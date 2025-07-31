@@ -1,0 +1,93 @@
+Create a modular and scalable set of frontend service files to integrate with a Spring Boot + PostgreSQL backend API. Follow these best practices:
+
+1. ✅ General Guidelines:
+Use Axios for all HTTP requests.
+
+Set up a centralized Axios instance (api.ts) with:
+
+baseURL pointing to the backend (e.g., http://localhost:8080/api).
+
+Automatic token handling: add Authorization headers from localStorage if available.
+
+Create apiService.ts for reusable wrappers:
+
+getRequest(url)
+
+postRequest(url, data)
+
+putRequest(url, data)
+
+deleteRequest(url)
+
+Automatically use the Axios instance from api.ts.
+
+Handle errors with try/catch and return consistent error messages.
+
+2. ✅ Create These Specific Services:
+📌 authService.ts
+ts
+Copy
+Edit
+login(emailOrPhone, password)
+register(userData)
+logout()
+forgotPassword(email)
+📌 productService.ts
+ts
+Copy
+Edit
+getAllProducts()
+getProductById(id)
+getProductsByCategory(category)
+searchProducts(query)
+createProduct(data)
+updateProduct(id, data)
+deleteProduct(id)
+📌 categoryService.ts
+ts
+Copy
+Edit
+getAllCategories()
+getSubcategoriesByCategory(categoryId)
+📌 orderService.ts
+ts
+Copy
+Edit
+placeOrder(orderData)
+getUserOrders(userId)
+getOrderDetails(orderId)
+📌 userService.ts
+ts
+Copy
+Edit
+getUserProfile()
+updateUserProfile(data)
+changePassword(oldPassword, newPassword)
+3. ✅ Folder Structure:
+css
+Copy
+Edit
+src/
+└── services/
+     ├── api.ts
+     ├── apiService.ts
+     ├── authService.ts
+     ├── productService.ts
+     ├── categoryService.ts
+     ├── orderService.ts
+     └── userService.ts
+4. ✅ Integration Notes:
+All services should only return response.data and abstract the error logic internally.
+
+The structure should easily integrate with Spring Boot RESTful controllers like:
+
+less
+Copy
+Edit
+@PostMapping("/auth/login")
+@GetMapping("/products")
+@PostMapping("/orders")
+etc.
+Use async/await and ensure type safety with TypeScript.
+
+Goal: Make the frontend services easily plug-and-play with backend endpoints, maintainable, and aligned with clean architecture principles.

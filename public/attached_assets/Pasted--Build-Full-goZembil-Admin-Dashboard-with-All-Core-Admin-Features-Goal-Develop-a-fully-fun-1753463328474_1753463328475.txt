@@ -1,0 +1,115 @@
+
+Build Full goZembil Admin Dashboard with All Core Admin Features
+
+**Goal:**
+Develop a fully functional and user-friendly **Admin Dashboard** at `/admin` where authorized admins can **monitor, manage, and approve** all activities 
+happening on the goZembil platform.
+
+---
+
+### 🔐 Access & Security
+
+* Route: `/admin`
+* Require **admin login/authentication**
+* Show warning or redirect if unauthorized
+
+---
+
+### 📊 Dashboard Overview Panel
+
+* Total Orders (with breakdown: Pending, Processing, Shipped, Delivered)
+* Total Revenue (filter by day/week/month)
+* Total Vendors Registered
+* Total Celebrity Registrations
+* Daily Signups / Activities chart
+* Quick Notifications (e.g., new vendor pending approval)
+
+---
+
+### 📦 Orders Management
+
+* View all orders with filters (date, status, payment method)
+* Click to view full order details
+* Change status: Pending → Processing → Shipped → Delivered
+* Assign or reassign delivery personnel
+* Cancel or refund an order (with reason)
+* Track customer issues or disputes
+
+---
+
+### 🛍️ Vendor Management
+
+* View all vendor accounts
+* Filter by status: pending / approved / rejected
+* Approve or decline new vendor registrations
+* View submitted documents (ID, TIN, etc.)
+* Activate/deactivate vendor listings
+* Edit vendor profile or contact
+
+---
+
+### 🎉 Celebrity Delivery Management
+
+* View all registered celebrities
+* Approve pending celebrity registrations
+* View social media & profile content
+* Toggle availability for deliveries
+* Feature top-rated celebrities on homepage
+* Edit bios or delivery regions if needed
+
+---
+
+### 🎁 Product & Category Management
+
+* Manage gift product listings:
+
+  * View, edit, approve or delete listings
+  * Add new gift products or categories
+  * Highlight featured items
+* Create/modify product categories (e.g., Coffee, Wellness, Custom Orders)
+* Moderate product reviews and ratings
+
+---
+
+### 👥 User Management
+
+* View all customer accounts
+* Search by name, email, phone
+* Ban or unban users
+* View order history per user
+* Handle reported issues or flagged activity
+
+---
+
+### 📩 Custom Orders Management
+
+* View incoming custom order requests
+* Assign vendors or providers
+* Communicate internally or externally for complex requests
+* Track status & delivery timeline
+
+---
+
+### 💬 Messages, Feedback & Support
+
+* View contact form submissions or support tickets
+* Reply directly or assign to support staff
+* Manage testimonials or customer reviews
+
+---
+
+### ⚙️ Settings & Admin Controls
+
+* Add/remove admin users
+* Manage platform settings (currency, fees, delivery cost)
+* Update policies, terms, and featured homepage content
+* Control marketing banners or announcements
+
+---
+
+### ✅ Bonus Features (Optional)
+
+* Analytics integration (Google Analytics or Stripe analytics)
+* Export reports as CSV (orders, revenue, vendors)
+* Dark mode toggle
+* Real-time notification alerts (new order, user flagged, etc.)

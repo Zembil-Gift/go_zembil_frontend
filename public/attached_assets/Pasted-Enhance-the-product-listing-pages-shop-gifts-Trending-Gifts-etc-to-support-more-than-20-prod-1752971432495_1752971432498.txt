@@ -1,0 +1,73 @@
+Enhance the product listing pages (/shop, /gifts, Trending Gifts, etc.) to support more than 20 products by default and include smart UI behavior such as View More buttons, arrows for navigation, and a Zembil-themed Signature Sets section below the listings.
+
+✅ Product Seeding:
+Seed 30+ products total to ensure the "View More" button and carousel behavior work as expected.
+
+Product types must include:
+
+Traditional Ethiopian gift items (scarves, baskets, spices)
+
+Custom gift boxes
+
+Books (Amharic/Fiction/Cultural)
+
+Affordable novelty or emotional items (starting from $5 USD)
+
+Gift items for kids, parents, and special occasions
+
+Each product card should show:
+
+Title, short description
+
+Local + USD price
+
+Discount tag (if applicable)
+
+Delivery icon with estimated time
+
+“Bestseller” tag (for selected few)
+
+🛒 Product Card Design:
+Ensure the layout of each product card is compact and visually appealing.
+
+Align the following elements clearly:
+
+Product image
+
+Title + price (local + USD)
+
+Discount and tags
+
+Buttons for wishlist/cart
+
+Responsive spacing for mobile/tablet/desktop
+
+⬅️➡️ Pagination/Scroll UI:
+Add "View More" button after 20 products.
+
+Also enable optional horizontal scrolling with left/right arrow icons.
+
+When users click "View More," show 10 additional products each time.
+
+Include "Back to Top" button just like in Screenshot 2.
+
+🎁 Promotional Section:
+Below product listing, add:
+
+Section title: “Gifting with Heart – Zembil Signature Sets”
+
+Three lifestyle images with real Ethiopian gift items.
+
+Updated paragraph (replaces old one):
+
+“Celebrate every occasion with heart and heritage. goZembil Signature Sets feature authentic, handpicked gifts inspired by Ethiopian culture — from woven baskets and coffee to books, spices, and netela. Perfect for reconnecting families, surprising loved ones, or sending your roots in a box. Every Zembil carries a story.”
+
+📱 Responsiveness:
+All updates should adapt smoothly across:
+
+Desktop
+
+Tablet
+
+Mobile (compact stacked layout)
+

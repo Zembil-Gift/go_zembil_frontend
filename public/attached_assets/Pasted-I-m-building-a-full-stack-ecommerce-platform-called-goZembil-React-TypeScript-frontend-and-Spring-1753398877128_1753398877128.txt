@@ -1,0 +1,112 @@
+I'm building a full-stack ecommerce platform called goZembil (React + TypeScript frontend and Spring Boot backend), integrating Stripe for international payments.
+
+❗ Current Critical Issues (Frontend + Stripe)
+Stripe Error:
+
+bash
+Copy
+Edit
+Each dictionary in the list "icons" should contain a non-empty UTF8 string field "type"
+GET /api/1572/envelope → 400 Bad Request
+Unrecognized request URL: /api/1572/envelope/
+Likely caused by malformed or missing "type" in payment metadata or request body.
+
+Possibly also related to invalid request to a non-existing endpoint.
+
+After payment:
+
+UI still shows /checkout, doesn't redirect to /order-success
+
+No order metadata saved: Order ID: undefined, Payment Method: Unknown
+
+Toast message: Order ID is missing. Please contact support.
+
+Cart is not cleared after successful payment.
+
+Track Your Order button doesn’t work properly.
+
+Browser Console shows:
+
+POST https://r.stripe.com/b net::ERR_INTERNET_DISCONNECTED (during failure)
+
+Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/...
+
+Stripe logs indicate metadata or identifier is undefined or null
+
+✅ Tasks for AI Agent to Fix
+Fix Stripe Metadata + Payment Intent
+
+When creating a PaymentIntent or Session, make sure you're passing:
+
+ts
+Copy
+Edit
+metadata: {
+  orderId: generatedOrderId,
+  userId: currentUserId,
+  paymentType: 'stripe',
+  email: currentUser.email,
+}
+Add valid "type" if using custom dictionaries (icons, line items, etc.)
+
+Remove /api/1572/envelope/ or check why this call is being made—this may be due to incorrect error logging or monitoring middleware.
+
+On Successful Payment (Frontend + Backend):
+
+After confirmation from Stripe:
+
+Save orderId and paymentMethod to DB
+
+Return complete order object to frontend
+
+Redirect user from /checkout to /order-success
+
+Show:
+
+✅ Payment success message
+
+📦 Track Order (goes to /my-orders/:orderId)
+
+🛍️ Continue Shopping (goes to /shop)
+
+Clear cart in state and localStorage
+
+Fix Error Handling:
+
+If metadata or order ID is undefined, show:
+
+vbnet
+Copy
+Edit
+We're verifying your order. Please refresh or contact support.
+Catch all failed Stripe calls and show user-friendly message.
+
+Backend Fixes:
+
+Ensure createOrder() or completePayment() endpoint:
+
+Generates orderId before Stripe call
+
+Saves payment confirmation data in database
+
+Returns structured response with all required values (orderId, paymentMethod, etc.)
+
+Test Flow:
+
+Simulate test payment using Stripe test card.
+
+Confirm order appears in:
+
+Stripe dashboard
+
+goZembil /my-orders
+
+Admin panel (if applicable)
+
+🧩 Tech Stack
+Frontend: React + TypeScript + Tailwind
+
+Backend: Java Spring Boot
+
+Payment: Stripe for USD/Card, Chapa for ETB/Mobile Money
+
