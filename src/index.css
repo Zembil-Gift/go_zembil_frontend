@@ -1,0 +1,308 @@
+/* Import Gotham font family with all weights */
+@import url('https://fonts.cdnfonts.com/css/gotham');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+/* Line clamp utilities for text truncation */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+:root {
+  /* Ethiopian warm theme */
+  --background: hsl(60, 33%, 97%);  /* Light cream #F8F8F8 */
+  --foreground: hsl(0, 0%, 13%);    /* Soft gray #222222 */
+  --muted: hsl(48, 44%, 93%);       /* Very light gold */
+  --muted-foreground: hsl(0, 0%, 40%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(0, 0%, 13%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(0, 0%, 13%);
+  --border: hsl(48, 15%, 85%);
+  --input: hsl(48, 15%, 90%);
+  --primary: hsl(48, 96%, 59%);     /* Ethiopian gold #FDCB2D */
+  --primary-foreground: hsl(151, 65%, 15%); /* Deep forest on gold */
+  --secondary: hsl(60, 33%, 97%);   /* Light cream */
+  --secondary-foreground: hsl(0, 0%, 13%);
+  --accent: hsl(151, 65%, 15%);     /* Deep forest #1C3A2D */
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(11, 83%, 51%); /* Warm red #E94E1B */
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(151, 65%, 15%);
+  --radius: 0.5rem;
+  
+  /* Ethiopian color scheme */
+  --ethiopian-gold: hsl(48, 96%, 53%);
+  --deep-forest: hsl(151, 65%, 15%);
+  --warm-red: hsl(348, 83%, 58%);
+  --sunset-orange: hsl(29, 88%, 67%);
+  --charcoal: hsl(156, 22%, 23%);
+  --amber: hsl(45, 100%, 51%);
+  --sky-blue: hsl(196, 73%, 73%);
+  
+  /* goZembil Brand Colors */
+  --go-green: hsl(120, 34%, 48%);        /* Soft green for "go" */
+  --go-brown: hsl(25, 62%, 31%);         /* Earthy brown alternative */
+  --zembil-brown: hsl(15, 36%, 25%);     /* Dark woven brown for "Zembil" */
+  --zembil-beige: hsl(43, 74%, 49%);     /* Golden beige */
+  --zembil-indigo: hsl(231, 48%, 48%);   /* Rich indigo */
+  
+  /* Additional Ethiopian palette */
+  --warm-gold: hsl(30, 59%, 55%);        /* #CD853F */
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(48, 96%, 53%);
+  --primary-foreground: hsl(0, 0%, 0%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    border-color: hsl(48, 15%, 85%);
+  }
+
+  body {
+    font-family: 'Gotham', 'Inter', sans-serif;
+    background-color: hsl(60, 33%, 97%);
+    color: hsl(0, 0%, 13%);
+    line-height: 1.6;
+  }
+
+  /* Gotham font utilities */
+  .font-gotham { font-family: 'Gotham', sans-serif; }
+  .font-gotham-light { font-family: 'Gotham-Light', sans-serif; }
+  .font-gotham-book { font-family: 'Gotham-Book', sans-serif; }
+  .font-gotham-medium { font-family: 'Gotham-Medium', sans-serif; }
+  .font-gotham-bold { font-family: 'Gotham-Bold', sans-serif; }
+  .font-gotham-black { font-family: 'Gotham-Black', sans-serif; }
+  .font-gotham-ultra { font-family: 'Gotham-Ultra', sans-serif; }
+  .font-gotham-thin { font-family: 'Gotham-Thin', sans-serif; }
+  .font-gotham-xlight { font-family: 'Gotham-XLight', sans-serif; }
+  .font-gotham-extra-light { font-family: 'Gotham-ExtraLight', sans-serif; }
+  .font-gotham-extra-bold { font-family: 'Gotham-ExtraBold', sans-serif; }
+}
+
+@layer utilities {
+  .text-ethiopian-gold {
+    color: var(--ethiopian-gold);
+  }
+  
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .bg-ethiopian-gold {
+    background-color: var(--ethiopian-gold);
+  }
+  
+  .text-deep-forest {
+    color: var(--deep-forest);
+  }
+  
+  .bg-deep-forest {
+    background-color: var(--deep-forest);
+  }
+  
+  .text-warm-red {
+    color: var(--warm-red);
+  }
+  
+  .bg-warm-red {
+    background-color: var(--warm-red);
+  }
+  
+  .text-sunset-orange {
+    color: var(--sunset-orange);
+  }
+  
+  .bg-sunset-orange {
+    background-color: var(--sunset-orange);
+  }
+  
+  .text-charcoal {
+    color: var(--charcoal);
+  }
+  
+  .text-zembil-brown {
+    color: var(--zembil-brown);
+  }
+  
+  .bg-zembil-brown {
+    background-color: var(--zembil-brown);
+  }
+  
+  .fill-zembil-brown {
+    fill: var(--zembil-brown);
+  }
+  
+  .fill-deep-forest {
+    fill: var(--deep-forest);
+  }
+  
+  /* goZembil Brand Typography and Colors */
+  .font-go {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 500;
+  }
+
+  .font-zembil {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+  }
+
+  .font-display {
+    font-family: 'Gotham-ExtraBold', sans-serif;
+  }
+
+  .brand-go {
+    color: var(--deep-forest);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 500;
+    text-transform: lowercase;
+  }
+
+  .brand-zembil {
+    color: var(--zembil-brown);
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+  }
+
+  .brand-zembil {
+    color: var(--zembil-brown);
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+  }
+  
+  .text-go-green {
+    color: var(--go-green);
+  }
+  
+  .text-go-brown {
+    color: var(--go-brown);
+  }
+  
+  .text-zembil-brown {
+    color: var(--zembil-brown);
+  }
+  
+  .text-zembil-beige {
+    color: var(--zembil-beige);
+  }
+  
+  .text-zembil-indigo {
+    color: var(--zembil-indigo);
+  }
+  
+  .bg-go-green {
+    background-color: var(--go-green);
+  }
+  
+  .bg-zembil-brown {
+    background-color: var(--zembil-brown);
+  }
+  
+  .bg-charcoal {
+    background-color: var(--charcoal);
+  }
+  
+  .text-amber {
+    color: var(--amber);
+  }
+  
+  .bg-amber {
+    background-color: var(--amber);
+  }
+  
+  .text-sky-blue {
+    color: var(--sky-blue);
+  }
+  
+  .bg-sky-blue {
+    background-color: var(--sky-blue);
+  }
+  
+  .hover\:bg-ethiopian-gold:hover {
+    background-color: var(--ethiopian-gold);
+  }
+  
+  .hover\:text-ethiopian-gold:hover {
+    color: var(--ethiopian-gold);
+  }
+  
+  .hover\:bg-amber:hover {
+    background-color: var(--amber);
+  }
+  
+  .hover\:bg-charcoal:hover {
+    background-color: var(--charcoal);
+  }
+  
+  .font-hand {
+    font-family: 'Kalam', 'Caveat', cursive;
+  }
+}
+
+.font-display {
+  font-family: 'Gotham-ExtraBold', sans-serif;
+}
+
+.font-body {
+  font-family: 'Gotham', sans-serif;
+}
+
+/* Horizontal scrolling animation for cultural categories */
+@keyframes scroll-horizontal {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll-horizontal {
+  animation: scroll-horizontal 30s linear infinite;
+}
+
+/* Pause animation on hover */
+.animate-scroll-horizontal:hover {
+  animation-play-state: paused;
+}
