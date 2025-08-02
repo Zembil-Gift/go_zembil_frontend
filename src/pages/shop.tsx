@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Filter, Grid, List, SortAsc, Heart, ShoppingCart, Star, ChevronRight, ArrowLeft } from "lucide-react";
-import ProductCard from "@/components/ProductCard";
+import GiftItemCard from "@/components/gift-card";
 import ProductPagination from "@/components/ProductPagination";
 import ZembilSignatureSets from "@/components/ZembilSignatureSets";
 import ProtectedRoute from "@/components/protected-route";
@@ -485,7 +485,7 @@ function ShopContent() {
               <ProductGridStagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {displayProducts.map((product: any, index: number) => (
                   <ProductGridItem key={product.id}>
-                    <ProductCard product={product} />
+                    <GiftItemCard product={product} />
                   </ProductGridItem>
                 ))}
               </ProductGridStagger>

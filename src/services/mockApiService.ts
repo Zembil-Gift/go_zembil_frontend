@@ -39,6 +39,14 @@ export class MockApiService {
       filteredProducts = filteredProducts.filter(p => p.categorySlug === params.category);
     }
 
+    if (params?.recipient) {
+      filteredProducts = filteredProducts.filter(p => 
+        p.recipient && 
+        Array.isArray(p.recipient) && 
+        p.recipient.includes(params.recipient)
+      );
+    }
+
     if (params?.limit) {
       filteredProducts = filteredProducts.slice(0, params.limit);
     }

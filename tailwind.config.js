@@ -5,6 +5,11 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
+    fontFamily: {
+      'sans': ['Gotham', 'Inter', 'sans-serif'],
+      'serif': ['Playfair Display', 'serif'],
+      'mono': ['ui-monospace', 'SFMono-Regular', 'monospace'],
+    },
     extend: {
       fontFamily: {
         'gotham': ['Gotham', 'sans-serif'],
@@ -18,6 +23,8 @@ export default {
         'gotham-xlight': ['Gotham-XLight', 'sans-serif'],
         'gotham-extra-light': ['Gotham-ExtraLight', 'sans-serif'],
         'gotham-extra-bold': ['Gotham-ExtraBold', 'sans-serif'],
+        'display': ['Gotham-ExtraBold', 'sans-serif'],
+        'body': ['Gotham', 'sans-serif'],
       },
       colors: {
         // Ethiopian themed colors
@@ -27,6 +34,11 @@ export default {
         'warm-gold': '#CD853F',
         'light-cream': '#F8F8F8',
         'charcoal': '#222222',
+        // Brand colors
+        'primary-blue': '#01415c',
+        'brand-blue': '#01415c',
+        // Custom yellow
+        'custom-yellow': '#ffff00',
       },
     },
   },

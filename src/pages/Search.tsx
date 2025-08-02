@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import MultilingualSearch from '@/components/search/MultilingualSearch';
-import ProductCard from '@/components/ProductCard';
+import GiftItemCard from '@/components/gift-card';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { ArrowLeft, Search as SearchIcon, Mic, Languages } from 'lucide-react';
@@ -244,7 +244,7 @@ export default function Search() {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {searchResults?.map((product: Product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <GiftItemCard key={product.id} product={product} />
                   ))}
                 </div>
                 

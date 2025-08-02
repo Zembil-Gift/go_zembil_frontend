@@ -15,11 +15,7 @@ export default function Footer() {
           <div className="md:col-span-1">
             <div className="mb-4">
               <div className="flex items-center space-x-3">
-                <GoZembilLogo size="lg" variant="icon" />
-                <div>
-                  <div className="font-bold text-2xl text-white">goZembil</div>
-                  <div className="text-sm font-medium" style={{ color: '#D2B48C' }}>{t('footer.tagline')}</div>
-                </div>
+                <GoZembilLogo size="xl" variant="icon" className="w-24 h-24" />
               </div>
             </div>
             <p className="text-gray-300 mb-6">

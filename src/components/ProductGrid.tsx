@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronUp } from "lucide-react";
-import ProductCard from "./ProductCard";
+import GiftItemCard from "./gift-card";
 import ProductPagination from "./ProductPagination";
 import { cn } from "@/lib/utils";
 import { Product } from "@shared/schema";
@@ -60,7 +60,7 @@ export function ProductGrid({
       {/* Product Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {displayProducts.map((product) => (
-          <ProductCard
+                          <GiftItemCard
             key={product.id}
             product={product}
             className="h-full"

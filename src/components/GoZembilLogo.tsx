@@ -1,5 +1,5 @@
 // Using URL for public assets instead of import
-const logoImagePath = "/attached_assets/image_1753381085382.png";
+const logoImagePath = "/attached_assets/logo-02.png";
 
 interface GoZembilLogoProps {
   className?: string;

@@ -26,6 +26,29 @@
 }
 
 :root {
+  /* Brand Colors */
+  --color-primary-blue: #01415c;
+  --color-brand-blue: #01415c;
+  
+  /* Custom Yellow */
+  --color-custom-yellow: #ffff00;
+  
+  /* Ethiopian themed colors */
+  --color-ethiopian-gold: #FDCB2D;
+  --color-deep-forest: #1C3A2D;
+  --color-warm-red: #E94E1B;
+  --color-warm-gold: #CD853F;
+  --color-light-cream: #F8F8F8;
+  --color-charcoal: #222222;
+  --color-amber: #FFD700; /* Assuming amber is a golden color */
+  --color-sky-blue: #4EA8DE; /* Assuming sky-blue is a blue-green color */
+  --color-zembil-brown: #331A00; /* Assuming zembil-brown is a dark brown */
+  --color-zembil-beige: #F5DEB3; /* Assuming zembil-beige is a light beige */
+  --color-zembil-indigo: #4B0082; /* Assuming zembil-indigo is a deep purple */
+  --color-go-green: #4CAF50; /* Assuming go-green is a green */
+  --color-go-brown: #8B4513; /* Assuming go-brown is a brown */
+  --color-sunset-orange: #FFA07A; /* Assuming sunset-orange is a warm orange */
+
   /* Ethiopian warm theme */
   --background: hsl(60, 33%, 97%);  /* Light cream #F8F8F8 */
   --foreground: hsl(0, 0%, 13%);    /* Soft gray #222222 */
@@ -101,6 +124,12 @@
     background-color: hsl(60, 33%, 97%);
     color: hsl(0, 0%, 13%);
     line-height: 1.6;
+    font-weight: 400;
+  }
+
+  /* Ensure all text elements use Gotham by default */
+  h1, h2, h3, h4, h5, h6, p, span, div, a, button, input, textarea, label {
+    font-family: 'Gotham', 'Inter', sans-serif;
   }
 
   /* Gotham font utilities */
@@ -115,9 +144,64 @@
   .font-gotham-xlight { font-family: 'Gotham-XLight', sans-serif; }
   .font-gotham-extra-light { font-family: 'Gotham-ExtraLight', sans-serif; }
   .font-gotham-extra-bold { font-family: 'Gotham-ExtraBold', sans-serif; }
+  
+  /* Default font classes */
+  .font-default { font-family: 'Gotham', 'Inter', sans-serif; }
+  .font-primary { font-family: 'Gotham', 'Inter', sans-serif; }
+  .font-brand { font-family: 'Gotham', 'Inter', sans-serif; }
 }
 
 @layer utilities {
+  /* Primary Blue Brand Color */
+  .text-primary-blue {
+    color: var(--color-primary-blue);
+  }
+  
+  .bg-primary-blue {
+    background-color: var(--color-primary-blue);
+  }
+  
+  .border-primary-blue {
+    border-color: var(--color-primary-blue);
+  }
+  
+  .hover\:text-primary-blue:hover {
+    color: var(--color-primary-blue);
+  }
+  
+  .hover\:bg-primary-blue:hover {
+    background-color: var(--color-primary-blue);
+  }
+  
+  .hover\:border-primary-blue:hover {
+    border-color: var(--color-primary-blue);
+  }
+  
+  /* Custom Yellow Color */
+  .text-custom-yellow {
+    color: var(--color-custom-yellow);
+  }
+  
+  .bg-custom-yellow {
+    background-color: var(--color-custom-yellow);
+  }
+  
+  .border-custom-yellow {
+    border-color: var(--color-custom-yellow);
+  }
+  
+  .hover\:text-custom-yellow:hover {
+    color: var(--color-custom-yellow);
+  }
+  
+  .hover\:bg-custom-yellow:hover {
+    background-color: var(--color-custom-yellow);
+  }
+  
+  .hover\:border-custom-yellow:hover {
+    border-color: var(--color-custom-yellow);
+  }
+  
   .text-ethiopian-gold {
     color: var(--ethiopian-gold);
   }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "react-router-dom";
 import { ChevronRight, Filter, Grid3X3, List, Heart, ShoppingCart, Star } from "lucide-react";
-import ProductCard from "@/components/ProductCard";
+import GiftItemCard from "@/components/gift-card";
 import ProtectedRoute from "@/components/protected-route";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -238,7 +238,7 @@ function OccasionCategoryContent() {
         ) : sortedProducts.length > 0 ? (
           <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
             {sortedProducts.map((product: Product) => (
-              <ProductCard key={product.id} product={product} />
+                              <GiftItemCard key={product.id} product={product} />
             ))}
           </div>
         ) : (

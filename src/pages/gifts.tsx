@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 
-import ProductCard from "@/components/ProductCard";
+import GiftItemCard from "@/components/gift-card";
 import ProductPagination from "@/components/ProductPagination";
 import ZembilSignatureSets from "@/components/ZembilSignatureSets";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,23 @@ import { Product, Category } from "@shared/schema";
 export default function Gifts() {
   // Get URL search params
   const urlParams = new URLSearchParams(window.location.search);
-  const categorySlug = urlParams.get('category');
   const searchParam = urlParams.get('search') || '';
   const sortParam = urlParams.get('sort') || 'popularity';
   const priceParam = urlParams.get('price') || 'all';
+  const recipientParam = urlParams.get('recipient') || '';
+  
+  // Get path parameters
+  const params = useParams();
+  
+  // Check if the path parameter is a recipient type
+  const knownRecipients = [
+    'mom', 'dad', 'friends', 'kids', 'couples', 'colleagues',
+    'anniversary', 'birthday', 'wedding', 'graduation', 'housewarming',
+    'christmas', 'holiday', 'valentine'
+  ];
+  const categorySlug = params.categorySlug && !knownRecipients.includes(params.categorySlug) ? params.categorySlug : urlParams.get('category');
+  const pathRecipient = params.categorySlug && knownRecipients.includes(params.categorySlug) ? params.categorySlug : null;
+  const finalRecipientParam = recipientParam || pathRecipient;
 
   const [searchTerm, setSearchTerm] = useState(searchParam);
   const [sortBy, setSortBy] = useState(sortParam);
@@ -38,6 +51,7 @@ export default function Gifts() {
     if (sortBy !== 'popularity') params.append('sort', sortBy);
     if (priceRange !== 'all') params.append('price', priceRange);
     if (categorySlug) params.append('category', categorySlug);
+    if (finalRecipientParam) params.append('recipient', finalRecipientParam);
     return params.toString();
   };
 
@@ -55,13 +69,22 @@ export default function Gifts() {
   const products = isNewFormat ? initialData.products : (initialData as Product[] || []);
   const totalProducts = isNewFormat ? initialData.total : (products?.length || 0);
 
+  // Filter products by recipient if specified
+  const filteredProducts = finalRecipientParam 
+    ? products.filter(product => 
+        product.recipient && 
+        Array.isArray(product.recipient) && 
+        product.recipient.includes(finalRecipientParam)
+      )
+    : products;
+
   // Update loaded products when initial data changes
   useEffect(() => {
-    if (products.length > 0) {
-      setLoadedProducts(products);
+    if (filteredProducts.length > 0) {
+      setLoadedProducts(filteredProducts);
       setCurrentPage(1);
     }
-  }, [products]);
+  }, [filteredProducts]);
 
   // Load more products function
   const loadMoreProducts = async () => {
@@ -88,11 +111,32 @@ export default function Gifts() {
   };
 
   const hasNextPage = totalProducts > loadedProducts.length;
-  const displayProducts = loadedProducts.length > 0 ? loadedProducts : products;
+  const displayProducts = loadedProducts.length > 0 ? loadedProducts : filteredProducts;
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
   });
+
+  // Get recipient display name
+  const getRecipientDisplayName = (recipient: string) => {
+    const recipientNames: { [key: string]: string } = {
+      'mom': 'For Mom',
+      'dad': 'For Dad', 
+      'friends': 'For Friends',
+      'kids': 'For Kids',
+      'couples': 'For Couples',
+      'colleagues': 'For Colleagues',
+      'anniversary': 'Anniversary Gifts',
+      'birthday': 'Birthday Gifts',
+      'wedding': 'Wedding Gifts',
+      'graduation': 'Graduation Gifts',
+      'housewarming': 'Housewarming Gifts',
+      'christmas': 'Christmas Gifts',
+      'holiday': 'Holiday Gifts',
+      'valentine': 'Valentine Gifts'
+    };
+    return recipientNames[recipient] || recipient;
+  };
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -143,13 +187,43 @@ export default function Gifts() {
                 <span className="text-ethiopian-gold">{currentCategory.name}</span>
               </>
             )}
+            {finalRecipientParam && (
+              <>
+                <span>›</span>
+                <span className="text-ethiopian-gold">{getRecipientDisplayName(finalRecipientParam)}</span>
+              </>
+            )}
           </div>
           
           <h1 className="text-3xl sm:text-4xl font-bold text-charcoal mb-4">
-            {currentCategory ? currentCategory.name : 'All Gifts'}
+            {finalRecipientParam 
+              ? `${getRecipientDisplayName(finalRecipientParam)}` 
+              : currentCategory 
+                ? currentCategory.name 
+                : 'All Gifts'
+            }
           </h1>
           
-          {currentCategory?.description && (
+          {finalRecipientParam && (
+            <p className="text-gray-600 text-lg max-w-3xl">
+              Perfect gifts curated specifically for {finalRecipientParam === 'mom' ? 'your mother' : 
+                finalRecipientParam === 'dad' ? 'your father' : 
+                finalRecipientParam === 'friends' ? 'your friends' :
+                finalRecipientParam === 'kids' ? 'children' :
+                finalRecipientParam === 'couples' ? 'couples' :
+                finalRecipientParam === 'colleagues' ? 'your colleagues' :
+                finalRecipientParam === 'anniversary' ? 'celebrating love and commitment' :
+                finalRecipientParam === 'birthday' ? 'birthday celebrations' :
+                finalRecipientParam === 'wedding' ? 'wedding celebrations' :
+                finalRecipientParam === 'graduation' ? 'academic achievements' :
+                finalRecipientParam === 'housewarming' ? 'new home celebrations' :
+                finalRecipientParam === 'christmas' ? 'Christmas celebrations' :
+                finalRecipientParam === 'holiday' ? 'holiday celebrations' :
+                finalRecipientParam === 'valentine' ? 'Valentine\'s Day' : finalRecipientParam}
+            </p>
+          )}
+          
+          {currentCategory?.description && !finalRecipientParam && (
             <p className="text-gray-600 text-lg max-w-3xl">
               {currentCategory.description}
             </p>
@@ -207,7 +281,7 @@ export default function Gifts() {
           </div>
 
           {/* Active Filters */}
-          {(searchTerm || priceRange !== 'all' || currentCategory) && (
+          {(searchTerm || priceRange !== 'all' || currentCategory || finalRecipientParam) && (
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
               <span className="text-sm text-gray-600">Active filters:</span>
               {searchTerm && (
@@ -224,6 +298,26 @@ export default function Gifts() {
               {currentCategory && (
                 <Badge variant="secondary" className="bg-ethiopian-gold/10 text-ethiopian-gold">
                   Category: {currentCategory.name}
+                </Badge>
+              )}
+              {finalRecipientParam && (
+                <Badge variant="secondary" className="bg-ethiopian-gold/10 text-ethiopian-gold">
+                  Recipient: {getRecipientDisplayName(finalRecipientParam)}
+                  <button 
+                    onClick={() => {
+                      const newParams = new URLSearchParams(window.location.search);
+                      newParams.delete('recipient');
+                      // If we're on a path-based recipient URL, redirect to /gifts
+                      if (pathRecipient) {
+                        window.location.href = '/gifts';
+                      } else {
+                        window.history.replaceState(null, '', `${window.location.pathname}?${newParams.toString()}`);
+                      }
+                    }}
+                    className="ml-2 hover:text-warm-red"
+                  >
+                    ×
+                  </button>
                 </Badge>
               )}
               {priceRange !== 'all' && (
@@ -277,7 +371,7 @@ export default function Gifts() {
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             >
               {displayProducts.map((product: Product) => (
-                <ProductCard key={product.id} product={product} />
+                <GiftItemCard key={product.id} product={product} />
               ))}
             </motion.div>
             
