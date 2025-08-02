@@ -21,7 +21,7 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
     return (
         <div className={`bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${className || ''}`}>
             {/* Image Container */}
-            <div className="relative">
+            <div className="relative rounded-2xl overflow-hidden">
                 <img
                     src={images?.[0] || '/api/placeholder/400/400'}
                     alt={name}
