@@ -19,9 +19,9 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
     const hasDiscount = originalPrice && price < originalPrice
 
     return (
-        <div className={`bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${className || ''}`}>
+        <div className={`rounded-2xl transition-all duration-300 overflow-hidden ${className || ''}`}>
             {/* Image Container */}
-            <div className="relative rounded-2xl overflow-hidden">
+            <div className="relative rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
                 <img
                     src={images?.[0] || '/api/placeholder/400/400'}
                     alt={name}

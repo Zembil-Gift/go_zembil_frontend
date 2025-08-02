@@ -61,27 +61,7 @@ export default function TrendingGiftsSection({
           </div>
         </div>
 
-        {/* Budget Filter */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-2 mb-4">
-            <span className="text-sm font-medium text-gray-700">{t('homepage.trending.budget')}</span>
-            <div className="flex flex-wrap gap-2">
-              {budgetRanges.map((range) => (
-                <button
-                  key={range.id}
-                  onClick={() => onBudgetChange(range.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    selectedBudget === range.id
-                      ? "bg-ethiopian-gold text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  {range.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+    
 
         {/* Two Row Grid Layout */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
