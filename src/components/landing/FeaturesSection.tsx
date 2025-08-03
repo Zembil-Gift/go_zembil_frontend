@@ -12,21 +12,21 @@ export default function FeaturesSection() {
       title: t('homepage.features.videoMessages.title'),
       description: t('homepage.features.videoMessages.description'),
       learnMore: t('homepage.features.videoMessages.learnMore'),
-      gradient: "from-warm-red to-sunset-orange"
+      gradient: "from-yellow to-june-bud"
     },
     {
       icon: PaintbrushVertical,
       title: t('homepage.features.customOrders.title'),
       description: t('homepage.features.customOrders.description'),
       learnMore: t('homepage.features.customOrders.learnMore'),
-      gradient: "from-ethiopian-gold to-amber"
+      gradient: "from-viridian-green to-eagle-green"
     },
     {
       icon: Star,
       title: t('homepage.features.influencerDelivery.title'),
       description: t('homepage.features.influencerDelivery.description'),
       learnMore: t('homepage.features.influencerDelivery.learnMore'),
-      gradient: "from-deep-forest to-sky-blue"
+      gradient: "from-june-bud to-viridian-green"
     }
   ];
 
@@ -34,10 +34,10 @@ export default function FeaturesSection() {
     <section id="custom" className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="font-gotham-extra-bold text-3xl sm:text-4xl text-charcoal mb-4">
+          <h2 className="font-gotham-extra-bold text-3xl sm:text-4xl text-eagle-green mb-4">
             {t('homepage.features.title')}
           </h2>
-          <p className="font-gotham-light text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="font-gotham-light text-xl text-eagle-green/70 max-w-2xl mx-auto">
             {t('homepage.features.subtitle')}
           </p>
         </div>
@@ -50,9 +50,9 @@ export default function FeaturesSection() {
                 <div className={`bg-gradient-to-br ${feature.gradient} w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6`}>
                   <IconComponent className="text-white" size={24} />
                 </div>
-                <h3 className="font-gotham-bold text-xl text-charcoal mb-4">{feature.title}</h3>
-                <p className="font-gotham-light text-gray-600 mb-6">{feature.description}</p>
-                <button className="text-ethiopian-gold hover:text-amber font-gotham-medium transition-colors duration-200">
+                <h3 className="font-gotham-bold text-xl text-eagle-green mb-4">{feature.title}</h3>
+                <p className="font-gotham-light text-eagle-green/70 mb-6">{feature.description}</p>
+                <button className="text-viridian-green hover:text-june-bud font-gotham-medium transition-colors duration-200">
                   {feature.learnMore}
                 </button>
               </div>
@@ -61,10 +61,10 @@ export default function FeaturesSection() {
         </div>
 
         {/* Call-to-Action */}
-        <div id="track" className="bg-gradient-to-r from-deep-forest to-ethiopian-gold rounded-2xl p-8 mt-12 text-white text-center">
+        <div id="track" className="bg-gradient-to-r from-eagle-green to-viridian-green rounded-2xl p-8 mt-12 text-white text-center">
           <h3 className="font-gotham-extra-bold text-2xl mb-4">{t('homepage.cta.title')}</h3>
           <p className="font-gotham-light text-lg mb-6 opacity-90">{t('homepage.cta.subtitle')}</p>
-          <Button asChild className="bg-white text-deep-forest hover:bg-gray-100">
+          <Button asChild className="bg-white text-eagle-green hover:bg-gray-100">
             <a href="/api/login">{t('homepage.cta.button')}</a>
           </Button>
         </div>

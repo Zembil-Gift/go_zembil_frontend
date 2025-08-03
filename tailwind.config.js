@@ -35,10 +35,11 @@ export default {
         'light-cream': '#F8F8F8',
         'charcoal': '#222222',
         // Brand colors
-        'primary-blue': '#01415c',
-        'brand-blue': '#01415c',
+        'yellow': '#ffff00',
+        'viridian-green': '#11a0a0',
+        'june-bud': '#b2d55b',
+        'eagle-green': '#01415c',
         // Custom yellow
-        'custom-yellow': '#ffff00',
       },
     },
   },

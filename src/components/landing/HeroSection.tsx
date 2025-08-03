@@ -15,7 +15,7 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
   const { t } = useTranslation();
 
   return (
-    <section className="relative bg-gradient-to-br from-deep-forest to-ethiopian-gold text-white">
+    <section className="relative bg-gradient-to-br from-eagle-green to-viridian-green text-white">
       {/* Ethiopian cultural pattern overlay */}
       <div className="absolute inset-0 opacity-10">
         <div className="w-full h-full" style={{
@@ -31,7 +31,7 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
             <FadeIn delay={0.2} duration={0.8}>
               <h1 className="font-gotham-extra-bold text-4xl sm:text-5xl lg:text-6xl leading-tight mb-6">
                 {t('homepage.hero.title')}
-                <span className="text-amber block">{t('homepage.hero.subtitle')}</span>
+                <span className="text-yellow block">{t('homepage.hero.subtitle')}</span>
               </h1>
             </FadeIn>
             <FadeIn delay={0.4} duration={0.8}>
@@ -50,7 +50,7 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
                   onChange={(e) => onSearchChange(e.target.value)}
                   className="flex-1 px-4 py-3 text-charcoal placeholder-gray-500 bg-transparent border-none outline-none"
                 />
-                <Button className="bg-ethiopian-gold hover:bg-amber text-white px-6 py-3 rounded-lg">
+                <Button className="bg-june-bud hover:bg-viridian-green text-white px-6 py-3 rounded-lg">
                   <Search size={16} />
                 </Button>
               </div>
@@ -59,11 +59,11 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
             {/* Quick Stats */}
             <div className="flex items-center space-x-8 mt-8 text-sm">
               <div className="flex items-center space-x-2">
-                <Truck className="text-amber" size={16} />
+                <Truck className="text-yellow" size={16} />
                 <span>{t('homepage.hero.freeDelivery')}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Heart className="text-amber" size={16} />
+                <Heart className="text-yellow" size={16} />
                 <span>{t('homepage.hero.happyRecipients')}</span>
               </div>
             </div>

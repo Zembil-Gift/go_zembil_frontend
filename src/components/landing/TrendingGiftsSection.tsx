@@ -77,7 +77,7 @@ export default function TrendingGiftsSection({
 
         {/* More Products Button */}
         <div className="text-center">
-          <Button asChild className="bg-custom-yellow hover:bg-custom-yellow/90 text-charcoal font-gotham-medium px-8 py-3 text-lg">
+          <Button asChild className="bg-viridian-green hover:bg-viridian-green/90 text-white font-gotham-medium px-8 py-3 text-lg">
             <Link to="/shop">More Products</Link>
           </Button>
         </div>

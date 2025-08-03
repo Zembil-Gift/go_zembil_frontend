@@ -20,54 +20,54 @@ export default function GiftRecipientsSection() {
       id: "mom", 
       name: t('homepage.recipients.mom'), 
       icon: Heart, 
-      gradient: "from-pink-400 to-rose-500",
+      gradient: "from-yellow to-june-bud",
       description: "Show your love and appreciation"
     },
     { 
       id: "dad", 
       name: t('homepage.recipients.dad'), 
       icon: Award, 
-      gradient: "from-blue-400 to-indigo-500",
+      gradient: "from-viridian-green to-eagle-green",
       description: "Celebrate his achievements"
     },
     { 
       id: "friends", 
       name: t('homepage.recipients.friends'), 
       icon: Users, 
-      gradient: "from-green-400 to-emerald-500",
+      gradient: "from-june-bud to-viridian-green",
       description: "Strengthen your friendship"
     },
     { 
       id: "kids", 
       name: t('homepage.recipients.kids'), 
       icon: Baby, 
-      gradient: "from-yellow-400 to-amber-500",
+      gradient: "from-eagle-green to-yellow",
       description: "Make them smile with joy"
     },
     { 
       id: "couples", 
       name: t('homepage.recipients.couples'), 
       icon: Heart, 
-      gradient: "from-red-400 to-pink-500",
+      gradient: "from-yellow to-viridian-green",
       description: "Express your deep affection"
     },
     { 
       id: "colleagues", 
       name: t('homepage.recipients.colleagues'), 
       icon: User, 
-      gradient: "from-purple-400 to-violet-500",
+      gradient: "from-june-bud to-eagle-green",
       description: "Build professional relationships"
     }
   ];
 
   return (
-    <section className="py-16 bg-gradient-to-br from-gray-50 to-white">
+    <section className="py-16 bg-gradient-to-br from-yellow/5 to-viridian-green/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="font-gotham-extra-bold text-3xl sm:text-4xl text-charcoal mb-4">
+          <h2 className="font-gotham-extra-bold text-3xl sm:text-4xl text-eagle-green mb-4">
             {t('homepage.recipients.title')}
           </h2>
-          <p className="font-gotham-light text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="font-gotham-light text-xl text-eagle-green/70 max-w-2xl mx-auto">
             {t('homepage.recipients.subtitle')}
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function GiftRecipientsSection() {
                   to={`/gifts/${recipient.id}`}
                   className="group block"
                 >
-                  <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-lg transition-all duration-300 group-hover:scale-105 border border-gray-100">
+                  <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-lg transition-all duration-300 group-hover:scale-105 border border-viridian-green/20">
                     {/* Gradient Background */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${recipient.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
                     
@@ -94,10 +94,10 @@ export default function GiftRecipientsSection() {
                       
                       {/* Text Content */}
                       <div className="space-y-2">
-                        <h3 className="font-gotham-bold text-lg text-gray-900 group-hover:text-gray-800 transition-colors">
+                        <h3 className="font-gotham-bold text-lg text-eagle-green group-hover:text-eagle-green transition-colors">
                           {recipient.name}
                         </h3>
-                        <p className="text-sm text-gray-600 leading-relaxed">
+                        <p className="text-sm text-eagle-green/70 leading-relaxed">
                           {recipient.description}
                         </p>
                       </div>

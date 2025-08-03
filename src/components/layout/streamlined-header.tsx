@@ -88,8 +88,8 @@ export default function StreamlinedHeader() {
               />
               <div className="hidden sm:flex flex-col">
                 <div className="flex items-center">
-                  <span className="text-lg lg:text-2xl font-bold text-primary-blue">go</span>
-                  <span className="text-lg lg:text-2xl font-bold text-primary-blue">Zembil</span>
+                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">go</span>
+                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">Zembil</span>
                 </div>
               </div>
             </Link>
@@ -103,8 +103,8 @@ export default function StreamlinedHeader() {
                 to={item.href}
                 className={`px-2 py-2 text-sm font-medium transition-colors rounded-lg ${
                   pathname === item.href
-                    ? "text-ethiopian-gold bg-ethiopian-gold/20"
-                    : "text-charcoal hover:text-ethiopian-gold hover:bg-ethiopian-gold/10"
+                    ? "text-viridian-green bg-viridian-green/20"
+                    : "text-eagle-green hover:text-viridian-green hover:bg-viridian-green/10"
                 }`}
               >
                 {item.name}
@@ -127,7 +127,7 @@ export default function StreamlinedHeader() {
                       variant="ghost"
                       size="sm"
                       onClick={handleSearchClick}
-                      className="text-charcoal hover:text-ethiopian-gold p-2"
+                      className="text-eagle-green hover:text-viridian-green p-2"
                     >
                       <Search className="h-5 w-5" />
                       <span className="sr-only">Search</span>
@@ -145,7 +145,7 @@ export default function StreamlinedHeader() {
                       variant="ghost"
                       size="sm"
                       asChild
-                      className="relative text-charcoal hover:text-ethiopian-gold p-2"
+                      className="relative text-eagle-green hover:text-viridian-green p-2"
                     >
                       <Link to="/wishlist">
                         <Heart className="h-5 w-5" />
@@ -173,7 +173,7 @@ export default function StreamlinedHeader() {
                       variant="ghost"
                       size="sm"
                       asChild
-                      className="relative text-charcoal hover:text-ethiopian-gold p-2"
+                      className="relative text-eagle-green hover:text-viridian-green p-2"
                     >
                       <Link to="/cart">
                         <ShoppingCart className="h-5 w-5" />
@@ -199,7 +199,7 @@ export default function StreamlinedHeader() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-charcoal hover:text-ethiopian-gold p-2"
+                    className="text-eagle-green hover:text-viridian-green p-2"
                   >
                     <Globe className="h-5 w-5" />
                     <span className="sr-only">Language</span>
@@ -232,7 +232,7 @@ export default function StreamlinedHeader() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-charcoal hover:text-ethiopian-gold p-2"
+                      className="text-eagle-green hover:text-viridian-green p-2"
                     >
                       <User className="h-5 w-5" />
                       <span className="sr-only">Profile</span>
@@ -271,7 +271,7 @@ export default function StreamlinedHeader() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-charcoal hover:text-ethiopian-gold text-xs lg:text-sm"
+                        className="text-eagle-green hover:text-viridian-green text-xs lg:text-sm"
                       >
                         Partner
                       </Button>
@@ -296,7 +296,7 @@ export default function StreamlinedHeader() {
                     variant="ghost"
                     size="sm"
                     asChild
-                    className="text-charcoal hover:text-ethiopian-gold"
+                    className="text-eagle-green hover:text-viridian-green"
                   >
                     <Link to="/signin">Sign In</Link>
                   </Button>
@@ -311,7 +311,7 @@ export default function StreamlinedHeader() {
                 variant="ghost"
                 size="sm"
                 asChild
-                className="relative text-charcoal hover:text-ethiopian-gold p-2"
+                className="relative text-eagle-green hover:text-viridian-green p-2"
               >
                 <Link to="/cart">
                   <ShoppingCart className="h-5 w-5" />
@@ -331,7 +331,7 @@ export default function StreamlinedHeader() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="text-charcoal hover:text-ethiopian-gold p-2"
+                className="text-eagle-green hover:text-viridian-green p-2"
               >
                 {isMobileMenuOpen ? (
                   <X className="h-5 w-5" />
@@ -377,8 +377,8 @@ export default function StreamlinedHeader() {
                     to={item.href}
                     className={`block px-4 py-3 text-base font-medium rounded-lg transition-colors ${
                       pathname === item.href
-                        ? "text-ethiopian-gold bg-ethiopian-gold/20"
-                        : "text-gray-700 hover:text-ethiopian-gold hover:bg-gray-50"
+                        ? "text-viridian-green bg-viridian-green/20"
+                        : "text-eagle-green hover:text-viridian-green hover:bg-gray-50"
                     }`}
                   >
                     {item.name}
