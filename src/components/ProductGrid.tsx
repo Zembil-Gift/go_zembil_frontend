@@ -85,7 +85,7 @@ export function ProductGrid({
       <div className="mt-16 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 rounded-3xl overflow-hidden">
         <div className="px-8 py-12 text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            GIFTING WITH HEART – ZEMBIL SIGNATURE SETS
+            GIFTING WITH HEART – goZEMBIL SIGNATURE SETS
           </h2>
           
           {/* Lifestyle Images */}

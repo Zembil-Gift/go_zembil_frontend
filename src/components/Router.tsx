@@ -21,6 +21,8 @@ import Occasions from "@/pages/occasions";
 import OccasionCategory from "@/pages/occasion-category";
 import Collections from "@/pages/collections";
 import Events from "@/pages/events";
+import EventDetail from "@/pages/event-detail";
+import ServiceDetail from "@/pages/service-detail";
 import EnhancedEvents from "@/pages/EnhancedEvents";
 import NotFound from "@/pages/not-found";
 
@@ -76,12 +78,15 @@ export default function Router() {
           <Route path="gifts/:categorySlug" element={<Gifts />} />
           <Route path="shop" element={<Shop />} />
           <Route path="shop/:categorySlug" element={<Shop />} />
+          <Route path="shop/category/:subcategorySlug" element={<Shop />} />
           <Route path="search" element={<Search />} />
-          <Route path="gift-experiences" element={<GiftExperiences />} />
+          <Route path="gift-experiences" element={<Navigate to="/events" replace />} />
           <Route path="occasions" element={<Occasions />} />
           <Route path="occasions/:categorySlug" element={<OccasionCategory />} />
           <Route path="collections" element={<Collections />} />
-          <Route path="events" element={<EnhancedEvents />} />
+          <Route path="events" element={<Events />} />
+          <Route path="events/:slug" element={<EventDetail />} />
+          <Route path="services/:id" element={<ServiceDetail />} />
           
           {/* Product Detail */}
           <Route path="product/:id" element={<ProductDetail />} />

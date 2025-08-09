@@ -1,46 +1,15 @@
-// Mock data for independent client development
-export const mockCategories = [
-  {
-    id: 1,
-    name: "Occasions",
-    slug: "occasions",
-    description: "Gifts for special occasions",
-    image: "/attached_assets/coffee_1752986974470.jpg",
-    productCount: 25
-  },
-  {
-    id: 2,
-    name: "Traditional",
-    slug: "traditional",
-    description: "Traditional Ethiopian gifts",
-    image: "/attached_assets/injera-kit_1752987009557.jpg",
-    productCount: 18
-  },
-  {
-    id: 3,
-    name: "Food & Beverages",
-    slug: "food-beverages",
-    description: "Ethiopian food and drinks",
-    image: "/attached_assets/coffee_1752986974470.jpg",
-    productCount: 12
-  },
-  {
-    id: 4,
-    name: "Clothing & Accessories",
-    slug: "clothing-accessories",
-    description: "Traditional clothing and accessories",
-    image: "/attached_assets/clothing_1752986983087.jpg",
-    productCount: 15
-  },
-  {
-    id: 5,
-    name: "Home & Living",
-    slug: "home-living",
-    description: "Home decor and living items",
-    image: "/attached_assets/holiday-basket_1752986968856.jpg",
-    productCount: 20
-  }
-];
+import { CATEGORIES } from '@/shared/categories';
+
+// Mock data for independent client development - convert to legacy format
+export const mockCategories = CATEGORIES.map(cat => ({
+  id: cat.id,
+  name: cat.name,
+  slug: cat.slug,
+  description: cat.description,
+  type: cat.id,
+  image: `/attached_assets/coffee_1752986974470.jpg`, // Default image
+  productCount: Math.floor(Math.random() * 50) + 10, // Random count for demo
+}));
 
 export const mockProducts = [
   {

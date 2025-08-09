@@ -3,7 +3,10 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Palette, Camera, Heart, Star, CheckCircle, Clock, ArrowRight, Save, Upload, X, FileImage } from "lucide-react";
+import { 
+  Palette, Camera, Heart, Star, CheckCircle, Clock, ArrowRight, Save, Upload, X, FileImage, 
+  Shirt, Wrench, Music, Sparkles, Gift, Crown, Coffee, Timer, Plus
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,9 +25,10 @@ const customOrderSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters").max(2000, "Description must be less than 2000 characters"),
   budget: z.string().min(1, "Please enter your budget"),
   deadline: z.string().min(1, "Please select a deadline"),
+  estimatedDelivery: z.string().optional(),
   recipientInfo: z.string().max(1000, "Recipient info must be less than 1000 characters").optional(),
   specialRequests: z.string().max(1000, "Special requests must be less than 1000 characters").optional(),
-  referenceImage: z.any().optional(),
+  referenceImages: z.array(z.any()).optional(),
 });
 
 type CustomOrderForm = z.infer<typeof customOrderSchema>;
@@ -75,8 +79,8 @@ function CustomOrdersContent() {
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<{ file: File; preview: string }[]>([]);
 
   // Load draft on component mount
   useEffect(() => {
@@ -94,9 +98,10 @@ function CustomOrdersContent() {
       description: "",
       budget: "",
       deadline: "",
+      estimatedDelivery: "",
       recipientInfo: "",
       specialRequests: "",
-      referenceImage: null,
+      referenceImages: [],
     },
   });
 
@@ -202,14 +207,22 @@ function CustomOrdersContent() {
   };
 
   const orderTypes = [
-    { value: "portrait", label: "Custom Portrait", icon: Camera },
-    { value: "embroidery", label: "Personalized Embroidery", icon: Heart },
-    { value: "art", label: "Epoxy Art Piece", icon: Palette },
-    { value: "other", label: "Other Custom Item", icon: Star },
+    { value: "custom-portrait", label: "Custom Portrait", description: "Personalized artwork", icon: Palette },
+    { value: "embroidery", label: "Embroidery", description: "Hand-stitched designs", icon: Shirt },
+    { value: "wood-crafts", label: "Wood Crafts", description: "Handcrafted items", icon: Wrench },
+    { value: "custom-jewelry", label: "Custom Jewelry", description: "Personalized accessories", icon: Star },
+    { value: "painted-ceramics", label: "Painted Ceramics", description: "Artistic pottery", icon: Palette },
+    { value: "personalized-baskets", label: "Personalized Baskets", description: "Custom gift baskets", icon: Gift },
+    { value: "custom-songs", label: "Custom Songs", description: "Personalized music", icon: Music },
+    { value: "photo-albums", label: "Photo Albums", description: "Memory collections", icon: Camera },
+    { value: "love-letters", label: "Love Letters", description: "Handwritten messages", icon: Heart },
+    { value: "leather-goods", label: "Leather Goods", description: "Handcrafted leather", icon: Sparkles },
+    { value: "traditional-crowns", label: "Traditional Crowns", description: "Cultural headpieces", icon: Crown },
+    { value: "coffee-accessories", label: "Coffee Accessories", description: "Brewing essentials", icon: Coffee },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Success Animation Overlay */}
       <AnimatePresence>
         {showSuccessAnimation && (
@@ -263,10 +276,10 @@ function CustomOrdersContent() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h1 className="font-display text-4xl font-bold text-charcoal mb-4">
+          <h1 className="font-gotham-bold text-4xl text-eagle-green mb-4">
             Custom Handmade Orders
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl font-gotham-light text-viridian-green max-w-3xl mx-auto">
             Commission unique, personalized pieces from talented Ethiopian artists. Turn your vision into a meaningful gift.
           </p>
         </motion.div>
@@ -280,14 +293,14 @@ function CustomOrdersContent() {
               exit={{ opacity: 0, y: -20 }}
               className="mb-6"
             >
-              <Card className="border-ethiopian-gold/30 bg-ethiopian-gold/5">
+              <Card className="border-yellow/30 bg-june-bud/10">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <Save className="text-ethiopian-gold" size={20} />
+                      <Save className="text-eagle-green" size={20} />
                       <div>
-                        <h4 className="font-semibold text-charcoal">Draft Found</h4>
-                        <p className="text-sm text-gray-600">You have a saved draft from a previous session.</p>
+                        <h4 className="font-gotham-bold text-eagle-green">Draft Found</h4>
+                        <p className="text-sm font-gotham-light text-eagle-green/70">You have a saved draft from a previous session.</p>
                       </div>
                     </div>
                     <div className="flex space-x-2">
@@ -295,14 +308,14 @@ function CustomOrdersContent() {
                         variant="outline"
                         size="sm"
                         onClick={() => setHasDraft(false)}
-                        className="border-gray-300"
+                        className="border-eagle-green/30 text-eagle-green hover:bg-eagle-green/10"
                       >
                         Ignore
                       </Button>
                       <Button
                         size="sm"
                         onClick={loadDraftData}
-                        className="bg-ethiopian-gold hover:bg-ethiopian-gold/90"
+                        className="bg-eagle-green hover:bg-viridian-green text-white"
                       >
                         Load Draft
                       </Button>
@@ -322,9 +335,9 @@ function CustomOrdersContent() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-2"
           >
-            <Card className="shadow-lg">
-              <CardHeader className="relative">
-                <CardTitle className="text-2xl text-charcoal">Submit Your Custom Order</CardTitle>
+            <Card className="shadow-lg border-eagle-green/10">
+              <CardHeader className="relative bg-gradient-to-r from-june-bud/5 to-white">
+                <CardTitle className="text-2xl font-gotham-bold text-eagle-green">Submit Your Custom Order</CardTitle>
                 {isAutoSaving && (
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -344,25 +357,32 @@ function CustomOrdersContent() {
                       name="type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-semibold text-charcoal">
-                            Order Type <span className="text-warm-red">*</span>
+                          <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                            Order Type <span className="text-yellow">*</span>
                           </FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger 
-                                className="h-12 focus:ring-2 focus:ring-ethiopian-gold focus:border-transparent"
+                                className="h-12 bg-white border border-gray-300 focus:ring-2 focus:ring-viridian-green focus:border-viridian-green hover:border-eagle-green/50 transition-colors"
                                 aria-describedby="type-description"
                                 aria-required="true"
                               >
                                 <SelectValue placeholder="Select the type of custom order" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md max-h-[300px] overflow-y-auto z-50">
                               {orderTypes.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  <div className="flex items-center space-x-2">
-                                    <type.icon size={16} className="text-ethiopian-gold" />
-                                    <span>{type.label}</span>
+                                <SelectItem 
+                                  key={type.value} 
+                                  value={type.value}
+                                  className="px-4 py-3 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10"
+                                >
+                                  <div className="flex items-center space-x-3 w-full">
+                                    <type.icon size={16} className="text-eagle-green flex-shrink-0" />
+                                    <div className="flex flex-col min-w-0 flex-1">
+                                      <span className="font-gotham-bold text-gray-900 text-sm">{type.label}</span>
+                                      <span className="text-xs text-gray-600 font-gotham-light leading-tight">{type.description}</span>
+                                    </div>
                                   </div>
                                 </SelectItem>
                               ))}
@@ -381,14 +401,14 @@ function CustomOrdersContent() {
                       name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-semibold text-charcoal">
-                            Project Title <span className="text-warm-red">*</span>
+                          <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                            Project Title <span className="text-yellow">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input 
                               {...field} 
                               placeholder="Brief title for your custom order" 
-                              className="h-12 focus:ring-2 focus:ring-ethiopian-gold focus:border-transparent"
+                              className="h-12 focus:ring-2 focus:ring-viridian-green focus:border-eagle-green/30 border-eagle-green/20"
                               aria-describedby="title-description"
                               aria-required="true"
                               maxLength={200}
@@ -412,14 +432,14 @@ function CustomOrdersContent() {
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-semibold text-charcoal">
-                            Detailed Description <span className="text-warm-red">*</span>
+                          <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                            Detailed Description <span className="text-yellow">*</span>
                           </FormLabel>
                           <FormControl>
                             <Textarea
                               {...field}
                               placeholder="Describe your vision in detail. Include colors, style preferences, size requirements, and any specific elements you want included."
-                              className="min-h-[120px] focus:ring-2 focus:ring-ethiopian-gold focus:border-transparent resize-none"
+                              className="min-h-[120px] focus:ring-2 focus:ring-viridian-green focus:border-eagle-green/30 border-eagle-green/20 resize-none"
                               aria-describedby="description-description"
                               aria-required="true"
                               maxLength={2000}
@@ -444,26 +464,26 @@ function CustomOrdersContent() {
                         name="budget"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-base font-semibold text-charcoal">
-                              Budget Range (ETB) <span className="text-warm-red">*</span>
+                            <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                              Budget Range (ETB) <span className="text-yellow">*</span>
                             </FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger 
-                                  className="h-12 focus:ring-2 focus:ring-ethiopian-gold focus:border-transparent"
+                                  className="h-12 bg-white border border-gray-300 focus:ring-2 focus:ring-viridian-green focus:border-viridian-green hover:border-eagle-green/50 transition-colors"
                                   aria-required="true"
                                 >
                                   <SelectValue placeholder="Select budget range" />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent>
-                                <SelectItem value="1000-2500">1,000 - 2,500 ETB (~$7-18)</SelectItem>
-                                <SelectItem value="2500-5000">2,500 - 5,000 ETB (~$18-37)</SelectItem>
-                                <SelectItem value="5000-10000">5,000 - 10,000 ETB (~$37-74)</SelectItem>
-                                <SelectItem value="10000+">10,000+ ETB (~$74+)</SelectItem>
+                              <SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md z-50">
+                                <SelectItem value="1000-2500" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">1,000 - 2,500 ETB (~$7-18)</SelectItem>
+                                <SelectItem value="2500-5000" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">2,500 - 5,000 ETB (~$18-37)</SelectItem>
+                                <SelectItem value="5000-10000" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">5,000 - 10,000 ETB (~$37-74)</SelectItem>
+                                <SelectItem value="10000+" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">10,000+ ETB (~$74+)</SelectItem>
                               </SelectContent>
                             </Select>
-                            <FormMessage className="text-warm-red" />
+                            <FormMessage className="text-yellow" />
                           </FormItem>
                         )}
                       />
@@ -473,36 +493,36 @@ function CustomOrdersContent() {
                         name="deadline"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-base font-semibold text-charcoal">
-                              Timeline <span className="text-warm-red">*</span>
+                            <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                              Timeline <span className="text-yellow">*</span>
                             </FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger 
-                                  className="h-12 focus:ring-2 focus:ring-ethiopian-gold focus:border-transparent"
+                                  className="h-12 bg-white border border-gray-300 focus:ring-2 focus:ring-viridian-green focus:border-viridian-green hover:border-eagle-green/50 transition-colors"
                                   aria-required="true"
                                 >
                                   <SelectValue placeholder="When do you need this?" />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent>
-                                <SelectItem value="1-week">
+                              <SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md z-50">
+                                <SelectItem value="1-week" className="px-4 py-3 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10">
                                   <div className="flex items-center space-x-2">
-                                    <Badge variant="secondary" className="bg-red-100 text-red-700">Rush</Badge>
-                                    <span>Within 1 week</span>
+                                    <Badge variant="secondary" className="bg-yellow/20 text-eagle-green">Rush</Badge>
+                                    <span className="text-gray-900">Within 1 week</span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="2-weeks">Within 2 weeks</SelectItem>
-                                <SelectItem value="1-month">Within 1 month</SelectItem>
-                                <SelectItem value="flexible">
+                                <SelectItem value="2-weeks" className="px-4 py-3 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">Within 2 weeks</SelectItem>
+                                <SelectItem value="1-month" className="px-4 py-3 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">Within 1 month</SelectItem>
+                                <SelectItem value="flexible" className="px-4 py-3 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10">
                                   <div className="flex items-center space-x-2">
-                                    <Badge variant="secondary" className="bg-green-100 text-green-700">Best Price</Badge>
-                                    <span>Flexible timeline</span>
+                                    <Badge variant="secondary" className="bg-june-bud/30 text-eagle-green">Best Price</Badge>
+                                    <span className="text-gray-900">Flexible timeline</span>
                                   </div>
                                 </SelectItem>
                               </SelectContent>
                             </Select>
-                            <FormMessage className="text-warm-red" />
+                            <FormMessage className="text-yellow" />
                           </FormItem>
                         )}
                       />
@@ -510,17 +530,50 @@ function CustomOrdersContent() {
 
                     <FormField
                       control={form.control}
+                      name="estimatedDelivery"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-gotham-bold text-eagle-green flex items-center gap-2">
+                            <Timer size={16} className="text-viridian-green" />
+                            Estimated Delivery Time
+                          </FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger 
+                                className="h-12 bg-white border border-gray-300 focus:ring-2 focus:ring-viridian-green focus:border-viridian-green hover:border-eagle-green/50 transition-colors"
+                              >
+                                <SelectValue placeholder="Expected delivery timeframe" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md z-50">
+                              <SelectItem value="3-5-days" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">3-5 business days</SelectItem>
+                              <SelectItem value="1-week" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">1 week</SelectItem>
+                              <SelectItem value="2-weeks" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">2 weeks</SelectItem>
+                              <SelectItem value="3-4-weeks" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">3-4 weeks</SelectItem>
+                              <SelectItem value="1-2-months" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">1-2 months</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-sm font-gotham-light text-eagle-green/70">
+                            This helps set delivery expectations based on your timeline
+                          </p>
+                          <FormMessage className="text-yellow" />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
                       name="recipientInfo"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-semibold text-charcoal">
+                          <FormLabel className="text-base font-gotham-bold text-eagle-green">
                             Recipient Information (Optional)
                           </FormLabel>
                           <FormControl>
                             <Textarea
                               {...field}
                               placeholder="Tell us about the recipient. Their interests, personality, or the occasion can help artists create something more personal."
-                              className="min-h-[80px] focus:ring-2 focus:ring-ethiopian-gold focus:border-transparent resize-none"
+                              className="min-h-[80px] focus:ring-2 focus:ring-viridian-green focus:border-eagle-green/30 border-eagle-green/20 resize-none"
                               aria-describedby="recipient-description"
                               maxLength={1000}
                             />
@@ -543,14 +596,14 @@ function CustomOrdersContent() {
                       name="specialRequests"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-semibold text-charcoal">
+                          <FormLabel className="text-base font-gotham-bold text-eagle-green">
                             Special Requests (Optional)
                           </FormLabel>
                           <FormControl>
                             <Textarea
                               {...field}
                               placeholder="Any additional requirements, shipping instructions, or specific artist preferences."
-                              className="min-h-[80px] focus:ring-2 focus:ring-ethiopian-gold focus:border-transparent resize-none"
+                              className="min-h-[80px] focus:ring-2 focus:ring-viridian-green focus:border-eagle-green/30 border-eagle-green/20 resize-none"
                               aria-describedby="requests-description"
                               maxLength={1000}
                             />
@@ -568,18 +621,19 @@ function CustomOrdersContent() {
                       )}
                     />
 
-                    {/* File Upload Section */}
+                    {/* Multiple File Upload Section */}
                     <div className="space-y-3">
-                      <label className="text-base font-semibold text-charcoal block">
-                        Upload Reference Image (Optional)
+                      <label className="text-base font-gotham-bold text-eagle-green flex items-center gap-2">
+                        <Upload size={16} className="text-viridian-green" />
+                        Upload Reference Images (Optional)
                       </label>
-                      <p className="text-sm text-gray-500">
-                        You can attach an image or sketch to help us understand your idea better.
+                      <p className="text-sm font-gotham-light text-eagle-green/70">
+                        You can attach multiple images or sketches to help us understand your idea better. Max 5 files.
                       </p>
                       
                       {/* File Upload Area */}
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-ethiopian-gold transition-colors duration-200">
-                        {uploadedFile ? (
+                      <div className="border-2 border-dashed border-eagle-green/30 rounded-lg p-6 text-center hover:border-viridian-green transition-colors duration-200">
+                        {uploadedFiles.length > 0 ? (
                           <div className="space-y-4">
                             {/* File Preview */}
                             {filePreview && (
@@ -683,7 +737,7 @@ function CustomOrdersContent() {
                       <Button
                         type="submit"
                         disabled={customOrderMutation.isPending}
-                        className="w-full bg-ethiopian-gold hover:bg-ethiopian-gold/90 text-white h-14 text-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl focus:ring-4 focus:ring-ethiopian-gold/20"
+                        className="w-full bg-eagle-green hover:bg-viridian-green text-white h-14 text-lg font-gotham-bold transition-all duration-200 shadow-lg hover:shadow-xl focus:ring-4 focus:ring-yellow/20"
                         aria-describedby="submit-description"
                       >
                         <div className="flex items-center justify-center space-x-2">
@@ -721,10 +775,10 @@ function CustomOrdersContent() {
               whileHover={{ y: -2 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardHeader>
-                  <CardTitle className="text-xl text-charcoal flex items-center space-x-2">
-                    <Palette className="text-ethiopian-gold" size={24} />
+              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-eagle-green/10">
+                <CardHeader className="bg-gradient-to-r from-june-bud/5 to-white">
+                  <CardTitle className="text-xl font-gotham-bold text-eagle-green flex items-center space-x-2">
+                    <Palette className="text-viridian-green" size={24} />
                     <span>Order Types</span>
                   </CardTitle>
                 </CardHeader>
@@ -735,21 +789,18 @@ function CustomOrdersContent() {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.6 + index * 0.1 }}
-                      className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="flex items-start space-x-3 p-3 rounded-lg hover:bg-june-bud/10 transition-colors cursor-pointer"
                     >
                       <motion.div
                         whileHover={{ scale: 1.1, rotate: 5 }}
-                        className="w-10 h-10 bg-ethiopian-gold/10 rounded-lg flex items-center justify-center flex-shrink-0"
+                        className="w-10 h-10 bg-eagle-green/10 rounded-lg flex items-center justify-center flex-shrink-0"
                       >
-                        <type.icon className="text-ethiopian-gold" size={20} />
+                        <type.icon className="text-eagle-green" size={20} />
                       </motion.div>
                       <div>
-                        <h4 className="font-semibold text-charcoal">{type.label}</h4>
-                        <p className="text-sm text-gray-600">
-                          {type.value === "portrait" && "Hand-drawn or painted portraits from photos"}
-                          {type.value === "embroidery" && "Traditional Ethiopian embroidery with custom text"}
-                          {type.value === "art" && "Beautiful epoxy resin art pieces with cultural motifs"}
-                          {type.value === "other" && "Any other custom handmade item you can imagine"}
+                        <h4 className="font-gotham-bold text-eagle-green">{type.label}</h4>
+                        <p className="text-sm font-gotham-light text-eagle-green/70">
+                          {type.description}
                         </p>
                       </div>
                     </motion.div>
@@ -762,10 +813,10 @@ function CustomOrdersContent() {
               whileHover={{ y: -2 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardHeader>
-                  <CardTitle className="text-xl text-charcoal flex items-center space-x-2">
-                    <CheckCircle className="text-ethiopian-gold" size={24} />
+              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-eagle-green/10">
+                <CardHeader className="bg-gradient-to-r from-june-bud/5 to-white">
+                  <CardTitle className="text-xl font-gotham-bold text-eagle-green flex items-center space-x-2">
+                    <CheckCircle className="text-viridian-green" size={24} />
                     <span>How It Works</span>
                   </CardTitle>
                 </CardHeader>
@@ -781,15 +832,15 @@ function CustomOrdersContent() {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 1.0 + index * 0.1 }}
-                      className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-start space-x-3 p-3 rounded-lg hover:bg-june-bud/10 transition-colors"
                     >
                       <motion.div
                         whileHover={{ scale: 1.1 }}
-                        className="w-8 h-8 bg-ethiopian-gold text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                        className="w-8 h-8 bg-eagle-green text-white rounded-full flex items-center justify-center text-sm font-gotham-bold flex-shrink-0"
                       >
                         {item.step}
                       </motion.div>
-                      <p className="text-sm text-gray-600 pt-1">{item.text}</p>
+                      <p className="text-sm font-gotham-light text-eagle-green/80 pt-1">{item.text}</p>
                     </motion.div>
                   ))}
                 </CardContent>

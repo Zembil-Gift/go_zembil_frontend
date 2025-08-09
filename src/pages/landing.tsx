@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 import LiveChatButton from "@/components/live-chat-button";
 import { MockApiService } from "@/services/mockApiService";
+import { parseUrlParams } from "@/shared/categories";
 
 // Landing page components
 import HeroSection from "@/components/landing/HeroSection";
@@ -16,7 +18,13 @@ import TestimonialsSection from "@/components/landing/TestimonialsSection";
 
 
 export default function Landing() {
-  const [activeCategory, setActiveCategory] = useState("occasions");
+  const location = useLocation();
+  
+  // Parse URL parameters to set initial category
+  const urlParams = new URLSearchParams(location.search);
+  const categoryFilters = parseUrlParams(urlParams);
+  
+  const [activeCategory, setActiveCategory] = useState(categoryFilters.category || "occasions");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBudget, setSelectedBudget] = useState("all");
 
