@@ -2,81 +2,179 @@ import {
   CakeSlice, Heart, GraduationCap, Baby, PartyPopper, Home as HomeIcon, 
   Users, Award, Sparkles, Star, Coffee, Cross, Waves, Egg, Moon, Sun, 
   TreePine, Flower2, Crown, Mountain, HelpingHand, Smile, ThumbsUp,
-  PaintbrushVertical, Shirt, Palette, Gift, Music, Camera
+  UtensilsCrossed, Wheat, ChefHat
 } from "lucide-react";
+import { CATEGORIES } from "@/shared/categories";
 
 export interface CategoryItem {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   name: string;
   description: string;
   gradient: string;
+  slug?: string;
 }
 
-export const occasionCategories: CategoryItem[] = [
-  { icon: CakeSlice, name: "Birthday", description: "Celebrate special moments", gradient: "from-yellow to-june-bud" },
-  { icon: Heart, name: "Anniversary", description: "Mark love and commitment", gradient: "from-viridian-green to-eagle-green" },
-  { icon: GraduationCap, name: "Graduation", description: "Academic achievements", gradient: "from-june-bud to-yellow" },
-  { icon: Baby, name: "New Baby", description: "Welcome new life", gradient: "from-eagle-green to-viridian-green" },
-  { icon: PartyPopper, name: "Wedding", description: "Celebrate love stories", gradient: "from-yellow to-viridian-green" },
-  { icon: HomeIcon, name: "Housewarming", description: "New beginnings at home", gradient: "from-june-bud to-eagle-green" },
-  { icon: Users, name: "Family Reunion", description: "Bring families together", gradient: "from-viridian-green to-june-bud" },
-  { icon: Award, name: "Promotion", description: "Career milestones", gradient: "from-eagle-green to-yellow" },
-  { icon: Sparkles, name: "Retirement", description: "New chapter begins", gradient: "from-yellow to-eagle-green" },
-  { icon: Star, name: "First Day School", description: "Educational journey", gradient: "from-june-bud to-viridian-green" },
-  { icon: Gift, name: "Engagement", description: "Promise of forever", gradient: "from-viridian-green to-yellow" },
-  { icon: Coffee, name: "Job Interview", description: "Career opportunities", gradient: "from-eagle-green to-june-bud" }
-];
+// Updated icon mappings for the new categories
+const subcategoryIcons: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  // Occasions
+  "birthday": CakeSlice,
+  "graduation": GraduationCap,
+  "new-baby": Baby,
+  "wedding": PartyPopper,
+  "housewarming": HomeIcon,
+  "family-reunion": Users,
+  "promotion": Award,
+  "anniversary": Heart,
+  "retirement": Sparkles,
+  "first-day-school": Star,
+  "engagement": Heart,
+  "mothers-day": Heart,
+  "fathers-day": Heart,
+  "valentines-day": Heart,
+  
+  // Cultural & Religious
+  "meskel": Cross,
+  "timket": Waves,
+  "gena": Star,
+  "fasika": Egg,
+  "enkutatash": Sun,
+  "eid-al-fitr": Moon,
+  "eid-al-adha": Mountain,
+  "irreechaa": TreePine,
+  "ashenda": Flower2,
+  "adwa-victory": Crown,
+  "bunn": Coffee,
+  "sigd": Heart,
+  
+  // Emotions
+  "love-romance": Heart,
+  "gratitude": Star,
+  "comfort-support": HelpingHand,
+  "celebration": Sparkles,
+  "miss-you": Smile,
+  "congratulations": ThumbsUp,
+  "get-well-soon": Heart,
+  "thinking-of-you": Heart,
+  "good-luck": Star,
+  "im-sorry": Sparkles,
+  "just-because": Coffee,
+  "encouragement": Heart,
+  
+  // Food & Beverages
+  "ethiopian-coffee": Coffee,
+  "spices-herbs": Wheat,
+  "traditional-bread": Wheat,
+  "sweets-desserts": CakeSlice,
+  "dairy-products": UtensilsCrossed,
+  "fresh-produce": Wheat,
+  "packaged-meals": ChefHat,
+  "beverages": Coffee
+};
 
-export const culturalCategories: CategoryItem[] = [
-  { icon: Cross, name: "Meskel", description: "Finding of the True Cross", gradient: "from-yellow to-viridian-green" },
-  { icon: Waves, name: "Timket", description: "Epiphany celebration", gradient: "from-june-bud to-eagle-green" },
-  { icon: Star, name: "Gena", description: "Ethiopian Christmas", gradient: "from-viridian-green to-yellow" },
-  { icon: Egg, name: "Fasika", description: "Ethiopian Easter", gradient: "from-eagle-green to-june-bud" },
-  { icon: Sun, name: "Enkutatash", description: "Ethiopian New Year", gradient: "from-yellow to-eagle-green" },
-  { icon: Moon, name: "Eid al-Fitr", description: "End of Ramadan", gradient: "from-june-bud to-viridian-green" },
-  { icon: Mountain, name: "Eid al-Adha", description: "Feast of Sacrifice", gradient: "from-viridian-green to-eagle-green" },
-  { icon: TreePine, name: "Irreechaa", description: "Thanksgiving festival", gradient: "from-eagle-green to-yellow" },
-  { icon: Flower2, name: "Ashenda", description: "Girls' festival", gradient: "from-yellow to-june-bud" },
-  { icon: Crown, name: "Adwa Victory", description: "Victory celebration", gradient: "from-viridian-green to-june-bud" },
-  { icon: Coffee, name: "Bunn", description: "Coffee ceremony", gradient: "from-june-bud to-eagle-green" },
-  { icon: Heart, name: "Sigd", description: "Beta Israel holiday", gradient: "from-eagle-green to-viridian-green" }
-];
+// Specific gradient mappings for each subcategory
+const getGradientForSubcategory = (categoryId: string, slug: string): string => {
+  const gradients: Record<string, Record<string, string>> = {
+    "occasions": {
+      "birthday": "from-pink-500 to-rose-600",
+      "graduation": "from-blue-500 to-indigo-600", 
+      "new-baby": "from-cyan-400 to-blue-500",
+      "wedding": "from-purple-500 to-pink-500",
+      "housewarming": "from-green-500 to-emerald-600",
+      "family-reunion": "from-orange-500 to-red-500",
+      "promotion": "from-yellow-500 to-orange-500",
+      "anniversary": "from-red-500 to-pink-600",
+      "retirement": "from-gray-500 to-gray-700",
+      "first-day-school": "from-indigo-500 to-purple-600",
+      "engagement": "from-pink-400 to-rose-500",
+      "mothers-day": "from-rose-400 to-pink-500",
+      "fathers-day": "from-blue-600 to-indigo-700",
+      "valentines-day": "from-red-400 to-pink-500"
+    },
+    "cultural-religious": {
+      "meskel": "from-yellow-500 to-orange-600",
+      "timket": "from-blue-500 to-cyan-600",
+      "gena": "from-green-600 to-emerald-700",
+      "fasika": "from-purple-500 to-violet-600",
+      "enkutatash": "from-yellow-400 to-amber-500",
+      "eid-al-fitr": "from-emerald-500 to-green-600",
+      "eid-al-adha": "from-teal-500 to-cyan-600",
+      "irreechaa": "from-orange-500 to-red-600",
+      "ashenda": "from-pink-500 to-rose-600",
+      "adwa-victory": "from-red-600 to-orange-700",
+      "bunn": "from-amber-600 to-orange-700",
+      "sigd": "from-indigo-500 to-blue-600"
+    },
+    "emotions": {
+      "love-romance": "from-red-500 to-pink-600",
+      "gratitude": "from-amber-500 to-yellow-600",
+      "comfort-support": "from-blue-500 to-indigo-600",
+      "celebration": "from-purple-500 to-pink-500",
+      "miss-you": "from-cyan-500 to-blue-600",
+      "congratulations": "from-green-500 to-emerald-600",
+      "get-well-soon": "from-emerald-400 to-green-500",
+      "thinking-of-you": "from-violet-500 to-purple-600",
+      "good-luck": "from-yellow-500 to-amber-600",
+      "im-sorry": "from-slate-500 to-gray-600",
+      "just-because": "from-indigo-400 to-blue-500",
+      "encouragement": "from-orange-500 to-red-500"
+    },
+    "food-beverages": {
+      "ethiopian-coffee": "from-amber-700 to-brown-800",
+      "spices-herbs": "from-red-600 to-orange-700",
+      "traditional-bread": "from-yellow-600 to-amber-700",
+      "sweets-desserts": "from-pink-500 to-rose-600",
+      "dairy-products": "from-blue-400 to-cyan-500",
+      "fresh-produce": "from-green-500 to-emerald-600",
+      "packaged-meals": "from-orange-600 to-red-700",
+      "beverages": "from-purple-500 to-indigo-600"
+    }
+  };
+  
+  return gradients[categoryId]?.[slug] || "from-gray-500 to-gray-700";
+};
 
-export const emotionCategories: CategoryItem[] = [
-  { icon: Heart, name: "Love & Romance", description: "Express deep affection", gradient: "from-yellow to-viridian-green" },
-  { icon: Star, name: "Gratitude", description: "Show appreciation", gradient: "from-june-bud to-eagle-green" },
-  { icon: HelpingHand, name: "Comfort & Support", description: "Be there for others", gradient: "from-viridian-green to-yellow" },
-  { icon: Sparkles, name: "Celebration", description: "Mark achievements", gradient: "from-eagle-green to-june-bud" },
-  { icon: Smile, name: "Miss You", description: "Bridge distances", gradient: "from-yellow to-eagle-green" },
-  { icon: ThumbsUp, name: "Congratulations", description: "Celebrate success", gradient: "from-june-bud to-viridian-green" },
-  { icon: Heart, name: "Get Well Soon", description: "Wish recovery", gradient: "from-viridian-green to-june-bud" },
-  { icon: Gift, name: "Thinking of You", description: "Show you care", gradient: "from-eagle-green to-yellow" },
-  { icon: Star, name: "Good Luck", description: "Wish success", gradient: "from-yellow to-june-bud" },
-  { icon: Sparkles, name: "I'm Sorry", description: "Express regret", gradient: "from-viridian-green to-eagle-green" },
-  { icon: Coffee, name: "Just Because", description: "No reason needed", gradient: "from-june-bud to-yellow" },
-  { icon: Heart, name: "Encouragement", description: "Boost spirits", gradient: "from-eagle-green to-viridian-green" }
-];
+// Generate category items from the central config
+export const occasionCategories: CategoryItem[] = 
+  CATEGORIES.find(cat => cat.id === "occasions")?.subcategories.map(sub => ({
+    icon: subcategoryIcons[sub.slug] || CakeSlice,
+    name: sub.name,
+    description: sub.description,
+    gradient: getGradientForSubcategory("occasions", sub.slug),
+    slug: sub.slug
+  })) || [];
 
-export const customCategories: CategoryItem[] = [
-  { icon: PaintbrushVertical, name: "Custom Portrait", description: "Personalized artwork", gradient: "from-yellow to-viridian-green" },
-  { icon: Shirt, name: "Embroidery", description: "Hand-stitched designs", gradient: "from-june-bud to-eagle-green" },
-  { icon: Coffee, name: "Wood Crafts", description: "Handcrafted items", gradient: "from-viridian-green to-yellow" },
-  { icon: Star, name: "Custom Jewelry", description: "Personalized accessories", gradient: "from-eagle-green to-june-bud" },
-  { icon: Palette, name: "Painted Ceramics", description: "Artistic pottery", gradient: "from-yellow to-eagle-green" },
-  { icon: Gift, name: "Personalized Baskets", description: "Custom gift baskets", gradient: "from-june-bud to-viridian-green" },
-  { icon: Music, name: "Custom Songs", description: "Personalized music", gradient: "from-viridian-green to-june-bud" },
-  { icon: Camera, name: "Photo Albums", description: "Memory collections", gradient: "from-eagle-green to-yellow" },
-  { icon: Heart, name: "Love Letters", description: "Handwritten messages", gradient: "from-yellow to-june-bud" },
-  { icon: Sparkles, name: "Leather Goods", description: "Handcrafted leather", gradient: "from-viridian-green to-eagle-green" },
-  { icon: Crown, name: "Traditional Crowns", description: "Cultural headpieces", gradient: "from-june-bud to-yellow" },
-  { icon: Coffee, name: "Coffee Accessories", description: "Brewing essentials", gradient: "from-eagle-green to-viridian-green" }
-];
+export const culturalCategories: CategoryItem[] = 
+  CATEGORIES.find(cat => cat.id === "cultural-religious")?.subcategories.map(sub => ({
+    icon: subcategoryIcons[sub.slug] || Cross,
+    name: sub.name,
+    description: sub.description,
+    gradient: getGradientForSubcategory("cultural-religious", sub.slug),
+    slug: sub.slug
+  })) || [];
+
+export const emotionCategories: CategoryItem[] = 
+  CATEGORIES.find(cat => cat.id === "emotions")?.subcategories.map(sub => ({
+    icon: subcategoryIcons[sub.slug] || Heart,
+    name: sub.name,
+    description: sub.description,
+    gradient: getGradientForSubcategory("emotions", sub.slug),
+    slug: sub.slug
+  })) || [];
+
+export const foodCategories: CategoryItem[] = 
+  CATEGORIES.find(cat => cat.id === "food-beverages")?.subcategories.map(sub => ({
+    icon: subcategoryIcons[sub.slug] || Coffee,
+    name: sub.name,
+    description: sub.description,
+    gradient: getGradientForSubcategory("food-beverages", sub.slug),
+    slug: sub.slug
+  })) || [];
 
 export const getCategoryContent = (activeCategory: string): CategoryItem[] => {
   switch (activeCategory) {
     case "cultural": return culturalCategories;
     case "emotions": return emotionCategories;
-    case "custom": return customCategories;
+    case "food": return foodCategories;
     default: return occasionCategories;
   }
 }; 
