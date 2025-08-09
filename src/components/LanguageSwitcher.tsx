@@ -17,7 +17,7 @@ export default function LanguageSwitcher() {
           <span className="hidden sm:inline">{currentLang?.nativeName || currentLang?.name}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="bg-white">
         {availableLanguages.map((language) => (
           <DropdownMenuItem
             key={language.code}

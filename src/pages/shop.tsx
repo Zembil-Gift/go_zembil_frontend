@@ -192,7 +192,7 @@ function ShopContent() {
                   const queryString = params.toString();
                   navigate(queryString ? `/shop?${queryString}` : '/shop');
                 }}
-                className="text-gray-600 hover:text-ethiopian-gold"
+                className="text-gray-600 hover:text-viridian-green"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to All Categories
@@ -203,7 +203,7 @@ function ShopContent() {
                 {activeMainCategory && (
                   <>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="text-ethiopian-gold font-medium">
+                    <span className="text-viridian-green font-medium">
                       {activeMainCategory.name}
                     </span>
                   </>
@@ -235,7 +235,7 @@ function ShopContent() {
                   const queryString = params.toString();
                   navigate(queryString ? `/shop?${queryString}` : '/shop');
                 }}
-                className="bg-ethiopian-gold hover:bg-ethiopian-gold/90 text-white"
+                className="bg-viridian-green hover:bg-viridian-green/90 text-white"
               >
                 All Categories
               </Button>
@@ -245,8 +245,8 @@ function ShopContent() {
                   variant={activeMainCategory?.id === category.id ? "default" : "outline"}
                   onClick={() => navigate(buildNavigationUrl(category.slug))}
                   className={activeMainCategory?.id === category.id 
-                    ? "bg-ethiopian-gold hover:bg-ethiopian-gold/90 text-white"
-                    : "hover:bg-ethiopian-gold/10 hover:text-ethiopian-gold border-ethiopian-gold/20"
+                    ? "bg-viridian-green hover:bg-viridian-green/90 text-white"
+                    : "hover:bg-viridian-green/10 hover:text-viridian-green border-viridian-green/20"
                   }
                 >
                   {category.name}
@@ -271,7 +271,7 @@ function ShopContent() {
                     onClick={() => navigate(buildNavigationUrl(subcategory.slug))}
                     className={`text-left h-auto p-3 ${
                       activeCategory?.id === subcategory.id
-                        ? "bg-ethiopian-gold hover:bg-ethiopian-gold/90 text-white"
+                        ? "bg-viridian-green hover:bg-viridian-green/90 text-white"
                         : "hover:bg-gray-50 text-charcoal justify-start"
                     }`}
                   >
@@ -301,7 +301,7 @@ function ShopContent() {
                     placeholder="Search gifts, occasions, or items..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-12 text-base border-gray-200 focus:border-ethiopian-gold focus:ring-ethiopian-gold"
+                    className="pl-10 h-12 text-base border-gray-200 focus:border-viridian-green focus:ring-viridian-green"
                   />
                 </div>
               </div>
@@ -409,7 +409,7 @@ function ShopContent() {
                     type="checkbox"
                     checked={filters.isTrending}
                     onChange={(e) => setFilters({...filters, isTrending: e.target.checked})}
-                    className="rounded border-gray-300 text-ethiopian-gold focus:ring-ethiopian-gold"
+                    className="rounded border-gray-300 text-viridian-green focus:ring-viridian-green"
                   />
                   <span className="text-sm text-gray-700 flex items-center gap-1">
                     <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
@@ -421,7 +421,7 @@ function ShopContent() {
                     type="checkbox"
                     checked={filters.isBestSeller}
                     onChange={(e) => setFilters({...filters, isBestSeller: e.target.checked})}
-                    className="rounded border-gray-300 text-ethiopian-gold focus:ring-ethiopian-gold"
+                    className="rounded border-gray-300 text-viridian-green focus:ring-viridian-green"
                   />
                   <span className="text-sm text-gray-700 flex items-center gap-1">
                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
@@ -433,7 +433,7 @@ function ShopContent() {
                     type="checkbox"
                     checked={filters.isNewArrival}
                     onChange={(e) => setFilters({...filters, isNewArrival: e.target.checked})}
-                    className="rounded border-gray-300 text-ethiopian-gold focus:ring-ethiopian-gold"
+                    className="rounded border-gray-300 text-viridian-green focus:ring-viridian-green"
                   />
                   <span className="text-sm text-gray-700 flex items-center gap-1">
                     <span className="w-2 h-2 bg-green-500 rounded-full"></span>
@@ -448,7 +448,7 @@ function ShopContent() {
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('grid')}
-                  className={viewMode === 'grid' ? 'bg-ethiopian-gold text-white' : ''}
+                  className={viewMode === 'grid' ? 'bg-viridian-green text-white' : ''}
                 >
                   <Grid className="h-4 w-4" />
                 </Button>
@@ -456,7 +456,7 @@ function ShopContent() {
                   variant={viewMode === 'list' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('list')}
-                  className={viewMode === 'list' ? 'bg-ethiopian-gold text-white' : ''}
+                  className={viewMode === 'list' ? 'bg-viridian-green text-white' : ''}
                 >
                   <List className="h-4 w-4" />
                 </Button>
@@ -534,13 +534,13 @@ function ShopContent() {
                     });
                   }}
                   variant="outline"
-                  className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
+                  className="border-viridian-green text-viridian-green hover:bg-viridian-green hover:text-white"
                 >
                   Clear All Filters
                 </Button>
                 <Button 
                   onClick={() => navigate('/shop')}
-                  className="bg-ethiopian-gold hover:bg-ethiopian-gold/90 text-white px-6"
+                  className="bg-viridian-green hover:bg-viridian-green/90 text-white px-6"
                 >
                   Browse All Categories
                 </Button>

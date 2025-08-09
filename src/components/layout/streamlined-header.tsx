@@ -59,11 +59,13 @@ export default function StreamlinedHeader() {
     window.location.href = "/search";
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     localStorage.removeItem('returnTo');
-    // Use mock logout instead of real API
-    MockApiService.logout();
-    window.location.href = '/';
+    try {
+      await MockApiService.logout();
+    } finally {
+      window.location.href = '/signin';
+    }
   };
 
   // Core navigation items - all primary business features
@@ -205,7 +207,7 @@ export default function StreamlinedHeader() {
                     <span className="sr-only">Language</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-48 bg-white">
                   {availableLanguages.map((language) => (
                     <DropdownMenuItem
                       key={language.code}
@@ -238,7 +240,7 @@ export default function StreamlinedHeader() {
                       <span className="sr-only">Profile</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuContent align="end" className="w-52 bg-white">
                     <DropdownMenuItem>
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile</span>
@@ -276,7 +278,7 @@ export default function StreamlinedHeader() {
                         Partner
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuContent align="end" className="w-48 bg-white">
                       <DropdownMenuItem asChild>
                         <Link to="/register-celebrity" className="flex items-center">
                           <span className="mr-2">🌟</span>
@@ -431,7 +433,7 @@ export default function StreamlinedHeader() {
                       Language
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuContent align="end" className="w-48 bg-white">
                     {availableLanguages.map((language) => (
                       <DropdownMenuItem
                         key={language.code}
