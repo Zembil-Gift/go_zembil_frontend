@@ -71,7 +71,7 @@ export default function StreamlinedHeader() {
     { name: t('navigation.home'), href: "/" },
     { name: t('navigation.shop'), href: "/shop" },
     { name: t('navigation.custom'), href: "/custom-orders" },
-    { name: t('navigation.events'), href: "/gift-experiences" },
+    { name: t('navigation.events'), href: "/events" },
   ];
 
   return (
@@ -387,7 +387,7 @@ export default function StreamlinedHeader() {
                 
                 {/* Categories */}
                 <div className="px-4 py-3">
-                  <CategoryDropdown />
+                  <CategoryDropdown isMobile={true} />
                 </div>
               </nav>
 

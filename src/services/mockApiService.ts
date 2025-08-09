@@ -1,4 +1,5 @@
 import { mockCategories, mockProducts, mockUser, mockOrders } from './mockData';
+import { CATEGORIES } from '@/shared/categories';
 
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -7,7 +8,7 @@ export class MockApiService {
   // Categories
   static async getCategories() {
     await delay(300);
-    return mockCategories;
+    return CATEGORIES;
   }
 
   static async getCategory(slug: string) {
@@ -36,7 +37,43 @@ export class MockApiService {
     }
 
     if (params?.category) {
-      filteredProducts = filteredProducts.filter(p => p.categorySlug === params.category);
+      // Map new category slugs to existing product categories
+      const categoryMapping: Record<string, string[]> = {
+        'occasions': ['occasions', 'Occasions'],
+        'cultural-religious': ['traditional', 'Traditional'],
+        'emotions': ['occasions', 'Occasions'], // Emotions can be found in occasions
+        'food-beverages': ['food-beverages', 'Food & Beverages']
+      };
+      
+      const mappedCategories = categoryMapping[params.category] || [params.category];
+      filteredProducts = filteredProducts.filter(p => 
+        mappedCategories.some(cat => 
+          p.categorySlug === cat || 
+          p.category === cat ||
+          p.categorySlug?.includes(cat) ||
+          p.category?.includes(cat)
+        )
+      );
+    }
+
+    if (params?.subcategory) {
+      // Enhanced subcategory filtering using multiple product fields
+      const subcategoryTerms = params.subcategory.split('-');
+      filteredProducts = filteredProducts.filter(p => {
+        // Check tags
+        if (p.tags?.some((tag: string) => 
+          subcategoryTerms.some(term => tag.toLowerCase().includes(term.toLowerCase()))
+        )) return true;
+        
+        // Check recipient
+        if (p.recipient?.some((rec: string) => 
+          subcategoryTerms.some(term => rec.toLowerCase().includes(term.toLowerCase()))
+        )) return true;
+        
+        // Check product name and description
+        const searchText = `${p.name} ${p.description}`.toLowerCase();
+        return subcategoryTerms.some(term => searchText.includes(term.toLowerCase()));
+      });
     }
 
     if (params?.recipient) {
