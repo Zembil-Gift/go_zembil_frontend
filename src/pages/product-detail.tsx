@@ -128,8 +128,8 @@ export default function ProductDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Product not found</h1>
-            <Link href="/gifts">
-              <Button className="bg-ethiopian-gold hover:bg-amber">
+            <Link to="/gifts">
+              <Button className="bg-viridian-green hover:bg-viridian-green/90">
                 Browse All Gifts
               </Button>
             </Link>
@@ -179,9 +179,9 @@ export default function ProductDetail() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-8">
-          <Link href="/" className="hover:text-ethiopian-gold">Home</Link>
+          <Link to="/" className="hover:text-viridian-green">Home</Link>
           <span>/</span>
-          <Link href="/gifts" className="hover:text-ethiopian-gold">Gifts</Link>
+          <Link to="/gifts" className="hover:text-viridian-green">Gifts</Link>
           <span>/</span>
           <span className="text-charcoal font-medium">{product.name}</span>
         </nav>
@@ -221,9 +221,9 @@ export default function ProductDetail() {
                   <button
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                     className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
                       selectedImageIndex === index
-                        ? "border-ethiopian-gold"
+                        ? "border-viridian-green"
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
@@ -255,7 +255,7 @@ export default function ProductDetail() {
                         size={16}
                         className={`${
                           i < Math.floor(parseFloat(product.rating))
-                            ? "text-ethiopian-gold fill-ethiopian-gold"
+                            ? "text-viridian-green fill-viridian-green"
                             : "text-gray-300"
                         }`}
                       />
@@ -270,7 +270,7 @@ export default function ProductDetail() {
               {/* Badges */}
               <div className="flex flex-wrap gap-2 mb-4">
                 {product.salesCount && product.salesCount > 50 && (
-                  <Badge className="bg-ethiopian-gold text-white">Bestseller</Badge>
+                  <Badge className="bg-viridian-green text-white">Bestseller</Badge>
                 )}
                 {product.tags?.includes("handmade") && (
                   <Badge className="bg-warm-red text-white">Handmade</Badge>
@@ -282,7 +282,7 @@ export default function ProductDetail() {
             </div>
 
             {/* Price */}
-            <div className="text-3xl font-bold text-ethiopian-gold">
+            <div className="text-3xl font-bold text-viridian-green">
               {product.price} ETB
             </div>
 
@@ -326,7 +326,7 @@ export default function ProductDetail() {
                 <Button
                   onClick={() => addToCartMutation.mutate()}
                   disabled={addToCartMutation.isPending}
-                  className="flex-1 bg-ethiopian-gold hover:bg-amber text-white h-12"
+                  className="flex-1 bg-viridian-green hover:bg-viridian-green/90 text-white h-12"
                 >
                   {addToCartMutation.isPending ? "Adding..." : "Add to Cart"}
                 </Button>
@@ -334,7 +334,7 @@ export default function ProductDetail() {
                   onClick={() => wishlistMutation.mutate()}
                   disabled={wishlistMutation.isPending}
                   variant="outline"
-                  className="h-12 px-6 border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
+                  className="h-12 px-6 border-viridian-green text-viridian-green hover:bg-viridian-green hover:text-white"
                 >
                   <Heart size={20} className={isWishlisted ? "fill-current" : ""} />
                 </Button>
@@ -365,17 +365,17 @@ export default function ProductDetail() {
             {/* Delivery Info */}
             <div className="space-y-3 pt-6 border-t border-gray-200">
               <div className="flex items-center space-x-3">
-                <Truck className="text-ethiopian-gold" size={20} />
+                <Truck className="text-viridian-green" size={20} />
                 <span className="text-gray-600">
                   {product.deliveryDays || 3} days delivery in Addis Ababa
                 </span>
               </div>
               <div className="flex items-center space-x-3">
-                <Shield className="text-ethiopian-gold" size={20} />
+                <Shield className="text-viridian-green" size={20} />
                 <span className="text-gray-600">Quality guarantee & authentic products</span>
               </div>
               <div className="flex items-center space-x-3">
-                <MessageCircle className="text-ethiopian-gold" size={20} />
+                <MessageCircle className="text-viridian-green" size={20} />
                 <span className="text-gray-600">Add personal video message (+50 ETB)</span>
               </div>
             </div>
@@ -406,7 +406,7 @@ export default function ProductDetail() {
                                 size={14}
                                 className={`${
                                   i < review.rating
-                                    ? "text-ethiopian-gold fill-ethiopian-gold"
+                                    ? "text-viridian-green fill-viridian-green"
                                     : "text-gray-300"
                                 }`}
                               />

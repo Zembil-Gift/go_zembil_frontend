@@ -1,5 +1,6 @@
 import React from 'react';
-import {Heart, ShoppingBag} from 'lucide-react'
+import { Link } from 'react-router-dom';
+import { Heart, ShoppingBag } from 'lucide-react'
 
 interface GiftItemCardProps {
     product: any;
@@ -18,8 +19,13 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
 
     const hasDiscount = originalPrice && price < originalPrice
 
+    const handleActionClick: React.MouseEventHandler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
     return (
-        <div className={`rounded-2xl transition-all duration-300 overflow-hidden ${className || ''}`}>
+        <Link to={`/product/${product.id}`} className={`block rounded-2xl transition-all duration-300 overflow-hidden hover:shadow-md ${className || ''}`}>
             {/* Image Container */}
             <div className="relative rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
                 <img
@@ -58,6 +64,7 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
                     {/* Action Buttons */}
                     <div className="flex space-x-3">
                         <button
+                            onClick={handleActionClick}
                             aria-label="like gift"
                             className={`text-gray-600 hover:text-red-500 transition-colors duration-200 ${
                                 isLiked ? 'text-red-500' : ''
@@ -69,6 +76,7 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
                             />
                         </button>
                         <button 
+                            onClick={handleActionClick}
                             className="text-gray-600 hover:text-primary-blue transition-colors duration-200"
                             aria-label="add to cart">
                             <ShoppingBag size={24} strokeWidth={1.5} />
@@ -76,7 +84,7 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
                     </div>
                 </div>
             </div>
-        </div>
+        </Link>
     )
 }
 
