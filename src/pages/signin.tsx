@@ -3,17 +3,20 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Gift, Mail, Lock, Facebook } from "lucide-react";
-import GoZembilLogo from "@/components/GoZembilLogo";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { FaFacebook } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
 import GiftingHeartAnimation from "@/components/animations/GiftingHeartAnimation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { MockApiService } from "@/services/mockApiService";
+
+const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
 
 const signinSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -88,17 +91,16 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-light-cream via-white to-gray-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Animation */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-10">
-        <GiftingHeartAnimation size="large" showText={false} />
-      </div>
+      
       
       <div className="w-full max-w-md relative z-10">
         {/* Header - Further reduced spacing */}
-        <div className="text-center mb-5">
-          <Link to="/" className="inline-flex items-center mb-2">
-            <GoZembilLogo size="lg" />
-          </Link>
+          <div className="text-center mb-5">
+          <img 
+            src={logoImagePath}
+            alt="goZembil Logo"
+            className="h-8 w-8 lg:h-12 lg:w-12 object-contain block mx-auto"
+          />
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
           <p className="text-gray-600">Sign in to your goZembil account</p>
         </div>
@@ -160,22 +162,12 @@ export default function SignIn() {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 bg-ethiopian-gold hover:bg-ethiopian-gold/90 text-white font-medium"
+                  className="w-full h-11 bg-viridian-green hover:bg-viridian-green/90 text-white font-medium"
                   disabled={signinMutation.isPending}
                 >
                   {signinMutation.isPending ? "Signing in..." : "Sign in"}
                 </Button>
 
-                {/* Demo Login Button */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full h-11"
-                  onClick={handleDemoLogin}
-                  disabled={signinMutation.isPending}
-                >
-                  Demo Login (Skip Form)
-                </Button>
               </form>
             </Form>
 
@@ -189,17 +181,29 @@ export default function SignIn() {
                 </div>
               </div>
 
-              <div className="mt-4">
-                <Button variant="outline" className="w-full h-11" disabled>
-                  <Facebook className="mr-2 h-4 w-4" />
-                  Continue with Facebook
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  className="w-full h-11 justify-center"
+                  disabled
+                  aria-label="Continue with Facebook"
+                >
+                  <FaFacebook className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-11 justify-center"
+                  disabled
+                  aria-label="Continue with Google"
+                >
+                  <FcGoogle className="h-5 w-5" />
                 </Button>
               </div>
             </div>
 
             <div className="mt-6 text-center text-sm">
               <span className="text-gray-600">Don't have an account? </span>
-              <Link to="/signup" className="text-ethiopian-gold hover:text-ethiopian-gold/80 font-medium">
+              <Link to="/signup" className="text-viridian-green hover:text-viridian-green/80 font-medium">
                 Sign up
               </Link>
             </div>

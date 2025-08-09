@@ -160,7 +160,163 @@ function ShopContent() {
   const hasNextPage = loadedProducts.length < totalProducts;
   const displayProducts = loadedProducts.length > 0 ? loadedProducts : products;
 
+  // Filter main and subcategories
+  const mainCategories = categories.filter((cat: any) => !cat.parentId);
+  const activeMainCategory = activeCategory?.parentId 
+    ? categories.find((cat: any) => cat.id === activeCategory.parentId)
+    : activeCategory;
+
+  const subcategories = activeMainCategory 
+    ? categories.filter((cat: any) => cat.parentId === activeMainCategory.id)
+    : [];
+
+  return (
+    <div className="min-h-screen bg-cream">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Page Header */}
+        <FadeIn duration={0.6} className="mb-8">
+          <div className="text-center mb-6">
+            <h1 className="font-display text-4xl font-bold text-charcoal mb-4">
+              {activeCategory ? activeCategory.name : "Discover Beautiful Gifts"}
+            </h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              {activeCategory 
+                ? activeCategory.description 
+                : "Explore our curated collection of meaningful Ethiopian gifts, handcrafted with love and delivered with care."
+              }
+            </p>
+          </div>
+
+          {/* Breadcrumb Navigation with Back Button */}
+          {(activeMainCategory || activeCategory) && (
+            <div className="flex items-center justify-between mb-6">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  const params = new URLSearchParams(location.search);
+                  params.delete('category');
+                  const queryString = params.toString();
+                  navigate(queryString ? `/shop?${queryString}` : '/shop');
+                }}
+                className="text-gray-600 hover:text-viridian-green"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to All Categories
+              </Button>
+              
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <span>Shop</span>
+                {activeMainCategory && (
+                  <>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="text-viridian-green font-medium">
+                      {activeMainCategory.name}
+                    </span>
+                  </>
+                )}
+                {activeCategory && activeCategory.parentId && (
+                  <>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="text-charcoal font-medium">
+                      {activeCategory.name}
+                    </span>
+                  </>
+                )}
+              </div>
+              
+              <div className="w-32"></div> {/* Spacer for centering */}
+            </div>
+          )}
+        </FadeIn>
+
+        {/* Category Navigation */}
+        {mainCategories.length > 0 && (
+          <FadeIn delay={0.1} duration={0.6} className="mb-8">
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Button
+                variant={!categorySlug ? "default" : "outline"}
+                onClick={() => {
+                  const params = new URLSearchParams(location.search);
+                  params.delete('category');
+                  const queryString = params.toString();
+                  navigate(queryString ? `/shop?${queryString}` : '/shop');
+                }}
+                className="bg-viridian-green hover:bg-viridian-green/90 text-white"
+              >
+                All Categories
+              </Button>
+              {mainCategories.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={activeMainCategory?.id === category.id ? "default" : "outline"}
+                  onClick={() => navigate(buildNavigationUrl(category.slug))}
+                  className={activeMainCategory?.id === category.id 
+                    ? "bg-viridian-green hover:bg-viridian-green/90 text-white"
+                    : "hover:bg-viridian-green/10 hover:text-viridian-green border-viridian-green/20"
+                  }
+                >
+                  {category.name}
+                </Button>
+              ))}
+            </div>
+          </FadeIn>
+        )}
+
+        {/* Subcategory Navigation */}
+        {subcategories.length > 0 && (
+          <FadeIn delay={0.2} duration={0.6} className="mb-8">
+            <div className="bg-white rounded-lg p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-charcoal mb-4">
+                {activeMainCategory?.name} Categories
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {subcategories.map((subcategory) => (
+                  <Button
+                    key={subcategory.id}
+                    variant={activeCategory?.id === subcategory.id ? "default" : "ghost"}
+                    onClick={() => navigate(buildNavigationUrl(subcategory.slug))}
+                    className={`text-left h-auto p-3 ${
+                      activeCategory?.id === subcategory.id
+                        ? "bg-viridian-green hover:bg-viridian-green/90 text-white"
+                        : "hover:bg-gray-50 text-charcoal justify-start"
+                    }`}
+                  >
+                    <div>
+                      <div className="font-medium">{subcategory.name}</div>
+                      <div className="text-xs opacity-75 mt-1">
+                        {subcategory.description}
+                      </div>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+        )}
+
+        {/* Enhanced Search and Filters */}
+        <FadeIn delay={0.3} duration={0.6} className="mb-8">
+          <div className="bg-white rounded-lg p-6 shadow-sm border">
+            {/* Search Input */}
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    type="text"
+                    placeholder="Search gifts, occasions, or items..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 h-12 text-base border-gray-200 focus:border-viridian-green focus:ring-viridian-green"
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  setSearchTerm('');
   const handleClearFilters = () => {
+main
                   setFilters({
                     minPrice: '',
                     maxPrice: '',
@@ -353,6 +509,46 @@ function ShopContent() {
               />
             </div>
 
+            {/* Collection Filters and View Mode */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex flex-wrap gap-3">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.isTrending}
+                    onChange={(e) => setFilters({...filters, isTrending: e.target.checked})}
+                    className="rounded border-gray-300 text-viridian-green focus:ring-viridian-green"
+                  />
+                  <span className="text-sm text-gray-700 flex items-center gap-1">
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    Trending Now
+                  </span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.isBestSeller}
+                    onChange={(e) => setFilters({...filters, isBestSeller: e.target.checked})}
+                    className="rounded border-gray-300 text-viridian-green focus:ring-viridian-green"
+                  />
+                  <span className="text-sm text-gray-700 flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                    Best Sellers
+                  </span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.isNewArrival}
+                    onChange={(e) => setFilters({...filters, isNewArrival: e.target.checked})}
+                    className="rounded border-gray-300 text-viridian-green focus:ring-viridian-green"
+                  />
+                  <span className="text-sm text-gray-700 flex items-center gap-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    New Arrivals
+                  </span>
+                </label>
+              </div>
             <div className="flex gap-3 lg:justify-end">
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-48 h-12 bg-white border border-eagle-green/30 focus:border-viridian-green focus:ring-2 focus:ring-viridian-green/20">
@@ -367,13 +563,16 @@ function ShopContent() {
                 </SelectContent>
               </Select>
 
+
               <div className="flex gap-2">
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setViewMode('grid')}
+                  className={viewMode === 'grid' ? 'bg-viridian-green text-white' : ''}
                   className={`h-12 w-12 ${viewMode === 'grid' ? 'bg-eagle-green border-eagle-green hover:bg-viridian-green' : 'border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white'}`}
                   title="Grid view"
+
                 >
                   <Grid className="h-4 w-4" />
                 </Button>
@@ -381,6 +580,8 @@ function ShopContent() {
                   variant={viewMode === 'list' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setViewMode('list')}
+                  className={viewMode === 'list' ? 'bg-viridian-green text-white' : ''}
+
                   className={`h-12 w-12 ${viewMode === 'list' ? 'bg-eagle-green border-eagle-green hover:bg-viridian-green' : 'border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white'}`}
                   title="List view"
                 >
@@ -507,7 +708,51 @@ function ShopContent() {
                 </div>
               )}
             </>
+          ) : (
+            <div className="text-center py-20">
+              <div className="mx-auto w-32 h-32 bg-gradient-to-br from-gray-50 to-gray-100 rounded-full flex items-center justify-center mb-8 shadow-inner">
+                <Search className="w-16 h-16 text-gray-300" />
+              </div>
+              <h3 className="text-2xl font-semibold text-charcoal mb-4">
+                {searchTerm ? "No matching products found" : "No products available"}
+              </h3>
+              <div className="max-w-md mx-auto mb-8">
+                <p className="text-gray-600 leading-relaxed">
+                  {searchTerm 
+                    ? `We couldn't find any products matching "${searchTerm}"${activeCategory ? ` in ${activeCategory.name}` : ''}. Try adjusting your search terms or filters.`
+                    : activeCategory 
+                      ? `The ${activeCategory.name} category is currently being updated with new products. Check back soon for exciting new additions!`
+                      : "Try adjusting your search criteria or browse our featured collections below."
+                  }
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button 
+                  onClick={() => {
+                    setSearchTerm('');
+                    setFilters({
+                      minPrice: '',
+                      maxPrice: '',
+                      minRating: '',
+                      maxDeliveryDays: '',
+                      isTrending: false,
+                      isBestSeller: false,
+                      isNewArrival: false
+                    });
+                  }}
+                  variant="outline"
+                  className="border-viridian-green text-viridian-green hover:bg-viridian-green hover:text-white"
+                >
+                  Clear All Filters
+                </Button>
+                <Button 
+                  onClick={() => navigate('/shop')}
+                  className="bg-viridian-green hover:bg-viridian-green/90 text-white px-6"
+                >
+                  Browse All Categories
+                </Button>
           )}
+
               </div>
               
         {/* Signature Sets */}
