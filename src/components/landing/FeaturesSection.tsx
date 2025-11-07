@@ -12,21 +12,18 @@ export default function FeaturesSection() {
       title: t('homepage.features.videoMessages.title'),
       description: t('homepage.features.videoMessages.description'),
       learnMore: t('homepage.features.videoMessages.learnMore'),
-      gradient: "from-yellow to-june-bud"
     },
     {
       icon: PaintbrushVertical,
       title: t('homepage.features.customOrders.title'),
       description: t('homepage.features.customOrders.description'),
       learnMore: t('homepage.features.customOrders.learnMore'),
-      gradient: "from-viridian-green to-eagle-green"
     },
     {
       icon: Star,
       title: t('homepage.features.influencerDelivery.title'),
       description: t('homepage.features.influencerDelivery.description'),
       learnMore: t('homepage.features.influencerDelivery.learnMore'),
-      gradient: "from-june-bud to-viridian-green"
     }
   ];
 
@@ -47,7 +44,7 @@ export default function FeaturesSection() {
             const IconComponent = feature.icon;
             return (
               <div key={index} className="text-center">
-                <div className={`bg-gradient-to-br ${feature.gradient} w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6`}>
+                <div className={`bg-eagle-green w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6`}>
                   <IconComponent className="text-white" size={24} />
                 </div>
                 <h3 className="font-gotham-bold text-xl text-eagle-green mb-4">{feature.title}</h3>
@@ -61,7 +58,7 @@ export default function FeaturesSection() {
         </div>
 
         {/* Call-to-Action */}
-        <div id="track" className="bg-gradient-to-r from-eagle-green to-viridian-green rounded-2xl p-8 mt-12 text-white text-center">
+        <div id="track" className="bg-eagle-green rounded-2xl p-8 mt-12 text-white text-center">
           <h3 className="font-gotham-extra-bold text-2xl mb-4">{t('homepage.cta.title')}</h3>
           <p className="font-gotham-light text-lg mb-6 opacity-90">{t('homepage.cta.subtitle')}</p>
           <Button asChild className="bg-white text-eagle-green hover:bg-gray-100">

@@ -7,7 +7,7 @@ export default function DiasporaSection() {
   const { t } = useTranslation();
 
   return (
-    <section className="py-12 sm:py-16 bg-gradient-to-br from-yellow/10 via-june-bud/10 to-viridian-green/10 relative overflow-hidden border-t border-viridian-green/20">
+    <section className="py-12 sm:py-16 bg-white relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-eagle-green/8 via-viridian-green/6 to-june-bud/8"></div>
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div 
@@ -16,18 +16,6 @@ export default function DiasporaSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
         >
-          <div className="mb-6">
-            <motion.div 
-              className="inline-flex items-center bg-white/50 backdrop-blur-sm border border-viridian-green/20 rounded-full px-6 py-2 mb-4 shadow-md"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 1 }}
-            >
-              <span className="text-xl mr-2">🌍</span>
-              <span className="text-sm font-medium text-eagle-green">→</span>
-              <span className="text-xl ml-2">🇪🇹</span>
-            </motion.div>
-          </div>
           <motion.h2 
             className="font-gotham-extra-bold text-3xl sm:text-4xl lg:text-5xl mb-4 leading-tight text-eagle-green"
             initial={{ opacity: 0, y: 20 }}

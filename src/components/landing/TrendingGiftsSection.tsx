@@ -48,7 +48,7 @@ export default function TrendingGiftsSection({
   ];
 
   return (
-    <section id="gifts" className="py-16 bg-gray-50">
+    <section id="gifts" className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -77,7 +77,7 @@ export default function TrendingGiftsSection({
 
         {/* More Products Button */}
         <div className="text-center">
-          <Button asChild className="bg-viridian-green hover:bg-viridian-green/90 text-white font-gotham-medium px-8 py-3 text-lg">
+          <Button asChild className="bg-eagle-green hover:bg-eagle-green/90 text-white font-gotham-medium px-8 py-3 text-lg">
             <Link to="/shop">More Products</Link>
           </Button>
         </div>

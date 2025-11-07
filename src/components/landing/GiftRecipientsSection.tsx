@@ -20,48 +20,42 @@ export default function GiftRecipientsSection() {
       id: "mom", 
       name: t('homepage.recipients.mom'), 
       icon: Heart, 
-      gradient: "from-yellow to-june-bud",
       description: "Show your love and appreciation"
     },
     { 
       id: "dad", 
       name: t('homepage.recipients.dad'), 
       icon: Award, 
-      gradient: "from-viridian-green to-eagle-green",
       description: "Celebrate his achievements"
     },
     { 
       id: "friends", 
       name: t('homepage.recipients.friends'), 
       icon: Users, 
-      gradient: "from-june-bud to-viridian-green",
       description: "Strengthen your friendship"
     },
     { 
       id: "kids", 
       name: t('homepage.recipients.kids'), 
       icon: Baby, 
-      gradient: "from-eagle-green to-yellow",
       description: "Make them smile with joy"
     },
     { 
       id: "couples", 
       name: t('homepage.recipients.couples'), 
-      icon: Heart, 
-      gradient: "from-yellow to-viridian-green",
+      icon: Heart,
       description: "Express your deep affection"
     },
     { 
       id: "colleagues", 
       name: t('homepage.recipients.colleagues'), 
-      icon: User, 
-      gradient: "from-june-bud to-eagle-green",
+      icon: User,
       description: "Build professional relationships"
     }
   ];
 
   return (
-    <section className="py-16 bg-gradient-to-br from-yellow/5 to-viridian-green/5">
+    <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="font-gotham-extra-bold text-3xl sm:text-4xl text-eagle-green mb-4">
@@ -83,12 +77,12 @@ export default function GiftRecipientsSection() {
                 >
                   <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-lg transition-all duration-300 group-hover:scale-105 border border-viridian-green/20">
                     {/* Gradient Background */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${recipient.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
+                    <div className={`absolute inset-0 bg-eagle-green opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
                     
                     {/* Content */}
                     <div className="relative p-6 text-center">
                       {/* Icon Container */}
-                      <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${recipient.gradient} flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110`}>
+                      <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-eagle-green flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110`}>
                         <IconComponent size={28} className="text-white" />
                       </div>
                       

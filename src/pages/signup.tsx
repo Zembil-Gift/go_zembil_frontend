@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -10,7 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { MockApiService } from "@/services/mockApiService";
+import authService from "@/services/authService";
+import { z as zod } from "zod";
 import { Eye, EyeOff, Mail, Phone, Lock } from "lucide-react";
 
 const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
@@ -20,6 +21,10 @@ const signupSchema = z
     firstName: z.string().min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
     email: z.string().email("Please enter a valid email address"),
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    birthDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/g, "Birth date must be in format YYYY-MM-DD"),
     phone: z
       .string()
       .min(7, "Please enter a valid phone number")
@@ -46,6 +51,8 @@ export default function SignUp() {
       firstName: "",
       lastName: "",
       email: "",
+      username: "",
+      birthDate: "",
       phone: "",
       password: "",
       confirmPassword: "",
@@ -53,10 +60,18 @@ export default function SignUp() {
   });
 
   const signupMutation = useMutation({
-    mutationFn: async (_data: SignupForm) => {
-      // Simulate register using mock auth
-      const result = await MockApiService.login();
-      return result;
+    mutationFn: async (data: SignupForm) => {
+      const payload = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        password: data.password,
+        username: data.username,
+        phoneNumber: data.phone,
+        role: "CUSTOMER",
+        birthDate: data.birthDate,
+      } as const;
+      return await authService.register(payload);
     },
     onSuccess: () => {
       toast({ title: "Account created", description: "Welcome to goZembil!" });
@@ -116,6 +131,35 @@ export default function SignUp() {
                         <FormLabel className="text-sm font-medium text-gray-700">Last name</FormLabel>
                         <FormControl>
                           <Input {...field} placeholder="Last name" className="h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700">Username</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Choose a username" className="h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="birthDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700">Birth date</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="date" placeholder="YYYY-MM-DD" className="h-11" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

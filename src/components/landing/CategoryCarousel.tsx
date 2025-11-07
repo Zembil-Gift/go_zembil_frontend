@@ -215,7 +215,7 @@ export default function CategoryCarousel({
             <h2 className="text-3xl sm:text-4xl font-gotham-bold text-eagle-green mb-4">
               Find the Perfect Gift
             </h2>
-            <p className="text-xl font-gotham-light text-viridian-green max-w-2xl mx-auto">
+            <p className="text-xl font-gotham-light text-eagle-green max-w-2xl mx-auto">
               Discover meaningful gifts for every occasion and celebration
             </p>
           </div>
@@ -230,8 +230,8 @@ export default function CategoryCarousel({
                 onClick={() => handleCategorySelect(tab.id)}
                 className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-gotham-bold transition-all duration-200 text-sm sm:text-base whitespace-nowrap ${
                   selectedCategory === tab.id
-                    ? "bg-eagle-green text-white shadow-sm ring-2 ring-yellow/40"
-                    : "text-eagle-green hover:text-white hover:bg-viridian-green"
+                    ? "bg-eagle-green text-white shadow-sm"
+                    : "text-eagle-green hover:text-white hover:bg-eagle-green"
                 }`}
                 aria-pressed={selectedCategory === tab.id}
               >
@@ -344,11 +344,11 @@ export default function CategoryCarousel({
                               loading="lazy"
                             />
                             {/* Gradient Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="absolute inset-0 bg-white to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           </div>
                           
                           {/* Content */}
-                          <div className="p-3 sm:p-4 bg-gradient-to-b from-june-bud/10 to-white">
+                          <div className="p-3 sm:p-4 bg-white">
                             <h3 className="font-gotham-bold text-sm sm:text-base text-eagle-green mb-1 leading-tight text-center">
                               {item.name}
                             </h3>
@@ -359,7 +359,7 @@ export default function CategoryCarousel({
                         </div>
                       ) : (
                         // Icon-based card for other categories
-                        <div className="w-full h-full bg-gradient-to-b from-june-bud/30 to-white rounded-2xl p-4 sm:p-5">
+                        <div className="w-full h-full bg-white to-white rounded-2xl p-4 sm:p-5">
                           <div className="flex flex-col items-center justify-center h-full text-center">
                             {/* Icon Chip */}
                             <div className="w-12 h-12 bg-eagle-green rounded-full flex items-center justify-center mb-3 shadow-sm">

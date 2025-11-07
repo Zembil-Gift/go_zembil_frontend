@@ -12,7 +12,7 @@ import CategoryCarousel from "@/components/landing/CategoryCarousel";
 import TrendingGiftsSection from "@/components/landing/TrendingGiftsSection";
 import GiftRecipientsSection from "@/components/landing/GiftRecipientsSection";
 import DiasporaSection from "@/components/landing/DiasporaSection";
-import SubscriptionBanner from "@/components/landing/SubscriptionBanner";
+import CustomGiftsBanner from "@/components/landing/CustomGiftBanner";
 import FeaturesSection from "@/components/landing/FeaturesSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 
@@ -59,7 +59,7 @@ export default function Landing() {
       
       <DiasporaSection />
       
-      <SubscriptionBanner />
+      <CustomGiftsBanner />
       
       <FeaturesSection />
       

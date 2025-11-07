@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -6,7 +6,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { FaFacebook } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
-import GiftingHeartAnimation from "@/components/animations/GiftingHeartAnimation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
-import { MockApiService } from "@/services/mockApiService";
+import authService from "@/services/authService";
 
 const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
 
@@ -52,9 +51,7 @@ export default function SignIn() {
 
   const signinMutation = useMutation({
     mutationFn: async (data: SigninForm) => {
-      // Use mock authentication
-      const result = await MockApiService.login();
-      return result;
+      return await authService.login(data.email, data.password);
     },
     onSuccess: () => {
       toast({

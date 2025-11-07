@@ -105,8 +105,8 @@ export default function StreamlinedHeader() {
                 to={item.href}
                 className={`px-2 py-2 text-sm font-medium transition-colors rounded-lg ${
                   pathname === item.href
-                    ? "text-viridian-green bg-viridian-green/20"
-                    : "text-eagle-green hover:text-viridian-green hover:bg-viridian-green/10"
+                    ? "text-eagle-green bg-eagle-green/20"
+                    : "text-eagle-green hover:text-eagle-green hover:bg-eagle-green/10"
                 }`}
               >
                 {item.name}

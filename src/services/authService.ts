@@ -1,4 +1,5 @@
 import { apiService } from './apiService';
+import type { AuthResponse as BackendAuthResponse, UserRole } from '@/types/auth';
 
 // Types for authentication
 export interface LoginRequest {
@@ -10,22 +11,16 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
   password: string;
-  confirmPassword: string;
+  username: string;
+  phoneNumber: string;
+  role: UserRole | string;
+  birthDate: string; // ISO yyyy-mm-dd
 }
 
-export interface AuthResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    profileImageUrl?: string;
-    role: string;
-  };
-  expiresIn: number;
+export interface AuthResponse extends BackendAuthResponse {
+  token?: string;
+  expiresIn?: number;
 }
 
 export interface ForgotPasswordRequest {
@@ -48,8 +43,12 @@ class AuthService {
     const response = await apiService.postRequest<AuthResponse>('/auth/login', loginData);
     
     // Store token and user data
-    if (response.token) {
-      localStorage.setItem('authToken', response.token);
+    const token = response.accessToken || response.token;
+    if (token) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('authToken', token);
+    }
+    if (response.user) {
       localStorage.setItem('user', JSON.stringify(response.user));
     }
     
@@ -60,14 +59,18 @@ class AuthService {
    * User registration
    */
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await apiService.postRequest<AuthResponse>('/auth/register', userData);
-    
-    // Store token and user data
-    if (response.token) {
-      localStorage.setItem('authToken', response.token);
+    const response = await apiService.postRequest<AuthResponse, RegisterRequest>('/auth/register', userData);
+
+    // Store token and user data (keep compatibility with axios interceptor)
+    const token = response.accessToken || response.token;
+    if (token) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('authToken', token);
+    }
+    if (response.user) {
       localStorage.setItem('user', JSON.stringify(response.user));
     }
-    
+
     return response;
   }
 
@@ -83,10 +86,11 @@ class AuthService {
     } finally {
       // Clear local storage
       localStorage.removeItem('authToken');
+      localStorage.removeItem('token');
       localStorage.removeItem('user');
       
       // Redirect to login page
-      window.location.href = '/api/login';
+      window.location.href = '/signin';
     }
   }
 
@@ -124,8 +128,12 @@ class AuthService {
   async refreshToken(): Promise<AuthResponse> {
     const response = await apiService.postRequest<AuthResponse>('/auth/refresh');
     
-    if (response.token) {
-      localStorage.setItem('authToken', response.token);
+    const token = response.accessToken || response.token;
+    if (token) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('authToken', token);
+    }
+    if (response.user) {
       localStorage.setItem('user', JSON.stringify(response.user));
     }
     
