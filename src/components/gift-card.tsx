@@ -5,9 +5,11 @@ import { Heart, ShoppingBag } from 'lucide-react'
 interface GiftItemCardProps {
     product: any;
     className?: string;
+    linkTo?: string;
+    onClick?: (e: React.MouseEvent) => void;
 }
 
-const GiftItemCard = ({product, className}: GiftItemCardProps) => {
+const GiftItemCard = ({product, className, linkTo, onClick}: GiftItemCardProps) => {
     const {
         name,
         images,
@@ -24,8 +26,15 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
         e.stopPropagation();
     };
 
-    return (
-        <Link to={`/product/${product.id}`} className={`block rounded-2xl transition-all duration-300 overflow-hidden hover:shadow-md ${className || ''}`}>
+    const handleCardClick = (e: React.MouseEvent) => {
+        if (onClick) {
+            e.preventDefault();
+            onClick(e);
+        }
+    };
+
+    const cardContent = (
+        <>
             {/* Image Container */}
             <div className="relative rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
                 <img
@@ -84,8 +93,28 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
                     </div>
                 </div>
             </div>
+        </>
+    );
+
+    if (onClick) {
+        return (
+            <div 
+                onClick={handleCardClick}
+                className={`block rounded-2xl transition-all duration-300 overflow-hidden hover:shadow-md cursor-pointer ${className || ''}`}
+            >
+                {cardContent}
+            </div>
+        );
+    }
+
+    return (
+        <Link 
+            to={linkTo || `/product/${product.id}`} 
+            className={`block rounded-2xl transition-all duration-300 overflow-hidden hover:shadow-md ${className || ''}`}
+        >
+            {cardContent}
         </Link>
-    )
+    );
 }
 
 export default GiftItemCard;
