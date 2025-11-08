@@ -3,28 +3,40 @@ import { useAuth } from "@/hooks/useAuth";
 import ScrollToTop from "./ScrollToTop";
 import Layout from "./layout/layout";
 
-// Import only essential pages that were working
-import Landing from "@/pages/landing";
-import About from "@/pages/about";
-import Contact from "@/pages/contact";
-import SignIn from "@/pages/signin";
-import SignUp from "@/pages/signup";
-import Gifts from "@/pages/gifts";
-import Shop from "@/pages/shop";
-import Cart from "@/pages/cart";
-import Wishlist from "@/pages/Wishlist";
-import ProductDetail from "@/pages/product-detail";
-import CustomOrders from "@/pages/custom-orders";
-import Search from "@/pages/Search";
-import GiftExperiences from "@/pages/GiftExperiences";
-import Occasions from "@/pages/occasions";
-import OccasionCategory from "@/pages/occasion-category";
-import Collections from "@/pages/collections";
-import Events from "@/pages/events";
-import EventDetail from "@/pages/event-detail";
-import ServiceDetail from "@/pages/service-detail";
-import EnhancedEvents from "@/pages/EnhancedEvents";
-import NotFound from "@/pages/not-found";
+// Import pages from organized folder structure
+// Public pages
+import Landing from "@/pages/public/landing";
+import About from "@/pages/public/about";
+import Contact from "@/pages/public/contact";
+import NotFound from "@/pages/public/not-found";
+
+// Auth pages
+import SignIn from "@/pages/auth/signin";
+import SignUp from "@/pages/auth/signup";
+
+// Shop pages
+import Gifts from "@/pages/shop/gifts";
+import Shop from "@/pages/shop/shop";
+import ProductDetail from "@/pages/shop/product-detail";
+import Collections from "@/pages/shop/collections";
+import Search from "@/pages/shop/Search";
+
+// Events pages
+import Events from "@/pages/events/events";
+import EventDetail from "@/pages/events/event-detail";
+import ServiceDetail from "@/pages/events/service-detail";
+import EnhancedEvents from "@/pages/events/EnhancedEvents";
+import GiftExperiences from "@/pages/events/GiftExperiences";
+
+// Occasions pages
+import Occasions from "@/pages/occasions/occasions";
+import OccasionCategory from "@/pages/occasions/occasion-category";
+
+// Orders pages
+import Cart from "@/pages/orders/cart";
+import Wishlist from "@/pages/orders/Wishlist";
+import CustomOrders from "@/pages/orders/custom-orders";
+import CustomOrderDetail from "@/pages/orders/custom-order-detail";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -107,6 +119,12 @@ export default function Router() {
           <Route path="custom-orders" element={
             <ProtectedRoute>
               <CustomOrders />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="custom-orders/:id" element={
+            <ProtectedRoute>
+              <CustomOrderDetail />
             </ProtectedRoute>
           } />
           
