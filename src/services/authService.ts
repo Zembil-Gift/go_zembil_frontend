@@ -16,10 +16,11 @@ export interface RegisterRequest {
 }
 
 export interface AuthResponse {
-  token: string;
+  accessToken: string;
   user: {
     id: string;
     email: string;
+    phoneNumber: string;
     firstName: string;
     lastName: string;
     profileImageUrl?: string;
@@ -46,10 +47,11 @@ class AuthService {
   async login(emailOrPhone: string, password: string): Promise<AuthResponse> {
     const loginData: LoginRequest = { emailOrPhone, password };
     const response = await apiService.postRequest<AuthResponse>('/auth/login', loginData);
-    
+
+    console.log(response)
     // Store token and user data
-    if (response.token) {
-      localStorage.setItem('authToken', response.token);
+    if (response.accessToken) {
+      localStorage.setItem('authToken', response.accessToken);
       localStorage.setItem('user', JSON.stringify(response.user));
     }
     

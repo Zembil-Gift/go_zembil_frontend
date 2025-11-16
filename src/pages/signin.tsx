@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { MockApiService } from "@/services/mockApiService";
+import {useLogin} from "../hooks/useLogin";
 
 const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
 
@@ -50,36 +51,30 @@ export default function SignIn() {
     },
   });
 
-  const signinMutation = useMutation({
-    mutationFn: async (data: SigninForm) => {
-      // Use mock authentication
-      const result = await MockApiService.login();
-      return result;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Sign in successful",
-        description: "Welcome to goZembil!",
-        variant: "default",
-      });
-      
-      // Navigate to return URL or home
-      const returnTo = localStorage.getItem('returnTo') || '/';
-      localStorage.removeItem('returnTo');
-      navigate(returnTo);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Sign in failed",
-        description: error.message || "Please check your credentials and try again",
-        variant: "destructive",
-      });
-    },
-  });
+  const signinMutation = useLogin();
 
   const onSubmit = (data: SigninForm) => {
-    signinMutation.mutate(data);
+    signinMutation.mutate(data, {
+      onSuccess: () => {
+        toast({
+          title: "Sign in successful",
+          description: "Welcome to goZembil!",
+        });
+
+        const returnTo = localStorage.getItem("returnTo") || "/";
+        localStorage.removeItem("returnTo");
+        navigate(returnTo);
+      },
+      onError: (err: any) => {
+        toast({
+          title: "Sign in failed",
+          description: err?.message || "Invalid email or password",
+          variant: "destructive",
+        });
+      },
+    });
   };
+
 
   const handleDemoLogin = () => {
     // Quick demo login without form validation
