@@ -19,7 +19,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import CategoryDropdown from "@/components/category-dropdown";
-import { MockApiService } from "@/services/mockApiService";
+import { cartService, CartItem } from "@/services/cartService";
+import { wishlistService, WishlistItem } from "@/services/wishlistService";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
 
@@ -39,18 +40,20 @@ export default function StreamlinedHeader() {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // Get cart and wishlist counts using mock data
-  const { data: cartItems = [] } = useQuery({
-    queryKey: ['/api/cart'],
-    queryFn: () => MockApiService.getCart(),
+  // Get cart and wishlist counts using real API
+  const { data: cartItems = [] } = useQuery<CartItem[]>({
+    queryKey: ['cart', 'items'],
+    queryFn: () => cartService.getCart(),
     enabled: !!isAuthenticated,
   });
   
-  const { data: wishlistItems = [] } = useQuery({
-    queryKey: ['/api/wishlist'],
-    queryFn: () => MockApiService.getWishlist(),
-    enabled: !!isAuthenticated,
-  });
+  // Wishlist API disabled for now - not complete on backend
+  const wishlistItems: WishlistItem[] = [];
+  // const { data: wishlistItems = [] } = useQuery<WishlistItem[]>({
+  //   queryKey: ['wishlist', 'items'],
+  //   queryFn: () => wishlistService.getWishlist(),
+  //   enabled: !!isAuthenticated,
+  // });
 
   const cartCount = Array.isArray(cartItems) ? cartItems.length : 0;
   const wishlistCount = Array.isArray(wishlistItems) ? wishlistItems.length : 0;
@@ -61,11 +64,9 @@ export default function StreamlinedHeader() {
 
   const handleSignOut = async () => {
     localStorage.removeItem('returnTo');
-    try {
-      await MockApiService.logout();
-    } finally {
-      window.location.href = '/signin';
-    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/signin';
   };
 
   // Core navigation items - all primary business features
