@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
+import React, {useState} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {useLocation} from "react-router-dom";
 import LiveChatButton from "@/components/live-chat-button";
-import { MockApiService } from "@/services/mockApiService";
-import { parseUrlParams } from "@/shared/categories";
+import {extractPriceAmount, Product, productService} from "@/services/productService";
+import {parseUrlParams} from "@/shared/categories";
 
 // Landing page components
 import HeroSection from "@/components/landing/HeroSection";
@@ -28,14 +27,48 @@ export default function Landing() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBudget, setSelectedBudget] = useState("all");
 
-  // Fetch trending gifts using mock data
-  const { data: trendingProducts = [] } = useQuery({
-    queryKey: ["/api/products?isTrending=true&limit=12"],
-    queryFn: () => MockApiService.getTrendingProducts(12),
+  // Fetch products using real API
+  const { data: productsResponse, isLoading, error } = useQuery({
+    queryKey: ["products", "all"],
+    queryFn: async () => {
+      try {
+          return await productService.getAllProducts(0, 12);
+      } catch (err) {
+        throw err;
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
   });
 
-  // Use real products or fallback to featured products
-  const trendingGifts = trendingProducts || [];
+  const trendingGifts = React.useMemo(() => {
+    if (!productsResponse?.content) return [];
+    
+    return productsResponse.content.map((product: Product) => {
+      const priceAmount = extractPriceAmount(product.price) || extractPriceAmount(product.productSku?.[0]?.price);
+      const currencyCode = product.price?.currencyCode ?? product.productSku?.[0]?.price?.currencyCode ?? 'USD';
+      
+      return {
+      id: product.id,
+      name: product.name,
+      description: product.description || '',
+      price: priceAmount,
+      originalPrice: undefined,
+      currency: currencyCode,
+      image: product.cover || '/placeholder-product.jpg',
+      images: product.cover ? [product.cover] : [],
+      category: product.occasion || 'Gift',
+      categorySlug: product.categorySlug || 'gifts',
+      isTrending: product.isTrending || false,
+      isFeatured: product.isFeatured || false,
+      rating: product.rating || 4.5,
+      reviewCount: product.reviewCount || 0,
+      inStock: true,
+      stockQuantity: product.stockQuantity || (product.productSku?.[0]?.stockQuantity) || 10,
+      badges: product.isFeatured ? ['Featured'] : [],
+      tags: product.tags || [],
+    }});
+  }, [productsResponse]);
 
   return (
     <div className="min-h-screen bg-light-cream">
@@ -49,11 +82,22 @@ export default function Landing() {
         onCategoryChange={setActiveCategory}
       />
       
-      <TrendingGiftsSection 
-        trendingGifts={trendingGifts}
-        selectedBudget={selectedBudget}
-        onBudgetChange={setSelectedBudget}
-      />
+      {isLoading ? (
+        <div className="py-16 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ethiopian-gold mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading products...</p>
+        </div>
+      ) : error ? (
+        <div className="py-16 text-center">
+          <p className="text-red-600">Failed to load products. Please try again later.</p>
+        </div>
+      ) : (
+        <TrendingGiftsSection 
+          trendingGifts={trendingGifts}
+          selectedBudget={selectedBudget}
+          onBudgetChange={setSelectedBudget}
+        />
+      )}
       
       <GiftRecipientsSection />
       
