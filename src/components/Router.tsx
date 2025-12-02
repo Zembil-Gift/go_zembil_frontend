@@ -24,6 +24,9 @@ import Events from "@/pages/events";
 import EventDetail from "@/pages/event-detail";
 import ServiceDetail from "@/pages/service-detail";
 import EnhancedEvents from "@/pages/EnhancedEvents";
+import StripePayment from "@/pages/stripe-payment";
+import PaymentSuccess from "@/pages/payment-success";
+import Checkout from "@/pages/Checkout";
 import NotFound from "@/pages/not-found";
 
 // Protected Route Component
@@ -91,13 +94,15 @@ export default function Router() {
           {/* Product Detail */}
           <Route path="product/:id" element={<ProductDetail />} />
           
-          {/* Protected Routes */}
-          <Route path="cart" element={
+          <Route path="cart" element={<Cart />} />
+          
+          <Route path="checkout" element={
             <ProtectedRoute>
-              <Cart />
+              <Checkout />
             </ProtectedRoute>
           } />
           
+          {/* Protected Routes */}
           <Route path="wishlist" element={
             <ProtectedRoute>
               <Wishlist />
@@ -107,6 +112,18 @@ export default function Router() {
           <Route path="custom-orders" element={
             <ProtectedRoute>
               <CustomOrders />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="payment/stripe" element={
+            <ProtectedRoute>
+              <StripePayment />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="payment-success" element={
+            <ProtectedRoute>
+              <PaymentSuccess />
             </ProtectedRoute>
           } />
           
