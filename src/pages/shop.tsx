@@ -15,7 +15,7 @@ import { Search, Filter, Grid, List, SortAsc, Heart, ShoppingCart, Star, Chevron
 import GiftItemCard from "@/components/gift-card";
 import ProductPagination from "@/components/ProductPagination";
 import ZembilSignatureSets from "@/components/ZembilSignatureSets";
-import { MockApiService } from "@/services/mockApiService";
+import { productService, Product, PagedProductResponse } from "@/services/productService";
 import { 
   CATEGORIES, 
   getCategoryBySlug, 
@@ -112,18 +112,18 @@ function ShopContent() {
 
   // Fetch products
   const queryParams = buildQueryParams();
-  const { data: initialData, isLoading } = useQuery<any>({
-    queryKey: ['/api/products', queryParams],
-    queryFn: () => MockApiService.getProducts({
-      category: categoryFilters.category,
-      subcategory: categoryFilters.sub,
+  const { data: initialData, isLoading } = useQuery<PagedProductResponse>({
+    queryKey: ['products', 'list', queryParams],
+    queryFn: () => productService.getAllProducts({
+      page: 0,
+      size: itemsPerPage,
       search: searchTerm,
-      limit: itemsPerPage
+      categoryId: categoryFilters.category ? parseInt(categoryFilters.category) : undefined,
     }),
   });
 
-  const products = initialData?.products || [];
-  const totalProducts = initialData?.total || 0;
+  const products = initialData?.content || [];
+  const totalProducts = initialData?.totalElements || 0;
 
   // Update loaded products when initial data changes
   useEffect(() => {
@@ -140,15 +140,14 @@ function ShopContent() {
     setIsLoadingMore(true);
     try {
       const nextPage = currentPage + 1;
-      const moreData = await MockApiService.getProducts({
-        category: categoryFilters.category,
-        subcategory: categoryFilters.sub,
+      const moreData = await productService.getAllProducts({
+        page: nextPage - 1, // API uses 0-based pages
+        size: itemsPerPage,
         search: searchTerm,
-        limit: itemsPerPage,
-        page: nextPage
+        categoryId: categoryFilters.category ? parseInt(categoryFilters.category) : undefined,
       });
       
-      setLoadedProducts(prev => [...prev, ...(moreData.products || [])]);
+      setLoadedProducts(prev => [...prev, ...(moreData.content || [])]);
         setCurrentPage(nextPage);
     } catch (error) {
       console.error('Error loading more products:', error);
@@ -158,7 +157,13 @@ function ShopContent() {
   };
 
   const hasNextPage = loadedProducts.length < totalProducts;
-  const displayProducts = loadedProducts.length > 0 ? loadedProducts : products;
+  const rawDisplayProducts = loadedProducts.length > 0 ? loadedProducts : products;
+  
+  const displayProducts = rawDisplayProducts.map((product: Product) => ({
+    ...product,
+    images: product.cover ? [product.cover] : [],
+    price: product.price || (product.productSku?.[0]?.price) || 0,
+  }));
 
   const handleClearFilters = () => {
                   setFilters({

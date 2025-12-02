@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingBag } from 'lucide-react'
+import { extractPriceAmount } from '@/services/productService';
 
 interface GiftItemCardProps {
     product: any;
@@ -15,9 +16,17 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
         originalPrice,
         discountLabel,
         isLiked = false,
+        currency = 'USD',
     } = product
 
-    const hasDiscount = originalPrice && price < originalPrice
+    // Handle price whether it's a number or an object with amount/unitAmountMinor
+    const displayPrice = typeof price === 'number' ? price : extractPriceAmount(price);
+    
+    const displayOriginalPrice = typeof originalPrice === 'number' 
+        ? originalPrice 
+        : extractPriceAmount(originalPrice);
+
+    const hasDiscount = displayOriginalPrice && displayOriginalPrice > 0 && displayPrice < displayOriginalPrice
 
     const handleActionClick: React.MouseEventHandler = (e) => {
         e.preventDefault();
@@ -47,12 +56,12 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
                     {/* Price Section */}
                     <div className="flex items-baseline space-x-2">
                         <span className="text-xl font-bold text-gray-900">
-                            ${price}
+                            ${displayPrice.toFixed(2)}
                         </span>
                         {hasDiscount && (
                             <>
                                 <span className="text-sm line-through text-gray-400">
-                                    ${originalPrice}
+                                    ${displayOriginalPrice?.toFixed(2)}
                                 </span>
                                 <span className="text-sm text-red-600 font-medium">
                                     (${discountLabel} Off)
