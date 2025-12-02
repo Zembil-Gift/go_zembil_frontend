@@ -6,6 +6,7 @@ import { WishlistButton } from '@/components/WishlistButton';
 import { CartButton } from '@/components/CartButton';
 import { useSeasonalTheme } from './SeasonalThemeProvider';
 import { SeasonalProductBadge } from './SeasonalDecorations';
+import { extractPriceAmount } from '@/services/productService';
 
 interface Product {
   id: number;
@@ -168,7 +169,7 @@ export function SeasonalProductCard({
                     : undefined
                 }}
               >
-                ${product.price}
+                ${(typeof product.price === 'number' ? product.price : extractPriceAmount(product.price as any)).toFixed(2)}
               </span>
               {showWishlistDate && wishlistItem?.createdAt && (
                 <span 

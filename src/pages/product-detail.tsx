@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -17,10 +17,14 @@ import {
   Plus, 
   Minus,
   Share2,
-  MessageCircle
+  MessageCircle,
+  Check
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { MockApiService } from "@/services/mockApiService";
+import { productService, Product, extractPriceAmount } from "@/services/productService";
+import { cartService } from "@/services/cartService";
+import { wishlistService } from "@/services/wishlistService";
+import { cn } from "@/lib/utils";
 
 export default function ProductDetail() {
   const params = useParams();
@@ -28,29 +32,72 @@ export default function ProductDetail() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [selectedSkuId, setSelectedSkuId] = useState<number | null>(null);
   
   const { toast } = useToast();
   const { addItem, openCart } = useCartStore();
   const queryClient = useQueryClient();
 
-  const { data: product, isLoading } = useQuery({
-    queryKey: ["/api/products", productId],
-    queryFn: () => MockApiService.getProductById(Number(productId)),
+  const { data: product, isLoading } = useQuery<Product>({
+    queryKey: ["products", "detail", productId],
+    queryFn: () => productService.getProductById(Number(productId)),
     enabled: !!productId,
   });
 
+  const selectedSku = useMemo(() => {
+    if (!product?.productSku || product.productSku.length === 0) return null;
+    
+    if (selectedSkuId) {
+      return product.productSku.find(sku => sku.id === selectedSkuId) || product.productSku[0];
+    }
+    return product.productSku[0];
+  }, [product, selectedSkuId]);
+
+  const currentPrice = useMemo(() => {
+    if (selectedSku?.price) return extractPriceAmount(selectedSku.price);
+    if (product?.productSku?.[0]?.price) return extractPriceAmount(product.productSku[0].price);
+    return extractPriceAmount(product?.price);
+  }, [selectedSku, product]);
+
+  const stockQuantity = useMemo(() => {
+    if (selectedSku?.stockQuantity !== undefined) return selectedSku.stockQuantity;
+    return product?.stockQuantity || 0;
+  }, [selectedSku, product]);
+
+  const skuAttributes = useMemo(() => {
+    if (!product?.productSku) return {};
+    
+    const attributes: Record<string, Set<string>> = {};
+    
+    product.productSku.forEach(sku => {
+      sku.attributes?.forEach(attr => {
+        if (!attributes[attr.name]) {
+          attributes[attr.name] = new Set();
+        }
+        attributes[attr.name].add(attr.value);
+      });
+    });
+    
+    const result: Record<string, string[]> = {};
+    Object.entries(attributes).forEach(([name, values]) => {
+      result[name] = Array.from(values);
+    });
+    
+    return result;
+  }, [product]);
+
   const { data: reviews = [] } = useQuery({
-    queryKey: ["/api/products", productId, "reviews"],
-    queryFn: () => MockApiService.getProductReviews(Number(productId)),
+    queryKey: ["products", productId, "reviews"],
+    queryFn: () => [], // Reviews API not implemented yet - return empty for now
     enabled: !!productId,
   });
 
   const wishlistMutation = useMutation({
     mutationFn: async () => {
       if (isWishlisted) {
-        return await MockApiService.removeFromWishlist(Number(productId));
+        return await wishlistService.removeProductFromWishlist(Number(productId));
       } else {
-        return await MockApiService.addToWishlist(Number(productId));
+        return await wishlistService.addToWishlist(Number(productId));
       }
     },
     onSuccess: () => {
@@ -73,20 +120,27 @@ export default function ProductDetail() {
 
   const addToCartMutation = useMutation({
     mutationFn: async () => {
-      return await MockApiService.addToCart(Number(productId), quantity);
+      return await cartService.addToCart({
+        productId: Number(productId),
+        productSkuId: selectedSku?.id,
+        quantity,
+      });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart', 'items'] });
       addItem({
         productId: Number(productId),
-        name: product.name,
-        price: product.price,
-        image: product.images[0] || "",
+        name: product?.name || "",
+        price: currentPrice,
+        image: product?.cover || "",
         quantity,
+        skuId: selectedSku?.id,
+        skuCode: selectedSku?.skuCode,
       });
       
       toast({
         title: "Added to cart",
-        description: `${product.name} added to your cart`,
+        description: `${product?.name} added to your cart`,
       });
       openCart();
     },
@@ -140,8 +194,8 @@ export default function ProductDetail() {
     );
   }
 
-  const images = product.images && product.images.length > 0 
-    ? product.images 
+  const images = product.cover
+    ? [product.cover] 
     : ["https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"];
 
   const nextImage = () => {
@@ -278,13 +332,104 @@ export default function ProductDetail() {
                 {product.tags?.includes("authentic") && (
                   <Badge className="bg-sunset-orange text-white">Authentic</Badge>
                 )}
+                {stockQuantity > 0 && stockQuantity <= 5 && (
+                  <Badge variant="outline\" className="border-orange-500 text-orange-500">
+                    Only {stockQuantity} left
+                  </Badge>
+                )}
               </div>
             </div>
 
             {/* Price */}
-            <div className="text-3xl font-bold text-viridian-green">
-              {product.price} ETB
+            <div className="space-y-2">
+              <div className="text-3xl font-bold text-viridian-green">
+                ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <div className="text-sm text-gray-500">
+                ≈ {(currentPrice * 55).toLocaleString()} ETB
+              </div>
+              {stockQuantity > 0 ? (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <Check className="h-4 w-4" />
+                  <span>In Stock ({stockQuantity} available)</span>
+                </div>
+              ) : (
+                <div className="text-sm text-red-500">Out of Stock</div>
+              )}
             </div>
+
+            {product.productSku && product.productSku.length > 1 && (
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <h3 className="font-semibold text-charcoal">Select Variant</h3>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  {product.productSku.map((sku) => (
+                    <button
+                      key={sku.id}
+                      onClick={() => setSelectedSkuId(sku.id || null)}
+                      disabled={(sku.stockQuantity || 0) === 0}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border-2 transition-all text-left",
+                        selectedSku?.id === sku.id
+                          ? "border-viridian-green bg-viridian-green/5"
+                          : "border-gray-200 hover:border-gray-300",
+                        (sku.stockQuantity || 0) === 0 && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                          selectedSku?.id === sku.id
+                            ? "border-viridian-green"
+                            : "border-gray-300"
+                        )}>
+                          {selectedSku?.id === sku.id && (
+                            <div className="w-3 h-3 rounded-full bg-viridian-green" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">{sku.skuCode}</div>
+                          {sku.attributes && sku.attributes.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {sku.attributes.map((attr, idx) => (
+                                <span key={idx} className="text-xs text-gray-500">
+                                  {attr.name}: <span className="font-medium">{attr.value}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-viridian-green">
+                          ${extractPriceAmount(sku.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {(sku.stockQuantity || 0) > 0 
+                            ? `${sku.stockQuantity} in stock` 
+                            : "Out of stock"}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Single SKU Info */}
+            {product.productSku && product.productSku.length === 1 && selectedSku?.attributes && selectedSku.attributes.length > 0 && (
+              <div className="space-y-2 pt-4 border-t border-gray-200">
+                <h3 className="font-semibold text-charcoal">Product Details</h3>
+                <div className="flex flex-wrap gap-4">
+                  {selectedSku.attributes.map((attr, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">{attr.name}:</span>
+                      <Badge variant="outline">{attr.value}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Description */}
             {product.description && (

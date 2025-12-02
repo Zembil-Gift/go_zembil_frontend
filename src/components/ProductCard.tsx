@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { cn } from "@/lib/utils";
 import { getPrimaryBadge } from "@/utils/productHelpers";
+import { extractPriceAmount } from "@/services/productService";
 
 interface ProductCardProps {
   product: any;
@@ -22,14 +23,39 @@ export default function ProductCard({ product, className }: ProductCardProps) {
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   
-  const price = parseFloat(product.price);
+  const getProductPrice = () => {
+    if (product.productSku && product.productSku.length > 0) {
+      const prices = product.productSku
+        .map((sku: any) => extractPriceAmount(sku.price))
+        .filter((p: number) => p > 0);
+      if (prices.length > 0) {
+        return Math.min(...prices);
+      }
+    }
+    return extractPriceAmount(product.price);
+  };
+
+  const isInStock = () => {
+    if (product.productSku && product.productSku.length > 0) {
+      return product.productSku.some((sku: any) => (sku.stockQuantity || 0) > 0);
+    }
+    return product.stockQuantity !== 0;
+  };
+
+  const getTotalStock = () => {
+    if (product.productSku && product.productSku.length > 0) {
+      return product.productSku.reduce((total: number, sku: any) => total + (sku.stockQuantity || 0), 0);
+    }
+    return product.stockQuantity || 0;
+  };
+  
+  const price = getProductPrice();
   const originalPrice = product.originalPrice ? parseFloat(product.originalPrice) : null;
   const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
+  const inStock = isInStock();
   
-  // Convert USD to ETB (approximate rate)
   const etbPrice = (price * 55).toFixed(0);
   
-  // Get primary badge using centralized logic
   const primaryBadge = getPrimaryBadge(product);
   
 
@@ -62,10 +88,21 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         {/* Image Container with consistent aspect ratio */}
         <div className="relative aspect-square bg-gray-50 overflow-hidden">
           <img
-            src={product.images?.[0] || '/api/placeholder/400/400'}
+            src={product.cover || product.images?.[0] || '/api/placeholder/400/400'}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className={cn(
+              "w-full h-full object-cover transition-transform duration-300 group-hover:scale-105",
+              !inStock && "opacity-60"
+            )}
           />
+          
+          {!inStock && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                Out of Stock
+              </span>
+            </div>
+          )}
           
           {/* Action icons - show on hover */}
           <div className={cn(
@@ -137,6 +174,13 @@ export default function ProductCard({ product, className }: ProductCardProps) {
               ≈ {etbPrice} ETB
             </div>
           </div>
+
+          {/* SKU variants info */}
+          {product.productSku && product.productSku.length > 1 && (
+            <div className="text-xs text-gray-500">
+              {product.productSku.length} variants available
+            </div>
+          )}
 
           {/* Delivery information */}
           <div className="flex items-center gap-1 text-xs text-gray-500 pt-1">
