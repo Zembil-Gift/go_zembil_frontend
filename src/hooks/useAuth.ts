@@ -1,42 +1,62 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MockApiService } from "@/services/mockApiService";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {authService} from "@/services/authService";
 
 export function useAuth() {
   const queryClient = useQueryClient();
   
-  // Use mock API service instead of real API calls
+  const hasToken = authService.isAuthenticated();
+  
+  console.log('=== useAuth Hook ===');
+  console.log('hasToken (sync check):', hasToken);
+  
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],
-    queryFn: () => MockApiService.getCurrentUser(),
+    queryFn: async () => {
+      if (!authService.isAuthenticated()) {
+        return null;
+      }
+
+      try {
+          return await authService.fetchCurrentUser();
+      } catch (error) {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            return JSON.parse(storedUser);
+          } catch {
+            return null;
+          }
+        }
+        return null;
+      }
+    },
     retry: false,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: hasToken,
   });
+
+  console.log('useAuth state:', { hasToken, user: !!user, isLoading, error: !!error });
 
   const logout = useMutation({
     mutationFn: async () => {
-      // Clear all cached data first
       queryClient.clear();
-      // Use mock logout
-      await MockApiService.logout();
+      await authService.logout();
       return Promise.resolve();
     },
   });
 
   const login = useMutation({
     mutationFn: async () => {
-      // Store current location for return after login
       localStorage.setItem('returnTo', window.location.pathname + window.location.search);
-      // Use mock login
-      const result = await MockApiService.login();
-      return result;
+      return Promise.resolve();
     },
   });
 
   return {
     user,
     isLoading,
-    isAuthenticated: !!user && !error,
+    isAuthenticated: hasToken, // Use synchronous token check
     logout: logout.mutate,
     login: login.mutate,
     isLoggingOut: logout.isPending,

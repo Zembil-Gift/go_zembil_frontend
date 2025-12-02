@@ -14,7 +14,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
-import { MockApiService } from "@/services/mockApiService";
 import {useLogin} from "../hooks/useLogin";
 
 const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
@@ -53,26 +52,35 @@ export default function SignIn() {
 
   const signinMutation = useLogin();
 
-  const onSubmit = (data: SigninForm) => {
-    signinMutation.mutate(data, {
-      onSuccess: () => {
-        toast({
-          title: "Sign in successful",
-          description: "Welcome to goZembil!",
-        });
+  const onSubmit = async (data: SigninForm) => {
+    console.log('Form submitted with data:', data);
+    
+    try {
+      console.log('Attempting login...');
+      const result = await signinMutation.mutateAsync({
+        email: data.email,
+        password: data.password
+      });
+      
+      console.log('Login successful:', result);
+      
+      toast({
+        title: "Sign in successful",
+        description: "Welcome to goZembil!",
+      });
 
-        const returnTo = localStorage.getItem("returnTo") || "/";
-        localStorage.removeItem("returnTo");
-        navigate(returnTo);
-      },
-      onError: (err: any) => {
-        toast({
-          title: "Sign in failed",
-          description: err?.message || "Invalid email or password",
-          variant: "destructive",
-        });
-      },
-    });
+      const returnTo = localStorage.getItem("returnTo") || "/";
+      localStorage.removeItem("returnTo");
+      console.log('Navigating to:', returnTo);
+      navigate(returnTo);
+    } catch (err: any) {
+      console.error('Login error:', err);
+      toast({
+        title: "Sign in failed",
+        description: err?.message || "Invalid email or password. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
 

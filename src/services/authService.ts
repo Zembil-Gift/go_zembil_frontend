@@ -10,9 +10,11 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
+  phoneNumber: string;
   password: string;
-  confirmPassword: string;
+  username: string;
+  role: 'CUSTOMER' | 'VENDOR' | 'ADMIN';
+  birthDate?: string; // ISO date string format
 }
 
 export interface AuthResponse {
@@ -48,10 +50,9 @@ class AuthService {
     const loginData: LoginRequest = { emailOrPhone, password };
     const response = await apiService.postRequest<AuthResponse>('/auth/login', loginData);
 
-    console.log(response)
-    // Store token and user data
+    // Store token and user data - using 'token' key to match API interceptor
     if (response.accessToken) {
-      localStorage.setItem('authToken', response.accessToken);
+      localStorage.setItem('token', response.accessToken);
       localStorage.setItem('user', JSON.stringify(response.user));
     }
     
@@ -62,11 +63,11 @@ class AuthService {
    * User registration
    */
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await apiService.postRequest<AuthResponse>('/auth/register', userData);
+    const response = await apiService.postRequest<AuthResponse>('/api/users/register', userData);
     
-    // Store token and user data
-    if (response.token) {
-      localStorage.setItem('authToken', response.token);
+    // Store token and user data - using 'token' key to match API interceptor
+    if (response.accessToken) {
+      localStorage.setItem('token', response.accessToken);
       localStorage.setItem('user', JSON.stringify(response.user));
     }
     
@@ -84,11 +85,11 @@ class AuthService {
       console.warn('Server logout failed:', error);
     } finally {
       // Clear local storage
-      localStorage.removeItem('authToken');
+      localStorage.removeItem('token');
       localStorage.removeItem('user');
       
       // Redirect to login page
-      window.location.href = '/api/login';
+      window.location.href = '/signin';
     }
   }
 
@@ -142,11 +143,24 @@ class AuthService {
     return userStr ? JSON.parse(userStr) : null;
   }
 
+
+  async fetchCurrentUser(): Promise<any> {
+    try {
+      const response = await apiService.getRequest<any>('/api/users/me');
+      // Update local storage with fresh data
+      localStorage.setItem('user', JSON.stringify(response));
+      return response;
+    } catch (error: any) {
+      console.error('Failed to fetch current user:', error);
+      throw error;
+    }
+  }
+
   /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('token');
     return !!token;
   }
 
@@ -154,10 +168,9 @@ class AuthService {
    * Get authentication token
    */
   getToken(): string | null {
-    return localStorage.getItem('authToken');
+    return localStorage.getItem('token');
   }
 }
 
-// Export singleton instance
 export const authService = new AuthService();
 export default authService;

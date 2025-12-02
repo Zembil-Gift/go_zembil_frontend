@@ -10,8 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { MockApiService } from "@/services/mockApiService";
-import { Eye, EyeOff, Mail, Phone, Lock } from "lucide-react";
+import authService from "@/services/authService";
+import { Eye, EyeOff, Mail, Phone, Lock, User } from "lucide-react";
 
 const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
 
@@ -19,13 +19,17 @@ const signupSchema = z
   .object({
     firstName: z.string().min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
+    username: z.string().min(3, "Username must be at least 3 characters"),
     email: z.string().email("Please enter a valid email address"),
-    phone: z
+    phoneNumber: z
       .string()
-      .min(7, "Please enter a valid phone number")
-      .max(20, "Phone number is too long"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    confirmPassword: z.string().min(6, "Password confirmation must be at least 6 characters"),
+      .min(10, "Please enter a valid phone number")
+      .regex(/^\+?\d+$/, "Phone number must contain only numbers and optional + at start"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/, "Password must contain both letters and numbers"),
+    confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ["confirmPassword"],
@@ -45,30 +49,57 @@ export default function SignUp() {
     defaultValues: {
       firstName: "",
       lastName: "",
+      username: "",
       email: "",
-      phone: "",
+      phoneNumber: "",
       password: "",
       confirmPassword: "",
     },
   });
 
   const signupMutation = useMutation({
-    mutationFn: async (_data: SignupForm) => {
-      // Simulate register using mock auth
-      const result = await MockApiService.login();
+    mutationFn: async (data: SignupForm) => {
+      console.log('=== STARTING REGISTRATION ===');
+      console.log('Form data:', data);
+      
+      const result = await authService.register({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        username: data.username,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        password: data.password,
+        role: 'CUSTOMER',
+      });
+      
+      console.log('=== REGISTRATION SUCCESS ===');
+      console.log('Result:', result);
       return result;
     },
-    onSuccess: () => {
-      toast({ title: "Account created", description: "Welcome to goZembil!" });
-      const returnTo = localStorage.getItem("returnTo") || "/";
-      localStorage.removeItem("returnTo");
-      navigate(returnTo);
+    onSuccess: (data) => {
+      console.log('=== onSuccess CALLED ===', data);
+      toast({ 
+        title: "Account created successfully!", 
+        description: "Welcome to goZembil! You can now sign in with your credentials." 
+      });
+      // REDIRECT DISABLED FOR DEBUGGING
+      // setTimeout(() => {
+      //   console.log('Navigating to signin...');
+      //   navigate('/signin');
+      // }, 1500);
     },
     onError: (error: any) => {
+      console.error('=== onError CALLED ===');
+      console.error('Error details:', {
+        message: error?.message,
+        response: error?.response,
+        stack: error?.stack
+      });
       toast({
         title: "Sign up failed",
-        description: error?.message || "Please check the form and try again",
+        description: error?.message || "Unable to create account. Please check your details and try again.",
         variant: "destructive",
+        duration: 5000,
       });
     },
   });
@@ -125,6 +156,23 @@ export default function SignUp() {
 
                 <FormField
                   control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Username</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                          <Input {...field} placeholder="Choose a username" className="pl-10 h-11" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
@@ -142,14 +190,14 @@ export default function SignUp() {
 
                 <FormField
                   control={form.control}
-                  name="phone"
+                  name="phoneNumber"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">Phone number</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                          <Input {...field} type="tel" placeholder="Enter your phone number" className="pl-10 h-11" />
+                          <Input {...field} type="tel" placeholder="+251911234567" className="pl-10 h-11" />
                         </div>
                       </FormControl>
                       <FormMessage />
