@@ -62,16 +62,27 @@ export default function Checkout() {
     city: "",
     state: "",
     postalCode: "0000",
-    country: "Ethiopia",
+    country: "",
   });
   const [contactPhone, setContactPhone] = useState("");
-  const [contactEmail, setContactEmail] = useState(user?.email || "");
+  const [contactEmail, setContactEmail] = useState("");
   const [giftWrap, setGiftWrap] = useState(false);
   const [cardMessage, setCardMessage] = useState("");
   const [discountCode, setDiscountCode] = useState("");
 
   const totalPrice = getTotalPrice();
   const totalItems = getTotalItems();
+
+  useEffect(() => {
+    if (user) {
+      if (user.phoneNumber && !contactPhone) {
+        setContactPhone(user.phoneNumber);
+      }
+      if (user.email && !contactEmail) {
+        setContactEmail(user.email);
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchExistingAddress = async () => {
@@ -84,22 +95,18 @@ export default function Checkout() {
         if (shippingAddress) {
           setExistingAddressId(shippingAddress.id || null);
 
-          // Parse phone from additionalDetails if available
-          let phone = shippingAddress.contactPhone || "";
-
-          if (!phone && shippingAddress.additionalDetails) {
-            const phoneMatch = shippingAddress.additionalDetails.match(/Phone:\s*([^\s,]+)/);
-            if (phoneMatch) phone = phoneMatch[1].trim();
-          }
-
           setShippingInfo({
             street: shippingAddress.street || "",
             city: shippingAddress.city || "",
             state: shippingAddress.state || "",
             postalCode: shippingAddress.postalCode || "0000",
-            country: shippingAddress.country || "Ethiopia",
+            country: shippingAddress.country || "",
           });
-          setContactPhone(phone);
+
+          // Only set phone from address if user profile doesn't have one
+          if (!user?.phoneNumber && shippingAddress.contactPhone) {
+            setContactPhone(shippingAddress.contactPhone);
+          }
 
           toast({
             title: "Address Loaded",

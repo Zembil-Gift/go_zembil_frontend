@@ -6,9 +6,6 @@ export function useAuth() {
   
   const hasToken = authService.isAuthenticated();
   
-  console.log('=== useAuth Hook ===');
-  console.log('hasToken (sync check):', hasToken);
-  
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],
     queryFn: async () => {

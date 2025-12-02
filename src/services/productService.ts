@@ -1,4 +1,4 @@
-import { apiService } from './apiService';
+import {apiService} from './apiService';
 
 // Types for products
 export interface ProductAttribute {
@@ -86,13 +86,9 @@ class ProductService {
   async getAllProducts(page: number = 0, size: number = 20): Promise<PagedProductResponse> {
     try {
       const url = `/api/v1/products?page=${page}&size=${size}`;
-      console.log('=== FETCHING ALL PRODUCTS ===');
-      console.log('URL:', url);
       const response = await apiService.getRequest<PagedProductResponse>(url);
-      console.log('Products response:', response);
       return response;
     } catch (error) {
-      console.error('Failed to fetch products:', error);
       throw error;
     }
   }
@@ -126,13 +122,8 @@ class ProductService {
   async getFeaturedProducts(limit: number = 10): Promise<Product[]> {
     try {
       const url = `/api/v1/products/featured?limit=${limit}`;
-      console.log('=== FETCHING FEATURED PRODUCTS ===');
-      console.log('URL:', url);
-      const response = await apiService.getRequest<Product[]>(url);
-      console.log('Featured products response:', response);
-      return response;
+        return await apiService.getRequest<Product[]>(url);
     } catch (error) {
-      console.error('Failed to fetch featured products:', error);
       throw error;
     }
   }

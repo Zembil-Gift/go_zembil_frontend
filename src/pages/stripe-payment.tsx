@@ -128,7 +128,6 @@ function PaymentForm({ clientSecret, orderId, amount, currency, onSuccess, onErr
             layout: 'tabs',
             defaultValues: {
               billingDetails: {
-                // You can pre-fill billing details if available
               }
             }
           }}
@@ -178,12 +177,6 @@ function PaymentForm({ clientSecret, orderId, amount, currency, onSuccess, onErr
           </>
         )}
       </Button>
-
-      {/* Security Notice */}
-      <p className="text-xs text-center text-gray-500">
-        🔒 Your payment information is encrypted and secure. 
-        Powered by Stripe.
-      </p>
     </form>
   );
 }
@@ -227,7 +220,6 @@ export default function StripePaymentPage() {
 
       // First, fetch order details to get the correct amount
       const orderDetails = await apiService.getRequest<any>(`/api/orders/${orderIdNum}`);
-      console.log('📦 Order details:', JSON.stringify(orderDetails, null, 2));
 
       // Extract amount from order totals
       const orderAmount = orderDetails?.totals?.totalMinor || 0;
@@ -236,7 +228,6 @@ export default function StripePaymentPage() {
       // Call your Spring Boot backend to initialize payment
       const response = await paymentService.initializePayment(orderIdNum, 'STRIPE');
 
-      console.log('✅ Payment initialized - full response:', JSON.stringify(response, null, 2));
 
       if (!response.clientSecret) {
         throw new Error('No client secret received from server');

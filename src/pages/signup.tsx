@@ -59,9 +59,6 @@ export default function SignUp() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
-      console.log('=== STARTING REGISTRATION ===');
-      console.log('Form data:', data);
-      
       const result = await authService.register({
         firstName: data.firstName,
         lastName: data.lastName,
@@ -72,24 +69,19 @@ export default function SignUp() {
         role: 'CUSTOMER',
       });
       
-      console.log('=== REGISTRATION SUCCESS ===');
-      console.log('Result:', result);
       return result;
     },
     onSuccess: (data) => {
-      console.log('=== onSuccess CALLED ===', data);
-      toast({ 
+      toast({
         title: "Account created successfully!", 
         description: "Welcome to goZembil! You can now sign in with your credentials." 
       });
-      // REDIRECT DISABLED FOR DEBUGGING
-      // setTimeout(() => {
-      //   console.log('Navigating to signin...');
-      //   navigate('/signin');
-      // }, 1500);
+      setTimeout(() => {
+        console.log('Navigating to signin...');
+        navigate('/signin');
+      }, 1500);
     },
     onError: (error: any) => {
-      console.error('=== onError CALLED ===');
       console.error('Error details:', {
         message: error?.message,
         response: error?.response,

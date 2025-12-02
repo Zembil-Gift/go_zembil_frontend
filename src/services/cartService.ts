@@ -51,16 +51,7 @@ class CartService {
    */
   async getCart(currency: string = 'USD'): Promise<CartItem[]> {
     try {
-      console.log('=== FETCHING CART ===');
-      console.log('Currency:', currency);
-      console.log('Token:', localStorage.getItem('token') ? 'Present' : 'Missing');
-      
       const response = await apiService.getRequest<Cart>(`/api/cart?currency=${currency}`);
-      
-      console.log('=== CART RESPONSE ===');
-      console.log('Full response:', response);
-      console.log('Items:', response.items);
-      console.log('Items count:', response.items?.length || 0);
       
       const items = response.items || [];
       
@@ -95,11 +86,6 @@ class CartService {
       
       return enrichedItems;
     } catch (error: any) {
-      console.error('=== CART ERROR ===');
-      console.error('Error:', error);
-      console.error('Error message:', error.message);
-      console.error('Error response:', error.response);
-      
       // Return empty array if cart doesn't exist yet
       if (error.message?.includes('404')) {
         console.log('Cart not found (404), returning empty array');

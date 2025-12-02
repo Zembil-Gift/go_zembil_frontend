@@ -51,7 +51,6 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
         title: "Payment Successful",
         description: "Your payment has been processed successfully.",
       });
-      console.log('✅ Stripe redirect payment confirmed, calling onSuccess with:', paymentIntentId);
       onSuccess({ paymentIntentId, status: 'succeeded' });
     }
   }, [stripe, onSuccess, toast]);
