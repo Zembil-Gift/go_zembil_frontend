@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { MockApiService } from "@/services/mockApiService";
+import { wishlistService, WishlistItem } from "@/services/wishlistService";
 import { useState, useEffect } from "react";
 
 interface WishlistItem {
@@ -44,14 +44,14 @@ export function useWishlist() {
     setLocalWishlist(productIds);
   };
 
-  // Fetch wishlist items from mock API (authenticated users only)
+  // Fetch wishlist items from real API (authenticated users only)
   const { 
     data: wishlistItems = [], 
     isLoading, 
     error 
   } = useQuery({
     queryKey: ["/api/wishlist"],
-    queryFn: () => MockApiService.getWishlist(),
+    queryFn: () => wishlistService.getWishlist(),
     retry: false,
     enabled: isAuthenticated,
     staleTime: 60000, // Consider data fresh for 1 minute
@@ -93,7 +93,7 @@ export function useWishlist() {
         throw new Error("Item already in wishlist");
       }
       
-      return await MockApiService.addToWishlist(data.productId);
+      return await wishlistService.addToWishlist(data.productId);
     },
     onMutate: async (newItem) => {
       // Cancel any outgoing refetches
@@ -170,7 +170,7 @@ export function useWishlist() {
         return { productId };
       }
       
-      return await MockApiService.removeFromWishlist(productId);
+      return await wishlistService.removeProductFromWishlist(productId);
     },
     onMutate: async (productId) => {
       // Cancel any outgoing refetches

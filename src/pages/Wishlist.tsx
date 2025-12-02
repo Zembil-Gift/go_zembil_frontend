@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { LocalSeasonalProvider, useLocalSeasonalTheme } from "@/components/seasonal/LocalSeasonalTheme";
 import { LocalSeasonalThemeSelector } from "@/components/seasonal/LocalSeasonalThemeSelector";
 import { LocalSeasonalWishlistHeader, LocalSeasonalDecorations, LocalSeasonalProductBadge } from "@/components/seasonal/LocalSeasonalDecorations";
+import { extractPriceAmount } from "@/services/productService";
 
 interface Product {
   id: number;
@@ -228,7 +229,7 @@ function WishlistContent() {
                               : undefined
                           }}
                         >
-                          ${product?.price || 'N/A'}
+                          ${(typeof product?.price === 'number' ? product.price : extractPriceAmount(product?.price as any)).toFixed(2)}
                         </span>
                         {item.createdAt && (
                           <span 
