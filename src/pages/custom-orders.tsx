@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { MockApiService } from "@/services/mockApiService";
+import { orderService, CustomOrderRequest } from "@/services/orderService";
 
 const customOrderSchema = z.object({
   type: z.string().min(1, "Please select an order type"),
@@ -143,7 +143,7 @@ function CustomOrdersContent() {
   const customOrderMutation = useMutation({
     mutationFn: async (data: CustomOrderForm) => {
       // Map form data to backend schema
-      const backendData = {
+      const backendData: CustomOrderRequest = {
         title: data.title,
         description: data.description,
         category: data.type,
@@ -152,7 +152,7 @@ function CustomOrdersContent() {
         customerNotes: [data.recipientInfo, data.specialRequests].filter(Boolean).join('\n\n'),
       };
       
-      return await MockApiService.postCustomOrder(backendData);
+      return await orderService.submitCustomOrder(backendData);
     },
     onSuccess: () => {
       setShowSuccessAnimation(true);

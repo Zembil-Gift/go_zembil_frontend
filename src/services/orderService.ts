@@ -56,36 +56,15 @@ export interface Order {
 }
 
 export interface CreateOrderRequest {
-  items: {
-    productId: number;
-    quantity: number;
-  }[];
-  shippingAddress: {
-    fullName: string;
-    phone: string;
-    email: string;
-    addressLine1: string;
-    addressLine2?: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
+  shippingAddressId?: number;
+  billingAddressId?: number;
+  contactEmail?: string;
+  contactPhone?: string;
+  giftOptions?: {
+    giftWrap?: boolean;
+    cardMessage?: string;
   };
-  billingAddress?: {
-    fullName: string;
-    phone: string;
-    email: string;
-    addressLine1: string;
-    addressLine2?: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-  };
-  paymentMethod: string;
-  currency?: 'ETB' | 'USD';
-  notes?: string;
-  couponCode?: string;
+  discountCode?: string;
 }
 
 export interface OrdersResponse {
@@ -123,13 +102,28 @@ export interface OrderStats {
   }[];
 }
 
+export interface CustomOrderRequest {
+  title: string;
+  description: string;
+  category: string;
+  budget: number | null;
+  deadline: string | null;
+  customerNotes: string;
+}
+
+export interface CustomOrderResponse {
+  success: boolean;
+  orderId: string;
+  message: string;
+}
+
 // Order service
 class OrderService {
   /**
-   * Place new order
+   * Place a new order
    */
   async placeOrder(orderData: CreateOrderRequest): Promise<Order> {
-    return await apiService.postRequest<Order>('/orders', orderData);
+    return await apiService.postRequest<Order>('/api/orders', orderData);
   }
 
   /**
@@ -140,7 +134,7 @@ class OrderService {
     queryParams.append('page', page.toString());
     queryParams.append('limit', limit.toString());
     
-    return await apiService.getRequest<OrdersResponse>(`/users/${userId}/orders?${queryParams.toString()}`);
+    return await apiService.getRequest<OrdersResponse>(`/api/users/${userId}/orders?${queryParams.toString()}`);
   }
 
   /**
@@ -151,36 +145,36 @@ class OrderService {
     queryParams.append('page', page.toString());
     queryParams.append('limit', limit.toString());
     
-    return await apiService.getRequest<OrdersResponse>(`/orders/my?${queryParams.toString()}`);
+    return await apiService.getRequest<OrdersResponse>(`/api/orders/my?${queryParams.toString()}`);
   }
 
   /**
    * Get order details by ID
    */
   async getOrderDetails(orderId: number): Promise<Order> {
-    return await apiService.getRequest<Order>(`/orders/${orderId}`);
+    return await apiService.getRequest<Order>(`/api/orders/${orderId}`);
   }
 
   /**
    * Get order by order number
    */
   async getOrderByNumber(orderNumber: string): Promise<Order> {
-    return await apiService.getRequest<Order>(`/orders/number/${orderNumber}`);
+    return await apiService.getRequest<Order>(`/api/orders/number/${orderNumber}`);
   }
 
   /**
    * Track order
    */
   async trackOrder(orderNumber: string): Promise<OrderTrackingInfo> {
-    return await apiService.getRequest<OrderTrackingInfo>(`/orders/track/${orderNumber}`);
+    return await apiService.getRequest<OrderTrackingInfo>(`/api/orders/track/${orderNumber}`);
   }
 
   /**
    * Cancel order
    */
-  async cancelOrder(orderId: number, reason?: string): Promise<{ message: string }> {
-    const data = reason ? { reason } : undefined;
-    return await apiService.putRequest(`/orders/${orderId}/cancel`, data);
+  async cancelOrder(orderId: number, reason?: string): Promise<Order> {
+    const queryParams = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+    return await apiService.postRequest<Order>(`/api/orders/${orderId}/cancel${queryParams}`);
   }
 
   /**
@@ -192,7 +186,7 @@ class OrderService {
     trackingCode?: string
   ): Promise<Order> {
     const data = { status, trackingCode };
-    return await apiService.putRequest<Order>(`/orders/${orderId}/status`, data);
+    return await apiService.putRequest<Order>(`/api/orders/${orderId}/status`, data);
   }
 
   /**
@@ -200,7 +194,7 @@ class OrderService {
    */
   async processRefund(orderId: number, amount?: number, reason?: string): Promise<{ message: string }> {
     const data = { amount, reason };
-    return await apiService.postRequest(`/orders/${orderId}/refund`, data);
+    return await apiService.postRequest(`/api/orders/${orderId}/refund`, data);
   }
 
   /**
@@ -218,7 +212,7 @@ class OrderService {
     if (status) queryParams.append('status', status);
     if (paymentStatus) queryParams.append('paymentStatus', paymentStatus);
     
-    return await apiService.getRequest<OrdersResponse>(`/orders/all?${queryParams.toString()}`);
+    return await apiService.getRequest<OrdersResponse>(`/api/orders/all?${queryParams.toString()}`);
   }
 
   /**
@@ -229,7 +223,7 @@ class OrderService {
     if (startDate) queryParams.append('startDate', startDate);
     if (endDate) queryParams.append('endDate', endDate);
     
-    const url = `/orders/stats${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `/api/orders/stats${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return await apiService.getRequest<OrderStats>(url);
   }
 
@@ -242,7 +236,7 @@ class OrderService {
     queryParams.append('page', page.toString());
     queryParams.append('limit', limit.toString());
     
-    return await apiService.getRequest<OrdersResponse>(`/orders/search?${queryParams.toString()}`);
+    return await apiService.getRequest<OrdersResponse>(`/api/orders/search?${queryParams.toString()}`);
   }
 
   /**
@@ -259,8 +253,24 @@ class OrderService {
     queryParams.append('format', format);
     
     // This would need special handling for blob response
-    const url = `/orders/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `/api/orders/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return await apiService.getRequest<Blob>(url);
+  }
+
+  /**
+   * Submit a custom order request
+   */
+  async submitCustomOrder(orderData: CustomOrderRequest): Promise<CustomOrderResponse> {
+    try {
+      return await apiService.postRequest<CustomOrderResponse>('/api/custom-orders', orderData);
+    } catch (error: any) {
+      console.error('Failed to submit custom order:', error);
+      throw new Error(
+        error.response?.data?.message || 
+        error.message || 
+        'Failed to submit custom order'
+      );
+    }
   }
 }
 
