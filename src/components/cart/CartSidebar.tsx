@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ShoppingCart, Plus, Minus, Trash2, CreditCard, X } from "lucide-react";
 import { useNavigate } from "wouter";
 import { cn } from "@/lib/utils";
+import { extractPriceAmount } from "@/services/productService";
 
 interface CartItem {
   id: number;
@@ -160,10 +161,10 @@ export function CartSidebar() {
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <p className="font-semibold text-primary">
-                          ${parseFloat(item.product?.price || "0").toFixed(2)}
+                          ${(typeof item.product?.price === 'number' ? item.product.price : extractPriceAmount(item.product?.price as any)).toFixed(2)}
                         </p>
                         <p className="text-xs text-gray-500">
-                          ≈ {(parseFloat(item.product?.price || "0") * 120.5).toFixed(0)} ETB
+                          ≈ {((typeof item.product?.price === 'number' ? item.product.price : extractPriceAmount(item.product?.price as any)) * 120.5).toFixed(0)} ETB
                         </p>
                       </div>
 
@@ -198,7 +199,7 @@ export function CartSidebar() {
                     {/* Subtotal */}
                     <div className="text-right">
                       <p className="text-sm font-medium">
-                        ${(parseFloat(item.product?.price || "0") * item.quantity).toFixed(2)}
+                        ${((typeof item.product?.price === 'number' ? item.product.price : extractPriceAmount(item.product?.price as any)) * item.quantity).toFixed(2)}
                       </p>
                     </div>
                   </div>

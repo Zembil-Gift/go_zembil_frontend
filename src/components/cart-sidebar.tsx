@@ -6,19 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { X, Plus, Minus, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
-
-interface CartItem {
-  id: number;
-  productId: number;
-  quantity: number;
-  customization?: any;
-  product?: {
-    id: number;
-    name: string;
-    price: string;
-    images: string[];
-  };
-}
+import { CartItem } from "@/services/cartService";
 
 export default function CartSidebar() {
   const {
@@ -99,10 +87,10 @@ export default function CartSidebar() {
                     
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-charcoal line-clamp-2">
-                        {item.product?.name || "Product"}
+                        {item.product?.name || `Product #${item.productId}`}
                       </h4>
                       {(() => {
-                        const currency = formatDualCurrency(item.product?.price || "0");
+                        const currency = formatDualCurrency(item.unitPrice || 0);
                         return (
                           <div className="flex flex-col">
                             <span className="text-ethiopian-gold font-semibold text-sm">{currency.etb}</span>

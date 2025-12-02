@@ -5,9 +5,11 @@ interface CartItem {
   id: number;
   productId: number;
   name: string;
-  price: string;
+  price: number | string;
   image: string;
   quantity: number;
+  skuId?: number;
+  skuCode?: string;
   customization?: any;
 }
 
@@ -32,12 +34,16 @@ export const useCartStore = create<CartStore>()(
       isOpen: false,
       addItem: (item) => {
         const items = get().items;
-        const existingItem = items.find(i => i.productId === item.productId);
+        const existingItem = items.find(i =>
+          i.productId === item.productId && 
+          (i.skuId === item.skuId || (!i.skuId && !item.skuId))
+        );
         
         if (existingItem) {
           set({
             items: items.map(i =>
-              i.productId === item.productId
+              i.productId === item.productId && 
+              (i.skuId === item.skuId || (!i.skuId && !item.skuId))
                 ? { ...i, quantity: i.quantity + item.quantity }
                 : i
             )

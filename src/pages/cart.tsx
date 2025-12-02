@@ -1,47 +1,30 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
 import { formatDualCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { ShoppingBag, Plus, Minus, X, Truck, Heart, ArrowRight } from "lucide-react";
+import { ShoppingBag, Plus, Minus, X, Truck, Heart, ArrowRight, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { MockApiService } from "@/services/mockApiService";
-
-interface CartItem {
-  id: number;
-  productId: number;
-  quantity: number;
-  customization?: any;
-  product?: {
-    id: number;
-    name: string;
-    price: string;
-    images: string[];
-    deliveryDays?: number;
-  };
-}
+import { cartService, CartItem } from "@/services/cartService";
 
 export default function Cart() {
-  const [promoCode, setPromoCode] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  const { data: cartItems = [], isLoading } = useQuery<CartItem[]>({
-    queryKey: ["/api/cart"],
-    queryFn: () => MockApiService.getCart(),
-    retry: false,
-  });
+  
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { cartItems, isLoading: cartLoading, getTotalItems, error: cartError, refetch } = useCart();
 
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ id, quantity }: { id: number; quantity: number }) => {
-      // Mock update quantity
-      return Promise.resolve({ success: true });
+      return await cartService.updateCartItem(id, quantity);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
       toast({
         title: "Quantity updated",
         description: "Cart item quantity updated successfully",
@@ -58,10 +41,10 @@ export default function Cart() {
 
   const removeItemMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await MockApiService.removeFromCart(id);
+      return await cartService.removeFromCart(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
       toast({
         title: "Item removed",
         description: "Item removed from cart",
@@ -78,7 +61,8 @@ export default function Cart() {
 
   const moveToWishlistMutation = useMutation({
     mutationFn: async (productId: number) => {
-      return await MockApiService.addToWishlist(productId);
+      // TODO: Implement wishlist service
+      return Promise.resolve({ success: true });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
@@ -97,9 +81,10 @@ export default function Cart() {
   });
 
   const calculateSubtotal = () => {
+    if (!Array.isArray(cartItems)) return 0;
     return cartItems.reduce((total: number, item: CartItem) => {
-      const price = parseFloat(item.product?.price || "0");
-      return total + (price * item.quantity);
+      const itemTotal = Number(item.totalPrice) || (Number(item.unitPrice || 0) * item.quantity);
+      return total + itemTotal;
     }, 0);
   };
 
@@ -111,10 +96,6 @@ export default function Cart() {
 
   const calculateTotal = () => {
     return calculateSubtotal() + calculateShipping();
-  };
-
-  const getTotalItems = () => {
-    return cartItems.reduce((total: number, item: CartItem) => total + item.quantity, 0);
   };
 
   const handleQuantityChange = (item: CartItem, newQuantity: number) => {
@@ -133,8 +114,65 @@ export default function Cart() {
       // Error already handled by mutation
     }
   };
+  
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="text-center py-8">
+              <div className="text-gray-600">Checking authentication...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <LogIn size={64} className="text-gray-400 mx-auto mb-6" />
+            <h2 className="font-display text-2xl font-bold text-charcoal mb-4">
+              Sign in to view your cart
+            </h2>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              Please sign in to your account to view and manage your shopping cart.
+            </p>
+            <Button asChild className="bg-ethiopian-gold hover:bg-amber text-white">
+              <Link to="/signin">Sign In</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  if (isLoading) {
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <LogIn size={64} className="text-gray-400 mx-auto mb-6" />
+            <h2 className="font-display text-2xl font-bold text-charcoal mb-4">
+              Sign in to view your cart
+            </h2>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              Please sign in to your account to view and manage your shopping cart.
+            </p>
+            <Button asChild className="bg-ethiopian-gold hover:bg-amber text-white">
+              <Link to="/signin">Sign In</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (cartLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         
@@ -152,6 +190,27 @@ export default function Cart() {
           </div>
         </div>
         
+      </div>
+    );
+  }
+
+  if (cartError) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <ShoppingBag size={64} className="text-red-400 mx-auto mb-6" />
+            <h2 className="font-display text-2xl font-bold text-charcoal mb-4">
+              Failed to load cart
+            </h2>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              There was an error loading your cart. Please try again.
+            </p>
+            <Button onClick={() => refetch()} className="bg-ethiopian-gold hover:bg-amber text-white">
+              Try Again
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -201,8 +260,14 @@ export default function Cart() {
                       {/* Product Image */}
                       <div className="relative w-24 h-24 flex-shrink-0">
                         <img
-                          src={item.product?.images?.[0] || "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200"}
-                          alt={item.product?.name || "Product"}
+                          src={
+                            item.productImage ||
+                            item.product?.cover ||
+                            item.product?.imageUrl ||
+                            item.product?.images?.[0] ||
+                            "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200"
+                          }
+                          alt={item.productName || item.product?.name || "Product"}
                           className="w-full h-full object-cover rounded-lg"
                         />
                       </div>
@@ -211,11 +276,12 @@ export default function Cart() {
                       <div className="flex-1 min-w-0">
                         <Link to={`/product/${item.productId}`}>
                           <h3 className="font-semibold text-lg text-charcoal hover:text-ethiopian-gold transition-colors line-clamp-2">
-                            {item.product?.name || "Product"}
+                            {item.product?.name || `Product #${item.productId}`}
                           </h3>
                         </Link>
                         {(() => {
-                          const currency = formatDualCurrency(item.product?.price || "0");
+                          // Use unitPrice from API instead of product.price
+                          const currency = formatDualCurrency(item.unitPrice || 0);
                           return (
                             <div className="mt-1">
                               <p className="text-ethiopian-gold font-bold text-lg">{currency.etb}</p>
@@ -286,7 +352,7 @@ export default function Cart() {
                       {/* Item Total */}
                       <div className="text-right">
                         {(() => {
-                          const itemTotal = parseFloat(item.product?.price || "0") * item.quantity;
+                          const itemTotal = Number(item.totalPrice) || (Number(item.unitPrice || 0) * item.quantity);
                           const currency = formatDualCurrency(itemTotal);
                           return (
                             <div>
@@ -352,28 +418,6 @@ export default function Cart() {
                         })()}
                       </div>
                     )}
-
-                    {/* Promo Code */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">
-                        Promo Code
-                      </label>
-                      <div className="flex space-x-2">
-                        <Input
-                          placeholder="Enter code"
-                          value={promoCode}
-                          onChange={(e) => setPromoCode(e.target.value)}
-                          className="flex-1"
-                        />
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
-                        >
-                          Apply
-                        </Button>
-                      </div>
-                    </div>
 
                     <Separator />
 
