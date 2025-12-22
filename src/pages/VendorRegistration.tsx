@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Store, Upload, MapPin, Globe, Phone, Mail, FileText, Image, CheckCircle, Package, Palette } from "lucide-react";
+import { Store, Upload, MapPin, Globe, FileText, Image, CheckCircle, Package, Palette } from "lucide-react";
 
 const vendorRegistrationSchema = z.object({
   businessName: z.string().min(2, "Business name must be at least 2 characters").max(200, "Business name is too long"),
@@ -211,6 +211,8 @@ export default function VendorRegistration() {
 
       const submissionData = {
         ...data,
+        city: data.businessAddress.city,
+        country: data.businessAddress.country,
         socialMediaLinks: cleanedSocialMedia,
         website: data.website || undefined,
       };
