@@ -5,42 +5,33 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { WishlistButton } from "@/components/WishlistButton";
-import { CartButton } from "@/components/CartButton";
-import { Heart, ShoppingCart, Loader2 } from "lucide-react";
+import { Heart, ShoppingCart, Loader2, Trash2, AlertCircle, Check, Package } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { LocalSeasonalProvider, useLocalSeasonalTheme } from "@/components/seasonal/LocalSeasonalTheme";
 import { LocalSeasonalThemeSelector } from "@/components/seasonal/LocalSeasonalThemeSelector";
 import { LocalSeasonalWishlistHeader, LocalSeasonalDecorations, LocalSeasonalProductBadge } from "@/components/seasonal/LocalSeasonalDecorations";
-import { extractPriceAmount } from "@/services/productService";
-
-interface Product {
-  id: number;
-  name: string;
-  price: string;
-  images: string[];
-  description: string;
-  vendor: {
-    name: string;
-  };
-}
-
-interface WishlistItemWithProduct {
-  id: number;
-  productId: number;
-  userId: string;
-  createdAt: string;
-  product: Product;
-}
+import { formatPrice } from "@/lib/currency";
+import { WishListItemDto } from "@/services/wishlistService";
+import { getSkuImageUrl } from "@/utils/imageUtils";
+import { useState } from "react";
 
 function WishlistContent() {
   const { isAuthenticated } = useAuth();
-  const { wishlistItems, isLoading, getWishlistCount } = useWishlist();
+  const { 
+    wishlistItems, 
+    isLoading, 
+    getWishlistCount,
+    moveToCart,
+    batchMoveToCart,
+    batchDelete,
+    clearWishlist,
+    isMovingToCart,
+    isBatchMovingToCart,
+    isBatchDeleting,
+    isClearingWishlist
+  } = useWishlist();
   const { currentTheme, isSeasonalMode } = useLocalSeasonalTheme();
-
-  // The wishlist API now returns products directly, no need for separate fetching
-  const wishlistWithProducts = Array.isArray(wishlistItems) ? wishlistItems : [];
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
 
   if (!isAuthenticated) {
     return (
@@ -109,7 +100,7 @@ function WishlistContent() {
 
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-3" style={{
                 color: isSeasonalMode && currentTheme.id !== 'default' ? currentTheme.colors.text : undefined
@@ -124,42 +115,104 @@ function WishlistContent() {
                 {getWishlistCount()} {getWishlistCount() === 1 ? 'gift' : 'gifts'} saved for later
               </p>
             </div>
-            <Button variant="outline" asChild>
-              <Link to="/shop">
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Continue Shopping
-              </Link>
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              {selectedItems.length > 0 && (
+                <>
+                  <Button 
+                    variant="default"
+                    onClick={() => batchMoveToCart({ wishListItemIds: selectedItems })}
+                    disabled={isBatchMovingToCart}
+                  >
+                    {isBatchMovingToCart ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                    )}
+                    Move {selectedItems.length} to Cart
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => {
+                      batchDelete({ wishListItemIds: selectedItems });
+                      setSelectedItems([]);
+                    }}
+                    disabled={isBatchDeleting}
+                  >
+                    {isBatchDeleting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-2" />
+                    )}
+                    Remove {selectedItems.length}
+                  </Button>
+                </>
+              )}
+              <Button variant="outline" asChild>
+                <Link to="/shop">
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Continue Shopping
+                </Link>
+              </Button>
+            </div>
           </div>
           <Separator className="mt-6" />
         </div>
 
         {/* Wishlist Items Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {wishlistWithProducts.map((item: any) => {
-            const product = item.product;
-            
-            if (!product) {
-              return null; // Skip items without product data
-            }
+          {wishlistItems.map((item: WishListItemDto) => {
+            const isSelected = selectedItems.includes(item.id);
             
             return (
-              <Card key={item.id || item.productId} className="group hover:shadow-lg transition-shadow duration-200 overflow-hidden relative">
+              <Card 
+                key={item.id} 
+                className={`group hover:shadow-lg transition-shadow duration-200 overflow-hidden relative ${
+                  isSelected ? 'ring-2 ring-ethiopian-gold' : ''
+                } ${!item.available ? 'opacity-75' : ''}`}
+              >
                 <LocalSeasonalProductBadge />
                 <CardContent className="p-0">
+                  {/* Selection checkbox */}
+                  <div className="absolute top-3 left-3 z-10">
+                    <button
+                      onClick={() => {
+                        setSelectedItems(prev => 
+                          isSelected 
+                            ? prev.filter(id => id !== item.id)
+                            : [...prev, item.id]
+                        );
+                      }}
+                      className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                        isSelected 
+                          ? 'bg-ethiopian-gold border-ethiopian-gold text-white' 
+                          : 'bg-white/90 border-gray-300 hover:border-ethiopian-gold'
+                      }`}
+                    >
+                      {isSelected && <Check className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  
                   {/* Product Image */}
                   <div className="relative aspect-square bg-gray-100">
-                    {product?.images?.[0] ? (
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                        <span className="text-gray-400">No Image</span>
-                      </div>
-                    )}
+                    {(() => {
+                      const imageUrl = getSkuImageUrl(
+                        item.productSku?.images,
+                        item.productImages, // Now we have product images available
+                        item.imageUrl
+                      );
+                      
+                      return imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={item.productName}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                          <Package className="h-12 w-12 text-gray-400" />
+                        </div>
+                      );
+                    })()}
                     
                     {/* Wishlist Button */}
                     <div className="absolute top-3 right-3">
@@ -171,12 +224,32 @@ function WishlistContent() {
                       />
                     </div>
 
-                    {/* Bestseller Badge */}
-                    {product?.isBestSeller && (
-                      <Badge className="absolute top-3 left-3 bg-yellow-500 text-yellow-900">
-                        Bestseller
-                      </Badge>
-                    )}
+                    {/* Status Badges */}
+                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-1">
+                      {!item.available && (
+                        <Badge variant="destructive" className="text-xs">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          {item.availabilityMessage || 'Unavailable'}
+                        </Badge>
+                      )}
+                      {item.priceChanged && (
+                        <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">
+                          Price changed
+                        </Badge>
+                      )}
+                      {item.priority && item.priority !== 'UNASSIGNED' && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            item.priority === 'HIGH' ? 'border-red-500 text-red-600' :
+                            item.priority === 'MEDIUM' ? 'border-yellow-500 text-yellow-600' :
+                            'border-gray-400 text-gray-600'
+                          }`}
+                        >
+                          {item.priority}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
                   {/* Product Details */}
@@ -191,47 +264,54 @@ function WishlistContent() {
                               : undefined
                           }}
                         >
-                          {product?.name || `Product #${item.productId}`}
+                          {item.productName || `Product #${item.productId}`}
                         </h3>
-                        {product?.vendor && (
+                        {item.skuCode && (
                           <p 
-                            className="text-sm mt-1"
-                            style={{
-                              color: isSeasonalMode && currentTheme.id !== 'default' 
-                                ? currentTheme.colors.text + '80' 
-                                : undefined
-                            }}
+                            className="text-xs mt-1 text-gray-500"
                           >
-                            by {product.vendor.name}
+                            SKU: {item.skuCode}
+                          </p>
+                        )}
+                        {item.productSku?.attributes && item.productSku.attributes.length > 0 && (
+                          <p className="text-xs mt-1 text-gray-500">
+                            {item.productSku.attributes.map(attr => `${attr.name}: ${attr.value}`).join(', ')}
                           </p>
                         )}
                       </div>
                       
-                      {product?.description && (
+                      {item.notes && (
                         <p 
-                          className="text-sm line-clamp-2"
+                          className="text-sm line-clamp-2 italic"
                           style={{
                             color: isSeasonalMode && currentTheme.id !== 'default' 
                               ? currentTheme.colors.text + 'CC' 
                               : undefined
                           }}
                         >
-                          {product.description}
+                          "{item.notes}"
                         </p>
                       )}
                       
                       <div className="flex items-center justify-between">
-                        <span 
-                          className="text-lg font-bold"
-                          style={{
-                            color: isSeasonalMode && currentTheme.id !== 'default' 
-                              ? currentTheme.colors.primary 
-                              : undefined
-                          }}
-                        >
-                          ${(typeof product?.price === 'number' ? product.price : extractPriceAmount(product?.price as any)).toFixed(2)}
-                        </span>
-                        {item.createdAt && (
+                        <div className="flex flex-col">
+                          <span 
+                            className="text-lg font-bold"
+                            style={{
+                              color: isSeasonalMode && currentTheme.id !== 'default' 
+                                ? currentTheme.colors.primary 
+                                : undefined
+                            }}
+                          >
+                            {formatPrice(item.price, item.currency || 'ETB')}
+                          </span>
+                          {item.priceChanged && item.snapshotPrice && (
+                            <span className="text-xs text-gray-500 line-through">
+                              Was: {formatPrice(item.snapshotPrice, item.currency || 'ETB')}
+                            </span>
+                          )}
+                        </div>
+                        {item.addedAt && (
                           <span 
                             className="text-xs"
                             style={{
@@ -240,7 +320,7 @@ function WishlistContent() {
                                 : undefined
                             }}
                           >
-                            Added {new Date(item.createdAt).toLocaleDateString()}
+                            Added {new Date(item.addedAt).toLocaleDateString()}
                           </span>
                         )}
                       </div>
@@ -248,11 +328,18 @@ function WishlistContent() {
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 mt-4">
-                      <CartButton 
-                        productId={item.productId}
-                        price={product?.price}
+                      <Button 
+                        onClick={() => moveToCart({ wishListItemId: item.id })}
+                        disabled={!item.available || isMovingToCart}
                         className="flex-1"
-                      />
+                      >
+                        {isMovingToCart ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                        )}
+                        {item.available ? 'Add to Cart' : 'Unavailable'}
+                      </Button>
                       <Button variant="outline" size="sm" asChild>
                         <Link to={`/product/${item.productId}`}>View</Link>
                       </Button>

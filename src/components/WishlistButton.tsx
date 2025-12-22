@@ -43,7 +43,7 @@ export function WishlistButton({
       if (inWishlist) {
         removeFromWishlist(productId);
       } else {
-        addToWishlist({ productId });
+        addToWishlist(productId);
       }
     } catch (error) {
       console.error('Failed to update wishlist:', error);
