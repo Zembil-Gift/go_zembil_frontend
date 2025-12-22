@@ -1,7 +1,15 @@
 import { ImageDto } from '@/services/imageService';
 
+// Flexible image type that can handle both full ImageDto and simplified cart images
+export interface SimpleImage {
+  id: number;
+  url: string;
+  isPrimary: boolean;
+  sortOrder: number;
+}
+
 export function getProductImageUrl(
-  images?: ImageDto[] | null,
+  images?: ImageDto[] | SimpleImage[] | null,
   placeholder?: string
 ): string {
   if (images && images.length > 0) {
@@ -11,15 +19,26 @@ export function getProductImageUrl(
   return placeholder || '';
 }
 
-export function getAllProductImages(images?: ImageDto[] | null): string[] {
-  if (!images || images.length === 0) return [];
-  return images
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map(img => getFullImageUrl(img.url));
+// Overloaded function to handle both old and new signatures
+export function getAllProductImages(images?: ImageDto[] | SimpleImage[] | null): string[];
+export function getAllProductImages(images?: ImageDto[] | SimpleImage[] | null, cover?: string): string[];
+export function getAllProductImages(images?: ImageDto[] | SimpleImage[] | null, cover?: string): string[] {
+  if (images && images.length > 0) {
+    return images
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(img => getFullImageUrl(img.url));
+  }
+  
+  // Fallback to cover if provided and no images
+  if (cover) {
+    return [getFullImageUrl(cover)];
+  }
+  
+  return [];
 }
 
 export function getEventImageUrl(
-  images?: ImageDto[] | null,
+  images?: ImageDto[] | SimpleImage[] | null,
   placeholder?: string
 ): string {
   return getProductImageUrl(images, placeholder);
@@ -63,7 +82,7 @@ export function getFullImageUrl(url: string): string {
   return `${baseUrl}${fullPath}`;
 }
 
-export function hasValidImage(images?: ImageDto[] | null): boolean {
+export function hasValidImage(images?: ImageDto[] | SimpleImage[] | null): boolean {
   return images != null && images.length > 0;
 }
 
