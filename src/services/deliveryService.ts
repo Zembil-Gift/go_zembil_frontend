@@ -1,0 +1,285 @@
+import { apiService } from "./apiService";
+
+// Types
+export interface DeliveryPersonDto {
+  id: number;
+  userId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  employeeId: string;
+  phoneNumber: string;
+  vehicleType?: string;
+  vehicleNumber?: string;
+  avatarUrl?: string;
+  status: 'AVAILABLE' | 'BUSY' | 'OFFLINE' | 'ON_BREAK';
+  active: boolean;
+  notes?: string;
+  totalDeliveries: number;
+  successfulDeliveries: number;
+  activeAssignments: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDeliveryPersonRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  username: string;
+  password: string;
+  employeeId?: string;
+  phoneNumber: string;
+  vehicleType?: string;
+  vehicleNumber?: string;
+  notes?: string;
+}
+
+export interface UpdateDeliveryPersonRequest {
+  phoneNumber?: string;
+  vehicleType?: string;
+  vehicleNumber?: string;
+  avatarUrl?: string;
+  status?: 'AVAILABLE' | 'BUSY' | 'OFFLINE' | 'ON_BREAK';
+  active?: boolean;
+  notes?: string;
+}
+
+export interface DeliveryAssignmentDto {
+  id: number;
+  orderId: number;
+  orderNumber: string;
+  deliveryPersonId: number;
+  deliveryPersonName: string;
+  status: DeliveryStatus;
+  assignedAt?: string;
+  pickedUpAt?: string;
+  deliveredAt?: string;
+  expectedDeliveryAt?: string;
+  notes?: string;
+  proofImageUrl?: string;
+  proofUploadedAt?: string;
+  recipientName?: string;
+  failureReason?: string;
+  attemptCount: number;
+  customerName?: string;
+  customerPhone?: string;
+  shippingAddress?: string;
+  shippingCity?: string;
+  totalAmountMinor: number;
+  currencyCode: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DeliveryStatus = 
+  | 'ASSIGNED' 
+  | 'ACCEPTED' 
+  | 'PICKED_UP' 
+  | 'IN_TRANSIT' 
+  | 'ARRIVED' 
+  | 'DELIVERED' 
+  | 'FAILED' 
+  | 'RETURNED' 
+  | 'CANCELLED';
+
+export interface AssignDeliveryRequest {
+  orderId: number;
+  deliveryPersonId: number;
+  expectedDeliveryAt?: string;
+  notes?: string;
+}
+
+export interface UpdateDeliveryStatusRequest {
+  status: DeliveryStatus;
+  notes?: string;
+  failureReason?: string;
+  recipientName?: string;
+}
+
+export interface UploadDeliveryProofRequest {
+  proofImageUrl: string;
+  recipientName?: string;
+  recipientSignatureUrl?: string;
+  notes?: string;
+}
+
+export interface DeliveryDashboardDto {
+  deliveryPersonId: number;
+  employeeId: string;
+  name: string;
+  status: 'AVAILABLE' | 'BUSY' | 'OFFLINE' | 'ON_BREAK';
+  activeAssignments: number;
+  pendingPickups: number;
+  inTransit: number;
+  todayDeliveries: number;
+  totalDeliveries: number;
+  successfulDeliveries: number;
+  successRate: number;
+}
+
+export interface OrderReadyForDeliveryDto {
+  id: number;
+  orderNumber: string;
+  status: string;
+  customerName?: string;
+  customerPhone?: string;
+  shippingAddress?: string;
+  shippingCity?: string;
+  totalAmountMinor: number;
+  currencyCode: string;
+  itemCount: number;
+  createdAt: string;
+}
+
+export interface PagedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+}
+
+// Admin Delivery Person Service
+export const adminDeliveryService = {
+  // Delivery Person Management
+  createDeliveryPerson: (data: CreateDeliveryPersonRequest) =>
+    apiService.postRequest<DeliveryPersonDto>('/api/admin/delivery/persons', data),
+
+  getAllDeliveryPersons: (params?: { active?: boolean; search?: string; page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.active !== undefined) queryParams.append('active', String(params.active));
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/admin/delivery/persons${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<DeliveryPersonDto>>(url);
+  },
+
+  getDeliveryPersonById: (id: number) =>
+    apiService.getRequest<DeliveryPersonDto>(`/api/admin/delivery/persons/${id}`),
+
+  updateDeliveryPerson: (id: number, data: UpdateDeliveryPersonRequest) =>
+    apiService.patchRequest<DeliveryPersonDto>(`/api/admin/delivery/persons/${id}`, data),
+
+  deactivateDeliveryPerson: (id: number) =>
+    apiService.postRequest<void>(`/api/admin/delivery/persons/${id}/deactivate`, {}),
+
+  activateDeliveryPerson: (id: number) =>
+    apiService.postRequest<void>(`/api/admin/delivery/persons/${id}/activate`, {}),
+
+  deleteDeliveryPerson: (id: number) =>
+    apiService.deleteRequest<void>(`/api/admin/delivery/persons/${id}`),
+
+  getAvailableDeliveryPersons: (params?: { page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/admin/delivery/persons/available${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<DeliveryPersonDto>>(url);
+  },
+
+  // Delivery Assignment Management
+  assignOrderToDeliveryPerson: (data: AssignDeliveryRequest) =>
+    apiService.postRequest<DeliveryAssignmentDto>('/api/admin/delivery/assignments', data),
+
+  getAllAssignments: (params?: { status?: string; page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/admin/delivery/assignments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<DeliveryAssignmentDto>>(url);
+  },
+
+  getAssignmentsByDeliveryPerson: (deliveryPersonId: number, params?: { page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/admin/delivery/assignments/by-person/${deliveryPersonId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<DeliveryAssignmentDto>>(url);
+  },
+
+  reassignOrder: (assignmentId: number, newDeliveryPersonId: number) =>
+    apiService.postRequest<DeliveryAssignmentDto>(
+      `/api/admin/delivery/assignments/${assignmentId}/reassign?newDeliveryPersonId=${newDeliveryPersonId}`,
+      {}
+    ),
+
+  cancelAssignment: (assignmentId: number, reason: string) =>
+    apiService.postRequest<void>(
+      `/api/admin/delivery/assignments/${assignmentId}/cancel?reason=${encodeURIComponent(reason)}`,
+      {}
+    ),
+
+  getOrdersReadyForDelivery: (params?: { page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/admin/delivery/orders/ready-for-delivery${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<OrderReadyForDeliveryDto>>(url);
+  },
+};
+
+// Delivery Person Service (for delivery person's own operations)
+export const deliveryService = {
+  // Dashboard & Profile
+  getDashboard: () =>
+    apiService.getRequest<DeliveryDashboardDto>('/api/delivery/dashboard'),
+
+  getProfile: () =>
+    apiService.getRequest<DeliveryPersonDto>('/api/delivery/profile'),
+
+  updateStatus: (status: string) =>
+    apiService.patchRequest<DeliveryPersonDto>(`/api/delivery/status?status=${status}`, {}),
+
+  // Assignments
+  getMyAssignments: (params?: { status?: string; page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/delivery/assignments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<DeliveryAssignmentDto>>(url);
+  },
+
+  getActiveAssignments: (params?: { page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/delivery/assignments/active${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<DeliveryAssignmentDto>>(url);
+  },
+
+  getAssignmentById: (assignmentId: number) =>
+    apiService.getRequest<DeliveryAssignmentDto>(`/api/delivery/assignments/${assignmentId}`),
+
+  acceptAssignment: (assignmentId: number) =>
+    apiService.postRequest<DeliveryAssignmentDto>(`/api/delivery/assignments/${assignmentId}/accept`, {}),
+
+  updateDeliveryStatus: (assignmentId: number, data: UpdateDeliveryStatusRequest) =>
+    apiService.postRequest<DeliveryAssignmentDto>(`/api/delivery/assignments/${assignmentId}/status`, data),
+
+  uploadDeliveryProof: (assignmentId: number, data: UploadDeliveryProofRequest) =>
+    apiService.postRequest<DeliveryAssignmentDto>(`/api/delivery/assignments/${assignmentId}/proof`, data),
+
+  completeDelivery: (assignmentId: number, data: UploadDeliveryProofRequest) =>
+    apiService.postRequest<DeliveryAssignmentDto>(`/api/delivery/assignments/${assignmentId}/complete`, data),
+
+  reportDeliveryFailure: (assignmentId: number, reason: string) =>
+    apiService.postRequest<DeliveryAssignmentDto>(
+      `/api/delivery/assignments/${assignmentId}/fail?reason=${encodeURIComponent(reason)}`,
+      {}
+    ),
+
+  // History
+  getDeliveryHistory: (params?: { page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/delivery/history${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<DeliveryAssignmentDto>>(url);
+  },
+};
