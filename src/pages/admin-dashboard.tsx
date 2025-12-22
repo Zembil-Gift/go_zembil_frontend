@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,16 +25,11 @@ import {
   TrendingUp,
   DollarSign,
   AlertCircle,
-  CheckCircle,
-  Clock,
   Plus,
   Edit,
   Eye,
   Shield,
   Settings,
-  BarChart3,
-  PieChart,
-  Activity
 } from "lucide-react";
 
 const categorySchema = z.object({
@@ -45,6 +42,48 @@ const categorySchema = z.object({
 });
 
 type CategoryForm = z.infer<typeof categorySchema>;
+
+// Type definitions for API responses
+interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  city?: string;
+  country?: string;
+  createdAt: string;
+}
+
+interface Vendor {
+  id: number;
+  businessName: string;
+  email: string;
+  phone?: string;
+  city?: string;
+  status: string;
+  rating?: string;
+  totalOrders?: number;
+}
+
+interface Order {
+  id: string;
+  recipientName: string;
+  recipientCity?: string;
+  total: string;
+  status: string;
+  paymentStatus?: string;
+  createdAt: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  type: string;
+  isActive: boolean;
+  sortOrder: number;
+}
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -71,35 +110,35 @@ export default function AdminDashboard() {
   }, [isAuthenticated, isLoading, user, toast]);
 
   // Fetch platform statistics
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  useQuery({
     queryKey: ["/api/admin/stats"],
     enabled: isAuthenticated && user?.role === "admin",
     retry: false,
   });
 
   // Fetch all users
-  const { data: users = [], isLoading: usersLoading } = useQuery({
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     enabled: isAuthenticated && user?.role === "admin",
     retry: false,
   });
 
   // Fetch all vendors
-  const { data: vendors = [], isLoading: vendorsLoading } = useQuery({
+  const { data: vendors = [], isLoading: vendorsLoading } = useQuery<Vendor[]>({
     queryKey: ["/api/admin/vendors"],
     enabled: isAuthenticated && user?.role === "admin",
     retry: false,
   });
 
   // Fetch all orders
-  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+  const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/admin/orders"],
     enabled: isAuthenticated && user?.role === "admin",
     retry: false,
   });
 
   // Fetch categories
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
     enabled: isAuthenticated && user?.role === "admin",
   });
@@ -118,7 +157,7 @@ export default function AdminDashboard() {
 
   const createCategoryMutation = useMutation({
     mutationFn: async (categoryData: CategoryForm) => {
-      return await apiRequest("POST", "/api/admin/categories", categoryData);
+      return await apiRequest("POST", "/api/categories", categoryData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
@@ -181,16 +220,16 @@ export default function AdminDashboard() {
   });
 
   const calculatePlatformMetrics = () => {
-    // Mock calculation since we don't have real aggregated stats endpoint
+    // Calculate metrics from fetched data
     const totalUsers = users.length;
     const totalVendors = vendors.length;
-    const approvedVendors = vendors.filter((v: any) => v.status === "approved").length;
-    const pendingVendors = vendors.filter((v: any) => v.status === "pending").length;
+    const approvedVendors = vendors.filter((v: Vendor) => v.status === "approved").length;
+    const pendingVendors = vendors.filter((v: Vendor) => v.status === "pending").length;
     const totalOrders = orders.length;
-    const completedOrders = orders.filter((o: any) => o.status === "delivered").length;
+    const completedOrders = orders.filter((o: Order) => o.status === "delivered").length;
     const totalRevenue = orders
-      .filter((o: any) => o.status === "delivered")
-      .reduce((sum: number, order: any) => sum + parseFloat(order.total || "0"), 0);
+      .filter((o: Order) => o.status === "delivered")
+      .reduce((sum: number, order: Order) => sum + parseFloat(order.total || "0"), 0);
 
     return {
       totalUsers,
@@ -345,16 +384,16 @@ export default function AdminDashboard() {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-sm">New users this week</span>
-                      <Badge className="bg-green-100 text-green-800">+12</Badge>
+                      <span className="text-sm">Total users</span>
+                      <Badge className="bg-green-100 text-green-800">{metrics.totalUsers}</Badge>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <span className="text-sm">Vendor applications</span>
                       <Badge className="bg-amber-100 text-amber-800">{metrics.pendingVendors}</Badge>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-sm">Orders today</span>
-                      <Badge className="bg-blue-100 text-blue-800">8</Badge>
+                      <span className="text-sm">Total orders</span>
+                      <Badge className="bg-blue-100 text-blue-800">{metrics.totalOrders}</Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -374,12 +413,12 @@ export default function AdminDashboard() {
                       <Badge className="bg-amber-100 text-amber-800">{metrics.pendingVendors}</Badge>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                      <span className="text-sm">Reported issues</span>
-                      <Badge className="bg-blue-100 text-blue-800">2</Badge>
+                      <span className="text-sm">Active vendors</span>
+                      <Badge className="bg-blue-100 text-blue-800">{metrics.approvedVendors}</Badge>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                      <span className="text-sm">System updates</span>
-                      <Badge className="bg-green-100 text-green-800">Available</Badge>
+                      <span className="text-sm">Completed orders</span>
+                      <Badge className="bg-green-100 text-green-800">{metrics.completedOrders}</Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -419,12 +458,12 @@ export default function AdminDashboard() {
                     </TableHeader>
                     <TableBody>
                       {users
-                        .filter((user: any) => 
+                        .filter((user: User) => 
                           user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           user.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           user.email?.toLowerCase().includes(searchTerm.toLowerCase())
                         )
-                        .map((user: any) => (
+                        .map((user: User) => (
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">
                             {user.firstName} {user.lastName}
@@ -488,7 +527,7 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {vendors.map((vendor: any) => (
+                      {vendors.map((vendor: Vendor) => (
                         <TableRow key={vendor.id}>
                           <TableCell className="font-medium">
                             {vendor.businessName}
@@ -577,7 +616,7 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {orders.slice(0, 20).map((order: any) => (
+                      {orders.slice(0, 20).map((order: Order) => (
                         <TableRow key={order.id}>
                           <TableCell className="font-medium">
                             #{order.id.slice(0, 8)}
@@ -597,8 +636,11 @@ export default function AdminDashboard() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge className={getStatusColor(order.paymentStatus)}>
-                              {order.paymentStatus?.charAt(0).toUpperCase() + order.paymentStatus?.slice(1)}
+                            <Badge className={getStatusColor(order.paymentStatus || "unknown")}>
+                              {order.paymentStatus ? 
+                                order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1) : 
+                                "Unknown"
+                              }
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -783,7 +825,7 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {categories.map((category: any) => (
+                      {categories.map((category: Category) => (
                         <TableRow key={category.id}>
                           <TableCell className="font-medium">
                             {category.name}
