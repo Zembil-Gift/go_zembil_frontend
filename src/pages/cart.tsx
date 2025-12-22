@@ -2,22 +2,22 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { formatDualCurrency } from "@/lib/currency";
+import { formatPrice } from "@/lib/currency";
+import { getProductImageUrl } from "@/utils/imageUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
 import { ShoppingBag, Plus, Minus, X, Truck, Heart, ArrowRight, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
 import { cartService, CartItem } from "@/services/cartService";
+import { wishlistService } from "@/services/wishlistService";
 
 export default function Cart() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { cartItems, isLoading: cartLoading, getTotalItems, error: cartError, refetch } = useCart();
+  const { cartItems, cartCurrency, isLoading: cartLoading, getTotalItems, error: cartError, refetch } = useCart();
 
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ id, quantity }: { id: number; quantity: number }) => {
@@ -60,21 +60,21 @@ export default function Cart() {
   });
 
   const moveToWishlistMutation = useMutation({
-    mutationFn: async (productId: number) => {
-      // TODO: Implement wishlist service
-      return Promise.resolve({ success: true });
+    mutationFn: async (cartItemId: number) => {
+      return await wishlistService.saveForLater({ cartItemId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wish-list"] });
+      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
       toast({
-        title: "Moved to wishlist",
+        title: "Saved for later",
         description: "Item moved to your wishlist",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to move item to wishlist",
+        description: "Failed to save item for later",
         variant: "destructive",
       });
     },
@@ -88,14 +88,9 @@ export default function Cart() {
     }, 0);
   };
 
-  const calculateShipping = () => {
-    // Free shipping over 1000 ETB
-    const subtotal = calculateSubtotal();
-    return subtotal >= 1000 ? 0 : 50;
-  };
-
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateShipping();
+    // Total is just subtotal on cart page - shipping is calculated at checkout
+    return calculateSubtotal();
   };
 
   const handleQuantityChange = (item: CartItem, newQuantity: number) => {
@@ -108,8 +103,9 @@ export default function Cart() {
 
   const handleMoveToWishlist = async (item: CartItem) => {
     try {
-      await moveToWishlistMutation.mutateAsync(item.productId);
-      removeItemMutation.mutate(item.id);
+      // Use the backend's save-for-later endpoint which handles both
+      // adding to wishlist and removing from cart atomically
+      await moveToWishlistMutation.mutateAsync(item.id);
     } catch (error) {
       // Error already handled by mutation
     }
@@ -259,17 +255,22 @@ export default function Cart() {
                     <div className="flex items-center space-x-4">
                       {/* Product Image */}
                       <div className="relative w-24 h-24 flex-shrink-0">
-                        <img
-                          src={
-                            item.productImage ||
-                            item.product?.cover ||
-                            item.product?.imageUrl ||
-                            item.product?.images?.[0] ||
-                            "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200"
-                          }
-                          alt={item.productName || item.product?.name || "Product"}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
+                        {getProductImageUrl(item.product?.images, item.product?.cover || item.productImage) ? (
+                          <img
+                            src={getProductImageUrl(
+                              item.product?.images,
+                              item.product?.cover || item.productImage
+                            )}
+                            alt={item.productName || item.product?.name || "Product"}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                            <div className="text-center text-gray-400">
+                              <p className="text-xs">No image</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Product Details */}
@@ -281,11 +282,11 @@ export default function Cart() {
                         </Link>
                         {(() => {
                           // Use unitPrice from API instead of product.price
-                          const currency = formatDualCurrency(item.unitPrice || 0);
                           return (
                             <div className="mt-1">
-                              <p className="text-ethiopian-gold font-bold text-lg">{currency.etb}</p>
-                              <p className="text-gray-500 font-medium text-sm">{currency.usd}</p>
+                              <p className="text-ethiopian-gold font-bold text-lg">
+                                {formatPrice(item.unitPrice || 0, cartCurrency)}
+                              </p>
                             </div>
                           );
                         })()}
@@ -353,11 +354,11 @@ export default function Cart() {
                       <div className="text-right">
                         {(() => {
                           const itemTotal = Number(item.totalPrice) || (Number(item.unitPrice || 0) * item.quantity);
-                          const currency = formatDualCurrency(itemTotal);
                           return (
                             <div>
-                              <p className="font-bold text-lg text-charcoal">{currency.etb}</p>
-                              <p className="text-gray-500 font-medium text-sm">{currency.usd}</p>
+                              <p className="font-bold text-lg text-charcoal">
+                                {formatPrice(itemTotal, cartCurrency)}
+                              </p>
                             </div>
                           );
                         })()}
@@ -380,59 +381,15 @@ export default function Cart() {
                     {/* Subtotal */}
                     <div className="flex justify-between">
                       <span className="text-gray-600">Subtotal ({getTotalItems()} items)</span>
-                      {(() => {
-                        const currency = formatDualCurrency(calculateSubtotal());
-                        return (
-                          <div className="text-right">
-                            <span className="font-medium">{currency.etb}</span>
-                            <div className="text-xs text-gray-500">{currency.usd}</div>
-                          </div>
-                        );
-                      })()}
+                      <span className="font-medium">{formatPrice(calculateSubtotal(), cartCurrency)}</span>
                     </div>
-
-                    {/* Shipping */}
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Shipping</span>
-                      {calculateShipping() === 0 ? (
-                        <span className="font-medium text-green-600">Free</span>
-                      ) : (
-                        (() => {
-                          const currency = formatDualCurrency(calculateShipping());
-                          return (
-                            <div className="text-right">
-                              <span className="font-medium">{currency.etb}</span>
-                              <div className="text-xs text-gray-500">{currency.usd}</div>
-                            </div>
-                          );
-                        })()
-                      )}
-                    </div>
-
-                    {/* Free Shipping Message */}
-                    {calculateSubtotal() < 1000 && (
-                      <div className="text-sm text-gray-600 bg-amber/10 p-3 rounded-lg">
-                        {(() => {
-                          const currency = formatDualCurrency(1000 - calculateSubtotal());
-                          return `Add ${currency.etb} (${currency.usd}) more for free shipping!`;
-                        })()}
-                      </div>
-                    )}
 
                     <Separator />
 
                     {/* Total */}
                     <div className="flex justify-between text-lg font-bold">
-                      <span>Total</span>
-                      {(() => {
-                        const currency = formatDualCurrency(calculateTotal());
-                        return (
-                          <div className="text-right">
-                            <div className="text-ethiopian-gold">{currency.etb}</div>
-                            <div className="text-sm font-medium text-gray-500">{currency.usd}</div>
-                          </div>
-                        );
-                      })()}
+                      <span>Subtotal</span>
+                      <span className="text-ethiopian-gold">{formatPrice(calculateTotal(), cartCurrency)}</span>
                     </div>
 
                     {/* Checkout Button */}
@@ -447,14 +404,6 @@ export default function Cart() {
                     <Button asChild variant="outline" className="w-full border-gray-300">
                       <Link to="/gifts">Continue Shopping</Link>
                     </Button>
-                  </div>
-
-                  {/* Security Info */}
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <div className="text-xs text-gray-500 text-center">
-                      <p>🔒 Secure checkout guaranteed</p>
-                      <p className="mt-1">🚚 Free delivery on orders over 1,000 ETB</p>
-                    </div>
                   </div>
                 </CardContent>
               </Card>

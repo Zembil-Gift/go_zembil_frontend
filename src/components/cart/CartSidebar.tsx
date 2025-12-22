@@ -8,6 +8,7 @@ import { ShoppingCart, Plus, Minus, Trash2, CreditCard, X } from "lucide-react";
 import { useNavigate } from "wouter";
 import { cn } from "@/lib/utils";
 import { extractPriceAmount } from "@/services/productService";
+import { formatPrice } from "@/lib/currency";
 
 interface CartItem {
   id: number;
@@ -41,7 +42,6 @@ export function CartSidebar() {
 
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
-  const totalETB = totalPrice * 120.5; // Convert to ETB
 
   const handleUpdateQuantity = (cartItem: CartItem, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -161,10 +161,7 @@ export function CartSidebar() {
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <p className="font-semibold text-primary">
-                          ${(typeof item.product?.price === 'number' ? item.product.price : extractPriceAmount(item.product?.price as any)).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          ≈ {((typeof item.product?.price === 'number' ? item.product.price : extractPriceAmount(item.product?.price as any)) * 120.5).toFixed(0)} ETB
+                          {formatPrice(typeof item.product?.price === 'number' ? item.product.price : extractPriceAmount(item.product?.price as any), (item.product as any)?.currency || 'USD')}
                         </p>
                       </div>
 
@@ -199,7 +196,7 @@ export function CartSidebar() {
                     {/* Subtotal */}
                     <div className="text-right">
                       <p className="text-sm font-medium">
-                        ${((typeof item.product?.price === 'number' ? item.product.price : extractPriceAmount(item.product?.price as any)) * item.quantity).toFixed(2)}
+                        {formatPrice((typeof item.product?.price === 'number' ? item.product.price : extractPriceAmount(item.product?.price as any)) * item.quantity, (item.product as any)?.currency || 'USD')}
                       </p>
                     </div>
                   </div>
@@ -225,11 +222,7 @@ export function CartSidebar() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal ({totalItems} items)</span>
-                  <span>${totalPrice.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>In Ethiopian Birr</span>
-                  <span>≈ {totalETB.toFixed(0)} ETB</span>
+                  <span>{formatPrice(totalPrice, 'USD')}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Shipping</span>
@@ -238,7 +231,7 @@ export function CartSidebar() {
                 <Separator />
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
-                  <span className="text-primary">${totalPrice.toFixed(2)}</span>
+                  <span className="text-primary">{formatPrice(totalPrice, 'USD')}</span>
                 </div>
               </div>
 
