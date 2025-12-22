@@ -22,9 +22,10 @@ class ApiService {
   /**
    * Generic POST request
    */
-  async postRequest<T, D = any>(url: string, data?: D): Promise<T> {
+  async postRequest<T, D = any>(url: string, data?: D, headers?: Record<string, string>): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await api.post(url, data);
+      const config = headers ? { headers } : undefined;
+      const response: AxiosResponse<T> = await api.post(url, data, config);
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -54,9 +55,10 @@ class ApiService {
   /**
    * Generic DELETE request
    */
-  async deleteRequest<T>(url: string): Promise<T> {
+  async deleteRequest<T, D = any>(url: string, data?: D): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await api.delete(url);
+      const config = data ? { data } : undefined;
+      const response: AxiosResponse<T> = await api.delete(url, config);
       return response.data;
     } catch (error: any) {
       throw new Error(
