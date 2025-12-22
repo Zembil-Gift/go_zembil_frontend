@@ -13,16 +13,15 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Filter, Grid, List, SortAsc, Heart, ShoppingCart, Star, ChevronRight, ArrowLeft } from "lucide-react";
 import GiftItemCard from "@/components/gift-card";
-import ProductPagination from "@/components/ProductPagination";
 import ZembilSignatureSets from "@/components/ZembilSignatureSets";
 import { productService, Product, PagedProductResponse } from "@/services/productService";
+import { getAllProductImages } from "@/utils/imageUtils";
 import { 
   CATEGORIES, 
   getCategoryBySlug, 
   getSubcategoriesByCategory, 
   parseUrlParams, 
-  buildUrlParams,
-  CategoryFilters 
+  CategoryFilters
 } from "@/shared/categories";
 
 export default function Shop() {
@@ -161,7 +160,7 @@ function ShopContent() {
   
   const displayProducts = rawDisplayProducts.map((product: Product) => ({
     ...product,
-    images: product.cover ? [product.cover] : [],
+    images: getAllProductImages(product.images, product.cover),
     price: product.price || (product.productSku?.[0]?.price) || 0,
   }));
 
