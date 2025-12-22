@@ -14,7 +14,8 @@ export interface RegisterRequest {
   password: string;
   username: string;
   role: 'CUSTOMER' | 'VENDOR' | 'ADMIN';
-  birthDate?: string; // ISO date string format
+  birthDate?: string;
+  preferredCurrencyCode?: string;
 }
 
 export interface AuthResponse {
@@ -53,7 +54,14 @@ class AuthService {
     // Store token and user data - using 'token' key to match API interceptor
     if (response.accessToken) {
       localStorage.setItem('token', response.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      // Normalize user object (backend might use 'userId' instead of 'id')
+      const normalizedUser = {
+        ...response.user,
+        id: response.user.id || (response.user as any).userId,
+      };
+      console.log('Login response user:', response.user);
+      console.log('Normalized user:', normalizedUser);
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
     }
     
     return response;
@@ -127,8 +135,8 @@ class AuthService {
   async refreshToken(): Promise<AuthResponse> {
     const response = await apiService.postRequest<AuthResponse>('/auth/refresh');
     
-    if (response.token) {
-      localStorage.setItem('authToken', response.token);
+    if (response.accessToken) {
+      localStorage.setItem('token', response.accessToken);
       localStorage.setItem('user', JSON.stringify(response.user));
     }
     
@@ -147,9 +155,16 @@ class AuthService {
   async fetchCurrentUser(): Promise<any> {
     try {
       const response = await apiService.getRequest<any>('/api/users/me');
+      console.log('fetchCurrentUser raw response:', response);
+      // Normalize user object (backend might use 'userId' instead of 'id')
+      const normalizedUser = {
+        ...response,
+        id: response.id || response.userId,
+      };
+      console.log('fetchCurrentUser normalized:', normalizedUser);
       // Update local storage with fresh data
-      localStorage.setItem('user', JSON.stringify(response));
-      return response;
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
+      return normalizedUser;
     } catch (error: any) {
       console.error('Failed to fetch current user:', error);
       throw error;
