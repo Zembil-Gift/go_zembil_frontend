@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
   PaymentElement,
@@ -11,20 +11,43 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle, AlertCircle, CreditCard, Loader2, ArrowLeft } from 'lucide-react';
+import { AlertCircle, CreditCard, Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { paymentService } from '@/services/paymentService';
 import { apiService } from '@/services/apiService';
-import { orderService } from '@/services/orderService';
+import { eventOrderService } from '@/services/eventOrderService';
 
-// Initialize Stripe - Make sure to set VITE_STRIPE_PUBLIC_KEY in your .env
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+
+const getCountryCode = (country?: string): string => {
+  if (!country) return '';
+  const countryMap: Record<string, string> = {
+    'Ethiopia': 'ET',
+    'USA': 'US',
+    'United States': 'US',
+    'United States of America': 'US',
+  };
+  return countryMap[country] || country;
+};
 
 interface PaymentFormProps {
   clientSecret: string;
   orderId: number;
   amount: number;
   currency: string;
+  billingDetails?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: {
+      line1?: string;
+      line2?: string;
+      city?: string;
+      state?: string;
+      postal_code?: string;
+      country?: string;
+    };
+  };
   onSuccess: (paymentIntentId: string) => void;
   onError: (error: string) => void;
 }
@@ -32,14 +55,13 @@ interface PaymentFormProps {
 /**
  * Payment Form Component - Handles the actual payment submission
  */
-function PaymentForm({ clientSecret, orderId, amount, currency, onSuccess, onError }: PaymentFormProps) {
+function PaymentForm({ orderId, amount, currency, billingDetails, onSuccess, onError }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const { toast } = useToast();
-  const navigate = useNavigate();
-
+  useNavigate();
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -83,13 +105,13 @@ function PaymentForm({ clientSecret, orderId, amount, currency, onSuccess, onErr
           
           toast({
             title: "Payment Successful!",
-            description: "Your payment has been processed. Redirecting...",
+            description: "Your payment has been processed. Opening confirmation...",
           });
 
           onSuccess(paymentIntent.id);
 
           setTimeout(() => {
-            navigate(`/payment-success?orderId=${orderId}&payment_intent=${paymentIntent.id}`);
+            window.open(`/payment-success?orderId=${orderId}&payment_intent=${paymentIntent.id}`);
           }, 1500);
         } else if (paymentIntent.status === 'processing') {
           toast({
@@ -98,7 +120,7 @@ function PaymentForm({ clientSecret, orderId, amount, currency, onSuccess, onErr
           });
           
           setTimeout(() => {
-            navigate(`/payment-success?orderId=${orderId}&payment_intent=${paymentIntent.id}`);
+            window.open(`/payment-success?orderId=${orderId}&payment_intent=${paymentIntent.id}`);
           }, 2000);
         } else {
           setErrorMessage(`Payment status: ${paymentIntent.status}`);
@@ -126,9 +148,16 @@ function PaymentForm({ clientSecret, orderId, amount, currency, onSuccess, onErr
         <PaymentElement 
           options={{
             layout: 'tabs',
-            defaultValues: {
+            fields: {
               billingDetails: {
+                name: 'auto',
+                email: 'auto',
+                phone: 'auto',
+                address: 'auto',
               }
+            },
+            defaultValues: {
+              billingDetails: billingDetails || {}
             }
           }}
         />
@@ -144,16 +173,14 @@ function PaymentForm({ clientSecret, orderId, amount, currency, onSuccess, onErr
 
       {/* Order Summary */}
       <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Order ID:</span>
-          <span className="font-medium">#{orderId}</span>
-        </div>
         <Separator />
         <div className="flex justify-between">
           <span className="font-semibold">Total Amount:</span>
           <span className="font-bold text-lg">
-            {currency === 'USD' ? '$' : 'ETB '}
-            {amount && !isNaN(amount) ? (amount / 100).toFixed(2) : '0.00'}
+            {new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: currency || 'USD',
+            }).format((amount || 0) / 100)}
           </span>
         </div>
       </div>
@@ -172,8 +199,10 @@ function PaymentForm({ clientSecret, orderId, amount, currency, onSuccess, onErr
         ) : (
           <>
             <CreditCard className="mr-2 h-5 w-5" />
-            Pay {currency === 'USD' ? '$' : 'ETB '}
-            {amount && !isNaN(amount) ? (amount / 100).toFixed(2) : '0.00'}
+            Pay {new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: currency || 'USD',
+            }).format((amount || 0) / 100)}
           </>
         )}
       </Button>
@@ -186,10 +215,12 @@ function PaymentForm({ clientSecret, orderId, amount, currency, onSuccess, onErr
  */
 export default function StripePaymentPage() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const orderId = searchParams.get('orderId');
+  const orderType = searchParams.get('orderType'); // 'event' or null (default to product)
   
   const [isInitializing, setIsInitializing] = useState(true);
   const [clientSecret, setClientSecret] = useState<string>('');
@@ -197,36 +228,73 @@ export default function StripePaymentPage() {
     amount: number;
     currency: string;
     orderId: number;
+    billingDetails?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      address?: {
+        line1?: string;
+        line2?: string;
+        city?: string;
+        state?: string;
+        postal_code?: string;
+        country?: string;
+      };
+    };
   } | null>(null);
   const [error, setError] = useState<string>('');
 
   // Initialize payment when component mounts
   useEffect(() => {
+    // Check if we have client secret from navigation state (for event orders)
+    const stateData = location.state as any;
+    if (stateData?.clientSecret) {
+      setClientSecret(stateData.clientSecret);
+      setPaymentData({
+        amount: stateData.amount,
+        currency: stateData.currency,
+        orderId: stateData.orderId,
+      });
+      setIsInitializing(false);
+      return;
+    }
+
+    // Otherwise, initialize payment
     if (!orderId) {
       setError('No order ID provided');
       setIsInitializing(false);
       return;
     }
 
-    initializePayment(parseInt(orderId));
-  }, [orderId]);
+    initializePayment(parseInt(orderId), orderType);
+  }, [orderId, orderType, location.state]);
 
-  const initializePayment = async (orderIdNum: number) => {
+  const initializePayment = async (orderIdNum: number, type?: string | null) => {
     try {
       setIsInitializing(true);
       setError('');
 
-      console.log('🔄 Initializing Stripe payment for order:', orderIdNum);
+      console.log('🔄 Initializing Stripe payment for order:', orderIdNum, 'type:', type);
 
-      // First, fetch order details to get the correct amount
-      const orderDetails = await apiService.getRequest<any>(`/api/orders/${orderIdNum}`);
+      let orderDetails: any;
+      let response: any;
 
-      // Extract amount from order totals
-      const orderAmount = orderDetails?.totals?.totalMinor || 0;
+      // Use appropriate service based on order type
+      if (type === 'event') {
+        // Event order - fetch event order details and initialize payment
+        orderDetails = await eventOrderService.getOrder(orderIdNum);
+        response = await eventOrderService.initializePayment(orderIdNum, 'STRIPE');
+      } else {
+        // Product order - fetch order details and initialize payment
+        orderDetails = await apiService.getRequest<any>(`/api/orders/${orderIdNum}`);
+        response = await paymentService.initializePayment(orderIdNum, 'STRIPE');
+      }
+
+      // Extract amount from order details
+      const orderAmount = type === 'event' 
+        ? orderDetails?.totalAmountMinor || 0
+        : orderDetails?.totals?.totalMinor || 0;
       const orderCurrency = orderDetails?.currency || 'USD';
-
-      // Call your Spring Boot backend to initialize payment
-      const response = await paymentService.initializePayment(orderIdNum, 'STRIPE');
 
 
       if (!response.clientSecret) {
@@ -239,11 +307,28 @@ export default function StripePaymentPage() {
 
       console.log('Parsed payment data:', { amount, currency, orderId: orderIdNum });
 
+      // Extract billing details - prefer billingAddress if available, fall back to shipping
+      const billingAddressData = orderDetails?.billingAddress || orderDetails?.shippingAddress;
+      const billingDetails = billingAddressData ? {
+        name: billingAddressData.fullName || billingAddressData.contactName || '',
+        email: orderDetails?.contactEmail || billingAddressData.email || '',
+        phone: orderDetails?.contactPhone || billingAddressData.phone || '',
+        address: {
+          line1: billingAddressData.addressLine1 || billingAddressData.street || '',
+          line2: billingAddressData.addressLine2 || '',
+          city: billingAddressData.city || '',
+          state: billingAddressData.state || '',
+          postal_code: billingAddressData.postalCode || '',
+          country: getCountryCode(billingAddressData.country) || '',
+        }
+      } : undefined;
+
       setClientSecret(response.clientSecret);
       setPaymentData({
         amount: amount,
         currency: currency,
-        orderId: orderIdNum
+        orderId: orderIdNum,
+        billingDetails,
       });
 
       toast({
@@ -366,51 +451,13 @@ export default function StripePaymentPage() {
               orderId={paymentData.orderId}
               amount={paymentData.amount}
               currency={paymentData.currency}
+              billingDetails={paymentData.billingDetails}
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
             />
           </Elements>
         </CardContent>
       </Card>
-
-      {/* Information Cards */}
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
-              <h3 className="font-semibold mb-1">Secure Payment</h3>
-              <p className="text-xs text-gray-600">
-                Your card details are encrypted and secure
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <CreditCard className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-              <h3 className="font-semibold mb-1">All Cards Accepted</h3>
-              <p className="text-xs text-gray-600">
-                Visa, Mastercard, Amex, and more
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-              <h3 className="font-semibold mb-1">Instant Processing</h3>
-              <p className="text-xs text-gray-600">
-                Your order will be confirmed immediately
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
