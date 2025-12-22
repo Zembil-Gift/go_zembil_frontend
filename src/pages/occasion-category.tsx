@@ -1,14 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "react-router-dom";
-import { ChevronRight, Filter, Grid3X3, List, Heart, ShoppingCart, Star } from "lucide-react";
+import { ChevronRight, Filter, Grid3X3, List, Heart } from "lucide-react";
 import GiftItemCard from "@/components/gift-card";
 import ProtectedRoute from "@/components/protected-route";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatDualCurrency } from "@/lib/currency";
 
 interface Product {
   id: number;

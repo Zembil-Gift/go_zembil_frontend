@@ -4,6 +4,7 @@ import {useLocation} from "react-router-dom";
 import LiveChatButton from "@/components/live-chat-button";
 import {extractPriceAmount, Product, productService} from "@/services/productService";
 import {parseUrlParams} from "@/shared/categories";
+import {getProductImageUrl, getAllProductImages} from "@/utils/imageUtils";
 
 // Landing page components
 import HeroSection from "@/components/landing/HeroSection";
@@ -55,8 +56,8 @@ export default function Landing() {
       price: priceAmount,
       originalPrice: undefined,
       currency: currencyCode,
-      image: product.cover || '/placeholder-product.jpg',
-      images: product.cover ? [product.cover] : [],
+      image: getProductImageUrl(product.images, '/placeholder-product.jpg'),
+      images: getAllProductImages(product.images, product.cover),
       category: product.occasion || 'Gift',
       categorySlug: product.categorySlug || 'gifts',
       isTrending: product.isTrending || false,

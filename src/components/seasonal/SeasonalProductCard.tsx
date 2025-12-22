@@ -7,6 +7,7 @@ import { CartButton } from '@/components/CartButton';
 import { useSeasonalTheme } from './SeasonalThemeProvider';
 import { SeasonalProductBadge } from './SeasonalDecorations';
 import { extractPriceAmount } from '@/services/productService';
+import { formatPriceFromDto, formatPrice, PriceData } from '@/lib/currency';
 
 interface Product {
   id: number;
@@ -169,7 +170,9 @@ export function SeasonalProductCard({
                     : undefined
                 }}
               >
-                ${(typeof product.price === 'number' ? product.price : extractPriceAmount(product.price as any)).toFixed(2)}
+                {typeof product.price === 'object' && product.price 
+                  ? formatPriceFromDto(product.price as unknown as PriceData)
+                  : formatPrice(typeof product.price === 'number' ? product.price : extractPriceAmount(product.price as any), (product as any).currency || 'USD')}
               </span>
               {showWishlistDate && wishlistItem?.createdAt && (
                 <span 

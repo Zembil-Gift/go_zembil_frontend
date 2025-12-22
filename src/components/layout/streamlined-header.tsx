@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, Heart, ShoppingCart, User, Globe, LogOut, Menu, X } from "lucide-react";
+import { Search, Heart, ShoppingCart, User, Globe, LogOut, Menu, X, Package, Ticket, Shield, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,10 +17,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { useWishlist } from "@/hooks/useWishlist";
 import { useQuery } from "@tanstack/react-query";
 import CategoryDropdown from "@/components/category-dropdown";
 import { cartService, CartItem } from "@/services/cartService";
-import { wishlistService, WishlistItem } from "@/services/wishlistService";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
 
@@ -41,22 +41,18 @@ export default function StreamlinedHeader() {
   }, [pathname]);
 
   // Get cart and wishlist counts using real API
-  const { data: cartItems = [] } = useQuery<CartItem[]>({
+  const { data: cartData } = useQuery({
     queryKey: ['cart', 'items'],
     queryFn: () => cartService.getCart(),
     enabled: !!isAuthenticated,
   });
   
-  // Wishlist API disabled for now - not complete on backend
-  const wishlistItems: WishlistItem[] = [];
-  // const { data: wishlistItems = [] } = useQuery<WishlistItem[]>({
-  //   queryKey: ['wishlist', 'items'],
-  //   queryFn: () => wishlistService.getWishlist(),
-  //   enabled: !!isAuthenticated,
-  // });
+  // Use the wishlist hook for count
+  const { getWishlistCount } = useWishlist();
 
-  const cartCount = Array.isArray(cartItems) ? cartItems.length : 0;
-  const wishlistCount = Array.isArray(wishlistItems) ? wishlistItems.length : 0;
+  const cartItems = cartData?.items || [];
+  const cartCount = Array.isArray(cartItems) ? cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
+  const wishlistCount = getWishlistCount();
 
   const handleSearchClick = () => {
     window.location.href = "/search";
@@ -242,9 +238,47 @@ export default function StreamlinedHeader() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52 bg-white">
-                    <DropdownMenuItem>
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
+                    {/* Admin Link - Only shown for admin users */}
+                    {user?.role?.toUpperCase() === 'ADMIN' && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="flex items-center text-eagle-green font-medium">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    {/* Vendor Link - Only shown for vendor users */}
+                    {user?.role?.toUpperCase() === 'VENDOR' && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to="/vendor" className="flex items-center text-emerald-600 font-medium">
+                            <Store className="mr-2 h-4 w-4" />
+                            <span>Vendor Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>My Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/my-orders" className="flex items-center">
+                        <Package className="mr-2 h-4 w-4" />
+                        <span>My Orders</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/my-tickets" className="flex items-center">
+                        <Ticket className="mr-2 h-4 w-4" />
+                        <span>My Tickets</span>
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
@@ -457,10 +491,31 @@ export default function StreamlinedHeader() {
                 {/* User Actions */}
                 {isAuthenticated ? (
                   <div className="space-y-2">
+                    {/* Admin Dashboard Link - Only for admin users */}
+                    {user?.role?.toUpperCase() === 'ADMIN' && (
+                      <Button variant="outline" asChild className="w-full justify-start bg-eagle-green/10 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white">
+                        <Link to="/admin">
+                          <Shield className="mr-2 h-4 w-4" />
+                          Admin Dashboard
+                        </Link>
+                      </Button>
+                    )}
                     <Button variant="outline" asChild className="w-full justify-start">
                       <Link to="/profile">
                         <User className="mr-2 h-4 w-4" />
-                        Profile
+                        My Profile
+                      </Link>
+                    </Button>
+                    <Button variant="outline" asChild className="w-full justify-start">
+                      <Link to="/my-orders">
+                        <Package className="mr-2 h-4 w-4" />
+                        My Orders
+                      </Link>
+                    </Button>
+                    <Button variant="outline" asChild className="w-full justify-start">
+                      <Link to="/my-tickets">
+                        <Ticket className="mr-2 h-4 w-4" />
+                        My Tickets
                       </Link>
                     </Button>
                     <Button variant="outline" asChild className="w-full justify-start">
