@@ -1,5 +1,3 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { Search, Truck, Heart } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -35,7 +33,7 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
               </h1>
             </FadeIn>
             <FadeIn delay={0.4} duration={0.8}>
-              <p className="font-gotham-light text-xl sm:text-2xl mb-8 leading-relaxed opacity-90">
+              <p className="font-light text-xl sm:text-2xl mb-8 leading-relaxed opacity-90">
                 {t('homepage.hero.description')}
               </p>
             </FadeIn>
