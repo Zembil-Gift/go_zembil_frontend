@@ -117,13 +117,12 @@ export interface CustomOrderResponse {
   message: string;
 }
 
-// Order service
 class OrderService {
-  /**
-   * Place a new order
-   */
-  async placeOrder(orderData: CreateOrderRequest): Promise<Order> {
-    return await apiService.postRequest<Order>('/api/orders', orderData);
+
+  async placeOrder(orderData: CreateOrderRequest, idempotencyKey: string): Promise<Order> {
+    return await apiService.postRequest<Order>('/api/orders', orderData, {
+      'Idempotency-Key': idempotencyKey
+    });
   }
 
   /**
