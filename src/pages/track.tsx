@@ -5,7 +5,7 @@ import { Search, Package, Truck, CheckCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProtectedRoute from "@/components/protected-route";
-import { formatDualCurrency } from "@/lib/currency";
+import { formatPrice } from "@/lib/currency";
 
 function TrackContent() {
   const [trackingNumber, setTrackingNumber] = useState("");
@@ -134,10 +134,7 @@ function TrackContent() {
                   <div>
                     <h4 className="font-semibold text-charcoal mb-2">Order Total</h4>
                     <p className="text-2xl font-bold text-ethiopian-gold">
-                      {formatDualCurrency(orderData.total).etb}
-                    </p>
-                    <p className="text-gray-600">
-                      {formatDualCurrency(orderData.total).usd}
+                      {formatPrice(orderData.total, orderData.currency || 'ETB')}
                     </p>
                   </div>
                   <div>
@@ -227,10 +224,7 @@ function TrackContent() {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-ethiopian-gold">
-                            {formatDualCurrency(item.price).etb}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {formatDualCurrency(item.price).usd}
+                            {formatPrice(item.price, item.currency || 'ETB')}
                           </p>
                         </div>
                       </div>
