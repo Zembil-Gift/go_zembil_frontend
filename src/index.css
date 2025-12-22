@@ -42,9 +42,9 @@
   --color-charcoal: #222222;
   --color-amber: #FFD700; /* Assuming amber is a golden color */
   --color-sky-blue: #4EA8DE; /* Assuming sky-blue is a blue-green color */
-  --color-zembil-brown: #331A00; /* Assuming zembil-brown is a dark brown */
-  --color-zembil-beige: #F5DEB3; /* Assuming zembil-beige is a light beige */
-  --color-zembil-indigo: #4B0082; /* Assuming zembil-indigo is a deep purple */
+  --color-Gerami-brown: #331A00; /* Assuming Gerami-brown is a dark brown */
+  --color-Gerami-beige: #F5DEB3; /* Assuming Gerami-beige is a light beige */
+  --color-Gerami-indigo: #4B0082; /* Assuming Gerami-indigo is a deep purple */
   --color-go-green: #4CAF50; /* Assuming go-green is a green */
   --color-go-brown: #8B4513; /* Assuming go-brown is a brown */
   --color-sunset-orange: #FFA07A; /* Assuming sunset-orange is a warm orange */
@@ -80,12 +80,12 @@
   --amber: hsl(45, 100%, 51%);
   --sky-blue: hsl(196, 73%, 73%);
   
-  /* goZembil Brand Colors */
+  /* goGerami Brand Colors */
   --go-green: hsl(120, 34%, 48%);        /* Soft green for "go" */
   --go-brown: hsl(25, 62%, 31%);         /* Earthy brown alternative */
-  --zembil-brown: hsl(15, 36%, 25%);     /* Dark woven brown for "Zembil" */
-  --zembil-beige: hsl(43, 74%, 49%);     /* Golden beige */
-  --zembil-indigo: hsl(231, 48%, 48%);   /* Rich indigo */
+  --Gerami-brown: hsl(15, 36%, 25%);     /* Dark woven brown for "Gerami" */
+  --Gerami-beige: hsl(43, 74%, 49%);     /* Golden beige */
+  --Gerami-indigo: hsl(231, 48%, 48%);   /* Rich indigo */
   
   /* Additional Ethiopian palette */
   --warm-gold: hsl(30, 59%, 55%);        /* #CD853F */
@@ -245,29 +245,29 @@
     color: var(--charcoal);
   }
   
-  .text-zembil-brown {
-    color: var(--zembil-brown);
+  .text-Gerami-brown {
+    color: var(--Gerami-brown);
   }
   
-  .bg-zembil-brown {
-    background-color: var(--zembil-brown);
+  .bg-Gerami-brown {
+    background-color: var(--Gerami-brown);
   }
   
-  .fill-zembil-brown {
-    fill: var(--zembil-brown);
+  .fill-Gerami-brown {
+    fill: var(--Gerami-brown);
   }
   
   .fill-deep-forest {
     fill: var(--deep-forest);
   }
   
-  /* goZembil Brand Typography and Colors */
+  /* goGerami Brand Typography and Colors */
   .font-go {
     font-family: 'Nunito', sans-serif;
     font-weight: 500;
   }
 
-  .font-zembil {
+  .font-Gerami {
     font-family: 'Playfair Display', serif;
     font-weight: 600;
   }
@@ -283,14 +283,14 @@
     text-transform: lowercase;
   }
 
-  .brand-zembil {
-    color: var(--zembil-brown);
+  .brand-Gerami {
+    color: var(--Gerami-brown);
     font-family: 'Playfair Display', serif;
     font-weight: 600;
   }
 
-  .brand-zembil {
-    color: var(--zembil-brown);
+  .brand-Gerami {
+    color: var(--Gerami-brown);
     font-family: 'Playfair Display', serif;
     font-weight: 600;
   }
@@ -303,24 +303,24 @@
     color: var(--go-brown);
   }
   
-  .text-zembil-brown {
-    color: var(--zembil-brown);
+  .text-Gerami-brown {
+    color: var(--Gerami-brown);
   }
   
-  .text-zembil-beige {
-    color: var(--zembil-beige);
+  .text-Gerami-beige {
+    color: var(--Gerami-beige);
   }
   
-  .text-zembil-indigo {
-    color: var(--zembil-indigo);
+  .text-Gerami-indigo {
+    color: var(--Gerami-indigo);
   }
   
   .bg-go-green {
     background-color: var(--go-green);
   }
   
-  .bg-zembil-brown {
-    background-color: var(--zembil-brown);
+  .bg-Gerami-brown {
+    background-color: var(--Gerami-brown);
   }
   
   .bg-charcoal {

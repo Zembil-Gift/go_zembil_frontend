@@ -12,7 +12,7 @@ export default function Terms() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-charcoal mb-4">1. Agreement to Terms</h2>
               <p>
-                By accessing and using Zembil's services, you accept and agree to be bound by the 
+                By accessing and using Gerami's services, you accept and agree to be bound by the 
                 terms and provision of this agreement. If you do not agree to abide by the above, 
                 please do not use this service.
               </p>
@@ -21,7 +21,7 @@ export default function Terms() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-charcoal mb-4">2. Service Description</h2>
               <p>
-                Zembil is a gift delivery platform that connects customers worldwide with Ethiopian 
+                Gerami is a gift delivery platform that connects customers worldwide with Ethiopian 
                 vendors to facilitate the delivery of gifts and products within Ethiopia. We act as 
                 an intermediary between buyers and sellers.
               </p>
@@ -67,7 +67,7 @@ export default function Terms() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-charcoal mb-4">7. Limitation of Liability</h2>
               <p>
-                Zembil's liability is limited to the amount paid for the specific order in question. 
+                Gerami's liability is limited to the amount paid for the specific order in question. 
                 We are not responsible for indirect, incidental, or consequential damages.
               </p>
             </section>
@@ -83,7 +83,7 @@ export default function Terms() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-charcoal mb-4">9. Modifications</h2>
               <p>
-                Zembil reserves the right to modify these terms at any time. Changes will be 
+                Gerami reserves the right to modify these terms at any time. Changes will be 
                 effective immediately upon posting on our website.
               </p>
             </section>
@@ -92,7 +92,7 @@ export default function Terms() {
               <h2 className="text-2xl font-semibold text-charcoal mb-4">10. Contact Information</h2>
               <p>
                 If you have any questions about these Terms of Service, please contact us at 
-                support@zembil.com or through our contact form.
+                support@Gerami.com or through our contact form.
               </p>
             </section>
           </div>

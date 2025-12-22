@@ -13,8 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/apiService";
 import { User, Mail, Phone, Lock, Globe, Calendar, Building2, Eye, EyeOff } from "lucide-react";
-
-const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
+import GoGeramiLogo from "@/components/GoGeramiLogo";
 
 interface Category {
   id: number;
@@ -177,8 +176,12 @@ export default function VendorSignup() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-block mb-6">
-            <img src={logoImagePath} alt="goZembil" className="h-16 mx-auto" />
+          <Link to="/" className="inline-block mb-6 flex justify-center">
+            <GoGeramiLogo 
+              size="lg"
+              variant="icon"
+              className="h-16 w-16"
+            />
           </Link>
           <div className="flex items-center justify-center space-x-2 mb-4">
             <h1 className="text-4xl font-bold text-gray-900">Vendor Signup</h1>

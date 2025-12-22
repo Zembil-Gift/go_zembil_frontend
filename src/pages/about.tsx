@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import GoZembilLogo from "@/components/GoZembilLogo";
+import GoGeramiLogo from "@/components/GoGeramiLogo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Gift, Heart, Users, Truck, Star, ArrowRight } from "lucide-react";
@@ -56,15 +56,15 @@ export default function About() {
         {/* Hero Section */}
         <FadeIn duration={0.8} className="text-center mb-16">
           <div className="flex flex-col items-center mb-6">
-            <GoZembilLogo size="xl" className="mb-4" />
+            <GoGeramiLogo size="xl" className="mb-4" />
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Connecting hearts across distances through meaningful Ethiopian gifts, 
-            one zembil at a time.
+            one Gerami at a time.
           </p>
         </FadeIn>
 
-        {/* What is a Zembil Section */}
+        {/* What is a Gerami Section */}
         <FadeIn delay={0.2} duration={0.8} className="mb-16">
           <Card className="bg-gradient-to-r from-ethiopian-gold/10 to-deep-forest/10 border-0 shadow-lg">
             <CardContent className="p-8 lg:p-12">
@@ -72,26 +72,26 @@ export default function About() {
                 <div>
                   <Badge className="bg-ethiopian-gold text-white mb-4">Cultural Heritage</Badge>
                   <h2 className="text-3xl font-bold text-charcoal mb-6">
-                    What is a Zembil?
+                    What is a Gerami?
                   </h2>
                   <div className="space-y-4 text-gray-600 leading-relaxed">
                     <p>
-                      A <strong className="text-charcoal">zembil</strong> (ዘንቢል) is a traditional Ethiopian woven basket, 
+                      A <strong className="text-charcoal">Gerami</strong> (ዘንቢል) is a traditional Ethiopian woven basket, 
                       handcrafted from natural materials like grass and palm leaves. For centuries, 
                       these beautiful baskets have been an integral part of Ethiopian culture.
                     </p>
                     <p>
-                      More than just a container, the zembil represents <strong className="text-charcoal">sustainability</strong>, 
+                      More than just a container, the Gerami represents <strong className="text-charcoal">sustainability</strong>, 
                       <strong className="text-charcoal"> community</strong>, and <strong className="text-charcoal">cultural heritage</strong>. 
-                      Ethiopian families use zembils for everything from storing precious grains to carrying gifts to neighbors, 
+                      Ethiopian families use Geramis for everything from storing precious grains to carrying gifts to neighbors, 
                       symbolizing the interconnectedness of community life.
                     </p>
                     <p>
-                      At <span className="text-deep-forest font-bold">go</span><span className="text-zembil-brown font-bold">Zembil</span>, we've chosen this name to honor the tradition of sharing and caring that 
-                      the zembil represents. Just as these baskets carry life's essentials, we carry your 
+                      At <span className="text-deep-forest font-bold">go</span><span className="text-Gerami-brown font-bold">Gerami</span>, we've chosen this name to honor the tradition of sharing and caring that 
+                      the Gerami represents. Just as these baskets carry life's essentials, we carry your 
                       love and thoughtfulness to your family and friends in Ethiopia.
                     </p>
-                    <div className="mt-6 p-4 bg-gradient-to-r from-go-green/10 to-zembil-beige/10 rounded-lg">
+                    <div className="mt-6 p-4 bg-gradient-to-r from-go-green/10 to-Gerami-beige/10 rounded-lg">
                       <p className="text-center font-medium italic" style={{ color: '#CD853F' }}>
                         "Gifting with Heart"
                       </p>
@@ -105,7 +105,7 @@ export default function About() {
                       className="w-full h-full text-white"
                       fill="currentColor"
                     >
-                      {/* Stylized zembil basket SVG */}
+                      {/* Stylized Gerami basket SVG */}
                       <path d="M100 20C80 20 60 30 50 50L50 150C50 170 70 180 100 180C130 180 150 170 150 150L150 50C140 30 120 20 100 20Z" 
                             opacity="0.3"/>
                       <path d="M60 60L140 60M60 80L140 80M60 100L140 100M60 120L140 120M60 140L140 140" 
@@ -257,7 +257,7 @@ export default function About() {
             <CardContent className="p-8 lg:p-12">
               <h2 className="text-3xl font-bold mb-6">Ready to Send Love?</h2>
               <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-                Join thousands of families who trust <span className="text-white font-bold">go</span><span className="text-white font-bold">Zembil</span> to deliver their most heartfelt gifts 
+                Join thousands of families who trust <span className="text-white font-bold">go</span><span className="text-white font-bold">Gerami</span> to deliver their most heartfelt gifts 
                 and maintain their cultural connections.
               </p>
               <Link 

@@ -58,7 +58,7 @@ type Location = {
 
 // Ethiopian-inspired gradient patterns
 const EthiopianPatterns = {
-  zembil: "bg-gradient-to-br from-amber-50 via-orange-50 to-red-50",
+  Gerami: "bg-gradient-to-br from-amber-50 via-orange-50 to-red-50",
   cultural: "bg-gradient-to-br from-green-50 via-yellow-50 to-red-50",
   gold: "bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50",
   earth: "bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50"

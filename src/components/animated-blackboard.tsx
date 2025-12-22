@@ -11,7 +11,7 @@ export default function AnimatedBlackboard() {
   const messages = [
     "Love Wrapped in Tradition",
     "Surprise Your Loved Ones in Ethiopia", 
-    "Zembil: Where Culture Meets Care",
+    "Gerami: Where Culture Meets Care",
     "From Addis to Abroad, We Deliver Love",
     "Because Every Gift Tells a Story"
   ];

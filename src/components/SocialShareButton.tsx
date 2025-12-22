@@ -32,7 +32,7 @@ export default function SocialShareButton({
   description = "",
   url = window.location.href,
   imageUrl = "",
-  hashtags = ["goZembil", "EthiopianGifts", "GiftExperience"],
+  hashtags = ["goGerami", "EthiopianGifts", "GiftExperience"],
   size = "default",
   variant = "outline",
   className = "",

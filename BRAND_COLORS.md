@@ -1,4 +1,4 @@
-# Brand Colors Guide - goZembil
+# Brand Colors Guide - goGerami
 
 ## Primary Brand Color: #01415c
 ## Custom Yellow Color: #ffff00
@@ -77,7 +77,7 @@ const yellowColor = applyThemeColor('customYellow'); // "#ffff00"
 #### Headers and Navigation
 ```jsx
 // Logo text
-<span className="text-primary-blue font-bold">goZembil</span>
+<span className="text-primary-blue font-bold">goGerami</span>
 
 // Navigation links
 <Link className="text-primary-blue hover:text-primary-blue/80">
@@ -199,4 +199,4 @@ To replace existing colors with your brand colors:
 <button className="bg-custom-yellow text-charcoal">Button</button>
 ```
 
-This ensures consistent branding throughout your goZembil website! 
+This ensures consistent branding throughout your goGerami website! 

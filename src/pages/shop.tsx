@@ -516,7 +516,7 @@ function ShopContent() {
               
         {/* Signature Sets */}
         <SlideIn direction="up" delay={0.4}>
-      <ZembilSignatureSets />
+      <GeramiSignatureSets />
         </SlideIn>
               </div>
     </div>

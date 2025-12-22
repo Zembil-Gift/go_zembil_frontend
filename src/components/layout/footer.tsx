@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { Gift, Phone, Mail, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
-import GoZembilLogo from "@/components/GoZembilLogo";
+import { Phone, Mail, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
+import GoGeramiLogo from "@/components/GoGeramiLogo";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 
@@ -13,12 +13,17 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-1">
-            <div className="mb-4">
+            <div className="mb-0">
               <div className="flex items-center space-x-3">
-                <GoZembilLogo size="xl" variant="icon" className="w-24 h-24" />
+                <GoGeramiLogo 
+                  size="xl" 
+                  variant="icon" 
+                  imagePath="/attached_assets/go-gerami-02.png"
+                  className="w-48 h-48 brightness-0 invert" 
+                />
               </div>
             </div>
-            <p className="text-gray-300 mb-6">
+            <p className="text-gray-300 mb-6 -mt-8">
               {t('footer.description')}
             </p>
             <div className="flex space-x-4">

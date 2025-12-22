@@ -341,7 +341,7 @@ export default function TrackOrder() {
                 <Mail className="text-ethiopian-gold" size={20} />
                 <div>
                   <p className="font-medium">Email Support</p>
-                  <p className="text-sm text-gray-600">support@gozembil.com</p>
+                  <p className="text-sm text-gray-600">support@goGerami.com</p>
                 </div>
               </div>
             </div>

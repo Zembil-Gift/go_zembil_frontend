@@ -236,7 +236,7 @@ export default function VendorRegistration() {
             <Package className="w-8 h-8 text-emerald-600" />
           </div>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Join goZembil's marketplace and connect with the Ethiopian diaspora through authentic gifts. 
+            Join goGerami's marketplace and connect with the Ethiopian diaspora through authentic gifts. 
             Share your products with hearts around the world.
           </p>
         </div>
@@ -468,7 +468,7 @@ export default function VendorRegistration() {
                 <span>Product Information</span>
               </CardTitle>
               <CardDescription>
-                Tell us about the products you want to sell on goZembil
+                Tell us about the products you want to sell on goGerami
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

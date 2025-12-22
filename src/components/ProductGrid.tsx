@@ -81,11 +81,11 @@ export function ProductGrid({
         />
       )}
 
-      {/* Promotional Section - Zembil Signature Sets */}
+      {/* Promotional Section - Gerami Signature Sets */}
       <div className="mt-16 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 rounded-3xl overflow-hidden">
         <div className="px-8 py-12 text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            GIFTING WITH HEART – goZEMBIL SIGNATURE SETS
+            GIFTING WITH HEART – goGerami SIGNATURE SETS
           </h2>
           
           {/* Lifestyle Images */}
@@ -139,7 +139,7 @@ export function ProductGrid({
           {/* Narrative Text */}
           <div className="max-w-4xl mx-auto">
             <p className="text-gray-700 leading-relaxed text-lg">
-              <span className="font-semibold text-amber-700">Illuminate Your Style</span> with goZembil Signature Sets. 
+              <span className="font-semibold text-amber-700">Illuminate Your Style</span> with goGerami Signature Sets. 
               <span className="font-semibold text-orange-700"> Dazzling Ethiopian Collections</span>, designed to celebrate the beauty and individuality of every diaspora family. 
               Each piece showcases vibrant, ethically sourced traditions that speak to the spirit. 
               Discover unique designs that reflect your personal style and let your inner sparkle shine. 

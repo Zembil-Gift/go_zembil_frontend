@@ -180,7 +180,7 @@ export default function SingleDeliveryAnimation({
           />
         </motion.g>
 
-        {/* Traditional Zembil Basket held in hand */}
+        {/* Traditional Gerami Basket held in hand */}
         <motion.g
           initial={{ opacity: 0, scale: 0.8 }}
           animate={isPlaying ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
@@ -190,7 +190,7 @@ export default function SingleDeliveryAnimation({
             delay: 0.4 
           }}
         >
-          {/* Basket Body - Traditional Zembil Shape (positioned near left arm) */}
+          {/* Basket Body - Traditional Gerami Shape (positioned near left arm) */}
           <motion.ellipse 
             cx="165" cy="90" rx="12" ry="10" fill="url(#basketGradient)"
             animate={isPlaying ? {
@@ -386,10 +386,10 @@ export default function SingleDeliveryAnimation({
           transition={{ duration: 1.5, delay: 2, ease: "easeOut" }}
           onAnimationComplete={handleAnimationComplete}
         >
-          {/* goZembil Text */}
+          {/* goGerami Text */}
           <text x="200" y="140" textAnchor="middle" className="font-bold text-xl">
             <tspan className="fill-deep-forest">go</tspan>
-            <tspan className="fill-zembil-brown">Zembil</tspan>
+            <tspan className="fill-Gerami-brown">Gerami</tspan>
           </text>
           
           {/* Tagline */}

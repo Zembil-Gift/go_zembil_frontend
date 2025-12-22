@@ -1,19 +1,22 @@
 // Using URL for public assets instead of import
-const logoImagePath = "/attached_assets/logo-02.png";
+const logoImagePath = "/attached_assets/go-gerami.png";
 
-interface GoZembilLogoProps {
+interface GoGeramiLogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   variant?: 'full' | 'icon' | 'text';
   showTagline?: boolean;
+  imagePath?: string;
 }
 
-export default function GoZembilLogo({ 
+export default function GoGeramiLogo({ 
   className = '', 
   size = 'md',
   variant = 'full',
-  showTagline = true
-}: GoZembilLogoProps) {
+  showTagline = true,
+  imagePath
+}: GoGeramiLogoProps) {
+  const logoPath = imagePath || logoImagePath;
   const sizeClasses = {
     sm: 'h-6 w-6',
     md: 'h-8 w-8', 
@@ -39,9 +42,14 @@ export default function GoZembilLogo({
   if (variant === 'icon') {
     return (
       <img 
-        src={logoImagePath} 
-        alt="goZembil Logo"
+        src={logoPath} 
+        alt="goGerami Logo"
         className={`${sizeClasses[size]} object-contain ${className}`}
+        onError={(e) => {
+          console.error('Failed to load logo image:', logoPath);
+          // Fallback: hide broken image or show placeholder
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
       />
     );
   }
@@ -52,7 +60,7 @@ export default function GoZembilLogo({
       <div className={`flex flex-col ${className}`}>
         <div className="flex items-center">
           <span className={`${textSizes[size]} font-display font-bold text-deep-forest`}>go</span>
-          <span className={`${textSizes[size]} font-display font-bold text-zembil-brown`}>Zembil</span>
+          <span className={`${textSizes[size]} font-display font-bold text-zembil-brown`}>Gerami</span>
         </div>
         {showTagline && (size === 'lg' || size === 'xl') && (
           <span className={`${taglineSizes[size]} font-medium text-warm-gold leading-none`}>
@@ -67,14 +75,19 @@ export default function GoZembilLogo({
   return (
     <div className={`flex items-center space-x-2 ${className}`}>
       <img 
-        src={logoImagePath} 
-        alt="goZembil Logo"
+        src={logoPath} 
+        alt="goGerami Logo"
         className={`${sizeClasses[size]} object-contain flex-shrink-0`}
+        onError={(e) => {
+          console.error('Failed to load logo image:', logoPath);
+          // Fallback: hide broken image or show placeholder
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
       />
       <div className="flex flex-col">
         <div className="flex items-center">
           <span className={`${textSizes[size]} font-display font-bold text-deep-forest`}>go</span>
-          <span className={`${textSizes[size]} font-display font-bold text-zembil-brown`}>Zembil</span>
+          <span className={`${textSizes[size]} font-display font-bold text-zembil-brown`}>Gerami</span>
         </div>
         {showTagline && (size === 'lg' || size === 'xl') && (
           <span className={`${taglineSizes[size]} font-medium text-warm-gold leading-none -mt-0.5`}>

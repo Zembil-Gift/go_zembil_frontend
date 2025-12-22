@@ -14,8 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import authService from "@/services/authService";
 import { apiService } from "@/services/apiService";
 import { Eye, EyeOff, Mail, Phone, Lock, User, Coins } from "lucide-react";
-
-const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
+import GoGeramiLogo from "@/components/GoGeramiLogo";
 
 interface Currency {
   id: number;
@@ -100,7 +99,7 @@ export default function SignUp() {
     onSuccess: (data) => {
       toast({
         title: "Account created successfully!", 
-        description: "Welcome to goZembil! You can now sign in with your credentials." 
+        description: "Welcome to goGerami! You can now sign in with your credentials." 
       });
       setTimeout(() => {
         console.log('Navigating to signin...');
@@ -130,13 +129,15 @@ export default function SignUp() {
     <div className="min-h-screen bg-gradient-to-br from-light-cream via-white to-gray-50 flex items-center justify-center p-4 relative overflow-hidden">
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-5">
-          <img
-            src={logoImagePath}
-            alt="goZembil Logo"
-            className="h-8 w-8 lg:h-12 lg:w-12 object-contain block mx-auto"
-          />
+          <div className="flex justify-center mb-2">
+            <GoGeramiLogo 
+              size="md"
+              variant="icon"
+              className="h-8 w-8 lg:h-12 lg:w-12"
+            />
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Create your account</h1>
-          <p className="text-gray-600">Join goZembil to start sending meaningful gifts</p>
+          <p className="text-gray-600">Join goGerami to start sending meaningful gifts</p>
         </div>
 
         <Card className="shadow-lg border-0">

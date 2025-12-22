@@ -27,7 +27,7 @@ export function useWishlist() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      const stored = localStorage.getItem('goZembil_wishlist');
+      const stored = localStorage.getItem('goGerami_wishlist');
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
@@ -51,7 +51,7 @@ export function useWishlist() {
   }, [isAuthenticated]);
 
   const saveToLocalStorage = (items: LocalWishlistItem[]) => {
-    localStorage.setItem('goZembil_wishlist', JSON.stringify(items));
+    localStorage.setItem('goGerami_wishlist', JSON.stringify(items));
     setLocalWishlist(items);
   };
 

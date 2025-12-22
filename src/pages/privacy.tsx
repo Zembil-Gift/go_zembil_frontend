@@ -129,7 +129,7 @@ export default function Privacy() {
               <h2 className="text-2xl font-semibold text-charcoal mb-4">12. Contact Us</h2>
               <p>
                 If you have questions about this privacy policy or our data practices, 
-                please contact us at privacy@gozembil.com or through our contact form.
+                please contact us at privacy@goGerami.com or through our contact form.
               </p>
             </section>
           </div>

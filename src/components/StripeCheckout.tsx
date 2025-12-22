@@ -117,7 +117,7 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
             console.log('🚨 Failsafe redirect activated - checking if still on checkout page');
             if (window.location.pathname.includes('/checkout')) {
               console.log('🚨 Still on checkout, forcing redirect...');
-              const orderId = localStorage.getItem('goZembil_currentOrderId');
+              const orderId = localStorage.getItem('goGerami_currentOrderId');
               if (orderId) {
                 window.location.href = `/order-success?orderId=${orderId}&paymentMethod=stripe`;
               }

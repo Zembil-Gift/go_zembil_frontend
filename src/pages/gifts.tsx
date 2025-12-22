@@ -386,8 +386,8 @@ export default function Gifts() {
               className="mt-12"
             />
             
-            {/* ZembilSignatureSets Component - show after sufficient products */}
-            {totalProducts >= 20 && <ZembilSignatureSets />}
+            {/* GeramiSignatureSets Component - show after sufficient products */}
+            {totalProducts >= 20 && <GeramiSignatureSets />}
           </>
         ) : (
           <motion.div

@@ -152,7 +152,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-charcoal mb-1">Email</h3>
-                  <p className="text-gray-600">support@gozembil.com</p>
+                  <p className="text-gray-600">support@goGerami.com</p>
                   <p className="text-sm text-gray-500 mt-1">We'll respond within 24 hours</p>
                 </div>
               </div>

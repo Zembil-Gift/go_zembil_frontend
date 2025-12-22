@@ -1,4 +1,4 @@
-I'm building a full-stack ecommerce platform called goZembil (React + TypeScript frontend and Spring Boot backend), integrating Stripe for international payments.
+I'm building a full-stack ecommerce platform called goGerami (React + TypeScript frontend and Spring Boot backend), integrating Stripe for international payments.
 
 ❗ Current Critical Issues (Frontend + Stripe)
 Stripe Error:
@@ -99,7 +99,7 @@ Confirm order appears in:
 
 Stripe dashboard
 
-goZembil /my-orders
+goGerami /my-orders
 
 Admin panel (if applicable)
 
