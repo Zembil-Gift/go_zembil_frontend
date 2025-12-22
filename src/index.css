@@ -49,26 +49,26 @@
   --color-go-brown: #8B4513; /* Assuming go-brown is a brown */
   --color-sunset-orange: #FFA07A; /* Assuming sunset-orange is a warm orange */
 
-  /* Ethiopian warm theme */
-  --background: hsl(60, 33%, 97%);  /* Light cream #F8F8F8 */
-  --foreground: hsl(0, 0%, 13%);    /* Soft gray #222222 */
-  --muted: hsl(48, 44%, 93%);       /* Very light gold */
-  --muted-foreground: hsl(0, 0%, 40%);
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(0, 0%, 13%);
-  --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(0, 0%, 13%);
-  --border: hsl(48, 15%, 85%);
-  --input: hsl(48, 15%, 90%);
-  --primary: hsl(48, 96%, 59%);     /* Ethiopian gold #FDCB2D */
-  --primary-foreground: hsl(151, 65%, 15%); /* Deep forest on gold */
-  --secondary: hsl(60, 33%, 97%);   /* Light cream */
-  --secondary-foreground: hsl(0, 0%, 13%);
-  --accent: hsl(151, 65%, 15%);     /* Deep forest #1C3A2D */
-  --accent-foreground: hsl(0, 0%, 100%);
-  --destructive: hsl(11, 83%, 51%); /* Warm red #E94E1B */
-  --destructive-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(151, 65%, 15%);
+  /* Ethiopian warm theme - raw HSL values for Tailwind opacity support */
+  --background: 60 33% 97%;  /* Light cream #F8F8F8 */
+  --foreground: 0 0% 13%;    /* Soft gray #222222 */
+  --muted: 48 44% 93%;       /* Very light gold */
+  --muted-foreground: 0 0% 40%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 13%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 13%;
+  --border: 48 15% 85%;
+  --input: 48 15% 90%;
+  --primary: 48 96% 59%;     /* Ethiopian gold #FDCB2D */
+  --primary-foreground: 151 65% 15%; /* Deep forest on gold */
+  --secondary: 60 33% 97%;   /* Light cream */
+  --secondary-foreground: 0 0% 13%;
+  --accent: 151 65% 15%;     /* Deep forest #1C3A2D */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 11 83% 51%; /* Warm red #E94E1B */
+  --destructive-foreground: 0 0% 100%;
+  --ring: 151 65% 15%;
   --radius: 0.5rem;
   
   /* Ethiopian color scheme */
@@ -92,25 +92,25 @@
 }
 
 .dark {
-  --background: hsl(240, 10%, 3.9%);
-  --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(240, 3.7%, 15.9%);
-  --muted-foreground: hsl(240, 5%, 64.9%);
-  --popover: hsl(240, 10%, 3.9%);
-  --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(240, 10%, 3.9%);
-  --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(240, 3.7%, 15.9%);
-  --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(48, 96%, 53%);
-  --primary-foreground: hsl(0, 0%, 0%);
-  --secondary: hsl(240, 3.7%, 15.9%);
-  --secondary-foreground: hsl(0, 0%, 98%);
-  --accent: hsl(240, 3.7%, 15.9%);
-  --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 62.8%, 30.6%);
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(240, 4.9%, 83.9%);
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 48 96% 53%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 240 4.9% 83.9%;
   --radius: 0.5rem;
 }
 
@@ -133,17 +133,17 @@
   }
 
   /* Gotham font utilities */
-  .font-gotham { font-family: 'Gotham', sans-serif; }
-  .font-gotham-light { font-family: 'Gotham-Light', sans-serif; }
-  .font-gotham-book { font-family: 'Gotham-Book', sans-serif; }
-  .font-gotham-medium { font-family: 'Gotham-Medium', sans-serif; }
-  .font-gotham-bold { font-family: 'Gotham-Bold', sans-serif; }
-  .font-gotham-black { font-family: 'Gotham-Black', sans-serif; }
-  .font-gotham-ultra { font-family: 'Gotham-Ultra', sans-serif; }
-  .font-gotham-thin { font-family: 'Gotham-Thin', sans-serif; }
-  .font-gotham-xlight { font-family: 'Gotham-XLight', sans-serif; }
-  .font-gotham-extra-light { font-family: 'Gotham-ExtraLight', sans-serif; }
-  .font-gotham-extra-bold { font-family: 'Gotham-ExtraBold', sans-serif; }
+  .font-gotham { font-family: 'Gotham', sans-serif; font-weight: 400; }
+  .font-gotham-light { font-family: 'Gotham', sans-serif; font-weight: 300; }
+  .font-gotham-book { font-family: 'Gotham', sans-serif; font-weight: 400; }
+  .font-gotham-medium { font-family: 'Gotham', sans-serif; font-weight: 500; }
+  .font-gotham-bold { font-family: 'Gotham', sans-serif; font-weight: 700; }
+  .font-gotham-black { font-family: 'Gotham', sans-serif; font-weight: 900; }
+  .font-gotham-ultra { font-family: 'Gotham', sans-serif; font-weight: 950; }
+  .font-gotham-thin { font-family: 'Gotham', sans-serif; font-weight: 100; }
+  .font-gotham-xlight { font-family: 'Gotham', sans-serif; font-weight: 200; }
+  .font-gotham-extra-light { font-family: 'Gotham', sans-serif; font-weight: 200; }
+  .font-gotham-extra-bold { font-family: 'Gotham', sans-serif; font-weight: 800; }
   
   /* Default font classes */
   .font-default { font-family: 'Gotham', 'Inter', sans-serif; }
