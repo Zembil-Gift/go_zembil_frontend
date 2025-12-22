@@ -48,7 +48,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  Shield,
   UserCog,
   UserPlus,
   Trash2
@@ -272,7 +271,7 @@ export default function AdminUsers() {
             <SelectItem value="admin">Admins</SelectItem>
           </SelectContent>
         </Select>
-        <Button onClick={() => setShowAddAdminDialog(true)} className="bg-eagle-green hover:bg-viridian-green">
+        <Button onClick={() => setShowAddAdminDialog(true)}>
           <UserPlus className="h-4 w-4 mr-2" />
           Add Admin
         </Button>
