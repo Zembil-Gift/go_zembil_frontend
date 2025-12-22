@@ -18,10 +18,30 @@ export interface CartItem {
     id: number;
     name: string;
     price: string;
-    images?: string[];
+    images?: Array<{
+      id: number;
+      url: string;
+      isPrimary: boolean;
+      sortOrder: number;
+    }>;
     cover?: string;
     imageUrl?: string;
     deliveryDays?: number;
+  };
+  // Optional nested SKU details
+  productSku?: {
+    id: number;
+    skuCode: string;
+    images?: Array<{
+      id: number;
+      url: string;
+      isPrimary: boolean;
+      sortOrder: number;
+    }>;
+    attributes?: Array<{
+      name: string;
+      value: string;
+    }>;
   };
 }
 
@@ -48,12 +68,15 @@ export interface AddToCartRequest {
 class CartService {
   /**
    * Get current user's cart with enriched product data
+   * Returns both items and cart metadata including currency
    */
-  async getCart(currency: string = 'USD'): Promise<CartItem[]> {
+  async getCart(currency: string = 'USD'): Promise<{ items: CartItem[]; currency: string; totalPrice: number }> {
     try {
       const response = await apiService.getRequest<Cart>(`/api/cart?currency=${currency}`);
       
       const items = response.items || [];
+      const cartCurrency = response.currency || currency;
+      const totalPrice = response.totalPrice || 0;
       
       // Enrich cart items with product details if not already present
       const enrichedItems = await Promise.all(
@@ -84,12 +107,12 @@ class CartService {
         })
       );
       
-      return enrichedItems;
+      return { items: enrichedItems, currency: cartCurrency, totalPrice };
     } catch (error: any) {
       // Return empty array if cart doesn't exist yet
       if (error.message?.includes('404')) {
         console.log('Cart not found (404), returning empty array');
-        return [];
+        return { items: [], currency: currency, totalPrice: 0 };
       }
       throw error;
     }

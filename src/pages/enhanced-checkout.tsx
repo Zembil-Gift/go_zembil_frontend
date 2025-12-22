@@ -15,7 +15,7 @@ import PaymentMethodSelector, { PaymentMethodType } from '@/components/PaymentMe
 import StripeCheckout from '@/components/StripeCheckout';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { formatDualCurrency } from '@/lib/currency';
+import { formatPrice } from '@/lib/currency';
 import { ShoppingCart, User, CreditCard, CheckCircle, AlertCircle, Gift, MapPin } from 'lucide-react';
 
 const checkoutSchema = z.object({
@@ -104,7 +104,7 @@ export default function EnhancedCheckout() {
     return calculateSubtotal() + calculateDeliveryFee() + calculateExtrasFee();
   };
 
-  const { etb, usd } = formatDualCurrency(calculateTotal());
+  const formattedTotal = formatPrice(calculateTotal(), 'ETB');
 
   // Create order mutation
   const createOrderMutation = useMutation({
@@ -262,7 +262,7 @@ export default function EnhancedCheckout() {
                       <div className="text-xs text-gray-500">Qty: {item.quantity}</div>
                     </div>
                     <div className="text-sm font-medium">
-                      {formatDualCurrency(parseFloat(item.product.price) * item.quantity).etb}
+                      {formatPrice(parseFloat(item.product.price) * item.quantity, 'ETB')}
                     </div>
                   </div>
                 ))}
@@ -274,7 +274,7 @@ export default function EnhancedCheckout() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>{formatDualCurrency(calculateSubtotal()).etb}</span>
+                  <span>{formatPrice(calculateSubtotal(), 'ETB')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery</span>
@@ -282,22 +282,21 @@ export default function EnhancedCheckout() {
                     {calculateDeliveryFee() === 0 ? (
                       <Badge variant="secondary" className="text-xs">Free</Badge>
                     ) : (
-                      formatDualCurrency(calculateDeliveryFee()).etb
+                      formatPrice(calculateDeliveryFee(), 'ETB')
                     )}
                   </span>
                 </div>
                 {calculateExtrasFee() > 0 && (
                   <div className="flex justify-between">
                     <span>Gift Wrap</span>
-                    <span>{formatDualCurrency(calculateExtrasFee()).etb}</span>
+                    <span>{formatPrice(calculateExtrasFee(), 'ETB')}</span>
                   </div>
                 )}
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
                   <div className="text-right">
-                    <div className="text-amber-600">{etb}</div>
-                    <div className="text-xs text-gray-500">{usd}</div>
+                    <div className="text-amber-600">{formattedTotal}</div>
                   </div>
                 </div>
               </div>
