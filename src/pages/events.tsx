@@ -11,18 +11,21 @@ import {
   Globe, 
   Star,
   Users,
-  Tag,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Ticket
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getEventImageUrl } from '@/utils/imageUtils';
+import { useAuth } from '@/hooks/useAuth';
+import { formatPrice } from '@/lib/currency';
 
 import { 
   Event, 
@@ -35,6 +38,7 @@ import {
   SERVICE_CATEGORIES
 } from '@/types/events';
 import { eventsService } from '@/services/eventsService';
+import { eventOrderService, EventResponse } from '@/services/eventOrderService';
 
 // Helper function for badge colors
 const getBadgeColor = (badge: string) => {
@@ -50,6 +54,10 @@ const getBadgeColor = (badge: string) => {
 export default function Events() {
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Get user's preferred currency for API calls
+  const { user } = useAuth();
+  const preferredCurrency = user?.preferredCurrencyCode || 'ETB';
   
   // Parse URL parameters for filters
   const urlParams = new URLSearchParams(location.search);
@@ -80,19 +88,47 @@ export default function Events() {
 
   const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch events
+  // Fetch real events from API with currency conversion
+  const { data: realEventsData, isLoading: realEventsLoading, error: eventsError } = useQuery({
+    queryKey: ['real-events', eventFilters, preferredCurrency],
+    queryFn: async () => {
+      try {
+        // Try real API first with user's preferred currency for price conversion
+        const response = await eventOrderService.searchEvents(
+          eventFilters.q,
+          eventFilters.city,
+          eventFilters.category ? parseInt(eventFilters.category) : undefined,
+          0, // page
+          12, // size
+          preferredCurrency // Pass preferred currency for backend conversion
+        );
+        return response;
+      } catch (error) {
+        console.error('Failed to fetch events from API:', error);
+        throw error;
+      }
+    },
+    enabled: activeTab === 'events',
+    staleTime: 30000, // 30 seconds
+  });
+
+  // Fallback to mock events if API fails
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
     queryKey: ['events', eventFilters],
     queryFn: () => eventsService.getEvents(eventFilters),
-    enabled: activeTab === 'events',
+    enabled: activeTab === 'events' && !!eventsError,
   });
 
-  // Fetch services
+  // Fetch services (keep using mock data)
   const { data: servicesData, isLoading: servicesLoading } = useQuery({
     queryKey: ['services', serviceFilters],
     queryFn: () => eventsService.getServices(serviceFilters),
     enabled: activeTab === 'services',
   });
+
+  // Determine which events data to use
+  const displayEvents = realEventsData?.content || eventsData?.events || [];
+  const isEventsLoading = realEventsLoading || (eventsError && eventsLoading);
 
   // Update URL when filters change
   useEffect(() => {
@@ -138,38 +174,6 @@ export default function Events() {
     if (!country) return [];
     return CITIES[country];
   };
-
-  const formatEventDate = (dateString: string, timezone: string) => {
-    const date = new Date(dateString);
-    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
-    const eventTime = date.toLocaleString('en-US', {
-      timeZone: timezone,
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-
-    const userTime = userTimeZone !== timezone ? 
-      date.toLocaleString('en-US', {
-        timeZone: userTimeZone,
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      }) : null;
-
-    return { eventTime, userTime };
-  };
-
-  const formatPrice = (price: number, currency: string) => {
-    return eventsService.formatCurrency(price, currency);
-  };
-
-
-
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
@@ -411,7 +415,7 @@ export default function Events() {
 
           {/* Events Tab Content */}
           <TabsContent value="events" className="space-y-6">
-            {eventsLoading ? (
+            {isEventsLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
                   <Card key={i} className="overflow-hidden">
@@ -424,7 +428,7 @@ export default function Events() {
                   </Card>
                 ))}
               </div>
-            ) : eventsData?.events.length === 0 ? (
+            ) : displayEvents.length === 0 ? (
               <div className="text-center py-16">
                 <Calendar className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
                 <h3 className="text-xl font-gotham-bold text-eagle-green mb-2">No events found</h3>
@@ -435,7 +439,12 @@ export default function Events() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {eventsData?.events.map((event, index) => (
+                {/* Render API events */}
+                {realEventsData?.content?.map((event, index) => (
+                  <RealEventCard key={event.id} event={event} index={index} />
+                ))}
+                {/* Fallback to mock events if API fails */}
+                {!realEventsData && eventsData?.events?.map((event, index) => (
                   <EventCard key={event.id} event={event} index={index} />
                 ))}
               </div>
@@ -480,11 +489,12 @@ export default function Events() {
   );
 }
 
-// Event Card Component
+// Event Card Component (for mock events)
 function EventCard({ event, index }: { event: Event; index: number }) {
   const navigate = useNavigate();
   const { eventTime, userTime } = formatEventDate(event.startDate, event.timezone);
-  const minPrice = Math.min(...event.ticketTypes.map(t => t.price));
+  // Mock events use price in major units
+  const minPrice = event.ticketTypes?.length > 0 ? Math.min(...event.ticketTypes.map(t => t.price)) : 0;
   const categoryName = EVENT_CATEGORIES.find(c => c.id === event.categoryId)?.name || 'Event';
   const cityName = CITIES[event.country].find(c => c.id === event.city)?.name || event.city;
 
@@ -526,10 +536,10 @@ function EventCard({ event, index }: { event: Event; index: number }) {
             </Badge>
           </div>
 
-          {/* Price */}
+          {/* Price - mock events use price in major units */}
           <div className="absolute bottom-3 right-3">
             <Badge className="bg-eagle-green text-white border-none font-gotham-bold">
-              From {eventsService.formatCurrency(minPrice, event.baseCurrency)}
+              From {formatPrice(minPrice, event.baseCurrency)}
             </Badge>
           </div>
         </div>
@@ -562,8 +572,114 @@ function EventCard({ event, index }: { event: Event; index: number }) {
 
           <div className="flex items-center justify-between">
             <span className="text-sm font-gotham-light text-eagle-green/70">
-              {event.ticketTypes.length} ticket type{event.ticketTypes.length !== 1 ? 's' : ''}
+              {event.ticketTypes?.length || 0} ticket type{(event.ticketTypes?.length || 0) !== 1 ? 's' : ''}
             </span>
+            <ChevronRight className="h-4 w-4 text-viridian-green group-hover:translate-x-1 transition-transform" />
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+// Real Event Card Component (for API events)
+function RealEventCard({ event, index }: { event: EventResponse; index: number }) {
+  const navigate = useNavigate();
+  const minPrice = event.ticketTypes?.length > 0 
+    ? Math.min(...event.ticketTypes.map(t => t.priceMinor)) 
+    : 0;
+  const currency = event.ticketTypes?.[0]?.currency || 'ETB';
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+    >
+      <Card 
+        className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-eagle-green/10 overflow-hidden"
+        onClick={() => navigate(`/events/${event.id}`)}
+      >
+        <div className="relative aspect-[4/3] overflow-hidden">
+          <img
+            src={getEventImageUrl(event.images, event.bannerImageUrl)}
+            alt={event.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="lazy"
+            onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+          />
+          <div className="w-full h-full bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center hidden">
+            <Calendar className="h-16 w-16 text-white/50" />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          
+          {/* Badges */}
+          <div className="absolute top-3 left-3 flex flex-wrap gap-1">
+            {event.isFeatured && (
+              <Badge className="text-xs font-gotham-bold bg-yellow/20 text-eagle-green border-yellow">
+                Featured
+              </Badge>
+            )}
+            {event.isSoldOut && (
+              <Badge className="text-xs font-gotham-bold bg-red-100 text-red-700 border-red-300">
+                Sold Out
+              </Badge>
+            )}
+          </div>
+
+          {/* Location badge */}
+          <div className="absolute top-3 right-3">
+            <Badge className="bg-white/90 text-eagle-green border-none font-gotham-bold">
+              📍 {event.city}
+            </Badge>
+          </div>
+
+          {/* Price */}
+          <div className="absolute bottom-3 right-3">
+            <Badge className="bg-eagle-green text-white border-none font-gotham-bold">
+              From {formatPrice(minPrice / 100, currency)}
+            </Badge>
+          </div>
+        </div>
+
+        <CardContent className="p-4">
+          <div className="mb-2">
+            <span className="text-sm font-gotham-light text-viridian-green">
+              {event.categoryName || 'Event'}
+            </span>
+          </div>
+          
+          <h3 className="font-gotham-bold text-eagle-green text-lg mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">
+            {event.title}
+          </h3>
+          
+          <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-2">
+            <MapPin className="h-4 w-4" />
+            <span className="font-gotham-light">{event.location}</span>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-3">
+            <Clock className="h-4 w-4" />
+            <span className="font-gotham-light">{formatDate(event.eventDate)}</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-sm font-gotham-light text-eagle-green/70">
+              <Ticket className="h-4 w-4" />
+              <span>{event.ticketTypes?.length || 0} ticket types</span>
+            </div>
             <ChevronRight className="h-4 w-4 text-viridian-green group-hover:translate-x-1 transition-transform" />
           </div>
         </CardContent>
@@ -616,7 +732,7 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
           {/* Price */}
           <div className="absolute bottom-3 right-3">
             <Badge className="bg-eagle-green text-white border-none font-gotham-bold">
-              From {eventsService.formatCurrency(service.startingPrice, service.currency)}
+              From {formatPrice(service.startingPrice, service.currency)}
             </Badge>
           </div>
         </div>

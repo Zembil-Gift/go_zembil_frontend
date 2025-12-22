@@ -6,16 +6,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { vendorService, VendorProfile } from "@/services/vendorService";
+import { vendorService, VendorProfile, CreateEventRequest } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService } from "@/services/imageService";
 
-// Helper function to check if vendor is Ethiopian
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
   if (!vendorProfile) return false;
-  const countryCode = vendorProfile.countryCode?.toUpperCase();
-  const country = vendorProfile.country?.toLowerCase();
-  return countryCode === 'ET' || countryCode === 'ETH' || country === 'ethiopia';
+  return vendorProfile.countryCode === 'ET';
 };
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +20,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, AlertCircle, ImageIcon } from "lucide-react";
 
@@ -78,30 +74,25 @@ export default function CreateEvent() {
 
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
 
-  // State for pending image files
   const [pendingImages, setPendingImages] = useState<File[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
-  // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: () => apiService.getRequest<Category[]>('/api/categories'),
   });
 
-  // Fetch currencies
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies'],
     queryFn: () => apiService.getRequest<Currency[]>('/api/currencies'),
   });
 
-  // Fetch vendor profile to check if Ethiopian vendor
   const { data: vendorProfile } = useQuery({
     queryKey: ['vendor', 'profile'],
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
   });
 
-  // Filter currencies based on vendor country - Ethiopian vendors can only use ETB
   const availableCurrencies = isEthiopianVendor(vendorProfile)
     ? currencies.filter(c => c.code === 'ETB')
     : currencies;
@@ -138,10 +129,8 @@ export default function CreateEvent() {
     name: "ticketTypes",
   });
 
-  // Set default currency to ETB for Ethiopian vendors when profile loads
   useEffect(() => {
     if (isEthiopianVendor(vendorProfile)) {
-      // Update all existing ticket type currencies to ETB
       ticketFields.forEach((_, index) => {
         form.setValue(`ticketTypes.${index}.currencyCode`, 'ETB');
       });
@@ -150,29 +139,29 @@ export default function CreateEvent() {
 
   const createEventMutation = useMutation({
     mutationFn: async (data: EventFormData) => {
-      const eventPayload = {
+      const eventPayload: CreateEventRequest = {
         title: data.title,
         description: data.description,
-        location: data.venue,
-        city: data.city || "N/A",
-        eventDate: data.startDateTime,
-        eventEndDate: data.endDateTime,
-        eventTypeId: data.categoryId ? parseInt(data.categoryId) : undefined,
-        bannerImageUrl: data.imageUrl || undefined,
-        organizerContact: data.address || undefined,
+        shortDescription: data.shortDescription,
+        startDateTime: data.startDateTime,
+        endDateTime: data.endDateTime,
+        timezone: data.timezone,
+        venue: data.venue,
+        address: data.address,
+        city: data.city,
+        country: data.country,
+        imageUrl: data.imageUrl || undefined,
+        categoryId: data.categoryId ? parseInt(data.categoryId) : undefined,
         ticketTypes: data.ticketTypes.map((tt) => ({
           name: tt.name,
-          description: tt.description || undefined,
+          description: tt.description,
           capacity: tt.capacity,
-          price: tt.amount,
-          currency: tt.currencyCode,
+          price: { prices: [{ currencyCode: tt.currencyCode, amount: tt.amount }] },
         })),
       };
       
-      // Create the event first
       const createdEvent = await vendorService.createEvent(eventPayload);
       
-      // Upload images if any pending
       if (pendingImages.length > 0 && createdEvent?.id) {
         console.log(`Uploading ${pendingImages.length} images for event ${createdEvent.id}...`);
         setIsUploadingImages(true);
@@ -213,7 +202,6 @@ export default function CreateEvent() {
   const onSubmit = (data: EventFormData) => {
     console.log("Event form submitted with data:", data);
     
-    // Validate that at least one event image is provided
     if (pendingImages.length === 0) {
       toast({
         title: "Image Required",

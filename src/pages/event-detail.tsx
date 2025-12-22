@@ -1,85 +1,157 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft,
-  Star,
   MapPin,
   Calendar,
   Clock,
-  Users,
   Globe,
   Ticket,
-  CheckCircle,
   ShoppingCart,
   Heart,
   Share2,
-  Info
+  Info,
+  Plus,
+  Minus
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { getEventImageUrl } from '@/utils/imageUtils';
+import { useAuth } from '@/hooks/useAuth';
 
 import { 
   Event, 
-  TicketType,
-  CITIES,
-  EVENT_CATEGORIES
+  TicketType as EventTicketType,
 } from '@/types/events';
 import { eventsService } from '@/services/eventsService';
+import { 
+  eventOrderService, 
+  EventResponse, 
+  TicketPurchaseItem,
+  TicketType
+} from '@/services/eventOrderService';
 
 export default function EventDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const preferredCurrency = user?.preferredCurrencyCode || 'ETB';
   
-  const [selectedTicketType, setSelectedTicketType] = useState<string>('');
-  const [ticketQuantity, setTicketQuantity] = useState(1);
-  const [showBookingModal, setShowBookingModal] = useState(false);
+  // Ticket selection state - map of ticketTypeId to array of recipient info
+  const [selectedTickets, setSelectedTickets] = useState<Map<number, TicketPurchaseItem[]>>(new Map());
 
-  // Fetch event details
-  const { data: event, isLoading } = useQuery({
+  // Determine if slug is numeric (API event) or string (mock event)
+  const isNumericId = slug ? !isNaN(Number(slug)) : false;
+
+  // Fetch real event from API (by ID) with user's preferred currency
+  const { data: apiEvent, isLoading: apiLoading } = useQuery({
+    queryKey: ['api-event', slug, preferredCurrency],
+    queryFn: () => eventOrderService.getEvent(Number(slug!), preferredCurrency),
+    enabled: !!slug && isNumericId,
+  });
+
+  // Fetch mock event by slug (fallback)
+  const { data: mockEvent, isLoading: mockLoading } = useQuery({
     queryKey: ['event', slug],
     queryFn: () => slug ? eventsService.getEventBySlug(slug) : null,
-    enabled: !!slug,
+    enabled: !!slug && !isNumericId,
   });
 
-  // Booking mutation
-  const bookingMutation = useMutation({
-    mutationFn: (bookingData: any) => eventsService.bookEvent(event?.id!, bookingData),
-    onSuccess: () => {
-      setShowBookingModal(false);
-      // Navigate to booking confirmation or payment
-      navigate(`/events/${slug}/booking-success`);
-    },
-  });
+  const isLoading = isNumericId ? apiLoading : mockLoading;
+  const event = apiEvent || mockEvent;
+  const isAPIEvent = !!apiEvent;
 
-  const handleBooking = () => {
-    if (!selectedTicketType) return;
-
-    const ticketType = event?.ticketTypes.find(t => t.id === selectedTicketType);
-    if (!ticketType) return;
-
-    const bookingData = {
-      eventId: event?.id!,
-      ticketTypeId: selectedTicketType,
-      quantity: ticketQuantity,
-      totalAmount: ticketType.price * ticketQuantity,
-    };
-
-    bookingMutation.mutate(bookingData);
+  // Helper to get ticket count for a type
+  const getTicketCount = (ticketTypeId: number) => {
+    return selectedTickets.get(ticketTypeId)?.length || 0;
   };
 
-  const formatEventDate = (dateString: string, timezone: string) => {
+  // Helper to get total tickets
+  const getTotalTickets = () => {
+    let total = 0;
+    selectedTickets.forEach(tickets => total += tickets.length);
+    return total;
+  };
+
+  // Helper to get total price (in minor units)
+  const getTotalPrice = () => {
+    if (!isAPIEvent || !apiEvent || !apiEvent.ticketTypes) return 0;
+    let total = 0;
+    selectedTickets.forEach((tickets, ticketTypeId) => {
+      const ticketType = apiEvent.ticketTypes.find(t => t.id === ticketTypeId);
+      if (ticketType) {
+        total += ticketType.priceMinor * tickets.length;
+      }
+    });
+    return total;
+  };
+
+  // Add ticket for a type
+  const addTicket = (ticketTypeId: number) => {
+    const ticketType = apiEvent?.ticketTypes?.find(t => t.id === ticketTypeId);
+    if (!ticketType || ticketType.availableCount === 0) return;
+    
+    const currentTickets = selectedTickets.get(ticketTypeId) || [];
+    if (currentTickets.length >= Math.min(ticketType.availableCount, 10)) return;
+
+    const newTicket: TicketPurchaseItem = {
+      ticketTypeId,
+      recipientName: '',
+      recipientEmail: '',
+      recipientPhone: '',
+    };
+
+    const newMap = new Map(selectedTickets);
+    newMap.set(ticketTypeId, [...currentTickets, newTicket]);
+    setSelectedTickets(newMap);
+  };
+
+  // Remove ticket for a type
+  const removeTicket = (ticketTypeId: number) => {
+    const currentTickets = selectedTickets.get(ticketTypeId) || [];
+    if (currentTickets.length === 0) return;
+
+    const newMap = new Map(selectedTickets);
+    newMap.set(ticketTypeId, currentTickets.slice(0, -1));
+    if (newMap.get(ticketTypeId)?.length === 0) {
+      newMap.delete(ticketTypeId);
+    }
+    setSelectedTickets(newMap);
+  };
+
+  // Navigate to checkout page
+  const handleProceedToCheckout = () => {
+    if (!isAPIEvent || getTotalTickets() === 0) {
+      toast({
+        title: 'No tickets selected',
+        description: 'Please select at least one ticket to proceed.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Navigate to checkout page with selected tickets
+    navigate(`/events/${slug}/checkout`, {
+      state: {
+        selectedTickets: selectedTickets,
+      },
+    });
+  };
+
+  const formatEventDate = (dateString: string, timezone?: string) => {
     const date = new Date(dateString);
+    const tz = timezone || 'Africa/Addis_Ababa';
     const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     
     const eventTime = date.toLocaleString('en-US', {
-      timeZone: timezone,
+      timeZone: tz,
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -89,7 +161,7 @@ export default function EventDetail() {
       hour12: true,
     });
 
-    const userTime = userTimeZone !== timezone ? 
+    const userTime = userTimeZone !== tz ? 
       date.toLocaleString('en-US', {
         timeZone: userTimeZone,
         hour: 'numeric',
@@ -135,11 +207,31 @@ export default function EventDetail() {
     );
   }
 
-  const categoryName = EVENT_CATEGORIES.find(c => c.id === event.categoryId)?.name || 'Event';
-  const cityName = CITIES[event.country].find(c => c.id === event.city)?.name || event.city;
-  const countryFlag = event.country === 'ET' ? '🇪🇹' : '🇺🇸';
-  const { eventTime, userTime } = formatEventDate(event.startDate, event.timezone);
-  const minPrice = Math.min(...event.ticketTypes.map(t => t.price));
+  // Adapt data based on source (API vs Mock)
+  const eventTitle = isAPIEvent ? (apiEvent as EventResponse).title : (mockEvent as Event).title;
+  const eventDescription = isAPIEvent ? (apiEvent as EventResponse).description : (mockEvent as Event).description;
+  const eventLocation = isAPIEvent ? (apiEvent as EventResponse).location : (mockEvent as Event).venue;
+  const eventCity = isAPIEvent ? (apiEvent as EventResponse).city : (mockEvent as Event).city;
+  const eventDate = isAPIEvent ? (apiEvent as EventResponse).eventDate : (mockEvent as Event).startDate;
+  const eventEndDate = isAPIEvent ? (apiEvent as EventResponse).eventEndDate : (mockEvent as Event).endDate;
+  const eventBanner = isAPIEvent 
+    ? getEventImageUrl((apiEvent as EventResponse).images, (apiEvent as EventResponse).bannerImageUrl) 
+    : (mockEvent as Event).poster;
+  const eventTimezone = isAPIEvent ? 'Africa/Addis_Ababa' : (mockEvent as Event).timezone;
+  const baseCurrency = isAPIEvent 
+    ? ((apiEvent as EventResponse).ticketTypes?.[0]?.currency || 'ETB')
+    : (mockEvent as Event).baseCurrency;
+  const ticketTypes = isAPIEvent 
+    ? (apiEvent as EventResponse).ticketTypes 
+    : (mockEvent as Event).ticketTypes;
+  // API uses priceMinor (cents), mock uses price (dollars)
+  const minPrice = isAPIEvent && ticketTypes?.length > 0 
+    ? Math.min(...(ticketTypes as TicketType[]).map(t => t.priceMinor))
+    : ticketTypes?.length > 0 
+      ? Math.min(...(ticketTypes as EventTicketType[]).map(t => t.price)) * 100  // Convert to minor units
+      : 0;
+
+  const { eventTime, userTime } = formatEventDate(eventDate, eventTimezone);
 
   return (
     <div className="min-h-screen bg-white">
@@ -163,37 +255,47 @@ export default function EventDetail() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-6">
-                <img
-                  src={event.poster}
-                  alt={event.title}
-                  className="w-full h-full object-cover"
-                />
+              <div className="relative aspect-[16/9] max-h-[400px] rounded-2xl overflow-hidden mb-6">
+                {eventBanner ? (
+                  <img
+                    src={eventBanner}
+                    alt={eventTitle}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center">
+                    <Calendar className="h-24 w-24 text-white/50" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 
                 {/* Badges */}
-                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                  {event.badges.map(badge => (
-                    <Badge 
-                      key={badge} 
-                      className={`font-gotham-bold ${getBadgeColor(badge)}`}
-                    >
+                {isAPIEvent && (apiEvent as EventResponse).isFeatured && (
+                  <div className="absolute top-4 left-4">
+                    <Badge className="font-gotham-bold bg-yellow/20 text-eagle-green border-yellow">
+                      Featured
+                    </Badge>
+                  </div>
+                )}
+                {!isAPIEvent && (mockEvent as Event).badges?.map(badge => (
+                  <div key={badge} className="absolute top-4 left-4 flex flex-wrap gap-2">
+                    <Badge className={`font-gotham-bold ${getBadgeColor(badge)}`}>
                       {badge.charAt(0).toUpperCase() + badge.slice(1)}
                     </Badge>
-                  ))}
-                </div>
+                  </div>
+                ))}
 
                 {/* Location */}
                 <div className="absolute top-4 right-4">
                   <Badge className="bg-white/90 text-eagle-green border-none font-gotham-bold">
-                    {countryFlag} {cityName}
+                    📍 {eventCity}
                   </Badge>
                 </div>
 
                 {/* Price */}
                 <div className="absolute bottom-4 right-4">
                   <Badge className="bg-eagle-green text-white border-none font-gotham-bold text-lg px-3 py-1">
-                    From {eventsService.formatCurrency(minPrice, event.baseCurrency)}
+                    From {eventOrderService.formatCurrency(minPrice, baseCurrency)}
                   </Badge>
                 </div>
               </div>
@@ -201,10 +303,11 @@ export default function EventDetail() {
               <div className="space-y-4">
                 <div>
                   <span className="text-sm font-gotham-light text-viridian-green">
-                    {categoryName}
+                    {isAPIEvent ? (apiEvent as EventResponse).categoryName || 'Event' : 
+                      EVENT_CATEGORIES.find(c => c.id === (mockEvent as Event).categoryId)?.name || 'Event'}
                   </span>
                   <h1 className="text-3xl lg:text-4xl font-gotham-bold text-eagle-green mt-1">
-                    {event.title}
+                    {eventTitle}
                   </h1>
                 </div>
 
@@ -228,14 +331,14 @@ export default function EventDetail() {
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-4 w-4 text-viridian-green" />
-                    <span className="font-gotham-light text-eagle-green">{event.venue}</span>
+                    <span className="font-gotham-light text-eagle-green">{eventLocation}</span>
                   </div>
                   
                   <Separator orientation="vertical" className="h-4" />
                   
                   <div className="flex items-center gap-1">
                     <Globe className="h-4 w-4 text-viridian-green" />
-                    <span className="font-gotham-light text-eagle-green">{event.timezone}</span>
+                    <span className="font-gotham-light text-eagle-green">{eventTimezone}</span>
                   </div>
                 </div>
               </div>
@@ -253,266 +356,170 @@ export default function EventDetail() {
                 </CardHeader>
                 <CardContent>
                   <p className="font-gotham-light text-eagle-green/80 leading-relaxed">
-                    {event.description}
+                    {eventDescription}
                   </p>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Event Details */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="font-gotham-bold text-eagle-green">Event Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-gotham-bold text-eagle-green mb-1">Organizer</h4>
-                      <p className="font-gotham-light text-eagle-green/70">{event.organizer.name}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-gotham-bold text-eagle-green mb-1">Contact</h4>
-                      <p className="font-gotham-light text-eagle-green/70">{event.organizer.contact}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-gotham-bold text-eagle-green mb-1">Duration</h4>
-                      <p className="font-gotham-light text-eagle-green/70">
-                        {Math.ceil((new Date(event.endDate).getTime() - new Date(event.startDate).getTime()) / (1000 * 60 * 60))} hours
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-gotham-bold text-eagle-green mb-1">Language</h4>
-                      <p className="font-gotham-light text-eagle-green/70">
-                        {event.languages?.join(', ') || 'Not specified'}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Ticket Types */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
-                    <Ticket className="h-5 w-5" />
-                    Available Tickets
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {event.ticketTypes.map((ticket, index) => (
-                      <div 
-                        key={ticket.id} 
-                        className={`p-4 rounded-lg border transition-all cursor-pointer ${
-                          selectedTicketType === ticket.id 
-                            ? 'border-eagle-green bg-june-bud/10' 
-                            : 'border-gray-200 hover:border-eagle-green/50'
-                        }`}
-                        onClick={() => setSelectedTicketType(ticket.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-gotham-bold text-eagle-green">{ticket.name}</h4>
-                              {(ticket.remaining || 0) === 0 && (
-                                <Badge variant="secondary">Sold Out</Badge>
-                              )}
-                              {(ticket.remaining || 0) > 0 && (ticket.remaining || 0) <= 5 && (
-                                <Badge className="bg-yellow/20 text-eagle-green border-yellow">
-                                  Only {ticket.remaining} left
-                                </Badge>
-                              )}
+            {/* Ticket Types - API Events with selection */}
+            {isAPIEvent && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
+                      <Ticket className="h-5 w-5" />
+                      Select Your Tickets
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {((apiEvent as EventResponse).ticketTypes || []).map((ticket) => {
+                        const availability = eventOrderService.getAvailabilityStatus(ticket);
+                        const count = getTicketCount(ticket.id);
+                        
+                        return (
+                          <div 
+                            key={ticket.id} 
+                            className={`p-4 rounded-lg border transition-all ${
+                              count > 0 
+                                ? 'border-eagle-green bg-june-bud/10' 
+                                : 'border-gray-200'
+                            } ${!availability.available ? 'opacity-60' : ''}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-gotham-bold text-eagle-green">{ticket.name}</h4>
+                                  {!availability.available ? (
+                                    <Badge variant="secondary">Sold Out</Badge>
+                                  ) : ticket.availableCount <= 10 && (
+                                    <Badge className="bg-yellow/20 text-eagle-green border-yellow">
+                                      {availability.message}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {ticket.description && (
+                                  <p className="font-gotham-light text-eagle-green/70 text-sm mt-1">
+                                    {ticket.description}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <p className="font-gotham-bold text-eagle-green text-lg">
+                                    {eventOrderService.formatCurrency(ticket.priceMinor, ticket.currency)}
+                                  </p>
+                                  <p className="font-gotham-light text-eagle-green/70 text-sm">
+                                    {ticket.availableCount} available
+                                  </p>
+                                </div>
+                                
+                                {/* Quantity controls */}
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 border-eagle-green"
+                                    onClick={() => removeTicket(ticket.id)}
+                                    disabled={count === 0}
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </Button>
+                                  <span className="w-8 text-center font-gotham-bold text-eagle-green">
+                                    {count}
+                                  </span>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 border-eagle-green"
+                                    onClick={() => addTicket(ticket.id)}
+                                    disabled={!availability.available || count >= Math.min(ticket.availableCount, 10)}
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
-                            {ticket.description && (
-                              <p className="font-gotham-light text-eagle-green/70 text-sm mt-1">
-                                {ticket.description}
-                              </p>
-                            )}
                           </div>
-                          <div className="text-right">
-                            <p className="font-gotham-bold text-eagle-green text-lg">
-                              {eventsService.formatCurrency(ticket.price, event.baseCurrency)}
-                            </p>
-                            <p className="font-gotham-light text-eagle-green/70 text-sm">
-                              {ticket.remaining || 0} available
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
           </div>
 
-          {/* Booking Panel */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-8 space-y-4">
-              <Card className="border-eagle-green/20">
-                <CardHeader className="bg-gradient-to-r from-june-bud/10 to-white">
-                  <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
-                    <Ticket className="h-5 w-5" />
-                    Book Your Tickets
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  {/* Ticket Selection */}
-                  <div>
-                    <label className="block font-gotham-light text-eagle-green mb-2">Select Ticket Type</label>
-                    <Select value={selectedTicketType} onValueChange={setSelectedTicketType}>
-                      <SelectTrigger className="border-eagle-green/30 focus:border-viridian-green">
-                        <SelectValue placeholder="Choose ticket type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {event.ticketTypes.map(ticket => (
-                          <SelectItem 
-                            key={ticket.id} 
-                            value={ticket.id}
-                            disabled={(ticket.remaining || 0) === 0}
-                          >
-                            <div className="flex items-center justify-between w-full">
-                              <span>{ticket.name}</span>
-                              <span className="ml-2">
-                                {eventsService.formatCurrency(ticket.price, event.baseCurrency)}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Quantity Selection */}
-                  {selectedTicketType && (
-                    <div>
-                      <label className="block font-gotham-light text-eagle-green mb-2">Quantity</label>
-                      <Select 
-                        value={ticketQuantity.toString()} 
-                        onValueChange={(value) => setTicketQuantity(parseInt(value))}
-                      >
-                        <SelectTrigger className="border-eagle-green/30 focus:border-viridian-green">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: Math.min(10, event.ticketTypes.find(t => t.id === selectedTicketType)?.remaining || 0) }, (_, i) => (
-                            <SelectItem key={i + 1} value={(i + 1).toString()}>
-                              {i + 1}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {/* Total */}
-                  {selectedTicketType && (
-                    <div className="bg-june-bud/10 rounded-lg p-4">
-                      <div className="flex justify-between items-center">
-                        <span className="font-gotham-light text-eagle-green">Total</span>
-                        <span className="font-gotham-bold text-eagle-green text-xl">
-                          {eventsService.formatCurrency(
-                            (event.ticketTypes.find(t => t.id === selectedTicketType)?.price || 0) * ticketQuantity,
-                            event.baseCurrency
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <Dialog open={showBookingModal} onOpenChange={setShowBookingModal}>
-                    <DialogTrigger asChild>
-                      <Button 
-                        className="w-full bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold h-12"
-                        disabled={!selectedTicketType}
-                      >
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        Book Now
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle className="font-gotham-bold text-eagle-green">
-                          Confirm Your Booking
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="bg-june-bud/10 rounded-lg p-4">
-                          <h3 className="font-gotham-bold text-eagle-green mb-2">{event.title}</h3>
-                          <div className="text-sm text-eagle-green/70 space-y-1">
-                            <p>{eventTime}</p>
-                            <p>{event.venue}</p>
-                            <p>
-                              {event.ticketTypes.find(t => t.id === selectedTicketType)?.name} × {ticketQuantity}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between items-center font-gotham-bold text-eagle-green">
-                          <span>Total Amount:</span>
-                          <span className="text-xl">
-                            {eventsService.formatCurrency(
-                              (event.ticketTypes.find(t => t.id === selectedTicketType)?.price || 0) * ticketQuantity,
-                              event.baseCurrency
-                            )}
-                          </span>
-                        </div>
-
-                        <Button
-                          onClick={handleBooking}
-                          disabled={bookingMutation.isPending}
-                          className="w-full bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold"
-                        >
-                          {bookingMutation.isPending ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                              Processing...
-                            </>
-                          ) : (
-                            'Confirm Booking'
-                          )}
-                        </Button>
-
-                        <p className="text-xs font-gotham-light text-eagle-green/70 text-center">
-                          You will be redirected to secure payment after confirmation.
+          {/* Booking Panel for API Events */}
+          {isAPIEvent && (
+            <div className="lg:col-span-1">
+              <div className="sticky top-8 space-y-4">
+                <Card className="border-eagle-green/20">
+                  <CardHeader className="bg-gradient-to-r from-june-bud/10 to-white">
+                    <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
+                      <ShoppingCart className="h-5 w-5" />
+                      Order Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-4">
+                    {getTotalTickets() === 0 ? (
+                      <div className="text-center py-8">
+                        <Ticket className="h-12 w-12 mx-auto text-eagle-green/30 mb-2" />
+                        <p className="font-gotham-light text-eagle-green/70">
+                          Select tickets from the list to continue
                         </p>
                       </div>
-                    </DialogContent>
-                  </Dialog>
+                    ) : (
+                      <>
+                        {/* Selected tickets summary */}
+                        <div className="space-y-2">
+                          {Array.from(selectedTickets.entries()).map(([ticketTypeId, tickets]) => {
+                            const ticketType = (apiEvent as EventResponse).ticketTypes?.find(t => t.id === ticketTypeId);
+                            if (!ticketType || tickets.length === 0) return null;
+                            return (
+                              <div key={ticketTypeId} className="flex justify-between text-sm">
+                                <span className="font-gotham-light text-eagle-green">
+                                  {ticketType.name} × {tickets.length}
+                                </span>
+                                <span className="font-gotham-bold text-eagle-green">
+                                  {eventOrderService.formatCurrency(ticketType.priceMinor * tickets.length, ticketType.currency)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
 
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white">
-                      <Heart className="h-4 w-4 mr-1" />
-                      Save
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white">
-                      <Share2 className="h-4 w-4 mr-1" />
-                      Share
-                    </Button>
-                  </div>
+                        <Separator />
 
-                  <div className="flex items-center gap-2 text-sm font-gotham-light text-eagle-green/70">
-                    <Info className="h-4 w-4" />
-                    <span>Free cancellation up to 24 hours before the event</span>
-                  </div>
-                </CardContent>
-              </Card>
+                        {/* Total */}
+                        <div className="bg-june-bud/10 rounded-lg p-4">
+                          <div className="flex justify-between items-center">
+                            <span className="font-gotham-light text-eagle-green">Total ({getTotalTickets()} tickets)</span>
+                            <span className="font-gotham-bold text-eagle-green text-xl">
+                              {eventOrderService.formatCurrency(getTotalPrice(), baseCurrency)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <Button 
+                          className="w-full bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold h-12"
+                          onClick={handleProceedToCheckout}
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          Continue to Checkout
+                        </Button>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

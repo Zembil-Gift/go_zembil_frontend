@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EventWishlistButton } from "@/components/EventWishlistButton";
 import { Input } from "@/components/ui/input";
 import { format, isValid } from "date-fns";
+import { getEventImageUrl } from "@/utils/imageUtils";
 
 type Event = {
   id: number;
@@ -412,7 +413,7 @@ export default function EnhancedEvents() {
                   <Card key={event.id} className="group bg-white/90 border-amber-200 backdrop-blur-sm hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden">
                     <div className="relative h-48 overflow-hidden">
                       <img 
-                        src={event.imageUrl} 
+                        src={getEventImageUrl(event.images, event.imageUrl)} 
                         alt={event.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
