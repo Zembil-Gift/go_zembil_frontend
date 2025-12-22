@@ -3,17 +3,28 @@ import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import authService from "@/services/authService";
-import { Eye, EyeOff, Mail, Phone, Lock, User } from "lucide-react";
+import { apiService } from "@/services/apiService";
+import { Eye, EyeOff, Mail, Phone, Lock, User, Coins } from "lucide-react";
 
 const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
+
+interface Currency {
+  id: number;
+  code: string;
+  name: string;
+  symbol: string;
+  isActive: boolean;
+  isDefault: boolean;
+}
 
 const signupSchema = z
   .object({
@@ -30,6 +41,7 @@ const signupSchema = z
       .min(8, "Password must be at least 8 characters")
       .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/, "Password must contain both letters and numbers"),
     confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
+    preferredCurrencyCode: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ["confirmPassword"],
@@ -44,6 +56,18 @@ export default function SignUp() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Fetch available currencies
+  const { data: currencies = [], isLoading: currenciesLoading } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: async () => {
+      const response = await apiService.getRequest<Currency[]>('/api/currencies');
+      return response;
+    },
+  });
+
+  // Find default currency
+  const defaultCurrency = currencies.find(c => c.isDefault)?.code || 'USD';
+
   const form = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -54,6 +78,7 @@ export default function SignUp() {
       phoneNumber: "",
       password: "",
       confirmPassword: "",
+      preferredCurrencyCode: "",
     },
   });
 
@@ -67,6 +92,7 @@ export default function SignUp() {
         phoneNumber: data.phoneNumber,
         password: data.password,
         role: 'CUSTOMER',
+        preferredCurrencyCode: data.preferredCurrencyCode || defaultCurrency,
       });
       
       return result;
@@ -197,6 +223,42 @@ export default function SignUp() {
                   )}
                 />
 
+                <FormField
+                  control={form.control}
+                  name="preferredCurrencyCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Preferred Currency</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Coins className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
+                          <Select
+                            value={field.value || defaultCurrency}
+                            onValueChange={field.onChange}
+                            disabled={currenciesLoading}
+                          >
+                            <SelectTrigger className="pl-10 h-11">
+                              <SelectValue placeholder={currenciesLoading ? "Loading currencies..." : "Select currency"} />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white">
+                              {currencies.map((currency) => (
+                                <SelectItem key={currency.code} value={currency.code}>
+                                  <span className="flex items-center gap-2">
+                                    <span className="font-medium">{currency.symbol}</span>
+                                    <span>{currency.code}</span>
+                                    <span className="text-gray-500">- {currency.name}</span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="space-y-4">
                   <FormField
                     control={form.control}
@@ -277,9 +339,13 @@ export default function SignUp() {
                 </div>
               </div>
 
-              <div className="mt-4 text-center text-sm">
-                <Link to="/signin" className="text-viridian-green hover:text-viridian-green/80 font-medium">
+              <div className="mt-4 text-center text-sm space-y-2">
+                <Link to="/signin" className="block text-viridian-green hover:text-viridian-green/80 font-medium">
                   Sign in
+                </Link>
+                <div className="text-gray-500">or</div>
+                <Link to="/vendor-signup" className="block text-emerald-600 hover:text-emerald-700 font-medium">
+                  Sign up as a Vendor
                 </Link>
               </div>
             </div>

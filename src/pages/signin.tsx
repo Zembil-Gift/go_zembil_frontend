@@ -209,6 +209,10 @@ export default function SignIn() {
               <Link to="/signup" className="text-viridian-green hover:text-viridian-green/80 font-medium">
                 Sign up
               </Link>
+              <span className="text-gray-600"> or </span>
+              <Link to="/vendor-signup" className="text-emerald-600 hover:text-emerald-700 font-medium">
+                Sign up as Vendor
+              </Link>
             </div>
 
             <div className="mt-4 text-center">
