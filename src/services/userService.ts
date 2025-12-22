@@ -92,6 +92,16 @@ export interface CreateAddressRequest {
   postalCode: string;
 }
 
+export interface CreateAdminRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  username: string;
+  phoneNumber: string;
+  preferredCurrency?: string;
+}
+
 export interface UserStats {
   totalUsers: number;
   activeUsers: number;
@@ -141,6 +151,17 @@ class UserService {
    */
   async updatePreferences(preferences: UpdatePreferencesRequest): Promise<UserPreferences> {
     return await apiService.putRequest<UserPreferences>('/users/preferences', preferences);
+  }
+
+  /**
+   * Create a new admin user (admin only)
+   */
+  async createAdmin(data: CreateAdminRequest): Promise<any> {
+    const requestData = {
+      ...data,
+      role: 'ADMIN'
+    };
+    return await apiService.postRequest('/api/users/admin', requestData);
   }
 
   /**

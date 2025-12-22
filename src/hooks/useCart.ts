@@ -10,17 +10,20 @@ export function useCart() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Get user's preferred currency (fallback to USD)
+  const preferredCurrency = user?.preferredCurrencyCode || 'USD';
+
   const {
-    data: cartItems = [], 
+    data: cartData, 
     isLoading, 
     error,
     refetch,
     isFetching 
   } = useQuery({
-    queryKey: ["cart", "items"],
+    queryKey: ["cart", "items", preferredCurrency],
     queryFn: async () => {
       try {
-        const result = await cartService.getCart();
+        const result = await cartService.getCart(preferredCurrency);
         return result;
       } catch (error) {
         throw error;
@@ -33,8 +36,13 @@ export function useCart() {
     refetchOnWindowFocus: true,
   });
 
+  // Extract items and currency from cart data
+  const cartItems = cartData?.items || [];
+  const cartCurrency = cartData?.currency || preferredCurrency;
+
   console.log('Cart query state:', { 
     cartItems, 
+    cartCurrency,
     isLoading, 
     error, 
     isFetching,
@@ -165,6 +173,7 @@ export function useCart() {
   return {
     // Cart data
     cartItems,
+    cartCurrency,
     isLoading,
     error,
     refetch,
