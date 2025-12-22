@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, MapPin, Clock, Heart, Gift, Send, CalendarDays } from "lucide-react";
+import { Calendar, MapPin, Heart, Gift, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { formatPrice } from "@/lib/currency";
 
 interface GiftExperienceModalProps {
   experience: {
@@ -28,6 +29,12 @@ interface GiftExperienceModalProps {
   children: React.ReactNode;
 }
 
+interface GiftOrderResponse {
+  confirmationCode: string;
+  id: number;
+  status: string;
+}
+
 export default function GiftExperienceModal({ experience, children }: GiftExperienceModalProps) {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -42,13 +49,13 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
     specialRequests: "",
   });
   
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   
   const price = experience.ticketPrice || experience.basePrice || "0";
   const totalAmount = parseFloat(price) * formData.ticketQuantity;
 
-  const createGiftMutation = useMutation({
+  const createGiftMutation = useMutation<GiftOrderResponse, Error, any>({
     mutationFn: async (data: any) => {
       const endpoint = experience.type === "event" ? "/api/event-gift-orders" : "/api/service-gift-orders";
       const payload = {
@@ -57,7 +64,8 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
         totalAmount: totalAmount.toFixed(2),
       };
       
-      return await apiRequest("POST", endpoint, payload);
+      const response = await apiRequest("POST", endpoint, payload);
+      return await response.json();
     },
     onSuccess: (data) => {
       toast({
@@ -330,7 +338,7 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
                   )}
                   <div className="flex justify-between text-lg font-bold text-green-800 border-t pt-2">
                     <span>Total Amount:</span>
-                    <span>${totalAmount.toFixed(2)}</span>
+                    <span>{formatPrice(totalAmount, 'USD')}</span>
                   </div>
                 </div>
               </CardContent>

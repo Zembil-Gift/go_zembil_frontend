@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingBag } from 'lucide-react'
+import { ShoppingBag } from 'lucide-react'
 import { extractPriceAmount } from '@/services/productService';
+import { formatPriceFromDto, formatPrice, getPriceParts, getPriceCurrency, PriceData } from '@/lib/currency';
+import { WishlistButton } from '@/components/WishlistButton';
 
 interface GiftItemCardProps {
     product: any;
@@ -15,18 +17,29 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
         price,
         originalPrice,
         discountLabel,
-        isLiked = false,
-        currency = 'USD',
     } = product
 
-    // Handle price whether it's a number or an object with amount/unitAmountMinor
     const displayPrice = typeof price === 'number' ? price : extractPriceAmount(price);
+    
+    const currencyCode = (typeof price === 'object' && price?.currencyCode)
+        || product.currency
+        || getPriceCurrency(price as PriceData)
+        || 'USD';
+    
+    typeof price === 'object' && price
+        ? formatPriceFromDto(price as PriceData)
+        : formatPrice(displayPrice, currencyCode);
+    const priceParts = getPriceParts(displayPrice, currencyCode);
     
     const displayOriginalPrice = typeof originalPrice === 'number' 
         ? originalPrice 
         : extractPriceAmount(originalPrice);
+    
+    const formattedOriginalPrice = typeof originalPrice === 'object' && originalPrice
+        ? formatPriceFromDto(originalPrice as PriceData)
+        : displayOriginalPrice ? formatPrice(displayOriginalPrice, currencyCode) : null;
 
-    const hasDiscount = displayOriginalPrice && displayOriginalPrice > 0 && displayPrice < displayOriginalPrice
+    const hasDiscount = !!(displayOriginalPrice && displayOriginalPrice > 0 && displayPrice < displayOriginalPrice)
 
     const handleActionClick: React.MouseEventHandler = (e) => {
         e.preventDefault();
@@ -36,7 +49,7 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
     return (
         <Link to={`/product/${product.id}`} className={`block rounded-2xl transition-all duration-300 overflow-hidden hover:shadow-md ${className || ''}`}>
             {/* Image Container */}
-            <div className="relative rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+            <div className="relative rounded-t-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
                 <img
                     src={images?.[0] || '/api/placeholder/400/400'}
                     alt={name}
@@ -55,35 +68,31 @@ const GiftItemCard = ({product, className}: GiftItemCardProps) => {
                 <div className="flex items-center justify-between">
                     {/* Price Section */}
                     <div className="flex items-baseline space-x-2">
-                        <span className="text-xl font-bold text-gray-900">
-                            ${displayPrice.toFixed(2)}
+                        <span className="text-xl text-gray-900">
+                            <span className="font-bold">{priceParts.symbol}{priceParts.whole}</span>
+                            {priceParts.decimal && <span className='font-bold'>.{priceParts.decimal}</span>}
                         </span>
-                        {hasDiscount && (
+                        {hasDiscount && formattedOriginalPrice && (
                             <>
                                 <span className="text-sm line-through text-gray-400">
-                                    ${displayOriginalPrice?.toFixed(2)}
+                                    {formattedOriginalPrice}
                                 </span>
-                                <span className="text-sm text-red-600 font-medium">
-                                    (${discountLabel} Off)
-                                </span>
+                                {discountLabel && (
+                                    <span className="text-sm text-red-600 font-medium">
+                                        ({discountLabel} Off)
+                                    </span>
+                                )}
                             </>
                         )}
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex space-x-3">
-                        <button
-                            onClick={handleActionClick}
-                            aria-label="like gift"
-                            className={`text-gray-600 hover:text-red-500 transition-colors duration-200 ${
-                                isLiked ? 'text-red-500' : ''
-                            }`}>
-                            <Heart 
-                                size={24} 
-                                strokeWidth={1.5} 
-                                fill={isLiked ? 'currentColor' : 'none'}
-                            />
-                        </button>
+                        <WishlistButton 
+                            productId={product.id}
+                            size="sm"
+                            showLabel={false}
+                        />
                         <button 
                             onClick={handleActionClick}
                             className="text-gray-600 hover:text-primary-blue transition-colors duration-200"
