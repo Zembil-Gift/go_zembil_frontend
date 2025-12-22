@@ -10,7 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 
 import { cn } from "@/lib/utils";
 import { getPrimaryBadge } from "@/utils/productHelpers";
-import { extractPriceAmount } from "@/services/productService";
+import { extractPriceAmount, Price } from "@/services/productService";
+import { formatPriceFromDto, formatPrice, getPriceAmount, getPriceCurrency, PriceData } from "@/lib/currency";
+import { getProductImageUrl } from "@/utils/imageUtils";
 
 interface ProductCardProps {
   product: any;
@@ -23,6 +25,26 @@ export default function ProductCard({ product, className }: ProductCardProps) {
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   
+  // Get the best price object from SKUs or product
+  const getProductPriceObject = (): PriceData | null => {
+    if (product.productSku && product.productSku.length > 0) {
+      // Find SKU with lowest price
+      let lowestPrice: PriceData | null = null;
+      let lowestAmount = Infinity;
+      
+      for (const sku of product.productSku) {
+        const amount = getPriceAmount(sku.price);
+        if (amount > 0 && amount < lowestAmount) {
+          lowestAmount = amount;
+          lowestPrice = sku.price;
+        }
+      }
+      
+      if (lowestPrice) return lowestPrice;
+    }
+    return product.price || null;
+  };
+
   const getProductPrice = () => {
     if (product.productSku && product.productSku.length > 0) {
       const prices = product.productSku
@@ -49,12 +71,15 @@ export default function ProductCard({ product, className }: ProductCardProps) {
     return product.stockQuantity || 0;
   };
   
+  const priceObject = getProductPriceObject();
   const price = getProductPrice();
   const originalPrice = product.originalPrice ? parseFloat(product.originalPrice) : null;
   const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
   const inStock = isInStock();
   
-  const etbPrice = (price * 55).toFixed(0);
+  // Format price using currency from price data
+  const formattedPrice = formatPriceFromDto(priceObject);
+  const currencyCode = getPriceCurrency(priceObject);
   
   const primaryBadge = getPrimaryBadge(product);
   
@@ -88,7 +113,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         {/* Image Container with consistent aspect ratio */}
         <div className="relative aspect-square bg-gray-50 overflow-hidden">
           <img
-            src={product.cover || product.images?.[0] || '/api/placeholder/400/400'}
+            src={getProductImageUrl(product.images, product.cover, '/api/placeholder/400/400')}
             alt={product.name}
             className={cn(
               "w-full h-full object-cover transition-transform duration-300 group-hover:scale-105",
@@ -153,12 +178,12 @@ export default function ProductCard({ product, className }: ProductCardProps) {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-gray-900">
-                ${price.toFixed(2)}
+                {formattedPrice}
               </span>
               {originalPrice && (
                 <>
                   <span className="text-sm text-gray-400 line-through">
-                    ${originalPrice.toFixed(2)}
+                    {formatPrice(originalPrice, currencyCode)}
                   </span>
                   {discount > 0 && (
                     <span className="text-xs text-red-500 font-medium">
@@ -167,11 +192,6 @@ export default function ProductCard({ product, className }: ProductCardProps) {
                   )}
                 </>
               )}
-            </div>
-            
-            {/* ETB conversion */}
-            <div className="text-xs text-gray-500">
-              ≈ {etbPrice} ETB
             </div>
           </div>
 

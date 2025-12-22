@@ -39,6 +39,12 @@ export interface ProductSku {
   price?: Price;
   stockQuantity?: number;
   attributes?: ProductAttribute[];
+  images?: Array<{
+    id: number;
+    url: string;
+    isPrimary: boolean;
+    sortOrder: number;
+  }>;
 }
 
 export interface Product {
@@ -57,7 +63,17 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   imageUrl?: string;
-  images?: string[];
+  images?: Array<{
+    id: number;
+    url: string;
+    originalFilename?: string;
+    altText?: string;
+    sortOrder: number;
+    isPrimary: boolean;
+    fileSize?: number;
+    contentType?: string;
+    createdAt?: string;
+  }>;
   rating?: number;
   reviewCount?: number;
   isTrending?: boolean;
@@ -66,6 +82,13 @@ export interface Product {
   categoryId?: number;
   categorySlug?: string;
   category?: string;
+}
+
+export interface Tag {
+  id?: number;
+  name: string;
+  slug: string;
+  description?: string;
 }
 
 export interface PagedProductResponse {

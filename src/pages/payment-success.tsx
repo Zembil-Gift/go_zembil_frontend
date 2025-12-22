@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, AlertTriangle, ArrowRight, Home, ShoppingBag } from "lucide-react";
+import { CheckCircle, AlertTriangle, ArrowRight, Home, ShoppingBag, Ticket } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function PaymentSuccess() {
@@ -14,6 +14,7 @@ export default function PaymentSuccess() {
     const urlParams = new URLSearchParams(window.location.search);
     const paymentIntent = urlParams.get('payment_intent');
     const orderId = urlParams.get('orderId');
+    const orderType = urlParams.get('orderType'); // Check if it's an event order
     const trxRef = urlParams.get('trx_ref');
     const status = urlParams.get('status');
     
@@ -22,6 +23,7 @@ export default function PaymentSuccess() {
       setPaymentStatus('success');
       setOrderInfo({
         id: orderId,
+        orderType: orderType || 'PRODUCT',
         paymentMethod: 'Stripe',
         paymentId: paymentIntent
       });
@@ -32,6 +34,7 @@ export default function PaymentSuccess() {
         setPaymentStatus('success');
         setOrderInfo({
           id: orderId,
+          orderType: orderType || 'PRODUCT',
           paymentMethod: 'Chapa',
           paymentId: trxRef
         });
@@ -53,6 +56,7 @@ export default function PaymentSuccess() {
       setPaymentStatus('success');
       setOrderInfo({
         id: orderId,
+        orderType: orderType || 'PRODUCT',
         paymentMethod: 'Unknown'
       });
     }
@@ -156,30 +160,30 @@ export default function PaymentSuccess() {
           )}
 
           <div className="space-y-3">
-            {orderInfo?.id && (
+            {orderInfo?.id && orderInfo?.orderType === 'EVENT' ? (
+              // For event orders, show View Tickets button
+              <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+                <a href="/my-tickets">
+                  <Ticket className="w-4 h-4 mr-2" />
+                  View My Tickets
+                </a>
+              </Button>
+            ) : orderInfo?.id ? (
+              // For product orders, show Track Order button
               <Button asChild className="w-full bg-green-600 hover:bg-green-700">
                 <a href={`/track/${orderInfo.id}`}>
                   <ShoppingBag className="w-4 h-4 mr-2" />
                   Track Your Order
                 </a>
               </Button>
-            )}
+            ) : null}
             
             <Button variant="outline" asChild className="w-full">
-              <a href="/shop">
+              <a href={orderInfo?.orderType === 'EVENT' ? '/events' : '/shop'}>
                 <Home className="w-4 h-4 mr-2" />
-                Continue Shopping
+                {orderInfo?.orderType === 'EVENT' ? 'Browse More Events' : 'Continue Shopping'}
               </a>
             </Button>
-          </div>
-
-          <div className="text-center pt-4 border-t">
-            <p className="text-sm text-gray-600">
-              🎉 Thank you for choosing goZembil!
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Your gifts will be delivered with love from Ethiopia
-            </p>
           </div>
         </CardContent>
       </Card>

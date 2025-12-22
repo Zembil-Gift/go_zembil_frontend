@@ -25,6 +25,8 @@ import { productService, Product, extractPriceAmount } from "@/services/productS
 import { cartService } from "@/services/cartService";
 import { wishlistService } from "@/services/wishlistService";
 import { cn } from "@/lib/utils";
+import { formatPrice, getPriceParts, getPriceCurrency } from "@/lib/currency";
+import { getProductImageUrl, getAllProductImages, getFullImageUrl } from "@/utils/imageUtils";
 
 export default function ProductDetail() {
   const params = useParams();
@@ -48,9 +50,16 @@ export default function ProductDetail() {
     if (!product?.productSku || product.productSku.length === 0) return null;
     
     if (selectedSkuId) {
-      return product.productSku.find(sku => sku.id === selectedSkuId) || product.productSku[0];
+      return product.productSku.find(sku => sku.id === selectedSkuId) || null;
     }
-    return product.productSku[0];
+    
+    // Auto-select if there's only ONE SKU (it's the base product, not a variant choice)
+    if (product.productSku.length === 1) {
+      return product.productSku[0];
+    }
+    
+    // For multiple SKUs, don't auto-select - let user choose
+    return null;
   }, [product, selectedSkuId]);
 
   const currentPrice = useMemo(() => {
@@ -59,10 +68,22 @@ export default function ProductDetail() {
     return extractPriceAmount(product?.price);
   }, [selectedSku, product]);
 
+  const currencyCode = useMemo(() => {
+    if (selectedSku?.price?.currencyCode) return selectedSku.price.currencyCode;
+    if (product?.productSku?.[0]?.price?.currencyCode) return product.productSku[0].price.currencyCode;
+    return getPriceCurrency(product?.price);
+  }, [selectedSku, product]);
+
+  const priceParts = useMemo(() => getPriceParts(currentPrice, currencyCode), [currentPrice, currencyCode]);
+
   const stockQuantity = useMemo(() => {
+    // For multi-SKU products, only show stock when a variant is selected
+    const isMultiSku = product?.productSku && product.productSku.length > 1;
+    if (isMultiSku && !selectedSkuId) return null;
+    
     if (selectedSku?.stockQuantity !== undefined) return selectedSku.stockQuantity;
     return product?.stockQuantity || 0;
-  }, [selectedSku, product]);
+  }, [selectedSku, selectedSkuId, product]);
 
   const skuAttributes = useMemo(() => {
     if (!product?.productSku) return {};
@@ -86,6 +107,28 @@ export default function ProductDetail() {
     return result;
   }, [product]);
 
+  // Show product images by default. 
+  // Only show SKU images when user explicitly selects a variant (for multi-SKU products).
+  // For single-SKU products, show SKU images if available (since the SKU IS the product).
+  const images = useMemo(() => {
+    const isMultiSku = product?.productSku && product.productSku.length > 1;
+    const userSelectedVariant = selectedSkuId !== null;
+    
+    // Show SKU images if: single SKU product OR user explicitly selected a variant
+    if ((!isMultiSku || userSelectedVariant) && selectedSku?.images && selectedSku.images.length > 0) {
+      return selectedSku.images
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map(img => getFullImageUrl(img.url));
+    }
+    
+    return getAllProductImages(product?.images, product?.cover);
+  }, [selectedSkuId, selectedSku, product?.productSku, product?.images, product?.cover]);
+  
+  // Use images if available, otherwise empty array (no fallback)
+  const displayImages = useMemo(() => {
+    return images.length > 0 ? images : [];
+  }, [images]);
+
   const { data: reviews = [] } = useQuery({
     queryKey: ["products", productId, "reviews"],
     queryFn: () => [], // Reviews API not implemented yet - return empty for now
@@ -97,7 +140,7 @@ export default function ProductDetail() {
       if (isWishlisted) {
         return await wishlistService.removeProductFromWishlist(Number(productId));
       } else {
-        return await wishlistService.addToWishlist(Number(productId));
+        return await wishlistService.addToWishlist({ productId: Number(productId) });
       }
     },
     onSuccess: () => {
@@ -120,6 +163,11 @@ export default function ProductDetail() {
 
   const addToCartMutation = useMutation({
     mutationFn: async () => {
+      // Require variant selection for products with multiple SKUs
+      if (product?.productSku && product.productSku.length > 1 && !selectedSkuId) {
+        throw new Error('Please select a variant');
+      }
+      
       return await cartService.addToCart({
         productId: Number(productId),
         productSkuId: selectedSku?.id,
@@ -132,7 +180,7 @@ export default function ProductDetail() {
         productId: Number(productId),
         name: product?.name || "",
         price: currentPrice,
-        image: product?.cover || "",
+        image: getProductImageUrl(product?.images, product?.cover),
         quantity,
         skuId: selectedSku?.id,
         skuCode: selectedSku?.skuCode,
@@ -144,10 +192,10 @@ export default function ProductDetail() {
       });
       openCart();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to add item to cart",
+        description: error?.message || "Failed to add item to cart",
         variant: "destructive",
       });
     },
@@ -194,16 +242,13 @@ export default function ProductDetail() {
     );
   }
 
-  const images = product.cover
-    ? [product.cover] 
-    : ["https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"];
 
   const nextImage = () => {
-    setSelectedImageIndex((prev) => (prev + 1) % images.length);
+    setSelectedImageIndex((prev) => (prev + 1) % displayImages.length);
   };
 
   const prevImage = () => {
-    setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    setSelectedImageIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
   };
 
   const handleShare = async () => {
@@ -243,51 +288,62 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images */}
           <div className="space-y-4">
-            {/* Main Image */}
-            <div className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-lg">
-              <img
-                src={images[selectedImageIndex]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-              {images.length > 1 && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-colors"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-colors"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </>
-              )}
-            </div>
+            {displayImages.length > 0 ? (
+              <>
+                {/* Main Image */}
+                <div className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-lg">
+                  <img
+                    src={displayImages[selectedImageIndex]}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                  {displayImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={prevImage}
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-colors"
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+                      <button
+                        onClick={nextImage}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-colors"
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                    </>
+                  )}
+                </div>
 
-            {/* Thumbnail Images */}
-            {images.length > 1 && (
-              <div className="flex space-x-2 overflow-x-auto">
-                {images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImageIndex(index)}
-                     className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedImageIndex === index
-                        ? "border-viridian-green"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`${product.name} ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
+                {/* Thumbnail Images */}
+                {displayImages.length > 1 && (
+                  <div className="flex space-x-2 overflow-x-auto">
+                    {displayImages.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedImageIndex(index)}
+                         className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                          selectedImageIndex === index
+                            ? "border-viridian-green"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <img
+                          src={image}
+                          alt={`${product.name} ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              /* No Image Available */
+              <div className="aspect-square bg-gray-100 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="text-center text-gray-400">
+                  <p className="text-sm">No image available</p>
+                </div>
               </div>
             )}
           </div>
@@ -333,22 +389,39 @@ export default function ProductDetail() {
                   <Badge className="bg-sunset-orange text-white">Authentic</Badge>
                 )}
                 {stockQuantity > 0 && stockQuantity <= 5 && (
-                  <Badge variant="outline\" className="border-orange-500 text-orange-500">
+                  <Badge variant="outline" className="border-orange-500 text-orange-500">
                     Only {stockQuantity} left
                   </Badge>
                 )}
               </div>
+
+              {/* Product Tags */}
+              {product.tags && product.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {product.tags.map((tag: string, index: number) => (
+                    <Badge 
+                      key={index} 
+                      variant="secondary" 
+                      className="text-xs font-normal"
+                    >
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Price */}
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-viridian-green">
-                ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div className="text-3xl text-viridian-green">
+                <span className="font-bold">{priceParts.symbol}{priceParts.whole}</span>
+                {priceParts.decimal && <span className="font-normal">.{priceParts.decimal}</span>}
               </div>
-              <div className="text-sm text-gray-500">
-                ≈ {(currentPrice * 55).toLocaleString()} ETB
-              </div>
-              {stockQuantity > 0 ? (
+              {stockQuantity === null ? (
+                <div className="text-sm text-gray-500">
+                  Select a variant to see availability
+                </div>
+              ) : stockQuantity > 0 ? (
                 <div className="flex items-center gap-2 text-sm text-green-600">
                   <Check className="h-4 w-4" />
                   <span>In Stock ({stockQuantity} available)</span>
@@ -360,7 +433,9 @@ export default function ProductDetail() {
 
             {product.productSku && product.productSku.length > 1 && (
               <div className="space-y-4 pt-4 border-t border-gray-200">
-                <h3 className="font-semibold text-charcoal">Select Variant</h3>
+                <h3 className="font-semibold text-charcoal">
+                  Select Variant <span className="text-red-500">*</span>
+                </h3>
                 
                 <div className="grid grid-cols-1 gap-3">
                   {product.productSku.map((sku) => (
@@ -402,7 +477,7 @@ export default function ProductDetail() {
                       </div>
                       <div className="text-right">
                         <div className="font-semibold text-viridian-green">
-                          ${extractPriceAmount(sku.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatPrice(extractPriceAmount(sku.price), sku.price?.currencyCode || currencyCode)}
                         </div>
                         <div className="text-xs text-gray-500">
                           {(sku.stockQuantity || 0) > 0 
@@ -470,10 +545,16 @@ export default function ProductDetail() {
               <div className="flex space-x-4">
                 <Button
                   onClick={() => addToCartMutation.mutate()}
-                  disabled={addToCartMutation.isPending}
+                  disabled={addToCartMutation.isPending || stockQuantity === 0 || stockQuantity === null}
                   className="flex-1 bg-viridian-green hover:bg-viridian-green/90 text-white h-12"
                 >
-                  {addToCartMutation.isPending ? "Adding..." : "Add to Cart"}
+                  {addToCartMutation.isPending 
+                    ? "Adding..." 
+                    : stockQuantity === 0 
+                      ? "Out of Stock"
+                      : product?.productSku && product.productSku.length > 1 && !selectedSkuId
+                        ? "Select a Variant First"
+                        : "Add to Cart"}
                 </Button>
                 <Button
                   onClick={() => wishlistMutation.mutate()}

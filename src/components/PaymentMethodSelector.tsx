@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CreditCard, Smartphone, Globe, Shield, CheckCircle, AlertCircle } from 'lucide-react';
-import { formatDualCurrency, isEthiopianUser, detectUserCurrency } from '@/lib/currency';
+import { formatPrice } from '@/lib/currency';
 
 export interface PaymentMethodSelectorProps {
   amount: number;
@@ -41,12 +41,10 @@ export default function PaymentMethodSelector({
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType>('stripe');
   const [telebirrPhone, setTelebirrPhone] = useState('');
   
-  const { etb, usd } = formatDualCurrency(amount);
+  const formattedAmount = formatPrice(amount, currency);
   const isEthiopian = userLocation ? 
     (userLocation.toLowerCase() === 'ethiopia' || userLocation.toLowerCase() === 'et') : 
-    isEthiopianUser();
-  
-  const detectedCurrency = detectUserCurrency();
+    false;
 
   const paymentMethods: PaymentMethodOption[] = [
     {
@@ -129,10 +127,7 @@ export default function PaymentMethodSelector({
         <CardContent className="pt-6">
           <div className="text-center">
             <div className="text-3xl font-bold text-amber-600 mb-2">
-              {currency === 'ETB' ? etb : usd}
-            </div>
-            <div className="text-sm text-gray-600">
-              {currency === 'ETB' ? `≈ ${usd} USD` : `≈ ${etb} ETB`}
+              {formattedAmount}
             </div>
           </div>
         </CardContent>
@@ -287,7 +282,7 @@ export default function PaymentMethodSelector({
             }
           </span>
           <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-            {detectedCurrency}
+            {currency}
           </span>
         </div>
       </div>
