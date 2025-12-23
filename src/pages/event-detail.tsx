@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft,
   MapPin,
@@ -10,11 +10,12 @@ import {
   Globe,
   Ticket,
   ShoppingCart,
-  Heart,
-  Share2,
-  Info,
   Plus,
-  Minus
+  Minus,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  ZoomIn
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { 
   Event, 
   TicketType as EventTicketType,
+  EVENT_CATEGORIES,
 } from '@/types/events';
 import { eventsService } from '@/services/eventsService';
 import { 
@@ -46,6 +48,10 @@ export default function EventDetail() {
   
   // Ticket selection state - map of ticketTypeId to array of recipient info
   const [selectedTickets, setSelectedTickets] = useState<Map<number, TicketPurchaseItem[]>>(new Map());
+  
+  // Image gallery state
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Determine if slug is numeric (API event) or string (mock event)
   const isNumericId = slug ? !isNaN(Number(slug)) : false;
@@ -224,17 +230,91 @@ export default function EventDetail() {
   const ticketTypes = isAPIEvent 
     ? (apiEvent as EventResponse).ticketTypes 
     : (mockEvent as Event).ticketTypes;
-  // API uses priceMinor (cents), mock uses price (dollars)
-  const minPrice = isAPIEvent && ticketTypes?.length > 0 
+  const minPrice = isAPIEvent && ticketTypes?.length > 0
     ? Math.min(...(ticketTypes as TicketType[]).map(t => t.priceMinor))
     : ticketTypes?.length > 0 
       ? Math.min(...(ticketTypes as EventTicketType[]).map(t => t.price)) * 100  // Convert to minor units
       : 0;
 
   const { eventTime, userTime } = formatEventDate(eventDate, eventTimezone);
+  const endDateFormatted = eventEndDate ? formatEventDate(eventEndDate, eventTimezone) : null;
+
+  const apiImages = isAPIEvent ? (apiEvent as EventResponse).images : undefined;
+  const eventImages: string[] = apiImages && apiImages.length > 0
+    ? apiImages.map(img => getEventImageUrl([img], ''))
+    : eventBanner ? [eventBanner] : [];
+
+  const nextImage = () => {
+    if (eventImages.length === 0) return;
+    setSelectedImageIndex((prev) => (prev + 1) % eventImages.length);
+  };
+
+  const prevImage = () => {
+    if (eventImages.length === 0) return;
+    setSelectedImageIndex((prev) => (prev - 1 + eventImages.length) % eventImages.length);
+  };
+
+  const openLightbox = (index: number) => {
+    setSelectedImageIndex(index);
+    setLightboxOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Lightbox Modal */}
+      <AnimatePresence>
+        {lightboxOpen && eventImages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <button
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50"
+            >
+              <X className="h-8 w-8" />
+            </button>
+            
+            {eventImages.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                  className="absolute left-4 text-white hover:text-gray-300 z-50 p-2 bg-black/50 rounded-full"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                  className="absolute right-4 text-white hover:text-gray-300 z-50 p-2 bg-black/50 rounded-full"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+            
+            <motion.img
+              key={selectedImageIndex}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              src={eventImages[selectedImageIndex]}
+              alt={`${eventTitle} - Image ${selectedImageIndex + 1}`}
+              className="max-h-[90vh] max-w-[90vw] object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            {eventImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-gotham-light">
+                {selectedImageIndex + 1} / {eventImages.length}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
         <Button
@@ -249,25 +329,52 @@ export default function EventDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Hero Section */}
+            {/* Hero Section with Image Gallery */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="relative aspect-[16/9] max-h-[400px] rounded-2xl overflow-hidden mb-6">
-                {eventBanner ? (
-                  <img
-                    src={eventBanner}
-                    alt={eventTitle}
-                    className="w-full h-full object-cover"
-                  />
+              {/* Main Image */}
+              <div 
+                className="relative aspect-[16/9] max-h-[400px] rounded-2xl overflow-hidden mb-4 cursor-pointer group"
+                onClick={() => eventImages.length > 0 && openLightbox(selectedImageIndex)}
+              >
+                {eventImages.length > 0 ? (
+                  <>
+                    <img
+                      src={eventImages[selectedImageIndex]}
+                      alt={eventTitle}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <ZoomIn className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </>
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center">
                     <Calendar className="h-24 w-24 text-white/50" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                
+                {/* Navigation arrows for main image */}
+                {eventImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <ChevronLeft className="h-5 w-5 text-eagle-green" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <ChevronRight className="h-5 w-5 text-eagle-green" />
+                    </button>
+                  </>
+                )}
                 
                 {/* Badges */}
                 {isAPIEvent && (apiEvent as EventResponse).isFeatured && (
@@ -298,7 +405,39 @@ export default function EventDetail() {
                     From {eventOrderService.formatCurrency(minPrice, baseCurrency)}
                   </Badge>
                 </div>
+                
+                {/* Image counter */}
+                {eventImages.length > 1 && (
+                  <div className="absolute bottom-4 left-4">
+                    <Badge className="bg-black/60 text-white border-none font-gotham-light">
+                      {selectedImageIndex + 1} / {eventImages.length}
+                    </Badge>
+                  </div>
+                )}
               </div>
+
+              {/* Thumbnail Gallery */}
+              {eventImages.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+                  {eventImages.map((img, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                        index === selectedImageIndex 
+                          ? 'border-eagle-green ring-2 ring-eagle-green/30' 
+                          : 'border-transparent hover:border-gray-300'
+                      }`}
+                    >
+                      <img
+                        src={img}
+                        alt={`${eventTitle} thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <div className="space-y-4">
                 <div>
@@ -311,10 +450,15 @@ export default function EventDetail() {
                   </h1>
                 </div>
 
-                <div className="flex items-center gap-4 text-sm">
+                <div className="flex flex-wrap items-center gap-4 text-sm">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4 text-viridian-green" />
-                    <span className="font-gotham-light text-eagle-green">{eventTime}</span>
+                    <span className="font-gotham-light text-eagle-green">
+                      {eventTime}
+                      {endDateFormatted && (
+                        <> — {endDateFormatted.eventTime}</>
+                      )}
+                    </span>
                   </div>
                   
                   {userTime && (
@@ -322,7 +466,12 @@ export default function EventDetail() {
                       <Separator orientation="vertical" className="h-4" />
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4 text-viridian-green" />
-                        <span className="font-gotham-light text-eagle-green">Your time: {userTime}</span>
+                        <span className="font-gotham-light text-eagle-green">
+                          Your time: {userTime}
+                          {endDateFormatted?.userTime && (
+                            <> — {endDateFormatted.userTime}</>
+                          )}
+                        </span>
                       </div>
                     </>
                   )}
