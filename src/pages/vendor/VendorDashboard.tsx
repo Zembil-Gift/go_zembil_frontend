@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { vendorService, VendorProfile, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse } from "@/services/vendorService";
+import { vendorService, VendorProfile, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse, VendorRevenue } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService, ImageDto } from "@/services/imageService";
 import { getProductImageUrl, getEventImageUrl } from "@/utils/imageUtils";
@@ -30,6 +30,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Store,
   Package,
   Calendar,
@@ -51,6 +61,8 @@ import {
   ScanLine,
   Eye,
   Layers,
+  RotateCcw,
+  XCircle,
 } from "lucide-react";
 
 // Helper function to check if vendor is Ethiopian
@@ -86,6 +98,13 @@ export default function VendorDashboardNew() {
   const { data: vendorSummary } = useQuery({
     queryKey: ['vendor', 'summary'],
     queryFn: () => vendorService.getVendorSummary(),
+    enabled: isAuthenticated && isVendor,
+  });
+
+  // Fetch vendor revenue (with tax/VAT considerations)
+  const { data: vendorRevenue } = useQuery({
+    queryKey: ['vendor', 'revenue'],
+    queryFn: () => vendorService.getVendorRevenue(),
     enabled: isAuthenticated && isVendor,
   });
 
@@ -134,6 +153,67 @@ export default function VendorDashboardNew() {
     },
   });
 
+  // State for cancel/deactivate dialogs
+  const [cancelEventDialog, setCancelEventDialog] = useState<{ open: boolean; eventId: number | null; eventTitle: string }>({
+    open: false, eventId: null, eventTitle: ''
+  });
+  const [cancelReason, setCancelReason] = useState('');
+  const [deactivateProductDialog, setDeactivateProductDialog] = useState<{ open: boolean; productId: number | null; productName: string }>({
+    open: false, productId: null, productName: ''
+  });
+
+  // Product deactivation mutation
+  const deactivateProductMutation = useMutation({
+    mutationFn: (productId: number) => vendorService.deactivateProduct(productId),
+    onSuccess: () => {
+      toast({ title: "Product deactivated", description: "Your product has been deactivated and is no longer visible to customers." });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'my-products'] });
+      setDeactivateProductDialog({ open: false, productId: null, productName: '' });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Product reactivation mutation
+  const reactivateProductMutation = useMutation({
+    mutationFn: (productId: number) => vendorService.reactivateProduct(productId),
+    onSuccess: () => {
+      toast({ title: "Product reactivated", description: "Your product is now active and visible to customers." });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'my-products'] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Event cancellation mutation
+  const cancelEventMutation = useMutation({
+    mutationFn: ({ eventId, reason }: { eventId: number; reason: string }) => 
+      vendorService.cancelEvent(eventId, reason),
+    onSuccess: () => {
+      toast({ title: "Event cancelled", description: "Your event has been cancelled." });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'events'] });
+      setCancelEventDialog({ open: false, eventId: null, eventTitle: '' });
+      setCancelReason('');
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Event reactivation mutation
+  const reactivateEventMutation = useMutation({
+    mutationFn: (eventId: number) => vendorService.reactivateEvent(eventId),
+    onSuccess: () => {
+      toast({ title: "Event reactivated", description: "Your event has been reactivated and is now visible." });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'events'] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   if (authLoading || profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -165,12 +245,19 @@ export default function VendorDashboardNew() {
       case 'ENABLED':
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
       case 'PENDING':
+      case 'PENDING_APPROVAL':
         return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
       case 'REJECTED':
       case 'DISABLED':
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
       case 'DRAFT':
         return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+      case 'INACTIVE':
+        return <Badge className="bg-slate-100 text-slate-800">Inactive</Badge>;
+      case 'CANCELLED':
+        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
+      case 'COMPLETED':
+        return <Badge className="bg-blue-100 text-blue-800">Completed</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -281,9 +368,16 @@ export default function VendorDashboardNew() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {vendorSummary?.revenueCurrency || '$'}{vendorSummary?.totalRevenue?.toFixed(2) || '0.00'}
+                    {vendorRevenue?.currencySymbol || '$'}{vendorRevenue?.totalRevenue?.toFixed(2) || '0.00'}
                   </div>
-                  <p className="text-xs text-muted-foreground">All time</p>
+                  <p className="text-xs text-muted-foreground">
+                    {vendorRevenue?.totalOrderCount || 0} orders • {vendorRevenue?.currencyCode || 'USD'}
+                  </p>
+                  {vendorRevenue?.isVatRegistered && vendorRevenue?.vatIncluded > 0 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Includes {vendorRevenue.currencySymbol}{vendorRevenue.vatIncluded.toFixed(2)} VAT (pass-through)
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -444,6 +538,32 @@ export default function VendorDashboardNew() {
                         <Button asChild variant="outline" size="sm">
                           <Link to={`/vendor/products/${product.id}/price`}>Update Price</Link>
                         </Button>
+                        {product.status?.toUpperCase() === 'INACTIVE' ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => reactivateProductMutation.mutate(product.id!)}
+                            disabled={reactivateProductMutation.isPending}
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            <RotateCcw className="h-4 w-4 mr-1" />
+                            Reactivate
+                          </Button>
+                        ) : ['ACTIVE', 'PENDING'].includes(product.status?.toUpperCase() || '') ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDeactivateProductDialog({ 
+                              open: true, 
+                              productId: product.id!, 
+                              productName: product.name || ''
+                            })}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Deactivate
+                          </Button>
+                        ) : null}
                       </div>
                     </CardContent>
                   </Card>
@@ -520,6 +640,32 @@ export default function VendorDashboardNew() {
                         <Button asChild variant="outline" size="sm">
                           <Link to={`/vendor/events/${event.id}/analytics`}>Analytics</Link>
                         </Button>
+                        {event.status?.toUpperCase() === 'CANCELLED' ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => reactivateEventMutation.mutate(event.id)}
+                            disabled={reactivateEventMutation.isPending}
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            <RotateCcw className="h-4 w-4 mr-1" />
+                            Reactivate
+                          </Button>
+                        ) : event.status?.toUpperCase() === 'APPROVED' || event.status?.toUpperCase() === 'PENDING_APPROVAL' ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCancelEventDialog({ 
+                              open: true, 
+                              eventId: event.id, 
+                              eventTitle: event.title 
+                            })}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Cancel
+                          </Button>
+                        ) : null}
                       </div>
                     </CardContent>
                   </Card>
@@ -680,6 +826,85 @@ export default function VendorDashboardNew() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Deactivate Product Dialog */}
+      <AlertDialog open={deactivateProductDialog.open} onOpenChange={(open) => {
+        if (!open && !deactivateProductMutation.isPending) {
+          setDeactivateProductDialog({ open: false, productId: null, productName: '' });
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate Product</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate "{deactivateProductDialog.productName}"? 
+              This will hide the product from customers. You can reactivate it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deactivateProductMutation.isPending}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deactivateProductDialog.productId) {
+                  deactivateProductMutation.mutate(deactivateProductDialog.productId);
+                }
+              }}
+              disabled={deactivateProductMutation.isPending}
+            >
+              {deactivateProductMutation.isPending ? 'Deactivating...' : 'Deactivate'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancel Event Dialog */}
+      <Dialog open={cancelEventDialog.open} onOpenChange={(open) => {
+        if (!open) {
+          setCancelEventDialog({ open: false, eventId: null, eventTitle: '' });
+          setCancelReason('');
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Event</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel "{cancelEventDialog.eventTitle}"? 
+              Please provide a reason for cancellation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="cancel-reason">Cancellation Reason</Label>
+            <Textarea
+              id="cancel-reason"
+              placeholder="Enter the reason for cancelling this event..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="mt-2"
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setCancelEventDialog({ open: false, eventId: null, eventTitle: '' });
+              setCancelReason('');
+            }}>
+              Go Back
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (cancelEventDialog.eventId && cancelReason.trim()) {
+                  cancelEventMutation.mutate({ eventId: cancelEventDialog.eventId, reason: cancelReason });
+                }
+              }}
+              disabled={!cancelReason.trim() || cancelEventMutation.isPending}
+            >
+              {cancelEventMutation.isPending ? 'Cancelling...' : 'Cancel Event'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
