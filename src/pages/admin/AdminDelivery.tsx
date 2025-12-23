@@ -67,7 +67,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { getFullImageUrl } from '@/utils/imageUtils';
 import {
   adminDeliveryService,
   DeliveryPersonDto,
@@ -984,7 +983,7 @@ export default function AdminDelivery() {
                   </h4>
                   <div className="border rounded-lg overflow-hidden">
                     <img
-                      src={getFullImageUrl(selectedAssignment.proofImageUrl)}
+                      src={selectedAssignment.proofImageUrl}
                       alt="Delivery proof"
                       className="w-full max-h-96 object-contain bg-gray-100"
                     />

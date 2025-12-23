@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { StateSelect, COUNTRIES } from '@/components/ui/state-select';
 import {
   Dialog,
   DialogContent,
@@ -53,72 +54,6 @@ import {
   TaxCategoryRequest,
   TaxRateRequest
 } from '@/services/adminService';
-
-// Country names must match the format used in shipping addresses (Checkout.tsx)
-const COUNTRIES = [
-  { value: "United States", label: "United States" },
-  { value: "Ethiopia", label: "Ethiopia" },
-  { value: "Canada", label: "Canada" },
-  { value: "United Kingdom", label: "United Kingdom" },
-  { value: "Europe", label: "Europe" },
-  { value: "Australia", label: "Australia" },
-  { value: "Middle East", label: "Middle East" },
-];
-
-
-const US_STATES = [
-  { value: "AL", label: "Alabama" },
-  { value: "AK", label: "Alaska" },
-  { value: "AZ", label: "Arizona" },
-  { value: "AR", label: "Arkansas" },
-  { value: "CA", label: "California" },
-  { value: "CO", label: "Colorado" },
-  { value: "CT", label: "Connecticut" },
-  { value: "DE", label: "Delaware" },
-  { value: "FL", label: "Florida" },
-  { value: "GA", label: "Georgia" },
-  { value: "HI", label: "Hawaii" },
-  { value: "ID", label: "Idaho" },
-  { value: "IL", label: "Illinois" },
-  { value: "IN", label: "Indiana" },
-  { value: "IA", label: "Iowa" },
-  { value: "KS", label: "Kansas" },
-  { value: "KY", label: "Kentucky" },
-  { value: "LA", label: "Louisiana" },
-  { value: "ME", label: "Maine" },
-  { value: "MD", label: "Maryland" },
-  { value: "MA", label: "Massachusetts" },
-  { value: "MI", label: "Michigan" },
-  { value: "MN", label: "Minnesota" },
-  { value: "MS", label: "Mississippi" },
-  { value: "MO", label: "Missouri" },
-  { value: "MT", label: "Montana" },
-  { value: "NE", label: "Nebraska" },
-  { value: "NV", label: "Nevada" },
-  { value: "NH", label: "New Hampshire" },
-  { value: "NJ", label: "New Jersey" },
-  { value: "NM", label: "New Mexico" },
-  { value: "NY", label: "New York" },
-  { value: "NC", label: "North Carolina" },
-  { value: "ND", label: "North Dakota" },
-  { value: "OH", label: "Ohio" },
-  { value: "OK", label: "Oklahoma" },
-  { value: "OR", label: "Oregon" },
-  { value: "PA", label: "Pennsylvania" },
-  { value: "RI", label: "Rhode Island" },
-  { value: "SC", label: "South Carolina" },
-  { value: "SD", label: "South Dakota" },
-  { value: "TN", label: "Tennessee" },
-  { value: "TX", label: "Texas" },
-  { value: "UT", label: "Utah" },
-  { value: "VT", label: "Vermont" },
-  { value: "VA", label: "Virginia" },
-  { value: "WA", label: "Washington" },
-  { value: "WV", label: "West Virginia" },
-  { value: "WI", label: "Wisconsin" },
-  { value: "WY", label: "Wyoming" },
-  { value: "DC", label: "District of Columbia" },
-];
 
 export default function AdminTax() {
   const { toast } = useToast();
@@ -700,19 +635,10 @@ export default function AdminTax() {
             {zoneForm.country === 'United States' ? (
               <div>
                 <Label>State *</Label>
-                <Select 
-                  value={zoneForm.state} 
+                <StateSelect
+                  value={zoneForm.state}
                   onValueChange={(v) => setZoneForm({ ...zoneForm, state: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a state" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {US_STATES.map((state) => (
-                      <SelectItem key={state.value} value={state.value}>{state.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
                 <p className="text-xs text-muted-foreground mt-1">US taxes are applied based on state</p>
               </div>
             ) : zoneForm.country ? (
