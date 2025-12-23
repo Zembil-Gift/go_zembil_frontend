@@ -388,11 +388,19 @@ export default function MyEventTickets() {
                         </span>
                       </div>
                     )}
-                    {selectedOrder.taxMinor > 0 && (
+                    {selectedOrder.vatAmountMinor > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="font-gotham-light text-eagle-green/70">Tax</span>
+                        <span className="font-gotham-light text-eagle-green/70">VAT (15%)</span>
                         <span className="font-gotham-light text-eagle-green">
-                          {eventOrderService.formatCurrency(selectedOrder.taxMinor, selectedOrder.currency)}
+                          {eventOrderService.formatCurrency(selectedOrder.vatAmountMinor, selectedOrder.currency)}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.salesTaxMinor > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="font-gotham-light text-eagle-green/70">Sales Tax</span>
+                        <span className="font-gotham-light text-eagle-green">
+                          {eventOrderService.formatCurrency(selectedOrder.salesTaxMinor, selectedOrder.currency)}
                         </span>
                       </div>
                     )}

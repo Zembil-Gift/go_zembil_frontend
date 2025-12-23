@@ -115,7 +115,8 @@ export interface EventOrderResponse {
   checkedInCount: number;
   subtotalMinor: number;
   discountMinor: number;
-  taxMinor: number;
+  vatAmountMinor: number;
+  salesTaxMinor: number;
   totalAmountMinor: number;
   currency: string;
   giftMessage?: string;
