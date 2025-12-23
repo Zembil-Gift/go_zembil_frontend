@@ -12,7 +12,7 @@ import { LocalSeasonalThemeSelector } from "@/components/seasonal/LocalSeasonalT
 import { LocalSeasonalWishlistHeader, LocalSeasonalDecorations, LocalSeasonalProductBadge } from "@/components/seasonal/LocalSeasonalDecorations";
 import { formatPrice } from "@/lib/currency";
 import { WishListItemDto } from "@/services/wishlistService";
-import { getSkuImageUrl } from "@/utils/imageUtils";
+import { getSkuImageUrl, getProductImageUrl } from "@/utils/imageUtils";
 import { useState } from "react";
 
 function WishlistContent() {
@@ -24,11 +24,9 @@ function WishlistContent() {
     moveToCart,
     batchMoveToCart,
     batchDelete,
-    clearWishlist,
     isMovingToCart,
     isBatchMovingToCart,
-    isBatchDeleting,
-    isClearingWishlist
+    isBatchDeleting
   } = useWishlist();
   const { currentTheme, isSeasonalMode } = useLocalSeasonalTheme();
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
@@ -195,11 +193,16 @@ function WishlistContent() {
                   {/* Product Image */}
                   <div className="relative aspect-square bg-gray-100">
                     {(() => {
-                      const imageUrl = getSkuImageUrl(
-                        item.productSku?.images,
-                        item.productImages, // Now we have product images available
-                        item.imageUrl
-                      );
+                      // Priority order: SKU images > Product images > imageUrl fallback
+                      let imageUrl = '';
+                      
+                      if (item.productSku?.images && item.productSku.images.length > 0) {
+                        imageUrl = getSkuImageUrl(item.productSku.images);
+                      } else if (item.productImages && item.productImages.length > 0) {
+                        imageUrl = getProductImageUrl(item.productImages);
+                      } else if (item.imageUrl) {
+                        imageUrl = item.imageUrl;
+                      }
                       
                       return imageUrl ? (
                         <img

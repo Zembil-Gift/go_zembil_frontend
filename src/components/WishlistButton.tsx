@@ -1,8 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useWishlist } from "@/hooks/useWishlist";
-import { useAuth } from "@/hooks/useAuth";
 import { Heart, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface WishlistButtonProps {
@@ -20,7 +18,6 @@ export function WishlistButton({
   className,
   onClick,
 }: WishlistButtonProps) {
-  const { isAuthenticated } = useAuth();
   const { 
     isInWishlist,
     addToWishlist, 
@@ -28,7 +25,6 @@ export function WishlistButton({
     isAddingToWishlist, 
     isRemovingFromWishlist 
   } = useWishlist();
-  const navigate = useNavigate();
 
   const inWishlist = isInWishlist(productId);
   const isLoading = isAddingToWishlist || isRemovingFromWishlist;
