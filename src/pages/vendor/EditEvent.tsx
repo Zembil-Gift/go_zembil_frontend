@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { vendorService, VendorProfile, UpdateEventRequest } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService, ImageDto } from "@/services/imageService";
-import { getFullImageUrl } from "@/utils/imageUtils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -176,10 +175,11 @@ export default function EditEvent() {
   // Populate form when event data is loaded
   useEffect(() => {
     if (event) {
-      // Load event images
+      // Load event images - use fullUrl from backend
       const imageObjects: ImageDto[] = (event.images || []).map((img, index) => ({
         id: img.id || index + 1,
-        url: getFullImageUrl(img.url),
+        url: img.url,
+        fullUrl: img.fullUrl,
         originalFilename: img.originalFilename || `image-${index + 1}`,
         altText: img.altText || event.title,
         sortOrder: img.sortOrder ?? index,
