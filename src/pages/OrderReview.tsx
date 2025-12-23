@@ -26,11 +26,18 @@ import { orderService } from "@/services/orderService";
 
 interface OrderTotals {
   subtotalMinor: number;
+  netSubtotalMinor?: number;
+  vatAmountMinor?: number;
+  salesTaxMinor?: number;
   discountMinor: number;
-  taxMinor: number;
   shippingMinor: number;
   platformFeeMinor?: number;
   totalMinor: number;
+  vatRate?: number;
+  salesTaxRate?: number;
+  vatApplied?: boolean;
+  salesTaxApplied?: boolean;
+  taxScenario?: string;
 }
 
 interface OrderLine {
@@ -115,7 +122,6 @@ export default function OrderReview() {
         totals: (orderData as any).totals || {
           subtotalMinor: (orderData.subtotal || 0) * 100,
           discountMinor: (orderData.discount || 0) * 100,
-          taxMinor: (orderData.tax || 0) * 100,
           shippingMinor: (orderData.shippingCost || 0) * 100,
           totalMinor: (orderData.totalAmount || 0) * 100,
         },
@@ -229,7 +235,7 @@ export default function OrderReview() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Review Your Order</h1>
               <p className="text-gray-600 mt-1">
-                Order #{order.orderNumber} • Please review before payment
+                Please review your order details before payment
               </p>
             </div>
           </div>
@@ -376,6 +382,33 @@ export default function OrderReview() {
                   <span>{formatPrice(fromMinor(order.totals.subtotalMinor), currency)}</span>
                 </div>
 
+                {/* VAT Information - For Ethiopian orders with VAT-registered vendors */}
+                {/* Hide VAT details for DIASPORA_TO_ETHIOPIA scenario - diaspora customers don't need to see Ethiopian VAT breakdown */}
+                {order.totals.vatApplied && 
+                 order.totals.vatAmountMinor && 
+                 order.totals.vatAmountMinor > 0 && 
+                 order.totals.taxScenario !== 'DIASPORA_TO_ETHIOPIA' && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-amber-800">VAT Included ({((order.totals.vatRate || 0.15) * 100).toFixed(0)}%)</span>
+                      <span className="text-amber-800">{formatPrice(fromMinor(order.totals.vatAmountMinor), currency)}</span>
+                    </div>
+                    <p className="text-xs text-amber-700">
+                      VAT is already included in the product prices shown above.
+                    </p>
+                  </div>
+                )}
+
+                {/* US Sales Tax - For US domestic orders */}
+                {order.totals.salesTaxApplied && order.totals.salesTaxMinor && order.totals.salesTaxMinor > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">
+                      Sales Tax ({((order.totals.salesTaxRate || 0) * 100).toFixed(2)}%)
+                    </span>
+                    <span>{formatPrice(fromMinor(order.totals.salesTaxMinor), currency)}</span>
+                  </div>
+                )}
+
                 {/* Shipping */}
                 <div className="flex justify-between">
                   <span className="text-gray-600 flex items-center gap-1">
@@ -389,14 +422,6 @@ export default function OrderReview() {
                   )}
                 </div>
 
-                {/* Tax */}
-                {order.totals.taxMinor > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tax</span>
-                    <span>{formatPrice(fromMinor(order.totals.taxMinor), currency)}</span>
-                  </div>
-                )}
-
                 {/* Discount */}
                 {order.totals.discountMinor > 0 && (
                   <div className="flex justify-between text-green-600">
@@ -405,14 +430,6 @@ export default function OrderReview() {
                       Discount
                     </span>
                     <span>-{formatPrice(fromMinor(order.totals.discountMinor), currency)}</span>
-                  </div>
-                )}
-
-                {/* Platform Service Fee */}
-                {order.totals.platformFeeMinor && order.totals.platformFeeMinor > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Service Fee</span>
-                    <span>{formatPrice(fromMinor(order.totals.platformFeeMinor), currency)}</span>
                   </div>
                 )}
 
@@ -425,6 +442,24 @@ export default function OrderReview() {
                     {formatPrice(fromMinor(order.totals.totalMinor), currency)}
                   </span>
                 </div>
+
+                {/* Tax Scenario Info - for transparency */}
+                {order.totals.taxScenario && (
+                  <p className="text-xs text-gray-500 text-center">
+                    {order.totals.taxScenario === 'DIASPORA_TO_ETHIOPIA' && 
+                      'International purchase with delivery in Ethiopia'}
+                    {order.totals.taxScenario === 'DOMESTIC_ETHIOPIA' && 
+                      'Domestic Ethiopian order'}
+                    {order.totals.taxScenario === 'US_DOMESTIC' && 
+                      'US domestic order'}
+                    {order.totals.taxScenario === 'FOREIGN_TO_US' && 
+                      'International purchase with US delivery'}
+                    {order.totals.taxScenario === 'ETHIOPIA_EXPORT' && 
+                      'Export from Ethiopia (VAT zero-rated)'}
+                    {order.totals.taxScenario === 'DIASPORA_EXPORT' && 
+                      'Export order (no tax)'}
+                  </p>
+                )}
 
                 {/* Payment Method Badge */}
                 <div className="pt-2">
