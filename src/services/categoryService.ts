@@ -1,153 +1,49 @@
 import { apiService } from './apiService';
 
-// Types for categories
 export interface Category {
   id: number;
   name: string;
   slug: string;
   description?: string;
-  parentId?: number;
-  level: number;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
+  iconName?: string;
 }
 
-export interface CategoryWithProducts extends Category {
-  productCount: number;
-}
-
-export interface CategoryTree extends Category {
-  subcategories: CategoryTree[];
-}
-
-export interface CreateCategoryRequest {
+export interface SubCategory {
+  id: number;
+  categoryId: number;
   name: string;
   slug: string;
   description?: string;
-  parentId?: number;
-  sortOrder?: number;
+  iconName?: string;
 }
 
-export interface UpdateCategoryRequest extends Partial<CreateCategoryRequest> {
-  isActive?: boolean;
-}
-
-// Category service
 class CategoryService {
+  private baseUrl = '/api/categories';
+
   /**
-   * Get all categories (flat list)
+   * Get all categories
    */
-  async getAllCategories(): Promise<Category[]> {
-    return await apiService.getRequest<Category[]>('/categories');
+  async getCategories(): Promise<Category[]> {
+    try {
+      return await apiService.getRequest<Category[]>(this.baseUrl);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+      return [];
+    }
   }
 
   /**
-   * Get categories with product counts
+   * Get sub-categories for a category
    */
-  async getCategoriesWithProductCounts(): Promise<CategoryWithProducts[]> {
-    return await apiService.getRequest<CategoryWithProducts[]>('/categories/with-counts');
-  }
-
-  /**
-   * Get category hierarchy (tree structure)
-   */
-  async getCategoryTree(): Promise<CategoryTree[]> {
-    return await apiService.getRequest<CategoryTree[]>('/categories/tree');
-  }
-
-  /**
-   * Get category by ID
-   */
-  async getCategoryById(id: number): Promise<Category> {
-    return await apiService.getRequest<Category>(`/categories/${id}`);
-  }
-
-  /**
-   * Get category by slug
-   */
-  async getCategoryBySlug(slug: string): Promise<Category> {
-    return await apiService.getRequest<Category>(`/categories/slug/${slug}`);
-  }
-
-  /**
-   * Get subcategories by parent category ID
-   */
-  async getSubcategoriesByCategory(categoryId: number): Promise<Category[]> {
-    return await apiService.getRequest<Category[]>(`/categories/${categoryId}/subcategories`);
-  }
-
-  /**
-   * Get main categories (top-level only)
-   */
-  async getMainCategories(): Promise<Category[]> {
-    return await apiService.getRequest<Category[]>('/categories/main');
-  }
-
-  /**
-   * Get category path (breadcrumb)
-   */
-  async getCategoryPath(categoryId: number): Promise<Category[]> {
-    return await apiService.getRequest<Category[]>(`/categories/${categoryId}/path`);
-  }
-
-  /**
-   * Search categories
-   */
-  async searchCategories(query: string): Promise<Category[]> {
-    const queryParams = new URLSearchParams();
-    queryParams.append('q', query);
-    
-    return await apiService.getRequest<Category[]>(`/categories/search?${queryParams.toString()}`);
-  }
-
-  /**
-   * Create new category (admin only)
-   */
-  async createCategory(data: CreateCategoryRequest): Promise<Category> {
-    return await apiService.postRequest<Category>('/categories', data);
-  }
-
-  /**
-   * Update category (admin only)
-   */
-  async updateCategory(id: number, data: UpdateCategoryRequest): Promise<Category> {
-    return await apiService.putRequest<Category>(`/categories/${id}`, data);
-  }
-
-  /**
-   * Delete category (admin only)
-   */
-  async deleteCategory(id: number): Promise<{ message: string }> {
-    return await apiService.deleteRequest(`/categories/${id}`);
-  }
-
-  /**
-   * Reorder categories (admin only)
-   */
-  async reorderCategories(categoryOrders: { id: number; sortOrder: number }[]): Promise<{ message: string }> {
-    return await apiService.putRequest('/categories/reorder', { categories: categoryOrders });
-  }
-
-  /**
-   * Get popular categories (based on product views/orders)
-   */
-  async getPopularCategories(limit: number = 10): Promise<CategoryWithProducts[]> {
-    const queryParams = new URLSearchParams();
-    queryParams.append('limit', limit.toString());
-    
-    return await apiService.getRequest<CategoryWithProducts[]>(`/categories/popular?${queryParams.toString()}`);
-  }
-
-  /**
-   * Get categories for navigation menu
-   */
-  async getNavigationCategories(): Promise<CategoryTree[]> {
-    return await apiService.getRequest<CategoryTree[]>('/categories/navigation');
+  async getSubCategories(categoryId: number): Promise<SubCategory[]> {
+    try {
+      return await apiService.getRequest<SubCategory[]>(`${this.baseUrl}/${categoryId}/sub-categories`);
+    } catch (error) {
+      console.error('Failed to fetch sub-categories:', error);
+      return [];
+    }
   }
 }
 
-// Export singleton instance
 export const categoryService = new CategoryService();
 export default categoryService;
