@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { vendorService, VendorProfile, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService, ImageDto } from "@/services/imageService";
-import { getProductImageUrl, getEventImageUrl, getFullImageUrl } from "@/utils/imageUtils";
+import { getProductImageUrl, getEventImageUrl } from "@/utils/imageUtils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,9 +91,9 @@ export default function VendorDashboardNew() {
 
   // Fetch vendor products
   const { data: productsData } = useQuery({
-    queryKey: ['vendor', 'products', vendorProfile?.id],
-    queryFn: () => vendorService.getVendorProducts(vendorProfile!.id),
-    enabled: isAuthenticated && isVendor && !!vendorProfile?.id,
+    queryKey: ['vendor', 'my-products'],
+    queryFn: () => vendorService.getMyProducts(),
+    enabled: isAuthenticated && isVendor,
   });
 
   // Fetch vendor events
@@ -361,9 +361,9 @@ export default function VendorDashboardNew() {
                             src={getProductImageUrl(product.images, product.cover)} 
                             alt={product.name} 
                             className="h-12 w-12 rounded object-cover"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                            onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
                           />
-                          <div className="h-12 w-12 rounded bg-gray-200 flex items-center justify-center hidden">
+                          <div className="h-12 w-12 rounded bg-gray-200 hidden items-center justify-center">
                             <Package className="h-6 w-6 text-gray-400" />
                           </div>
                           <div>
@@ -421,9 +421,9 @@ export default function VendorDashboardNew() {
                           src={getProductImageUrl(product.images, product.cover)} 
                           alt={product.name} 
                           className="h-16 w-16 rounded object-cover"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                          onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
                         />
-                        <div className="h-16 w-16 rounded bg-gray-200 flex items-center justify-center hidden">
+                        <div className="h-16 w-16 rounded bg-gray-200 hidden items-center justify-center">
                           <Package className="h-8 w-8 text-gray-400" />
                         </div>
                         <div>
@@ -488,9 +488,9 @@ export default function VendorDashboardNew() {
                           src={getEventImageUrl(event.images, event.bannerImageUrl)} 
                           alt={event.title} 
                           className="h-16 w-24 rounded object-cover"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                          onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
                         />
-                        <div className="h-16 w-24 rounded bg-gray-200 flex items-center justify-center hidden">
+                        <div className="h-16 w-24 rounded bg-gray-200 hidden items-center justify-center">
                           <Calendar className="h-8 w-8 text-gray-400" />
                         </div>
                         <div>
@@ -509,29 +509,17 @@ export default function VendorDashboardNew() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <Button asChild variant="outline" size="sm">
-                          <Link to={`/vendor/events/${event.id}`}>View</Link>
+                          <Link to={`/vendor/events/${event.id}/edit`}>
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Link>
+                        </Button>
+                        <Button asChild variant="outline" size="sm">
+                          <Link to={`/vendor/events/${event.id}/price`}>Update Price</Link>
                         </Button>
                         <Button asChild variant="outline" size="sm">
                           <Link to={`/vendor/events/${event.id}/analytics`}>Analytics</Link>
                         </Button>
-                        {(event.status === 'PENDING' || event.status === 'REJECTED') && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setActiveTab('requests');
-                              // Small delay to ensure tab switch completes
-                              setTimeout(() => {
-                                const eventsTab = document.querySelector('[value="events"]');
-                                if (eventsTab) {
-                                  (eventsTab as HTMLElement).click();
-                                }
-                              }, 100);
-                            }}
-                          >
-                            Edit in Requests
-                          </Button>
-                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -990,76 +978,6 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     },
   });
 
-  // Open edit dialogs
-  const openProductEdit = (product: Product) => {
-    setSelectedProduct(product);
-    
-    // Load existing SKUs or create default one
-    const skuData = (product.productSku && product.productSku.length > 0) 
-      ? product.productSku.map(sku => {
-          // Handle both direct price format and nested prices array format
-          const currencyCode = sku.price?.currencyCode || sku.price?.prices?.[0]?.currencyCode || (isEthiopianVendor(vendorProfile) ? "ETB" : currencies[0]?.code) || "";
-          // Use vendorAmount (what vendor receives) instead of amount (customer price with platform fee)
-          const amount = sku.price?.vendorAmount || sku.price?.amount || sku.price?.prices?.[0]?.amount || 0;
-          
-          return {
-            id: sku.id,
-            skuCode: sku.skuCode || "",
-            stockQuantity: sku.stockQuantity || 0,
-            currencyCode,
-            amount,
-            attributes: sku.attributes?.map(attr => ({
-              id: attr.id,
-              name: attr.name,
-              value: attr.value,
-            })) || [],
-          };
-        })
-      : [{
-          skuCode: "",
-          stockQuantity: 0,
-          currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : currencies[0]?.code || "",
-          // Use vendorAmount for product-level price as well
-          amount: product.price?.vendorAmount || product.price?.prices?.[0]?.amount || product.price?.amount || 0,
-          attributes: [],
-        }];
-    
-    // Load SKU images - keyed by SKU index
-    const skuImagesMap: Record<number, ImageDto[]> = {};
-    if (product.productSku && product.productSku.length > 0) {
-      product.productSku.forEach((sku, index) => {
-        if (sku.images && sku.images.length > 0) {
-          skuImagesMap[index] = sku.images.map((img, imgIndex) => ({
-            id: img.id || imgIndex + 1,
-            url: getFullImageUrl(img.url),
-            originalFilename: img.originalFilename || `image-${imgIndex + 1}`,
-            altText: img.altText || sku.skuCode || product.name,
-            sortOrder: img.sortOrder ?? imgIndex,
-            isPrimary: img.isPrimary ?? (imgIndex === 0),
-            fileSize: img.fileSize || 0,
-            contentType: img.contentType || 'image/jpeg',
-            createdAt: img.createdAt || new Date().toISOString(),
-          }));
-        } else {
-          skuImagesMap[index] = [];
-        }
-      });
-    }
-    setCurrentSkuImages(skuImagesMap);
-    setPendingSkuImages({});
-    
-    productForm.reset({
-      name: product.name,
-      description: product.description || "",
-      summary: product.summary || "",
-      subCategoryId: product.subCategoryId?.toString() || "",
-      tags: product.tags?.join(", ") || "",
-      occasion: product.occasion || "",
-      productSku: skuData,
-    });
-    setEditProductOpen(true);
-  };
-
   const openPriceUpdateEdit = (request: PriceUpdateRequest) => {
     setSelectedPriceUpdate(request);
     const newPrice = request.newPrice?.prices?.[0];
@@ -1069,46 +987,6 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       reason: request.reason || "",
     });
     setEditPriceUpdateOpen(true);
-  };
-
-  const openEventEdit = (event: EventResponse) => {
-    setSelectedEvent(event);
-    
-    // Use the images directly since they're already ImageDto objects
-    const imageObjects: ImageDto[] = (event.images || []).map((img, index) => ({
-      id: img.id || index + 1,
-      url: img.url,
-      originalFilename: img.originalFilename || `image-${index + 1}`,
-      altText: img.altText || event.title,
-      sortOrder: img.sortOrder ?? index,
-      isPrimary: img.isPrimary ?? (index === 0),
-      fileSize: img.fileSize || 0,
-      contentType: img.contentType || 'image/jpeg',
-      createdAt: img.createdAt || new Date().toISOString(),
-    }));
-    
-    setCurrentEventImages(imageObjects);
-    setPendingEventImages([]);
-    eventForm.reset({
-      title: event.title,
-      description: event.description || "",
-      location: event.location || "",
-      city: event.city || "",
-      organizerContact: event.organizerContact || "",
-      bannerImageUrl: event.bannerImageUrl || "",
-      eventDate: event.eventDate ? new Date(event.eventDate).toISOString().slice(0, 16) : "",
-      eventEndDate: event.eventEndDate ? new Date(event.eventEndDate).toISOString().slice(0, 16) : "",
-      eventTypeId: event.eventTypeId?.toString() || "",
-      ticketTypes: event.ticketTypes?.map(tt => ({
-        id: tt.id,
-        name: tt.name,
-        description: tt.description || "",
-        capacity: tt.capacity,
-        currencyCode: tt.price?.prices?.[0]?.currencyCode || currencies[0]?.code || "USD",
-        amount: tt.price?.prices?.[0]?.amount || 0,
-      })) || [],
-    });
-    setEditEventOpen(true);
   };
 
   const openEventPriceEdit = (request: EventPriceUpdateResponse) => {
@@ -1448,9 +1326,9 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             src={getProductImageUrl(product.images, product.cover)} 
                             alt={product.name} 
                             className="h-16 w-16 rounded object-cover"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                            onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
                           />
-                          <div className="h-16 w-16 rounded bg-gray-200 flex items-center justify-center hidden">
+                          <div className="h-16 w-16 rounded bg-gray-200 hidden items-center justify-center">
                             <Package className="h-8 w-8 text-gray-400" />
                           </div>
                           <div>
@@ -1471,9 +1349,11 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                               View
                             </Link>
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => openProductEdit(product)}>
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
+                          <Button asChild variant="outline" size="sm">
+                            <Link to={`/vendor/products/${product.id}/edit`}>
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Link>
                           </Button>
                         </div>
                       </div>
@@ -1613,9 +1493,9 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             src={getEventImageUrl(event.images, event.bannerImageUrl)} 
                             alt={event.title} 
                             className="h-16 w-24 rounded object-cover"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                            onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
                           />
-                          <div className="h-16 w-24 rounded bg-gray-200 flex items-center justify-center hidden">
+                          <div className="h-16 w-24 rounded bg-gray-200 hidden items-center justify-center">
                             <Calendar className="h-8 w-8 text-gray-400" />
                           </div>
                           <div>
@@ -1629,9 +1509,11 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             </div>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => openEventEdit(event)}>
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
+                        <Button asChild variant="outline" size="sm">
+                          <Link to={`/vendor/events/${event.id}/edit`}>
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Link>
                         </Button>
                       </div>
                       {event.rejectionReason && (
@@ -2654,6 +2536,7 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
                       accept="image/jpeg,image/png,image/gif,image/webp"
                       onChange={handleFileSelect}
                       className="hidden"
+                      aria-label="Upload logo image"
                     />
                   </Label>
                   <p className="text-xs text-muted-foreground">

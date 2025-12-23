@@ -1,28 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import FadeIn from "@/components/animations/FadeIn";
 import SlideIn from "@/components/animations/SlideIn";
-import { ProductGridStagger, ProductGridItem, StaggerContainer, StaggerItem } from "@/components/animations/StaggerAnimations";
+import { ProductGridStagger, ProductGridItem } from "@/components/animations/StaggerAnimations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, Grid, List, SortAsc, Heart, ShoppingCart, Star, ChevronRight, ArrowLeft } from "lucide-react";
+import { Search, Grid, List, ChevronRight, Package } from "lucide-react";
 import GiftItemCard from "@/components/gift-card";
 import ZembilSignatureSets from "@/components/ZembilSignatureSets";
 import { productService, Product, PagedProductResponse } from "@/services/productService";
+import { categoryService } from "@/services/categoryService";
 import { getAllProductImages } from "@/utils/imageUtils";
-import { 
-  CATEGORIES, 
-  getCategoryBySlug, 
-  getSubcategoriesByCategory, 
-  parseUrlParams, 
-  CategoryFilters
-} from "@/shared/categories";
+import { getIconByName } from "@/components/admin/IconPicker";
 
 export default function Shop() {
   return <ShopContent />;
@@ -34,151 +29,137 @@ function ShopContent() {
   
   // Parse URL parameters
   const urlParams = new URLSearchParams(location.search);
-  const categoryFilters = parseUrlParams(urlParams);
+  const categoryIdParam = urlParams.get('categoryId');
+  const subCategoryIdParam = urlParams.get('subCategoryId');
+  const searchParam = urlParams.get('search') || '';
   
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('newest');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState(searchParam);
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParam);
+  const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage] = useState(20);
-  const [loadedProducts, setLoadedProducts] = useState<any[]>([]);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [filters, setFilters] = useState({
-    minPrice: '',
-    maxPrice: '',
-    minRating: '',
-    maxDeliveryDays: '',
-    isTrending: false,
-    isBestSeller: false,
-    isNewArrival: false
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(
+    categoryIdParam ? parseInt(categoryIdParam) : undefined
+  );
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<number | undefined>(
+    subCategoryIdParam ? parseInt(subCategoryIdParam) : undefined
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(0); // Reset to first page on search
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch categories from backend
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => categoryService.getCategories(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  // Get current category and subcategories
-  const currentCategory = categoryFilters.category ? getCategoryBySlug(categoryFilters.category) : undefined;
-  const subcategories = currentCategory ? getSubcategoriesByCategory(currentCategory.slug) : [];
+  // Fetch subcategories when a category is selected
+  const { data: subCategories = [], isLoading: subCategoriesLoading } = useQuery({
+    queryKey: ['subCategories', selectedCategoryId],
+    queryFn: () => selectedCategoryId ? categoryService.getSubCategories(selectedCategoryId) : Promise.resolve([]),
+    enabled: !!selectedCategoryId,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // Update URL with new category filters
-  const updateCategoryFilters = (newFilters: Partial<CategoryFilters>) => {
-    const updatedFilters = { ...categoryFilters, ...newFilters };
-    const params = new URLSearchParams(location.search);
-    
-    // Clear existing category params
-    params.delete('category');
-    params.delete('sub');
-    
-    // Add new category params
-    if (updatedFilters.category) params.set('category', updatedFilters.category);
-    if (updatedFilters.sub) params.set('sub', updatedFilters.sub);
-    
-    navigate(`/shop?${params.toString()}`, { replace: true });
-  };
+  // Get current category and subcategory objects
+  const currentCategory = useMemo(() => 
+    categories.find(c => c.id === selectedCategoryId),
+    [categories, selectedCategoryId]
+  );
+  
+  const currentSubCategory = useMemo(() => 
+    subCategories.find(s => s.id === selectedSubCategoryId),
+    [subCategories, selectedSubCategoryId]
+  );
 
-  // Handle main category selection
-  const handleCategorySelect = (categorySlug: string) => {
-    updateCategoryFilters({ category: categorySlug, sub: undefined });
-  };
-
-  // Handle subcategory selection  
-  const handleSubcategorySelect = (subcategorySlug: string) => {
-    if (categoryFilters.sub === subcategorySlug) {
-      // Deselect if already selected
-      updateCategoryFilters({ sub: undefined });
-    } else {
-      // Select new subcategory
-      updateCategoryFilters({ sub: subcategorySlug });
-    }
-  };
-
-  // Build query parameters for product fetching
-  const buildQueryParams = () => {
-    const params = new URLSearchParams();
-    if (searchTerm) params.append('search', searchTerm);
-    if (sortBy) params.append('sortBy', sortBy);
-    if (categoryFilters.category) params.append('category', categoryFilters.category);
-    if (categoryFilters.sub) params.append('subcategory', categoryFilters.sub);
-    
-    if (filters.minPrice) params.append('minPrice', filters.minPrice);
-    if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
-    if (filters.minRating) params.append('minRating', filters.minRating);
-    if (filters.maxDeliveryDays) params.append('maxDeliveryDays', filters.maxDeliveryDays);
-    if (filters.isTrending) params.append('isTrending', 'true');
-    if (filters.isBestSeller) params.append('isBestSeller', 'true');
-    if (filters.isNewArrival) params.append('isNewArrival', 'true');
-    params.append('page', '1');
-    params.append('limit', itemsPerPage.toString());
-    return params.toString();
-  };
-
-  // Fetch products
-  const queryParams = buildQueryParams();
-  const { data: initialData, isLoading } = useQuery<PagedProductResponse>({
-    queryKey: ['products', 'list', queryParams],
-    queryFn: () => productService.getAllProducts({
-      page: 0,
+  // Fetch products with filters
+  const { data: productsData, isLoading: productsLoading, isFetching } = useQuery<PagedProductResponse>({
+    queryKey: ['products', 'filtered', {
+      page: currentPage,
       size: itemsPerPage,
-      search: searchTerm,
-      categoryId: categoryFilters.category ? parseInt(categoryFilters.category) : undefined,
+      search: debouncedSearch,
+      categoryId: selectedCategoryId,
+      subCategoryId: selectedSubCategoryId,
+      sortBy
+    }],
+    queryFn: () => productService.getFilteredProducts({
+      page: currentPage,
+      size: itemsPerPage,
+      search: debouncedSearch || undefined,
+      categoryId: selectedCategoryId,
+      subCategoryId: selectedSubCategoryId,
     }),
   });
 
-  const products = initialData?.content || [];
-  const totalProducts = initialData?.totalElements || 0;
+  const products = productsData?.content || [];
+  const totalProducts = productsData?.totalElements || 0;
+  const totalPages = productsData?.totalPages || 0;
 
-  // Update loaded products when initial data changes
+  // Update URL when filters change
   useEffect(() => {
-    if (products.length > 0) {
-      setLoadedProducts(products);
-      setCurrentPage(1);
-    }
-  }, [products]);
-
-  // Load more products function
-  const loadMoreProducts = async () => {
-    if (isLoadingMore || loadedProducts.length >= totalProducts) return;
+    const params = new URLSearchParams();
+    if (selectedCategoryId) params.set('categoryId', selectedCategoryId.toString());
+    if (selectedSubCategoryId) params.set('subCategoryId', selectedSubCategoryId.toString());
+    if (debouncedSearch) params.set('search', debouncedSearch);
     
-    setIsLoadingMore(true);
-    try {
-      const nextPage = currentPage + 1;
-      const moreData = await productService.getAllProducts({
-        page: nextPage - 1, // API uses 0-based pages
-        size: itemsPerPage,
-        search: searchTerm,
-        categoryId: categoryFilters.category ? parseInt(categoryFilters.category) : undefined,
-      });
-      
-      setLoadedProducts(prev => [...prev, ...(moreData.content || [])]);
-        setCurrentPage(nextPage);
-    } catch (error) {
-      console.error('Error loading more products:', error);
-    } finally {
-      setIsLoadingMore(false);
+    const newSearch = params.toString();
+    const currentSearch = location.search.replace('?', '');
+    
+    if (newSearch !== currentSearch) {
+      navigate(`/shop${newSearch ? `?${newSearch}` : ''}`, { replace: true });
     }
+  }, [selectedCategoryId, selectedSubCategoryId, debouncedSearch, navigate, location.search]);
+
+  // Handle category selection
+  const handleCategorySelect = (categoryId: number) => {
+    if (selectedCategoryId === categoryId) {
+      // Deselect if already selected
+      setSelectedCategoryId(undefined);
+      setSelectedSubCategoryId(undefined);
+    } else {
+      setSelectedCategoryId(categoryId);
+      setSelectedSubCategoryId(undefined);
+    }
+    setCurrentPage(0);
   };
 
-  const hasNextPage = loadedProducts.length < totalProducts;
-  const rawDisplayProducts = loadedProducts.length > 0 ? loadedProducts : products;
-  
-  const displayProducts = rawDisplayProducts.map((product: Product) => ({
+  // Handle subcategory selection
+  const handleSubCategorySelect = (subCategoryId: number) => {
+    if (selectedSubCategoryId === subCategoryId) {
+      setSelectedSubCategoryId(undefined);
+    } else {
+      setSelectedSubCategoryId(subCategoryId);
+    }
+    setCurrentPage(0);
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setDebouncedSearch('');
+    setSelectedCategoryId(undefined);
+    setSelectedSubCategoryId(undefined);
+    setCurrentPage(0);
+  };
+
+  const displayProducts = products.map((product: Product) => ({
     ...product,
-    images: getAllProductImages(product.images, product.cover),
+    images: getAllProductImages(product.images),
     price: product.price || (product.productSku?.[0]?.price) || 0,
   }));
 
-  const handleClearFilters = () => {
-                  setFilters({
-                    minPrice: '',
-                    maxPrice: '',
-                    minRating: '',
-                    maxDeliveryDays: '',
-                    isTrending: false,
-                    isBestSeller: false,
-                    isNewArrival: false
-                  });
-    setSearchTerm('');
-    updateCategoryFilters({ category: undefined, sub: undefined });
-  };
+  const isLoading = productsLoading || categoriesLoading;
+  const hasFilters = selectedCategoryId || selectedSubCategoryId || debouncedSearch;
 
-  if (isLoading) {
+  if (isLoading && !isFetching) {
     return (
       <div className="min-h-screen bg-white">
         <div className="container mx-auto px-4 py-8">
@@ -234,18 +215,18 @@ function ShopContent() {
               Find the perfect handcrafted gifts from talented Ethiopian artisans
             </p>
             
-                        {/* Main Category Pills - Sticky within section */}
+            {/* Main Category Pills */}
             <div className="sticky top-0 z-10 bg-white pb-4 mb-6">
               <div className="flex flex-wrap gap-3">
-                {CATEGORIES.map((category) => {
-                  const Icon = category.icon;
-                  const isActive = categoryFilters.category === category.slug;
+                {categories.map((category) => {
+                  const Icon = getIconByName(category.iconName);
+                  const isActive = selectedCategoryId === category.id;
                   
                   return (
                     <Button
                       key={category.id}
                       variant={isActive ? "default" : "outline"}
-                      onClick={() => handleCategorySelect(category.slug)}
+                      onClick={() => handleCategorySelect(category.id)}
                       className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-200 ${
                         isActive 
                           ? "bg-eagle-green text-white hover:bg-viridian-green border-eagle-green" 
@@ -255,14 +236,14 @@ function ShopContent() {
                     >
                       <Icon className="h-4 w-4" />
                       <span className="font-gotham-bold">{category.name}</span>
-              </Button>
+                    </Button>
                   );
                 })}
-                </div>
               </div>
+            </div>
 
-            {/* Subcategory Panel - appears when main category is active */}
-            {currentCategory && subcategories.length > 0 && (
+            {/* Subcategory Panel */}
+            {currentCategory && subCategories.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -271,56 +252,68 @@ function ShopContent() {
               >
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-gotham-bold text-eagle-green flex items-center gap-2">
-                    <currentCategory.icon className="h-5 w-5 text-viridian-green" />
+                    {(() => {
+                      const CategoryIcon = getIconByName(currentCategory.iconName);
+                      return <CategoryIcon className="h-5 w-5 text-viridian-green" />;
+                    })()}
                     {currentCategory.name} Categories
                   </h2>
-                  {categoryFilters.sub && (
+                  {selectedSubCategoryId && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => updateCategoryFilters({ sub: undefined })}
-                      className="text-eagle-green hover:text-viridian-green hover:bg-june-bud/20 font-gotham-bold"
+                      onClick={() => setSelectedSubCategoryId(undefined)}
+                      className="text-eagle-green hover:text-viridian-green hover:bg-june-bud/20 hover:text-white font-gotham-bold"
                     >
                       Clear subcategory ×
                     </Button>
                   )}
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {subcategories.map((subcategory) => {
-                    const Icon = subcategory.icon;
-                    const isSelected = categoryFilters.sub === subcategory.slug;
-                    
-                    return (
-                      <Button
-                        key={subcategory.id}
-                        variant="ghost"
-                        onClick={() => handleSubcategorySelect(subcategory.slug)}
-                        className={`flex flex-col items-center gap-2 p-4 h-20 rounded-lg transition-all duration-200 border ${
-                          isSelected
-                            ? "bg-yellow/8 border-viridian-green ring-2 ring-viridian-green text-eagle-green shadow-md"
-                            : "bg-white border-gray-200 text-gray-800 hover:border-viridian-green hover:shadow-sm"
-                        }`}
-                        aria-pressed={isSelected}
-                        title={`${isSelected ? 'Remove' : 'Apply'} ${subcategory.name} filter`}
-                      >
-                        <Icon className={`h-6 w-6 flex-shrink-0 ${isSelected ? 'text-viridian-green' : 'text-eagle-green'}`} />
-                        <span className={`text-xs font-gotham-bold text-center leading-tight ${isSelected ? 'text-eagle-green' : 'text-gray-700'}`}>
-                          {subcategory.name}
-                        </span>
-                      </Button>
-                    );
-                  })}
-                </div>
+                
+                {subCategoriesLoading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {[...Array(6)].map((_, i) => (
+                      <Skeleton key={i} className="h-20 rounded-lg bg-june-bud/20" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {subCategories.map((subcategory) => {
+                      const Icon = getIconByName(subcategory.iconName);
+                      const isSelected = selectedSubCategoryId === subcategory.id;
+                      
+                      return (
+                        <Button
+                          key={subcategory.id}
+                          variant="ghost"
+                          onClick={() => handleSubCategorySelect(subcategory.id)}
+                          className={`flex flex-col items-center gap-2 p-4 h-20 rounded-lg transition-all duration-200 border ${
+                            isSelected
+                              ? "bg-yellow/8 border-viridian-green ring-2 ring-viridian-green text-eagle-green shadow-md"
+                              : "bg-white border-gray-200 text-gray-800 hover:border-viridian-green hover:shadow-sm"
+                          }`}
+                          aria-pressed={isSelected}
+                          title={`${isSelected ? 'Remove' : 'Apply'} ${subcategory.name} filter`}
+                        >
+                          <Icon className={`h-6 w-6 flex-shrink-0 ${isSelected ? 'text-viridian-green' : 'text-eagle-green'}`} />
+                          <span className={`text-xs font-gotham-bold text-center leading-tight ${isSelected ? 'text-eagle-green' : 'text-gray-700'}`}>
+                            {subcategory.name}
+                          </span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                )}
               </motion.div>
             )}
 
             {/* Breadcrumb */}
-            {(currentCategory || categoryFilters.sub) && (
+            {hasFilters && (
               <div className="flex items-center gap-2 text-sm mb-6 overflow-x-auto">
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => updateCategoryFilters({ category: undefined, sub: undefined })}
+                  onClick={handleClearFilters}
                   className="p-0 h-auto font-gotham-bold text-eagle-green hover:text-viridian-green flex-shrink-0"
                 >
                   All Products
@@ -331,20 +324,28 @@ function ShopContent() {
                     <span className="font-gotham-bold text-eagle-green flex-shrink-0">{currentCategory.name}</span>
                   </>
                 )}
-                {categoryFilters.sub && (
+                {currentSubCategory && (
                   <>
                     <ChevronRight className="h-4 w-4 text-eagle-green/50 flex-shrink-0" />
                     <span className="font-gotham-bold text-viridian-green flex-shrink-0 truncate">
-                      {subcategories.find(sub => sub.slug === categoryFilters.sub)?.name}
+                      {currentSubCategory.name}
+                    </span>
+                  </>
+                )}
+                {debouncedSearch && (
+                  <>
+                    <ChevronRight className="h-4 w-4 text-eagle-green/50 flex-shrink-0" />
+                    <span className="font-gotham-bold text-viridian-green flex-shrink-0 truncate">
+                      Search: "{debouncedSearch}"
                     </span>
                   </>
                 )}
               </div>
             )}
-              </div>
+          </div>
         </FadeIn>
 
-                {/* Search and Filters */}
+        {/* Search and Filters */}
         <SlideIn direction="up" delay={0.2}>
           <div className="flex flex-col lg:flex-row gap-4 mb-8">
             <div className="flex-1 relative">
@@ -376,7 +377,7 @@ function ShopContent() {
                   variant={viewMode === 'grid' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setViewMode('grid')}
-                  className={`h-12 w-12 ${viewMode === 'grid' ? 'bg-eagle-green border-eagle-green hover:bg-viridian-green' : 'border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white'}`}
+                  className={`h-12 w-12 ${viewMode === 'grid' ? 'bg-eagle-green text-white border-eagle-green hover:bg-viridian-green' : 'border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white'}`}
                   title="Grid view"
                 >
                   <Grid className="h-4 w-4" />
@@ -385,7 +386,7 @@ function ShopContent() {
                   variant={viewMode === 'list' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setViewMode('list')}
-                  className={`h-12 w-12 ${viewMode === 'list' ? 'bg-eagle-green border-eagle-green hover:bg-viridian-green' : 'border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white'}`}
+                  className={`h-12 w-12 ${viewMode === 'list' ? 'bg-eagle-green text-white border-eagle-green hover:bg-viridian-green' : 'border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white'}`}
                   title="List view"
                 >
                   <List className="h-4 w-4" />
@@ -396,26 +397,43 @@ function ShopContent() {
         </SlideIn>
 
         {/* Active Filters */}
-        {(categoryFilters.category || categoryFilters.sub || Object.values(filters).some(f => f)) && (
+        {hasFilters && (
           <div className="flex flex-wrap items-center gap-2 mb-6">
             <span className="text-sm font-gotham-bold text-eagle-green">Active filters:</span>
-            {categoryFilters.category && (
+            {currentCategory && (
               <Badge className="flex items-center gap-1 bg-june-bud/20 text-eagle-green border border-june-bud hover:bg-june-bud/30">
-                <span className="font-gotham-bold">{getCategoryBySlug(categoryFilters.category)?.name}</span>
+                <span className="font-gotham-bold">{currentCategory.name}</span>
                 <button 
-                  onClick={() => updateCategoryFilters({ category: undefined, sub: undefined })}
+                  onClick={() => {
+                    setSelectedCategoryId(undefined);
+                    setSelectedSubCategoryId(undefined);
+                  }}
                   className="ml-1 hover:text-viridian-green"
                 >
                   ×
                 </button>
               </Badge>
             )}
-            {categoryFilters.sub && (
+            {currentSubCategory && (
               <Badge className="flex items-center gap-1 bg-viridian-green/10 text-eagle-green border border-viridian-green/30 hover:bg-viridian-green/20">
-                <span className="font-gotham-bold">{subcategories.find(sub => sub.slug === categoryFilters.sub)?.name}</span>
+                <span className="font-gotham-bold">{currentSubCategory.name}</span>
                 <button 
-                  onClick={() => updateCategoryFilters({ sub: undefined })}
+                  onClick={() => setSelectedSubCategoryId(undefined)}
                   className="ml-1 hover:text-viridian-green"
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+            {debouncedSearch && (
+              <Badge className="flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200">
+                <span className="font-gotham-bold">"{debouncedSearch}"</span>
+                <button 
+                  onClick={() => {
+                    setSearchTerm('');
+                    setDebouncedSearch('');
+                  }}
+                  className="ml-1 hover:text-blue-600"
                 >
                   ×
                 </button>
@@ -436,50 +454,27 @@ function ShopContent() {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <p className="font-gotham-light text-eagle-green/70">
-              Showing {displayProducts.length} of {totalProducts} products
+              {isFetching ? 'Loading...' : `Showing ${displayProducts.length} of ${totalProducts} products`}
             </p>
           </div>
 
-          {displayProducts.length === 0 ? (
+          {displayProducts.length === 0 && !isFetching ? (
             <div className="text-center py-16 px-6">
               <div className="max-w-md mx-auto">
-                {categoryFilters.sub ? (
-                  <>
-                    <h3 className="text-xl font-gotham-bold text-eagle-green mb-3">
-                      No items in {subcategories.find(sub => sub.slug === categoryFilters.sub)?.name} yet
-                    </h3>
-                    <p className="font-gotham-light text-eagle-green/70 mb-6">
-                      Try clearing filters or browsing another subcategory.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                      <Button 
-                        onClick={handleClearFilters} 
-                        className="bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold"
-                      >
-                        Clear filters
-                      </Button>
-                      <Button 
-                        onClick={() => updateCategoryFilters({ sub: undefined })}
-                        variant="outline"
-                        className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white font-gotham-bold"
-                      >
-                        Browse all {currentCategory?.name}
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h3 className="text-xl font-gotham-bold text-eagle-green mb-3">No products found</h3>
-                    <p className="font-gotham-light text-eagle-green/70 mb-6">
-                      Try adjusting your search or filters to find what you're looking for.
-                    </p>
-                    <Button 
-                      onClick={handleClearFilters} 
-                      className="bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold"
-                    >
-                      Clear filters and show all products
-                    </Button>
-                  </>
+                <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-gotham-bold text-eagle-green mb-3">No products found</h3>
+                <p className="font-gotham-light text-eagle-green/70 mb-6">
+                  {hasFilters 
+                    ? "Try adjusting your search or filters to find what you're looking for."
+                    : "No products are available at the moment. Please check back later."}
+                </p>
+                {hasFilters && (
+                  <Button 
+                    onClick={handleClearFilters} 
+                    className="bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold"
+                  >
+                    Clear filters and show all products
+                  </Button>
                 )}
               </div>
             </div>
@@ -490,35 +485,48 @@ function ShopContent() {
                   ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' 
                   : 'grid-cols-1'
               }`}>
-                {displayProducts.map((product, index) => (
-                  <ProductGridItem key={product.id} index={index}>
-                    <GiftItemCard product={product} viewMode={viewMode} />
+                {displayProducts.map((product) => (
+                  <ProductGridItem key={product.id}>
+                    <GiftItemCard product={product} />
                   </ProductGridItem>
                 ))}
               </ProductGridStagger>
               
-              {hasNextPage && (
-                <div className="text-center mt-8">
-                  <Button 
-                    onClick={loadMoreProducts}
-                    disabled={isLoadingMore}
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-8">
+                  <Button
                     variant="outline"
-                    size="lg"
-                    className="px-8 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white font-gotham-bold"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                    disabled={currentPage === 0 || isFetching}
+                    className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
                   >
-                    {isLoadingMore ? 'Loading...' : 'Load More Products'}
+                    Previous
+                  </Button>
+                  <span className="px-4 py-2 text-sm font-gotham-bold text-eagle-green">
+                    Page {currentPage + 1} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={currentPage >= totalPages - 1 || isFetching}
+                    className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
+                  >
+                    Next
                   </Button>
                 </div>
               )}
             </>
           )}
-              </div>
+        </div>
               
         {/* Signature Sets */}
         <SlideIn direction="up" delay={0.4}>
-      <ZembilSignatureSets />
+          <ZembilSignatureSets />
         </SlideIn>
-              </div>
+      </div>
     </div>
   );
 }
