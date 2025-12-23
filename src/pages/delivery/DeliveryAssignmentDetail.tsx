@@ -47,7 +47,6 @@ import {
 } from "lucide-react";
 import { deliveryService, DeliveryStatus } from "@/services/deliveryService";
 import { imageService } from "@/services/imageService";
-import { getFullImageUrl } from "@/utils/imageUtils";
 
 export default function DeliveryAssignmentDetail() {
   const { assignmentId } = useParams<{ assignmentId: string }>();
@@ -366,7 +365,7 @@ export default function DeliveryAssignmentDetail() {
               </CardHeader>
               <CardContent>
                 <img
-                  src={getFullImageUrl(assignment.proofImageUrl)}
+                  src={assignment.proofImageUrl}
                   alt="Delivery proof"
                   className="max-w-full rounded-lg"
                 />
