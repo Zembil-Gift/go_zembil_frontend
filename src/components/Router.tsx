@@ -32,6 +32,7 @@ import Checkout from "@/pages/Checkout";
 import OrderReview from "@/pages/OrderReview";
 import NotFound from "@/pages/not-found";
 import VendorSignup from "@/pages/VendorSignup";
+import Profile from "@/pages/Profile";
 
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminUsers from "@/pages/admin/AdminUsers";
@@ -332,6 +333,12 @@ export default function Router() {
           <Route path="my-tickets" element={
             <ProtectedRoute>
               <MyEventTickets />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="profile" element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           } />
           
