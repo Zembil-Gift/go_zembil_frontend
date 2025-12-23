@@ -19,6 +19,7 @@ export interface WishListItemDto {
   productImages?: Array<{
     id: number;
     url: string;
+    fullUrl: string;
     isPrimary: boolean;
     sortOrder: number;
   }>;
@@ -28,6 +29,7 @@ export interface WishListItemDto {
     images?: Array<{
       id: number;
       url: string;
+      fullUrl: string;
       isPrimary: boolean;
       sortOrder: number;
     }>;
