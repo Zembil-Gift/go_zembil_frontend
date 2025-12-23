@@ -11,7 +11,7 @@ export default function ZembilSignatureSets() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-gotham-bold text-eagle-green mb-4 tracking-wider uppercase">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-eagle-green mb-4 tracking-wider uppercase">
             GIFTING WITH HEART – <span className="text-viridian-green">goZEMBIL</span> SIGNATURE SETS
           </h2>
         </motion.div>
@@ -56,7 +56,7 @@ export default function ZembilSignatureSets() {
                 <div className="absolute inset-0 bg-gradient-to-t from-eagle-green/30 via-transparent to-viridian-green/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="absolute inset-0 ring-2 ring-transparent group-hover:ring-june-bud/40 rounded-full transition-all duration-300" />
               </div>
-              <span className="text-sm font-gotham-bold text-eagle-green/70 group-hover:text-viridian-green transition-colors duration-300 text-center">
+              <span className="text-sm font-bold text-eagle-green/70 group-hover:text-viridian-green transition-colors duration-300 text-center">
                 {item.category}
               </span>
             </motion.div>
@@ -70,8 +70,8 @@ export default function ZembilSignatureSets() {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="text-center max-w-5xl mx-auto"
         >
-          <p className="text-base sm:text-lg text-eagle-green/80 leading-relaxed font-gotham-light max-w-4xl mx-auto">
-            Celebrate every occasion with heart and heritage. <span className="font-gotham-bold text-viridian-green">goZembil</span> Signature Sets feature authentic, handpicked gifts inspired by Ethiopian culture — from woven baskets and coffee to books, spices, and netela. Perfect for reconnecting families, surprising loved ones, or sending your roots in a box. Every Zembil carries a story.
+          <p className="text-base sm:text-lg text-eagle-green/80 leading-relaxed font-light max-w-4xl mx-auto">
+            Celebrate every occasion with heart and heritage. <span className="font-bold text-viridian-green">goZembil</span> Signature Sets feature authentic, handpicked gifts inspired by Ethiopian culture — from woven baskets and coffee to books, spices, and netela. Perfect for reconnecting families, surprising loved ones, or sending your roots in a box. Every Zembil carries a story.
           </p>
         </motion.div>
       </div>
