@@ -21,6 +21,8 @@ export interface VendorProfile {
   payoutEnabled: boolean;
   categoryId?: number;
   categoryName?: string;
+  vatStatus?: 'VAT_REGISTERED' | 'NOT_VAT_REGISTERED' | 'VAT_EXEMPT';
+  vendorType?: string;
 }
 
 export interface VendorOnboardingStatus {
@@ -298,6 +300,19 @@ export interface VendorEventSummary {
   revenueCurrency: string;
 }
 
+export interface VendorRevenue {
+  productRevenue: number;
+  eventRevenue: number;
+  totalRevenue: number;
+  currencyCode: string;
+  currencySymbol: string;
+  productOrderCount: number;
+  eventOrderCount: number;
+  totalOrderCount: number;
+  isVatRegistered: boolean;
+  vatIncluded: number;
+}
+
 export type TicketStatus = 'ISSUED' | 'CHECKED_IN' | 'CANCELLED' | 'REFUNDED' | 'EXPIRED';
 
 export interface TicketValidationResponse {
@@ -465,6 +480,23 @@ export const vendorService = {
   cancelEvent: (eventId: number, reason: string) =>
     apiService.postRequest<EventResponse>(`/api/vendor/events/${eventId}/cancel?reason=${encodeURIComponent(reason)}`, {}),
 
+  reactivateEvent: (eventId: number) =>
+    apiService.postRequest<EventResponse>(`/api/vendor/events/${eventId}/reactivate`, {}),
+
+  // Product deactivation/reactivation (soft delete)
+  deactivateProduct: (productId: number) =>
+    apiService.postRequest<Product>(`/api/v1/products/vendor/${productId}/deactivate`, {}),
+
+  reactivateProduct: (productId: number) =>
+    apiService.postRequest<Product>(`/api/v1/products/vendor/${productId}/reactivate`, {}),
+
+  // SKU deactivation/reactivation
+  deactivateSku: (productId: number, skuId: number) =>
+    apiService.postRequest<Product>(`/api/v1/products/vendor/${productId}/skus/${skuId}/deactivate`, {}),
+
+  reactivateSku: (productId: number, skuId: number) =>
+    apiService.postRequest<Product>(`/api/v1/products/vendor/${productId}/skus/${skuId}/reactivate`, {}),
+
   addTicketType: (eventId: number, ticketType: { name: string; description?: string; capacity: number; price: number; currency: string }) =>
     apiService.postRequest<EventResponse>(`/api/vendor/events/${eventId}/ticket-types`, ticketType),
 
@@ -503,6 +535,9 @@ export const vendorService = {
 
   getVendorSummary: () =>
     apiService.getRequest<VendorEventSummary>('/api/vendor/events/summary'),
+
+  getVendorRevenue: () =>
+    apiService.getRequest<VendorRevenue>('/api/vendors/me/revenue'),
 
   validateTicket: (ticketCode: string) =>
     apiService.getRequest<TicketValidationResponse>(`/api/vendor/events/validate/${ticketCode}`),
