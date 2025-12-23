@@ -3,7 +3,8 @@ import api from './api';
 
 export interface ImageDto {
   id: number;
-  url: string;
+  url: string;           // Relative path
+  fullUrl: string;       // Complete URL
   originalFilename: string;
   altText?: string;
   sortOrder: number;
