@@ -102,6 +102,20 @@ export interface PagedProductResponse {
   empty: boolean;
 }
 
+export interface ProductFilterParams {
+  page?: number;
+  size?: number;
+  search?: string;
+  categoryId?: number;
+  subCategoryId?: number;
+  minPriceMinor?: number;
+  maxPriceMinor?: number;
+  tags?: string[];
+  isFeatured?: boolean;
+  vendorId?: number;
+  sortBy?: string;
+}
+
 class ProductService {
   /**
    * Get all products with pagination
@@ -109,6 +123,58 @@ class ProductService {
   async getAllProducts(page: number = 0, size: number = 20): Promise<PagedProductResponse> {
     try {
       const url = `/api/v1/products?page=${page}&size=${size}`;
+      const response = await apiService.getRequest<PagedProductResponse>(url);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+
+  async getFilteredProducts(params: ProductFilterParams = {}): Promise<PagedProductResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      queryParams.append('page', (params.page ?? 0).toString());
+      queryParams.append('size', (params.size ?? 20).toString());
+      
+      // Search term
+      if (params.search) {
+        queryParams.append('searchTerm', params.search);
+      }
+      
+      // Category filters
+      if (params.categoryId) {
+        queryParams.append('categoryId', params.categoryId.toString());
+      }
+      if (params.subCategoryId) {
+        queryParams.append('subCategoryId', params.subCategoryId.toString());
+      }
+      
+      // Price filters
+      if (params.minPriceMinor) {
+        queryParams.append('minPriceMinor', params.minPriceMinor.toString());
+      }
+      if (params.maxPriceMinor) {
+        queryParams.append('maxPriceMinor', params.maxPriceMinor.toString());
+      }
+      
+      // Tags
+      if (params.tags && params.tags.length > 0) {
+        queryParams.append('tags', params.tags.join(','));
+      }
+      
+      // Featured
+      if (params.isFeatured !== undefined) {
+        queryParams.append('isFeatured', params.isFeatured.toString());
+      }
+      
+      // Vendor
+      if (params.vendorId) {
+        queryParams.append('vendorId', params.vendorId.toString());
+      }
+
+      const url = `/api/v1/products/filter?${queryParams.toString()}`;
       const response = await apiService.getRequest<PagedProductResponse>(url);
       return response;
     } catch (error) {

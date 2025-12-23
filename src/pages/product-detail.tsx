@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,7 +19,9 @@ import {
   Minus,
   Share2,
   MessageCircle,
-  Check
+  Check,
+  X,
+  ZoomIn
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { productService, Product, extractPriceAmount } from "@/services/productService";
@@ -35,6 +38,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedSkuId, setSelectedSkuId] = useState<number | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   
   const { toast } = useToast();
   const { addItem, openCart } = useCartStore();
@@ -244,11 +248,18 @@ export default function ProductDetail() {
 
 
   const nextImage = () => {
+    if (displayImages.length === 0) return;
     setSelectedImageIndex((prev) => (prev + 1) % displayImages.length);
   };
 
   const prevImage = () => {
+    if (displayImages.length === 0) return;
     setSelectedImageIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
+  };
+
+  const openLightbox = (index: number) => {
+    setSelectedImageIndex(index);
+    setLightboxOpen(true);
   };
 
   const handleShare = async () => {
@@ -273,7 +284,59 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      
+      {/* Lightbox Modal */}
+      <AnimatePresence>
+        {lightboxOpen && displayImages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <button
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50"
+            >
+              <X className="h-8 w-8" />
+            </button>
+            
+            {displayImages.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                  className="absolute left-4 text-white hover:text-gray-300 z-50 p-2 bg-black/50 rounded-full"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                  className="absolute right-4 text-white hover:text-gray-300 z-50 p-2 bg-black/50 rounded-full"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+            
+            <motion.img
+              key={selectedImageIndex}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              src={displayImages[selectedImageIndex]}
+              alt={`${product.name} - Image ${selectedImageIndex + 1}`}
+              className="max-h-[90vh] max-w-[90vw] object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            {displayImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-gotham-light">
+                {selectedImageIndex + 1} / {displayImages.length}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
@@ -291,46 +354,63 @@ export default function ProductDetail() {
             {displayImages.length > 0 ? (
               <>
                 {/* Main Image */}
-                <div className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-lg">
+                <div 
+                  className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-lg cursor-pointer group"
+                  onClick={() => openLightbox(selectedImageIndex)}
+                >
                   <img
                     src={displayImages[selectedImageIndex]}
                     alt={product.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <ZoomIn className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  
+                  {/* Navigation arrows */}
                   {displayImages.length > 1 && (
                     <>
                       <button
-                        onClick={prevImage}
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-colors"
+                        onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
                       >
-                        <ChevronLeft size={20} />
+                        <ChevronLeft className="h-5 w-5 text-charcoal" />
                       </button>
                       <button
-                        onClick={nextImage}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-colors"
+                        onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
                       >
-                        <ChevronRight size={20} />
+                        <ChevronRight className="h-5 w-5 text-charcoal" />
                       </button>
                     </>
+                  )}
+                  
+                  {/* Image counter */}
+                  {displayImages.length > 1 && (
+                    <div className="absolute bottom-4 left-4">
+                      <Badge className="bg-black/60 text-white border-none font-gotham-light">
+                        {selectedImageIndex + 1} / {displayImages.length}
+                      </Badge>
+                    </div>
                   )}
                 </div>
 
                 {/* Thumbnail Images */}
                 {displayImages.length > 1 && (
-                  <div className="flex space-x-2 overflow-x-auto">
+                  <div className="flex gap-2 overflow-x-auto pb-2">
                     {displayImages.map((image, index) => (
                       <button
                         key={index}
                         onClick={() => setSelectedImageIndex(index)}
-                         className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                          selectedImageIndex === index
-                            ? "border-viridian-green"
-                            : "border-gray-200 hover:border-gray-300"
+                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                          index === selectedImageIndex
+                            ? "border-viridian-green ring-2 ring-viridian-green/30"
+                            : "border-transparent hover:border-gray-300"
                         }`}
                       >
                         <img
                           src={image}
-                          alt={`${product.name} ${index + 1}`}
+                          alt={`${product.name} thumbnail ${index + 1}`}
                           className="w-full h-full object-cover"
                         />
                       </button>
