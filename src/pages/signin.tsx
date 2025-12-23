@@ -2,18 +2,16 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { FaFacebook } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
-import GiftingHeartAnimation from "@/components/animations/GiftingHeartAnimation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
 import {useLogin} from "../hooks/useLogin";
 
 const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
@@ -29,18 +27,34 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Get return URL from query params or localStorage
+  const getReturnUrl = (): string => {
+    // First check query params (from 401 redirect)
+    const returnUrl = searchParams.get('returnUrl');
+    if (returnUrl) {
+      return decodeURIComponent(returnUrl);
+    }
+    // Fallback to localStorage (from protected route)
+    const returnTo = localStorage.getItem('returnTo');
+    if (returnTo && returnTo !== '/') {
+      return returnTo;
+    }
+    return '/';
+  };
   
   // Show a message if user was redirected from a protected route
   useEffect(() => {
-    const returnTo = localStorage.getItem('returnTo');
-    if (returnTo && returnTo !== '/') {
+    const returnUrl = getReturnUrl();
+    if (returnUrl && returnUrl !== '/') {
       toast({
         title: "Sign in required",
-        description: `Please sign in to access ${returnTo}`,
+        description: "Please sign in to continue",
         variant: "default",
       });
     }
-  }, [toast]);
+  }, [toast, searchParams]);
 
   const form = useForm<SigninForm>({
     resolver: zodResolver(signinSchema),
@@ -69,10 +83,11 @@ export default function SignIn() {
         description: "Welcome to goZembil!",
       });
 
-      const returnTo = localStorage.getItem("returnTo") || "/";
+      // Get return URL and navigate
+      const returnUrl = getReturnUrl();
       localStorage.removeItem("returnTo");
-      console.log('Navigating to:', returnTo);
-      navigate(returnTo);
+      console.log('Navigating to:', returnUrl);
+      navigate(returnUrl);
     } catch (err: any) {
       console.error('Login error:', err);
       toast({
@@ -82,16 +97,6 @@ export default function SignIn() {
       });
     }
   };
-
-
-  const handleDemoLogin = () => {
-    // Quick demo login without form validation
-    signinMutation.mutate({
-      email: "demo@example.com",
-      password: "demo123"
-    });
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-light-cream via-white to-gray-50 flex items-center justify-center p-4 relative overflow-hidden">
       
