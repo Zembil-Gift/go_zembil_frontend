@@ -90,7 +90,7 @@ export function useWishlist() {
           totalElements: (old?.totalElements || 0) + 1,
           items: [
             ...items,
-            { 
+            {
               id: Date.now(),
               productId: newItem.productId,
               productName: 'Loading...',
@@ -121,7 +121,7 @@ export function useWishlist() {
         // Don't show error toast, redirect is already handled in onMutate
         return;
       }
-      
+
       if (context?.previousWishlist && isAuthenticated) {
         queryClient.setQueryData(["/api/wish-list"], context.previousWishlist);
       }
@@ -199,7 +199,7 @@ export function useWishlist() {
         // Don't show error toast, redirect is already handled in onMutate
         return;
       }
-      
+
       if (context?.previousWishlist && isAuthenticated) {
         queryClient.setQueryData(["/api/wish-list"], context.previousWishlist);
       }

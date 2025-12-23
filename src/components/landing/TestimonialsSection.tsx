@@ -15,7 +15,7 @@ export default function TestimonialsSection() {
 
   const testimonials: Testimonial[] = [
     {
-      content: "Sending my grandmother her favorite coffee from home made her cry tears of joy. The video message feature let me see her reaction - it was priceless. Zembil brought us closer despite the distance.",
+      content: "Sending my grandmother her favorite coffee from home made her cry tears of joy. The video message feature let me see her reaction - it was priceless. Gerami brought us closer despite the distance.",
       name: "Sarah M.",
       location: "Toronto, Canada",
       rating: 5,

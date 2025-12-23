@@ -1,9 +1,9 @@
 
-Build Full goZembil Admin Dashboard with All Core Admin Features
+Build Full goGerami Admin Dashboard with All Core Admin Features
 
 **Goal:**
 Develop a fully functional and user-friendly **Admin Dashboard** at `/admin` where authorized admins can **monitor, manage, and approve** all activities 
-happening on the goZembil platform.
+happening on the goGerami platform.
 
 ---
 

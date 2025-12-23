@@ -640,7 +640,7 @@ export default function GiftExperiences() {
                             title={`Gift Experience: ${event.name}`}
                             description={`Join us for ${event.name} in ${event.location?.city}! ${event.description}`}
                             url={`${window.location.origin}/gift-experiences?event=${event.id}`}
-                            hashtags={['goZembil', 'EthiopianGifts', 'GiftEvent', event.eventType]}
+                            hashtags={['goGerami', 'EthiopianGifts', 'GiftEvent', event.eventType]}
                             size="default"
                             variant="outline"
                           />
@@ -726,7 +726,7 @@ export default function GiftExperiences() {
                             title={`Professional Service: ${service.name}`}
                             description={`Experience ${service.name} - ${service.category} service. ${service.description}`}
                             url={`${window.location.origin}/gift-experiences?service=${service.id}`}
-                            hashtags={['goZembil', 'EthiopianServices', 'ProfessionalService', service.category.replace(/\s+/g, '')]}
+                            hashtags={['goGerami', 'EthiopianServices', 'ProfessionalService', service.category.replace(/\s+/g, '')]}
                             size="default"
                             variant="outline"
                           />

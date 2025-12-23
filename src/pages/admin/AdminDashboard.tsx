@@ -146,7 +146,7 @@ export default function AdminDashboard() {
   return (
     <AdminLayout 
       title="Dashboard" 
-      description="Overview of the goZembil marketplace platform"
+      description="Overview of the goGerami marketplace platform"
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card className="lg:col-span-1 bg-gradient-to-br from-eagle-green via-eagle-green/90 to-eagle-green/80 text-white overflow-hidden relative">

@@ -301,7 +301,7 @@ export default function AdminDashboard() {
             Admin Dashboard
           </h1>
           <p className="text-gray-600">
-            Welcome back, {user?.firstName || "Admin"}! Manage the goZembil marketplace platform.
+            Welcome back, {user?.firstName || "Admin"}! Manage the goGerami marketplace platform.
           </p>
         </div>
 
@@ -887,7 +887,7 @@ export default function AdminDashboard() {
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-medium">Platform Name</label>
-                      <p className="text-gray-600">goZembil</p>
+                      <p className="text-gray-600">goGerami</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium">Default Currency</label>

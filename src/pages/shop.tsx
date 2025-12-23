@@ -13,11 +13,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Grid, List, ChevronRight, Package } from "lucide-react";
 import GiftItemCard from "@/components/gift-card";
-import ZembilSignatureSets from "@/components/ZembilSignatureSets";
 import { productService, Product, PagedProductResponse } from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
 import { getAllProductImages } from "@/utils/imageUtils";
 import { getIconByName } from "@/components/admin/IconPicker";
+import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
 
 export default function Shop() {
   return <ShopContent />;
@@ -70,12 +70,12 @@ function ShopContent() {
   });
 
   // Get current category and subcategory objects
-  const currentCategory = useMemo(() => 
+  const currentCategory = useMemo(() =>
     categories.find(c => c.id === selectedCategoryId),
     [categories, selectedCategoryId]
   );
-  
-  const currentSubCategory = useMemo(() => 
+
+  const currentSubCategory = useMemo(() =>
     subCategories.find(s => s.id === selectedSubCategoryId),
     [subCategories, selectedSubCategoryId]
   );
@@ -112,7 +112,7 @@ function ShopContent() {
     
     const newSearch = params.toString();
     const currentSearch = location.search.replace('?', '');
-    
+
     if (newSearch !== currentSearch) {
       navigate(`/shop${newSearch ? `?${newSearch}` : ''}`, { replace: true });
     }
@@ -269,7 +269,7 @@ function ShopContent() {
                     </Button>
                   )}
                 </div>
-                
+
                 {subCategoriesLoading ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     {[...Array(6)].map((_, i) => (
@@ -281,7 +281,7 @@ function ShopContent() {
                     {subCategories.map((subcategory) => {
                       const Icon = getIconByName(subcategory.iconName);
                       const isSelected = selectedSubCategoryId === subcategory.id;
-                      
+
                       return (
                         <Button
                           key={subcategory.id}
@@ -428,7 +428,7 @@ function ShopContent() {
             {debouncedSearch && (
               <Badge className="flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200">
                 <span className="font-gotham-bold">"{debouncedSearch}"</span>
-                <button 
+                <button
                   onClick={() => {
                     setSearchTerm('');
                     setDebouncedSearch('');
@@ -464,13 +464,13 @@ function ShopContent() {
                 <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-gotham-bold text-eagle-green mb-3">No products found</h3>
                 <p className="font-gotham-light text-eagle-green/70 mb-6">
-                  {hasFilters 
+                  {hasFilters
                     ? "Try adjusting your search or filters to find what you're looking for."
                     : "No products are available at the moment. Please check back later."}
                 </p>
                 {hasFilters && (
-                  <Button 
-                    onClick={handleClearFilters} 
+                  <Button
+                    onClick={handleClearFilters}
                     className="bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold"
                   >
                     Clear filters and show all products
@@ -524,7 +524,7 @@ function ShopContent() {
               
         {/* Signature Sets */}
         <SlideIn direction="up" delay={0.4}>
-          <ZembilSignatureSets />
+      <GeramiSignatureSets />
         </SlideIn>
       </div>
     </div>

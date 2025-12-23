@@ -31,7 +31,7 @@ export default function LoginAnimation({ className = "" }: LoginAnimationProps) 
           transition={{ delay: 0.5, duration: 0.8 }}
         >
           <h2 className="font-display text-3xl md:text-4xl font-bold text-charcoal mb-2">
-            Welcome to goZembil
+            Welcome to goGerami
           </h2>
           <p className="text-lg text-warm-gold font-medium">
             Gifting with Heart

@@ -88,7 +88,7 @@ export const useCartStore = create<CartStore>()(
       },
     }),
     {
-      name: 'gozembil-cart',
+      name: 'goGerami-cart',
     }
   )
 );

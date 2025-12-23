@@ -24,7 +24,7 @@ export const seasonalThemes: SeasonalTheme[] = [
   {
     id: 'default',
     name: 'default',
-    displayName: 'Classic goZembil',
+    displayName: 'Classic goGerami',
     description: 'Our warm Ethiopian colors',
     colors: {
       primary: '#FDCB2D',
@@ -227,15 +227,15 @@ export function SeasonalThemeProvider({ children }: { children: React.ReactNode 
   // Auto-activate seasonal themes
   useEffect(() => {
     const activeSeasonalTheme = getActiveSeasonalTheme();
-    const savedMode = localStorage.getItem('goZembil_seasonalMode');
-    const savedTheme = localStorage.getItem('goZembil_currentTheme');
+    const savedMode = localStorage.getItem('goGerami_seasonalMode');
+    const savedTheme = localStorage.getItem('goGerami_currentTheme');
     
     // Initialize seasonal mode
     if (savedMode !== null) {
       setIsSeasonalMode(savedMode === 'true');
     } else if (activeSeasonalTheme) {
       setIsSeasonalMode(true);
-      localStorage.setItem('goZembil_seasonalMode', 'true');
+      localStorage.setItem('goGerami_seasonalMode', 'true');
     }
     
     // Set appropriate theme
@@ -269,14 +269,14 @@ export function SeasonalThemeProvider({ children }: { children: React.ReactNode 
     const theme = seasonalThemes.find(t => t.id === themeId);
     if (theme) {
       setCurrentTheme(theme);
-      localStorage.setItem('goZembil_currentTheme', themeId);
+      localStorage.setItem('goGerami_currentTheme', themeId);
     }
   };
 
   const toggleSeasonalMode = () => {
     const newMode = !isSeasonalMode;
     setIsSeasonalMode(newMode);
-    localStorage.setItem('goZembil_seasonalMode', newMode.toString());
+    localStorage.setItem('goGerami_seasonalMode', newMode.toString());
     
     if (newMode) {
       const activeTheme = getActiveSeasonalTheme();

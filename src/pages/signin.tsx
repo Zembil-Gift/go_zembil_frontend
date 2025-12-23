@@ -13,8 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import {useLogin} from "../hooks/useLogin";
-
-const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
+import GoGeramiLogo from "@/components/GoGeramiLogo";
 
 const signinSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -80,7 +79,7 @@ export default function SignIn() {
       
       toast({
         title: "Sign in successful",
-        description: "Welcome to goZembil!",
+        description: "Welcome to goGerami!",
       });
 
       // Get return URL and navigate
@@ -104,13 +103,15 @@ export default function SignIn() {
       <div className="w-full max-w-md relative z-10">
         {/* Header - Further reduced spacing */}
           <div className="text-center mb-5">
-          <img 
-            src={logoImagePath}
-            alt="goZembil Logo"
-            className="h-8 w-8 lg:h-12 lg:w-12 object-contain block mx-auto"
-          />
+          <div className="flex justify-center mb-2">
+            <GoGeramiLogo 
+              size="md"
+              variant="icon"
+              className="h-8 w-8 lg:h-12 lg:w-12"
+            />
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
-          <p className="text-gray-600">Sign in to your goZembil account</p>
+          <p className="text-gray-600">Sign in to your goGerami account</p>
         </div>
 
         <Card className="shadow-lg border-0">

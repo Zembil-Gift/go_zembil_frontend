@@ -53,7 +53,7 @@ export default function OrderSuccess() {
     });
     
     // Fallback to localStorage if orderId is missing from URL
-    const orderIdFromStorage = localStorage.getItem('goZembil_currentOrderId');
+    const orderIdFromStorage = localStorage.getItem('goGerami_currentOrderId');
     console.log('🔍 OrderSuccess - Checking localStorage fallback:', orderIdFromStorage);
     
     // Use URL first, then localStorage fallback

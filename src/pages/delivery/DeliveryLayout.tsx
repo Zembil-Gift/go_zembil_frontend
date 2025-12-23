@@ -63,7 +63,7 @@ export default function DeliveryLayout() {
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b z-50 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Truck className="h-6 w-6 text-ethiopian-gold" />
-          <span className="font-bold text-lg">Zembil Delivery</span>
+          <span className="font-bold text-lg">Gerami Delivery</span>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <X /> : <Menu />}
@@ -79,7 +79,7 @@ export default function DeliveryLayout() {
         <div className="flex flex-col h-full">
           <div className="h-16 flex items-center gap-2 px-6 border-b">
             <Truck className="h-6 w-6 text-ethiopian-gold" />
-            <span className="font-bold text-lg">Zembil Delivery</span>
+            <span className="font-bold text-lg">Gerami Delivery</span>
           </div>
 
           <nav className="flex-1 p-4 space-y-1">

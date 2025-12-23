@@ -122,7 +122,7 @@ export default function GiftingHeartAnimation({
             <path d="M 115 165 Q 120 170 125 165" stroke="#000" strokeWidth="2" fill="none"/>
           </motion.g>
 
-          {/* Traditional Zembil Basket */}
+          {/* Traditional Gerami Basket */}
           <motion.g
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

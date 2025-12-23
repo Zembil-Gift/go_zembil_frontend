@@ -23,9 +23,7 @@ import CategoryDropdown from "@/components/category-dropdown";
 import { cartService, CartItem } from "@/services/cartService";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
-
-// Using refined goZembil logo with transparent background
-const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
+import GoGeramiLogo from "@/components/GoGeramiLogo";
 
 export default function StreamlinedHeader() {
   const { t } = useTranslation();
@@ -79,16 +77,16 @@ export default function StreamlinedHeader() {
         <div className="container flex h-16 lg:h-20 items-center px-4 lg:px-6 max-w-full">
           {/* Logo */}
           <div className="flex-shrink-0 mr-4 lg:mr-8">
-            <Link to="/" className="flex items-center space-x-2">
-              <img 
-                src={logoImagePath}
-                alt="goZembil Logo"
-                className="h-8 w-8 lg:h-12 lg:w-12 object-contain"
+            <Link to="/" className="flex items-center space-x-0">
+              <GoGeramiLogo 
+                size="md"
+                variant="icon"
+                className="h-8 w-8 lg:h-14 lg:w-14"
               />
               <div className="hidden sm:flex flex-col">
                 <div className="flex items-center">
-                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">go</span>
-                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">Zembil</span>
+                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">Go</span>
+                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">Gerami</span>
                 </div>
               </div>
             </Link>

@@ -179,7 +179,7 @@ export default function CelebrityRegistration() {
             <Star className="w-8 h-8 text-amber-500" />
           </div>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Join goZembil as a verified celebrity and offer personalized gift delivery experiences 
+            Join goGerami as a verified celebrity and offer personalized gift delivery experiences 
             to connect hearts across distances.
           </p>
         </div>

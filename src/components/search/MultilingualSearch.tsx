@@ -38,7 +38,7 @@ export function MultilingualSearch({
 
   // Load search history from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('goZembil_search_history');
+    const saved = localStorage.getItem('goGerami_search_history');
     if (saved) {
       try {
         setSearchHistory(JSON.parse(saved));
@@ -52,7 +52,7 @@ export function MultilingualSearch({
   const saveToHistory = (result: SearchResult) => {
     const newHistory = [result, ...searchHistory.slice(0, 9)]; // Keep last 10 searches
     setSearchHistory(newHistory);
-    localStorage.setItem('goZembil_search_history', JSON.stringify(newHistory));
+    localStorage.setItem('goGerami_search_history', JSON.stringify(newHistory));
   };
 
   // Translate search query

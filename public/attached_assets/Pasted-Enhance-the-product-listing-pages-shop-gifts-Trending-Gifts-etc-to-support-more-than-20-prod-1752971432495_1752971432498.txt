@@ -1,4 +1,4 @@
-Enhance the product listing pages (/shop, /gifts, Trending Gifts, etc.) to support more than 20 products by default and include smart UI behavior such as View More buttons, arrows for navigation, and a Zembil-themed Signature Sets section below the listings.
+Enhance the product listing pages (/shop, /gifts, Trending Gifts, etc.) to support more than 20 products by default and include smart UI behavior such as View More buttons, arrows for navigation, and a Gerami-themed Signature Sets section below the listings.
 
 ✅ Product Seeding:
 Seed 30+ products total to ensure the "View More" button and carousel behavior work as expected.
@@ -54,13 +54,13 @@ Include "Back to Top" button just like in Screenshot 2.
 🎁 Promotional Section:
 Below product listing, add:
 
-Section title: “Gifting with Heart – Zembil Signature Sets”
+Section title: “Gifting with Heart – Gerami Signature Sets”
 
 Three lifestyle images with real Ethiopian gift items.
 
 Updated paragraph (replaces old one):
 
-“Celebrate every occasion with heart and heritage. goZembil Signature Sets feature authentic, handpicked gifts inspired by Ethiopian culture — from woven baskets and coffee to books, spices, and netela. Perfect for reconnecting families, surprising loved ones, or sending your roots in a box. Every Zembil carries a story.”
+“Celebrate every occasion with heart and heritage. goGerami Signature Sets feature authentic, handpicked gifts inspired by Ethiopian culture — from woven baskets and coffee to books, spices, and netela. Perfect for reconnecting families, surprising loved ones, or sending your roots in a box. Every Gerami carries a story.”
 
 📱 Responsiveness:
 All updates should adapt smoothly across:
