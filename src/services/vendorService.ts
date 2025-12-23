@@ -3,6 +3,7 @@ import { ImageDto } from './imageService';
 
 export interface VendorProfile {
   id: number;
+  userId: number;
   businessName: string;
   description?: string;
   businessEmail: string;
@@ -57,7 +58,9 @@ export interface Bank {
 
 export interface ProductPrice {
   currencyCode: string;
-  amount: number;
+  amount?: number;
+  vendorAmountMinor?: number;
+  unitAmountMinor?: number;
 }
 
 export interface ProductSku {
@@ -127,6 +130,20 @@ export interface ProductFilter {
   isFeatured?: boolean;
 }
 
+// Matches backend PriceDto
+export interface PriceDto {
+  id?: number;
+  variantId?: number;
+  currencyCode?: string;
+  currencyId?: number;
+  unitAmountMinor?: number;
+  vendorAmountMinor?: number;
+  amount?: number;
+  vendorAmount?: number;
+  useExchangeRate?: boolean;
+  active?: boolean;
+}
+
 export interface PriceUpdateRequest {
   id?: number;
   productId?: number;
@@ -135,8 +152,8 @@ export interface PriceUpdateRequest {
   skuCode?: string;
   vendorId?: number;
   vendorName?: string;
-  currentPrice?: { prices: ProductPrice[] };
-  newPrice: { prices: ProductPrice[] };
+  currentPrice?: PriceDto;
+  newPrice: PriceDto;
   reason?: string;
   status?: string;
   reviewedBy?: number;
@@ -149,31 +166,30 @@ export interface PriceUpdateRequest {
 
 export interface TicketTypePrice {
   currencyCode: string;
-  amount: number;
+  amount?: number;
+  vendorAmountMinor?: number;
+  unitAmountMinor?: number;
 }
 
 export interface CreateTicketType {
   name: string;
   description?: string;
   capacity: number;
-  price: { prices: TicketTypePrice[] };
-  salesStartDate?: string;
-  salesEndDate?: string;
+  price: number;      // BigDecimal - vendor's price in major units
+  currency?: string;  // 3-letter currency code, defaults to ETB
+  sortOrder?: number;
 }
 
 export interface CreateEventRequest {
   title: string;
-  description: string;
-  shortDescription?: string;
-  startDateTime: string;
-  endDateTime: string;
-  timezone?: string;
-  venue: string;
-  address?: string;
-  city?: string;
-  country?: string;
-  imageUrl?: string;
-  categoryId?: number;
+  description?: string;
+  location: string;        // Backend uses 'location' not 'venue'
+  city: string;
+  eventDate: string;       // Backend uses 'eventDate' not 'startDateTime'
+  eventEndDate?: string;   // Backend uses 'eventEndDate' not 'endDateTime'
+  eventTypeId?: number;    // Backend uses 'eventTypeId' not 'categoryId'
+  bannerImageUrl?: string; // Backend uses 'bannerImageUrl' not 'imageUrl'
+  organizerContact?: string;
   ticketTypes: CreateTicketType[];
 }
 
@@ -228,16 +244,27 @@ export interface TicketType {
   description?: string;
   capacity: number;
   soldCount: number;
-  price: { prices: TicketTypePrice[] };
+  availableCount?: number;
+  // Backend returns these fields directly (not nested)
+  priceMinor?: number;       // Customer-facing price (includes platform commission)
+  vendorPriceMinor?: number; // Vendor's price (what vendor receives)
+  currency?: string;
+  originalCurrency?: string;
+  originalPriceMinor?: number;
+  // Legacy field for compatibility
+  price?: { prices: TicketTypePrice[] };
   isActive: boolean;
+  isAvailable?: boolean;
+  sortOrder?: number;
   salesStartDate?: string;
   salesEndDate?: string;
 }
 
 export interface EventPriceUpdateRequest {
   ticketTypeId: number;
-  newPrice: { prices: TicketTypePrice[] };
-  reason?: string;
+  newPrice: number;  // Vendor's price in major units (e.g., 100.00)
+  newCurrency: string;
+  reason: string;
 }
 
 export interface EventPriceUpdateResponse {
@@ -384,6 +411,9 @@ export const vendorService = {
   getVendorProducts: (vendorId: number, page = 0, size = 20) =>
     apiService.getRequest<PageResponse<Product>>(`/api/v1/products/filter?vendorId=${vendorId}&page=${page}&size=${size}`),
 
+  getMyProducts: (page = 0, size = 20) =>
+    apiService.getRequest<PageResponse<Product>>(`/api/v1/products/vendor/me?page=${page}&size=${size}`),
+
   getMyPendingRejectedProducts: (page = 0, size = 20) =>
     apiService.getRequest<PageResponse<Product>>(`/api/v1/products/vendor/me/pending-rejected?page=${page}&size=${size}`),
 
@@ -404,6 +434,9 @@ export const vendorService = {
 
   editPriceUpdateRequest: (requestId: number, request: PriceUpdateRequest) =>
     apiService.putRequest<PriceUpdateRequest>(`/api/v1/price-update-requests/${requestId}/edit`, request),
+
+  updateProductForVendor: (productId: number, product: Product) =>
+    apiService.putRequest<Product>(`/api/v1/products/vendor/${productId}`, product),
 
   editPendingProduct: (productId: number, product: Product) =>
     apiService.putRequest<Product>(`/api/v1/products/${productId}/edit`, product),
