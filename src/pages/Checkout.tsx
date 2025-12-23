@@ -25,7 +25,6 @@ import { formatPrice } from "@/lib/currency";
 import { apiService } from "@/services/apiService";
 import { orderService, type CreateOrderRequest } from "@/services/orderService";
 import { type CartItem } from "@/services/cartService";
-import { getSkuImageUrl } from "@/utils/imageUtils";
 
 interface AddressDto {
   id?: number;
@@ -332,8 +331,6 @@ export default function Checkout() {
       console.log('Order created - full response:', JSON.stringify(orderResponse, null, 2));
 
       const orderId = (orderResponse as any).orderId || orderResponse.id;
-      const orderNumber = (orderResponse as any).orderNumber || orderResponse.orderNumber || orderId;
-
       if (!orderId) {
         console.error('Order response missing ID:', orderResponse);
         throw new Error('Order created but no order ID returned. Please check your orders.');
@@ -341,7 +338,7 @@ export default function Checkout() {
 
       toast({
         title: "Order Created",
-        description: `Order #${orderNumber} created. Review your order details...`,
+        description: "Your order has been created. Please review the details before payment.",
       });
 
       // Reset idempotency key for next order
@@ -757,11 +754,9 @@ export default function Checkout() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {cartItems.map((item: CartItem) => {
-                  // Get image URL with SKU image priority, fallback to product image
-                  const imageUrl = getSkuImageUrl(
-                    item.productSku?.images || item.product?.images,
-                    item.product?.cover || item.productImage
-                  );
+                  // Get image URL - use fallback cover/productImage directly
+                  // (cart item images don't have fullUrl property required by getSkuImageUrl)
+                  const imageUrl = item.product?.cover || item.productImage || '';
                   
                   return (
                   <div key={item.id} className="flex gap-4">
@@ -797,22 +792,33 @@ export default function Checkout() {
                   );
                 })}
 
-                <Separator />
+                <Separator className="my-4" />
 
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>{formatPrice(totalPrice, cartCurrency)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Shipping</span>
-                    <span className="text-gray-500">Based on address</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Subtotal</span>
-                    <span>{formatPrice(totalPrice, cartCurrency)}</span>
-                  </div>
+                {/* Subtotal */}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span>{formatPrice(totalPrice, cartCurrency)}</span>
+                </div>
+
+                {/* Tax Information Notice */}
+                <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-600 space-y-1">
+                  <p className="font-medium text-gray-700">Tax Information:</p>
+                  {shippingInfo.country === "Ethiopia" && (
+                    <p>• Ethiopian orders: VAT (15%) is included in product prices for VAT-registered vendors</p>
+                  )}
+                  {shippingInfo.country === "United States" && (
+                    <p>• US orders: Sales tax will be calculated based on your delivery state</p>
+                  )}
+                  {!shippingInfo.country && (
+                    <p>• Applicable taxes will be calculated based on your delivery location</p>
+                  )}
+                  <p className="text-gray-500 mt-1">Final tax breakdown will be shown on the order review page.</p>
+                </div>
+
+                {/* Estimated Total */}
+                <div className="flex justify-between font-semibold text-lg pt-2">
+                  <span>Estimated Total</span>
+                  <span className="text-ethiopian-gold">{formatPrice(totalPrice, cartCurrency)}</span>
                 </div>
 
                 <Button
