@@ -46,6 +46,10 @@ import AdminDelivery from "@/pages/admin/AdminDelivery";
 import VendorDashboard from "@/pages/vendor/VendorDashboard";
 import CreateProduct from "@/pages/vendor/CreateProduct";
 import CreateEvent from "@/pages/vendor/CreateEvent";
+import EditProduct from "@/pages/vendor/EditProduct";
+import EditEvent from "@/pages/vendor/EditEvent";
+import ProductPriceUpdate from "@/pages/vendor/ProductPriceUpdate";
+import EventPriceUpdate from "@/pages/vendor/EventPriceUpdate";
 import ChapaOnboarding from "@/pages/vendor/ChapaOnboarding";
 import StripeOnboardingReturn from "@/pages/vendor/StripeOnboardingReturn";
 import StripeOnboardingRefresh from "@/pages/vendor/StripeOnboardingRefresh";
@@ -334,7 +338,11 @@ export default function Router() {
           {/* Vendor Routes */}
           <Route path="vendor" element={<VendorRoute><VendorDashboard /></VendorRoute>} />
           <Route path="vendor/products/new" element={<VendorRoute><CreateProduct /></VendorRoute>} />
+          <Route path="vendor/products/:id/edit" element={<VendorRoute><EditProduct /></VendorRoute>} />
+          <Route path="vendor/products/:id/price" element={<VendorRoute><ProductPriceUpdate /></VendorRoute>} />
           <Route path="vendor/events/new" element={<VendorRoute><CreateEvent /></VendorRoute>} />
+          <Route path="vendor/events/:id/edit" element={<VendorRoute><EditEvent /></VendorRoute>} />
+          <Route path="vendor/events/:id/price" element={<VendorRoute><EventPriceUpdate /></VendorRoute>} />
 
           <Route path="vendor/payments/chapa" element={<VendorRoute><ChapaOnboarding /></VendorRoute>} />
           <Route path="vendor/onboarding/return" element={<VendorRoute><StripeOnboardingReturn /></VendorRoute>} />

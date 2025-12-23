@@ -1,0 +1,848 @@
+import { useState, useEffect } from "react";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, Link, useParams } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { vendorService, VendorProfile, Product } from "@/services/vendorService";
+import { apiService } from "@/services/apiService";
+import { imageService, ImageDto } from "@/services/imageService";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ImageUpload } from "@/components/ImageUpload";
+import { 
+  ArrowLeft, 
+  Package, 
+  AlertCircle, 
+  Plus, 
+  Trash2, 
+  RefreshCw, 
+  Layers,
+  DollarSign,
+  AlertTriangle,
+  ImageIcon,
+  Info
+} from "lucide-react";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+
+const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
+  if (!vendorProfile) return false;
+  return vendorProfile.countryCode === 'ET';
+};
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface SubCategory {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface Currency {
+  id: number;
+  code: string;
+  name: string;
+  symbol: string;
+}
+
+const attributeSchema = z.object({
+  id: z.number().optional(),
+  name: z.string().min(1, "Attribute name is required"),
+  value: z.string().min(1, "Attribute value is required"),
+});
+
+const skuSchema = z.object({
+  id: z.number().optional(),
+  skuCode: z.string().min(1, "SKU code is required"),
+  stockQuantity: z.number().min(0, "Stock cannot be negative"),
+  // Price fields are read-only in edit mode
+  currencyCode: z.string().optional(),
+  currentPrice: z.number().optional(),
+  attributes: z.array(attributeSchema).optional(),
+});
+
+const productEditSchema = z.object({
+  name: z.string().min(1, "Product name is required").max(255),
+  description: z.string().max(1000).optional(),
+  summary: z.string().max(500).optional(),
+  subCategoryId: z.string().min(1, "Category is required"),
+  isCustomizable: z.boolean().optional(),
+  tags: z.string().optional(),
+  occasion: z.string().optional(),
+  productSku: z.array(skuSchema).min(1, "At least one product SKU is required"),
+});
+
+type ProductEditFormData = z.infer<typeof productEditSchema>;
+
+export default function EditProduct() {
+  const { id } = useParams<{ id: string }>();
+  const productId = id ? parseInt(id, 10) : null;
+  
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
+
+  const isVendor = user?.role?.toUpperCase() === 'VENDOR';
+
+  // State for SKU images management
+  const [pendingSkuImages, setPendingSkuImages] = useState<Record<number, File[]>>({});
+  const [currentSkuImages, setCurrentSkuImages] = useState<Record<number, ImageDto[]>>({});
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+
+  // Fetch product data
+  const { data: product, isLoading: productLoading, error: productError } = useQuery({
+    queryKey: ['product', productId],
+    queryFn: async () => {
+      const response = await apiService.getRequest<Product>(`/api/v1/products/${productId}`);
+      return response;
+    },
+    enabled: !!productId && isAuthenticated && isVendor,
+  });
+
+  // Fetch vendor profile
+  const { data: vendorProfile } = useQuery({
+    queryKey: ['vendor', 'profile'],
+    queryFn: () => vendorService.getMyProfile(),
+    enabled: isAuthenticated && isVendor,
+  });
+
+  // Fetch categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => apiService.getRequest<Category[]>('/api/categories'),
+  });
+
+  // Fetch all subcategories
+  const { data: allSubCategories = [], isLoading: isLoadingSubCategories } = useQuery({
+    queryKey: ['all-subcategories', categories],
+    queryFn: async () => {
+      const subCategoriesPromises = categories.map((category) =>
+        apiService.getRequest<SubCategory[]>(`/api/categories/${category.id}/sub-categories`)
+      );
+      const results = await Promise.all(subCategoriesPromises);
+      return results.flat();
+    },
+    enabled: categories.length > 0,
+  });
+
+  // Fetch currencies
+  const { data: currencies = [] } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: () => apiService.getRequest<Currency[]>('/api/currencies'),
+  });
+
+  const availableCurrencies = isEthiopianVendor(vendorProfile)
+    ? currencies.filter(c => c.code === 'ETB')
+    : currencies;
+
+  const form = useForm<ProductEditFormData>({
+    resolver: zodResolver(productEditSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      summary: "",
+      subCategoryId: "",
+      isCustomizable: false,
+      tags: "",
+      occasion: "",
+      productSku: [],
+    },
+  });
+
+  const { fields: skuFields, append: appendSku, remove: removeSku } = useFieldArray({
+    control: form.control,
+    name: "productSku",
+  });
+
+  // Populate form when product data is loaded
+  useEffect(() => {
+    if (product) {
+      // Load SKU data
+      const skuData = (product.productSku && product.productSku.length > 0)
+        ? product.productSku.map(sku => {
+            const currencyCode = sku.price?.currencyCode || sku.price?.prices?.[0]?.currencyCode || "";
+            const currentPrice = sku.price?.vendorAmount || sku.price?.amount || sku.price?.prices?.[0]?.amount || 0;
+            return {
+              id: sku.id,
+              skuCode: sku.skuCode || "",
+              stockQuantity: sku.stockQuantity || 0,
+              currencyCode,
+              currentPrice,
+              attributes: sku.attributes?.map(attr => ({
+                id: attr.id,
+                name: attr.name,
+                value: attr.value,
+              })) || [],
+            };
+          })
+        : [{
+            skuCode: "",
+            stockQuantity: 0,
+            currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : currencies[0]?.code || "",
+            currentPrice: product.price?.vendorAmount || product.price?.prices?.[0]?.amount || 0,
+            attributes: [],
+          }];
+
+      // Load SKU images - use fullUrl from backend
+      const skuImagesMap: Record<number, ImageDto[]> = {};
+      if (product.productSku && product.productSku.length > 0) {
+        product.productSku.forEach((sku, index) => {
+          if (sku.images && sku.images.length > 0) {
+            skuImagesMap[index] = sku.images.map((img, imgIndex) => ({
+              id: img.id || imgIndex + 1,
+              url: img.url,
+              fullUrl: img.fullUrl,
+              originalFilename: img.originalFilename || `image-${imgIndex + 1}`,
+              altText: img.altText || sku.skuCode || product.name,
+              sortOrder: img.sortOrder ?? imgIndex,
+              isPrimary: img.isPrimary ?? (imgIndex === 0),
+              fileSize: img.fileSize || 0,
+              contentType: img.contentType || 'image/jpeg',
+              createdAt: img.createdAt || new Date().toISOString(),
+            }));
+          } else {
+            skuImagesMap[index] = [];
+          }
+        });
+      }
+      setCurrentSkuImages(skuImagesMap);
+
+      form.reset({
+        name: product.name || "",
+        description: product.description || "",
+        summary: product.summary || "",
+        subCategoryId: product.subCategoryId?.toString() || "",
+        isCustomizable: product.isCustomizable || false,
+        tags: product.tags?.join(", ") || "",
+        occasion: product.occasion || "",
+        productSku: skuData,
+      });
+    }
+  }, [product, vendorProfile, currencies, form]);
+
+  // Check if vendor owns this product (compare with userId, not vendor id)
+  const isProductOwner = product && vendorProfile && product.vendorId === vendorProfile.userId;
+
+  // Update product mutation
+  const updateProductMutation = useMutation({
+    mutationFn: async (data: ProductEditFormData) => {
+      if (!productId) throw new Error("Product ID is required");
+
+      const productPayload: Partial<Product> = {
+        name: data.name,
+        description: data.description || undefined,
+        summary: data.summary || undefined,
+        subCategoryId: data.subCategoryId ? parseInt(data.subCategoryId) : undefined,
+        isCustomizable: data.isCustomizable,
+        tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(t => t) : undefined,
+        occasion: data.occasion || undefined,
+        // Include SKU updates (excluding price changes)
+        productSku: data.productSku.map((sku, index) => ({
+          id: sku.id,
+          skuCode: sku.skuCode,
+          stockQuantity: sku.stockQuantity,
+          isDefault: index === 0,
+          attributes: sku.attributes?.filter(attr => attr.name && attr.value) || [],
+          // Note: We don't include price here as it requires a separate request
+        })),
+      };
+
+      // Use the appropriate endpoint based on product status
+      const isPendingOrRejected = product?.status === 'PENDING' || product?.status === 'REJECTED';
+      
+      if (isPendingOrRejected) {
+        return vendorService.editPendingProduct(productId, productPayload as Product);
+      } else {
+        return vendorService.updateProduct(productId, productPayload as Product);
+      }
+    },
+    onSuccess: async () => {
+      // Upload any pending SKU images
+      const hasAnyPendingImages = Object.values(pendingSkuImages).some(images => images.length > 0);
+      
+      if (hasAnyPendingImages && product?.productSku) {
+        setIsUploadingImages(true);
+        try {
+          for (const [skuIndexStr, images] of Object.entries(pendingSkuImages)) {
+            const skuIndex = parseInt(skuIndexStr, 10);
+            const sku = product.productSku[skuIndex];
+            
+            if (images.length > 0 && sku?.id) {
+              await imageService.uploadSkuImages(sku.id, images);
+            }
+          }
+        } catch (imageError) {
+          console.error("Failed to upload SKU images:", imageError);
+          toast({
+            title: "Warning",
+            description: "Product updated but some images failed to upload.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsUploadingImages(false);
+        }
+      }
+
+      toast({
+        title: "Product Updated",
+        description: product?.status === 'PENDING' || product?.status === 'REJECTED'
+          ? "Your product has been updated and resubmitted for review."
+          : "Your product has been updated successfully.",
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'products'] });
+      queryClient.invalidateQueries({ queryKey: ['product', productId] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-products'] });
+      
+      navigate("/vendor");
+    },
+    onError: (error: any) => {
+      setIsUploadingImages(false);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || error.message || "Failed to update product",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addSku = () => {
+    const defaultCurrency = isEthiopianVendor(vendorProfile)
+      ? "ETB"
+      : (availableCurrencies[0]?.code || currencies[0]?.code || "");
+
+    appendSku({
+      skuCode: "",
+      stockQuantity: 0,
+      currencyCode: defaultCurrency,
+      currentPrice: 0,
+      attributes: [],
+    });
+  };
+
+  const addAttribute = (skuIndex: number) => {
+    const currentSku = form.getValues(`productSku.${skuIndex}`);
+    const currentAttributes = currentSku.attributes || [];
+    form.setValue(`productSku.${skuIndex}.attributes`, [
+      ...currentAttributes,
+      { name: "", value: "" },
+    ]);
+  };
+
+  const removeAttribute = (skuIndex: number, attrIndex: number) => {
+    const currentSku = form.getValues(`productSku.${skuIndex}`);
+    const currentAttributes = currentSku.attributes || [];
+    form.setValue(
+      `productSku.${skuIndex}.attributes`,
+      currentAttributes.filter((_, i) => i !== attrIndex)
+    );
+  };
+
+  const onSubmit = (data: ProductEditFormData) => {
+    // Validate that each SKU has at least one image
+    for (let i = 0; i < data.productSku.length; i++) {
+      const existingImages = currentSkuImages[i] || [];
+      const pendingImages = pendingSkuImages[i] || [];
+      const totalImages = existingImages.length + pendingImages.length;
+      
+      if (totalImages === 0) {
+        toast({
+          title: "Image Required",
+          description: `Please upload at least one image for ${data.productSku.length === 1 ? 'your product' : `variant #${i + 1} (${data.productSku[i].skuCode || 'unnamed'})`}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    updateProductMutation.mutate(data);
+  };
+
+  const onError = (errors: any) => {
+    console.log("Form validation errors:", errors);
+    toast({
+      title: "Validation Error",
+      description: "Please fill in all required fields correctly.",
+      variant: "destructive",
+    });
+  };
+
+  if (!isAuthenticated || !isVendor) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+        <p className="text-gray-600 mb-4">You need to be a vendor to edit products.</p>
+        <Button asChild>
+          <Link to="/vendor-signup">Become a Vendor</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (productLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <RefreshCw className="h-12 w-12 animate-spin text-eagle-green mx-auto mb-4" />
+          <p className="text-gray-600">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (productError || !product) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h1>
+        <p className="text-gray-600 mb-4">The product you're looking for doesn't exist or couldn't be loaded.</p>
+        <Button asChild>
+          <Link to="/vendor">Back to Dashboard</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (!isProductOwner) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Unauthorized</h1>
+        <p className="text-gray-600 mb-4">You can only edit your own products.</p>
+        <Button asChild>
+          <Link to="/vendor">Back to Dashboard</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case 'ACTIVE':
+      case 'APPROVED':
+        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+      case 'PENDING':
+        return <Badge className="bg-amber-100 text-amber-800">Pending Review</Badge>;
+      case 'REJECTED':
+        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container max-w-3xl mx-auto px-4">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/vendor">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <div className="flex-1">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold">Edit Product</h1>
+              {getStatusBadge(product.status || '')}
+            </div>
+            <p className="text-muted-foreground">Update your product details (prices require a separate request)</p>
+          </div>
+        </div>
+
+        {/* Status Alerts */}
+        {product.status === 'REJECTED' && product.rejectionReason && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Product Rejected</AlertTitle>
+            <AlertDescription>
+              <strong>Reason:</strong> {product.rejectionReason}
+              <br />
+              Please address this issue and save to resubmit for review.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {product.status === 'PENDING' && (
+          <Alert className="mb-6 border-amber-200 bg-amber-50">
+            <Info className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800">Pending Review</AlertTitle>
+            <AlertDescription className="text-amber-700">
+              This product is currently under review. Any changes will require re-approval.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Price Update Notice */}
+        <Alert className="mb-6 border-blue-200 bg-blue-50">
+          <DollarSign className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-800">Price Updates</AlertTitle>
+          <AlertDescription className="text-blue-700">
+            Price changes require admin approval and cannot be made directly here.{' '}
+            <Link to={`/vendor/products/${productId}/price`} className="font-medium underline">
+              Request a price update
+            </Link>{' '}
+            or go to the Requests tab in your dashboard.
+          </AlertDescription>
+        </Alert>
+
+        <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Basic Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="name">Product Name *</Label>
+                <Input
+                  id="name"
+                  placeholder="Enter product name"
+                  {...form.register("name")}
+                />
+                {form.formState.errors.name && (
+                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.name.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="summary">Short Summary</Label>
+                <Input
+                  id="summary"
+                  placeholder="Brief product summary"
+                  {...form.register("summary")}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Detailed product description"
+                  className="min-h-[120px]"
+                  {...form.register("description")}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Category */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Category</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Sub-Category *</Label>
+                <Controller
+                  name="subCategoryId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={isLoadingSubCategories || allSubCategories.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={
+                          isLoadingSubCategories
+                            ? "Loading categories..."
+                            : allSubCategories.length === 0
+                            ? "No categories available"
+                            : "Select a sub-category"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allSubCategories.map((subCategory) => (
+                          <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
+                            {subCategory.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {form.formState.errors.subCategoryId && (
+                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.subCategoryId.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="occasion">Occasion</Label>
+                <Input
+                  id="occasion"
+                  placeholder="e.g., Birthday, Wedding, Christmas"
+                  {...form.register("occasion")}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="tags">Tags (comma separated)</Label>
+                <Input
+                  id="tags"
+                  placeholder="gift, premium, handmade"
+                  {...form.register("tags")}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Product SKUs */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Layers className="h-5 w-5" />
+                    Product Variants (SKUs)
+                  </CardTitle>
+                  <CardDescription>
+                    Update stock and attributes for your product variants. Price changes require a separate request.
+                  </CardDescription>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={addSku}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Variant
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {skuFields.map((field, skuIndex) => {
+                const attributes = form.watch(`productSku.${skuIndex}.attributes`) || [];
+                const currentPrice = form.watch(`productSku.${skuIndex}.currentPrice`);
+                const currencyCode = form.watch(`productSku.${skuIndex}.currencyCode`);
+                const skuId = form.watch(`productSku.${skuIndex}.id`);
+
+                return (
+                  <Card key={field.id} className="border-2">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">
+                          {skuFields.length === 1 ? "Product SKU" : `Variant #${skuIndex + 1}`}
+                        </CardTitle>
+                        {skuFields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeSku(skuIndex)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* SKU Code and Stock */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>SKU Code *</Label>
+                          <Input
+                            placeholder={skuFields.length === 1 ? "e.g., PROD-001" : "e.g., SHIRT-RED-M"}
+                            {...form.register(`productSku.${skuIndex}.skuCode`)}
+                          />
+                          {form.formState.errors.productSku?.[skuIndex]?.skuCode && (
+                            <p className="text-sm text-red-600 mt-1">
+                              {form.formState.errors.productSku[skuIndex]?.skuCode?.message}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <Label>Stock Quantity *</Label>
+                          <Controller
+                            name={`productSku.${skuIndex}.stockQuantity`}
+                            control={form.control}
+                            render={({ field }) => (
+                              <Input
+                                type="number"
+                                min="0"
+                                placeholder="0"
+                                value={field.value || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '') {
+                                    field.onChange(0);
+                                  } else {
+                                    field.onChange(parseInt(value, 10));
+                                  }
+                                }}
+                                onBlur={field.onBlur}
+                              />
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Current Price (Read-only) */}
+                      {skuId && currentPrice !== undefined && (
+                        <div className="p-3 bg-gray-50 rounded-lg border">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Current Price</Label>
+                              <p className="text-lg font-semibold">
+                                {currencyCode} {currentPrice?.toFixed(2)}
+                              </p>
+                            </div>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm"
+                              asChild
+                            >
+                              <Link to={`/vendor/products/${productId}/price`}>
+                                <DollarSign className="h-4 w-4 mr-1" />
+                                Request Price Change
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Attributes */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm">Attributes (Size, Color, etc.)</Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => addAttribute(skuIndex)}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add Attribute
+                          </Button>
+                        </div>
+
+                        {attributes.length === 0 && (
+                          <p className="text-sm text-muted-foreground italic">
+                            No attributes added. Click "Add Attribute" to add size, color, etc.
+                          </p>
+                        )}
+
+                        {attributes.map((_, attrIndex) => (
+                          <div key={attrIndex} className="flex items-center gap-2">
+                            <Input
+                              placeholder="Name (e.g., Size)"
+                              {...form.register(`productSku.${skuIndex}.attributes.${attrIndex}.name`)}
+                              className="flex-1"
+                            />
+                            <Input
+                              placeholder="Value (e.g., Large)"
+                              {...form.register(`productSku.${skuIndex}.attributes.${attrIndex}.value`)}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeAttribute(skuIndex, attrIndex)}
+                              className="text-destructive hover:text-destructive shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* SKU Images */}
+                      <div className="space-y-3 border-t pt-4">
+                        <div className="flex items-center gap-2">
+                          <ImageIcon className="h-4 w-4" />
+                          <Label className="text-sm font-medium">Images *</Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Upload images for this {skuFields.length === 1 ? 'product' : 'variant'}. First image will be the cover.
+                        </p>
+                        <ImageUpload
+                          images={currentSkuImages[skuIndex] || []}
+                          onFilesSelected={(files) => {
+                            setPendingSkuImages((prev) => ({
+                              ...prev,
+                              [skuIndex]: [...(prev[skuIndex] || []), ...files],
+                            }));
+                          }}
+                          maxImages={10}
+                          isUploading={isUploadingImages}
+                          disabled={updateProductMutation.isPending}
+                          label=""
+                          helperText={`Upload images for this ${skuFields.length === 1 ? 'product' : 'variant'}.`}
+                        />
+                        {pendingSkuImages[skuIndex] && pendingSkuImages[skuIndex].length > 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            {pendingSkuImages[skuIndex].length} new image(s) will be uploaded
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </CardContent>
+          </Card>
+
+          {/* Options */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Options</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Customizable</Label>
+                  <p className="text-sm text-muted-foreground">Allow customers to customize this product</p>
+                </div>
+                <Switch
+                  checked={form.watch("isCustomizable")}
+                  onCheckedChange={(checked) => form.setValue("isCustomizable", checked)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Submit */}
+          <div className="flex justify-end gap-4">
+            <Button type="button" variant="outline" asChild>
+              <Link to="/vendor">Cancel</Link>
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={updateProductMutation.isPending || isUploadingImages}
+            >
+              {updateProductMutation.isPending || isUploadingImages ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {isUploadingImages ? "Uploading Images..." : "Saving..."}
+                </>
+              ) : (
+                product.status === 'PENDING' || product.status === 'REJECTED' 
+                  ? "Save & Resubmit" 
+                  : "Save Changes"
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
