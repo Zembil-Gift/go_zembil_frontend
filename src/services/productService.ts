@@ -42,6 +42,7 @@ export interface ProductSku {
   images?: Array<{
     id: number;
     url: string;
+    fullUrl: string;
     isPrimary: boolean;
     sortOrder: number;
   }>;
@@ -66,6 +67,7 @@ export interface Product {
   images?: Array<{
     id: number;
     url: string;
+    fullUrl: string;
     originalFilename?: string;
     altText?: string;
     sortOrder: number;

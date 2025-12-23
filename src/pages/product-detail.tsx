@@ -29,7 +29,7 @@ import { cartService } from "@/services/cartService";
 import { wishlistService } from "@/services/wishlistService";
 import { cn } from "@/lib/utils";
 import { formatPrice, getPriceParts, getPriceCurrency } from "@/lib/currency";
-import { getProductImageUrl, getAllProductImages, getFullImageUrl } from "@/utils/imageUtils";
+import { getProductImageUrl, getAllProductImages } from "@/utils/imageUtils";
 
 export default function ProductDetail() {
   const params = useParams();
@@ -122,11 +122,11 @@ export default function ProductDetail() {
     if ((!isMultiSku || userSelectedVariant) && selectedSku?.images && selectedSku.images.length > 0) {
       return selectedSku.images
         .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map(img => getFullImageUrl(img.url));
+        .map(img => img.fullUrl);
     }
     
-    return getAllProductImages(product?.images, product?.cover);
-  }, [selectedSkuId, selectedSku, product?.productSku, product?.images, product?.cover]);
+    return getAllProductImages(product?.images);
+  }, [selectedSkuId, selectedSku, product?.productSku, product?.images]);
   
   // Use images if available, otherwise empty array (no fallback)
   const displayImages = useMemo(() => {
