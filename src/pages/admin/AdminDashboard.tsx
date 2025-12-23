@@ -126,9 +126,9 @@ export default function AdminDashboard() {
 
   const isLoading = statsLoading || eventsLoading;
 
-  const formatCurrency = (amount: number, currency: string = 'ETB') => {
-    if (amount === undefined || amount === null) return '0 ' + currency;
-    return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
+  const formatCurrency = (amount: number, _currency: string = 'USD') => {
+    if (amount === undefined || amount === null) return '$0.00';
+    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const formatNumber = (num: number) => {
@@ -138,9 +138,9 @@ export default function AdminDashboard() {
     return num.toString();
   };
 
-  const formatOrderCurrency = (amountMinor: number, currency: string = 'ETB') => {
+  const formatOrderCurrency = (amountMinor: number, _currency: string = 'USD') => {
     const amount = amountMinor / 100;
-    return `${amount.toLocaleString()} ${currency}`;
+    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   return (

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { IconPicker, getIconByName } from '@/components/admin/IconPicker';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -46,7 +46,7 @@ import {
   Plus,
   Edit,
   Loader2,
-  Trash2
+  Trash2,
 } from 'lucide-react';
 import { adminService } from '@/services/adminService';
 
@@ -54,6 +54,7 @@ const categorySchema = z.object({
   name: z.string().min(1, 'Category name is required'),
   slug: z.string().min(1, 'Slug is required'),
   description: z.string().optional(),
+  iconName: z.string().optional(),
   type: z.enum(['occasion', 'cultural', 'emotion', 'custom', 'daily']),
   sortOrder: z.number().min(0, 'Sort order must be 0 or greater').default(0),
 });
@@ -73,6 +74,7 @@ export default function AdminCategories() {
       name: '',
       slug: '',
       description: '',
+      iconName: '',
       type: 'occasion',
       sortOrder: 0,
     },
@@ -160,6 +162,7 @@ export default function AdminCategories() {
       name: category.name,
       slug: category.slug,
       description: category.description || '',
+      iconName: category.iconName || '',
       type: category.type,
       sortOrder: category.sortOrder || 0,
     });
@@ -172,6 +175,7 @@ export default function AdminCategories() {
       name: '',
       slug: '',
       description: '',
+      iconName: '',
       type: 'occasion',
       sortOrder: 0,
     });
@@ -205,7 +209,7 @@ export default function AdminCategories() {
             className="pl-10"
           />
         </div>
-        <Button onClick={openCreateDialog} className="bg-eagle-green hover:bg-viridian-green">
+        <Button onClick={openCreateDialog} className="bg-eagle-green text-white hover:bg-viridian-green">
           <Plus className="h-4 w-4 mr-2 text-white" />
           <span className='text-white'>Add Category</span>
         </Button>
@@ -244,6 +248,7 @@ export default function AdminCategories() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Slug</TableHead>
+                  <TableHead>Icon</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Sort Order</TableHead>
                   <TableHead>Status</TableHead>
@@ -251,55 +256,67 @@ export default function AdminCategories() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCategories.map((category: any) => (
-                  <TableRow key={category.id}>
-                    <TableCell>
-                      <div className="font-medium text-eagle-green">{category.name}</div>
-                      {category.description && (
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
-                          {category.description}
+                {filteredCategories.map((category: any) => {
+                  const IconComponent = getIconByName(category.iconName);
+                  
+                  return (
+                    <TableRow key={category.id}>
+                      <TableCell>
+                        <div className="font-medium text-eagle-green">{category.name}</div>
+                        {category.description && (
+                          <div className="text-sm text-gray-500 truncate max-w-xs">
+                            {category.description}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-gray-600 font-mono text-sm">
+                        {category.slug}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="h-5 w-5 text-eagle-green" />
+                          {category.iconName && (
+                            <span className="text-xs text-gray-500">{category.iconName}</span>
+                          )}
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-gray-600 font-mono text-sm">
-                      {category.slug}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getTypeColor(category.type)}>
-                        {category.type?.charAt(0).toUpperCase() + category.type?.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{category.sortOrder || 0}</TableCell>
-                    <TableCell>
-                      <Badge className={category.isActive !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                        {category.isActive !== false ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => openEditDialog(category)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => {
-                            if (confirm('Are you sure you want to delete this category?')) {
-                              deleteMutation.mutate(category.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getTypeColor(category.type)}>
+                          {category.type?.charAt(0).toUpperCase() + category.type?.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{category.sortOrder || 0}</TableCell>
+                      <TableCell>
+                        <Badge className={category.isActive !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                          {category.isActive !== false ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => openEditDialog(category)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              if (confirm('Are you sure you want to delete this category?')) {
+                                deleteMutation.mutate(category.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (
@@ -375,6 +392,23 @@ export default function AdminCategories() {
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="iconName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <IconPicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select an icon for this category"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -432,7 +466,7 @@ export default function AdminCategories() {
                 <Button 
                   type="submit" 
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  className="bg-eagle-green hover:bg-viridian-green"
+                  className="bg-eagle-green text-white hover:bg-viridian-green"
                 >
                   {(createMutation.isPending || updateMutation.isPending) && (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

@@ -173,15 +173,18 @@ export interface EventPriceUpdateRequest {
   ticketTypeId: number;
   ticketTypeName: string;
   currentPriceMinor: number;
-  requestedPriceMinor: number;
-  currency: string;
+  currentCurrencyCode: string;
+  newPriceMinor: number;
+  newCurrencyCode: string;
   reason: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   vendorId: number;
   vendorName?: string;
   rejectionReason?: string;
   createdAt: string;
-  processedAt?: string;
+  reviewedAt?: string;
+  reviewedById?: number;
+  reviewedByName?: string;
 }
 
 export interface CategoryResponse {
@@ -189,6 +192,7 @@ export interface CategoryResponse {
   name: string;
   slug: string;
   description?: string;
+  iconName?: string;
   type: string;
   parentId?: number;
   sortOrder: number;
@@ -200,9 +204,26 @@ export interface CreateCategoryRequest {
   name: string;
   slug: string;
   description?: string;
+  iconName?: string;
   type: 'occasion' | 'cultural' | 'emotion' | 'custom' | 'daily';
   parentId?: number;
   sortOrder?: number;
+}
+
+export interface SubCategoryResponse {
+  id: number;
+  categoryId: number;
+  name: string;
+  slug: string;
+  description?: string;
+  iconName?: string;
+  createdAt: string;
+}
+
+export interface CreateSubCategoryRequest {
+  name: string;
+  description?: string;
+  iconName?: string;
 }
 
 // ==================== TAX TYPES ====================
@@ -298,23 +319,33 @@ export interface CurrencyRateDto {
 }
 
 // ==================== PRODUCT PRICE UPDATE TYPES ====================
+// Backend returns PriceDto objects for currentPrice and newPrice
+export interface ProductPriceDto {
+  id?: number;
+  currencyCode?: string;
+  unitAmountMinor?: number;
+  vendorAmountMinor?: number;
+  amount?: number;
+  vendorAmount?: number;
+}
+
 export interface ProductPriceUpdateRequestDto {
   id: number;
   productId: number;
   productName?: string;
-  skuId?: number;
-  skuName?: string;
-  currentPriceMinor: number;
-  requestedPriceMinor: number;
-  currency: string;
+  productSkuId?: number;  // Backend uses productSkuId, not skuId
+  skuCode?: string;
+  currentPrice?: ProductPriceDto;  // Backend returns PriceDto object
+  newPrice?: ProductPriceDto;      // Backend returns PriceDto object
   reason: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   vendorId: number;
   vendorName?: string;
   rejectionReason?: string;
   createdAt: string;
-  processedAt?: string;
-  processedByUserId?: number;
+  reviewedAt?: string;
+  reviewedBy?: number;
+  reviewedByName?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -674,6 +705,24 @@ class AdminService {
     return await apiService.deleteRequest(`/api/categories/${categoryId}`);
   }
 
+  // ==================== SUBCATEGORY MANAGEMENT ====================
+  
+  async getSubCategories(categoryId: number): Promise<SubCategoryResponse[]> {
+    return await apiService.getRequest<SubCategoryResponse[]>(`/api/categories/${categoryId}/sub-categories`);
+  }
+
+  async createSubCategory(categoryId: number, data: CreateSubCategoryRequest): Promise<SubCategoryResponse> {
+    return await apiService.postRequest<SubCategoryResponse>(`/api/categories/${categoryId}/sub-categories`, data);
+  }
+
+  async updateSubCategory(subCategoryId: number, data: Partial<CreateSubCategoryRequest>): Promise<SubCategoryResponse> {
+    return await apiService.putRequest<SubCategoryResponse>(`/api/categories/sub-categories/${subCategoryId}`, data);
+  }
+
+  async deleteSubCategory(subCategoryId: number): Promise<void> {
+    return await apiService.deleteRequest(`/api/categories/sub-categories/${subCategoryId}`);
+  }
+
   // ==================== TAX ZONE MANAGEMENT ====================
   
   async getTaxZones(country?: string, active?: boolean): Promise<TaxZoneDto[]> {
@@ -800,11 +849,11 @@ class AdminService {
   }
 
   async approveProductPriceUpdate(requestId: number): Promise<ProductPriceUpdateRequestDto> {
-    return await apiService.postRequest<ProductPriceUpdateRequestDto>(`/api/v1/price-update-requests/${requestId}/approve`, {});
+    return await apiService.putRequest<ProductPriceUpdateRequestDto>(`/api/v1/price-update-requests/${requestId}/approve`, {});
   }
 
   async rejectProductPriceUpdate(requestId: number, reason: string): Promise<ProductPriceUpdateRequestDto> {
-    return await apiService.postRequest<ProductPriceUpdateRequestDto>(`/api/v1/price-update-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+    return await apiService.putRequest<ProductPriceUpdateRequestDto>(`/api/v1/price-update-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
   }
 }
 

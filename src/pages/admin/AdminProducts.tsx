@@ -222,9 +222,9 @@ export default function AdminProducts() {
     return 'N/A';
   };
 
-  const formatCurrency = (amountMinor: number, currency: string = 'ETB') => {
+  const formatCurrency = (amountMinor: number, _currency: string = 'USD') => {
     const amount = amountMinor / 100;
-    return `${amount.toLocaleString()} ${currency}`;
+    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const getStock = (product: Product) => {
@@ -518,10 +518,10 @@ export default function AdminProducts() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {formatCurrency(request.currentPriceMinor, request.currency)}
+                          {formatCurrency(request.currentPrice?.unitAmountMinor || 0)}
                         </TableCell>
                         <TableCell className="font-medium">
-                          {formatCurrency(request.requestedPriceMinor, request.currency)}
+                          {formatCurrency(request.newPrice?.unitAmountMinor || 0)}
                         </TableCell>
                         <TableCell>
                           <p className="text-sm text-gray-600 max-w-xs truncate" title={request.reason}>

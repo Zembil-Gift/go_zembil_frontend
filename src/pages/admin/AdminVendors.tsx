@@ -31,15 +31,10 @@ import {
   Mail,
   Phone,
   MapPin,
-  Star,
   CreditCard,
   CheckCircle,
   XCircle,
-  Package,
-  Calendar,
-  DollarSign,
   Building,
-  Globe,
   FileText,
   Clock
 } from 'lucide-react';
@@ -47,7 +42,7 @@ import { adminService } from '@/services/adminService';
 
 export default function AdminVendors() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedVendor, setSelectedVendor] = useState<any>(null);
+  const [, setSelectedVendor] = useState<any>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [vendorDetail, setVendorDetail] = useState<any>(null);
@@ -142,16 +137,6 @@ export default function AdminVendors() {
       setIsLoadingDetail(false);
     }
   };
-
-  const formatCurrency = (amount: number | undefined, currency: string = 'ETB') => {
-    if (amount === undefined || amount === null) return '-';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
-
   return (
     <AdminLayout 
       title="Vendor Management" 

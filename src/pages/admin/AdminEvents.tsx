@@ -222,9 +222,9 @@ export default function AdminEvents() {
     }
   };
 
-  const formatCurrency = (amountMinor: number, currency: string = 'ETB') => {
+  const formatCurrency = (amountMinor: number, _currency: string = 'USD') => {
     const amount = amountMinor / 100;
-    return `${amount.toLocaleString()} ${currency}`;
+    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const getStatusBadge = (status: string) => {
@@ -537,10 +537,10 @@ export default function AdminEvents() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {formatCurrency(request.currentPriceMinor, request.currency)}
+                          {formatCurrency(request.currentPriceMinor, request.currentCurrencyCode)}
                         </TableCell>
                         <TableCell className="font-medium">
-                          {formatCurrency(request.requestedPriceMinor, request.currency)}
+                          {formatCurrency(request.newPriceMinor, request.newCurrencyCode)}
                         </TableCell>
                         <TableCell>
                           <p className="text-sm text-gray-600 max-w-xs truncate" title={request.reason}>
