@@ -99,7 +99,7 @@ export function useCart() {
         description: "Item has been added to your cart",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to add item to cart. Please try again.",
@@ -119,7 +119,7 @@ export function useCart() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update cart item",
@@ -140,7 +140,7 @@ export function useCart() {
         description: "Item removed from cart",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to remove item from cart",
@@ -161,7 +161,7 @@ export function useCart() {
         description: "All items removed from cart",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to clear cart",
