@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Search, Heart, ShoppingCart, User, Globe, LogOut, Menu, X, Package, Ticket, Shield, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useQuery } from "@tanstack/react-query";
 import CategoryDropdown from "@/components/category-dropdown";
-import { cartService, CartItem } from "@/services/cartService";
+import { cartService } from "@/services/cartService";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
@@ -28,7 +28,7 @@ import GoGeramiLogo from "@/components/GoGeramiLogo";
 export default function StreamlinedHeader() {
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage, availableLanguages } = useLanguage();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated} = useAuth();
   const location = useLocation();
   const pathname = location.pathname;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -285,12 +285,14 @@ export default function StreamlinedHeader() {
                         <span>Join as Celebrity</span>
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/register-vendor" className="flex items-center">
-                        <span className="mr-2">🏪</span>
-                        <span>Join as Vendor</span>
-                      </Link>
-                    </DropdownMenuItem>
+                    {user?.role?.toUpperCase() !== 'VENDOR' && user?.role?.toUpperCase() !== 'ADMIN' && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/vendor-signup" className="flex items-center">
+                          <span className="mr-2">🏪</span>
+                          <span>Join as Vendor</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="mr-2 h-4 w-4" />
@@ -319,7 +321,7 @@ export default function StreamlinedHeader() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/register-vendor" className="flex items-center">
+                        <Link to="/vendor-signup" className="flex items-center">
                           <span className="mr-2">🏪</span>
                           <span>Join as Vendor</span>
                         </Link>
@@ -522,12 +524,24 @@ export default function StreamlinedHeader() {
                         Join as Celebrity
                       </Link>
                     </Button>
-                    <Button variant="outline" asChild className="w-full justify-start">
-                      <Link to="/register-vendor">
-                        <span className="mr-2">🏪</span>
-                        Join as Vendor
-                      </Link>
-                    </Button>
+                    {/* Only show Join as Vendor if user is not a vendor */}
+                    {user?.role?.toUpperCase() !== 'VENDOR' && user?.role?.toUpperCase() !== 'ADMIN' && (
+                      <Button variant="outline" asChild className="w-full justify-start">
+                        <Link to="/vendor-signup">
+                          <span className="mr-2">🏪</span>
+                          Join as Vendor
+                        </Link>
+                      </Button>
+                    )}
+                    {/* Show Vendor Dashboard for vendors */}
+                    {user?.role?.toUpperCase() === 'VENDOR' && (
+                      <Button variant="outline" asChild className="w-full justify-start bg-emerald-50 border-emerald-500 text-emerald-700 hover:bg-emerald-100">
+                        <Link to="/vendor">
+                          <Store className="mr-2 h-4 w-4" />
+                          Vendor Dashboard
+                        </Link>
+                      </Button>
+                    )}
                     <Button 
                       variant="destructive" 
                       onClick={handleSignOut}
@@ -546,7 +560,7 @@ export default function StreamlinedHeader() {
                       </Link>
                     </Button>
                     <Button variant="outline" asChild className="w-full justify-start">
-                      <Link to="/register-vendor">
+                      <Link to="/vendor-signup">
                         <span className="mr-2">🏪</span>
                         Join as Vendor
                       </Link>
