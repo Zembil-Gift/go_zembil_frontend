@@ -173,7 +173,7 @@ export default function EditProduct() {
 
   // Populate form when product data is loaded
   useEffect(() => {
-    if (product) {
+    if (product && allSubCategories.length > 0) {
       // Load SKU data
       const skuData = (product.productSku && product.productSku.length > 0)
         ? product.productSku.map(sku => {
@@ -204,6 +204,7 @@ export default function EditProduct() {
       const skuImagesMap: Record<number, ImageDto[]> = {};
       if (product.productSku && product.productSku.length > 0) {
         product.productSku.forEach((sku, index) => {
+          // First try SKU-level images
           if (sku.images && sku.images.length > 0) {
             skuImagesMap[index] = sku.images.map((img, imgIndex) => ({
               id: img.id || imgIndex + 1,
@@ -217,10 +218,38 @@ export default function EditProduct() {
               contentType: img.contentType || 'image/jpeg',
               createdAt: img.createdAt || new Date().toISOString(),
             }));
+          } else if (index === 0 && product.images && product.images.length > 0) {
+            // Fallback to product-level images for the first/default SKU
+            skuImagesMap[index] = product.images.map((img, imgIndex) => ({
+              id: img.id || imgIndex + 1,
+              url: img.url,
+              fullUrl: img.fullUrl,
+              originalFilename: img.originalFilename || `image-${imgIndex + 1}`,
+              altText: img.altText || product.name,
+              sortOrder: img.sortOrder ?? imgIndex,
+              isPrimary: img.isPrimary ?? (imgIndex === 0),
+              fileSize: img.fileSize || 0,
+              contentType: img.contentType || 'image/jpeg',
+              createdAt: img.createdAt || new Date().toISOString(),
+            }));
           } else {
             skuImagesMap[index] = [];
           }
         });
+      } else if (product.images && product.images.length > 0) {
+        // If no SKUs but product has images, use them for the default SKU
+        skuImagesMap[0] = product.images.map((img, imgIndex) => ({
+          id: img.id || imgIndex + 1,
+          url: img.url,
+          fullUrl: img.fullUrl,
+          originalFilename: img.originalFilename || `image-${imgIndex + 1}`,
+          altText: img.altText || product.name,
+          sortOrder: img.sortOrder ?? imgIndex,
+          isPrimary: img.isPrimary ?? (imgIndex === 0),
+          fileSize: img.fileSize || 0,
+          contentType: img.contentType || 'image/jpeg',
+          createdAt: img.createdAt || new Date().toISOString(),
+        }));
       }
       setCurrentSkuImages(skuImagesMap);
 
@@ -235,7 +264,7 @@ export default function EditProduct() {
         productSku: skuData,
       });
     }
-  }, [product, vendorProfile, currencies, form]);
+  }, [product, vendorProfile, currencies, form, allSubCategories]);
 
   // Check if vendor owns this product (compare with userId, not vendor id)
   const isProductOwner = product && vendorProfile && product.vendorId === vendorProfile.userId;
@@ -270,7 +299,8 @@ export default function EditProduct() {
       if (isPendingOrRejected) {
         return vendorService.editPendingProduct(productId, productPayload as Product);
       } else {
-        return vendorService.updateProduct(productId, productPayload as Product);
+        // Use updateProductForVendor for ACTIVE products (preserves prices)
+        return vendorService.updateProductForVendor(productId, productPayload as Product);
       }
     },
     onSuccess: async () => {
