@@ -11,49 +11,11 @@ import {
   BatchDeleteRequest,
   UpdateWishListItemRequest
 } from "@/services/wishlistService";
-import { useState, useEffect } from "react";
-
-interface LocalWishlistItem {
-  id: number;
-  productId: number;
-  addedAt: string;
-}
 
 export function useWishlist() {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [localWishlist, setLocalWishlist] = useState<LocalWishlistItem[]>([]);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      const stored = localStorage.getItem('goZembil_wishlist');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            if (typeof parsed[0] === 'number') {
-              setLocalWishlist(parsed.map((id: number) => ({
-                id,
-                productId: id,
-                addedAt: new Date().toISOString()
-              })));
-            } else {
-              setLocalWishlist(parsed);
-            }
-          }
-        } catch (error) {
-          console.warn('Error parsing stored wishlist:', error);
-          setLocalWishlist([]);
-        }
-      }
-    }
-  }, [isAuthenticated]);
-
-  const saveToLocalStorage = (items: LocalWishlistItem[]) => {
-    localStorage.setItem('goZembil_wishlist', JSON.stringify(items));
-    setLocalWishlist(items);
-  };
 
   const {
     data: wishlistResponse,
@@ -69,34 +31,27 @@ export function useWishlist() {
   const wishlistItems: WishListItemDto[] = wishlistResponse?.items || [];
 
   const isInWishlist = (productId: number): boolean => {
+    // Only check server wishlist for authenticated users
     if (isAuthenticated) {
       return wishlistItems.some((item) => item.productId === productId);
-    } else {
-      return localWishlist.some(item => item.productId === productId);
     }
+    // For unauthenticated users, nothing is in wishlist (forces login)
+    return false;
   };
 
   const getWishlistCount = (): number => {
+    // Only show count for authenticated users
     if (isAuthenticated) {
       return wishlistResponse?.totalElements || wishlistItems.length;
-    } else {
-      return localWishlist.length;
     }
+    return 0;
   };
 
   const addToWishlistMutation = useMutation({
     mutationFn: async (data: CreateWishListItemRequest) => {
+      // Force authentication for wishlist actions - check immediately
       if (!isAuthenticated) {
-        if (localWishlist.some(item => item.productId === data.productId)) {
-          throw new Error("Item already in wishlist");
-        }
-        const newItem: LocalWishlistItem = {
-          id: Date.now(),
-          productId: data.productId,
-          addedAt: new Date().toISOString()
-        };
-        saveToLocalStorage([...localWishlist, newItem]);
-        return newItem as unknown as WishListItemDto;
+        throw new Error('Authentication required');
       }
       
       if (wishlistItems.some((item) => item.productId === data.productId)) {
@@ -106,53 +61,69 @@ export function useWishlist() {
       return await wishlistService.addToWishlist(data);
     },
     onMutate: async (newItem) => {
+      // Don't do optimistic updates for unauthenticated users
+      if (!isAuthenticated) {
+        // Show toast and redirect to login immediately
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to add items to your wishlist",
+        });
+        // Small delay to show toast before redirect
+        setTimeout(() => {
+          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = `/signin?returnUrl=${returnUrl}`;
+        }, 500);
+        return;
+      }
+
       await queryClient.cancelQueries({ queryKey: ["/api/wish-list"] });
 
       const previousWishlist = queryClient.getQueryData<PagedWishListResponse>(["/api/wish-list"]);
 
-      if (isAuthenticated) {
-        queryClient.setQueryData<PagedWishListResponse>(["/api/wish-list"], (old) => {
-          const items = old?.items || [];
-          return {
-            ...old,
-            page: old?.page || 0,
-            size: old?.size || 20,
-            totalPages: old?.totalPages || 1,
-            totalElements: (old?.totalElements || 0) + 1,
-            items: [
-              ...items,
-              { 
-                id: Date.now(),
-                productId: newItem.productId,
-                productName: 'Loading...',
-                price: 0,
-                currency: 'ETB',
-                available: true,
-                priceChanged: false,
-                addedAt: new Date().toISOString()
-              } as WishListItemDto
-            ]
-          };
-        });
-      }
+      queryClient.setQueryData<PagedWishListResponse>(["/api/wish-list"], (old) => {
+        const items = old?.items || [];
+        return {
+          ...old,
+          page: old?.page || 0,
+          size: old?.size || 20,
+          totalPages: old?.totalPages || 1,
+          totalElements: (old?.totalElements || 0) + 1,
+          items: [
+            ...items,
+            { 
+              id: Date.now(),
+              productId: newItem.productId,
+              productName: 'Loading...',
+              price: 0,
+              currency: 'ETB',
+              available: true,
+              priceChanged: false,
+              addedAt: new Date().toISOString()
+            } as WishListItemDto
+          ]
+        };
+      });
 
       return { previousWishlist };
     },
     onSuccess: () => {
       if (isAuthenticated) {
         queryClient.invalidateQueries({ queryKey: ["/api/wish-list"] });
+        toast({
+          title: "Added to wishlist",
+          description: "Gift has been added to your wishlist",
+        });
       }
-      toast({
-        title: "Added to wishlist",
-        description: "Gift has been added to your wishlist",
-      });
     },
-    onError: (error: any, newItem, context) => {
+    onError: (error: any, _newItem, context) => {
+      // Handle authentication error
+      if (error?.message === 'Authentication required') {
+        // Don't show error toast, redirect is already handled in onMutate
+        return;
+      }
+      
       if (context?.previousWishlist && isAuthenticated) {
         queryClient.setQueryData(["/api/wish-list"], context.previousWishlist);
-      } else if (!isAuthenticated) {
-        const revertedWishlist = localWishlist.filter(item => item.productId !== newItem.productId);
-        saveToLocalStorage(revertedWishlist);
       }
       
       console.error("Add to wishlist error:", error);
@@ -175,54 +146,62 @@ export function useWishlist() {
 
   const removeFromWishlistMutation = useMutation({
     mutationFn: async (productId: number) => {
+      // Force authentication for wishlist actions - check immediately
       if (!isAuthenticated) {
-        if (!localWishlist.some(item => item.productId === productId)) {
-          throw new Error("Item not in wishlist");
-        }
-        const newLocalWishlist = localWishlist.filter(item => item.productId !== productId);
-        saveToLocalStorage(newLocalWishlist);
-        return { productId };
+        throw new Error('Authentication required');
       }
       
       return await wishlistService.removeProductFromWishlist(productId);
     },
     onMutate: async (productId) => {
+      // Don't do optimistic updates for unauthenticated users
+      if (!isAuthenticated) {
+        // Show toast and redirect to login immediately
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to manage your wishlist",
+        });
+        // Small delay to show toast before redirect
+        setTimeout(() => {
+          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = `/signin?returnUrl=${returnUrl}`;
+        }, 500);
+        return;
+      }
+
       await queryClient.cancelQueries({ queryKey: ["/api/wish-list"] });
 
       const previousWishlist = queryClient.getQueryData<PagedWishListResponse>(["/api/wish-list"]);
 
-      if (isAuthenticated) {
-        queryClient.setQueryData<PagedWishListResponse>(["/api/wish-list"], (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            totalElements: Math.max(0, (old.totalElements || 0) - 1),
-            items: old.items.filter(item => item.productId !== productId)
-          };
-        });
-      }
+      queryClient.setQueryData<PagedWishListResponse>(["/api/wish-list"], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          totalElements: Math.max(0, (old.totalElements || 0) - 1),
+          items: old.items.filter(item => item.productId !== productId)
+        };
+      });
 
       return { previousWishlist };
     },
     onSuccess: () => {
       if (isAuthenticated) {
         queryClient.invalidateQueries({ queryKey: ["/api/wish-list"] });
+        toast({
+          title: "Removed from wishlist",
+          description: "Gift has been removed from your wishlist",
+        });
       }
-      toast({
-        title: "Removed from wishlist",
-        description: "Gift has been removed from your wishlist",
-      });
     },
-    onError: (error: any, productId, context) => {
+    onError: (error: any, _productId, context) => {
+      // Handle authentication error
+      if (error?.message === 'Authentication required') {
+        // Don't show error toast, redirect is already handled in onMutate
+        return;
+      }
+      
       if (context?.previousWishlist && isAuthenticated) {
         queryClient.setQueryData(["/api/wish-list"], context.previousWishlist);
-      } else if (!isAuthenticated) {
-        const revertedItem: LocalWishlistItem = {
-          id: Date.now(),
-          productId,
-          addedAt: new Date().toISOString()
-        };
-        saveToLocalStorage([...localWishlist, revertedItem]);
       }
       
       console.error("Remove from wishlist error:", error);
@@ -323,8 +302,7 @@ export function useWishlist() {
   const clearWishlistMutation = useMutation({
     mutationFn: async () => {
       if (!isAuthenticated) {
-        saveToLocalStorage([]);
-        return;
+        throw new Error('Authentication required');
       }
       return await wishlistService.clearWishlist();
     },
@@ -376,16 +354,7 @@ export function useWishlist() {
 
   const normalizedWishlistItems: WishListItemDto[] = isAuthenticated
     ? wishlistItems 
-    : localWishlist.map(item => ({
-        id: item.id,
-        productId: item.productId,
-        productName: `Product ${item.productId}`,
-        price: 0,
-        currency: 'ETB',
-        available: true,
-        priceChanged: false,
-        addedAt: item.addedAt
-      }));
+    : []; // Empty array for unauthenticated users
 
   return {
     wishlistItems: normalizedWishlistItems,
