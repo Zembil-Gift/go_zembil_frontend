@@ -16,14 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StateSelect, COUNTRIES } from "@/components/ui/state-select";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, ArrowLeft, CreditCard, Globe, Smartphone, Loader2, Gift, Tag } from "lucide-react";
+import { ShoppingCart, ArrowLeft, CreditCard, Smartphone, Loader2, Gift, Tag } from "lucide-react";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/currency";
 import { apiService } from "@/services/apiService";
 import { orderService, type CreateOrderRequest } from "@/services/orderService";
-import { getProductImageUrl, getSkuImageUrl } from "@/utils/imageUtils";
+import { type CartItem } from "@/services/cartService";
+import { getSkuImageUrl } from "@/utils/imageUtils";
 
 interface AddressDto {
   id?: number;
@@ -39,91 +41,9 @@ interface AddressDto {
   isDefault?: boolean;
 }
 
-interface CartItem {
-  id: number;
-  productId: number;
-  quantity: number;
-  unitPrice?: number;
-  totalPrice?: number;
-  productName?: string;
-  productImage?: string;
-  product?: {
-    id: number;
-    name: string;
-    price: string;
-    images?: string[];
-    cover?: string;
-    imageUrl?: string;
-  };
-}
-
-const COUNTRIES = [
-  { value: "United States", label: "United States" },
-  { value: "Ethiopia", label: "Ethiopia" },
-  { value: "Canada", label: "Canada" },
-  { value: "United Kingdom", label: "United Kingdom" },
-  { value: "Europe", label: "Europe" },
-  { value: "Australia", label: "Australia" },
-  { value: "Middle East", label: "Middle East" },
-];
-
-const US_STATES = [
-  { value: "AL", label: "Alabama" },
-  { value: "AK", label: "Alaska" },
-  { value: "AZ", label: "Arizona" },
-  { value: "AR", label: "Arkansas" },
-  { value: "CA", label: "California" },
-  { value: "CO", label: "Colorado" },
-  { value: "CT", label: "Connecticut" },
-  { value: "DE", label: "Delaware" },
-  { value: "FL", label: "Florida" },
-  { value: "GA", label: "Georgia" },
-  { value: "HI", label: "Hawaii" },
-  { value: "ID", label: "Idaho" },
-  { value: "IL", label: "Illinois" },
-  { value: "IN", label: "Indiana" },
-  { value: "IA", label: "Iowa" },
-  { value: "KS", label: "Kansas" },
-  { value: "KY", label: "Kentucky" },
-  { value: "LA", label: "Louisiana" },
-  { value: "ME", label: "Maine" },
-  { value: "MD", label: "Maryland" },
-  { value: "MA", label: "Massachusetts" },
-  { value: "MI", label: "Michigan" },
-  { value: "MN", label: "Minnesota" },
-  { value: "MS", label: "Mississippi" },
-  { value: "MO", label: "Missouri" },
-  { value: "MT", label: "Montana" },
-  { value: "NE", label: "Nebraska" },
-  { value: "NV", label: "Nevada" },
-  { value: "NH", label: "New Hampshire" },
-  { value: "NJ", label: "New Jersey" },
-  { value: "NM", label: "New Mexico" },
-  { value: "NY", label: "New York" },
-  { value: "NC", label: "North Carolina" },
-  { value: "ND", label: "North Dakota" },
-  { value: "OH", label: "Ohio" },
-  { value: "OK", label: "Oklahoma" },
-  { value: "OR", label: "Oregon" },
-  { value: "PA", label: "Pennsylvania" },
-  { value: "RI", label: "Rhode Island" },
-  { value: "SC", label: "South Carolina" },
-  { value: "SD", label: "South Dakota" },
-  { value: "TN", label: "Tennessee" },
-  { value: "TX", label: "Texas" },
-  { value: "UT", label: "Utah" },
-  { value: "VT", label: "Vermont" },
-  { value: "VA", label: "Virginia" },
-  { value: "WA", label: "Washington" },
-  { value: "WV", label: "West Virginia" },
-  { value: "WI", label: "Wisconsin" },
-  { value: "WY", label: "Wyoming" },
-  { value: "DC", label: "District of Columbia" },
-];
-
 export default function Checkout() {
   const { isAuthenticated, user } = useAuth();
-  const { cartItems, cartCurrency, getTotalPrice, getTotalItems, clearCart } = useCart();
+  const { cartItems, cartCurrency, getTotalPrice, getTotalItems } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -153,18 +73,6 @@ export default function Checkout() {
   const [cardMessage, setCardMessage] = useState("");
   const [discountCode, setDiscountCode] = useState("");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'stripe' | 'chapa'>('stripe');
-  const [shippingStateSearch, setShippingStateSearch] = useState("");
-  const [billingStateSearch, setBillingStateSearch] = useState("");
-
-  const filteredShippingStates = US_STATES.filter(state =>
-    state.label.toLowerCase().includes(shippingStateSearch.toLowerCase()) ||
-    state.value.toLowerCase().includes(shippingStateSearch.toLowerCase())
-  );
-
-  const filteredBillingStates = US_STATES.filter(state =>
-    state.label.toLowerCase().includes(billingStateSearch.toLowerCase()) ||
-    state.value.toLowerCase().includes(billingStateSearch.toLowerCase())
-  );
 
   const totalPrice = getTotalPrice();
   const totalItems = getTotalItems();
@@ -553,29 +461,11 @@ export default function Checkout() {
                     {shippingInfo.country === "United States" && (
                       <div>
                         <Label htmlFor="state">State *</Label>
-                        <Select
+                        <StateSelect
+                          id="state"
                           value={shippingInfo.state}
                           onValueChange={(value) => setShippingInfo({ ...shippingInfo, state: value })}
-                        >
-                          <SelectTrigger id="state">
-                            <SelectValue placeholder="Select a state" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <div className="p-2">
-                              <Input
-                                placeholder="Search states..."
-                                value={shippingStateSearch}
-                                onChange={(e) => setShippingStateSearch(e.target.value)}
-                                className="mb-2"
-                              />
-                            </div>
-                            {filteredShippingStates.map((state) => (
-                              <SelectItem key={state.value} value={state.value}>
-                                {state.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        />
                       </div>
                     )}
                   </div>
@@ -597,7 +487,6 @@ export default function Checkout() {
                         value={shippingInfo.country}
                         onValueChange={(value) => {
                           setShippingInfo({ ...shippingInfo, country: value, state: "" });
-                          setShippingStateSearch("");
                         }}
                       >
                         <SelectTrigger id="country">
@@ -668,29 +557,11 @@ export default function Checkout() {
                       {billingInfo.country === "United States" && (
                         <div>
                           <Label htmlFor="billingState">State *</Label>
-                          <Select
+                          <StateSelect
+                            id="billingState"
                             value={billingInfo.state}
                             onValueChange={(value) => setBillingInfo({ ...billingInfo, state: value })}
-                          >
-                            <SelectTrigger id="billingState">
-                              <SelectValue placeholder="Select a state" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <div className="p-2">
-                                <Input
-                                  placeholder="Search states..."
-                                  value={billingStateSearch}
-                                  onChange={(e) => setBillingStateSearch(e.target.value)}
-                                  className="mb-2"
-                                />
-                              </div>
-                              {filteredBillingStates.map((state) => (
-                                <SelectItem key={state.value} value={state.value}>
-                                  {state.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          />
                         </div>
                       )}
                     </div>
@@ -712,7 +583,6 @@ export default function Checkout() {
                           value={billingInfo.country}
                           onValueChange={(value) => {
                             setBillingInfo({ ...billingInfo, country: value, state: "" });
-                            setBillingStateSearch("");
                           }}
                         >
                           <SelectTrigger id="billingCountry">
@@ -889,9 +759,8 @@ export default function Checkout() {
                 {cartItems.map((item: CartItem) => {
                   // Get image URL with SKU image priority, fallback to product image
                   const imageUrl = getSkuImageUrl(
-                    item.productSku?.images,
-                    item.product?.images,
-                    item.product?.cover
+                    item.productSku?.images || item.product?.images,
+                    item.product?.cover || item.productImage
                   );
                   
                   return (
