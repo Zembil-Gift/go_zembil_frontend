@@ -28,7 +28,7 @@ interface Bank {
 }
 
 export default function ChapaOnboarding() {
-  const navigate = useNavigate();
+  useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -47,7 +47,7 @@ export default function ChapaOnboarding() {
   });
 
   // Fetch current onboarding status
-  const { data: onboardingStatus, isLoading: statusLoading } = useQuery({
+  const { data: onboardingStatus} = useQuery({
     queryKey: ['vendor', 'onboarding-status'],
     queryFn: () => vendorService.getOnboardingStatus(),
     enabled: isAuthenticated && isVendor,
@@ -255,7 +255,7 @@ export default function ChapaOnboarding() {
                   <Button
                     type="submit"
                     disabled={setupChapaMutation.isPending || !bankCode || !accountNumber || !accountName}
-                    className="flex-1 bg-eagle-green hover:bg-eagle-green/90"
+                    className="flex-1 bg-eagle-green text-white hover:bg-eagle-green/90"
                   >
                     {setupChapaMutation.isPending ? (
                       <>
