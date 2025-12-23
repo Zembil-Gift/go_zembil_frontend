@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { X, Upload, Star, Loader2, GripVertical, Image as ImageIcon } from 'lucide-react';
+import { X, Upload, Star, Loader2} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ImageDto } from '@/services/imageService';
@@ -151,13 +151,11 @@ export function ImageUpload({
       return prev.filter((p) => p.id !== previewId);
     });
   }, []);
-
-  const clearPreviews = useCallback(() => {
+  useCallback(() => {
     previewImages.forEach((p) => URL.revokeObjectURL(p.preview));
     setPreviewImages([]);
   }, [previewImages]);
-
-  // Clean up object URLs on unmount
+// Clean up object URLs on unmount
   // Note: Using Effect cleanup to revoke URLs when component unmounts
 
   return (
@@ -180,7 +178,7 @@ export function ImageUpload({
               className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted"
             >
               <img
-                src={image.url}
+                src={image.fullUrl || image.url}
                 alt={image.altText || image.originalFilename}
                 className="w-full h-full object-cover"
               />
@@ -348,7 +346,7 @@ export function ManagedImageUpload({
   label,
 }: ManagedImageUploadProps) {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading] = useState(false);
 
   const handleFilesSelected = useCallback((files: File[]) => {
     setPendingFiles((prev) => [...prev, ...files]);

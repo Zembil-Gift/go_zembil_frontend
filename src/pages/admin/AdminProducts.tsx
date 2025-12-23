@@ -47,6 +47,7 @@ interface Product {
   images?: Array<{
     id: number;
     url: string;
+    fullUrl?: string;
     originalFilename?: string;
     altText?: string;
     sortOrder: number;
@@ -63,14 +64,27 @@ interface Product {
   price?: {
     id: number;
     amount: number;
+    vendorAmount?: number;
+    unitAmountMinor?: number;
+    vendorAmountMinor?: number;
     currencyCode: string;
   };
   productSku?: Array<{
     id: number;
     skuCode: string;
     stockQuantity: number;
+    isDefault?: boolean;
+    attributes?: Array<{
+      id: number;
+      name: string;
+      value: string;
+    }>;
     price?: {
+      id?: number;
       amount: number;
+      vendorAmount?: number;
+      unitAmountMinor?: number;
+      vendorAmountMinor?: number;
       currencyCode: string;
     };
   }>;
@@ -499,69 +513,87 @@ export default function AdminProducts() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Product / SKU</TableHead>
-                      <TableHead>Current Price</TableHead>
-                      <TableHead>Requested Price</TableHead>
+                      <TableHead className="text-right">Current Customer Price</TableHead>
+                      <TableHead className="text-right">Current Vendor Price</TableHead>
+                      <TableHead className="text-right">Requested Customer Price</TableHead>
+                      <TableHead className="text-right">Requested Vendor Price</TableHead>
                       <TableHead>Reason</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {priceRequests.map((request: any) => (
-                      <TableRow key={request.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{request.productName}</div>
-                            {request.skuCode && (
-                              <div className="text-sm text-gray-500">SKU: {request.skuCode}</div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {formatCurrency(request.currentPrice?.unitAmountMinor || 0)}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {formatCurrency(request.newPrice?.unitAmountMinor || 0)}
-                        </TableCell>
-                        <TableCell>
-                          <p className="text-sm text-gray-600 max-w-xs truncate" title={request.reason}>
-                            {request.reason}
-                          </p>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={
-                            request.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
-                            request.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                            'bg-red-100 text-red-800'
-                          }>
-                            {request.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {request.status === 'PENDING' ? (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => approveProductPriceUpdateMutation.mutate(request.id)}
-                                disabled={approveProductPriceUpdateMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => setRejectDialog({ open: true, productId: request.id, type: 'price' })}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                    {priceRequests.map((request: any) => {
+                      const currentCustomer = request.currentPrice?.unitAmountMinor || 0;
+                      const currentVendor = request.currentPrice?.vendorAmountMinor || 0;
+                      const newCustomer = request.newPrice?.unitAmountMinor || 0;
+                      const newVendor = request.newPrice?.vendorAmountMinor || 0;
+                      const currency = request.currentPrice?.currencyCode || request.newPrice?.currencyCode || 'ETB';
+                      
+                      return (
+                        <TableRow key={request.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{request.productName}</div>
+                              {request.skuCode && (
+                                <div className="text-sm text-gray-500 font-mono">SKU: {request.skuCode}</div>
+                              )}
                             </div>
-                          ) : (
-                            <span className="text-sm text-gray-500">Processed</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(currentCustomer)} {currency}
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {formatCurrency(currentVendor)} {currency}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            <span className={newCustomer > currentCustomer ? 'text-red-600' : newCustomer < currentCustomer ? 'text-green-600' : ''}>
+                              {formatCurrency(newCustomer)} {currency}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {formatCurrency(newVendor)} {currency}
+                          </TableCell>
+                          <TableCell>
+                            <p className="text-sm text-gray-600 max-w-xs truncate" title={request.reason}>
+                              {request.reason}
+                            </p>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={
+                              request.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
+                              request.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                              'bg-red-100 text-red-800'
+                            }>
+                              {request.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {request.status === 'PENDING' ? (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => approveProductPriceUpdateMutation.mutate(request.id)}
+                                  disabled={approveProductPriceUpdateMutation.isPending}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => setRejectDialog({ open: true, productId: request.id, type: 'price' })}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-500">Processed</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               ) : (
@@ -578,7 +610,7 @@ export default function AdminProducts() {
 
       {/* View Product Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Product Details</DialogTitle>
             <DialogDescription>
@@ -608,11 +640,11 @@ export default function AdminProducts() {
               
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Price</p>
+                  <p className="text-muted-foreground">Base Price</p>
                   <p className="font-medium">{formatPrice(selectedProduct)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Stock</p>
+                  <p className="text-muted-foreground">Total Stock</p>
                   <p className="font-medium">{getStock(selectedProduct)}</p>
                 </div>
                 <div>
@@ -629,6 +661,78 @@ export default function AdminProducts() {
                 <div>
                   <p className="text-muted-foreground text-sm">Description</p>
                   <p className="text-sm mt-1">{selectedProduct.description}</p>
+                </div>
+              )}
+
+              {/* SKU Prices Section */}
+              {selectedProduct.productSku && selectedProduct.productSku.length > 0 && (
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-eagle-green" />
+                    SKU Prices
+                  </h4>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>SKU Code</TableHead>
+                          <TableHead>Attributes</TableHead>
+                          <TableHead className="text-right">Customer Price</TableHead>
+                          <TableHead className="text-right">Vendor Price</TableHead>
+                          <TableHead className="text-right">Platform Fee</TableHead>
+                          <TableHead className="text-right">Stock</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedProduct.productSku.map((sku) => {
+                          const customerPrice = sku.price?.unitAmountMinor || (sku.price?.amount ? sku.price.amount * 100 : 0);
+                          const vendorPrice = sku.price?.vendorAmountMinor || (sku.price?.vendorAmount ? sku.price.vendorAmount * 100 : 0);
+                          const platformFee = customerPrice - vendorPrice;
+                          const currency = sku.price?.currencyCode || 'ETB';
+                          
+                          return (
+                            <TableRow key={sku.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-sm">{sku.skuCode}</span>
+                                  {sku.isDefault && (
+                                    <Badge variant="outline" className="text-xs">Default</Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {sku.attributes && sku.attributes.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {sku.attributes.map((attr, idx) => (
+                                      <Badge key={idx} variant="secondary" className="text-xs">
+                                        {attr.name}: {attr.value}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                {formatCurrency(customerPrice)} {currency}
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground">
+                                {formatCurrency(vendorPrice)} {currency}
+                              </TableCell>
+                              <TableCell className="text-right text-green-600">
+                                {formatCurrency(platformFee)} {currency}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Badge variant={sku.stockQuantity > 0 ? "outline" : "destructive"}>
+                                  {sku.stockQuantity}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               )}
             </div>
