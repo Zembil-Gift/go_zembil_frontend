@@ -26,6 +26,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { getEventImageUrl } from '@/utils/imageUtils';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/lib/currency';
+import PageNavigator from '@/components/PageNavigator';
 
 import { 
   Event, 
@@ -87,10 +88,17 @@ export default function Events() {
   });
 
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Pagination state
+  const [eventsPage, setEventsPage] = useState(0);
+  const eventsPerPage = 12;
+  // Services pagination - uncomment when services API supports pagination
+  // const [servicesPage, setServicesPage] = useState(0);
+  // const servicesPerPage = 12;
 
   // Fetch real events from API with currency conversion
-  const { data: realEventsData, isLoading: realEventsLoading, error: eventsError } = useQuery({
-    queryKey: ['real-events', eventFilters, preferredCurrency],
+  const { data: realEventsData, isLoading: realEventsLoading, error: eventsError, isFetching: eventsFetching } = useQuery({
+    queryKey: ['real-events', eventFilters, preferredCurrency, eventsPage],
     queryFn: async () => {
       try {
         // Try real API first with user's preferred currency for price conversion
@@ -98,8 +106,8 @@ export default function Events() {
           eventFilters.q,
           eventFilters.city,
           eventFilters.category ? parseInt(eventFilters.category) : undefined,
-          0, // page
-          12, // size
+          eventsPage, // page from state
+          eventsPerPage, // size
           preferredCurrency // Pass preferred currency for backend conversion
         );
         return response;
@@ -151,10 +159,12 @@ export default function Events() {
 
   const updateEventFilters = (newFilters: Partial<EventFilters>) => {
     setEventFilters(prev => ({ ...prev, ...newFilters }));
+    setEventsPage(0); // Reset to first page when filters change
   };
 
   const updateServiceFilters = (newFilters: Partial<ServiceFilters>) => {
     setServiceFilters(prev => ({ ...prev, ...newFilters }));
+    // setServicesPage(0); // Reset to first page when filters change
   };
 
   const clearFilters = () => {
@@ -163,10 +173,12 @@ export default function Events() {
         q: '',
         sort: 'popular',
       });
+      setEventsPage(0);
     } else {
       setServiceFilters({
         sort: 'rating',
       });
+      // setServicesPage(0);
     }
   };
 
@@ -438,16 +450,33 @@ export default function Events() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Render API events */}
-                {realEventsData?.content?.map((event, index) => (
-                  <RealEventCard key={event.id} event={event} index={index} />
-                ))}
-                {/* Fallback to mock events if API fails */}
-                {!realEventsData && eventsData?.events?.map((event, index) => (
-                  <EventCard key={event.id} event={event} index={index} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Render API events */}
+                  {realEventsData?.content?.map((event, index) => (
+                    <RealEventCard key={event.id} event={event} index={index} />
+                  ))}
+                  {/* Fallback to mock events if API fails */}
+                  {!realEventsData && eventsData?.events?.map((event, index) => (
+                    <EventCard key={event.id} event={event} index={index} />
+                  ))}
+                </div>
+                
+                {/* Events Pagination */}
+                {realEventsData && (
+                  <PageNavigator
+                    currentPage={eventsPage}
+                    totalPages={realEventsData.totalPages}
+                    onPageChange={(page) => {
+                      setEventsPage(page);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    isLoading={eventsFetching}
+                    totalItems={realEventsData.totalElements}
+                    itemsPerPage={eventsPerPage}
+                  />
+                )}
+              </>
             )}
           </TabsContent>
 

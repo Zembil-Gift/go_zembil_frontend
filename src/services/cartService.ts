@@ -21,6 +21,7 @@ export interface CartItem {
     images?: Array<{
       id: number;
       url: string;
+      fullUrl?: string;
       isPrimary: boolean;
       sortOrder: number;
     }>;
@@ -35,6 +36,7 @@ export interface CartItem {
     images?: Array<{
       id: number;
       url: string;
+      fullUrl?: string;
       isPrimary: boolean;
       sortOrder: number;
     }>;
@@ -92,11 +94,12 @@ class CartService {
             return {
               ...item,
               productName: product.name,
-              productImage: product.cover,
+              productImage: product.cover || product.images?.[0]?.fullUrl,
               product: {
                 id: product.id,
                 name: product.name,
-                cover: product.cover,
+                cover: product.cover || product.images?.[0]?.fullUrl,
+                images: product.images,
                 price: String(product.price || product.productSku?.[0]?.price || 0),
               }
             };

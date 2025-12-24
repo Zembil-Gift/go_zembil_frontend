@@ -1,17 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import FadeIn from "../animations/FadeIn";
-import { CATEGORIES, getCategoryById, parseUrlParams, buildUrlParams } from "../../shared/categories";
-import { 
-  occasionCategories, 
-  culturalCategories, 
-  emotionCategories, 
-  foodCategories,
-  CategoryItem 
-} from "./categoryData";
+import { parseUrlParams, buildUrlParams } from "../../shared/categories";
+import { useCategories, SubCategoryResponse } from "@/hooks/useCategories";
+import { getIconByName } from "./iconMapping";
 
 interface CategoryCarouselProps {
   activeCategory: string;
@@ -22,9 +16,11 @@ export default function CategoryCarousel({
   activeCategory, 
   onCategoryChange
 }: CategoryCarouselProps) {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Fetch categories from API with fallback
+  const { data: categories, isLoading, error } = useCategories();
   
   // Parse URL parameters to get initial state
   const urlParams = new URLSearchParams(location.search);
@@ -49,19 +45,19 @@ export default function CategoryCarousel({
     setSelectedSubcategory(categoryFilters.sub);
   }, [location.search, onCategoryChange, categoryFilters.category, categoryFilters.sub]);
 
-  // Get current category data
-  const currentCategoryData = getCategoryById(selectedCategory);
-  const subcategories = currentCategoryData?.subcategories || [];
+  // Get current category data from API response
+  const currentCategoryData = categories?.find(cat => cat.slug === selectedCategory);
+  const currentSubcategories = currentCategoryData?.subcategories || [];
 
   // Main category selection handler
-  const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId);
+  const handleCategorySelect = (categorySlug: string) => {
+    setSelectedCategory(categorySlug);
     setSelectedSubcategory(undefined);
-    onCategoryChange(categoryId);
+    onCategoryChange(categorySlug);
     
     // Update URL without navigation
     const params = new URLSearchParams(location.search);
-    params.set('category', categoryId);
+    params.set('category', categorySlug);
     params.delete('sub');
     const newUrl = `${location.pathname}?${params.toString()}`;
     window.history.pushState({}, '', newUrl);
@@ -90,13 +86,12 @@ export default function CategoryCarousel({
   const scrollCarousel = (direction: 'left' | 'right') => {
     if (!carouselRef.current) return;
     
-    const scrollAmount = carouselRef.current.clientWidth * 0.8; // Scroll by ~80% of visible width
+    const scrollAmount = carouselRef.current.clientWidth * 0.8;
     const currentScroll = carouselRef.current.scrollLeft;
     const targetScroll = direction === 'left' 
       ? currentScroll - scrollAmount 
       : currentScroll + scrollAmount;
     
-    // Check for reduced motion preference
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     
     carouselRef.current.scrollTo({
@@ -116,8 +111,7 @@ export default function CategoryCarousel({
         break;
       case 'ArrowRight':
         event.preventDefault();
-        const currentItems = getCurrentCategoryItems();
-        if (index < currentItems.length - 1) {
+        if (index < currentSubcategories.length - 1) {
           setFocusedIndex(index + 1);
         }
         break;
@@ -136,7 +130,6 @@ export default function CategoryCarousel({
       const targetCard = cards[focusedIndex] as HTMLElement;
       if (targetCard) {
         targetCard.focus();
-        // Scroll card into view if needed
         const cardRect = targetCard.getBoundingClientRect();
         const containerRect = carouselRef.current.getBoundingClientRect();
         
@@ -158,18 +151,15 @@ export default function CategoryCarousel({
 
     const handleScroll = () => updateScrollButtons();
     carousel.addEventListener('scroll', handleScroll);
-    
-    // Initial update
     updateScrollButtons();
 
     return () => carousel.removeEventListener('scroll', handleScroll);
-  }, [selectedCategory]); // Re-run when category changes
+  }, [selectedCategory, currentSubcategories]);
 
-  // Scroll to selected subcategory when URL changes or category changes
+  // Scroll to selected subcategory when URL changes
   useEffect(() => {
     if (selectedSubcategory && carouselRef.current) {
-      const currentItems = getCurrentCategoryItems();
-      const targetIndex = currentItems.findIndex(item => item.slug === selectedSubcategory);
+      const targetIndex = currentSubcategories.findIndex(item => item.slug === selectedSubcategory);
       
       if (targetIndex >= 0) {
         setTimeout(() => {
@@ -182,40 +172,66 @@ export default function CategoryCarousel({
               inline: 'center' 
             });
           }
-        }, 100); // Small delay to ensure DOM is updated
+        }, 100);
       }
     }
-  }, [selectedCategory, selectedSubcategory]);
+  }, [selectedCategory, selectedSubcategory, currentSubcategories]);
 
-  // Get current category items using the original data structure
-  const getCurrentCategoryItems = (): CategoryItem[] => {
-    switch (selectedCategory) {
-      case "occasions": return occasionCategories;
-      case "cultural-religious": return culturalCategories;
-      case "emotions": return emotionCategories;
-      case "food-beverages": return foodCategories;
-      default: return occasionCategories;
-    }
+  // Generate image path for occasions
+  const getImagePath = (slug: string): string | null => {
+    const imageMap: Record<string, string> = {
+      'birthday': 'birthday.png',
+      'graduation': 'graduation.png',
+      'new-baby': 'new-baby.png',
+      'wedding': 'wedding.png',
+      'housewarming': 'housewarming.png',
+      'family-reunion': 'family-reunion.png',
+      'promotion': 'promotion.png',
+      'anniversary': 'anniversary.png',
+      'retirement': 'retirement.png',
+      'first-day-school': 'first-day-school.png',
+      'engagement': 'engagement.png',
+      'mothers-day': 'mothers-day.png',
+      'fathers-day': 'fathers-day.png',
+      'valentines-day': 'valentines-day.png'
+    };
+    
+    return imageMap[slug] ? `/attached_assets/${imageMap[slug]}` : null;
   };
 
-  const categoryTabs = [
+  // Build category tabs from API data
+  const categoryTabs = categories?.map(cat => ({
+    id: cat.slug,
+    label: cat.name,
+  })) || [
     { id: "occasions", label: "Occasions" },
     { id: "cultural-religious", label: "Cultural & Religious" },
     { id: "emotions", label: "Emotions" },
     { id: "food-beverages", label: "Food & Beverages" },
   ];
 
-  const currentItems = getCurrentCategoryItems();
+  if (isLoading) {
+    return (
+      <section id="perfect-gift" className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-eagle-green" />
+            <span className="ml-3 text-gray-600">Loading categories...</span>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="perfect-gift" className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <FadeIn delay={0.2} duration={0.8}>
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-gotham-bold text-eagle-green mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-eagle-green mb-4">
               Find the Perfect Gift
             </h2>
-            <p className="text-xl font-gotham-light text-viridian-green max-w-2xl mx-auto">
+            <p className="text-xl font-light text-viridian-green max-w-2xl mx-auto">
               Discover meaningful gifts for every occasion and celebration
             </p>
           </div>
@@ -228,7 +244,7 @@ export default function CategoryCarousel({
               <button
                 key={tab.id}
                 onClick={() => handleCategorySelect(tab.id)}
-                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-gotham-bold transition-all duration-200 text-sm sm:text-base whitespace-nowrap ${
+                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold transition-all duration-200 text-sm sm:text-base whitespace-nowrap ${
                   selectedCategory === tab.id
                     ? "bg-eagle-green text-white shadow-sm ring-2 ring-yellow/40"
                     : "text-eagle-green hover:text-white hover:bg-viridian-green"
@@ -288,41 +304,17 @@ export default function CategoryCarousel({
               transition={{ duration: 0.3 }}
               className="flex gap-4 sm:gap-5 pb-2"
             >
-              {currentItems.map((item, index) => {
-                const Icon = item.icon;
+              {currentSubcategories.map((item: SubCategoryResponse, index: number) => {
+                const Icon = getIconByName(item.iconName);
                 const isSelected = selectedSubcategory === item.slug;
-                
-                // Generate image filename from slug
-                const getImagePath = (slug: string) => {
-                  // Map slug to image filename (for occasions category)
-                  const imageMap: Record<string, string> = {
-                    'birthday': 'birthday.png',
-                    'graduation': 'graduation.png',
-                    'new-baby': 'new-baby.png',
-                    'wedding': 'wedding.png',
-                    'housewarming': 'housewarming.png',
-                    'family-reunion': 'family-reunion.png',
-                    'promotion': 'promotion.png',
-                    'anniversary': 'anniversary.png',
-                    'retirement': 'retirement.png',
-                    'first-day-school': 'first-day-school.png',
-                    'engagement': 'engagement.png',
-                    'mothers-day': 'mothers-day.png',
-                    'fathers-day': 'fathers-day.png',
-                    'valentines-day': 'valentines-day.png'
-                  };
-                  
-                  return imageMap[slug] ? `/attached_assets/${imageMap[slug]}` : null;
-                };
-                
-                const imagePath = selectedCategory === 'occasions' ? getImagePath(item.slug!) : null;
+                const imagePath = selectedCategory === 'occasions' ? getImagePath(item.slug) : (item.imageUrl || null);
                 
                 return (
                   <button
                     key={item.slug || index}
                     data-card-index={index}
-                    onClick={() => handleSubcategoryClick(item.slug!)}
-                    onKeyDown={(e) => handleKeyDown(e, index, item.slug!)}
+                    onClick={() => handleSubcategoryClick(item.slug)}
+                    onKeyDown={(e) => handleKeyDown(e, index, item.slug)}
                     className={`flex-shrink-0 w-60 sm:w-72 h-40 sm:h-48 group cursor-pointer transform transition-all duration-300 hover:scale-102 focus:outline-none focus:ring-2 focus:ring-yellow/40 focus:ring-offset-2 rounded-2xl ${
                       isSelected ? "scale-102 ring-2 ring-yellow/60" : ""
                     }`}
@@ -333,9 +325,7 @@ export default function CategoryCarousel({
                   >
                     <div className="w-full h-full bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-viridian-green/30 overflow-hidden">
                       {imagePath ? (
-                        // Image-based card for Occasions
                         <div className="flex flex-col h-full">
-                          {/* Image Container */}
                           <div className="flex-1 relative overflow-hidden">
                             <img
                               src={imagePath}
@@ -343,36 +333,30 @@ export default function CategoryCarousel({
                               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                               loading="lazy"
                             />
-                            {/* Gradient Overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           </div>
                           
-                          {/* Content */}
                           <div className="p-3 sm:p-4 bg-gradient-to-b from-june-bud/10 to-white">
-                            <h3 className="font-gotham-bold text-sm sm:text-base text-eagle-green mb-1 leading-tight text-center">
+                            <h3 className="font-bold text-sm sm:text-base text-eagle-green mb-1 leading-tight text-center">
                               {item.name}
                             </h3>
-                            <p className="font-gotham-light text-xs sm:text-sm text-eagle-green/70 leading-tight line-clamp-2 text-center">
+                            <p className="font-light text-xs sm:text-sm text-eagle-green/70 leading-tight line-clamp-2 text-center">
                               {item.description}
                             </p>
                           </div>
                         </div>
                       ) : (
-                        // Icon-based card for other categories
                         <div className="w-full h-full bg-gradient-to-b from-june-bud/30 to-white rounded-2xl p-4 sm:p-5">
                           <div className="flex flex-col items-center justify-center h-full text-center">
-                            {/* Icon Chip */}
                             <div className="w-12 h-12 bg-eagle-green rounded-full flex items-center justify-center mb-3 shadow-sm">
                               <Icon className="w-6 h-6 text-white" />
                             </div>
                             
-                            {/* Title */}
-                            <h3 className="font-gotham-bold text-sm sm:text-base text-eagle-green mb-2 leading-tight">
+                            <h3 className="font-bold text-sm sm:text-base text-eagle-green mb-2 leading-tight">
                               {item.name}
                             </h3>
                             
-                            {/* Description */}
-                            <p className="font-gotham-light text-xs sm:text-sm text-eagle-green/70 leading-tight line-clamp-2">
+                            <p className="font-light text-xs sm:text-sm text-eagle-green/70 leading-tight line-clamp-2">
                               {item.description}
                             </p>
                           </div>
@@ -387,8 +371,7 @@ export default function CategoryCarousel({
         </div>
       </div>
 
-      {/* Hide scrollbar styles */}
-      <style jsx>{`
+      <style>{`
         .scrollbar-hide {
           -ms-overflow-style: none;
           scrollbar-width: none;

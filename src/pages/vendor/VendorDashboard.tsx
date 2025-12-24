@@ -2798,7 +2798,7 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
             Business Information
           </CardTitle>
           <CardDescription>
-            Your business details. Contact support to update this information.
+            Your business details.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

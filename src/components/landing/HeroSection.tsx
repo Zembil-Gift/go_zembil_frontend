@@ -27,7 +27,7 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
           {/* Content */}
           <div className="mb-12 lg:mb-0">
             <FadeIn delay={0.2} duration={0.8}>
-              <h1 className="font-gotham-extra-bold text-4xl sm:text-5xl lg:text-6xl leading-tight mb-6">
+              <h1 className="font-bold text-4xl sm:text-5xl lg:text-6xl leading-tight mb-6">
                 {t('homepage.hero.title')}
                 <span className="text-yellow block">{t('homepage.hero.subtitle')}</span>
               </h1>

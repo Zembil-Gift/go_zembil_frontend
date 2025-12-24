@@ -159,25 +159,25 @@ export default function AdminVendors() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-gotham-bold text-eagle-green">{vendors.length}</div>
+            <div className="text-2xl font-bold text-eagle-green">{vendors.length}</div>
             <p className="text-sm text-gray-500">Total Vendors</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-gotham-bold text-green-600">{approvedCount}</div>
+            <div className="text-2xl font-bold text-green-600">{approvedCount}</div>
             <p className="text-sm text-gray-500">Approved</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-gotham-bold text-amber-600">{pendingCount}</div>
+            <div className="text-2xl font-bold text-amber-600">{pendingCount}</div>
             <p className="text-sm text-gray-500">Pending Approval</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-gotham-bold text-blue-600">{payoutEnabledCount}</div>
+            <div className="text-2xl font-bold text-blue-600">{payoutEnabledCount}</div>
             <p className="text-sm text-gray-500">Payout Enabled</p>
           </CardContent>
         </Card>
@@ -348,11 +348,11 @@ export default function AdminVendors() {
               <TabsContent value="info" className="space-y-4 mt-4">
                 {/* Header */}
                 <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-eagle-green/5 to-viridian-green/5 rounded-lg">
-                  <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center text-white text-xl font-gotham-bold">
+                  <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center text-white text-xl font-bold">
                     {vendorDetail.businessName?.charAt(0) || 'V'}
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-gotham-bold text-eagle-green">
+                    <h3 className="text-lg font-bold text-eagle-green">
                       {vendorDetail.businessName}
                     </h3>
                     {vendorDetail.categoryName && (

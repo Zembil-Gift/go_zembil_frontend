@@ -33,7 +33,7 @@ export default function Landing() {
     queryKey: ["products", "all"],
     queryFn: async () => {
       try {
-          return await productService.getAllProducts(0, 12);
+          return await productService.getAllProducts(0, 3);
       } catch (err) {
         throw err;
       }
@@ -57,7 +57,7 @@ export default function Landing() {
       originalPrice: undefined,
       currency: currencyCode,
       image: getProductImageUrl(product.images, '/placeholder-product.jpg'),
-      images: getAllProductImages(product.images, product.cover),
+      images: getAllProductImages(product.images),
       category: product.occasion || 'Gift',
       categorySlug: product.categorySlug || 'gifts',
       isTrending: product.isTrending || false,

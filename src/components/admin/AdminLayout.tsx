@@ -75,16 +75,7 @@ export default function AdminLayout({ children, title, description }: AdminLayou
               })}
             </nav>
 
-            {/* Back to site */}
-            <div className="p-4 border-t border-white/10">
-              <Link 
-                to="/" 
-                className="flex items-center text-white/70 hover:text-white text-sm"
-              >
-                <ChevronRight className="h-4 w-4 mr-2 rotate-180" />
-                Back to Site
-              </Link>
-            </div>
+        
           </div>
         </aside>
 

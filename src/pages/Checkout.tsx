@@ -754,18 +754,33 @@ export default function Checkout() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {cartItems.map((item: CartItem) => {
-                  // Get image URL - use fallback cover/productImage directly
-                  // (cart item images don't have fullUrl property required by getSkuImageUrl)
-                  const imageUrl = item.product?.cover || item.productImage || '';
+                  // Get image URL - prioritize fullUrl from images array, then url, then cover/productImage
+                  const images = item.product?.images as Array<{ id: number; url: string; fullUrl?: string; isPrimary: boolean; sortOrder: number }> | undefined;
+                  const imageUrl = images?.[0]?.fullUrl || 
+                                   images?.[0]?.url || 
+                                   item.product?.cover || 
+                                   item.productImage || '';
                   
                   return (
                   <div key={item.id} className="flex gap-4">
                     <div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden">
-                      <img
-                        src={imageUrl}
-                        alt={item.productName || item.product?.name || "Product"}
-                        className="w-full h-full object-cover"
-                      />
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={item.productName || item.product?.name || "Product"}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { 
+                            e.currentTarget.classList.add('hidden'); 
+                            const fallback = e.currentTarget.nextElementSibling; 
+                            if (fallback) fallback.classList.remove('hidden'); 
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-full h-full bg-gray-100 rounded-md flex items-center justify-center ${imageUrl ? 'hidden' : ''}`}>
+                        <div className="text-center text-gray-400">
+                          <p className="text-xs">No image</p>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="flex-1">
