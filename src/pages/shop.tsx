@@ -18,6 +18,7 @@ import { categoryService } from "@/services/categoryService";
 import { getAllProductImages } from "@/utils/imageUtils";
 import { getIconByName } from "@/components/admin/IconPicker";
 import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
+import PageNavigator from "@/components/PageNavigator";
 
 export default function Shop() {
   return <ShopContent />;
@@ -38,7 +39,7 @@ function ShopContent() {
   const [searchTerm, setSearchTerm] = useState(searchParam);
   const [debouncedSearch, setDebouncedSearch] = useState(searchParam);
   const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage] = useState(20);
+  const [itemsPerPage] = useState(2);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(
     categoryIdParam ? parseInt(categoryIdParam) : undefined
   );
@@ -493,31 +494,14 @@ function ShopContent() {
               </ProductGridStagger>
               
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-8">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-                    disabled={currentPage === 0 || isFetching}
-                    className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
-                  >
-                    Previous
-                  </Button>
-                  <span className="px-4 py-2 text-sm font-gotham-bold text-eagle-green">
-                    Page {currentPage + 1} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
-                    disabled={currentPage >= totalPages - 1 || isFetching}
-                    className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
+              <PageNavigator
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                isLoading={isFetching}
+                totalItems={totalProducts}
+                itemsPerPage={itemsPerPage}
+              />
             </>
           )}
         </div>
