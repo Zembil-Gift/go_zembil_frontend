@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -65,8 +64,7 @@ interface RevenueTrendChartProps {
 
 export function RevenueTrendChart({
   className,
-  showTotal = true,
-  showOrders = true,
+                                    showOrders = true,
   showAvgOrder = false,
   title = 'Revenue Trends',
   description = 'Product and event revenue over time',
@@ -119,15 +117,15 @@ export function RevenueTrendChart({
             <div className="hidden md:flex items-center gap-6 text-sm">
               <div className="text-right">
                 <p className="text-muted-foreground">Total Revenue</p>
-                <p className="font-gotham-bold text-eagle-green">{formatCurrency(totalRevenue)}</p>
+                <p className="font-bold text-eagle-green">{formatCurrency(totalRevenue)}</p>
               </div>
               <div className="text-right">
                 <p className="text-muted-foreground">Total Orders</p>
-                <p className="font-gotham-bold text-viridian-green">{totalOrders.toLocaleString()}</p>
+                <p className="font-bold text-viridian-green">{totalOrders.toLocaleString()}</p>
               </div>
               <div className="text-right">
                 <p className="text-muted-foreground">Avg Order</p>
-                <p className="font-gotham-bold text-ethiopian-gold">{formatCurrency(avgOrderValue)}</p>
+                <p className="font-bold text-ethiopian-gold">{formatCurrency(avgOrderValue)}</p>
               </div>
             </div>
           )}
