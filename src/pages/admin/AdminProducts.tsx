@@ -32,9 +32,10 @@ import {
   Check,
   X,
   DollarSign,
-  Clock
+  Clock,
+  FolderTree
 } from 'lucide-react';
-import { adminService } from '@/services/adminService';
+import { adminService, CategoryChangeRequestDto } from '@/services/adminService';
 import { useToast } from '@/hooks/use-toast';
 import { getProductImageUrl } from '@/utils/imageUtils';
 
@@ -98,7 +99,7 @@ export default function AdminProducts() {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
-  const [rejectDialog, setRejectDialog] = useState<{ open: boolean; productId?: number; type: 'product' | 'price' }>({ 
+  const [rejectDialog, setRejectDialog] = useState<{ open: boolean; productId?: number; type: 'product' | 'price' | 'category-change' }>({ 
     open: false, 
     type: 'product' 
   });
@@ -131,10 +132,21 @@ export default function AdminProducts() {
     },
   });
 
+  // Fetch category change requests
+  const { data: categoryChangeRequestsData, isLoading: categoryChangeLoading } = useQuery({
+    queryKey: ['admin', 'category-change-requests'],
+    queryFn: async () => {
+      const response = await adminService.getCategoryChangeRequests(0, 100);
+      return response.content || [];
+    },
+  });
+
   const allProducts = allProductsData || [];
   const pendingProducts = pendingProductsData || [];
   const priceRequests = priceRequestsData || [];
   const pendingPriceRequests = priceRequests.filter((r: any) => r.status === 'PENDING');
+  const categoryChangeRequests = categoryChangeRequestsData || [];
+  const pendingCategoryChangeRequests = categoryChangeRequests.filter((r: CategoryChangeRequestDto) => r.status === 'PENDING');
 
   // Approve product mutation
   const approveProductMutation = useMutation({
@@ -208,6 +220,48 @@ export default function AdminProducts() {
     },
   });
 
+  // Approve category change request mutation
+  const approveCategoryChangeMutation = useMutation({
+    mutationFn: (requestId: number) => adminService.approveCategoryChange(requestId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'category-change-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'all-products'] });
+      toast({
+        title: 'Category Change Approved',
+        description: 'The product category has been updated successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to approve category change',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Reject category change request mutation
+  const rejectCategoryChangeMutation = useMutation({
+    mutationFn: ({ requestId, reason }: { requestId: number; reason: string }) => 
+      adminService.rejectCategoryChange(requestId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'category-change-requests'] });
+      toast({
+        title: 'Category Change Rejected',
+        description: 'The category change request has been rejected.',
+      });
+      setRejectDialog({ open: false, type: 'category-change' });
+      setRejectReason('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reject category change',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleReject = () => {
     if (!rejectReason.trim()) {
       toast({
@@ -222,6 +276,8 @@ export default function AdminProducts() {
       rejectProductMutation.mutate({ productId: rejectDialog.productId, reason: rejectReason });
     } else if (rejectDialog.type === 'price' && rejectDialog.productId) {
       rejectProductPriceUpdateMutation.mutate({ requestId: rejectDialog.productId, reason: rejectReason });
+    } else if (rejectDialog.type === 'category-change' && rejectDialog.productId) {
+      rejectCategoryChangeMutation.mutate({ requestId: rejectDialog.productId, reason: rejectReason });
     }
   };
 
@@ -236,9 +292,16 @@ export default function AdminProducts() {
     return 'N/A';
   };
 
-  const formatCurrency = (amountMinor: number, _currency: string = 'USD') => {
+  const formatCurrency = (amountMinor: number, currency: string = 'ETB') => {
     const amount = amountMinor / 100;
-    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const symbol = currency === 'ETB' ? 'ETB ' : currency === 'USD' ? '$' : `${currency} `;
+    return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  // Format amount in major units (e.g., 1.36 USD)
+  const formatAmount = (amount: number, currency: string = 'ETB') => {
+    const symbol = currency === 'ETB' ? 'ETB ' : currency === 'USD' ? '$' : `${currency} `;
+    return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const getStock = (product: Product) => {
@@ -285,6 +348,12 @@ export default function AdminProducts() {
             Price Update Requests
             {pendingPriceRequests.length > 0 && (
               <Badge className="ml-2 bg-blue-500 text-white">{pendingPriceRequests.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="category-changes" className="relative">
+            Category Changes
+            {pendingCategoryChangeRequests.length > 0 && (
+              <Badge className="ml-2 bg-purple-500 text-white">{pendingCategoryChangeRequests.length}</Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -513,10 +582,9 @@ export default function AdminProducts() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Product / SKU</TableHead>
-                      <TableHead className="text-right">Current Customer Price</TableHead>
-                      <TableHead className="text-right">Current Vendor Price</TableHead>
-                      <TableHead className="text-right">Requested Customer Price</TableHead>
-                      <TableHead className="text-right">Requested Vendor Price</TableHead>
+                      <TableHead className="text-right">Current Price</TableHead>
+                      <TableHead className="text-right">Requested Price</TableHead>
+                      <TableHead className="text-right">Change</TableHead>
                       <TableHead>Reason</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
@@ -524,11 +592,12 @@ export default function AdminProducts() {
                   </TableHeader>
                   <TableBody>
                     {priceRequests.map((request: any) => {
-                      const currentCustomer = request.currentPrice?.unitAmountMinor || 0;
-                      const currentVendor = request.currentPrice?.vendorAmountMinor || 0;
-                      const newCustomer = request.newPrice?.unitAmountMinor || 0;
-                      const newVendor = request.newPrice?.vendorAmountMinor || 0;
+                      // Use amount (major units) if available, otherwise convert from minor units
+                      const currentPrice = request.currentPrice?.amount ?? (request.currentPrice?.unitAmountMinor ? request.currentPrice.unitAmountMinor / 100 : 0);
+                      const newPrice = request.newPrice?.amount ?? (request.newPrice?.unitAmountMinor ? request.newPrice.unitAmountMinor / 100 : 0);
                       const currency = request.currentPrice?.currencyCode || request.newPrice?.currencyCode || 'ETB';
+                      const priceDiff = newPrice - currentPrice;
+                      const percentChange = currentPrice > 0 ? ((priceDiff / currentPrice) * 100).toFixed(1) : 0;
                       
                       return (
                         <TableRow key={request.id}>
@@ -538,21 +607,22 @@ export default function AdminProducts() {
                               {request.skuCode && (
                                 <div className="text-sm text-gray-500 font-mono">SKU: {request.skuCode}</div>
                               )}
+                              <div className="text-xs text-muted-foreground">Vendor: {request.vendorName}</div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(currentCustomer)} {currency}
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {formatCurrency(currentVendor)} {currency}
+                          <TableCell className="text-right font-medium">
+                            {formatAmount(currentPrice, currency)}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            <span className={newCustomer > currentCustomer ? 'text-red-600' : newCustomer < currentCustomer ? 'text-green-600' : ''}>
-                              {formatCurrency(newCustomer)} {currency}
+                            <span className={priceDiff > 0 ? 'text-red-600' : priceDiff < 0 ? 'text-green-600' : ''}>
+                              {formatAmount(newPrice, currency)}
                             </span>
                           </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {formatCurrency(newVendor)} {currency}
+                          <TableCell className="text-right">
+                            <span className={priceDiff > 0 ? 'text-red-600' : priceDiff < 0 ? 'text-green-600' : 'text-gray-500'}>
+                              {priceDiff > 0 ? '+' : ''}{formatAmount(priceDiff, currency)}
+                              <span className="text-xs ml-1">({priceDiff > 0 ? '+' : ''}{percentChange}%)</span>
+                            </span>
                           </TableCell>
                           <TableCell>
                             <p className="text-sm text-gray-600 max-w-xs truncate" title={request.reason}>
@@ -600,6 +670,111 @@ export default function AdminProducts() {
                 <div className="text-center py-12">
                   <DollarSign className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No price update requests</h3>
+                  <p className="text-gray-500">All requests have been processed</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Category Change Requests Tab */}
+        <TabsContent value="category-changes">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FolderTree className="h-5 w-5 text-purple-500" />
+                Category Change Requests
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {categoryChangeLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-eagle-green" />
+                </div>
+              ) : categoryChangeRequests.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Vendor</TableHead>
+                      <TableHead>Current Category</TableHead>
+                      <TableHead>New Category</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {categoryChangeRequests.map((request: CategoryChangeRequestDto) => (
+                      <TableRow key={request.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            {request.productCover ? (
+                              <img 
+                                src={request.productCover} 
+                                alt={request.productName} 
+                                className="h-10 w-10 rounded object-cover"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center">
+                                <Package className="h-5 w-5 text-gray-400" />
+                              </div>
+                            )}
+                            <div className="font-medium">{request.productName}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{request.vendorBusinessName}</TableCell>
+                        <TableCell>
+                          <span className="text-muted-foreground">{request.currentSubCategoryName}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium text-purple-600">{request.newSubCategoryName}</span>
+                        </TableCell>
+                        <TableCell>
+                          <p className="text-sm text-gray-600 max-w-xs truncate" title={request.reason}>
+                            {request.reason}
+                          </p>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={
+                            request.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
+                            request.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                            'bg-red-100 text-red-800'
+                          }>
+                            {request.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {request.status === 'PENDING' ? (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => approveCategoryChangeMutation.mutate(request.id)}
+                                disabled={approveCategoryChangeMutation.isPending}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => setRejectDialog({ open: true, productId: request.id, type: 'category-change' })}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-500">Processed</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-12">
+                  <FolderTree className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No category change requests</h3>
                   <p className="text-gray-500">All requests have been processed</p>
                 </div>
               )}
@@ -774,7 +949,7 @@ export default function AdminProducts() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-500" />
-              Reject {rejectDialog.type === 'product' ? 'Product' : 'Price Update'}
+              Reject {rejectDialog.type === 'product' ? 'Product' : rejectDialog.type === 'price' ? 'Price Update' : 'Category Change'}
             </DialogTitle>
             <DialogDescription>
               Please provide a reason for rejection. This will be sent to the vendor.
@@ -793,9 +968,9 @@ export default function AdminProducts() {
             <Button 
               variant="destructive" 
               onClick={handleReject}
-              disabled={rejectProductMutation.isPending || rejectProductPriceUpdateMutation.isPending}
+              disabled={rejectProductMutation.isPending || rejectProductPriceUpdateMutation.isPending || rejectCategoryChangeMutation.isPending}
             >
-              {(rejectProductMutation.isPending || rejectProductPriceUpdateMutation.isPending) && (
+              {(rejectProductMutation.isPending || rejectProductPriceUpdateMutation.isPending || rejectCategoryChangeMutation.isPending) && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
               Reject

@@ -57,6 +57,7 @@ export interface PendingApprovals {
   events: number;
   productPriceUpdates: number;
   eventPriceUpdates: number;
+  categoryChangeRequests: number;
 }
 
 export interface AdminDashboardStats {
@@ -346,6 +347,81 @@ export interface ProductPriceUpdateRequestDto {
   reviewedAt?: string;
   reviewedBy?: number;
   reviewedByName?: string;
+}
+
+// ==================== SERVICE PRICE UPDATE TYPES ====================
+export interface ServicePriceDto {
+  id?: number;
+  currencyCode?: string;
+  unitAmountMinor?: number;
+  vendorAmountMinor?: number;
+  amount?: number;
+  vendorAmount?: number;
+}
+
+export interface ServicePriceUpdateRequestDto {
+  id: number;
+  serviceId: number;
+  serviceName?: string;
+  currentPrice?: ServicePriceDto;
+  newPrice?: ServicePriceDto;
+  reason: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  vendorId: number;
+  vendorName?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedBy?: number;
+  reviewedByName?: string;
+}
+
+// ==================== SERVICE CATEGORY CHANGE REQUEST TYPES ====================
+export interface ServiceCategoryChangeRequestDto {
+  id: number;
+  serviceId: number;
+  serviceName?: string;
+  serviceCover?: string;
+  vendorId: number;
+  vendorName?: string;
+  currentSubCategoryId?: number;
+  currentSubCategoryName?: string;
+  currentCategoryName?: string;
+  newSubCategoryId: number;
+  newSubCategoryName?: string;
+  newCategoryName?: string;
+  reason?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedBy?: number;
+  reviewedByName?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// ==================== CATEGORY CHANGE REQUEST TYPES ====================
+export interface CategoryChangeRequestDto {
+  id: number;
+  productId: number;
+  productName?: string;
+  productCover?: string;
+  vendorId: number;
+  vendorName?: string;
+  currentSubCategoryId?: number;
+  currentSubCategoryName?: string;
+  currentCategoryName?: string;
+  newSubCategoryId: number;
+  newSubCategoryName?: string;
+  newCategoryName?: string;
+  reason?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedBy?: number;
+  reviewedByName?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -644,21 +720,21 @@ class AdminService {
     return await apiService.postRequest<EventResponse>(`/api/admin/events/${eventId}/featured?featured=${featured}`, {});
   }
 
+  // ==================== EVENT PRICE UPDATE REQUESTS (UNIFIED SYSTEM) ====================
+  // Event price updates now use the unified VendorChangeRequest system
   
   async getPriceUpdateRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<EventPriceUpdateRequest>> {
-    let url = `/api/admin/events/price-update-requests?page=${page}&size=${size}`;
-    if (status) {
-      url += `&status=${status}`;
-    }
+    // Use the unified endpoint filtered by EVENT entity type
+    let url = `/api/admin/vendor-change-requests/entity-type/EVENT?page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<EventPriceUpdateRequest>>(url);
   }
 
   async approvePriceUpdate(requestId: number): Promise<EventPriceUpdateRequest> {
-    return await apiService.postRequest<EventPriceUpdateRequest>(`/api/admin/events/price-update-requests/${requestId}/approve`, {});
+    return await apiService.postRequest<EventPriceUpdateRequest>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
   }
 
   async rejectPriceUpdate(requestId: number, reason: string): Promise<EventPriceUpdateRequest> {
-    return await apiService.postRequest<EventPriceUpdateRequest>(`/api/admin/events/price-update-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+    return await apiService.postRequest<EventPriceUpdateRequest>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
   }
 
   // ==================== PRODUCT MANAGEMENT ====================
@@ -836,25 +912,156 @@ class AdminService {
     return await apiService.getRequest<CurrencyRateDto[]>('/api/currencies/rates');
   }
 
-  // ==================== PRODUCT PRICE UPDATE REQUESTS ====================
+  // ==================== PRODUCT PRICE UPDATE REQUESTS (UNIFIED SYSTEM) ====================
+  // Product price updates now use the unified VendorChangeRequest system
   
   async getProductPriceUpdateRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<ProductPriceUpdateRequestDto>> {
-    let url = `/api/v1/price-update-requests?page=${page}&size=${size}`;
-    if (status) url += `&status=${status}`;
+    // Use the unified endpoint filtered by PRODUCT entity type and PRICE_UPDATE request type
+    let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<ProductPriceUpdateRequestDto>>(url);
   }
 
   async getProductPriceUpdateRequestById(requestId: number): Promise<ProductPriceUpdateRequestDto> {
-    return await apiService.getRequest<ProductPriceUpdateRequestDto>(`/api/v1/price-update-requests/${requestId}`);
+    return await apiService.getRequest<ProductPriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}`);
   }
 
   async approveProductPriceUpdate(requestId: number): Promise<ProductPriceUpdateRequestDto> {
-    return await apiService.putRequest<ProductPriceUpdateRequestDto>(`/api/v1/price-update-requests/${requestId}/approve`, {});
+    return await apiService.postRequest<ProductPriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
   }
 
   async rejectProductPriceUpdate(requestId: number, reason: string): Promise<ProductPriceUpdateRequestDto> {
-    return await apiService.putRequest<ProductPriceUpdateRequestDto>(`/api/v1/price-update-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+    return await apiService.postRequest<ProductPriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
   }
+
+  // ==================== SERVICE PRICE UPDATE REQUESTS (UNIFIED SYSTEM) ====================
+  // Service price updates use the unified VendorChangeRequest system
+  
+  async getServicePriceUpdateRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<ServicePriceUpdateRequestDto>> {
+    // Use the unified endpoint filtered by SERVICE entity type
+    let url = `/api/admin/vendor-change-requests/entity-type/SERVICE?page=${page}&size=${size}`;
+    return await apiService.getRequest<PaginatedResponse<ServicePriceUpdateRequestDto>>(url);
+  }
+
+  async getServicePriceUpdateRequestById(requestId: number): Promise<ServicePriceUpdateRequestDto> {
+    return await apiService.getRequest<ServicePriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}`);
+  }
+
+  async approveServicePriceUpdate(requestId: number): Promise<ServicePriceUpdateRequestDto> {
+    return await apiService.postRequest<ServicePriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
+  }
+
+  async rejectServicePriceUpdate(requestId: number, reason: string): Promise<ServicePriceUpdateRequestDto> {
+    return await apiService.postRequest<ServicePriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+  }
+
+  // ==================== SERVICE CATEGORY CHANGE REQUESTS ====================
+
+  async getServiceCategoryChangeRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<ServiceCategoryChangeRequestDto>> {
+    return await apiService.getRequest<PaginatedResponse<ServiceCategoryChangeRequestDto>>(`/api/admin/vendor-change-requests/entity-type/SERVICE?changeType=CATEGORY_CHANGE&page=${page}&size=${size}`);
+  }
+
+  async getServiceCategoryChangeRequestsByStatus(status: string, page: number = 0, size: number = 20): Promise<PaginatedResponse<ServiceCategoryChangeRequestDto>> {
+    return await apiService.getRequest<PaginatedResponse<ServiceCategoryChangeRequestDto>>(`/api/admin/vendor-change-requests/status/${status}?changeType=CATEGORY_CHANGE&page=${page}&size=${size}`);
+  }
+
+  async getServiceCategoryChangeRequestById(requestId: number): Promise<ServiceCategoryChangeRequestDto> {
+    return await apiService.getRequest<ServiceCategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}`);
+  }
+
+  async approveServiceCategoryChange(requestId: number): Promise<ServiceCategoryChangeRequestDto> {
+    return await apiService.postRequest<ServiceCategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
+  }
+
+  async rejectServiceCategoryChange(requestId: number, reason: string): Promise<ServiceCategoryChangeRequestDto> {
+    return await apiService.postRequest<ServiceCategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+  }
+
+  // ==================== CATEGORY CHANGE REQUESTS (UNIFIED SYSTEM) ====================
+  // Category changes now use the unified VendorChangeRequest system
+  
+  async getCategoryChangeRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<CategoryChangeRequestDto>> {
+    // Use the unified endpoint - filter by PRODUCT entity type for product category changes
+    let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?page=${page}&size=${size}`;
+    return await apiService.getRequest<PaginatedResponse<CategoryChangeRequestDto>>(url);
+  }
+
+  async getCategoryChangeRequestsByStatus(status: string, page: number = 0, size: number = 20): Promise<PaginatedResponse<CategoryChangeRequestDto>> {
+    return await apiService.getRequest<PaginatedResponse<CategoryChangeRequestDto>>(`/api/admin/vendor-change-requests/status/${status}?page=${page}&size=${size}`);
+  }
+
+  async getCategoryChangeRequestById(requestId: number): Promise<CategoryChangeRequestDto> {
+    return await apiService.getRequest<CategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}`);
+  }
+
+  async approveCategoryChange(requestId: number): Promise<CategoryChangeRequestDto> {
+    return await apiService.postRequest<CategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
+  }
+
+  async rejectCategoryChange(requestId: number, reason: string): Promise<CategoryChangeRequestDto> {
+    return await apiService.postRequest<CategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+  }
+
+  // ==================== UNIFIED VENDOR CHANGE REQUESTS ====================
+  // These endpoints use the new unified VendorChangeRequest system for all entity types
+  
+  async getUnifiedChangeRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
+    return await apiService.getRequest<PaginatedResponse<UnifiedChangeRequestDto>>(`/api/admin/vendor-change-requests?page=${page}&size=${size}`);
+  }
+
+  async getUnifiedChangeRequestsByStatus(status: 'PENDING' | 'APPROVED' | 'REJECTED', page: number = 0, size: number = 20): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
+    return await apiService.getRequest<PaginatedResponse<UnifiedChangeRequestDto>>(`/api/admin/vendor-change-requests/status/${status}?page=${page}&size=${size}`);
+  }
+
+  async getUnifiedChangeRequestsByEntityType(entityType: 'PRODUCT' | 'EVENT' | 'SERVICE', page: number = 0, size: number = 20): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
+    return await apiService.getRequest<PaginatedResponse<UnifiedChangeRequestDto>>(`/api/admin/vendor-change-requests/entity-type/${entityType}?page=${page}&size=${size}`);
+  }
+
+  async approveUnifiedChangeRequest(requestId: number): Promise<UnifiedChangeRequestDto> {
+    return await apiService.postRequest<UnifiedChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
+  }
+
+  async rejectUnifiedChangeRequest(requestId: number, reason: string): Promise<UnifiedChangeRequestDto> {
+    return await apiService.postRequest<UnifiedChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+  }
+}
+
+// ==================== UNIFIED CHANGE REQUEST TYPES ====================
+export interface UnifiedChangeRequestDto {
+  id: number;
+  entityType: 'PRODUCT' | 'EVENT' | 'SERVICE';
+  entityId: number;
+  entityName?: string;
+  entityImageUrl?: string;
+  requestType: 'PRICE_UPDATE' | 'CATEGORY_CHANGE';
+  vendorId: number;
+  vendorName?: string;
+  
+  // For price updates
+  currentPriceMinor?: number;
+  currentCurrency?: string;
+  newPriceMinor?: number;
+  newCurrency?: string;
+  skuId?: number;
+  skuCode?: string;
+  ticketTypeId?: number;
+  ticketTypeName?: string;
+  
+  // For category changes
+  currentSubCategoryId?: number;
+  currentSubCategoryName?: string;
+  currentCategoryName?: string;
+  newSubCategoryId?: number;
+  newSubCategoryName?: string;
+  newCategoryName?: string;
+  
+  reason?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedBy?: number;
+  reviewedByName?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export const adminService = new AdminService();

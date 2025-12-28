@@ -36,9 +36,12 @@ import {
   XCircle,
   Building,
   FileText,
-  Clock
+  Clock,
+  Download,
+  ScrollText
 } from 'lucide-react';
 import { adminService } from '@/services/adminService';
+import { vendorTermsService, VendorTermsAcceptanceResponse } from '@/services/vendorTermsService';
 
 export default function AdminVendors() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,6 +49,7 @@ export default function AdminVendors() {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [vendorDetail, setVendorDetail] = useState<any>(null);
+  const [termsAcceptance, setTermsAcceptance] = useState<VendorTermsAcceptanceResponse | null>(null);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [actionVendor, setActionVendor] = useState<any>(null);
@@ -120,10 +124,15 @@ export default function AdminVendors() {
     setSelectedVendor(vendor);
     setShowDetailDialog(true);
     setIsLoadingDetail(true);
+    setTermsAcceptance(null);
     
     try {
       const detail = await adminService.getVendorById(vendor.id);
       setVendorDetail(detail);
+      
+      // Fetch terms acceptance
+      const terms = await vendorTermsService.getVendorTermsAcceptance(vendor.id);
+      setTermsAcceptance(terms);
     } catch (error) {
       console.error('Failed to fetch vendor details:', error);
       toast({
@@ -131,7 +140,6 @@ export default function AdminVendors() {
         description: 'Failed to load vendor details',
         variant: 'destructive',
       });
-      // Use the basic vendor info as fallback
       setVendorDetail(vendor);
     } finally {
       setIsLoadingDetail(false);
@@ -339,8 +347,9 @@ export default function AdminVendors() {
             </div>
           ) : vendorDetail && (
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="info">Information</TabsTrigger>
+                <TabsTrigger value="terms">Terms</TabsTrigger>
                 <TabsTrigger value="payout">Payout</TabsTrigger>
               </TabsList>
               
@@ -433,6 +442,86 @@ export default function AdminVendors() {
                     </div>
                   </div>
                 </div>
+              </TabsContent>
+
+              {/* Terms Tab */}
+              <TabsContent value="terms" className="space-y-4 mt-4">
+                {termsAcceptance ? (
+                  <>
+                    <div className="flex items-center gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
+                      <CheckCircle className="h-8 w-8 text-green-600" />
+                      <div className="flex-1">
+                        <h4 className="font-medium text-green-900">Terms Accepted</h4>
+                        <p className="text-sm text-green-700">
+                          Version {termsAcceptance.termsVersion} accepted on{' '}
+                          {new Date(termsAcceptance.acceptedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {termsAcceptance.pdfUrl && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            try {
+                              // Extract filename from the PDF URL
+                              const urlParts = termsAcceptance.pdfUrl!.split('/');
+                              const filename = urlParts[urlParts.length - 1];
+                              
+                              const blob = await vendorTermsService.downloadTermsPdf(termsAcceptance.vendorId, filename);
+                              
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `terms-acceptance-vendor-${termsAcceptance.vendorId}.pdf`;
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                            } catch (error) {
+                              console.error('Error downloading PDF:', error);
+                              toast({
+                                title: 'Error',
+                                description: 'Failed to download PDF. Please try again.',
+                                variant: 'destructive',
+                              });
+                            }
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download PDF
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <h4 className="font-medium flex items-center gap-2">
+                        <ScrollText className="h-4 w-4" />
+                        Accepted Terms ({termsAcceptance.acceptedTerms.length})
+                      </h4>
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                        {termsAcceptance.acceptedTerms.map((term, index) => (
+                          <div key={term.termId} className="p-3 bg-gray-50 rounded-lg border">
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {index + 1}. {term.title}
+                                </p>
+                                <p className="text-xs text-gray-600 mt-1">{term.description}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                    <XCircle className="h-12 w-12 text-gray-300 mb-4" />
+                    <h4 className="font-medium text-gray-900">No Terms Acceptance Found</h4>
+                    <p className="text-sm">This vendor has not accepted any terms and conditions.</p>
+                  </div>
+                )}
               </TabsContent>
 
               {/* Payout Tab */}
