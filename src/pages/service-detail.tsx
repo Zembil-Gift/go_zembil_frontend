@@ -1,116 +1,104 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft,
-  Star,
   MapPin,
   Calendar,
   Clock,
   Shield,
   CheckCircle,
-  Mail,
-  Phone,
-  Award,
   Users,
-  MessageSquare,
-  Send
+  Image as ImageIcon,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  ZoomIn
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-import { 
-  Service, 
-  Quote,
-  CITIES,
-  SERVICE_CATEGORIES
-} from '@/types/events';
-import { eventsService } from '@/services/eventsService';
+import { serviceService, PoliciesConfig, AvailabilityConfig } from '@/services/serviceService';
 
 export default function ServiceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
-  const [showQuoteModal, setShowQuoteModal] = useState(false);
-  const [quoteForm, setQuoteForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    eventDate: '',
-    eventLocation: '',
-    guestCount: '',
-    requirements: '',
-  });
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  // Fetch service details
-  const { data: service, isLoading } = useQuery({
+  const { data: service, isLoading, error } = useQuery({
     queryKey: ['service', id],
-    queryFn: () => id ? eventsService.getService(id) : null,
+    queryFn: () => id ? serviceService.getService(parseInt(id)) : null,
     enabled: !!id,
   });
 
-  // Quote mutation
-  const quoteMutation = useMutation({
-    mutationFn: (quoteData: Partial<Quote>) => eventsService.createQuote(id!, quoteData),
-    onSuccess: () => {
-      setShowQuoteModal(false);
-      setQuoteForm({
-        name: '',
-        email: '',
-        phone: '',
-        eventDate: '',
-        eventLocation: '',
-        guestCount: '',
-        requirements: '',
-      });
-      // Show success message
-      alert('Quote request sent successfully! The provider will contact you within 24 hours.');
-    },
-  });
+  const policies = useMemo<PoliciesConfig>(() => {
+    if (!service) return {};
+    return serviceService.parsePoliciesConfig(service);
+  }, [service]);
 
-  const handleQuoteSubmit = () => {
-    const quoteData: Partial<Quote> = {
-      serviceId: id!,
-      clientInfo: {
-        name: quoteForm.name,
-        email: quoteForm.email,
-        phone: quoteForm.phone,
-        eventDate: quoteForm.eventDate,
-        eventLocation: quoteForm.eventLocation,
-        guestCount: parseInt(quoteForm.guestCount) || 0,
-        requirements: quoteForm.requirements,
-      },
-    };
+  const availability = useMemo<AvailabilityConfig>(() => {
+    if (!service) return {};
+    return serviceService.parseAvailabilityConfig(service);
+  }, [service]);
 
-    quoteMutation.mutate(quoteData);
+  const displayImages = useMemo(() => {
+    if (!service?.images || service.images.length === 0) return [];
+    return service.images
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(img => img.fullUrl);
+  }, [service]);
+  useMemo(() => {
+    if (!service) return undefined;
+    return serviceService.getPrimaryImageUrl(service);
+  }, [service]);
+  const nextImage = () => {
+    if (displayImages.length === 0) return;
+    setSelectedImageIndex((prev) => (prev + 1) % displayImages.length);
   };
 
+  const prevImage = () => {
+    if (displayImages.length === 0) return;
+    setSelectedImageIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
+  };
+
+  const openLightbox = (index: number) => {
+    setSelectedImageIndex(index);
+    setLightboxOpen(true);
+  };
+
+  // Format working days for display
+  const workingDaysDisplay = useMemo(() => {
+    const days = availability.workingDays || [];
+    if (days.length === 7) return 'Every day';
+    if (days.length === 5 && !days.includes(0) && !days.includes(6)) return 'Weekdays';
+    if (days.length === 2 && days.includes(0) && days.includes(6)) return 'Weekends only';
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days.map(d => dayNames[d]).join(', ');
+  }, [availability]);
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-eagle-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="font-gotham-light text-eagle-green">Loading service details...</p>
+          <p className="font-light text-eagle-green">Loading service details...</p>
         </div>
       </div>
     );
   }
 
-  if (!service) {
+  if (error || !service) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-gotham-bold text-eagle-green mb-2">Service Not Found</h2>
-          <p className="font-gotham-light text-eagle-green/70 mb-4">The service you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate('/events?tab=services')} className="bg-eagle-green hover:bg-viridian-green text-white">
+          <h2 className="text-2xl font-bold text-eagle-green mb-2">Service Not Found</h2>
+          <p className="font-light text-eagle-green/70 mb-4">The service you're looking for doesn't exist or is not available.</p>
+          <Button onClick={() => navigate('/services')} className="bg-eagle-green hover:bg-viridian-green text-white">
             Browse All Services
           </Button>
         </div>
@@ -118,17 +106,67 @@ export default function ServiceDetail() {
     );
   }
 
-  const categoryInfo = SERVICE_CATEGORIES[service.category];
-  const cityName = CITIES[service.country].find(c => c.id === service.city)?.name || service.city;
-  const countryFlag = service.country === 'ET' ? '🇪🇹' : '🇺🇸';
-
   return (
     <div className="min-h-screen bg-white">
+      {/* Lightbox Modal */}
+      <AnimatePresence>
+        {lightboxOpen && displayImages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <button
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50"
+            >
+              <X className="h-8 w-8" />
+            </button>
+            
+            {displayImages.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                  className="absolute left-4 text-white hover:text-gray-300 z-50 p-2 bg-black/50 rounded-full"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                  className="absolute right-4 text-white hover:text-gray-300 z-50 p-2 bg-black/50 rounded-full"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+            
+            <motion.img
+              key={selectedImageIndex}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              src={displayImages[selectedImageIndex]}
+              alt={`${service.title} - Image ${selectedImageIndex + 1}`}
+              className="max-h-[90vh] max-w-[90vw] object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            {displayImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-light">
+                {selectedImageIndex + 1} / {displayImages.length}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
         <Button
           variant="ghost"
-          onClick={() => navigate('/events?tab=services')}
+          onClick={() => navigate('/services')}
           className="mb-6 text-eagle-green hover:text-viridian-green hover:bg-june-bud/10"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -138,72 +176,158 @@ export default function ServiceDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Hero Section */}
+            {/* Hero Section with Image Gallery */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-6">
-                <img
-                  src={service.images[0]}
-                  alt={service.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                
-                {/* Verified Badge */}
-                {service.provider.verified && (
-                  <div className="absolute top-4 left-4">
-                    <Badge className="bg-green-500 text-white border-none font-gotham-bold">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Verified Provider
-                    </Badge>
+              {/* Image Gallery */}
+              <div className="space-y-4 mb-6">
+                {displayImages.length > 0 ? (
+                  <>
+                    {/* Main Image */}
+                    <div 
+                      className="relative aspect-[16/9] bg-gray-100 rounded-2xl overflow-hidden shadow-lg cursor-pointer group"
+                      onClick={() => openLightbox(selectedImageIndex)}
+                    >
+                      <img
+                        src={displayImages[selectedImageIndex]}
+                        alt={service.title}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
+                        <ZoomIn className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      
+                      {/* Navigation arrows */}
+                      {displayImages.length > 1 && (
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <ChevronLeft className="h-5 w-5 text-eagle-green" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <ChevronRight className="h-5 w-5 text-eagle-green" />
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* Image counter */}
+                      {displayImages.length > 1 && (
+                        <div className="absolute bottom-4 left-4">
+                          <Badge className="bg-black/60 text-white border-none font-light">
+                            {selectedImageIndex + 1} / {displayImages.length}
+                          </Badge>
+                        </div>
+                      )}
+
+                      {/* Location Badge */}
+                      {service.city && (
+                        <div className="absolute top-4 right-4">
+                          <Badge className="bg-white/90 text-eagle-green border-none font-bold">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {service.city}
+                          </Badge>
+                        </div>
+                      )}
+
+                      {/* Price Badge */}
+                      <div className="absolute bottom-4 right-4">
+                        <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
+                          From {serviceService.formatPrice(service.basePriceMinor, service.currency)}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Thumbnail Images */}
+                    {displayImages.length > 1 && (
+                      <div className="flex gap-2 overflow-x-auto pb-2">
+                        {displayImages.map((image, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setSelectedImageIndex(index)}
+                            className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                              index === selectedImageIndex
+                                ? "border-viridian-green ring-2 ring-viridian-green/30"
+                                : "border-transparent hover:border-gray-300"
+                            }`}
+                          >
+                            <img
+                              src={image}
+                              alt={`${service.title} thumbnail ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* No Image Available */
+                  <div className="relative aspect-[16/9] bg-gray-100 rounded-2xl overflow-hidden shadow-lg">
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="h-16 w-16 text-gray-300" />
+                    </div>
+                    
+                    {/* Location Badge */}
+                    {service.city && (
+                      <div className="absolute top-4 right-4">
+                        <Badge className="bg-white/90 text-eagle-green border-none font-bold">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {service.city}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {/* Price Badge */}
+                    <div className="absolute bottom-4 right-4">
+                      <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
+                        From {serviceService.formatPrice(service.basePriceMinor, service.currency)}
+                      </Badge>
+                    </div>
                   </div>
                 )}
-
-                {/* Location */}
-                <div className="absolute top-4 right-4">
-                  <Badge className="bg-white/90 text-eagle-green border-none font-gotham-bold">
-                    {countryFlag} {cityName}
-                  </Badge>
-                </div>
-
-                {/* Price */}
-                <div className="absolute bottom-4 right-4">
-                  <Badge className="bg-eagle-green text-white border-none font-gotham-bold text-lg px-3 py-1">
-                    From {eventsService.formatCurrency(service.startingPrice, service.currency)}
-                  </Badge>
-                </div>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <span className="text-sm font-gotham-light text-viridian-green">
-                    {categoryInfo.icon} {categoryInfo.name}
-                  </span>
-                  <h1 className="text-3xl lg:text-4xl font-gotham-bold text-eagle-green mt-1">
-                    {service.name}
+                  {service.categoryName && (
+                    <span className="text-sm font-light text-viridian-green">
+                      {service.categoryName}
+                    </span>
+                  )}
+                  <h1 className="text-3xl lg:text-4xl font-bold text-eagle-green mt-1">
+                    {service.title}
                   </h1>
                 </div>
 
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-gotham-bold text-eagle-green">{service.rating}</span>
-                    <span className="font-gotham-light text-eagle-green/70">
-                      ({service.reviewCount} reviews)
-                    </span>
-                  </div>
+                <div className="flex items-center gap-4 text-sm flex-wrap">
+                  {service.vendorName && (
+                    <>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4 text-viridian-green" />
+                        <span className="font-light text-eagle-green/70">
+                          by {service.vendorName}
+                        </span>
+                      </div>
+                      <Separator orientation="vertical" className="h-4" />
+                    </>
+                  )}
                   
-                  <Separator orientation="vertical" className="h-4" />
-                  
-                  <div className="flex items-center gap-1">
-                    <Award className="h-4 w-4 text-viridian-green" />
-                    <span className="font-gotham-light text-eagle-green/70">
-                      {service.provider.yearsExperience} years experience
-                    </span>
-                  </div>
+                  {service.durationMinutes && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4 text-viridian-green" />
+                      <span className="font-light text-eagle-green/70">
+                        {service.durationMinutes} minutes
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -216,112 +340,54 @@ export default function ServiceDetail() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="font-gotham-bold text-eagle-green">About This Service</CardTitle>
+                  <CardTitle className="font-bold text-eagle-green">About This Service</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="font-gotham-light text-eagle-green/80 leading-relaxed mb-4">
-                    {service.description}
+                  <p className="font-light text-eagle-green/80 leading-relaxed mb-4 whitespace-pre-wrap">
+                    {service.description || 'No description available.'}
                   </p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-gotham-bold text-eagle-green mb-2">Service Area</h4>
-                      <p className="font-gotham-light text-eagle-green/70">
-                        {service.serviceAreaKm}km radius from {cityName}
-                      </p>
-                    </div>
+                    {service.location && (
+                      <div>
+                        <h4 className="font-bold text-eagle-green mb-2">Location</h4>
+                        <p className="font-light text-eagle-green/70">
+                          {service.location}
+                        </p>
+                      </div>
+                    )}
                     
                     <div>
-                      <h4 className="font-gotham-bold text-eagle-green mb-2">Working Days</h4>
-                      <p className="font-gotham-light text-eagle-green/70">
-                        {service.availability.workingDays.length === 7 ? 'Every day' : 
-                         service.availability.workingDays.length === 5 ? 'Weekdays' :
-                         'Custom schedule'}
+                      <h4 className="font-bold text-eagle-green mb-2">Working Days</h4>
+                      <p className="font-light text-eagle-green/70">
+                        {workingDaysDisplay}
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
-
-            {/* Features */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="font-gotham-bold text-eagle-green">What's Included</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {service.features.map((feature, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                        <span className="font-gotham-light text-eagle-green">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Portfolio */}
-            {service.portfolio.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-              >
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="font-gotham-bold text-eagle-green">Portfolio</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {service.portfolio.map((image, index) => (
-                        <div key={index} className="aspect-square rounded-lg overflow-hidden">
-                          <img
-                            src={image}
-                            alt={`Portfolio ${index + 1}`}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
 
             {/* Policies */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
+                  <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Shield className="h-5 w-5" />
-                    Policies & Terms
+                    Cancellation & Refund Policy
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <h4 className="font-gotham-bold text-eagle-green mb-1">Reschedule Policy</h4>
-                      <p className="font-gotham-light text-eagle-green/70 text-sm">
-                        Free reschedule up to {service.policies.rescheduleHours} hours before event
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-gotham-bold text-eagle-green mb-1">Deposit Required</h4>
-                      <p className="font-gotham-light text-eagle-green/70 text-sm">
-                        {service.policies.depositRequired ? 
-                          `${service.policies.depositPercentage}% deposit required to book` :
+                      <h4 className="font-bold text-eagle-green mb-1">Deposit Required</h4>
+                      <p className="font-light text-eagle-green/70 text-sm">
+                        {policies.depositRequired ? 
+                          `${policies.depositPercentage || 30}% deposit required to book` :
                           'No deposit required'
                         }
                       </p>
@@ -329,194 +395,94 @@ export default function ServiceDetail() {
                   </div>
                   
                   <div>
-                    <h4 className="font-gotham-bold text-eagle-green mb-1">Cancellation Policy</h4>
-                    <p className="font-gotham-light text-eagle-green/70 text-sm">
-                      {service.policies.cancellationPolicy}
+                    <h4 className="font-bold text-eagle-green mb-1">Cancellation & Refund Policy (System-Enforced)</h4>
+                    <p className="font-light text-eagle-green/70 text-sm">
+                      Full refund for cancellations 48+ hours before service. 50% refund for cancellations 24-48 hours before. No refund for cancellations less than 24 hours before service.
                     </p>
+                  </div>
+
+                  {/* Refund Tiers Info */}
+                  <div className="bg-june-bud/10 rounded-lg p-4 mt-4">
+                    <h4 className="font-bold text-eagle-green mb-2">Refund Tiers</h4>
+                    <ul className="space-y-2 text-sm font-light text-eagle-green/70">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span>48+ hours before: 100% refund (minus platform fee)</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-yellow-500" />
+                        <span>24-48 hours before: 50% refund</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-red-500" />
+                        <span>Less than 24 hours: No refund</span>
+                      </li>
+                    </ul>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
           </div>
 
-          {/* Quote Panel */}
+          {/* Booking Panel */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
               <Card className="border-eagle-green/20">
                 <CardHeader className="bg-gradient-to-r from-june-bud/10 to-white">
-                  <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
+                  <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    Provider Information
+                    Service Provider
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
                   <div className="text-center">
-                    <h3 className="font-gotham-bold text-eagle-green text-lg mb-1">
-                      {service.provider.name}
+                    <h3 className="font-bold text-eagle-green text-lg mb-1">
+                      {service.vendorName || 'Service Provider'}
                     </h3>
-                    <div className="flex items-center justify-center gap-2 mb-3">
-                      {service.provider.verified && (
-                        <Badge className="bg-green-100 text-green-700 border-green-300">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Verified
-                        </Badge>
-                      )}
-                      <span className="font-gotham-light text-eagle-green/70 text-sm">
-                        {service.provider.yearsExperience} years experience
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-center gap-1 mb-4">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-gotham-bold text-eagle-green">{service.rating}</span>
-                      <span className="font-gotham-light text-eagle-green/70 text-sm">
-                        ({service.reviewCount} reviews)
-                      </span>
-                    </div>
                   </div>
 
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-viridian-green" />
-                      <span className="font-gotham-light text-eagle-green">
-                        {cityName}, {service.country === 'ET' ? 'Ethiopia' : 'United States'}
-                      </span>
-                    </div>
+                    {service.city && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-viridian-green" />
+                        <span className="font-light text-eagle-green">
+                          {service.city}{service.location ? `, ${service.location}` : ''}
+                        </span>
+                      </div>
+                    )}
                     
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-viridian-green" />
-                      <span className="font-gotham-light text-eagle-green text-sm">
-                        {service.provider.contact}
-                      </span>
-                    </div>
+                    {service.durationMinutes && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-viridian-green" />
+                        <span className="font-light text-eagle-green">
+                          {service.durationMinutes} minutes duration
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="bg-june-bud/10 rounded-lg p-4">
                     <div className="text-center">
-                      <p className="font-gotham-light text-eagle-green/70 text-sm mb-2">Starting from</p>
-                      <p className="font-gotham-bold text-eagle-green text-2xl">
-                        {eventsService.formatCurrency(service.startingPrice, service.currency)}
+                      <p className="font-light text-eagle-green/70 text-sm mb-2">Starting from</p>
+                      <p className="font-bold text-eagle-green text-2xl">
+                        {serviceService.formatPrice(service.basePriceMinor, service.currency)}
                       </p>
-                      <p className="font-gotham-light text-eagle-green/70 text-xs">
+                      <p className="font-light text-eagle-green/70 text-xs">
                         Final price depends on your requirements
                       </p>
                     </div>
                   </div>
 
-                  <Dialog open={showQuoteModal} onOpenChange={setShowQuoteModal}>
-                    <DialogTrigger asChild>
-                      <Button className="w-full bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold h-12">
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Request Quote
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle className="font-gotham-bold text-eagle-green">
-                          Request Quote from {service.provider.name}
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label className="font-gotham-light text-eagle-green">Your Name *</Label>
-                            <Input
-                              value={quoteForm.name}
-                              onChange={(e) => setQuoteForm(prev => ({ ...prev, name: e.target.value }))}
-                              className="border-eagle-green/30 focus:border-viridian-green"
-                            />
-                          </div>
-                          
-                          <div>
-                            <Label className="font-gotham-light text-eagle-green">Email *</Label>
-                            <Input
-                              type="email"
-                              value={quoteForm.email}
-                              onChange={(e) => setQuoteForm(prev => ({ ...prev, email: e.target.value }))}
-                              className="border-eagle-green/30 focus:border-viridian-green"
-                            />
-                          </div>
-                        </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white font-bold h-12"
+                    onClick={() => navigate(`/service-checkout/${service.id}`)}
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Book Now
+                  </Button>
 
-                        <div>
-                          <Label className="font-gotham-light text-eagle-green">Phone</Label>
-                          <Input
-                            value={quoteForm.phone}
-                            onChange={(e) => setQuoteForm(prev => ({ ...prev, phone: e.target.value }))}
-                            className="border-eagle-green/30 focus:border-viridian-green"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label className="font-gotham-light text-eagle-green">Event Date *</Label>
-                            <Input
-                              type="date"
-                              value={quoteForm.eventDate}
-                              onChange={(e) => setQuoteForm(prev => ({ ...prev, eventDate: e.target.value }))}
-                              className="border-eagle-green/30 focus:border-viridian-green"
-                            />
-                          </div>
-                          
-                          <div>
-                            <Label className="font-gotham-light text-eagle-green">Guest Count</Label>
-                            <Input
-                              type="number"
-                              value={quoteForm.guestCount}
-                              onChange={(e) => setQuoteForm(prev => ({ ...prev, guestCount: e.target.value }))}
-                              className="border-eagle-green/30 focus:border-viridian-green"
-                              placeholder="50"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="font-gotham-light text-eagle-green">Event Location *</Label>
-                          <Input
-                            value={quoteForm.eventLocation}
-                            onChange={(e) => setQuoteForm(prev => ({ ...prev, eventLocation: e.target.value }))}
-                            className="border-eagle-green/30 focus:border-viridian-green"
-                            placeholder="Venue name or address"
-                          />
-                        </div>
-
-                        <div>
-                          <Label className="font-gotham-light text-eagle-green">Requirements</Label>
-                          <Textarea
-                            value={quoteForm.requirements}
-                            onChange={(e) => setQuoteForm(prev => ({ ...prev, requirements: e.target.value }))}
-                            className="border-eagle-green/30 focus:border-viridian-green"
-                            placeholder="Describe your specific needs..."
-                            rows={3}
-                          />
-                        </div>
-
-                        <Button
-                          onClick={handleQuoteSubmit}
-                          disabled={!quoteForm.name || !quoteForm.email || !quoteForm.eventDate || !quoteForm.eventLocation || quoteMutation.isPending}
-                          className="w-full bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold"
-                        >
-                          {quoteMutation.isPending ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                              Sending...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="h-4 w-4 mr-2" />
-                              Send Quote Request
-                            </>
-                          )}
-                        </Button>
-
-                        <p className="text-xs font-gotham-light text-eagle-green/70 text-center">
-                          The provider will respond within 24 hours with a detailed quote.
-                        </p>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  <div className="flex items-center gap-2 text-sm font-gotham-light text-eagle-green/70">
+                  <div className="flex items-center gap-2 text-sm font-light text-eagle-green/70">
                     <Clock className="h-4 w-4" />
                     <span>Responds within 24 hours</span>
                   </div>
@@ -529,4 +495,3 @@ export default function ServiceDetail() {
     </div>
   );
 }
-
