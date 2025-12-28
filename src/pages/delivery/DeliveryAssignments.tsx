@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -158,10 +158,6 @@ export default function DeliveryAssignments() {
 
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <p className="text-lg font-semibold">
-                            {(assignment.totalAmountMinor / 100).toFixed(2)}{" "}
-                            {assignment.currencyCode}
-                          </p>
                           <p className="text-sm text-gray-500">
                             {assignment.customerName}
                           </p>

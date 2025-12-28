@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -55,13 +54,20 @@ export default function DeliveryAssignmentDetail() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const pickupFileInputRef = useRef<HTMLInputElement>(null);
+  const pickupCameraInputRef = useRef<HTMLInputElement>(null);
 
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showFailDialog, setShowFailDialog] = useState(false);
+  const [showPickupProofDialog, setShowPickupProofDialog] = useState(false);
   const [proofImageUrl, setProofImageUrl] = useState("");
   const [proofImagePreview, setProofImagePreview] = useState<string | null>(null);
   const [proofImageFile, setProofImageFile] = useState<File | null>(null);
+  const [pickupImagePreview, setPickupImagePreview] = useState<string | null>(null);
+  const [pickupImageFile, setPickupImageFile] = useState<File | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingPickupImage, setIsUploadingPickupImage] = useState(false);
+  const [pickupNotes, setPickupNotes] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [notes, setNotes] = useState("");
   const [failureReason, setFailureReason] = useState("");
@@ -171,6 +177,73 @@ export default function DeliveryAssignmentDetail() {
       
       toast({ title: "Image Selected", description: "Delivery proof image ready for upload" });
     }
+  };
+
+  // Handle pickup image selection
+  const handlePickupImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({ title: "Invalid File", description: "Please select an image file", variant: "destructive" });
+        return;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        toast({ title: "File Too Large", description: "Image must be less than 10MB", variant: "destructive" });
+        return;
+      }
+
+      setPickupImageFile(file);
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPickupImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      toast({ title: "Image Selected", description: "Pickup proof image ready for upload" });
+    }
+  };
+
+  // Upload pickup proof image and save
+  const handleUploadPickupProof = async () => {
+    if (!pickupImageFile) {
+      toast({ title: "Image Required", description: "Please capture or select a pickup proof image", variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingPickupImage(true);
+    try {
+      const uploadedImage = await imageService.uploadDeliveryPickupImage(Number(assignmentId), pickupImageFile);
+      const imageUrl = uploadedImage.url;
+
+      await deliveryService.uploadPickupProof(Number(assignmentId), {
+        pickupImageUrl: imageUrl,
+        notes: pickupNotes || undefined,
+      });
+
+      toast({ title: "Pickup Proof Uploaded!", description: "You can now mark the order as picked up" });
+      queryClient.invalidateQueries({ queryKey: ["delivery"] });
+      setShowPickupProofDialog(false);
+      handleClearPickupImage();
+    } catch (error: any) {
+      toast({ 
+        title: "Error", 
+        description: error.response?.data?.message || "Failed to upload pickup proof",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsUploadingPickupImage(false);
+    }
+  };
+
+  // Clear pickup image
+  const handleClearPickupImage = () => {
+    setPickupImageFile(null);
+    setPickupImagePreview(null);
+    setPickupNotes("");
+    if (pickupFileInputRef.current) pickupFileInputRef.current.value = "";
+    if (pickupCameraInputRef.current) pickupCameraInputRef.current.value = "";
   };
 
   // Upload the image and complete delivery
@@ -354,7 +427,31 @@ export default function DeliveryAssignmentDetail() {
             </CardContent>
           </Card>
 
-          {/* Proof Image */}
+          {/* Pickup Proof Image */}
+          {assignment.pickupImageUrl && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Camera className="h-5 w-5" />
+                  Pickup Proof
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <img
+                  src={assignment.pickupImageUrl}
+                  alt="Pickup proof"
+                  className="max-w-full rounded-lg"
+                />
+                {assignment.pickupUploadedAt && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    Uploaded: {formatDate(assignment.pickupUploadedAt)}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Delivery Proof Image */}
           {assignment.proofImageUrl && (
             <Card>
               <CardHeader>
@@ -379,19 +476,12 @@ export default function DeliveryAssignmentDetail() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Order Summary */}
+          {/* Order Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Order Summary</CardTitle>
+              <CardTitle>Order Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Order Total</span>
-                <span className="font-bold text-lg">
-                  {(assignment.totalAmountMinor / 100).toFixed(2)} {assignment.currencyCode}
-                </span>
-              </div>
-              <Separator />
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Attempt</span>
                 <span>{assignment.attemptCount}</span>
@@ -427,7 +517,43 @@ export default function DeliveryAssignmentDetail() {
                   </Button>
                 )}
 
-                {nextStatus && (
+                {/* Pickup Proof Button - shown when ACCEPTED and no pickup proof yet */}
+                {assignment.status === "ACCEPTED" && !assignment.pickupImageUrl && (
+                  <Button
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    onClick={() => setShowPickupProofDialog(true)}
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    Upload Pickup Photo
+                  </Button>
+                )}
+
+                {/* Show pickup proof status */}
+                {assignment.status === "ACCEPTED" && assignment.pickupImageUrl && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-2 rounded">
+                    <CheckCircle className="h-4 w-4" />
+                    Pickup photo uploaded
+                  </div>
+                )}
+
+                {/* Modified: Only show Mark as Picked Up if pickup proof is uploaded */}
+                {assignment.status === "ACCEPTED" && assignment.pickupImageUrl && (
+                  <Button
+                    className="w-full"
+                    onClick={() => updateStatusMutation.mutate("PICKED_UP")}
+                    disabled={updateStatusMutation.isPending}
+                  >
+                    {updateStatusMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Truck className="mr-2 h-4 w-4" />
+                    )}
+                    Mark as Picked Up
+                  </Button>
+                )}
+
+                {/* Other status transitions (PICKED_UP -> IN_TRANSIT, IN_TRANSIT -> ARRIVED) */}
+                {nextStatus && assignment.status !== "ACCEPTED" && (
                   <Button
                     className="w-full"
                     onClick={() => updateStatusMutation.mutate(nextStatus)}
@@ -638,6 +764,111 @@ export default function DeliveryAssignmentDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Pickup Proof Dialog */}
+      <Dialog open={showPickupProofDialog} onOpenChange={(open) => {
+        setShowPickupProofDialog(open);
+        if (!open) {
+          handleClearPickupImage();
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload Pickup Proof</DialogTitle>
+            <DialogDescription>
+              Take a photo of the product when you receive it. This serves as evidence of the product's condition before delivery.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="pickup-camera-input">Product Photo <span className="text-red-500">*</span></Label>
+              
+              {/* Hidden file inputs */}
+              <input
+                id="pickup-camera-input"
+                ref={pickupCameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handlePickupImageSelect}
+                aria-label="Take photo with camera"
+              />
+              <input
+                id="pickup-file-input"
+                ref={pickupFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePickupImageSelect}
+                aria-label="Choose image file"
+              />
+
+              {/* Image Preview or Capture Buttons */}
+              {pickupImagePreview ? (
+                <div className="mt-2 relative">
+                  <img
+                    src={pickupImagePreview}
+                    alt="Pickup proof preview"
+                    className="w-full max-h-64 object-cover rounded-lg border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                    onClick={handleClearPickupImage}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-24 flex flex-col gap-2"
+                    onClick={() => pickupCameraInputRef.current?.click()}
+                  >
+                    <Camera className="h-8 w-8" />
+                    <span className="text-sm">Take Photo</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-24 flex flex-col gap-2"
+                    onClick={() => pickupFileInputRef.current?.click()}
+                  >
+                    <Upload className="h-8 w-8" />
+                    <span className="text-sm">Choose File</span>
+                  </Button>
+                </div>
+              )}
+            </div>
+            <div>
+              <Label>Notes (Optional)</Label>
+              <Textarea
+                value={pickupNotes}
+                onChange={(e) => setPickupNotes(e.target.value)}
+                placeholder="Any notes about the product condition, packaging, etc."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPickupProofDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-purple-600 hover:bg-purple-700"
+              onClick={handleUploadPickupProof}
+              disabled={!pickupImageFile || isUploadingPickupImage}
+            >
+              {isUploadingPickupImage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isUploadingPickupImage ? "Uploading..." : "Upload Pickup Proof"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

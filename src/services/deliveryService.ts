@@ -57,6 +57,37 @@ export interface DeliveryAssignmentDto {
   deliveredAt?: string;
   expectedDeliveryAt?: string;
   notes?: string;
+  pickupImageUrl?: string;
+  pickupUploadedAt?: string;
+  proofImageUrl?: string;
+  proofUploadedAt?: string;
+  recipientName?: string;
+  failureReason?: string;
+  attemptCount: number;
+  customerName?: string;
+  customerPhone?: string;
+  shippingAddress?: string;
+  shippingCity?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminDeliveryAssignmentDto {
+  id: number;
+  orderId: number;
+  orderNumber: string;
+  deliveryPersonId: number;
+  deliveryPersonName: string;
+  status: DeliveryStatus;
+  assignedAt?: string;
+  pickedUpAt?: string;
+  deliveredAt?: string;
+  expectedDeliveryAt?: string;
+  notes?: string;
+  // Pickup proof (photo when receiving the product)
+  pickupImageUrl?: string;
+  pickupUploadedAt?: string;
+  // Delivery proof (photo when delivering the product)
   proofImageUrl?: string;
   proofUploadedAt?: string;
   recipientName?: string;
@@ -101,6 +132,11 @@ export interface UploadDeliveryProofRequest {
   proofImageUrl: string;
   recipientName?: string;
   recipientSignatureUrl?: string;
+  notes?: string;
+}
+
+export interface UploadPickupProofRequest {
+  pickupImageUrl: string;
   notes?: string;
 }
 
@@ -183,7 +219,7 @@ export const adminDeliveryService = {
 
   // Delivery Assignment Management
   assignOrderToDeliveryPerson: (data: AssignDeliveryRequest) =>
-    apiService.postRequest<DeliveryAssignmentDto>('/api/admin/delivery/assignments', data),
+    apiService.postRequest<AdminDeliveryAssignmentDto>('/api/admin/delivery/assignments', data),
 
   getAllAssignments: (params?: { status?: string; page?: number; size?: number }) => {
     const queryParams = new URLSearchParams();
@@ -191,7 +227,7 @@ export const adminDeliveryService = {
     if (params?.page !== undefined) queryParams.append('page', String(params.page));
     if (params?.size !== undefined) queryParams.append('size', String(params.size));
     const url = `/api/admin/delivery/assignments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return apiService.getRequest<PagedResponse<DeliveryAssignmentDto>>(url);
+    return apiService.getRequest<PagedResponse<AdminDeliveryAssignmentDto>>(url);
   },
 
   getAssignmentsByDeliveryPerson: (deliveryPersonId: number, params?: { page?: number; size?: number }) => {
@@ -199,11 +235,11 @@ export const adminDeliveryService = {
     if (params?.page !== undefined) queryParams.append('page', String(params.page));
     if (params?.size !== undefined) queryParams.append('size', String(params.size));
     const url = `/api/admin/delivery/assignments/by-person/${deliveryPersonId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return apiService.getRequest<PagedResponse<DeliveryAssignmentDto>>(url);
+    return apiService.getRequest<PagedResponse<AdminDeliveryAssignmentDto>>(url);
   },
 
   reassignOrder: (assignmentId: number, newDeliveryPersonId: number) =>
-    apiService.postRequest<DeliveryAssignmentDto>(
+    apiService.postRequest<AdminDeliveryAssignmentDto>(
       `/api/admin/delivery/assignments/${assignmentId}/reassign?newDeliveryPersonId=${newDeliveryPersonId}`,
       {}
     ),
@@ -261,6 +297,9 @@ export const deliveryService = {
 
   updateDeliveryStatus: (assignmentId: number, data: UpdateDeliveryStatusRequest) =>
     apiService.postRequest<DeliveryAssignmentDto>(`/api/delivery/assignments/${assignmentId}/status`, data),
+
+  uploadPickupProof: (assignmentId: number, data: UploadPickupProofRequest) =>
+    apiService.postRequest<DeliveryAssignmentDto>(`/api/delivery/assignments/${assignmentId}/pickup-proof`, data),
 
   uploadDeliveryProof: (assignmentId: number, data: UploadDeliveryProofRequest) =>
     apiService.postRequest<DeliveryAssignmentDto>(`/api/delivery/assignments/${assignmentId}/proof`, data),
