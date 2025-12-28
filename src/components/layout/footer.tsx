@@ -70,7 +70,10 @@ export default function Footer() {
             <div className="space-y-3 text-gray-300">
               <div className="flex items-center space-x-3">
                 <Phone className="text-ethiopian-gold" size={16} />
-                <span>{t('footer.phone')}</span>
+                <div className="flex flex-col gap-1">
+                  <span>{t('footer.USAPhone')}</span>
+                  <span>{t('footer.ETHPhone')}</span>
+                </div>  
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="text-ethiopian-gold" size={16} />
