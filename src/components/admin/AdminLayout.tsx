@@ -4,17 +4,16 @@ import {
   LayoutDashboard, 
   Users, 
   Store, 
-  ShoppingCart, 
-  Calendar, 
+  Calendar,
   Tag, 
-  Ticket,
+  Layers,
   Package,
   ChevronRight,
   Shield,
   DollarSign,
   Receipt,
-  TrendingUp,
-  Truck
+  Truck,
+  Briefcase
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,8 +28,10 @@ const navItems = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/vendors', label: 'Vendors', icon: Store },
   { href: '/admin/products', label: 'Products', icon: Package },
+  { href: '/admin/services', label: 'Services', icon: Briefcase },
   { href: '/admin/events', label: 'Events', icon: Calendar },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
+  { href: '/admin/subcategories', label: 'Subcategories', icon: Layers },
   { href: '/admin/delivery', label: 'Delivery', icon: Truck },
   { href: '/admin/tax', label: 'Tax Management', icon: Receipt },
   { href: '/admin/currency', label: 'Currency', icon: DollarSign }
