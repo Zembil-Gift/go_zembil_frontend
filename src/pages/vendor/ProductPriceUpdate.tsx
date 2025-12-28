@@ -1,40 +1,29 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { vendorService, VendorProfile, ProductSku } from "@/services/vendorService";
-import { apiService } from "@/services/apiService";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  ArrowLeft,
-  Package,
-  AlertCircle,
-  DollarSign,
-  RefreshCw,
-  Info
-} from "lucide-react";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert";
+import {useState} from "react";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {z} from "zod";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {Link, useParams} from "react-router-dom";
+import {useAuth} from "@/hooks/useAuth";
+import {useToast} from "@/hooks/use-toast";
+import {ProductSku, VendorProfile, vendorService} from "@/services/vendorService";
+import {apiService} from "@/services/apiService";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {Badge} from "@/components/ui/badge";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
+import {Label} from "@/components/ui/label";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {AlertCircle, ArrowLeft, DollarSign, Info, Package, RefreshCw} from "lucide-react";
+import {Alert, AlertDescription, AlertTitle,} from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
@@ -79,8 +68,7 @@ export default function ProductPriceUpdate() {
   const { data: product, isLoading: productLoading, error: productError } = useQuery({
     queryKey: ['vendor', 'product', productId],
     queryFn: async () => {
-      const response = await apiService.getRequest<any>(`/api/v1/products/${productId}`);
-      return response;
+      return await apiService.getRequest<any>(`/api/v1/products/${productId}`);
     },
     enabled: !!productId && isAuthenticated && isVendor,
   });
@@ -425,24 +413,6 @@ export default function ProductPriceUpdate() {
                     {form.formState.errors.vendorAmount.message}
                   </p>
                 )}
-              </div>
-            </div>
-
-            {/* Show calculated customer price */}
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium">Customer Price (with {(PLATFORM_COMMISSION_RATE * 100).toFixed(0)}% platform fee)</p>
-                  <p className="text-xs text-muted-foreground">This is what customers will pay</p>
-                </div>
-                <p className="text-lg font-bold">
-                  {(() => {
-                    const vendorAmount = form.watch("vendorAmount") || 0;
-                    const customerAmount = vendorAmount * (1 + PLATFORM_COMMISSION_RATE);
-                    const currency = currencies.find(c => c.code === form.watch("currencyCode"));
-                    return `${currency?.symbol || form.watch("currencyCode") || ""} ${customerAmount.toFixed(2)}`;
-                  })()}
-                </p>
               </div>
             </div>
 
