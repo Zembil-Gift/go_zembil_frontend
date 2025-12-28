@@ -6,10 +6,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { vendorService, VendorProfile, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse, VendorRevenue } from "@/services/vendorService";
+import { vendorService, VendorProfile, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse, ServicePriceUpdateRequest, CategoryChangeRequest, ServiceCategoryChangeRequest } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService, ImageDto } from "@/services/imageService";
 import { getProductImageUrl, getEventImageUrl } from "@/utils/imageUtils";
+import { serviceOrderService, ServiceOrderResponse } from "@/services/serviceOrderService";
+import { serviceService, ServiceResponse } from "@/services/serviceService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +33,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -63,6 +64,8 @@ import {
   Layers,
   RotateCcw,
   XCircle,
+  Briefcase,
+  X,
 } from "lucide-react";
 
 // Helper function to check if vendor is Ethiopian
@@ -119,6 +122,20 @@ export default function VendorDashboardNew() {
   const { data: eventsData } = useQuery({
     queryKey: ['vendor', 'events'],
     queryFn: () => vendorService.getMyEvents(),
+    enabled: isAuthenticated && isVendor,
+  });
+
+  // Fetch vendor service orders
+  const { data: serviceOrdersData } = useQuery({
+    queryKey: ['vendor', 'service-orders'],
+    queryFn: () => serviceOrderService.getVendorOrders(0, 100),
+    enabled: isAuthenticated && isVendor,
+  });
+
+  // Fetch vendor services
+  const { data: servicesData } = useQuery({
+    queryKey: ['vendor', 'services'],
+    queryFn: () => serviceService.getMyServices(undefined, 0, 100),
     enabled: isAuthenticated && isVendor,
   });
 
@@ -237,6 +254,21 @@ export default function VendorDashboardNew() {
 
   const products = productsData?.content || [];
   const events = eventsData?.content || [];
+  const serviceOrders = serviceOrdersData?.content || [];
+  const services = servicesData?.content || [];
+
+  // Calculate service order statistics
+  const serviceOrderStats = {
+    pending: serviceOrders.filter((o: ServiceOrderResponse) => o.status === 'BOOKED' && o.paymentStatus === 'PAID').length,
+    confirmed: serviceOrders.filter((o: ServiceOrderResponse) => o.status === 'CONFIRMED_BY_VENDOR').length,
+    inProgress: serviceOrders.filter((o: ServiceOrderResponse) => o.status === 'IN_PROGRESS').length,
+    completed: serviceOrders.filter((o: ServiceOrderResponse) => o.status === 'COMPLETED').length,
+    cancelled: serviceOrders.filter((o: ServiceOrderResponse) => o.status === 'CANCELLED').length,
+    total: serviceOrders.length,
+    revenue: serviceOrders
+      .filter((o: ServiceOrderResponse) => o.status === 'COMPLETED')
+      .reduce((sum: number, o: ServiceOrderResponse) => sum + (o.totalAmountMinor || 0), 0),
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status?.toUpperCase()) {
@@ -289,7 +321,7 @@ export default function VendorDashboardNew() {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-8 lg:w-auto lg:inline-grid">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -301,6 +333,10 @@ export default function VendorDashboardNew() {
             <TabsTrigger value="events" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">Events</span>
+            </TabsTrigger>
+            <TabsTrigger value="services" className="flex items-center gap-2">
+              <Briefcase className="h-4 w-4" />
+              <span className="hidden sm:inline">Services</span>
             </TabsTrigger>
             <TabsTrigger value="check-in" className="flex items-center gap-2">
               <ScanLine className="h-4 w-4" />
@@ -363,12 +399,25 @@ export default function VendorDashboardNew() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Service Bookings</CardTitle>
+                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{serviceOrderStats.total}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {serviceOrderStats.pending} pending • {serviceOrderStats.confirmed} confirmed
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {vendorRevenue?.currencySymbol || '$'}{vendorRevenue?.totalRevenue?.toFixed(2) || '0.00'}
+                    {vendorRevenue?.currencySymbol || '$'} {vendorRevenue?.totalRevenue?.toFixed(2) || '0.00'}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {vendorRevenue?.totalOrderCount || 0} orders • {vendorRevenue?.currencyCode || 'USD'}
@@ -674,6 +723,186 @@ export default function VendorDashboardNew() {
             )}
           </TabsContent>
 
+          {/* Services Tab */}
+          <TabsContent value="services" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Service Bookings</h2>
+              <div className="flex gap-2">
+                <Button asChild variant="outline">
+                  <Link to="/vendor/service-calendar">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Calendar View
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/vendor/service-orders">
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    Manage Orders
+                  </Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/vendor/services/new">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Service
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            {/* Service Order Stats */}
+            {/* <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-blue-600">{serviceOrderStats.pending}</div>
+                  <p className="text-xs text-muted-foreground">Pending</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-green-600">{serviceOrderStats.confirmed}</div>
+                  <p className="text-xs text-muted-foreground">Confirmed</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-yellow-600">{serviceOrderStats.inProgress}</div>
+                  <p className="text-xs text-muted-foreground">In Progress</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-emerald-600">{serviceOrderStats.completed}</div>
+                  <p className="text-xs text-muted-foreground">Completed</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-red-600">{serviceOrderStats.cancelled}</div>
+                  <p className="text-xs text-muted-foreground">Cancelled</p>
+                </CardContent>
+              </Card>
+            </div> */}
+
+            {/* Service Revenue */}
+            {/* <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Service Revenue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-eagle-green">
+                  {serviceOrderService.formatPrice(serviceOrderStats.revenue, vendorRevenue?.currencyCode || 'USD')}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  From {serviceOrderStats.completed} completed service{serviceOrderStats.completed !== 1 ? 's' : ''}
+                </p>
+              </CardContent>
+            </Card> */}
+
+            {/* Recent Service Orders */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Recent Service Orders</CardTitle>
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/vendor/service-orders">View All</Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {serviceOrders.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">No service orders yet.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {serviceOrders.slice(0, 5).map((order: ServiceOrderResponse) => {
+                      const statusDisplay = serviceOrderService.getStatusDisplay(order.status);
+                      return (
+                        <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <div className="h-10 w-10 rounded bg-eagle-green/10 flex items-center justify-center">
+                              <Briefcase className="h-5 w-5 text-eagle-green" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{order.service?.title || 'Service'}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {serviceOrderService.formatDateTime(order.scheduledDateTime)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge className={`${statusDisplay.bgColor} ${statusDisplay.color} border-none`}>
+                              {statusDisplay.text}
+                            </Badge>
+                            <span className="font-medium">
+                              {serviceOrderService.formatPrice(order.totalAmountMinor, order.currency)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* My Services */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>My Services</CardTitle>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/vendor/services/new">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Service
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {services.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Briefcase className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-muted-foreground mb-4">No services created yet.</p>
+                    <Button asChild>
+                      <Link to="/vendor/services/new">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Your First Service
+                      </Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {services.map((service: ServiceResponse) => (
+                      <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          {service.primaryImageUrl ? (
+                            <img 
+                              src={service.primaryImageUrl} 
+                              alt={service.title} 
+                              className="h-12 w-12 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded bg-eagle-green/10 flex items-center justify-center">
+                              <Briefcase className="h-6 w-6 text-eagle-green" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-medium">{service.title}</p>
+                            <p className="text-sm text-muted-foreground">{service.city}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {getStatusBadge(service.status)}
+                          <span className="font-medium">
+                            {serviceService.formatPrice(service.basePriceMinor, service.currency)}
+                          </span>
+                          <Button asChild variant="outline" size="sm">
+                            <Link to={`/vendor/services/${service.id}/edit`}>Edit</Link>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Check-In Tab */}
           <TabsContent value="check-in" className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -925,6 +1154,7 @@ interface Currency {
 
 interface SubCategory {
   id: number;
+  categoryId: number;
   name: string;
   slug: string;
 }
@@ -992,10 +1222,40 @@ const eventPriceUpdateEditSchema = z.object({
   reason: z.string().optional(),
 });
 
+// Service schemas
+const serviceEditSchema = z.object({
+  title: z.string().min(1, "Service title is required"),
+  description: z.string().optional(),
+  location: z.string().optional(),
+  city: z.string().optional(),
+  durationMinutes: z.number().min(1).optional(),
+  categoryId: z.string().optional(),
+});
+
+const servicePriceUpdateEditSchema = z.object({
+  currencyCode: z.string().min(1, "Currency is required"),
+  amount: z.number().min(0.01, "Price must be greater than 0"),
+  reason: z.string().optional(),
+});
+
+const productCategoryEditSchema = z.object({
+  newSubCategoryId: z.number().min(1, "Category is required"),
+  reason: z.string().optional(),
+});
+
+const serviceCategoryEditSchema = z.object({
+  newSubCategoryId: z.number().min(1, "Category is required"),
+  reason: z.string().optional(),
+});
+
 type ProductEditForm = z.infer<typeof productEditSchema>;
 type PriceUpdateEditForm = z.infer<typeof priceUpdateEditSchema>;
 type EventEditForm = z.infer<typeof eventEditSchema>;
 type EventPriceUpdateEditForm = z.infer<typeof eventPriceUpdateEditSchema>;
+type ServiceEditForm = z.infer<typeof serviceEditSchema>;
+type ServicePriceUpdateEditForm = z.infer<typeof servicePriceUpdateEditSchema>;
+type ProductCategoryEditForm = z.infer<typeof productCategoryEditSchema>;
+type ServiceCategoryEditForm = z.infer<typeof serviceCategoryEditSchema>;
 
 function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: RequestsManagementProps) {
   const { toast } = useToast();
@@ -1006,12 +1266,20 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
   const [editPriceUpdateOpen, setEditPriceUpdateOpen] = useState(false);
   const [editEventOpen, setEditEventOpen] = useState(false);
   const [editEventPriceOpen, setEditEventPriceOpen] = useState(false);
+  const [editServiceOpen, setEditServiceOpen] = useState(false);
+  const [editServicePriceOpen, setEditServicePriceOpen] = useState(false);
+  const [editProductCategoryOpen, setEditProductCategoryOpen] = useState(false);
+  const [editServiceCategoryOpen, setEditServiceCategoryOpen] = useState(false);
 
   // Selected items
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedPriceUpdate, setSelectedPriceUpdate] = useState<PriceUpdateRequest | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventResponse | null>(null);
   const [selectedEventPriceUpdate, setSelectedEventPriceUpdate] = useState<EventPriceUpdateResponse | null>(null);
+  const [selectedService, setSelectedService] = useState<ServiceResponse | null>(null);
+  const [selectedServicePriceUpdate, setSelectedServicePriceUpdate] = useState<ServicePriceUpdateRequest | null>(null);
+  const [selectedProductCategoryRequest, setSelectedProductCategoryRequest] = useState<CategoryChangeRequest | null>(null);
+  const [selectedServiceCategoryRequest, setSelectedServiceCategoryRequest] = useState<ServiceCategoryChangeRequest | null>(null);
 
   // Image management for events
   const [pendingEventImages, setPendingEventImages] = useState<File[]>([]);
@@ -1022,6 +1290,11 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
   const [pendingSkuImages, setPendingSkuImages] = useState<Record<number, File[]>>({});
   const [currentSkuImages, setCurrentSkuImages] = useState<Record<number, ImageDto[]>>({});
   const [isUploadingProductImages, setIsUploadingProductImages] = useState(false);
+
+  // Image management for services
+  const [pendingServiceImages, setPendingServiceImages] = useState<File[]>([]);
+  const [isUploadingServiceImages, setIsUploadingServiceImages] = useState(false);
+  const [currentServiceImages, setCurrentServiceImages] = useState<string[]>([]);
 
   // Fetch pending/rejected items using /me/ endpoints (authenticated vendor)
   const { data: pendingProductsData, isLoading: loadingProducts } = useQuery({
@@ -1042,6 +1315,30 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
   const { data: pendingEventPriceRequestsData, isLoading: loadingEventPrices } = useQuery({
     queryKey: ['vendor', 'pending-rejected-event-price-requests'],
     queryFn: () => vendorService.getMyPendingRejectedEventPriceRequests(0, 100),
+  });
+
+  // Fetch pending/rejected services
+  const { data: pendingServicesData, isLoading: loadingServices } = useQuery({
+    queryKey: ['vendor', 'pending-rejected-services'],
+    queryFn: () => serviceService.getMyPendingRejectedServices(0, 100),
+  });
+
+  // Fetch pending/rejected service price requests
+  const { data: pendingServicePriceRequestsData, isLoading: loadingServicePrices } = useQuery({
+    queryKey: ['vendor', 'pending-rejected-service-price-requests'],
+    queryFn: () => vendorService.getMyPendingRejectedServicePriceRequests(0, 100),
+  });
+
+  // Fetch pending/rejected product category change requests
+  const { data: pendingProductCategoryRequestsData, isLoading: loadingProductCategories } = useQuery({
+    queryKey: ['vendor', 'pending-rejected-product-category-requests'],
+    queryFn: () => vendorService.getMyPendingRejectedCategoryChangeRequests(0, 100),
+  });
+
+  // Fetch pending/rejected service category change requests
+  const { data: pendingServiceCategoryRequestsData, isLoading: loadingServiceCategories } = useQuery({
+    queryKey: ['vendor', 'pending-rejected-service-category-requests'],
+    queryFn: () => vendorService.getMyPendingRejectedServiceCategoryRequests(0, 100),
   });
 
   // Fetch currencies
@@ -1078,6 +1375,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
   const pendingPriceRequests = pendingPriceRequestsData?.content || [];
   const pendingEvents = pendingEventsData?.content || [];
   const pendingEventPriceRequests = pendingEventPriceRequestsData?.content || [];
+  const pendingServices = pendingServicesData?.content || [];
+  const pendingProductCategoryRequests = pendingProductCategoryRequestsData?.content || [];
+  const pendingServiceCategoryRequests = pendingServiceCategoryRequestsData?.content || [];
+  const pendingServicePriceRequests = pendingServicePriceRequestsData?.content || [];
 
   // Mutations
   const editProductMutation = useMutation({
@@ -1129,6 +1430,84 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-event-price-requests'] });
       setEditEventPriceOpen(false);
       setSelectedEventPriceUpdate(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.response?.data?.message || error.message || "Failed to update request", 
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Service edit mutation
+  const editServiceMutation = useMutation({
+    mutationFn: (data: { serviceId: number; service: any }) =>
+      serviceService.editPendingService(data.serviceId, data.service),
+    onSuccess: () => {
+      toast({ title: "Success", description: "Service updated and resubmitted for review. Status reset to PENDING." });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'services'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-services'] });
+      setEditServiceOpen(false);
+      setSelectedService(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.response?.data?.message || error.message || "Failed to update service", 
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Service price update mutation
+  const editServicePriceMutation = useMutation({
+    mutationFn: (data: { requestId: number; request: { newPrice: any; reason?: string } }) =>
+      vendorService.editServicePriceUpdateRequest(data.requestId, data.request),
+    onSuccess: () => {
+      toast({ title: "Success", description: "Service price update request resubmitted for review. Status reset to PENDING." });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'service-price-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-service-price-requests'] });
+      setEditServicePriceOpen(false);
+      setSelectedServicePriceUpdate(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.response?.data?.message || error.message || "Failed to update request", 
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Product category change mutation
+  const editProductCategoryMutation = useMutation({
+    mutationFn: (data: { requestId: number; request: { newSubCategoryId: number; reason?: string } }) =>
+      vendorService.editCategoryChangeRequest(data.requestId, data.request),
+    onSuccess: () => {
+      toast({ title: "Success", description: "Category change request resubmitted for review. Status reset to PENDING." });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-product-category-requests'] });
+      setEditProductCategoryOpen(false);
+      setSelectedProductCategoryRequest(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.response?.data?.message || error.message || "Failed to update request", 
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Service category change mutation
+  const editServiceCategoryMutation = useMutation({
+    mutationFn: (data: { requestId: number; request: { newSubCategoryId: number; reason?: string } }) =>
+      vendorService.editServiceCategoryChangeRequest(data.requestId, data.request),
+    onSuccess: () => {
+      toast({ title: "Success", description: "Category change request resubmitted for review. Status reset to PENDING." });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-service-category-requests'] });
+      setEditServiceCategoryOpen(false);
+      setSelectedServiceCategoryRequest(null);
     },
     onError: (error: any) => {
       toast({ 
@@ -1203,12 +1582,48 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     },
   });
 
+  const serviceForm = useForm<ServiceEditForm>({
+    resolver: zodResolver(serviceEditSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      location: "",
+      city: "",
+      durationMinutes: undefined,
+      categoryId: "",
+    },
+  });
+
+  const servicePriceForm = useForm<ServicePriceUpdateEditForm>({
+    resolver: zodResolver(servicePriceUpdateEditSchema),
+    defaultValues: {
+      currencyCode: "",
+      amount: 0,
+      reason: "",
+    },
+  });
+
+  const productCategoryForm = useForm<ProductCategoryEditForm>({
+    resolver: zodResolver(productCategoryEditSchema),
+    defaultValues: {
+      newSubCategoryId: 0,
+      reason: "",
+    },
+  });
+
+  const serviceCategoryForm = useForm<ServiceCategoryEditForm>({
+    resolver: zodResolver(serviceCategoryEditSchema),
+    defaultValues: {
+      newSubCategoryId: 0,
+      reason: "",
+    },
+  });
+
   const openPriceUpdateEdit = (request: PriceUpdateRequest) => {
     setSelectedPriceUpdate(request);
-    const newPrice = request.newPrice?.prices?.[0];
     priceUpdateForm.reset({
-      currencyCode: newPrice?.currencyCode || currencies[0]?.code || "",
-      amount: newPrice?.amount || 0,
+      currencyCode: request.newPrice?.currencyCode || currencies[0]?.code || "",
+      amount: request.newPrice?.amount ?? (request.newPrice?.unitAmountMinor ? request.newPrice.unitAmountMinor / 100 : 0),
       reason: request.reason || "",
     });
     setEditPriceUpdateOpen(true);
@@ -1224,6 +1639,52 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       reason: request.reason || "",
     });
     setEditEventPriceOpen(true);
+  };
+
+  const openServiceEdit = (service: ServiceResponse) => {
+    setSelectedService(service);
+    // Extract URLs from service images
+    setCurrentServiceImages(service.images?.map(img => img.fullUrl || img.url) || []);
+    setPendingServiceImages([]);
+    serviceForm.reset({
+      title: service.title || "",
+      description: service.description || "",
+      location: service.location || "",
+      city: service.city || "",
+      durationMinutes: service.durationMinutes,
+      categoryId: service.categoryId?.toString() || "",
+    });
+    setEditServiceOpen(true);
+  };
+
+  const openServicePriceEdit = (request: ServicePriceUpdateRequest) => {
+    setSelectedServicePriceUpdate(request);
+    // Convert from minor units if available, otherwise use amount
+    const amountDecimal = request.newPrice?.amount ?? (request.newPrice?.unitAmountMinor ? request.newPrice.unitAmountMinor / 100 : 0);
+    servicePriceForm.reset({
+      currencyCode: request.newPrice?.currencyCode || currencies[0]?.code || "",
+      amount: amountDecimal,
+      reason: request.reason || "",
+    });
+    setEditServicePriceOpen(true);
+  };
+
+  const openProductCategoryEdit = (request: CategoryChangeRequest) => {
+    setSelectedProductCategoryRequest(request);
+    productCategoryForm.reset({
+      newSubCategoryId: request.newSubCategoryId || 0,
+      reason: request.reason || "",
+    });
+    setEditProductCategoryOpen(true);
+  };
+
+  const openServiceCategoryEdit = (request: ServiceCategoryChangeRequest) => {
+    setSelectedServiceCategoryRequest(request);
+    serviceCategoryForm.reset({
+      newSubCategoryId: request.newSubCategoryId || 0,
+      reason: request.reason || "",
+    });
+    setEditServiceCategoryOpen(true);
   };
 
   // Submit handlers
@@ -1313,10 +1774,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       request: {
         ...selectedPriceUpdate,
         newPrice: {
-          prices: [{
-            currencyCode: data.currencyCode,
-            amount: data.amount,
-          }],
+          currencyCode: data.currencyCode,
+          amount: data.amount,
         },
         reason: data.reason,
       },
@@ -1358,18 +1817,17 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
         if (ticketType.id) {
           // Existing ticket type - check if price changed
           const originalTicket = selectedEvent.ticketTypes?.find(tt => tt.id === ticketType.id);
-          const originalPrice = originalTicket?.price?.prices?.[0];
+          // Get original price from various possible sources
+          const originalPriceMinor = originalTicket?.vendorPriceMinor ?? originalTicket?.priceMinor;
+          const originalPriceMajor = originalPriceMinor ? originalPriceMinor / 100 : originalTicket?.price?.prices?.[0]?.amount;
+          const originalCurrency = originalTicket?.currency ?? originalTicket?.price?.prices?.[0]?.currencyCode;
           
-          if (originalPrice && (originalPrice.amount !== ticketType.amount || originalPrice.currencyCode !== ticketType.currencyCode)) {
+          if (originalPriceMajor !== undefined && (originalPriceMajor !== ticketType.amount || originalCurrency !== ticketType.currencyCode)) {
             // Price changed - submit price update request
             await vendorService.requestEventPriceUpdate({
               ticketTypeId: ticketType.id,
-              newPrice: {
-                prices: [{
-                  currencyCode: ticketType.currencyCode,
-                  amount: ticketType.amount,
-                }],
-              },
+              newPrice: ticketType.amount,
+              newCurrency: ticketType.currencyCode,
               reason: "Price update via event edit",
             });
           }
@@ -1447,11 +1905,102 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     });
   };
 
-  const getRequestCount = () => {
-    return pendingProducts.length + pendingPriceRequests.length + pendingEvents.length + pendingEventPriceRequests.length;
+  const onServiceSubmit = async (data: ServiceEditForm) => {
+    if (!selectedService?.id) return;
+    
+    // Validate that at least one service image exists (current or pending)
+    const totalImages = currentServiceImages.length + pendingServiceImages.length;
+    if (totalImages === 0) {
+      toast({
+        title: "Image Required",
+        description: "Please upload at least one service image before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Update basic service details
+      await editServiceMutation.mutateAsync({
+        serviceId: selectedService.id,
+        service: {
+          title: data.title,
+          description: data.description,
+          location: data.location,
+          city: data.city,
+          durationMinutes: data.durationMinutes,
+          categoryId: data.categoryId ? parseInt(data.categoryId) : undefined,
+        },
+      });
+      
+      // Upload images if any pending
+      if (pendingServiceImages.length > 0) {
+        setIsUploadingServiceImages(true);
+        try {
+          await imageService.uploadServiceImages(selectedService.id, pendingServiceImages);
+        } catch (imageError) {
+          console.error("Failed to upload service images:", imageError);
+          toast({
+            title: "Warning",
+            description: "Service updated but some images failed to upload.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsUploadingServiceImages(false);
+        }
+      }
+      
+      // Clear image states
+      setPendingServiceImages([]);
+      setCurrentServiceImages([]);
+      
+    } catch (error: any) {
+      setIsUploadingServiceImages(false);
+      // Error is already handled by the mutation
+    }
   };
 
-  const isLoading = loadingProducts || loadingPriceRequests || loadingEvents || loadingEventPrices;
+  const onServicePriceSubmit = (data: ServicePriceUpdateEditForm) => {
+    if (!selectedServicePriceUpdate?.id) return;
+    editServicePriceMutation.mutate({
+      requestId: selectedServicePriceUpdate.id,
+      request: {
+        newPrice: {
+          currencyCode: data.currencyCode,
+          amount: data.amount,
+        },
+        reason: data.reason,
+      },
+    });
+  };
+
+  const onProductCategorySubmit = (data: ProductCategoryEditForm) => {
+    if (!selectedProductCategoryRequest?.id) return;
+    editProductCategoryMutation.mutate({
+      requestId: selectedProductCategoryRequest.id,
+      request: {
+        newSubCategoryId: data.newSubCategoryId,
+        reason: data.reason,
+      },
+    });
+  };
+
+  const onServiceCategorySubmit = (data: ServiceCategoryEditForm) => {
+    if (!selectedServiceCategoryRequest?.id) return;
+    editServiceCategoryMutation.mutate({
+      requestId: selectedServiceCategoryRequest.id,
+      request: {
+        newSubCategoryId: data.newSubCategoryId,
+        reason: data.reason,
+      },
+    });
+  };
+
+  const getRequestCount = () => {
+    return pendingProducts.length + pendingPriceRequests.length + pendingEvents.length + pendingEventPriceRequests.length + pendingServices.length + pendingServicePriceRequests.length + pendingProductCategoryRequests.length + pendingServiceCategoryRequests.length;
+  };
+
+  const isLoading = loadingProducts || loadingPriceRequests || loadingEvents || loadingEventPrices || loadingServices || loadingServicePrices || loadingProductCategories || loadingServiceCategories;
   const hasNoRequests = !isLoading && getRequestCount() === 0;
 
   return (
@@ -1488,7 +2037,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
         </Card>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 lg:w-auto lg:inline-grid">
           <TabsTrigger value="products" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             <span className="hidden sm:inline">Products</span>
@@ -1503,6 +2052,13 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               <Badge variant="secondary" className="ml-1">{pendingPriceRequests.length}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="product-categories" className="flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            <span className="hidden sm:inline">Product Categories</span>
+            {pendingProductCategoryRequests.length > 0 && (
+              <Badge variant="secondary" className="ml-1">{pendingProductCategoryRequests.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="events" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Events</span>
@@ -1515,6 +2071,27 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             <span className="hidden sm:inline">Event Prices</span>
             {pendingEventPriceRequests.length > 0 && (
               <Badge variant="secondary" className="ml-1">{pendingEventPriceRequests.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="services" className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4" />
+            <span className="hidden sm:inline">Services</span>
+            {pendingServices.length > 0 && (
+              <Badge variant="secondary" className="ml-1">{pendingServices.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="service-prices" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            <span className="hidden sm:inline">Service Prices</span>
+            {pendingServicePriceRequests.length > 0 && (
+              <Badge variant="secondary" className="ml-1">{pendingServicePriceRequests.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="service-categories" className="flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            <span className="hidden sm:inline">Service Categories</span>
+            {pendingServiceCategoryRequests.length > 0 && (
+              <Badge variant="secondary" className="ml-1">{pendingServiceCategoryRequests.length}</Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -1626,8 +2203,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               ) : (
                 <div className="space-y-4">
                   {pendingPriceRequests.map((request) => {
-                    const currentPrice = request.currentPrice?.prices?.[0];
-                    const newPrice = request.newPrice?.prices?.[0];
+                    const currentPrice = request.currentPrice;
+                    const newPrice = request.newPrice;
                     return (
                       <div key={request.id} className="border rounded-lg p-4">
                         <div className="flex items-start justify-between">
@@ -1640,14 +2217,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                               <div>
                                 <span className="text-sm text-muted-foreground">Current: </span>
                                 <span className="font-medium">
-                                  {currentPrice?.currencyCode} {currentPrice?.amount?.toFixed(2)}
+                                  {currentPrice?.currencyCode} {(currentPrice?.amount ?? (currentPrice?.unitAmountMinor ? currentPrice.unitAmountMinor / 100 : 0))?.toFixed(2)}
                                 </span>
                               </div>
                               <span className="text-muted-foreground">→</span>
                               <div>
                                 <span className="text-sm text-muted-foreground">New: </span>
                                 <span className="font-medium text-blue-600">
-                                  {newPrice?.currencyCode} {newPrice?.amount?.toFixed(2)}
+                                  {newPrice?.currencyCode} {(newPrice?.amount ?? (newPrice?.unitAmountMinor ? newPrice.unitAmountMinor / 100 : 0))?.toFixed(2)}
                                 </span>
                               </div>
                             </div>
@@ -1838,6 +2415,337 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Service Creation Requests Tab */}
+        <TabsContent value="services" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                Service Creation Requests
+              </CardTitle>
+              <CardDescription>
+                Services pending approval or rejected by admin.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingServices ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : pendingServices.length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No pending or rejected services</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingServices.map((service) => (
+                    <div key={service.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-3">
+                          {service.primaryImageUrl ? (
+                            <img 
+                              src={service.primaryImageUrl} 
+                              alt={service.title}
+                              className="h-16 w-16 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 rounded bg-gray-100 flex items-center justify-center">
+                              <Briefcase className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-semibold">{service.title}</h3>
+                            <p className="text-sm text-muted-foreground">{service.categoryName || 'Uncategorized'}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              {getStatusBadge(service.status)}
+                              <span className="text-sm text-muted-foreground">
+                                Price: {serviceService.formatPrice(service.basePriceMinor, service.currency)}
+                              </span>
+                            </div>
+                            {service.description && (
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{service.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => openServiceEdit(service)}>
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                      {service.rejectionReason && (
+                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                              <p className="text-sm text-red-700">{service.rejectionReason}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Service Price Update Requests Tab */}
+        <TabsContent value="service-prices" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Service Price Update Requests
+              </CardTitle>
+              <CardDescription>
+                Service price change requests pending approval or rejected by admin.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingServicePrices ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : pendingServicePriceRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No pending or rejected service price update requests</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingServicePriceRequests.map((request) => {
+                    // Backend may return prices in minor units or major units
+                    const currentPrice = request.currentPrice?.amount ?? (request.currentPrice?.unitAmountMinor ? request.currentPrice.unitAmountMinor / 100 : 0);
+                    const newPrice = request.newPrice?.amount ?? (request.newPrice?.unitAmountMinor ? request.newPrice.unitAmountMinor / 100 : 0);
+                    const currency = request.currentPrice?.currencyCode || request.newPrice?.currencyCode || 'ETB';
+                    
+                    return (
+                      <div key={request.id} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-semibold">{request.serviceName || `Service #${request.serviceId}`}</h3>
+                            <p className="text-sm text-muted-foreground">Vendor: {request.vendorName || `#${request.vendorId}`}</p>
+                            <div className="flex items-center gap-4 mt-2">
+                              <div>
+                                <span className="text-sm text-muted-foreground">Current: </span>
+                                <span className="font-medium">
+                                  {currency} {currentPrice.toFixed(2)}
+                                </span>
+                              </div>
+                              <span className="text-muted-foreground">→</span>
+                              <div>
+                                <span className="text-sm text-muted-foreground">New: </span>
+                                <span className="font-medium text-blue-600">
+                                  {currency} {newPrice.toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                              {getStatusBadge(request.status || 'PENDING')}
+                              {request.createdAt && (
+                                <span className="text-sm text-muted-foreground">
+                                  Submitted: {new Date(request.createdAt).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                            {request.reason && (
+                              <p className="text-sm text-muted-foreground mt-1">Reason: {request.reason}</p>
+                            )}
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => openServicePriceEdit(request)}>
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                        {request.rejectionReason && (
+                          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                                <p className="text-sm text-red-700">{request.rejectionReason}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Product Category Change Requests Tab */}
+        <TabsContent value="product-categories" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Layers className="h-5 w-5" />
+                Product Category Change Requests
+              </CardTitle>
+              <CardDescription>
+                Category change requests pending approval or rejected by admin.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingProductCategories ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : pendingProductCategoryRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No pending or rejected category change requests</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingProductCategoryRequests.map((request: CategoryChangeRequest) => (
+                    <div key={request.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-3">
+                          {request.productCover ? (
+                            <img 
+                              src={request.productCover} 
+                              alt={request.productName}
+                              className="h-16 w-16 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 rounded bg-gray-100 flex items-center justify-center">
+                              <Package className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-semibold">{request.productName}</h3>
+                            <div className="flex items-center gap-2 mt-2">
+                              {getStatusBadge(request.status || 'PENDING')}
+                            </div>
+                            <div className="mt-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Current:</span>
+                                <span>{request.currentCategoryName} → {request.currentSubCategoryName}</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-muted-foreground">New:</span>
+                                <span className="text-blue-600 font-medium">{request.newCategoryName} → {request.newSubCategoryName}</span>
+                              </div>
+                            </div>
+                            {request.reason && (
+                              <p className="text-sm text-muted-foreground mt-2">Reason: {request.reason}</p>
+                            )}
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => openProductCategoryEdit(request)}>
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                      {request.rejectionReason && (
+                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                              <p className="text-sm text-red-700">{request.rejectionReason}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Service Category Change Requests Tab */}
+        <TabsContent value="service-categories" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Layers className="h-5 w-5" />
+                Service Category Change Requests
+              </CardTitle>
+              <CardDescription>
+                Category change requests pending approval or rejected by admin.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingServiceCategories ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : pendingServiceCategoryRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No pending or rejected category change requests</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingServiceCategoryRequests.map((request: ServiceCategoryChangeRequest) => (
+                    <div key={request.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-3">
+                          {request.serviceCover ? (
+                            <img 
+                              src={request.serviceCover} 
+                              alt={request.serviceName}
+                              className="h-16 w-16 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 rounded bg-gray-100 flex items-center justify-center">
+                              <Briefcase className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-semibold">{request.serviceName}</h3>
+                            <div className="flex items-center gap-2 mt-2">
+                              {getStatusBadge(request.status || 'PENDING')}
+                            </div>
+                            <div className="mt-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Current:</span>
+                                <span>{request.currentCategoryName} → {request.currentSubCategoryName}</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-muted-foreground">New:</span>
+                                <span className="text-blue-600 font-medium">{request.newCategoryName} → {request.newSubCategoryName}</span>
+                              </div>
+                            </div>
+                            {request.reason && (
+                              <p className="text-sm text-muted-foreground mt-2">Reason: {request.reason}</p>
+                            )}
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => openServiceCategoryEdit(request)}>
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                      {request.rejectionReason && (
+                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                              <p className="text-sm text-red-700">{request.rejectionReason}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -2562,6 +3470,315 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               <Button type="button" variant="outline" onClick={() => setEditEventPriceOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={editEventPriceMutation.isPending}>
                 {editEventPriceMutation.isPending ? 'Submitting...' : 'Save & Resubmit'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Service Dialog */}
+      <Dialog open={editServiceOpen} onOpenChange={setEditServiceOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Service Request</DialogTitle>
+            <DialogDescription>
+              Update your pending or rejected service request.
+              {selectedService?.status === 'REJECTED' && (
+                <span className="block mt-2 text-amber-600">
+                  This service was rejected. Editing will resubmit it for approval.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={serviceForm.handleSubmit(onServiceSubmit)} className="space-y-4">
+            <div>
+              <Label>Title *</Label>
+              <Input {...serviceForm.register("title")} />
+              {serviceForm.formState.errors.title && (
+                <p className="text-sm text-red-500 mt-1">{serviceForm.formState.errors.title.message}</p>
+              )}
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea {...serviceForm.register("description")} rows={3} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Location</Label>
+                <Input {...serviceForm.register("location")} />
+              </div>
+              <div>
+                <Label>City</Label>
+                <Input {...serviceForm.register("city")} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Duration (minutes)</Label>
+                <Input 
+                  type="number" 
+                  min="1" 
+                  {...serviceForm.register("durationMinutes", { valueAsNumber: true })} 
+                />
+              </div>
+              <div>
+                <Label>Category</Label>
+                <Controller
+                  name="categoryId"
+                  control={serviceForm.control}
+                  render={({ field }) => (
+                    <Select 
+                      value={field.value?.toString() || ''} 
+                      onValueChange={(val) => field.onChange(val ? parseInt(val) : undefined)}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                      <SelectContent>
+                        {categories?.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id.toString()}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+            
+            {/* Service Images */}
+            <div>
+              <Label>Images</Label>
+              <div className="mt-2">
+                {/* Current images */}
+                {currentServiceImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {currentServiceImages.map((url, idx) => (
+                      <div key={idx} className="relative h-20 w-20">
+                        <img src={url} alt={`Service image ${idx + 1}`} className="h-full w-full object-cover rounded" />
+                        <button
+                          type="button"
+                          title="Remove image"
+                          aria-label={`Remove service image ${idx + 1}`}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                          onClick={() => setCurrentServiceImages(currentServiceImages.filter((_, i) => i !== idx))}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Pending images */}
+                {pendingServiceImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {pendingServiceImages.map((file, idx) => (
+                      <div key={idx} className="relative h-20 w-20">
+                        <img src={URL.createObjectURL(file)} alt={`New image ${idx + 1}`} className="h-full w-full object-cover rounded border-2 border-blue-500" />
+                        <button
+                          type="button"
+                          title="Remove image"
+                          aria-label={`Remove new image ${idx + 1}`}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                          onClick={() => setPendingServiceImages(pendingServiceImages.filter((_, i) => i !== idx))}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setPendingServiceImages([...pendingServiceImages, ...files]);
+                  }}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditServiceOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={editServiceMutation.isPending || isUploadingServiceImages}>
+                {(editServiceMutation.isPending || isUploadingServiceImages) ? 'Submitting...' : 'Save & Resubmit'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Service Price Update Dialog */}
+      <Dialog open={editServicePriceOpen} onOpenChange={setEditServicePriceOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Service Price Update Request</DialogTitle>
+            <DialogDescription>
+              Update the price change request for {selectedServicePriceUpdate?.serviceName || 'this service'}.
+              {selectedServicePriceUpdate?.status === 'REJECTED' && (
+                <span className="block mt-2 text-amber-600">
+                  This request was rejected. Editing will resubmit it for approval.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={servicePriceForm.handleSubmit(onServicePriceSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Currency *</Label>
+                <Controller
+                  name="currencyCode"
+                  control={servicePriceForm.control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {currencies.map((c) => <SelectItem key={c.id} value={c.code}>{c.code}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div>
+                <Label>New Price *</Label>
+                <Controller
+                  name="amount"
+                  control={servicePriceForm.control}
+                  render={({ field }) => (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={field.value || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          field.onChange(0);
+                        } else {
+                          const numValue = parseFloat(value);
+                          if (!isNaN(numValue)) {
+                            field.onChange(Math.round(numValue * 100) / 100);
+                          }
+                        }
+                      }}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Reason</Label>
+              <Textarea {...servicePriceForm.register("reason")} />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditServicePriceOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={editServicePriceMutation.isPending}>
+                {editServicePriceMutation.isPending ? 'Submitting...' : 'Save & Resubmit'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Product Category Dialog */}
+      <Dialog open={editProductCategoryOpen} onOpenChange={setEditProductCategoryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Product Category Change Request</DialogTitle>
+            <DialogDescription>
+              Update the category change request for {selectedProductCategoryRequest?.productName || 'this product'}.
+              {selectedProductCategoryRequest?.status === 'REJECTED' && (
+                <span className="block mt-2 text-amber-600">
+                  This request was rejected. Editing will resubmit it for approval.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={productCategoryForm.handleSubmit(onProductCategorySubmit)} className="space-y-4">
+            <div>
+              <Label>New Category *</Label>
+              <Controller
+                name="newSubCategoryId"
+                control={productCategoryForm.control}
+                render={({ field }) => (
+                  <Select value={field.value?.toString()} onValueChange={(val) => field.onChange(Number(val))}>
+                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => 
+                        allSubCategories
+                          .filter(sub => sub.categoryId === category.id)
+                          .map((sub) => (
+                            <SelectItem key={sub.id} value={sub.id.toString()}>
+                              {category.name} → {sub.name}
+                            </SelectItem>
+                          ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
+              <Label>Reason</Label>
+              <Textarea {...productCategoryForm.register("reason")} placeholder="Explain why you want to change the category" />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditProductCategoryOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={editProductCategoryMutation.isPending}>
+                {editProductCategoryMutation.isPending ? 'Submitting...' : 'Save & Resubmit'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Service Category Dialog */}
+      <Dialog open={editServiceCategoryOpen} onOpenChange={setEditServiceCategoryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Service Category Change Request</DialogTitle>
+            <DialogDescription>
+              Update the category change request for {selectedServiceCategoryRequest?.serviceName || 'this service'}.
+              {selectedServiceCategoryRequest?.status === 'REJECTED' && (
+                <span className="block mt-2 text-amber-600">
+                  This request was rejected. Editing will resubmit it for approval.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={serviceCategoryForm.handleSubmit(onServiceCategorySubmit)} className="space-y-4">
+            <div>
+              <Label>New Category *</Label>
+              <Controller
+                name="newSubCategoryId"
+                control={serviceCategoryForm.control}
+                render={({ field }) => (
+                  <Select value={field.value?.toString()} onValueChange={(val) => field.onChange(Number(val))}>
+                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => 
+                        allSubCategories
+                          .filter(sub => sub.categoryId === category.id)
+                          .map((sub) => (
+                            <SelectItem key={sub.id} value={sub.id.toString()}>
+                              {category.name} → {sub.name}
+                            </SelectItem>
+                          ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
+              <Label>Reason</Label>
+              <Textarea {...serviceCategoryForm.register("reason")} placeholder="Explain why you want to change the category" />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditServiceCategoryOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={editServiceCategoryMutation.isPending}>
+                {editServiceCategoryMutation.isPending ? 'Submitting...' : 'Save & Resubmit'}
               </Button>
             </DialogFooter>
           </form>

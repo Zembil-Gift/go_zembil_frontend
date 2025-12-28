@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,7 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/apiService";
-import { User, Mail, Phone, Lock, Globe, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText } from "lucide-react";
+import { certificateService, CertificateResponse } from "@/services/certificateService";
+import { vendorTermsService, VendorTermsResponse } from "@/services/vendorTermsService";
+import { User, Mail, Phone, Lock, Globe, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Award, Loader2, Play, Pause } from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 
 interface Category {
@@ -42,6 +44,7 @@ const COUNTRIES = [
   {value: "Middle East", label: "Middle East" },
 ];
 
+
 const VENDOR_TYPES = [
   { value: "PRODUCT", label: "Product Vendor", description: "I sell physical goods that require delivery" },
   { value: "SERVICE", label: "Service Vendor", description: "I provide experiences, events, or time-based services" },
@@ -54,67 +57,19 @@ const VAT_STATUS_OPTIONS = [
   { value: "VAT_EXEMPT", label: "VAT Exempt", description: "My business is exempt from VAT" },
 ];
 
-// Terms and Conditions for vendors
-const VENDOR_TERMS = [
-  {
-    id: "quality",
-    title: "Product Quality Standards",
-    description: "I agree to maintain high-quality standards for all products and services I offer on the platform. All items must be accurately described and match the images provided.",
-  },
-  {
-    id: "pricing",
-    title: "Fair Pricing Policy",
-    description: "I agree to set fair and competitive prices for my products. I will not engage in price gouging or deceptive pricing practices.",
-  },
-  {
-    id: "shipping",
-    title: "Shipping & Fulfillment",
-    description: "I commit to processing and shipping orders within the specified timeframes. I will provide accurate tracking information and handle shipping issues promptly.",
-  },
-  {
-    id: "returns",
-    title: "Returns & Refunds Policy",
-    description: "I agree to honor the platform's return and refund policies. I will process refunds within 5-7 business days of receiving returned items.",
-  },
-  {
-    id: "communication",
-    title: "Customer Communication",
-    description: "I will respond to customer inquiries within 24-48 hours and maintain professional communication at all times.",
-  },
-  {
-    id: "compliance",
-    title: "Legal Compliance",
-    description: "I confirm that my business operates legally and I have all necessary permits and licenses. I will comply with all applicable local and international laws.",
-  },
-  {
-    id: "commission",
-    title: "Platform Commission",
-    description: "I understand and agree to the platform's commission structure. Commission rates will be clearly communicated and deducted from each sale.",
-  },
-  {
-    id: "content",
-    title: "Content Guidelines",
-    description: "I agree not to upload prohibited content, counterfeit goods, or items that violate intellectual property rights. All product listings will be honest and accurate.",
-  },
-  {
-    id: "data",
-    title: "Data Protection",
-    description: "I agree to handle customer data responsibly and in compliance with privacy regulations. I will not misuse or share customer information.",
-  },
-  {
-    id: "termination",
-    title: "Account Termination",
-    description: "I understand that violation of these terms may result in account suspension or termination. The platform reserves the right to remove listings that violate policies.",
-  },
-];
+const ONBOARDING_VIDEO_URL = "/videos/vendor-onboarding.mp4";
 
-const ONBOARDING_VIDEO_URL = "https://www.youtube.com/embed/8vSZA0l5XKs?list=PLvt-hujkg6kYsQsxDHXxrwe9a8Pu59CQ_";
+type OnboardingStep = "video" | "certificate" | "form" | "terms";
 
-type OnboardingStep = "terms" | "video" | "form";
+// Format seconds to MM:SS
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
 
 const vendorSignupSchema = z
   .object({
-    // User account fields
     firstName: z.string().min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
     username: z.string().min(3, "Username must be at least 3 characters"),
@@ -130,8 +85,6 @@ const vendorSignupSchema = z
     confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
     birthDate: z.string().min(1, "Birth date is required"),
     preferredCurrencyCode: z.string().optional(),
-    
-    // Vendor business fields
     businessName: z.string().min(2, "Business name must be at least 2 characters").max(200),
     description: z.string().max(1000, "Description must be less than 1000 characters").optional(),
     businessEmail: z.string().email("Valid business email is required"),
@@ -142,13 +95,13 @@ const vendorSignupSchema = z
     categoryId: z.string().min(1, "Please select a category"),
     vendorType: z.string().min(1, "Please select a vendor type"),
     vatStatus: z.string().optional(),
+    certificateCode: z.string().min(1, "Certificate code is required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ["confirmPassword"],
     message: "Passwords must match",
   })
   .refine((data) => {
-    // VAT status is required for Ethiopian vendors
     if (data.country === "Ethiopia" && !data.vatStatus) {
       return false;
     }
@@ -160,44 +113,60 @@ const vendorSignupSchema = z
 
 type VendorSignupForm = z.infer<typeof vendorSignupSchema>;
 
+
 export default function VendorSignup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>("terms");
-  const [acceptedTerms, setAcceptedTerms] = useState<Record<string, boolean>>({});
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>("video");
+  const [acceptedTerms, setAcceptedTerms] = useState<Record<number, boolean>>({});
   const [hasWatchedVideo, setHasWatchedVideo] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [certificateEmail, setCertificateEmail] = useState("");
+  const [certificateFullName, setCertificateFullName] = useState("");
+  const [generatedCertificate, setGeneratedCertificate] = useState<CertificateResponse | null>(null);
+  const [certificateCode, setCertificateCode] = useState("");
+  const [isCertificateValidated, setIsCertificateValidated] = useState(false);
+  const [termsData, setTermsData] = useState<VendorTermsResponse | null>(null);
+  const [isLoadingTerms, setIsLoadingTerms] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Check if all terms are accepted
-  const allTermsAccepted = VENDOR_TERMS.every(term => acceptedTerms[term.id]);
-
-  // Handle individual term toggle
-  const handleTermToggle = (termId: string) => {
-    setAcceptedTerms(prev => ({
-      ...prev,
-      [termId]: !prev[termId]
-    }));
-  };
-
-  // Handle accept all
-  const handleAcceptAll = () => {
-    const allAccepted: Record<string, boolean> = {};
-    VENDOR_TERMS.forEach(term => {
-      allAccepted[term.id] = true;
+  const handleVideoEnded = () => {
+    setHasWatchedVideo(true);
+    setIsVideoPlaying(false);
+    toast({
+      title: "Video Completed!",
+      description: "You can now generate your onboarding certificate.",
+      variant: "default",
     });
-    setAcceptedTerms(allAccepted);
   };
 
-  // Handle reject all
-  const handleRejectAll = () => {
-    setAcceptedTerms({});
+  const handleVideoTimeUpdate = () => {
+    if (videoRef.current) {
+      setVideoProgress(videoRef.current.currentTime);
+    }
   };
 
-  // Count accepted terms
-  const acceptedCount = Object.values(acceptedTerms).filter(Boolean).length;
+  const handleVideoLoadedMetadata = () => {
+    if (videoRef.current) {
+      setVideoDuration(videoRef.current.duration);
+    }
+  };
 
-  // Fetch available currencies
+  const handlePlayPause = () => {
+    if (videoRef.current) {
+      if (isVideoPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsVideoPlaying(!isVideoPlaying);
+    }
+  };
+
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies'],
     queryFn: async () => {
@@ -206,7 +175,6 @@ export default function VendorSignup() {
     },
   });
 
-  // Fetch categories for vendor type
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -239,11 +207,122 @@ export default function VendorSignup() {
       categoryId: "",
       vendorType: "",
       vatStatus: "",
+      certificateCode: "",
+    },
+  });
+
+  // Fetch terms when vendor type changes
+  const selectedVendorType = form.watch("vendorType");
+  
+  useEffect(() => {
+    if (selectedVendorType && currentStep === "terms") {
+      fetchTermsForVendorType(selectedVendorType);
+    }
+  }, [selectedVendorType, currentStep]);
+
+  const fetchTermsForVendorType = async (vendorType: string) => {
+    setIsLoadingTerms(true);
+    try {
+      const terms = await vendorTermsService.getTermsByVendorType(vendorType);
+      setTermsData(terms);
+      setAcceptedTerms({});
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load terms and conditions",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingTerms(false);
+    }
+  };
+
+  const allTermsAccepted = termsData ? termsData.terms.every(term => acceptedTerms[term.id]) : false;
+
+  const handleTermToggle = (termId: number) => {
+    setAcceptedTerms(prev => ({
+      ...prev,
+      [termId]: !prev[termId]
+    }));
+  };
+
+  const handleAcceptAll = () => {
+    if (termsData) {
+      const allAccepted: Record<number, boolean> = {};
+      termsData.terms.forEach(term => {
+        allAccepted[term.id] = true;
+      });
+      setAcceptedTerms(allAccepted);
+    }
+  };
+
+  const handleRejectAll = () => {
+    setAcceptedTerms({});
+  };
+
+  const acceptedCount = Object.values(acceptedTerms).filter(Boolean).length;
+
+  const generateCertificateMutation = useMutation({
+    mutationFn: async () => {
+      return certificateService.generateCertificate({
+        email: certificateEmail,
+        fullName: certificateFullName,
+      });
+    },
+    onSuccess: (data) => {
+      setGeneratedCertificate(data);
+      toast({
+        title: "Certificate Generated!",
+        description: "Your onboarding certificate has been generated. Please download it and save the certificate code.",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Certificate Generation Failed",
+        description: error.message || "Failed to generate certificate. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const validateCertificateMutation = useMutation({
+    mutationFn: async () => {
+      return certificateService.validateCertificate(certificateCode);
+    },
+    onSuccess: (data) => {
+      if (data.isValid) {
+        setIsCertificateValidated(true);
+        form.setValue("certificateCode", certificateCode);
+        if (data.email) {
+          form.setValue("email", data.email);
+        }
+        toast({
+          title: "Certificate Validated!",
+          description: "Your certificate is valid. You can now proceed with registration.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Invalid Certificate",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Validation Failed",
+        description: error.message || "Failed to validate certificate. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
   const signupMutation = useMutation({
     mutationFn: async (data: VendorSignupForm) => {
+      const acceptedTermIds = termsData ? termsData.terms.filter(t => acceptedTerms[t.id]).map(t => t.id) : [];
+      
       const payload = {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -264,6 +343,9 @@ export default function VendorSignup() {
         vendorType: data.vendorType,
         vatStatus: data.country === "Ethiopia" && data.vatStatus ? data.vatStatus : undefined,
         supportedPaymentProviders: ["STRIPE", "CHAPA"],
+        certificateCode: data.certificateCode,
+        termsVersion: termsData?.version || 1,
+        acceptedTermIds: acceptedTermIds,
       };
 
       console.log('Vendor signup payload:', JSON.stringify(payload, null, 2));
@@ -286,9 +368,29 @@ export default function VendorSignup() {
     },
   });
 
+  const handleProceedToTerms = async () => {
+    const isValid = await form.trigger();
+    if (isValid) {
+      const vendorType = form.getValues("vendorType");
+      if (vendorType) {
+        await fetchTermsForVendorType(vendorType);
+        setCurrentStep("terms");
+      }
+    }
+  };
+
   const onSubmit = async (data: VendorSignupForm) => {
+    if (!allTermsAccepted) {
+      toast({
+        title: "Terms Required",
+        description: "Please accept all terms and conditions to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
     await signupMutation.mutateAsync(data);
   };
+
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -318,136 +420,45 @@ export default function VendorSignup() {
 
         {/* Progress Steps */}
         <div className="mb-8">
-          <div className="flex items-center justify-center space-x-4">
-            <div className={`flex items-center ${currentStep === "terms" ? "text-emerald-600" : allTermsAccepted ? "text-emerald-600" : "text-gray-400"}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "terms" ? "border-emerald-600 bg-emerald-50" : allTermsAccepted ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
-                {allTermsAccepted ? <CheckCircle2 className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
-              </div>
-              <span className="ml-2 font-medium text-center hidden sm:inline">Terms </span>
-            </div>
-            <div className="w-16 h-0.5 bg-gray-300">
-              <div className={`h-full transition-all duration-300 ${allTermsAccepted ? "bg-emerald-600 w-full" : "w-0"}`} />
-            </div>
+          <div className="flex items-center justify-center space-x-2 sm:space-x-4">
             <div className={`flex items-center ${currentStep === "video" ? "text-emerald-600" : hasWatchedVideo ? "text-emerald-600" : "text-gray-400"}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "video" ? "border-emerald-600 bg-emerald-50" : hasWatchedVideo ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
-                {hasWatchedVideo ? <CheckCircle2 className="w-5 h-5" /> : <PlayCircle className="w-5 h-5" />}
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "video" ? "border-emerald-600 bg-emerald-50" : hasWatchedVideo ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
+                {hasWatchedVideo ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <PlayCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
               </div>
-              <span className="ml-2 font-medium hidden sm:inline">Video</span>
+              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Video</span>
             </div>
-            <div className="w-16 h-0.5 bg-gray-300">
+            <div className="w-8 sm:w-16 h-0.5 bg-gray-300">
               <div className={`h-full transition-all duration-300 ${hasWatchedVideo ? "bg-emerald-600 w-full" : "w-0"}`} />
             </div>
-            <div className={`flex items-center ${currentStep === "form" ? "text-emerald-600" : "text-gray-400"}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "form" ? "border-emerald-600 bg-emerald-50" : "border-gray-300"}`}>
-                <User className="w-5 h-5" />
+            <div className={`flex items-center ${currentStep === "certificate" ? "text-emerald-600" : isCertificateValidated ? "text-emerald-600" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "certificate" ? "border-emerald-600 bg-emerald-50" : isCertificateValidated ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
+                {isCertificateValidated ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <Award className="w-4 h-4 sm:w-5 sm:h-5" />}
               </div>
-              <span className="ml-2 font-medium hidden sm:inline">Details</span>
+              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Certificate</span>
+            </div>
+            <div className="w-8 sm:w-16 h-0.5 bg-gray-300">
+              <div className={`h-full transition-all duration-300 ${isCertificateValidated ? "bg-emerald-600 w-full" : "w-0"}`} />
+            </div>
+            <div className={`flex items-center ${currentStep === "form" ? "text-emerald-600" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "form" ? "border-emerald-600 bg-emerald-50" : currentStep === "terms" ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
+                {currentStep === "terms" ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <User className="w-4 h-4 sm:w-5 sm:h-5" />}
+              </div>
+              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Details</span>
+            </div>
+            <div className="w-8 sm:w-16 h-0.5 bg-gray-300">
+              <div className={`h-full transition-all duration-300 ${currentStep === "terms" ? "bg-emerald-600 w-full" : "w-0"}`} />
+            </div>
+            <div className={`flex items-center ${currentStep === "terms" ? "text-emerald-600" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "terms" ? "border-emerald-600 bg-emerald-50" : "border-gray-300"}`}>
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Terms</span>
             </div>
           </div>
         </div>
 
-        {/* Step 1: Terms and Conditions */}
-        {currentStep === "terms" && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="w-5 h-5 text-emerald-600" />
-                <span>Terms & Conditions</span>
-              </CardTitle>
-              <CardDescription>
-                Please read and accept all terms and conditions to continue with your vendor registration.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Accept All / Reject All Buttons */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-700">
-                    {acceptedCount} of {VENDOR_TERMS.length} terms accepted
-                  </span>
-                  <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-emerald-600 transition-all duration-300" 
-                      style={{ width: `${(acceptedCount / VENDOR_TERMS.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleRejectAll}
-                    disabled={acceptedCount === 0}
-                  >
-                    Clear All
-                  </Button>
-                  <Button 
-                    type="button" 
-                    size="sm"
-                    onClick={handleAcceptAll}
-                    disabled={allTermsAccepted}
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Accept All
-                  </Button>
-                </div>
-              </div>
 
-              {/* Terms List */}
-              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                {VENDOR_TERMS.map((term, index) => (
-                  <div
-                    key={term.id}
-                    className={`p-4 rounded-lg border transition-all duration-200 ${
-                      acceptedTerms[term.id] 
-                        ? "border-emerald-200 bg-emerald-50" 
-                        : "border-gray-200 bg-white hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <Checkbox
-                        id={term.id}
-                        checked={acceptedTerms[term.id] || false}
-                        onCheckedChange={() => handleTermToggle(term.id)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <label 
-                          htmlFor={term.id} 
-                          className="font-medium text-gray-900 cursor-pointer flex items-center"
-                        >
-                          <span className="text-emerald-600 mr-2">{index + 1}.</span>
-                          {term.title}
-                        </label>
-                        <p className="text-sm text-gray-600 mt-1">{term.description}</p>
-                      </div>
-                      {acceptedTerms[term.id] && (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Continue Button */}
-              <div className="flex justify-end pt-4 border-t">
-                <Button
-                  type="button"
-                  onClick={() => setCurrentStep("video")}
-                  disabled={!allTermsAccepted}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  Continue to Video
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 2: Onboarding Video */}
+        {/* Step 1: Onboarding Video */}
         {currentStep === "video" && (
           <Card className="mb-6">
             <CardHeader>
@@ -456,66 +467,245 @@ export default function VendorSignup() {
                 <span>Vendor Onboarding Video</span>
               </CardTitle>
               <CardDescription>
-                Watch this short video to learn how to navigate goGerami's as a vendor.
+                Watch this video completely to learn how to navigate goGerami as a vendor.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Video Player */}
-              <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src={ONBOARDING_VIDEO_URL}
-                  title="Vendor Onboarding Video"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="absolute inset-0"
-                />
+              <div className="relative bg-black rounded-lg overflow-hidden">
+                <video
+                  ref={videoRef}
+                  className="w-full aspect-video"
+                  onEnded={handleVideoEnded}
+                  onTimeUpdate={handleVideoTimeUpdate}
+                  onLoadedMetadata={handleVideoLoadedMetadata}
+                  onPlay={() => setIsVideoPlaying(true)}
+                  onPause={() => setIsVideoPlaying(false)}
+                  controlsList="nodownload noplaybackrate"
+                  disablePictureInPicture
+                  playsInline
+                >
+                  <source src={ONBOARDING_VIDEO_URL} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+                
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handlePlayPause}
+                      className="text-white hover:bg-white/20"
+                    >
+                      {isVideoPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                    </Button>
+                    
+                    <div className="flex-1 h-2 bg-white/30 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-emerald-500 transition-all duration-200"
+                        style={{ width: `${videoDuration > 0 ? (videoProgress / videoDuration) * 100 : 0}%` }}
+                      />
+                    </div>
+                    
+                    <span className="text-white text-sm font-mono min-w-[80px] text-right">
+                      {formatTime(videoProgress)} / {formatTime(videoDuration)}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Video Info */}
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="font-medium text-blue-900 mb-2">What you'll learn:</h4>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• How to set up your vendor profile for success</li>
-                  <li>• Best practices for product listings and photography</li>
-                  <li>• Understanding the payment and commission structure</li>
-                  <li>• Tips for excellent customer service</li>
-                  <li>• How to handle orders and shipping efficiently</li>
-                </ul>
+              <div className={`p-4 rounded-lg border ${hasWatchedVideo ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    {hasWatchedVideo ? (
+                      <>
+                        <CheckCircle2 className="w-5 h-5 text-green-600 mr-2" />
+                        <span className="font-medium text-green-900">Video Completed!</span>
+                      </>
+                    ) : (
+                      <>
+                        <PlayCircle className="w-5 h-5 text-amber-600 mr-2" />
+                        <span className="font-medium text-amber-900">
+                          {videoProgress > 0 ? 'Keep watching...' : 'Please watch the entire video'}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  {!hasWatchedVideo && videoDuration > 0 && (
+                    <span className="text-sm text-amber-700">
+                      {Math.round((videoProgress / videoDuration) * 100)}% complete
+                    </span>
+                  )}
+                </div>
               </div>
 
-              {/* Confirmation Checkbox */}
-              <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border">
-                <Checkbox
-                  id="watchedVideo"
-                  checked={hasWatchedVideo}
-                  onCheckedChange={(checked) => setHasWatchedVideo(checked as boolean)}
-                  className="mt-1"
-                />
-                <label htmlFor="watchedVideo" className="cursor-pointer">
-                  <span className="font-medium text-gray-900">I have watched the onboarding video</span>
-                  <p className="text-sm text-gray-600 mt-1">
-                    By checking this box, I confirm that I have watched and understood the vendor onboarding video.
-                  </p>
-                </label>
-              </div>
 
-              {/* Navigation Buttons */}
-              <div className="flex justify-between pt-4 border-t">
+              {hasWatchedVideo && !generatedCertificate && (
+                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200 space-y-4">
+                  <h4 className="font-medium text-emerald-900 flex items-center">
+                    <Award className="w-5 h-5 mr-2" />
+                    Generate Your Onboarding Certificate
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="certFullName">Full Name *</Label>
+                      <Input
+                        id="certFullName"
+                        placeholder="Enter your full name"
+                        value={certificateFullName}
+                        onChange={(e) => setCertificateFullName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="certEmail">Email *</Label>
+                      <Input
+                        id="certEmail"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={certificateEmail}
+                        onChange={(e) => setCertificateEmail(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => generateCertificateMutation.mutate()}
+                    disabled={!certificateEmail || !certificateFullName || generateCertificateMutation.isPending}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {generateCertificateMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Award className="w-4 h-4 mr-2" />
+                        Generate Certificate
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {generatedCertificate && (
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-green-900 flex items-center">
+                      <CheckCircle2 className="w-5 h-5 mr-2" />
+                      Certificate Generated Successfully!
+                    </h4>
+                  </div>
+                  <div className="bg-white p-4 rounded border">
+                    <p className="text-sm text-gray-600 mb-2">Your Certificate Code:</p>
+                    <p className="text-xl font-mono font-bold text-emerald-600">{generatedCertificate.certificateCode}</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Valid until: {new Date(generatedCertificate.expiresAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedCertificate.certificateCode);
+                      toast({ title: "Copied!", description: "Certificate code copied to clipboard" });
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    Copy Certificate Code
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-4 border-t">
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => setCurrentStep("terms")}
+                  onClick={() => setCurrentStep("certificate")}
+                  disabled={!hasWatchedVideo}
+                  className="bg-emerald-600 hover:bg-emerald-700"
                 >
+                  Continue to Certificate Validation
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+
+        {/* Step 2: Certificate Validation */}
+        {currentStep === "certificate" && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Award className="w-5 h-5 text-emerald-600" />
+                <span>Validate Your Certificate</span>
+              </CardTitle>
+              <CardDescription>
+                Enter your onboarding certificate code to proceed with registration.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="certificateCode">Certificate Code *</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="certificateCode"
+                    placeholder="CERT-XXXXXXXXXXXX"
+                    value={certificateCode}
+                    onChange={(e) => {
+                      setCertificateCode(e.target.value.toUpperCase());
+                      setIsCertificateValidated(false);
+                    }}
+                    className="font-mono"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => validateCertificateMutation.mutate()}
+                    disabled={!certificateCode || validateCertificateMutation.isPending}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {validateCertificateMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Validate"
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {isCertificateValidated && (
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 mr-2" />
+                    <span className="font-medium text-green-900">Certificate Validated Successfully!</span>
+                  </div>
+                </div>
+              )}
+
+              {!isCertificateValidated && (
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <h4 className="font-medium text-amber-900 mb-2">Don't have a certificate?</h4>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCurrentStep("video")}
+                    size="sm"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Go Back to Video
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex justify-between pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setCurrentStep("video")}>
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Terms
+                  Back to Video
                 </Button>
                 <Button
                   type="button"
                   onClick={() => setCurrentStep("form")}
-                  disabled={!hasWatchedVideo}
+                  disabled={!isCertificateValidated}
                   className="bg-emerald-600 hover:bg-emerald-700"
                 >
                   Continue to Registration
@@ -526,18 +716,14 @@ export default function VendorSignup() {
           </Card>
         )}
 
+
         {/* Step 3: Registration Form */}
         {currentStep === "form" && (
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Back to Video Button */}
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
           <div className="flex justify-start mb-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setCurrentStep("video")}
-            >
+            <Button type="button" variant="outline" onClick={() => setCurrentStep("certificate")}>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Video
+              Back to Certificate
             </Button>
           </div>
 
@@ -548,30 +734,19 @@ export default function VendorSignup() {
                 <User className="w-5 h-5" />
                 <span>Personal Information</span>
               </CardTitle>
-              <CardDescription>
-                Create your user account details
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="firstName">First Name *</Label>
-                  <Input
-                    id="firstName"
-                    placeholder=""
-                    {...form.register("firstName")}
-                  />
+                  <Input id="firstName" {...form.register("firstName")} />
                   {form.formState.errors.firstName && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.firstName.message}</p>
                   )}
                 </div>
                 <div>
                   <Label htmlFor="lastName">Last Name *</Label>
-                  <Input
-                    id="lastName"
-                    placeholder=""
-                    {...form.register("lastName")}
-                  />
+                  <Input id="lastName" {...form.register("lastName")} />
                   {form.formState.errors.lastName && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.lastName.message}</p>
                   )}
@@ -583,12 +758,7 @@ export default function VendorSignup() {
                   <Label htmlFor="username">Username *</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="username"
-                      placeholder=""
-                      className="pl-10"
-                      {...form.register("username")}
-                    />
+                    <Input id="username" className="pl-10" {...form.register("username")} />
                   </div>
                   {form.formState.errors.username && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.username.message}</p>
@@ -598,13 +768,7 @@ export default function VendorSignup() {
                   <Label htmlFor="email">Email *</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder=""
-                      className="pl-10"
-                      {...form.register("email")}
-                    />
+                    <Input id="email" type="email" className="pl-10" {...form.register("email")} />
                   </div>
                   {form.formState.errors.email && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>
@@ -617,12 +781,7 @@ export default function VendorSignup() {
                   <Label htmlFor="phoneNumber">Phone Number *</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="phoneNumber"
-                      placeholder="+251911000000"
-                      className="pl-10"
-                      {...form.register("phoneNumber")}
-                    />
+                    <Input id="phoneNumber" placeholder="+251911000000" className="pl-10" {...form.register("phoneNumber")} />
                   </div>
                   {form.formState.errors.phoneNumber && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.phoneNumber.message}</p>
@@ -632,18 +791,14 @@ export default function VendorSignup() {
                   <Label htmlFor="birthDate">Birth Date *</Label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="birthDate"
-                      type="date"
-                      className="pl-10"
-                      {...form.register("birthDate")}
-                    />
+                    <Input id="birthDate" type="date" className="pl-10" {...form.register("birthDate")} />
                   </div>
                   {form.formState.errors.birthDate && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.birthDate.message}</p>
                   )}
                 </div>
               </div>
+
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -653,7 +808,6 @@ export default function VendorSignup() {
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder=""
                       className="pl-10 pr-10"
                       {...form.register("password")}
                     />
@@ -676,7 +830,6 @@ export default function VendorSignup() {
                     <Input
                       id="confirmPassword"
                       type={showConfirm ? "text" : "password"}
-                      placeholder=""
                       className="pl-10 pr-10"
                       {...form.register("confirmPassword")}
                     />
@@ -699,7 +852,6 @@ export default function VendorSignup() {
                   <Label htmlFor="country">Country *</Label>
                   <Select onValueChange={(value) => {
                     form.setValue("country", value);
-                    // Auto-set ETB for Ethiopian vendors
                     if (value === "Ethiopia") {
                       form.setValue("preferredCurrencyCode", "ETB");
                     }
@@ -739,15 +891,11 @@ export default function VendorSignup() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {form.watch("country") === "Ethiopia" && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Ethiopian vendors can only use ETB currency.
-                    </p>
-                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
+
 
           {/* Business Information */}
           <Card>
@@ -756,17 +904,11 @@ export default function VendorSignup() {
                 <Building2 className="w-5 h-5" />
                 <span>Business Information</span>
               </CardTitle>
-              <CardDescription>
-                Tell us about your business
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="businessName">Business Name *</Label>
-                <Input
-                  id="businessName"
-                  {...form.register("businessName")}
-                />
+                <Input id="businessName" {...form.register("businessName")} />
                 {form.formState.errors.businessName && (
                   <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessName.message}</p>
                 )}
@@ -780,9 +922,6 @@ export default function VendorSignup() {
                   className="min-h-[100px]"
                   {...form.register("description")}
                 />
-                {form.formState.errors.description && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.description.message}</p>
-                )}
               </div>
 
               <div>
@@ -813,9 +952,7 @@ export default function VendorSignup() {
                   <SelectContent>
                     {VENDOR_TYPES.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
-                        <div className="flex flex-col">
-                          <span>{type.label}</span>
-                        </div>
+                        {type.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -830,7 +967,6 @@ export default function VendorSignup() {
                 )}
               </div>
 
-              {/* VAT Status - Only shown for Ethiopian vendors */}
               {form.watch("country") === "Ethiopia" && (
                 <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
                   <Label htmlFor="vatStatus" className="text-amber-800">VAT Registration Status *</Label>
@@ -844,42 +980,24 @@ export default function VendorSignup() {
                     <SelectContent>
                       {VAT_STATUS_OPTIONS.map((status) => (
                         <SelectItem key={status.value} value={status.value}>
-                          <div className="flex flex-col">
-                            <span>{status.label}</span>
-                          </div>
+                          {status.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {form.watch("vatStatus") && (
-                    <p className="text-xs text-amber-700 mt-1">
-                      {VAT_STATUS_OPTIONS.find(s => s.value === form.watch("vatStatus"))?.description}
-                    </p>
-                  )}
-                  {form.watch("vatStatus") === "VAT_REGISTERED" && (
-                    <p className="text-xs text-amber-800 mt-2 font-medium">
-                      Note: As a VAT-registered vendor, your product prices should be VAT-inclusive (15% VAT). 
-                      The platform will automatically calculate and track VAT for tax reporting.
-                    </p>
-                  )}
                   {form.formState.errors.vatStatus && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.vatStatus.message}</p>
                   )}
                 </div>
               )}
 
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="businessEmail">Business Email *</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="businessEmail"
-                      type="email"
-                      placeholder=""
-                      className="pl-10"
-                      {...form.register("businessEmail")}
-                    />
+                    <Input id="businessEmail" type="email" className="pl-10" {...form.register("businessEmail")} />
                   </div>
                   {form.formState.errors.businessEmail && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessEmail.message}</p>
@@ -889,12 +1007,7 @@ export default function VendorSignup() {
                   <Label htmlFor="businessPhone">Business Phone *</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="businessPhone"
-                      placeholder="+251911111111"
-                      className="pl-10"
-                      {...form.register("businessPhone")}
-                    />
+                    <Input id="businessPhone" placeholder="+251911111111" className="pl-10" {...form.register("businessPhone")} />
                   </div>
                   {form.formState.errors.businessPhone && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessPhone.message}</p>
@@ -904,14 +1017,7 @@ export default function VendorSignup() {
 
               <div>
                 <Label htmlFor="contactName">Contact Person Name</Label>
-                <Input
-                  id="contactName"
-                  placeholder="Primary contact person"
-                  {...form.register("contactName")}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  You can add your business logo later from your vendor dashboard after approval.
-                </p>
+                <Input id="contactName" placeholder="Primary contact person" {...form.register("contactName")} />
               </div>
             </CardContent>
           </Card>
@@ -923,18 +1029,11 @@ export default function VendorSignup() {
                 <Globe className="w-5 h-5" />
                 <span>Business Location</span>
               </CardTitle>
-              <CardDescription>
-                Where is your business based?
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="city">City *</Label>
-                <Input
-                  id="city"
-                  placeholder="Enter City"
-                  {...form.register("city")}
-                />
+                <Input id="city" placeholder="Enter City" {...form.register("city")} />
                 {form.formState.errors.city && (
                   <p className="text-sm text-red-600 mt-1">{form.formState.errors.city.message}</p>
                 )}
@@ -942,18 +1041,148 @@ export default function VendorSignup() {
             </CardContent>
           </Card>
 
-          {/* Submit Button */}
-          <div className="flex flex-col items-center gap-4 pt-6">
+          {/* Continue to Terms Button */}
+          <div className="flex justify-end pt-6">
             <Button
-              type="submit"
-              size="lg"
-              disabled={signupMutation.isPending}
-              className="w-full md:w-auto text-white px-12 py-6 text-md bg-emerald-600 hover:bg-emerald-700"
+              type="button"
+              onClick={handleProceedToTerms}
+              className="bg-emerald-600 hover:bg-emerald-700 px-8"
             >
-              {signupMutation.isPending ? "Creating Account..." : "Create Vendor Account"}
+              Continue to Terms & Conditions
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
         </form>
+        )}
+
+
+        {/* Step 4: Terms and Conditions */}
+        {currentStep === "terms" && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="w-5 h-5 text-emerald-600" />
+                <span>Terms & Conditions</span>
+              </CardTitle>
+              <CardDescription>
+                Please read and accept all terms and conditions for {form.watch("vendorType")} vendors to complete your registration.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoadingTerms ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                  <span className="ml-2">Loading terms...</span>
+                </div>
+              ) : termsData ? (
+                <>
+                  {/* Accept All / Reject All Buttons */}
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        {acceptedCount} of {termsData.terms.length} terms accepted
+                      </span>
+                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-emerald-600 transition-all duration-300" 
+                          style={{ width: `${(acceptedCount / termsData.terms.length) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleRejectAll}
+                        disabled={acceptedCount === 0}
+                      >
+                        Clear All
+                      </Button>
+                      <Button 
+                        type="button" 
+                        size="sm"
+                        onClick={handleAcceptAll}
+                        disabled={allTermsAccepted}
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                        Accept All
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Terms List */}
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                    {termsData.terms.map((term, index) => (
+                      <div
+                        key={term.id}
+                        className={`p-4 rounded-lg border transition-all duration-200 ${
+                          acceptedTerms[term.id] 
+                            ? "border-emerald-200 bg-emerald-50" 
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <Checkbox
+                            id={`term-${term.id}`}
+                            checked={acceptedTerms[term.id] || false}
+                            onCheckedChange={() => handleTermToggle(term.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <label 
+                              htmlFor={`term-${term.id}`} 
+                              className="font-medium text-gray-900 cursor-pointer flex items-center"
+                            >
+                              <span className="text-emerald-600 mr-2">{index + 1}.</span>
+                              {term.title}
+                            </label>
+                            <p className="text-sm text-gray-600 mt-1">{term.description}</p>
+                          </div>
+                          {acceptedTerms[term.id] && (
+                            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No terms found for this vendor type.
+                </div>
+              )}
+
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentStep("form")}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Details
+                </Button>
+                <Button
+                  type="button"
+                  onClick={form.handleSubmit(onSubmit)}
+                  disabled={!allTermsAccepted || signupMutation.isPending}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {signupMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating Account...
+                    </>
+                  ) : (
+                    "Create Vendor Account"
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

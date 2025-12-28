@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { vendorService, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse, VendorProfile } from "@/services/vendorService";
+import { vendorService, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse, VendorProfile, CategoryChangeRequest } from "@/services/vendorService";
 
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
   if (!vendorProfile) return false;
@@ -43,6 +43,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Ticket,
+  FolderTree,
+  Trash2,
 } from "lucide-react";
 
 interface Category {
@@ -98,10 +100,16 @@ const eventPriceUpdateEditSchema = z.object({
   reason: z.string().optional(),
 });
 
+const categoryChangeEditSchema = z.object({
+  newSubCategoryId: z.string().min(1, "New category is required"),
+  reason: z.string().min(1, "Reason is required"),
+});
+
 type ProductEditForm = z.infer<typeof productEditSchema>;
 type PriceUpdateEditForm = z.infer<typeof priceUpdateEditSchema>;
 type EventEditForm = z.infer<typeof eventEditSchema>;
 type EventPriceUpdateEditForm = z.infer<typeof eventPriceUpdateEditSchema>;
+type CategoryChangeEditForm = z.infer<typeof categoryChangeEditSchema>;
 
 export default function VendorRequests() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -113,11 +121,13 @@ export default function VendorRequests() {
   const [editPriceUpdateOpen, setEditPriceUpdateOpen] = useState(false);
   const [editEventOpen, setEditEventOpen] = useState(false);
   const [editEventPriceOpen, setEditEventPriceOpen] = useState(false);
+  const [editCategoryChangeOpen, setEditCategoryChangeOpen] = useState(false);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedPriceUpdate, setSelectedPriceUpdate] = useState<PriceUpdateRequest | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventResponse | null>(null);
   const [selectedEventPriceUpdate, setSelectedEventPriceUpdate] = useState<EventPriceUpdateResponse | null>(null);
+  const [selectedCategoryChange, setSelectedCategoryChange] = useState<CategoryChangeRequest | null>(null);
 
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
 
@@ -177,6 +187,12 @@ export default function VendorRequests() {
     enabled: isAuthenticated && isVendor,
   });
 
+  const { data: categoryChangeRequestsData, isLoading: categoryChangeLoading } = useQuery({
+    queryKey: ['vendor', 'category-change-requests'],
+    queryFn: () => vendorService.getMyPendingRejectedCategoryChangeRequests(),
+    enabled: isAuthenticated && isVendor,
+  });
+
   const pendingProducts = (productsData?.content || []).filter(
     (p) => p.status === 'PENDING' || p.status === 'REJECTED'
   );
@@ -187,6 +203,9 @@ export default function VendorRequests() {
     (e) => e.status === 'PENDING_APPROVAL' || e.status === 'REJECTED'
   );
   const pendingEventPriceRequests = (eventPriceRequestsData?.content || []).filter(
+    (r) => r.status === 'PENDING' || r.status === 'REJECTED'
+  );
+  const pendingCategoryChangeRequests = (categoryChangeRequestsData || []).filter(
     (r) => r.status === 'PENDING' || r.status === 'REJECTED'
   );
 
@@ -246,6 +265,31 @@ export default function VendorRequests() {
     },
   });
 
+  const editCategoryChangeMutation = useMutation({
+    mutationFn: (data: { requestId: number; newSubCategoryId: number; reason: string }) =>
+      vendorService.editCategoryChangeRequest(data.requestId, { newSubCategoryId: data.newSubCategoryId, reason: data.reason }),
+    onSuccess: () => {
+      toast({ title: "Success", description: "Category change request updated and resubmitted for review." });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'category-change-requests'] });
+      setEditCategoryChangeOpen(false);
+      setSelectedCategoryChange(null);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update request", variant: "destructive" });
+    },
+  });
+
+  const deleteCategoryChangeMutation = useMutation({
+    mutationFn: (requestId: number) => vendorService.deleteCategoryChangeRequest(requestId),
+    onSuccess: () => {
+      toast({ title: "Success", description: "Category change request cancelled." });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'category-change-requests'] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to cancel request", variant: "destructive" });
+    },
+  });
+
   const productForm = useForm<ProductEditForm>({
     resolver: zodResolver(productEditSchema),
     defaultValues: {
@@ -287,6 +331,14 @@ export default function VendorRequests() {
     defaultValues: {
       currencyCode: "",
       amount: 0,
+      reason: "",
+    },
+  });
+
+  const categoryChangeForm = useForm<CategoryChangeEditForm>({
+    resolver: zodResolver(categoryChangeEditSchema),
+    defaultValues: {
+      newSubCategoryId: "",
       reason: "",
     },
   });
@@ -342,6 +394,15 @@ export default function VendorRequests() {
       reason: request.reason || "",
     });
     setEditEventPriceOpen(true);
+  };
+
+  const openCategoryChangeEdit = (request: CategoryChangeRequest) => {
+    setSelectedCategoryChange(request);
+    categoryChangeForm.reset({
+      newSubCategoryId: request.newSubCategoryId?.toString() || "",
+      reason: request.reason || "",
+    });
+    setEditCategoryChangeOpen(true);
   };
 
   const onProductSubmit = (data: ProductEditForm) => {
@@ -404,6 +465,15 @@ export default function VendorRequests() {
     });
   };
 
+  const onCategoryChangeSubmit = (data: CategoryChangeEditForm) => {
+    if (!selectedCategoryChange?.id) return;
+    editCategoryChangeMutation.mutate({
+      requestId: selectedCategoryChange.id,
+      newSubCategoryId: parseInt(data.newSubCategoryId),
+      reason: data.reason,
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     const upperStatus = status?.toUpperCase();
     switch (upperStatus) {
@@ -421,7 +491,7 @@ export default function VendorRequests() {
   };
 
   const getRequestCount = () => {
-    return pendingProducts.length + pendingPriceRequests.length + pendingEvents.length + pendingEventPriceRequests.length;
+    return pendingProducts.length + pendingPriceRequests.length + pendingEvents.length + pendingEventPriceRequests.length + pendingCategoryChangeRequests.length;
   };
 
   if (authLoading) {
@@ -464,7 +534,7 @@ export default function VendorRequests() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Products</span>
@@ -477,6 +547,13 @@ export default function VendorRequests() {
               <span className="hidden sm:inline">Product Prices</span>
               {pendingPriceRequests.length > 0 && (
                 <Badge variant="secondary" className="ml-1">{pendingPriceRequests.length}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="category-changes" className="flex items-center gap-2">
+              <FolderTree className="h-4 w-4" />
+              <span className="hidden sm:inline">Categories</span>
+              {pendingCategoryChangeRequests.length > 0 && (
+                <Badge variant="secondary" className="ml-1">{pendingCategoryChangeRequests.length}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="events" className="flex items-center gap-2">
@@ -646,6 +723,101 @@ export default function VendorRequests() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Category Change Requests Tab */}
+          <TabsContent value="category-changes" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FolderTree className="h-5 w-5" />
+                  Category Change Requests
+                </CardTitle>
+                <CardDescription>
+                  Requests to change product categories pending approval or rejected by admin.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {categoryChangeLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : pendingCategoryChangeRequests.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                    <p className="text-muted-foreground">No pending or rejected category change requests</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingCategoryChangeRequests.map((request) => (
+                      <div key={request.id} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-4">
+                            {request.productCover && (
+                              <img 
+                                src={request.productCover} 
+                                alt={request.productName} 
+                                className="h-16 w-16 rounded object-cover"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                              />
+                            )}
+                            <div>
+                              <h3 className="font-semibold">{request.productName}</h3>
+                              <div className="flex items-center gap-4 mt-2">
+                                <div>
+                                  <span className="text-sm text-muted-foreground">Current: </span>
+                                  <span className="font-medium">{request.currentSubCategoryName}</span>
+                                </div>
+                                <span className="text-muted-foreground">→</span>
+                                <div>
+                                  <span className="text-sm text-muted-foreground">New: </span>
+                                  <span className="font-medium text-blue-600">{request.newSubCategoryName}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 mt-2">
+                                {getStatusBadge(request.status)}
+                                <span className="text-sm text-muted-foreground">
+                                  Submitted: {new Date(request.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                              {request.reason && (
+                                <p className="text-sm text-muted-foreground mt-1">Reason: {request.reason}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => openCategoryChangeEdit(request)}>
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => deleteCategoryChangeMutation.mutate(request.id)}
+                              disabled={deleteCategoryChangeMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                        {request.rejectionReason && (
+                          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                                <p className="text-sm text-red-700">{request.rejectionReason}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -1195,6 +1367,89 @@ export default function VendorRequests() {
               </Button>
               <Button type="submit" disabled={editEventPriceMutation.isPending}>
                 {editEventPriceMutation.isPending ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Save & Resubmit'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Category Change Dialog */}
+      <Dialog open={editCategoryChangeOpen} onOpenChange={setEditCategoryChangeOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Category Change Request</DialogTitle>
+            <DialogDescription>
+              Update your category change request and resubmit for review.
+              {selectedCategoryChange?.status === 'REJECTED' && (
+                <span className="block mt-2 text-amber-600">
+                  This request was rejected. Editing will resubmit it for approval.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={categoryChangeForm.handleSubmit(onCategoryChangeSubmit)} className="space-y-4">
+            {selectedCategoryChange && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">
+                  <span className="font-medium">Product:</span> {selectedCategoryChange.productName}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Current Category:</span> {selectedCategoryChange.currentSubCategoryName}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <Label>New Category *</Label>
+              <Controller
+                name="newSubCategoryId"
+                control={categoryChangeForm.control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allSubCategories.map((subCategory) => (
+                        <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
+                          {subCategory.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {categoryChangeForm.formState.errors.newSubCategoryId && (
+                <p className="text-sm text-red-600 mt-1">{categoryChangeForm.formState.errors.newSubCategoryId.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="categoryChangeReason">Reason for Category Change *</Label>
+              <Textarea 
+                id="categoryChangeReason" 
+                {...categoryChangeForm.register("reason")} 
+                placeholder="Explain why this product should be in the new category..." 
+                rows={4}
+              />
+              {categoryChangeForm.formState.errors.reason && (
+                <p className="text-sm text-red-600 mt-1">{categoryChangeForm.formState.errors.reason.message}</p>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditCategoryChangeOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editCategoryChangeMutation.isPending}>
+                {editCategoryChangeMutation.isPending ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                     Submitting...

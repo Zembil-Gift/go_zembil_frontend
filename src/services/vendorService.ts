@@ -166,6 +166,70 @@ export interface PriceUpdateRequest {
   updatedAt?: string;
 }
 
+export interface CategoryChangeRequest {
+  id?: number;
+  productId: number;
+  productName?: string;
+  productCover?: string;
+  vendorId?: number;
+  vendorName?: string;
+  currentSubCategoryId?: number;
+  currentSubCategoryName?: string;
+  currentCategoryName?: string;
+  newSubCategoryId: number;
+  newSubCategoryName?: string;
+  newCategoryName?: string;
+  reason?: string;
+  status?: string;
+  reviewedBy?: number;
+  reviewedByName?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ServicePriceUpdateRequest {
+  id?: number;
+  serviceId?: number;
+  serviceName?: string;
+  vendorId?: number;
+  vendorName?: string;
+  currentPrice?: PriceDto;
+  newPrice: PriceDto;
+  reason?: string;
+  status?: string;
+  reviewedBy?: number;
+  reviewedByName?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ServiceCategoryChangeRequest {
+  id?: number;
+  serviceId: number;
+  serviceName?: string;
+  serviceCover?: string;
+  vendorId?: number;
+  vendorName?: string;
+  currentSubCategoryId?: number;
+  currentSubCategoryName?: string;
+  currentCategoryName?: string;
+  newSubCategoryId: number;
+  newSubCategoryName?: string;
+  newCategoryName?: string;
+  reason?: string;
+  status?: string;
+  reviewedBy?: number;
+  reviewedByName?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface TicketTypePrice {
   currencyCode: string;
   amount?: number;
@@ -433,22 +497,31 @@ export const vendorService = {
     apiService.getRequest<PageResponse<Product>>(`/api/v1/products/vendor/me/pending-rejected?page=${page}&size=${size}`),
 
   createProductPriceUpdateRequest: (productId: number, request: PriceUpdateRequest) =>
-    apiService.postRequest<PriceUpdateRequest>(`/api/v1/price-update-requests/products/${productId}`, request),
+    apiService.postRequest<PriceUpdateRequest>(`/api/vendor/change-requests/products/${productId}/price`, {
+      newPrice: request.newPrice,
+      reason: request.reason,
+    }),
 
   createSkuPriceUpdateRequest: (productId: number, skuId: number, request: PriceUpdateRequest) =>
-    apiService.postRequest<PriceUpdateRequest>(`/api/v1/price-update-requests/products/${productId}/skus/${skuId}`, request),
+    apiService.postRequest<PriceUpdateRequest>(`/api/vendor/change-requests/products/${productId}/skus/${skuId}/price`, {
+      newPrice: request.newPrice,
+      reason: request.reason,
+    }),
 
   getVendorPriceUpdateRequests: (vendorId: number, page = 0, size = 20) =>
-    apiService.getRequest<PageResponse<PriceUpdateRequest>>(`/api/v1/price-update-requests/vendor/${vendorId}?page=${page}&size=${size}`),
+    apiService.getRequest<PageResponse<PriceUpdateRequest>>(`/api/vendor/change-requests/entity-type/PRODUCT?page=${page}&size=${size}`),
 
   getMyPendingRejectedPriceRequests: (page = 0, size = 20) =>
-    apiService.getRequest<PageResponse<PriceUpdateRequest>>(`/api/v1/price-update-requests/vendor/me/pending-rejected?page=${page}&size=${size}`),
+    apiService.getRequest<PageResponse<PriceUpdateRequest>>(`/api/vendor/change-requests/entity-type/PRODUCT?page=${page}&size=${size}`),
 
   deletePriceUpdateRequest: (requestId: number) =>
-    apiService.deleteRequest<void>(`/api/v1/price-update-requests/${requestId}`),
+    apiService.deleteRequest<void>(`/api/vendor/change-requests/${requestId}`),
 
   editPriceUpdateRequest: (requestId: number, request: PriceUpdateRequest) =>
-    apiService.putRequest<PriceUpdateRequest>(`/api/v1/price-update-requests/${requestId}/edit`, request),
+    apiService.putRequest<PriceUpdateRequest>(`/api/vendor/change-requests/${requestId}`, {
+      newPrice: request.newPrice,
+      reason: request.reason,
+    }),
 
   updateProductForVendor: (productId: number, product: Product) =>
     apiService.putRequest<Product>(`/api/v1/products/vendor/${productId}`, product),
@@ -510,19 +583,32 @@ export const vendorService = {
   },
 
   requestEventPriceUpdate: (request: EventPriceUpdateRequest) =>
-    apiService.postRequest<EventPriceUpdateResponse>('/api/vendor/events/price-update-requests', request),
+    apiService.postRequest<EventPriceUpdateResponse>(`/api/vendor/change-requests/events/${request.ticketTypeId}/ticket-types/${request.ticketTypeId}/price`, {
+      newPrice: {
+        amount: request.newPrice,
+        currencyCode: request.newCurrency,
+      },
+      reason: request.reason,
+    }),
 
+  // Legacy endpoints - these now redirect to the unified change request system
   getMyEventPriceUpdateRequests: (page = 0, size = 20) =>
-    apiService.getRequest<PageResponse<EventPriceUpdateResponse>>(`/api/vendor/events/price-update-requests?page=${page}&size=${size}`),
+    apiService.getRequest<PageResponse<EventPriceUpdateResponse>>(`/api/vendor/change-requests/entity-type/EVENT?page=${page}&size=${size}`),
 
   getMyPendingRejectedEventPriceRequests: (page = 0, size = 20) =>
-    apiService.getRequest<PageResponse<EventPriceUpdateResponse>>(`/api/vendor/events/price-update-requests/pending-rejected?page=${page}&size=${size}`),
+    apiService.getRequest<PageResponse<EventPriceUpdateResponse>>(`/api/vendor/change-requests/entity-type/EVENT?page=${page}&size=${size}`),
 
   editPendingOrRejectedEvent: (eventId: number, event: UpdateEventRequest) =>
     apiService.putRequest<EventResponse>(`/api/vendor/events/${eventId}/edit`, event),
 
   editEventPriceUpdateRequest: (requestId: number, request: EventPriceUpdateRequest) =>
-    apiService.putRequest<EventPriceUpdateResponse>(`/api/vendor/events/price-update-requests/${requestId}/edit`, request),
+    apiService.putRequest<EventPriceUpdateResponse>(`/api/vendor/change-requests/${requestId}`, {
+      newPrice: {
+        amount: request.newPrice,
+        currencyCode: request.newCurrency,
+      },
+      reason: request.reason,
+    }),
 
   getEventOrders: (eventId: number, page = 0, size = 20) =>
     apiService.getRequest<PageResponse<EventOrder>>(`/api/vendor/events/${eventId}/orders?page=${page}&size=${size}`),
@@ -544,6 +630,66 @@ export const vendorService = {
 
   checkInTicket: (ticketCode: string) =>
     apiService.postRequest<TicketValidationResponse>(`/api/vendor/events/check-in/${ticketCode}`, {}),
+
+  // Category Change Requests (using unified VendorChangeRequest system)
+  createCategoryChangeRequest: (productId: number, request: { newSubCategoryId: number; reason?: string }) =>
+    apiService.postRequest<CategoryChangeRequest>(`/api/vendor/change-requests/products/${productId}/category`, request),
+
+  getVendorCategoryChangeRequests: (vendorId: number, page = 0, size = 20) =>
+    apiService.getRequest<PageResponse<CategoryChangeRequest>>(`/api/vendor/change-requests/entity-type/PRODUCT?page=${page}&size=${size}`),
+
+  getMyPendingRejectedCategoryChangeRequests: (page = 0, size = 20) =>
+    apiService.getRequest<PageResponse<CategoryChangeRequest>>(`/api/vendor/change-requests/entity-type/PRODUCT?page=${page}&size=${size}`),
+
+  editCategoryChangeRequest: (requestId: number, request: { newSubCategoryId?: number; reason?: string }) =>
+    apiService.putRequest<CategoryChangeRequest>(`/api/vendor/change-requests/${requestId}`, request),
+
+  deleteCategoryChangeRequest: (requestId: number) =>
+    apiService.deleteRequest<void>(`/api/vendor/change-requests/${requestId}`),
+
+  getPendingCategoryChangeRequestForProduct: (productId: number) =>
+    apiService.getRequest<CategoryChangeRequest | null>(`/api/vendor/change-requests/check/PRODUCT/${productId}/CATEGORY_CHANGE`),
+
+  // ==================== Service Price Update Requests ====================
+  createServicePriceUpdateRequest: (serviceId: number, request: { newPrice: PriceDto; reason?: string }) =>
+    apiService.postRequest<ServicePriceUpdateRequest>(`/api/vendor/change-requests/services/${serviceId}/price`, {
+      newPrice: request.newPrice,
+      reason: request.reason,
+    }),
+
+  getMyServicePriceUpdateRequests: (page = 0, size = 20) =>
+    apiService.getRequest<PageResponse<ServicePriceUpdateRequest>>(`/api/vendor/change-requests/entity-type/SERVICE?page=${page}&size=${size}`),
+
+  getMyPendingRejectedServicePriceRequests: (page = 0, size = 20) =>
+    apiService.getRequest<PageResponse<ServicePriceUpdateRequest>>(`/api/vendor/change-requests/entity-type/SERVICE?page=${page}&size=${size}`),
+
+  editServicePriceUpdateRequest: (requestId: number, request: { newPrice: PriceDto; reason?: string }) =>
+    apiService.putRequest<ServicePriceUpdateRequest>(`/api/vendor/change-requests/${requestId}`, {
+      newPrice: request.newPrice,
+      reason: request.reason,
+    }),
+
+  deleteServicePriceUpdateRequest: (requestId: number) =>
+    apiService.deleteRequest<void>(`/api/vendor/change-requests/${requestId}`),
+
+  // ==================== Service Category Change Requests ====================
+  createServiceCategoryChangeRequest: (serviceId: number, request: { newSubCategoryId: number; reason?: string }) =>
+    apiService.postRequest<ServiceCategoryChangeRequest>(`/api/vendor/change-requests/services/${serviceId}/category`, request),
+
+  getMyServiceCategoryChangeRequests: (page = 0, size = 20) =>
+    apiService.getRequest<PageResponse<ServiceCategoryChangeRequest>>(`/api/vendor/change-requests/entity-type/SERVICE?changeType=CATEGORY_CHANGE&page=${page}&size=${size}`),
+
+  getMyPendingRejectedServiceCategoryRequests: (page = 0, size = 20) =>
+    apiService.getRequest<PageResponse<ServiceCategoryChangeRequest>>(`/api/vendor/change-requests/entity-type/SERVICE?changeType=CATEGORY_CHANGE&page=${page}&size=${size}`),
+
+  editServiceCategoryChangeRequest: (requestId: number, request: { newSubCategoryId?: number; reason?: string }) =>
+    apiService.putRequest<ServiceCategoryChangeRequest>(`/api/vendor/change-requests/${requestId}`, request),
+
+  deleteServiceCategoryChangeRequest: (requestId: number) =>
+    apiService.deleteRequest<void>(`/api/vendor/change-requests/${requestId}`),
+
+  getPendingCategoryChangeRequestForService: (serviceId: number) =>
+    apiService.getRequest<ServiceCategoryChangeRequest | null>(`/api/vendor/change-requests/check/SERVICE/${serviceId}/CATEGORY_CHANGE`),
 };
 
 export default vendorService;
