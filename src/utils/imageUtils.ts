@@ -10,7 +10,8 @@ export interface BaseImage {
 }
 
 // Type that accepts any object with the required image fields
-type ImageLike = BaseImage | ImageDto | (BaseImage & Record<string, unknown>);
+// ImageDto already has all required fields, so we can use it directly
+type ImageLike = BaseImage | ImageDto;
 
 export function getProductImageUrl(
   images?: ImageLike[] | null,

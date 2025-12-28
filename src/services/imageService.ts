@@ -130,6 +130,44 @@ export const imageService = {
     return response.data;
   },
 
+  // Service Images
+  async uploadServiceImages(serviceId: number, files: File[]): Promise<ImageUploadResponse> {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+
+    const response = await api.post<ImageUploadResponse>(
+      `/api/images/services/${serviceId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
+
+  async getServiceImages(serviceId: number): Promise<ImageDto[]> {
+    const response = await api.get<ImageDto[]>(`/api/images/services/${serviceId}`);
+    return response.data;
+  },
+
+  async deleteServiceImage(serviceId: number, imageId: number): Promise<void> {
+    await api.delete(`/api/images/services/images/${imageId}`);
+  },
+
+  async setServicePrimaryImage(serviceId: number, imageId: number): Promise<ImageDto> {
+    const response = await api.put<ImageDto>(`/api/images/services/${serviceId}/images/${imageId}/primary`);
+    return response.data;
+  },
+
+  async reorderServiceImages(serviceId: number, imageIds: number[]): Promise<ImageDto[]> {
+    const response = await api.put<ImageDto[]>(`/api/images/services/${serviceId}/reorder`, imageIds);
+    return response.data;
+  },
+
   // Vendor Logo
   async uploadVendorLogo(vendorId: number, file: File): Promise<ImageDto> {
     const formData = new FormData();
@@ -161,6 +199,23 @@ export const imageService = {
 
   async deleteVendorLogo(vendorId: number): Promise<void> {
     await api.delete(`/api/images/vendors/${vendorId}/logo`);
+  },
+
+  // Delivery Pickup Proof Images
+  async uploadDeliveryPickupImage(assignmentId: number, file: File): Promise<ImageDto> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post<ImageDto>(
+      `/api/images/deliveries/${assignmentId}/pickup`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
   },
 
   // Delivery Proof Images
