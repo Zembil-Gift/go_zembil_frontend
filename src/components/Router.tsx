@@ -15,6 +15,7 @@ import Shop from "@/pages/shop";
 import Cart from "@/pages/cart";
 import Wishlist from "@/pages/Wishlist";
 import ProductDetail from "@/pages/product-detail";
+import VendorDetail from "@/pages/vendor-detail";
 import CustomOrders from "@/pages/custom-orders";
 import Search from "@/pages/Search";
 import Occasions from "@/pages/occasions";
@@ -23,7 +24,11 @@ import Collections from "@/pages/collections";
 import Events from "@/pages/events";
 import EventDetail from "@/pages/event-detail";
 import EventCheckout from "@/pages/event-checkout";
+import Services from "@/pages/services";
 import ServiceDetail from "@/pages/service-detail";
+import ServiceCheckout from "@/pages/service-checkout";
+import ServiceConfirmation from "@/pages/service-confirmation";
+import MyServiceOrders from "@/pages/my-service-orders";
 import MyEventTickets from "@/pages/my-event-tickets";
 import StripePayment from "@/pages/stripe-payment";
 import ChapaPayment from "@/pages/chapa-payment";
@@ -39,16 +44,22 @@ import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminVendors from "@/pages/admin/AdminVendors";
 import AdminEvents from "@/pages/admin/AdminEvents";
 import AdminCategories from "@/pages/admin/AdminCategories";
+import AdminSubcategories from "@/pages/admin/AdminSubcategories";
 import AdminProducts from "@/pages/admin/AdminProducts";
+import AdminServices from "@/pages/admin/AdminServices";
 import AdminTax from "@/pages/admin/AdminTax";
 import AdminCurrency from "@/pages/admin/AdminCurrency";
 import AdminDelivery from "@/pages/admin/AdminDelivery";
 
 import VendorDashboard from "@/pages/vendor/VendorDashboard";
+import VendorServiceOrders from "@/pages/vendor/VendorServiceOrders";
+import VendorServiceCalendar from "@/pages/vendor/VendorServiceCalendar";
 import CreateProduct from "@/pages/vendor/CreateProduct";
 import CreateEvent from "@/pages/vendor/CreateEvent";
+import CreateService from "@/pages/vendor/CreateService";
 import EditProduct from "@/pages/vendor/EditProduct";
 import EditEvent from "@/pages/vendor/EditEvent";
+import EditService from "@/pages/vendor/EditService";
 import ProductPriceUpdate from "@/pages/vendor/ProductPriceUpdate";
 import EventPriceUpdate from "@/pages/vendor/EventPriceUpdate";
 import ChapaOnboarding from "@/pages/vendor/ChapaOnboarding";
@@ -274,10 +285,17 @@ export default function Router() {
           <Route path="events" element={<Events />} />
           <Route path="events/:slug" element={<EventDetail />} />
           <Route path="events/:eventId/checkout" element={<ProtectedRoute><EventCheckout /></ProtectedRoute>} />
+          <Route path="services" element={<Services />} />
           <Route path="services/:id" element={<ServiceDetail />} />
+          <Route path="service-checkout/:serviceId" element={<ProtectedRoute><ServiceCheckout /></ProtectedRoute>} />
+          <Route path="service-confirmation/:orderId" element={<ProtectedRoute><ServiceConfirmation /></ProtectedRoute>} />
+          <Route path="service-confirmation" element={<ProtectedRoute><ServiceConfirmation /></ProtectedRoute>} />
           
           {/* Product Detail */}
           <Route path="product/:id" element={<ProductDetail />} />
+          
+          {/* Vendor Detail */}
+          <Route path="vendor/:id" element={<VendorDetail />} />
           
           <Route path="cart" element={<Cart />} />
           
@@ -336,6 +354,12 @@ export default function Router() {
             </ProtectedRoute>
           } />
           
+          <Route path="my-service-orders" element={
+            <ProtectedRoute>
+              <MyServiceOrders />
+            </ProtectedRoute>
+          } />
+          
           <Route path="profile" element={
             <ProtectedRoute>
               <Profile />
@@ -344,12 +368,16 @@ export default function Router() {
           
           {/* Vendor Routes */}
           <Route path="vendor" element={<VendorRoute><VendorDashboard /></VendorRoute>} />
+          <Route path="vendor/service-orders" element={<VendorRoute><VendorServiceOrders /></VendorRoute>} />
+          <Route path="vendor/service-calendar" element={<VendorRoute><VendorServiceCalendar /></VendorRoute>} />
           <Route path="vendor/products/new" element={<VendorRoute><CreateProduct /></VendorRoute>} />
           <Route path="vendor/products/:id/edit" element={<VendorRoute><EditProduct /></VendorRoute>} />
           <Route path="vendor/products/:id/price" element={<VendorRoute><ProductPriceUpdate /></VendorRoute>} />
           <Route path="vendor/events/new" element={<VendorRoute><CreateEvent /></VendorRoute>} />
           <Route path="vendor/events/:id/edit" element={<VendorRoute><EditEvent /></VendorRoute>} />
           <Route path="vendor/events/:id/price" element={<VendorRoute><EventPriceUpdate /></VendorRoute>} />
+          <Route path="vendor/services/new" element={<VendorRoute><CreateService /></VendorRoute>} />
+          <Route path="vendor/services/:id/edit" element={<VendorRoute><EditService /></VendorRoute>} />
 
           <Route path="vendor/payments/chapa" element={<VendorRoute><ChapaOnboarding /></VendorRoute>} />
           <Route path="vendor/onboarding/return" element={<VendorRoute><StripeOnboardingReturn /></VendorRoute>} />
@@ -360,8 +388,10 @@ export default function Router() {
           <Route path="admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
           <Route path="admin/vendors" element={<AdminRoute><AdminVendors /></AdminRoute>} />
           <Route path="admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
+          <Route path="admin/services" element={<AdminRoute><AdminServices /></AdminRoute>} />
           <Route path="admin/events" element={<AdminRoute><AdminEvents /></AdminRoute>} />
           <Route path="admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
+          <Route path="admin/subcategories" element={<AdminRoute><AdminSubcategories /></AdminRoute>} />
           <Route path="admin/tax" element={<AdminRoute><AdminTax /></AdminRoute>} />
           <Route path="admin/currency" element={<AdminRoute><AdminCurrency /></AdminRoute>} />
           <Route path="admin/delivery" element={<AdminRoute><AdminDelivery /></AdminRoute>} />
