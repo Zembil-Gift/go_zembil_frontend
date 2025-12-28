@@ -70,7 +70,7 @@ import {
 import {
   adminDeliveryService,
   DeliveryPersonDto,
-  DeliveryAssignmentDto,
+  AdminDeliveryAssignmentDto,
   CreateDeliveryPersonRequest,
   OrderReadyForDeliveryDto,
 } from '@/services/deliveryService';
@@ -84,7 +84,7 @@ export default function AdminDelivery() {
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<DeliveryPersonDto | null>(null);
-  const [selectedAssignment, setSelectedAssignment] = useState<DeliveryAssignmentDto | null>(null);
+  const [selectedAssignment, setSelectedAssignment] = useState<AdminDeliveryAssignmentDto | null>(null);
   const [showAssignmentDetailDialog, setShowAssignmentDetailDialog] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedDeliveryPersonId, setSelectedDeliveryPersonId] = useState<number | null>(null);
@@ -253,7 +253,7 @@ export default function AdminDelivery() {
   const unassignedOrders: OrderReadyForDeliveryDto[] = ordersData?.content || [];
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Delivery Management" description="Manage delivery personnel and order assignments">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -974,6 +974,29 @@ export default function AdminDelivery() {
                 </div>
               )}
 
+              {/* Pickup Proof Image */}
+              {selectedAssignment.pickupImageUrl && (
+                <div className="space-y-2">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    Pickup Proof Photo
+                  </h4>
+                  <p className="text-sm text-gray-500">Photo taken when the delivery person picked up the package from the vendor</p>
+                  <div className="border rounded-lg overflow-hidden">
+                    <img
+                      src={selectedAssignment.pickupImageUrl}
+                      alt="Pickup proof"
+                      className="w-full max-h-96 object-contain bg-gray-100"
+                    />
+                  </div>
+                  {selectedAssignment.pickupUploadedAt && (
+                    <p className="text-xs text-gray-500">
+                      Uploaded: {new Date(selectedAssignment.pickupUploadedAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Delivery Proof Image */}
               {selectedAssignment.proofImageUrl && (
                 <div className="space-y-2">
@@ -981,6 +1004,7 @@ export default function AdminDelivery() {
                     <ImageIcon className="h-4 w-4" />
                     Delivery Proof Photo
                   </h4>
+                  <p className="text-sm text-gray-500">Photo taken when the package was delivered to the customer</p>
                   <div className="border rounded-lg overflow-hidden">
                     <img
                       src={selectedAssignment.proofImageUrl}
@@ -993,6 +1017,14 @@ export default function AdminDelivery() {
                       Uploaded: {new Date(selectedAssignment.proofUploadedAt).toLocaleString()}
                     </p>
                   )}
+                </div>
+              )}
+
+              {/* No Images Message */}
+              {!selectedAssignment.pickupImageUrl && !selectedAssignment.proofImageUrl && (
+                <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
+                  <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No proof images uploaded yet</p>
                 </div>
               )}
             </div>
