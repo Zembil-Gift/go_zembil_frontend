@@ -1,19 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
-import { useLocation, useParams } from "wouter";
+import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 
 import GiftItemCard from "@/components/gift-card";
 import ProductPagination from "@/components/ProductPagination";
-import ZembilSignatureSets from "@/components/ZembilSignatureSets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, SlidersHorizontal, ChevronUp, Star } from "lucide-react";
+import { Search, SlidersHorizontal, Star } from "lucide-react";
 import { Product, Category } from "@shared/schema";
+import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
 
 export default function Gifts() {
   // Get URL search params

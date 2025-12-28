@@ -45,6 +45,7 @@ export default function Landing() {
   const trendingGifts = React.useMemo(() => {
     if (!productsResponse?.content) return [];
     
+    // Backend already filters out out-of-stock products
     return productsResponse.content.map((product: Product) => {
       const priceAmount = extractPriceAmount(product.price) || extractPriceAmount(product.productSku?.[0]?.price);
       const currencyCode = product.price?.currencyCode ?? product.productSku?.[0]?.price?.currencyCode ?? 'USD';

@@ -1,4 +1,3 @@
-import React from "react";
 import { useTranslation } from "react-i18next";
 import { Star } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,7 +37,7 @@ export default function TestimonialsSection() {
     <section className="py-16 bg-light-cream">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="font-gotham-extra-bold text-3xl sm:text-4xl font-bold text-soft-gray mb-4">
+          <h2 className="font-extra-bold text-3xl sm:text-4xl font-bold text-soft-gray mb-4">
             {t('homepage.testimonials.title')}
           </h2>
           <p className="text-xl text-gray-600">

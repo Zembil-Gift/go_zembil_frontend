@@ -339,7 +339,7 @@ export default function AdminTax() {
                 <Globe className="h-6 w-6 text-blue-500" />
               </div>
               <div>
-                <div className="text-2xl font-gotham-bold text-eagle-green">{zones.length}</div>
+                <div className="text-2xl font-bold text-eagle-green">{zones.length}</div>
                 <p className="text-sm text-gray-500">Tax Zones</p>
               </div>
             </div>
@@ -352,7 +352,7 @@ export default function AdminTax() {
                 <Tag className="h-6 w-6 text-purple-500" />
               </div>
               <div>
-                <div className="text-2xl font-gotham-bold text-eagle-green">{categories.length}</div>
+                <div className="text-2xl font-bold text-eagle-green">{categories.length}</div>
                 <p className="text-sm text-gray-500">Tax Categories</p>
               </div>
             </div>
@@ -365,7 +365,7 @@ export default function AdminTax() {
                 <Percent className="h-6 w-6 text-green-500" />
               </div>
               <div>
-                <div className="text-2xl font-gotham-bold text-eagle-green">{rates.length}</div>
+                <div className="text-2xl font-bold text-eagle-green">{rates.length}</div>
                 <p className="text-sm text-gray-500">Tax Rates</p>
               </div>
             </div>

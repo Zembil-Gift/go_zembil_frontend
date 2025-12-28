@@ -20,7 +20,7 @@ export default function CategoryCarousel({
   const location = useLocation();
   
   // Fetch categories from API with fallback
-  const { data: categories, isLoading, error } = useCategories();
+  const { data: categories, isLoading} = useCategories();
   
   // Parse URL parameters to get initial state
   const urlParams = new URLSearchParams(location.search);
@@ -239,12 +239,12 @@ export default function CategoryCarousel({
 
         {/* Category Pills */}
         <div className="flex justify-center mb-12">
-          <div className="bg-white border border-eagle-green/20 p-1 rounded-xl inline-flex flex-wrap shadow-sm">
+          <div className="bg-white border border-eagle-green/20 p-1 rounded-xl inline-flex flex-wrap shadow-sm gap-2">
             {categoryTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => handleCategorySelect(tab.id)}
-                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold transition-all duration-200 text-sm sm:text-base whitespace-nowrap ${
+                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-all duration-200 text-sm sm:text-base whitespace-nowrap ${
                   selectedCategory === tab.id
                     ? "bg-eagle-green text-white shadow-sm ring-2 ring-yellow/40"
                     : "text-eagle-green hover:text-white hover:bg-viridian-green"

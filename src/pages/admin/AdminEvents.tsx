@@ -435,7 +435,7 @@ export default function AdminEvents() {
                             <Calendar className="h-10 w-10 text-gray-400" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-gotham-bold text-eagle-green text-lg">{event.title}</h3>
+                            <h3 className="font-bold text-eagle-green text-lg">{event.title}</h3>
                           <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
                             <span className="flex items-center">
                               <MapPin className="h-4 w-4 mr-1" />
@@ -618,7 +618,7 @@ export default function AdminEvents() {
                   <Calendar className="h-16 w-16 text-gray-400" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-gotham-bold text-eagle-green">{selectedEvent.title}</h3>
+                  <h3 className="text-xl font-bold text-eagle-green">{selectedEvent.title}</h3>
                   <p className="text-sm text-gray-500 mt-1">{selectedEvent.category || selectedEvent.eventTypeName}</p>
                   {getStatusBadge(selectedEvent.status)}
                 </div>

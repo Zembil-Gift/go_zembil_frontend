@@ -131,28 +131,28 @@ export default function MyEventTickets() {
                 </Badge>
               </div>
               
-              <h3 className="font-gotham-bold text-eagle-green text-lg mb-1">
+              <h3 className="font-bold text-eagle-green text-lg mb-1">
                 {order.eventTitle}
               </h3>
               
               <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-1">
                 <Calendar className="h-4 w-4" />
-                <span className="font-gotham-light">{formatDate(order.eventDate)}</span>
+                <span className="font-light">{formatDate(order.eventDate)}</span>
               </div>
               
               <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-2">
                 <MapPin className="h-4 w-4" />
-                <span className="font-gotham-light">{order.eventLocation}</span>
+                <span className="font-light">{order.eventLocation}</span>
               </div>
 
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <Ticket className="h-4 w-4 text-viridian-green" />
-                  <span className="font-gotham-bold text-eagle-green">
+                  <span className="font-bold text-eagle-green">
                     {order.totalTicketCount} ticket{order.totalTicketCount !== 1 ? 's' : ''}
                   </span>
                 </div>
-                <span className="font-gotham-bold text-eagle-green">
+                <span className="font-bold text-eagle-green">
                   {eventOrderService.formatCurrency(order.totalAmountMinor, order.currency)}
                 </span>
               </div>
@@ -168,7 +168,7 @@ export default function MyEventTickets() {
   const EmptyState = ({ message }: { message: string }) => (
     <div className="text-center py-12">
       <Ticket className="h-16 w-16 text-eagle-green/20 mx-auto mb-4" />
-      <p className="font-gotham-light text-eagle-green/60">{message}</p>
+      <p className="font-light text-eagle-green/60">{message}</p>
       <Button 
         onClick={() => navigate('/events')}
         className="mt-4 bg-eagle-green hover:bg-viridian-green text-white"
@@ -190,10 +190,10 @@ export default function MyEventTickets() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-gotham-bold text-eagle-green mb-2">
+              <h1 className="text-3xl font-bold text-eagle-green mb-2">
                 My Event Tickets
               </h1>
-              <p className="font-gotham-light text-eagle-green/70">
+              <p className="font-light text-eagle-green/70">
                 View and manage your event tickets
               </p>
             </div>
@@ -225,20 +225,20 @@ export default function MyEventTickets() {
             <TabsList className="bg-june-bud/10 p-1">
               <TabsTrigger 
                 value="upcoming"
-                className="font-gotham-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
+                className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
                 Upcoming ({upcomingOrders.length})
               </TabsTrigger>
               <TabsTrigger 
                 value="past"
-                className="font-gotham-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
+                className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
                 Past ({pastOrders.length})
               </TabsTrigger>
               {pendingOrders.length > 0 && (
                 <TabsTrigger 
                   value="pending"
-                  className="font-gotham-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
+                  className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
                 >
                   Pending ({pendingOrders.length})
                 </TabsTrigger>
@@ -283,7 +283,7 @@ export default function MyEventTickets() {
             {selectedOrder && (
               <>
                 <DialogHeader>
-                  <DialogTitle className="font-gotham-bold text-eagle-green">
+                  <DialogTitle className="font-bold text-eagle-green">
                     Order #{selectedOrder.orderNumber}
                   </DialogTitle>
                 </DialogHeader>
@@ -291,7 +291,7 @@ export default function MyEventTickets() {
                 <div className="space-y-6">
                   {/* Event Info */}
                   <div className="bg-june-bud/10 rounded-lg p-4">
-                    <h3 className="font-gotham-bold text-eagle-green text-lg mb-2">
+                    <h3 className="font-bold text-eagle-green text-lg mb-2">
                       {selectedOrder.eventTitle}
                     </h3>
                     <div className="space-y-1 text-sm text-eagle-green/70">
@@ -309,13 +309,13 @@ export default function MyEventTickets() {
                   {/* Order Status */}
                   <div className="flex items-center gap-4">
                     <div>
-                      <span className="text-sm font-gotham-light text-eagle-green/70">Payment</span>
+                      <span className="text-sm font-light text-eagle-green/70">Payment</span>
                       <Badge className={`ml-2 ${getPaymentStatusColor(selectedOrder.paymentStatus)}`}>
                         {selectedOrder.paymentStatus}
                       </Badge>
                     </div>
                     <div>
-                      <span className="text-sm font-gotham-light text-eagle-green/70">Order</span>
+                      <span className="text-sm font-light text-eagle-green/70">Order</span>
                       <Badge className={`ml-2 ${getStatusColor(selectedOrder.status)}`}>
                         {selectedOrder.status}
                       </Badge>
@@ -326,7 +326,7 @@ export default function MyEventTickets() {
 
                   {/* Tickets */}
                   <div>
-                    <h4 className="font-gotham-bold text-eagle-green mb-4">
+                    <h4 className="font-bold text-eagle-green mb-4">
                       Tickets ({selectedOrder.tickets?.length || 0})
                     </h4>
                     <div className="space-y-3">
@@ -341,22 +341,22 @@ export default function MyEventTickets() {
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
                                   {getTicketStatusIcon(ticket.status)}
-                                  <span className="font-gotham-bold text-eagle-green">
+                                  <span className="font-bold text-eagle-green">
                                     {ticket.ticketTypeName}
                                   </span>
                                   <Badge variant="outline" className="text-xs">
                                     {ticket.status}
                                   </Badge>
                                 </div>
-                                <p className="text-sm font-gotham-light text-eagle-green/70">
+                                <p className="text-sm font-light text-eagle-green/70">
                                   {ticket.recipientName} • {ticket.recipientEmail}
                                 </p>
-                                <p className="text-xs font-gotham-light text-eagle-green/50 mt-1">
+                                <p className="text-xs font-light text-eagle-green/50 mt-1">
                                   Code: {ticket.ticketCode}
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-gotham-bold text-eagle-green">
+                                <p className="font-bold text-eagle-green">
                                   {eventOrderService.formatCurrency(ticket.pricePaidMinor || ticket.pricePaid || 0, ticket.currency)}
                                 </p>
                                 {ticket.status === 'ISSUED' && (
@@ -375,39 +375,39 @@ export default function MyEventTickets() {
                   {/* Order Summary */}
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="font-gotham-light text-eagle-green/70">Subtotal</span>
-                      <span className="font-gotham-light text-eagle-green">
+                      <span className="font-light text-eagle-green/70">Subtotal</span>
+                      <span className="font-light text-eagle-green">
                         {eventOrderService.formatCurrency(selectedOrder.subtotalMinor, selectedOrder.currency)}
                       </span>
                     </div>
                     {selectedOrder.discountMinor > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="font-gotham-light text-eagle-green/70">Discount</span>
-                        <span className="font-gotham-light text-green-600">
+                        <span className="font-light text-eagle-green/70">Discount</span>
+                        <span className="font-light text-green-600">
                           -{eventOrderService.formatCurrency(selectedOrder.discountMinor, selectedOrder.currency)}
                         </span>
                       </div>
                     )}
                     {selectedOrder.vatAmountMinor > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="font-gotham-light text-eagle-green/70">VAT (15%)</span>
-                        <span className="font-gotham-light text-eagle-green">
+                        <span className="font-light text-eagle-green/70">VAT (15%)</span>
+                        <span className="font-light text-eagle-green">
                           {eventOrderService.formatCurrency(selectedOrder.vatAmountMinor, selectedOrder.currency)}
                         </span>
                       </div>
                     )}
                     {selectedOrder.salesTaxMinor > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="font-gotham-light text-eagle-green/70">Sales Tax</span>
-                        <span className="font-gotham-light text-eagle-green">
+                        <span className="font-light text-eagle-green/70">Sales Tax</span>
+                        <span className="font-light text-eagle-green">
                           {eventOrderService.formatCurrency(selectedOrder.salesTaxMinor, selectedOrder.currency)}
                         </span>
                       </div>
                     )}
                     <Separator />
                     <div className="flex justify-between">
-                      <span className="font-gotham-bold text-eagle-green">Total</span>
-                      <span className="font-gotham-bold text-eagle-green text-xl">
+                      <span className="font-bold text-eagle-green">Total</span>
+                      <span className="font-bold text-eagle-green text-xl">
                         {eventOrderService.formatCurrency(selectedOrder.totalAmountMinor, selectedOrder.currency)}
                       </span>
                     </div>
@@ -416,8 +416,8 @@ export default function MyEventTickets() {
                   {/* Gift Message */}
                   {selectedOrder.giftMessage && (
                     <div className="bg-yellow/10 rounded-lg p-4">
-                      <h5 className="font-gotham-bold text-eagle-green text-sm mb-1">Gift Message</h5>
-                      <p className="font-gotham-light text-eagle-green/80 text-sm italic">
+                      <h5 className="font-bold text-eagle-green text-sm mb-1">Gift Message</h5>
+                      <p className="font-light text-eagle-green/80 text-sm italic">
                         "{selectedOrder.giftMessage}"
                       </p>
                     </div>
@@ -434,7 +434,7 @@ export default function MyEventTickets() {
             {selectedTicket && (
               <>
                 <DialogHeader>
-                  <DialogTitle className="font-gotham-bold text-eagle-green">
+                  <DialogTitle className="font-bold text-eagle-green">
                     Ticket Details
                   </DialogTitle>
                 </DialogHeader>
@@ -455,10 +455,10 @@ export default function MyEventTickets() {
 
                   {/* Ticket Info */}
                   <div className="text-center">
-                    <h3 className="font-gotham-bold text-eagle-green text-xl mb-1">
+                    <h3 className="font-bold text-eagle-green text-xl mb-1">
                       {selectedTicket.ticketTypeName}
                     </h3>
-                    <p className="font-gotham-light text-eagle-green/70 text-sm">
+                    <p className="font-light text-eagle-green/70 text-sm">
                       Code: {selectedTicket.ticketCode}
                     </p>
                     <Badge className={`mt-2 ${
@@ -474,15 +474,15 @@ export default function MyEventTickets() {
 
                   {/* Recipient */}
                   <div className="space-y-2">
-                    <h4 className="font-gotham-bold text-eagle-green text-sm">Recipient</h4>
-                    <p className="font-gotham-light text-eagle-green">
+                    <h4 className="font-bold text-eagle-green text-sm">Recipient</h4>
+                    <p className="font-light text-eagle-green">
                       {selectedTicket.recipientName}
                     </p>
-                    <p className="font-gotham-light text-eagle-green/70 text-sm">
+                    <p className="font-light text-eagle-green/70 text-sm">
                       {selectedTicket.recipientEmail}
                     </p>
                     {selectedTicket.recipientPhone && (
-                      <p className="font-gotham-light text-eagle-green/70 text-sm">
+                      <p className="font-light text-eagle-green/70 text-sm">
                         {selectedTicket.recipientPhone}
                       </p>
                     )}
@@ -491,7 +491,7 @@ export default function MyEventTickets() {
                   {/* Check-in Info */}
                   {selectedTicket.checkedInAt && (
                     <div className="bg-blue-50 rounded-lg p-3">
-                      <p className="text-sm font-gotham-light text-blue-700">
+                      <p className="text-sm font-light text-blue-700">
                         Checked in: {formatDate(selectedTicket.checkedInAt)}
                       </p>
                     </div>

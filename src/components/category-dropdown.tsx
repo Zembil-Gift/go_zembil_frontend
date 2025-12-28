@@ -62,7 +62,7 @@ export default function CategoryDropdown({ isMobile = false }: CategoryDropdownP
       <Button
         ref={buttonRef}
         variant="ghost"
-        className="flex items-center space-x-1 px-5 py-3 text-sm lg:text-base font-medium transition-colors rounded-lg border border-transparent text-gray-700 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-300"
+        className="flex items-center space-x-1 px-5 py-3 text-sm font-medium transition-colors rounded-lg border border-transparent hover:text-blue-700 hover:bg-blue-50 hover:border-blue-300"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-controls="categories-dropdown"

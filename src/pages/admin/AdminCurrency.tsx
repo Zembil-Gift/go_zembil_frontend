@@ -171,7 +171,7 @@ export default function AdminCurrency() {
                 <Coins className="h-6 w-6 text-blue-500" />
               </div>
               <div>
-                <div className="text-2xl font-gotham-bold text-eagle-green">{currencies.length}</div>
+                <div className="text-2xl font-bold text-eagle-green">{currencies.length}</div>
                 <p className="text-sm text-gray-500">Total Currencies</p>
               </div>
             </div>
@@ -184,7 +184,7 @@ export default function AdminCurrency() {
                 <Check className="h-6 w-6 text-green-500" />
               </div>
               <div>
-                <div className="text-2xl font-gotham-bold text-green-600">{activeCurrencies.length}</div>
+                <div className="text-2xl font-bold text-green-600">{activeCurrencies.length}</div>
                 <p className="text-sm text-gray-500">Active Currencies</p>
               </div>
             </div>
@@ -197,7 +197,7 @@ export default function AdminCurrency() {
                 <Star className="h-6 w-6 text-amber-500" />
               </div>
               <div>
-                <div className="text-2xl font-gotham-bold text-amber-600">{defaultCurrency?.code || 'N/A'}</div>
+                <div className="text-2xl font-bold text-amber-600">{defaultCurrency?.code || 'N/A'}</div>
                 <p className="text-sm text-gray-500">Default Currency</p>
               </div>
             </div>

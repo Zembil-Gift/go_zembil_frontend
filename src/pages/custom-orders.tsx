@@ -276,10 +276,10 @@ function CustomOrdersContent() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h1 className="font-gotham-bold text-4xl text-eagle-green mb-4">
+          <h1 className="font-bold text-4xl text-eagle-green mb-4">
             Custom Handmade Orders
           </h1>
-          <p className="text-xl font-gotham-light text-viridian-green max-w-3xl mx-auto">
+          <p className="text-xl font-light text-viridian-green max-w-3xl mx-auto">
             Commission unique, personalized pieces from talented Ethiopian artists. Turn your vision into a meaningful gift.
           </p>
         </motion.div>
@@ -299,8 +299,8 @@ function CustomOrdersContent() {
                     <div className="flex items-center space-x-3">
                       <Save className="text-eagle-green" size={20} />
                       <div>
-                        <h4 className="font-gotham-bold text-eagle-green">Draft Found</h4>
-                        <p className="text-sm font-gotham-light text-eagle-green/70">You have a saved draft from a previous session.</p>
+                        <h4 className="font-bold text-eagle-green">Draft Found</h4>
+                        <p className="text-sm font-light text-eagle-green/70">You have a saved draft from a previous session.</p>
                       </div>
                     </div>
                     <div className="flex space-x-2">
@@ -337,7 +337,7 @@ function CustomOrdersContent() {
           >
             <Card className="shadow-lg border-eagle-green/10">
               <CardHeader className="relative bg-gradient-to-r from-june-bud/5 to-white">
-                <CardTitle className="text-2xl font-gotham-bold text-eagle-green">Submit Your Custom Order</CardTitle>
+                <CardTitle className="text-2xl font-bold text-eagle-green">Submit Your Custom Order</CardTitle>
                 {isAutoSaving && (
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -357,7 +357,7 @@ function CustomOrdersContent() {
                       name="type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                          <FormLabel className="text-base font-bold text-eagle-green">
                             Order Type <span className="text-yellow">*</span>
                           </FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -380,8 +380,8 @@ function CustomOrdersContent() {
                                   <div className="flex items-center space-x-3 w-full">
                                     <type.icon size={16} className="text-eagle-green flex-shrink-0" />
                                     <div className="flex flex-col min-w-0 flex-1">
-                                      <span className="font-gotham-bold text-gray-900 text-sm">{type.label}</span>
-                                      <span className="text-xs text-gray-600 font-gotham-light leading-tight">{type.description}</span>
+                                      <span className="font-bold text-gray-900 text-sm">{type.label}</span>
+                                      <span className="text-xs text-gray-600 font-light leading-tight">{type.description}</span>
                                     </div>
                                   </div>
                                 </SelectItem>
@@ -401,7 +401,7 @@ function CustomOrdersContent() {
                       name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                          <FormLabel className="text-base font-bold text-eagle-green">
                             Project Title <span className="text-yellow">*</span>
                           </FormLabel>
                           <FormControl>
@@ -432,7 +432,7 @@ function CustomOrdersContent() {
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                          <FormLabel className="text-base font-bold text-eagle-green">
                             Detailed Description <span className="text-yellow">*</span>
                           </FormLabel>
                           <FormControl>
@@ -464,7 +464,7 @@ function CustomOrdersContent() {
                         name="budget"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                            <FormLabel className="text-base font-bold text-eagle-green">
                               Budget Range (ETB) <span className="text-yellow">*</span>
                             </FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -493,7 +493,7 @@ function CustomOrdersContent() {
                         name="deadline"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                            <FormLabel className="text-base font-bold text-eagle-green">
                               Timeline <span className="text-yellow">*</span>
                             </FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -533,7 +533,7 @@ function CustomOrdersContent() {
                       name="estimatedDelivery"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-gotham-bold text-eagle-green flex items-center gap-2">
+                          <FormLabel className="text-base font-bold text-eagle-green flex items-center gap-2">
                             <Timer size={16} className="text-viridian-green" />
                             Estimated Delivery Time
                           </FormLabel>
@@ -553,7 +553,7 @@ function CustomOrdersContent() {
                               <SelectItem value="1-2-months" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">1-2 months</SelectItem>
                             </SelectContent>
                           </Select>
-                          <p className="text-sm font-gotham-light text-eagle-green/70">
+                          <p className="text-sm font-light text-eagle-green/70">
                             This helps set delivery expectations based on your timeline
                           </p>
                           <FormMessage className="text-yellow" />
@@ -566,7 +566,7 @@ function CustomOrdersContent() {
                       name="recipientInfo"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                          <FormLabel className="text-base font-bold text-eagle-green">
                             Recipient Information (Optional)
                           </FormLabel>
                           <FormControl>
@@ -596,7 +596,7 @@ function CustomOrdersContent() {
                       name="specialRequests"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-gotham-bold text-eagle-green">
+                          <FormLabel className="text-base font-bold text-eagle-green">
                             Special Requests (Optional)
                           </FormLabel>
                           <FormControl>
@@ -623,11 +623,11 @@ function CustomOrdersContent() {
 
                     {/* Multiple File Upload Section */}
                     <div className="space-y-3">
-                      <label className="text-base font-gotham-bold text-eagle-green flex items-center gap-2">
+                      <label className="text-base font-bold text-eagle-green flex items-center gap-2">
                         <Upload size={16} className="text-viridian-green" />
                         Upload Reference Images (Optional)
                       </label>
-                      <p className="text-sm font-gotham-light text-eagle-green/70">
+                      <p className="text-sm font-light text-eagle-green/70">
                         You can attach multiple images or sketches to help us understand your idea better. Max 5 files.
                       </p>
                       
@@ -737,7 +737,7 @@ function CustomOrdersContent() {
                       <Button
                         type="submit"
                         disabled={customOrderMutation.isPending}
-                        className="w-full bg-eagle-green hover:bg-viridian-green text-white h-14 text-lg font-gotham-bold transition-all duration-200 shadow-lg hover:shadow-xl focus:ring-4 focus:ring-yellow/20"
+                        className="w-full bg-eagle-green hover:bg-viridian-green text-white h-14 text-lg font-bold transition-all duration-200 shadow-lg hover:shadow-xl focus:ring-4 focus:ring-yellow/20"
                         aria-describedby="submit-description"
                       >
                         <div className="flex items-center justify-center space-x-2">
@@ -777,7 +777,7 @@ function CustomOrdersContent() {
             >
               <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-eagle-green/10">
                 <CardHeader className="bg-gradient-to-r from-june-bud/5 to-white">
-                  <CardTitle className="text-xl font-gotham-bold text-eagle-green flex items-center space-x-2">
+                  <CardTitle className="text-xl font-bold text-eagle-green flex items-center space-x-2">
                     <Palette className="text-viridian-green" size={24} />
                     <span>Order Types</span>
                   </CardTitle>
@@ -798,8 +798,8 @@ function CustomOrdersContent() {
                         <type.icon className="text-eagle-green" size={20} />
                       </motion.div>
                       <div>
-                        <h4 className="font-gotham-bold text-eagle-green">{type.label}</h4>
-                        <p className="text-sm font-gotham-light text-eagle-green/70">
+                        <h4 className="font-bold text-eagle-green">{type.label}</h4>
+                        <p className="text-sm font-light text-eagle-green/70">
                           {type.description}
                         </p>
                       </div>
@@ -815,7 +815,7 @@ function CustomOrdersContent() {
             >
               <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-eagle-green/10">
                 <CardHeader className="bg-gradient-to-r from-june-bud/5 to-white">
-                  <CardTitle className="text-xl font-gotham-bold text-eagle-green flex items-center space-x-2">
+                  <CardTitle className="text-xl font-bold text-eagle-green flex items-center space-x-2">
                     <CheckCircle className="text-viridian-green" size={24} />
                     <span>How It Works</span>
                   </CardTitle>
@@ -836,11 +836,11 @@ function CustomOrdersContent() {
                     >
                       <motion.div
                         whileHover={{ scale: 1.1 }}
-                        className="w-8 h-8 bg-eagle-green text-white rounded-full flex items-center justify-center text-sm font-gotham-bold flex-shrink-0"
+                        className="w-8 h-8 bg-eagle-green text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
                       >
                         {item.step}
                       </motion.div>
-                      <p className="text-sm font-gotham-light text-eagle-green/80 pt-1">{item.text}</p>
+                      <p className="text-sm font-light text-eagle-green/80 pt-1">{item.text}</p>
                     </motion.div>
                   ))}
                 </CardContent>

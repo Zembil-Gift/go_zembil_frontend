@@ -219,14 +219,14 @@ export default function AdminCategories() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-gotham-bold text-eagle-green">{categories.length}</div>
+            <div className="text-2xl font-bold text-eagle-green">{categories.length}</div>
             <p className="text-sm text-gray-500">Total</p>
           </CardContent>
         </Card>
         {['occasion', 'cultural', 'emotion', 'custom', 'daily'].map((type) => (
           <Card key={type}>
             <CardContent className="pt-4">
-              <div className="text-2xl font-gotham-bold text-eagle-green">
+              <div className="text-2xl font-bold text-eagle-green">
                 {categories.filter((c: any) => c.type === type).length}
               </div>
               <p className="text-sm text-gray-500 capitalize">{type}</p>

@@ -196,10 +196,10 @@ export default function Events() {
           transition={{ duration: 0.6 }}
           className="text-center mb-8"
         >
-          <h1 className="text-3xl lg:text-4xl font-gotham-bold text-eagle-green mb-4">
+          <h1 className="text-3xl lg:text-4xl font-bold text-eagle-green mb-4">
             Gift Experiences & Professional Services
           </h1>
-          <p className="text-lg font-gotham-light text-viridian-green max-w-3xl mx-auto">
+          <p className="text-lg font-light text-viridian-green max-w-3xl mx-auto">
             Discover memorable experiences in Ethiopia and U.S. Habesha communities, plus professional services for your special events.
           </p>
         </motion.div>
@@ -209,13 +209,13 @@ export default function Events() {
           <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 bg-june-bud/10 p-1">
             <TabsTrigger 
               value="events" 
-              className="font-gotham-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
+              className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
             >
               Gift Events
             </TabsTrigger>
             <TabsTrigger 
               value="services" 
-              className="font-gotham-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
+              className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
             >
               Professional Services
             </TabsTrigger>
@@ -240,7 +240,7 @@ export default function Events() {
                       updateEventFilters({ q: e.target.value });
                     }
                   }}
-                  className="pl-10 h-12 bg-white border border-eagle-green/30 focus:border-viridian-green focus:ring-2 focus:ring-viridian-green/20 font-gotham-light"
+                  className="pl-10 h-12 bg-white border border-eagle-green/30 focus:border-viridian-green focus:ring-2 focus:ring-viridian-green/20 font-light"
                 />
               </div>
 
@@ -443,8 +443,8 @@ export default function Events() {
             ) : displayEvents.length === 0 ? (
               <div className="text-center py-16">
                 <Calendar className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
-                <h3 className="text-xl font-gotham-bold text-eagle-green mb-2">No events found</h3>
-                <p className="text-eagle-green/70 font-gotham-light mb-4">Try adjusting your filters to find more events.</p>
+                <h3 className="text-xl font-bold text-eagle-green mb-2">No events found</h3>
+                <p className="text-eagle-green/70 font-light mb-4">Try adjusting your filters to find more events.</p>
                 <Button onClick={clearFilters} className="bg-eagle-green hover:bg-viridian-green text-white">
                   Clear Filters
                 </Button>
@@ -498,8 +498,8 @@ export default function Events() {
             ) : servicesData?.services.length === 0 ? (
               <div className="text-center py-16">
                 <Users className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
-                <h3 className="text-xl font-gotham-bold text-eagle-green mb-2">No services found</h3>
-                <p className="text-eagle-green/70 font-gotham-light mb-4">Try adjusting your filters to find more services.</p>
+                <h3 className="text-xl font-bold text-eagle-green mb-2">No services found</h3>
+                <p className="text-eagle-green/70 font-light mb-4">Try adjusting your filters to find more services.</p>
                 <Button onClick={clearFilters} className="bg-eagle-green hover:bg-viridian-green text-white">
                   Clear Filters
                 </Button>
@@ -551,7 +551,7 @@ function EventCard({ event, index }: { event: Event; index: number }) {
             {event.badges.map(badge => (
               <Badge 
                 key={badge} 
-                className={`text-xs font-gotham-bold ${getBadgeColor(badge)}`}
+                className={`text-xs font-bold ${getBadgeColor(badge)}`}
               >
                 {badge.charAt(0).toUpperCase() + badge.slice(1)}
               </Badge>
@@ -560,14 +560,14 @@ function EventCard({ event, index }: { event: Event; index: number }) {
 
           {/* Country flag */}
           <div className="absolute top-3 right-3">
-            <Badge className="bg-white/90 text-eagle-green border-none font-gotham-bold">
+            <Badge className="bg-white/90 text-eagle-green border-none font-bold">
               {event.country === 'ET' ? '🇪🇹' : '🇺🇸'} {cityName}
             </Badge>
           </div>
 
           {/* Price - mock events use price in major units */}
           <div className="absolute bottom-3 right-3">
-            <Badge className="bg-eagle-green text-white border-none font-gotham-bold">
+            <Badge className="bg-eagle-green text-white border-none font-bold">
               From {formatPrice(minPrice, event.baseCurrency)}
             </Badge>
           </div>
@@ -575,24 +575,24 @@ function EventCard({ event, index }: { event: Event; index: number }) {
 
         <CardContent className="p-4">
           <div className="mb-2">
-            <span className="text-sm font-gotham-light text-viridian-green">{categoryName}</span>
+            <span className="text-sm font-light text-viridian-green">{categoryName}</span>
           </div>
           
-          <h3 className="font-gotham-bold text-eagle-green text-lg mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">
+          <h3 className="font-bold text-eagle-green text-lg mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">
             {event.title}
           </h3>
           
           <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-2">
             <MapPin className="h-4 w-4" />
-            <span className="font-gotham-light">{event.venue}</span>
+            <span className="font-light">{event.venue}</span>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-3">
             <Clock className="h-4 w-4" />
             <div className="flex flex-col">
-              <span className="font-gotham-light">{eventTime}</span>
+              <span className="font-light">{eventTime}</span>
               {userTime && (
-                <span className="text-xs text-viridian-green font-gotham-light">
+                <span className="text-xs text-viridian-green font-light">
                   Your time: {userTime}
                 </span>
               )}
@@ -600,7 +600,7 @@ function EventCard({ event, index }: { event: Event; index: number }) {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm font-gotham-light text-eagle-green/70">
+            <span className="text-sm font-light text-eagle-green/70">
               {event.ticketTypes?.length || 0} ticket type{(event.ticketTypes?.length || 0) !== 1 ? 's' : ''}
             </span>
             <ChevronRight className="h-4 w-4 text-viridian-green group-hover:translate-x-1 transition-transform" />
@@ -657,12 +657,12 @@ function RealEventCard({ event, index }: { event: EventResponse; index: number }
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-wrap gap-1">
             {event.isFeatured && (
-              <Badge className="text-xs font-gotham-bold bg-yellow/20 text-eagle-green border-yellow">
+              <Badge className="text-xs font-bold bg-yellow/20 text-eagle-green border-yellow">
                 Featured
               </Badge>
             )}
             {event.isSoldOut && (
-              <Badge className="text-xs font-gotham-bold bg-red-100 text-red-700 border-red-300">
+              <Badge className="text-xs font-bold bg-red-100 text-red-700 border-red-300">
                 Sold Out
               </Badge>
             )}
@@ -670,14 +670,14 @@ function RealEventCard({ event, index }: { event: EventResponse; index: number }
 
           {/* Location badge */}
           <div className="absolute top-3 right-3">
-            <Badge className="bg-white/90 text-eagle-green border-none font-gotham-bold">
+            <Badge className="bg-white/90 text-eagle-green border-none font-bold">
               📍 {event.city}
             </Badge>
           </div>
 
           {/* Price */}
           <div className="absolute bottom-3 right-3">
-            <Badge className="bg-eagle-green text-white border-none font-gotham-bold">
+            <Badge className="bg-eagle-green text-white border-none font-bold">
               From {formatPrice(minPrice / 100, currency)}
             </Badge>
           </div>
@@ -685,27 +685,27 @@ function RealEventCard({ event, index }: { event: EventResponse; index: number }
 
         <CardContent className="p-4">
           <div className="mb-2">
-            <span className="text-sm font-gotham-light text-viridian-green">
+            <span className="text-sm font-light text-viridian-green">
               {event.categoryName || 'Event'}
             </span>
           </div>
           
-          <h3 className="font-gotham-bold text-eagle-green text-lg mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">
+          <h3 className="font-bold text-eagle-green text-lg mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">
             {event.title}
           </h3>
           
           <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-2">
             <MapPin className="h-4 w-4" />
-            <span className="font-gotham-light">{event.location}</span>
+            <span className="font-light">{event.location}</span>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-3">
             <Clock className="h-4 w-4" />
-            <span className="font-gotham-light">{formatDate(event.eventDate)}</span>
+            <span className="font-light">{formatDate(event.eventDate)}</span>
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm font-gotham-light text-eagle-green/70">
+            <div className="flex items-center gap-1 text-sm font-light text-eagle-green/70">
               <Ticket className="h-4 w-4" />
               <span>{event.ticketTypes?.length || 0} ticket types</span>
             </div>
@@ -745,7 +745,7 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
           {/* Verified badge */}
           {service.provider.verified && (
             <div className="absolute top-3 left-3">
-              <Badge className="bg-green-500 text-white border-none font-gotham-bold">
+              <Badge className="bg-green-500 text-white border-none font-bold">
                 ✓ Verified
               </Badge>
             </div>
@@ -753,14 +753,14 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
 
           {/* Location badge */}
           <div className="absolute top-3 right-3">
-            <Badge className="bg-white/90 text-eagle-green border-none font-gotham-bold">
+            <Badge className="bg-white/90 text-eagle-green border-none font-bold">
               {service.country === 'ET' ? '🇪🇹' : '🇺🇸'} {cityName}
             </Badge>
           </div>
 
           {/* Price */}
           <div className="absolute bottom-3 right-3">
-            <Badge className="bg-eagle-green text-white border-none font-gotham-bold">
+            <Badge className="bg-eagle-green text-white border-none font-bold">
               From {formatPrice(service.startingPrice, service.currency)}
             </Badge>
           </div>
@@ -768,18 +768,18 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
 
         <CardContent className="p-4">
           <div className="mb-2">
-            <span className="text-sm font-gotham-light text-viridian-green">
+            <span className="text-sm font-light text-viridian-green">
               {categoryInfo.icon} {categoryInfo.name}
             </span>
           </div>
           
-          <h3 className="font-gotham-bold text-eagle-green text-lg mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">
+          <h3 className="font-bold text-eagle-green text-lg mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">
             {service.name}
           </h3>
           
           <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-2">
             <Users className="h-4 w-4" />
-            <span className="font-gotham-bold text-eagle-green">{service.provider.name}</span>
+            <span className="font-bold text-eagle-green">{service.provider.name}</span>
             {service.provider.verified && (
               <Badge className="bg-green-100 text-green-700 text-xs border-green-300 px-1 py-0">
                 ✓
@@ -790,14 +790,14 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
           <div className="flex items-center gap-4 text-sm text-eagle-green/70 mb-3">
             <div className="flex items-center gap-1">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-gotham-bold text-eagle-green">{service.rating}</span>
-              <span className="font-gotham-light">({service.reviewCount} reviews)</span>
+              <span className="font-bold text-eagle-green">{service.rating}</span>
+              <span className="font-light">({service.reviewCount} reviews)</span>
             </div>
-            <span className="font-gotham-light">{service.provider.yearsExperience} years experience</span>
+            <span className="font-light">{service.provider.yearsExperience} years experience</span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm font-gotham-light text-eagle-green/70">
+            <span className="text-sm font-light text-eagle-green/70">
               Service area: {service.serviceAreaKm}km radius
             </span>
             <ChevronRight className="h-4 w-4 text-viridian-green group-hover:translate-x-1 transition-transform" />

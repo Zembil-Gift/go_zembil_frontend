@@ -161,7 +161,7 @@ export default function AdminDashboard() {
                   Monthly Revenue:
                 </p>
                 {stats && (
-                  <h4 className="text-3xl font-gotham-bold mb-3">
+                  <h4 className="text-3xl font-bold mb-3">
                     {formatCurrency(stats.revenue?.monthRevenue || 0, stats.revenue?.currency)}
                   </h4>
                 )}
@@ -186,7 +186,7 @@ export default function AdminDashboard() {
                   <PieChart className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h5 className="text-xl font-gotham-bold">{formatNumber(stats?.orders?.totalProductOrders || 0)}</h5>
+                  <h5 className="text-xl font-bold">{formatNumber(stats?.orders?.totalProductOrders || 0)}</h5>
                   <small className="text-muted-foreground">Sales</small>
                 </div>
               </div>
@@ -196,7 +196,7 @@ export default function AdminDashboard() {
                   <Users className="h-6 w-6 text-blue-500" />
                 </div>
                 <div>
-                  <h5 className="text-xl font-gotham-bold">{formatNumber(stats?.users?.customers || 0)}</h5>
+                  <h5 className="text-xl font-bold">{formatNumber(stats?.users?.customers || 0)}</h5>
                   <small className="text-muted-foreground">Customers</small>
                 </div>
               </div>
@@ -206,7 +206,7 @@ export default function AdminDashboard() {
                   <Package className="h-6 w-6 text-orange-500" />
                 </div>
                 <div>
-                  <h5 className="text-xl font-gotham-bold">{formatNumber(stats?.products?.total || 0)}</h5>
+                  <h5 className="text-xl font-bold">{formatNumber(stats?.products?.total || 0)}</h5>
                   <small className="text-muted-foreground">Products</small>
                 </div>
               </div>
@@ -216,7 +216,7 @@ export default function AdminDashboard() {
                   <DollarSign className="h-6 w-6 text-green-500" />
                 </div>
                 <div>
-                  <h5 className="text-xl font-gotham-bold">{formatCurrency(stats?.revenue?.totalRevenue || 0, stats?.revenue?.currency)}</h5>
+                  <h5 className="text-xl font-bold">{formatCurrency(stats?.revenue?.totalRevenue || 0, stats?.revenue?.currency)}</h5>
                   <small className="text-muted-foreground">Revenue</small>
                 </div>
               </div>
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="flex items-end justify-between">
               <div>
-                <h3 className="text-2xl font-gotham-bold">
+                <h3 className="text-2xl font-bold">
                   {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : formatCurrency(stats?.revenue?.todayRevenue || 0, stats?.revenue?.currency)}
                 </h3>
                 <div className="flex items-center gap-1 mt-1">
@@ -258,7 +258,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="flex items-end justify-between">
               <div>
-                <h3 className="text-2xl font-gotham-bold">
+                <h3 className="text-2xl font-bold">
                   {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : formatCurrency(stats?.revenue?.weekRevenue || 0, stats?.revenue?.currency)}
                 </h3>
                 <div className="flex items-center gap-1 mt-1">
@@ -281,7 +281,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="flex items-end justify-between">
               <div>
-                <h3 className="text-2xl font-gotham-bold">
+                <h3 className="text-2xl font-bold">
                   {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats?.vendors?.active || 0}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -303,7 +303,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="flex items-end justify-between">
               <div>
-                <h3 className="text-2xl font-gotham-bold">
+                <h3 className="text-2xl font-bold">
                   {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats?.users?.newThisMonth || 0}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -734,11 +734,11 @@ export default function AdminDashboard() {
             <div className="border-t pt-4 mt-4">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Total Product Orders</span>
-                <span className="font-gotham-bold">{stats?.orders?.totalProductOrders || 0}</span>
+                <span className="font-bold">{stats?.orders?.totalProductOrders || 0}</span>
               </div>
               <div className="flex justify-between text-sm mt-2">
                 <span className="text-muted-foreground">Total Event Orders</span>
-                <span className="font-gotham-bold">{stats?.orders?.totalEventOrders || 0}</span>
+                <span className="font-bold">{stats?.orders?.totalEventOrders || 0}</span>
               </div>
             </div>
           </CardContent>

@@ -281,13 +281,13 @@ export default function AdminUsers() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-gotham-bold text-eagle-green">{users.length}</div>
+            <div className="text-2xl font-bold text-eagle-green">{users.length}</div>
             <p className="text-sm text-gray-500">Total Users</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-gotham-bold text-green-600">
+            <div className="text-2xl font-bold text-green-600">
               {users.filter((u: any) => u.role?.toLowerCase() === 'customer').length}
             </div>
             <p className="text-sm text-gray-500">Customers</p>
@@ -295,7 +295,7 @@ export default function AdminUsers() {
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-gotham-bold text-blue-600">
+            <div className="text-2xl font-bold text-blue-600">
               {users.filter((u: any) => u.role?.toLowerCase() === 'vendor').length}
             </div>
             <p className="text-sm text-gray-500">Vendors</p>
@@ -303,7 +303,7 @@ export default function AdminUsers() {
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-gotham-bold ">
+            <div className="text-2xl font-bold ">
               {users.filter((u: any) => u.role?.toLowerCase() === 'admin').length}
             </div>
             <p className="text-sm text-gray-500">Admins</p>
@@ -416,12 +416,12 @@ export default function AdminUsers() {
           {selectedUser && (
             <div className="space-y-4">
               <div className="flex items-center justify-center mb-4">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center text-white text-2xl font-gotham-bold">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center text-white text-2xl font-bold">
                   {selectedUser.firstName?.charAt(0)}{selectedUser.lastName?.charAt(0)}
                 </div>
               </div>
               <div className="text-center mb-4">
-                <h3 className="text-lg font-gotham-bold text-eagle-green">
+                <h3 className="text-lg font-bold text-eagle-green">
                   {selectedUser.firstName} {selectedUser.lastName}
                 </h3>
                 <Badge className={getRoleColor(selectedUser.role)}>
@@ -484,7 +484,7 @@ export default function AdminUsers() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex items-center justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center text-white text-xl font-gotham-bold">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center text-white text-xl font-bold">
                 {selectedUser?.firstName?.charAt(0)}{selectedUser?.lastName?.charAt(0)}
               </div>
             </div>

@@ -239,7 +239,7 @@ export default function EventCheckout() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-eagle-green mx-auto mb-4" />
-          <p className="font-gotham-light text-eagle-green">Loading checkout...</p>
+          <p className="font-light text-eagle-green">Loading checkout...</p>
         </div>
       </div>
     );
@@ -249,7 +249,7 @@ export default function EventCheckout() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-gotham-bold text-eagle-green mb-2">Event Not Found</h2>
+          <h2 className="text-2xl font-bold text-eagle-green mb-2">Event Not Found</h2>
           <Button onClick={() => navigate('/events')} className="bg-eagle-green hover:bg-viridian-green text-white">
             Browse Events
           </Button>
@@ -278,10 +278,10 @@ export default function EventCheckout() {
             Back to Event
           </Button>
           
-          <h1 className="text-3xl font-gotham-bold text-eagle-green">
+          <h1 className="text-3xl font-bold text-eagle-green">
             Complete Your Order
           </h1>
-          <p className="font-gotham-light text-eagle-green/70 mt-1">
+          <p className="font-light text-eagle-green/70 mt-1">
             Fill in the details below to purchase your tickets
           </p>
         </motion.div>
@@ -308,7 +308,7 @@ export default function EventCheckout() {
                       <Calendar className="h-8 w-8 text-eagle-green/50" />
                     </div>
                     <div className="flex-1">
-                      <h2 className="font-gotham-bold text-eagle-green text-xl mb-2">
+                      <h2 className="font-bold text-eagle-green text-xl mb-2">
                         {event.title}
                       </h2>
                       <div className="space-y-1 text-sm text-eagle-green/70">
@@ -335,11 +335,11 @@ export default function EventCheckout() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
+                  <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <User className="h-5 w-5" />
                     Ticket Recipients
                   </CardTitle>
-                  <p className="text-sm font-gotham-light text-eagle-green/70">
+                  <p className="text-sm font-light text-eagle-green/70">
                     Each ticket will be sent to the specified recipient via email
                   </p>
                 </CardHeader>
@@ -348,7 +348,7 @@ export default function EventCheckout() {
                     <div key={selection.ticketTypeId} className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Ticket className="h-4 w-4 text-viridian-green" />
-                        <h4 className="font-gotham-bold text-eagle-green">
+                        <h4 className="font-bold text-eagle-green">
                           {selection.ticketTypeName}
                         </h4>
                         <Badge variant="outline">
@@ -358,12 +358,12 @@ export default function EventCheckout() {
                       
                       {selection.recipients.map((recipient, recIndex) => (
                         <div key={recIndex} className="border rounded-lg p-4 bg-white space-y-4">
-                          <p className="text-sm font-gotham-bold text-eagle-green/60">
+                          <p className="text-sm font-bold text-eagle-green/60">
                             Ticket #{recIndex + 1}
                           </p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <Label className="text-sm font-gotham-light">Recipient Name *</Label>
+                              <Label className="text-sm font-light">Recipient Name *</Label>
                               <div className="relative mt-1">
                                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                                 <Input
@@ -375,7 +375,7 @@ export default function EventCheckout() {
                               </div>
                             </div>
                             <div>
-                              <Label className="text-sm font-gotham-light">Recipient Email *</Label>
+                              <Label className="text-sm font-light">Recipient Email *</Label>
                               <div className="relative mt-1">
                                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                                 <Input
@@ -388,7 +388,7 @@ export default function EventCheckout() {
                               </div>
                             </div>
                             <div className="md:col-span-2">
-                              <Label className="text-sm font-gotham-light">Recipient Phone (optional)</Label>
+                              <Label className="text-sm font-light">Recipient Phone (optional)</Label>
                               <div className="relative mt-1">
                                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                                 <Input
@@ -416,18 +416,18 @@ export default function EventCheckout() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
+                  <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Mail className="h-5 w-5" />
                     Your Contact Information
                   </CardTitle>
-                  <p className="text-sm font-gotham-light text-eagle-green/70">
+                  <p className="text-sm font-light text-eagle-green/70">
                     We'll send the order confirmation to this email
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-gotham-light">Your Email *</Label>
+                      <Label className="text-sm font-light">Your Email *</Label>
                       <div className="relative mt-1">
                         <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                         <Input
@@ -440,7 +440,7 @@ export default function EventCheckout() {
                       </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-gotham-light">Your Phone (optional)</Label>
+                      <Label className="text-sm font-light">Your Phone (optional)</Label>
                       <div className="relative mt-1">
                         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                         <Input
@@ -464,7 +464,7 @@ export default function EventCheckout() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
+                  <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Gift className="h-5 w-5" />
                     Gift Message (optional)
                   </CardTitle>
@@ -488,7 +488,7 @@ export default function EventCheckout() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
+                  <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
                     Payment Method
                   </CardTitle>
@@ -498,8 +498,8 @@ export default function EventCheckout() {
                     <div className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${paymentProvider === 'stripe' ? 'border-eagle-green bg-june-bud/10' : 'border-gray-200 hover:border-eagle-green/50'}`}>
                       <RadioGroupItem value="stripe" id="stripe" />
                       <Label htmlFor="stripe" className="flex-1 cursor-pointer">
-                        <span className="font-gotham-bold text-eagle-green">Card Payment (Stripe)</span>
-                        <p className="text-sm font-gotham-light text-eagle-green/70">
+                        <span className="font-bold text-eagle-green">Card Payment (Stripe)</span>
+                        <p className="text-sm font-light text-eagle-green/70">
                           Pay with Visa, Mastercard, or American Express
                         </p>
                       </Label>
@@ -508,8 +508,8 @@ export default function EventCheckout() {
                     <div className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${paymentProvider === 'chapa' ? 'border-eagle-green bg-june-bud/10' : 'border-gray-200 hover:border-eagle-green/50'}`}>
                       <RadioGroupItem value="chapa" id="chapa" />
                       <Label htmlFor="chapa" className="flex-1 cursor-pointer">
-                        <span className="font-gotham-bold text-eagle-green">Chapa</span>
-                        <p className="text-sm font-gotham-light text-eagle-green/70">
+                        <span className="font-bold text-eagle-green">Chapa</span>
+                        <p className="text-sm font-light text-eagle-green/70">
                           Pay with Telebirr, CBE Birr, Awash Bank, or other local options
                         </p>
                       </Label>
@@ -531,7 +531,7 @@ export default function EventCheckout() {
             >
               <Card className="border-eagle-green/20">
                 <CardHeader className="bg-gradient-to-r from-june-bud/10 to-white">
-                  <CardTitle className="font-gotham-bold text-eagle-green">
+                  <CardTitle className="font-bold text-eagle-green">
                     Order Summary
                   </CardTitle>
                 </CardHeader>
@@ -540,10 +540,10 @@ export default function EventCheckout() {
                   <div className="space-y-3">
                     {ticketSelections.map((selection) => (
                       <div key={selection.ticketTypeId} className="flex justify-between text-sm">
-                        <span className="font-gotham-light text-eagle-green">
+                        <span className="font-light text-eagle-green">
                           {selection.ticketTypeName} × {selection.recipients.length}
                         </span>
-                        <span className="font-gotham-bold text-eagle-green">
+                        <span className="font-bold text-eagle-green">
                           {eventOrderService.formatCurrency(selection.priceMinor * selection.recipients.length, selection.currency)}
                         </span>
                       </div>
@@ -556,17 +556,17 @@ export default function EventCheckout() {
                   <div className="bg-june-bud/10 rounded-lg p-4">
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="font-gotham-light text-eagle-green text-sm">Total</span>
+                        <span className="font-light text-eagle-green text-sm">Total</span>
                         <p className="text-xs text-eagle-green/60">{getTotalTickets()} ticket{getTotalTickets() !== 1 ? 's' : ''}</p>
                       </div>
-                      <span className="font-gotham-bold text-eagle-green text-2xl">
+                      <span className="font-bold text-eagle-green text-2xl">
                         {eventOrderService.formatCurrency(getTotalPrice(), currency)}
                       </span>
                     </div>
                   </div>
 
                   <Button 
-                    className="w-full bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold h-12"
+                    className="w-full bg-eagle-green hover:bg-viridian-green text-white font-bold h-12"
                     onClick={handleCheckout}
                     disabled={isProcessing}
                   >
@@ -583,7 +583,7 @@ export default function EventCheckout() {
                     )}
                   </Button>
 
-                  <p className="text-xs font-gotham-light text-eagle-green/60 text-center">
+                  <p className="text-xs font-light text-eagle-green/60 text-center">
                     By completing this purchase, you agree to our terms of service.
                     Tickets will be emailed to recipients after payment.
                   </p>

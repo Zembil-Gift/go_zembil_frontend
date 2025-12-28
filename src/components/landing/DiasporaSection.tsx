@@ -1,4 +1,3 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Truck, Calendar, Heart } from "lucide-react";
@@ -29,7 +28,7 @@ export default function DiasporaSection() {
             </motion.div>
           </div>
           <motion.h2 
-            className="font-gotham-extra-bold text-3xl sm:text-4xl lg:text-5xl mb-4 leading-tight text-eagle-green"
+            className="font-extra-bold text-3xl sm:text-4xl lg:text-5xl mb-4 leading-tight text-eagle-green"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 1.2 }}
@@ -37,7 +36,7 @@ export default function DiasporaSection() {
             {t('homepage.diaspora.title')}
           </motion.h2>
           <motion.p 
-            className="font-gotham-light text-lg sm:text-xl mb-8 max-w-3xl mx-auto leading-relaxed text-eagle-green/70"
+            className="font-light text-lg sm:text-xl mb-8 max-w-3xl mx-auto leading-relaxed text-eagle-green/70"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 1.4 }}
