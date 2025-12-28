@@ -67,13 +67,14 @@ export default function StreamlinedHeader() {
   const navigation = [
     { name: t('navigation.home'), href: "/" },
     { name: t('navigation.shop'), href: "/shop" },
+    { name: t('navigation.services'), href: "/services" },
     { name: t('navigation.custom'), href: "/custom-orders" },
     { name: t('navigation.events'), href: "/events" },
   ];
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <header className="sticky top-0 z-40 w-full border-b bg-white/95 justify-center backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container flex h-16 lg:h-20 items-center px-4 lg:px-6 max-w-full">
           {/* Logo */}
           <div className="flex-shrink-0 mr-4 lg:mr-8">
@@ -93,7 +94,7 @@ export default function StreamlinedHeader() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1 mr-4">
+          <nav className="hidden lg:flex items-center justify-center w-full space-x-1 mr-4">
             {navigation.map((item) => (
               <Link
                 key={item.name}
