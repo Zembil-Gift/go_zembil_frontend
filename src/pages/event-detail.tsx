@@ -25,6 +25,8 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { getEventImageUrl } from '@/utils/imageUtils';
 import { useAuth } from '@/hooks/useAuth';
+import { VendorCard } from '@/components/reviews';
+import { reviewService } from '@/services/reviewService';
 
 import { 
   Event, 
@@ -73,6 +75,14 @@ export default function EventDetail() {
   const isLoading = isNumericId ? apiLoading : mockLoading;
   const event = apiEvent || mockEvent;
   const isAPIEvent = !!apiEvent;
+
+  // Fetch vendor profile for API events
+  const vendorId = isAPIEvent ? (apiEvent as EventResponse)?.vendorId : null;
+  const { data: vendorProfile } = useQuery({
+    queryKey: ['vendor-profile', vendorId],
+    queryFn: () => vendorId ? reviewService.getVendorPublicProfile(vendorId) : null,
+    enabled: !!vendorId,
+  });
 
   // Helper to get ticket count for a type
   const getTicketCount = (ticketTypeId: number) => {
@@ -193,7 +203,7 @@ export default function EventDetail() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-eagle-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="font-gotham-light text-eagle-green">Loading event details...</p>
+          <p className="font-light text-eagle-green">Loading event details...</p>
         </div>
       </div>
     );
@@ -203,8 +213,8 @@ export default function EventDetail() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-gotham-bold text-eagle-green mb-2">Event Not Found</h2>
-          <p className="font-gotham-light text-eagle-green/70 mb-4">The event you're looking for doesn't exist.</p>
+          <h2 className="text-2xl font-bold text-eagle-green mb-2">Event Not Found</h2>
+          <p className="font-light text-eagle-green/70 mb-4">The event you're looking for doesn't exist.</p>
           <Button onClick={() => navigate('/events')} className="bg-eagle-green hover:bg-viridian-green text-white">
             Browse All Events
           </Button>
@@ -307,7 +317,7 @@ export default function EventDetail() {
             />
             
             {eventImages.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-gotham-light">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-light">
                 {selectedImageIndex + 1} / {eventImages.length}
               </div>
             )}
@@ -379,14 +389,14 @@ export default function EventDetail() {
                 {/* Badges */}
                 {isAPIEvent && (apiEvent as EventResponse).isFeatured && (
                   <div className="absolute top-4 left-4">
-                    <Badge className="font-gotham-bold bg-yellow/20 text-eagle-green border-yellow">
+                    <Badge className="font-bold bg-yellow/20 text-eagle-green border-yellow">
                       Featured
                     </Badge>
                   </div>
                 )}
                 {!isAPIEvent && (mockEvent as Event).badges?.map(badge => (
                   <div key={badge} className="absolute top-4 left-4 flex flex-wrap gap-2">
-                    <Badge className={`font-gotham-bold ${getBadgeColor(badge)}`}>
+                    <Badge className={`font-bold ${getBadgeColor(badge)}`}>
                       {badge.charAt(0).toUpperCase() + badge.slice(1)}
                     </Badge>
                   </div>
@@ -394,14 +404,14 @@ export default function EventDetail() {
 
                 {/* Location */}
                 <div className="absolute top-4 right-4">
-                  <Badge className="bg-white/90 text-eagle-green border-none font-gotham-bold">
+                  <Badge className="bg-white/90 text-eagle-green border-none font-bold">
                     📍 {eventCity}
                   </Badge>
                 </div>
 
                 {/* Price */}
                 <div className="absolute bottom-4 right-4">
-                  <Badge className="bg-eagle-green text-white border-none font-gotham-bold text-lg px-3 py-1">
+                  <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
                     From {eventOrderService.formatCurrency(minPrice, baseCurrency)}
                   </Badge>
                 </div>
@@ -409,7 +419,7 @@ export default function EventDetail() {
                 {/* Image counter */}
                 {eventImages.length > 1 && (
                   <div className="absolute bottom-4 left-4">
-                    <Badge className="bg-black/60 text-white border-none font-gotham-light">
+                    <Badge className="bg-black/60 text-white border-none font-light">
                       {selectedImageIndex + 1} / {eventImages.length}
                     </Badge>
                   </div>
@@ -441,11 +451,11 @@ export default function EventDetail() {
 
               <div className="space-y-4">
                 <div>
-                  <span className="text-sm font-gotham-light text-viridian-green">
+                  <span className="text-sm font-light text-viridian-green">
                     {isAPIEvent ? (apiEvent as EventResponse).categoryName || 'Event' : 
                       EVENT_CATEGORIES.find(c => c.id === (mockEvent as Event).categoryId)?.name || 'Event'}
                   </span>
-                  <h1 className="text-3xl lg:text-4xl font-gotham-bold text-eagle-green mt-1">
+                  <h1 className="text-3xl lg:text-4xl font-bold text-eagle-green mt-1">
                     {eventTitle}
                   </h1>
                 </div>
@@ -453,7 +463,7 @@ export default function EventDetail() {
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4 text-viridian-green" />
-                    <span className="font-gotham-light text-eagle-green">
+                    <span className="font-light text-eagle-green">
                       {eventTime}
                       {endDateFormatted && (
                         <> — {endDateFormatted.eventTime}</>
@@ -466,7 +476,7 @@ export default function EventDetail() {
                       <Separator orientation="vertical" className="h-4" />
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4 text-viridian-green" />
-                        <span className="font-gotham-light text-eagle-green">
+                        <span className="font-light text-eagle-green">
                           Your time: {userTime}
                           {endDateFormatted?.userTime && (
                             <> — {endDateFormatted.userTime}</>
@@ -480,14 +490,14 @@ export default function EventDetail() {
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-4 w-4 text-viridian-green" />
-                    <span className="font-gotham-light text-eagle-green">{eventLocation}</span>
+                    <span className="font-light text-eagle-green">{eventLocation}</span>
                   </div>
                   
                   <Separator orientation="vertical" className="h-4" />
                   
                   <div className="flex items-center gap-1">
                     <Globe className="h-4 w-4 text-viridian-green" />
-                    <span className="font-gotham-light text-eagle-green">{eventTimezone}</span>
+                    <span className="font-light text-eagle-green">{eventTimezone}</span>
                   </div>
                 </div>
               </div>
@@ -501,15 +511,27 @@ export default function EventDetail() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="font-gotham-bold text-eagle-green">About This Event</CardTitle>
+                  <CardTitle className="font-bold text-eagle-green">About This Event</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="font-gotham-light text-eagle-green/80 leading-relaxed">
+                  <p className="font-light text-eagle-green/80 leading-relaxed">
                     {eventDescription}
                   </p>
                 </CardContent>
               </Card>
             </motion.div>
+
+            {/* Event Organizer/Vendor */}
+            {vendorProfile && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                <h3 className="font-bold text-eagle-green mb-3">Event Organizer</h3>
+                <VendorCard vendor={vendorProfile} />
+              </motion.div>
+            )}
 
             {/* Ticket Types - API Events with selection */}
             {isAPIEvent && (
@@ -520,7 +542,7 @@ export default function EventDetail() {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
+                    <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                       <Ticket className="h-5 w-5" />
                       Select Your Tickets
                     </CardTitle>
@@ -543,7 +565,7 @@ export default function EventDetail() {
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                  <h4 className="font-gotham-bold text-eagle-green">{ticket.name}</h4>
+                                  <h4 className="font-bold text-eagle-green">{ticket.name}</h4>
                                   {!availability.available ? (
                                     <Badge variant="secondary">Sold Out</Badge>
                                   ) : ticket.availableCount <= 10 && (
@@ -553,17 +575,17 @@ export default function EventDetail() {
                                   )}
                                 </div>
                                 {ticket.description && (
-                                  <p className="font-gotham-light text-eagle-green/70 text-sm mt-1">
+                                  <p className="font-light text-eagle-green/70 text-sm mt-1">
                                     {ticket.description}
                                   </p>
                                 )}
                               </div>
                               <div className="flex items-center gap-4">
                                 <div className="text-right">
-                                  <p className="font-gotham-bold text-eagle-green text-lg">
+                                  <p className="font-bold text-eagle-green text-lg">
                                     {eventOrderService.formatCurrency(ticket.priceMinor, ticket.currency)}
                                   </p>
-                                  <p className="font-gotham-light text-eagle-green/70 text-sm">
+                                  <p className="font-light text-eagle-green/70 text-sm">
                                     {ticket.availableCount} available
                                   </p>
                                 </div>
@@ -579,7 +601,7 @@ export default function EventDetail() {
                                   >
                                     <Minus className="h-4 w-4" />
                                   </Button>
-                                  <span className="w-8 text-center font-gotham-bold text-eagle-green">
+                                  <span className="w-8 text-center font-bold text-eagle-green">
                                     {count}
                                   </span>
                                   <Button
@@ -610,7 +632,7 @@ export default function EventDetail() {
               <div className="sticky top-8 space-y-4">
                 <Card className="border-eagle-green/20">
                   <CardHeader className="bg-gradient-to-r from-june-bud/10 to-white">
-                    <CardTitle className="font-gotham-bold text-eagle-green flex items-center gap-2">
+                    <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                       <ShoppingCart className="h-5 w-5" />
                       Order Summary
                     </CardTitle>
@@ -619,7 +641,7 @@ export default function EventDetail() {
                     {getTotalTickets() === 0 ? (
                       <div className="text-center py-8">
                         <Ticket className="h-12 w-12 mx-auto text-eagle-green/30 mb-2" />
-                        <p className="font-gotham-light text-eagle-green/70">
+                        <p className="font-light text-eagle-green/70">
                           Select tickets from the list to continue
                         </p>
                       </div>
@@ -632,10 +654,10 @@ export default function EventDetail() {
                             if (!ticketType || tickets.length === 0) return null;
                             return (
                               <div key={ticketTypeId} className="flex justify-between text-sm">
-                                <span className="font-gotham-light text-eagle-green">
+                                <span className="font-light text-eagle-green">
                                   {ticketType.name} × {tickets.length}
                                 </span>
-                                <span className="font-gotham-bold text-eagle-green">
+                                <span className="font-bold text-eagle-green">
                                   {eventOrderService.formatCurrency(ticketType.priceMinor * tickets.length, ticketType.currency)}
                                 </span>
                               </div>
@@ -648,15 +670,15 @@ export default function EventDetail() {
                         {/* Total */}
                         <div className="bg-june-bud/10 rounded-lg p-4">
                           <div className="flex justify-between items-center">
-                            <span className="font-gotham-light text-eagle-green">Total ({getTotalTickets()} tickets)</span>
-                            <span className="font-gotham-bold text-eagle-green text-xl">
+                            <span className="font-light text-eagle-green">Total ({getTotalTickets()} tickets)</span>
+                            <span className="font-bold text-eagle-green text-xl">
                               {eventOrderService.formatCurrency(getTotalPrice(), baseCurrency)}
                             </span>
                           </div>
                         </div>
 
                         <Button 
-                          className="w-full bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold h-12"
+                          className="w-full bg-eagle-green hover:bg-viridian-green text-white font-bold h-12"
                           onClick={handleProceedToCheckout}
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />

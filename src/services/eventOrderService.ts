@@ -28,6 +28,7 @@ export interface TicketType {
 export interface ImageDto {
   id: number;
   url: string;
+  fullUrl: string;
   originalFilename?: string;
   altText?: string;
   sortOrder: number;
