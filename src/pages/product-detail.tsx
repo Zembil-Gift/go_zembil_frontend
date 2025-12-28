@@ -1,24 +1,19 @@
 import { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useCartStore } from "@/stores/cart-store";
 import { 
   Heart, 
-  Star, 
-  Truck, 
-  Shield, 
-  ChevronLeft, 
+  ChevronLeft,
   ChevronRight, 
   Plus, 
   Minus,
   Share2,
-  MessageCircle,
   Check,
   X,
   ZoomIn
@@ -27,12 +22,56 @@ import { Link } from "react-router-dom";
 import { productService, Product, extractPriceAmount } from "@/services/productService";
 import { cartService } from "@/services/cartService";
 import { wishlistService } from "@/services/wishlistService";
+import { reviewService } from "@/services/reviewService";
 import { cn } from "@/lib/utils";
 import { formatPrice, getPriceParts, getPriceCurrency } from "@/lib/currency";
 import { getProductImageUrl, getAllProductImages } from "@/utils/imageUtils";
+import { ProductReviewsSection, VendorCard, CompactRating } from "@/components/reviews";
+
+// Image with skeleton loading
+function ProductImage({ 
+  src, 
+  alt, 
+  className,
+  onClick 
+}: { 
+  src: string; 
+  alt: string; 
+  className?: string;
+  onClick?: () => void;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  return (
+    <div className="relative w-full h-full" onClick={onClick}>
+      {!loaded && !error && (
+        <div 
+          className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer"
+          style={{ backgroundSize: '200% 100%' }}
+        />
+      )}
+      <img
+        src={error ? '/placeholder-product.jpg' : src}
+        alt={alt}
+        className={cn(
+          'transition-opacity duration-300',
+          loaded ? 'opacity-100' : 'opacity-0',
+          className
+        )}
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          setError(true);
+          setLoaded(true);
+        }}
+      />
+    </div>
+  );
+}
 
 export default function ProductDetail() {
   const params = useParams();
+  const navigate = useNavigate();
   const productId = params.id;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -88,12 +127,11 @@ export default function ProductDetail() {
     if (selectedSku?.stockQuantity !== undefined) return selectedSku.stockQuantity;
     return product?.stockQuantity || 0;
   }, [selectedSku, selectedSkuId, product]);
-
-  const skuAttributes = useMemo(() => {
+  useMemo(() => {
     if (!product?.productSku) return {};
-    
+
     const attributes: Record<string, Set<string>> = {};
-    
+
     product.productSku.forEach(sku => {
       sku.attributes?.forEach(attr => {
         if (!attributes[attr.name]) {
@@ -102,16 +140,15 @@ export default function ProductDetail() {
         attributes[attr.name].add(attr.value);
       });
     });
-    
+
     const result: Record<string, string[]> = {};
     Object.entries(attributes).forEach(([name, values]) => {
       result[name] = Array.from(values);
     });
-    
+
     return result;
   }, [product]);
-
-  // Show product images by default. 
+// Show product images by default.
   // Only show SKU images when user explicitly selects a variant (for multi-SKU products).
   // For single-SKU products, show SKU images if available (since the SKU IS the product).
   const images = useMemo(() => {
@@ -133,10 +170,19 @@ export default function ProductDetail() {
     return images.length > 0 ? images : [];
   }, [images]);
 
-  const { data: reviews = [] } = useQuery({
-    queryKey: ["products", productId, "reviews"],
-    queryFn: () => [], // Reviews API not implemented yet - return empty for now
+  const { data: ratingSummary } = useQuery({
+    queryKey: ["product-rating-summary", productId],
+    queryFn: () => reviewService.getProductRatingSummary(Number(productId)),
     enabled: !!productId,
+  });
+
+  const { data: vendorProfile } = useQuery({
+    queryKey: ["vendor-profile-by-user", product?.vendorId],
+    queryFn: () => {
+      if (!product?.vendorId) return null;
+      return reviewService.getVendorPublicProfileByUserId(product.vendorId);
+    },
+    enabled: !!product?.vendorId,
   });
 
   const wishlistMutation = useMutation({
@@ -156,7 +202,7 @@ export default function ProductDetail() {
           : "Item added to your wishlist",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update wishlist",
@@ -330,7 +376,7 @@ export default function ProductDetail() {
             />
             
             {displayImages.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-gotham-light">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-light">
                 {selectedImageIndex + 1} / {displayImages.length}
               </div>
             )}
@@ -358,12 +404,12 @@ export default function ProductDetail() {
                   className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-lg cursor-pointer group"
                   onClick={() => openLightbox(selectedImageIndex)}
                 >
-                  <img
+                  <ProductImage
                     src={displayImages[selectedImageIndex]}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
                     <ZoomIn className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   
@@ -388,7 +434,7 @@ export default function ProductDetail() {
                   {/* Image counter */}
                   {displayImages.length > 1 && (
                     <div className="absolute bottom-4 left-4">
-                      <Badge className="bg-black/60 text-white border-none font-gotham-light">
+                      <Badge className="bg-black/60 text-white border-none font-light">
                         {selectedImageIndex + 1} / {displayImages.length}
                       </Badge>
                     </div>
@@ -408,7 +454,7 @@ export default function ProductDetail() {
                             : "border-transparent hover:border-gray-300"
                         }`}
                       >
-                        <img
+                        <ProductImage
                           src={image}
                           alt={`${product.name} thumbnail ${index + 1}`}
                           className="w-full h-full object-cover"
@@ -436,39 +482,28 @@ export default function ProductDetail() {
                 {product.name}
               </h1>
               
-              {product.rating && product.reviewCount && (
+              {/* Rating from API */}
+              {ratingSummary && ratingSummary.totalReviews > 0 ? (
                 <div className="flex items-center space-x-2 mb-4">
-                  <div className="flex items-center">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        size={16}
-                        className={`${
-                          i < Math.floor(parseFloat(product.rating))
-                            ? "text-viridian-green fill-viridian-green"
-                            : "text-gray-300"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {parseFloat(product.rating).toFixed(1)} ({product.reviewCount} reviews)
-                  </span>
+                  <CompactRating 
+                    rating={ratingSummary.averageRating} 
+                    reviewCount={ratingSummary.totalReviews}
+                    size="md"
+                  />
                 </div>
+              ) : (
+                <p className="text-sm text-gray-500 mb-4">No reviews yet</p>
               )}
 
               {/* Badges */}
               <div className="flex flex-wrap gap-2 mb-4">
-                {product.salesCount && product.salesCount > 50 && (
-                  <Badge className="bg-viridian-green text-white">Bestseller</Badge>
+                {product.isFeatured && (
+                  <Badge className="bg-viridian-green text-white">Featured</Badge>
                 )}
-                {product.tags?.includes("handmade") && (
-                  <Badge className="bg-warm-red text-white">Handmade</Badge>
+                {product.isTrending && (
+                  <Badge className="bg-sunset-orange text-white">Trending</Badge>
                 )}
-                {product.tags?.includes("authentic") && (
-                  <Badge className="bg-sunset-orange text-white">Authentic</Badge>
-                )}
-                {stockQuantity > 0 && stockQuantity <= 5 && (
+                {stockQuantity !== null && stockQuantity > 0 && stockQuantity <= 5 && (
                   <Badge variant="outline" className="border-orange-500 text-orange-500">
                     Only {stockQuantity} left
                   </Badge>
@@ -654,28 +689,43 @@ export default function ProductDetail() {
               </div>
 
               <Button
-                onClick={() => {
-                  addToCartMutation.mutate();
-                  // Navigate to checkout after adding to cart
-                  setTimeout(() => {
-                    window.location.href = "/checkout";
-                  }, 1000);
+                onClick={async () => {
+                  // Check variant selection first for multi-SKU products
+                  if (product?.productSku && product.productSku.length > 1 && !selectedSkuId) {
+                    toast({
+                      title: "Please select a variant",
+                      description: "Choose a product variant before proceeding",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  if (stockQuantity === 0 || stockQuantity === null) {
+                    toast({
+                      title: "Out of stock",
+                      description: "This item is currently unavailable",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  try {
+                    await addToCartMutation.mutateAsync();
+                    navigate("/checkout");
+                  } catch (error) {
+                    console.error('Failed to add to cart:', error);
+                  }
                 }}
+                disabled={addToCartMutation.isPending || stockQuantity === 0 || stockQuantity === null}
                 variant="outline"
                 className="w-full h-12 border-deep-forest text-deep-forest hover:bg-deep-forest hover:text-white"
               >
-                Buy Now
+                {addToCartMutation.isPending ? "Processing..." : "Buy Now"}
               </Button>
             </div>
 
             {/* Delivery Info */}
-            <div className="space-y-3 pt-6 border-t border-gray-200">
-              <div className="flex items-center space-x-3">
-                <Truck className="text-viridian-green" size={20} />
-                <span className="text-gray-600">
-                  {product.deliveryDays || 3} days delivery in Addis Ababa
-                </span>
-              </div>
+            {/* <div className="space-y-3 pt-6 border-t border-gray-200">
               <div className="flex items-center space-x-3">
                 <Shield className="text-viridian-green" size={20} />
                 <span className="text-gray-600">Quality guarantee & authentic products</span>
@@ -684,53 +734,34 @@ export default function ProductDetail() {
                 <MessageCircle className="text-viridian-green" size={20} />
                 <span className="text-gray-600">Add personal video message (+50 ETB)</span>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
+
+        {/* Vendor Section */}
+        {vendorProfile && (
+          <div className="mt-8">
+            <h3 className="font-semibold text-lg text-charcoal mb-4">Sold by</h3>
+            <VendorCard vendor={vendorProfile} />
+          </div>
+        )}
 
         {/* Product Details Tabs */}
         <div className="mt-16">
           <Tabs defaultValue="reviews" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
+              <TabsTrigger value="reviews">
+                Reviews
+                {ratingSummary && ratingSummary.totalReviews > 0 && (
+                  <span className="ml-1 text-xs">({ratingSummary.totalReviews})</span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="details">Product Details</TabsTrigger>
               <TabsTrigger value="shipping">Shipping & Returns</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="reviews" className="space-y-6">
-              <div className="bg-white rounded-lg p-6">
-                <h3 className="font-semibold text-lg mb-4">Customer Reviews</h3>
-                {reviews.length > 0 ? (
-                  <div className="space-y-4">
-                    {reviews.map((review: any) => (
-                      <div key={review.id} className="border-b border-gray-200 pb-4 last:border-b-0">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <div className="flex">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                size={14}
-                                className={`${
-                                  i < review.rating
-                                    ? "text-viridian-green fill-viridian-green"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="font-medium">{review.title}</span>
-                        </div>
-                        <p className="text-gray-600">{review.content}</p>
-                        <p className="text-sm text-gray-500 mt-2">
-                          {new Date(review.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500">No reviews yet. Be the first to review this product!</p>
-                )}
-              </div>
+            <TabsContent value="reviews" className="space-y-6 mt-6">
+              <ProductReviewsSection productId={Number(productId)} />
             </TabsContent>
             
             <TabsContent value="details" className="space-y-6">
@@ -739,15 +770,7 @@ export default function ProductDetail() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <span className="font-medium">SKU:</span>
-                    <span className="ml-2 text-gray-600">{product.sku || "N/A"}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Weight:</span>
-                    <span className="ml-2 text-gray-600">{product.weight || "N/A"} kg</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Delivery Time:</span>
-                    <span className="ml-2 text-gray-600">{product.deliveryDays || 3} days</span>
+                    <span className="ml-2 text-gray-600">{product.productSku ?  product.productSku[0].skuCode : "N/A"}</span>
                   </div>
                   <div>
                     <span className="font-medium">Customizable:</span>

@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { vendorService, VendorProfile, Product } from "@/services/vendorService";
+import { vendorService, VendorProfile, Product, CategoryChangeRequest } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService, ImageDto } from "@/services/imageService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,13 +29,23 @@ import {
   DollarSign,
   AlertTriangle,
   ImageIcon,
-  Info
+  Info,
+  FolderTree,
+  Clock
 } from "lucide-react";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
   if (!vendorProfile) return false;
@@ -106,6 +116,11 @@ export default function EditProduct() {
   const [currentSkuImages, setCurrentSkuImages] = useState<Record<number, ImageDto[]>>({});
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
+  // State for category change request
+  const [categoryChangeDialogOpen, setCategoryChangeDialogOpen] = useState(false);
+  const [categoryChangeReason, setCategoryChangeReason] = useState("");
+  const [pendingFormData, setPendingFormData] = useState<ProductEditFormData | null>(null);
+
   // Fetch product data
   const { data: product, isLoading: productLoading, error: productError } = useQuery({
     queryKey: ['product', productId],
@@ -146,6 +161,20 @@ export default function EditProduct() {
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies'],
     queryFn: () => apiService.getRequest<Currency[]>('/api/currencies'),
+  });
+
+  // Fetch pending category change request for this product
+  const { data: pendingCategoryChangeRequest } = useQuery<CategoryChangeRequest | null>({
+    queryKey: ['pending-category-change', productId],
+    queryFn: async () => {
+      try {
+        const response = await vendorService.getPendingCategoryChangeRequestForProduct(productId!);
+        return response;
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!productId && isAuthenticated && isVendor && product?.status === 'ACTIVE',
   });
 
   const availableCurrencies = isEthiopianVendor(vendorProfile)
@@ -274,11 +303,16 @@ export default function EditProduct() {
     mutationFn: async (data: ProductEditFormData) => {
       if (!productId) throw new Error("Product ID is required");
 
+      // Use the appropriate endpoint based on product status
+      const isPendingOrRejected = product?.status === 'PENDING' || product?.status === 'REJECTED';
+      
+      // For ACTIVE products, exclude subCategoryId from the payload (category changes require approval)
       const productPayload: Partial<Product> = {
         name: data.name,
         description: data.description || undefined,
         summary: data.summary || undefined,
-        subCategoryId: data.subCategoryId ? parseInt(data.subCategoryId) : undefined,
+        // Only include subCategoryId for PENDING/REJECTED products (can change directly)
+        ...(isPendingOrRejected && { subCategoryId: data.subCategoryId ? parseInt(data.subCategoryId) : undefined }),
         isCustomizable: data.isCustomizable,
         tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(t => t) : undefined,
         occasion: data.occasion || undefined,
@@ -293,9 +327,6 @@ export default function EditProduct() {
         })),
       };
 
-      // Use the appropriate endpoint based on product status
-      const isPendingOrRejected = product?.status === 'PENDING' || product?.status === 'REJECTED';
-      
       if (isPendingOrRejected) {
         return vendorService.editPendingProduct(productId, productPayload as Product);
       } else {
@@ -353,6 +384,36 @@ export default function EditProduct() {
     },
   });
 
+  // Category change request mutation
+  const categoryChangeMutation = useMutation({
+    mutationFn: async ({ newSubCategoryId, reason }: { newSubCategoryId: number; reason: string }) => {
+      if (!productId) throw new Error("Product ID is required");
+      return vendorService.createCategoryChangeRequest(productId, { newSubCategoryId, reason });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Category Change Requested",
+        description: "Your category change request has been submitted for admin approval.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['pending-category-change', productId] });
+      setCategoryChangeDialogOpen(false);
+      setCategoryChangeReason("");
+      
+      // Now proceed with the rest of the product update if there's pending data
+      if (pendingFormData) {
+        updateProductMutation.mutate(pendingFormData);
+        setPendingFormData(null);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || error.message || "Failed to submit category change request",
+        variant: "destructive",
+      });
+    },
+  });
+
   const addSku = () => {
     const defaultCurrency = isEthiopianVendor(vendorProfile)
       ? "ETB"
@@ -402,7 +463,42 @@ export default function EditProduct() {
       }
     }
 
+    // Check if category changed for ACTIVE products
+    const isActiveProduct = product?.status === 'ACTIVE';
+    const originalSubCategoryId = product?.subCategoryId?.toString();
+    const newSubCategoryId = data.subCategoryId;
+    const categoryChanged = originalSubCategoryId !== newSubCategoryId;
+
+    if (isActiveProduct && categoryChanged && !pendingCategoryChangeRequest) {
+      // Category change needs approval - show dialog
+      setPendingFormData(data);
+      setCategoryChangeDialogOpen(true);
+      return;
+    }
+
+    // If there's already a pending category change request, warn the user
+    if (isActiveProduct && categoryChanged && pendingCategoryChangeRequest) {
+      toast({
+        title: "Pending Category Change",
+        description: "You already have a pending category change request for this product. Please wait for admin approval or cancel the existing request.",
+        variant: "destructive",
+      });
+      // Reset the category dropdown to current value
+      form.setValue('subCategoryId', originalSubCategoryId || '');
+      return;
+    }
+
     updateProductMutation.mutate(data);
+  };
+
+  const handleCategoryChangeSubmit = () => {
+    if (!pendingFormData || !productId) return;
+    
+    const newSubCategoryId = parseInt(pendingFormData.subCategoryId);
+    categoryChangeMutation.mutate({
+      newSubCategoryId,
+      reason: categoryChangeReason,
+    });
   };
 
   const onError = (errors: any) => {
@@ -532,6 +628,26 @@ export default function EditProduct() {
             or go to the Requests tab in your dashboard.
           </AlertDescription>
         </Alert>
+
+        {/* Pending Category Change Request Alert */}
+        {pendingCategoryChangeRequest && (
+          <Alert className="mb-6 border-amber-200 bg-amber-50">
+            <Clock className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800">Pending Category Change Request</AlertTitle>
+            <AlertDescription className="text-amber-700">
+              You have a pending category change request for this product.
+              <br />
+              <span className="font-medium">Requested Category:</span>{" "}
+              {pendingCategoryChangeRequest.newSubCategoryName}
+              <br />
+              <span className="font-medium">Reason:</span> {pendingCategoryChangeRequest.reason}
+              <br />
+              <Link to="/vendor?tab=requests" className="font-medium underline">
+                View in Requests
+              </Link>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
           {/* Basic Information */}
@@ -857,12 +973,12 @@ export default function EditProduct() {
             </Button>
             <Button 
               type="submit" 
-              disabled={updateProductMutation.isPending || isUploadingImages}
+              disabled={updateProductMutation.isPending || isUploadingImages || categoryChangeMutation.isPending}
             >
-              {updateProductMutation.isPending || isUploadingImages ? (
+              {updateProductMutation.isPending || isUploadingImages || categoryChangeMutation.isPending ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  {isUploadingImages ? "Uploading Images..." : "Saving..."}
+                  {isUploadingImages ? "Uploading Images..." : categoryChangeMutation.isPending ? "Submitting Category Change..." : "Saving..."}
                 </>
               ) : (
                 product.status === 'PENDING' || product.status === 'REJECTED' 
@@ -873,6 +989,73 @@ export default function EditProduct() {
           </div>
         </form>
       </div>
+
+      {/* Category Change Request Dialog */}
+      <Dialog open={categoryChangeDialogOpen} onOpenChange={setCategoryChangeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderTree className="h-5 w-5" />
+              Category Change Request
+            </DialogTitle>
+            <DialogDescription>
+              Since your product is already active, changing its category requires admin approval.
+              Please provide a reason for the category change.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="categoryChangeReason">Reason for Category Change</Label>
+              <Textarea
+                id="categoryChangeReason"
+                placeholder="e.g., The product fits better in the new category because..."
+                value={categoryChangeReason}
+                onChange={(e) => setCategoryChangeReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+            {pendingFormData && (
+              <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+                <p>
+                  <span className="font-medium">Current Category:</span>{" "}
+                  {allSubCategories.find((sc: SubCategory) => sc.id === product?.subCategoryId)?.name || "Unknown"}
+                </p>
+                <p>
+                  <span className="font-medium">New Category:</span>{" "}
+                  {allSubCategories.find((sc: SubCategory) => sc.id.toString() === pendingFormData.subCategoryId)?.name || "Unknown"}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCategoryChangeDialogOpen(false);
+                setCategoryChangeReason("");
+                setPendingFormData(null);
+                // Reset category to original
+                form.setValue('subCategoryId', product?.subCategoryId?.toString() || '');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCategoryChangeSubmit}
+              disabled={categoryChangeMutation.isPending || !categoryChangeReason.trim()}
+            >
+              {categoryChangeMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Request"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

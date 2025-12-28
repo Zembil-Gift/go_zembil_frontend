@@ -78,12 +78,16 @@ export interface Product {
   }>;
   rating?: number;
   reviewCount?: number;
+  averageRating?: number;
+  totalReviews?: number;
   isTrending?: boolean;
   isNew?: boolean;
   stockQuantity?: number;
   categoryId?: number;
   categorySlug?: string;
   category?: string;
+  vendorId?: number;
+  vendorName?: string;
 }
 
 export interface Tag {
