@@ -88,7 +88,14 @@ export default function ServiceCheckout() {
     return serviceService.parseAvailabilityConfig(service);
   }, [service]);
 
-  // Prefill contact information from user profile
+  const displayPrice = useMemo(() => {
+    return service?.defaultPackage?.basePriceMinor ?? service?.basePriceMinor ?? 0;
+  }, [service]);
+
+  const displayCurrency = useMemo(() => {
+    return service?.defaultPackage?.currency ?? service?.currency ?? 'ETB';
+  }, [service]);
+
   useEffect(() => {
     if (user) {
       if (user.email && !contactEmail) {
@@ -100,14 +107,12 @@ export default function ServiceCheckout() {
     }
   }, [user]);
 
-  // Generate available dates for calendar (improved version)
   const calendarDates = useMemo(() => {
     const dates: string[] = [];
     const today = new Date();
     const workingDays = availability.workingDays || [0, 1, 2, 3, 4, 5, 6];
     const blackoutDates = availability.blackoutDates || [];
-    const advanceBookingDays = availability.advanceBookingDays || 60; // Increased to 60 days
-
+    const advanceBookingDays = availability.advanceBookingDays || 60; 
     for (let i = 1; i <= advanceBookingDays; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
@@ -947,7 +952,7 @@ export default function ServiceCheckout() {
                     <div className="flex justify-between items-center">
                       <span className="font-light text-eagle-green">Total</span>
                       <span className="font-bold text-eagle-green text-2xl">
-                        {serviceService.formatPrice(service.basePriceMinor, service.currency)}
+                        {serviceService.formatPrice(displayPrice, displayCurrency)}
                       </span>
                     </div>
                   </div>

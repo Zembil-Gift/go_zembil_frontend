@@ -61,6 +61,52 @@ export interface ServiceResponse {
   approvedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Package support
+  packages?: ServicePackageResponse[];
+  defaultPackage?: ServicePackageResponse;
+  hasPackages?: boolean;
+}
+
+export type ServicePackageStatus = 
+  | 'PENDING' 
+  | 'APPROVED' 
+  | 'REJECTED' 
+  | 'SUSPENDED' 
+  | 'ARCHIVED';
+
+export interface ServicePackageAttribute {
+  id: number;
+  name?: string;
+  value: string;
+  sortOrder: number;
+}
+
+export interface ServicePackageResponse {
+  id: number;
+  serviceId: number;
+  serviceName?: string;
+  packageCode: string;
+  name: string;
+  description?: string;
+  durationMinutes?: number;
+  isDefault: boolean;
+  isFeatured?: boolean;
+  isAd?: boolean;
+  status: ServicePackageStatus;
+  rejectionReason?: string;
+  approvedAt?: string;
+  maxBookingsPerDay?: number;
+  sortOrder: number;
+  basePriceMinor: number;
+  vendorPriceMinor?: number;
+  currency: string;
+  availabilityType?: AvailabilityType;
+  availabilityConfig?: AvailabilityConfig;
+  attributes?: ServicePackageAttribute[];
+  images?: ServiceImage[];
+  primaryImageUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type ServiceStatus = 
@@ -97,11 +143,9 @@ export interface CreateServiceRequest {
   categoryId?: number;
   basePrice: number;
   currency?: string;
-  durationMinutes?: number;
   location?: string;
   city?: string;
-  availabilityType?: AvailabilityType;
-  availabilityConfig?: AvailabilityConfig;
+  // Note: availability settings are now at package level, not service level
   policiesConfig?: PoliciesConfig;
 }
 
@@ -109,14 +153,40 @@ export interface UpdateServiceRequest {
   title?: string;
   description?: string;
   categoryId?: number;
-  basePrice?: number;
-  currency?: string;
-  durationMinutes?: number;
   location?: string;
   city?: string;
+  policiesConfig?: PoliciesConfig;
+}
+
+// ==================== Service Package Types ====================
+
+export interface CreateServicePackageRequest {
+  packageCode?: string;
+  name: string;
+  description?: string;
+  durationMinutes?: number;
+  basePrice: number;  // Vendor price in major units
+  currency?: string;  // 3-letter code, defaults to ETB
+  isDefault?: boolean;
+  maxBookingsPerDay?: number;
+  sortOrder?: number;
+  availabilityType: AvailabilityType;
+  availabilityConfig: AvailabilityConfig;
+  attributes?: { name?: string; value: string; sortOrder?: number }[];
+}
+
+export interface UpdateServicePackageRequest {
+  name?: string;
+  description?: string;
+  durationMinutes?: number;
+  basePrice?: number;  // Vendor price in major units
+  currency?: string;
+  isDefault?: boolean;
+  maxBookingsPerDay?: number;
+  sortOrder?: number;
   availabilityType?: AvailabilityType;
   availabilityConfig?: AvailabilityConfig;
-  policiesConfig?: PoliciesConfig;
+  attributes?: { name?: string; value: string; sortOrder?: number }[];
 }
 
 class ServiceService {
@@ -149,6 +219,14 @@ class ServiceService {
   async getFeaturedServices(page: number = 0, size: number = 10): Promise<PagedServiceResponse> {
     const url = `/api/services/featured?page=${page}&size=${size}`;
     return await apiService.getRequest<PagedServiceResponse>(url);
+  }
+
+  /**
+   * Get ad service packages
+   */
+  async getAdServicePackages(limit: number = 5): Promise<ServicePackageResponse[]> {
+    const url = `/api/packages/ads?limit=${limit}`;
+    return await apiService.getRequest<ServicePackageResponse[]>(url);
   }
 
   /**
@@ -238,6 +316,50 @@ class ServiceService {
    */
   async archiveService(id: number): Promise<ServiceResponse> {
     return await apiService.postRequest<ServiceResponse>(`/api/services/${id}/archive`);
+  }
+
+  // ==================== Package Endpoints ====================
+
+  /**
+   * Create a new package for a service (vendor only)
+   */
+  async createPackage(serviceId: number, data: CreateServicePackageRequest): Promise<ServicePackageResponse> {
+    return await apiService.postRequest<ServicePackageResponse>(`/api/vendor/services/${serviceId}/packages`, data);
+  }
+
+  /**
+   * Update a package (vendor only)
+   */
+  async updatePackage(packageId: number, data: UpdateServicePackageRequest): Promise<ServicePackageResponse> {
+    return await apiService.putRequest<ServicePackageResponse>(`/api/vendor/packages/${packageId}`, data);
+  }
+
+  /**
+   * Get vendor's package by ID
+   */
+  async getVendorPackage(packageId: number): Promise<ServicePackageResponse> {
+    return await apiService.getRequest<ServicePackageResponse>(`/api/vendor/packages/${packageId}`);
+  }
+
+  /**
+   * Get all packages for a service (vendor)
+   */
+  async getVendorServicePackages(serviceId: number): Promise<ServicePackageResponse[]> {
+    return await apiService.getRequest<ServicePackageResponse[]>(`/api/vendor/services/${serviceId}/packages`);
+  }
+
+  /**
+   * Archive a package (vendor only)
+   */
+  async archivePackage(packageId: number): Promise<ServicePackageResponse> {
+    return await apiService.postRequest<ServicePackageResponse>(`/api/vendor/packages/${packageId}/archive`);
+  }
+
+  /**
+   * Set a package as default for its service (vendor only)
+   */
+  async setDefaultPackage(serviceId: number, packageId: number): Promise<ServicePackageResponse> {
+    return await apiService.postRequest<ServicePackageResponse>(`/api/vendor/services/${serviceId}/packages/${packageId}/set-default`);
   }
 
   // ==================== Admin Endpoints ====================

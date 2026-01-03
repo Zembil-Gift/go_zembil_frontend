@@ -27,6 +27,8 @@ import {
 import { serviceService, ServiceResponse, PagedServiceResponse } from "@/services/serviceService";
 import { categoryService } from "@/services/categoryService";
 import PageNavigator from "@/components/PageNavigator";
+import { reviewService } from "@/services/reviewService";
+import { CompactRating } from "@/components/reviews";
 
 // Service Card Component with hover image effect
 function ServiceCard({ service }: { service: ServiceResponse }) {
@@ -37,15 +39,31 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
   const [primaryImageError, setPrimaryImageError] = useState(false);
   const [secondaryImageError, setSecondaryImageError] = useState(false);
   
-  // Get images sorted by sortOrder
+  // Get images sorted by sortOrder - prefer default package images if available
   const sortedImages = useMemo(() => {
+    // First check if default package has images
+    if (service.defaultPackage?.images && service.defaultPackage.images.length > 0) {
+      return [...service.defaultPackage.images].sort((a, b) => a.sortOrder - b.sortOrder);
+    }
+    // Fall back to service images
     if (!service.images || service.images.length === 0) return [];
     return [...service.images].sort((a, b) => a.sortOrder - b.sortOrder);
-  }, [service.images]);
+  }, [service.images, service.defaultPackage]);
   
-  const primaryImage = sortedImages[0]?.fullUrl || serviceService.getPrimaryImageUrl(service);
+  const primaryImage = sortedImages[0]?.fullUrl || service.defaultPackage?.primaryImageUrl || serviceService.getPrimaryImageUrl(service);
   const secondaryImage = sortedImages[1]?.fullUrl || null;
   const hasSecondImage = !!secondaryImage && !secondaryImageError;
+
+  // Get price from default package if available, otherwise use base price
+  const displayPrice = service.defaultPackage?.basePriceMinor ?? service.basePriceMinor;
+  const displayCurrency = service.defaultPackage?.currency ?? service.currency;
+
+  // Fetch service rating summary
+  const { data: ratingSummary } = useQuery({
+    queryKey: ['service-rating-summary', service.id],
+    queryFn: () => reviewService.getServiceRatingSummary(service.id),
+    enabled: !!service.id,
+  });
 
   return (
     <motion.div
@@ -113,7 +131,7 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
             {/* Price Badge */}
             <div className="absolute bottom-3 right-3">
               <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
-                From {serviceService.formatPrice(service.basePriceMinor, service.currency)}
+                From {serviceService.formatPrice(displayPrice, displayCurrency)}
               </Badge>
             </div>
 
@@ -140,6 +158,15 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
                 {service.description}
               </p>
             )}
+
+            {/* Rating */}
+            <div className="mb-2">
+              <CompactRating 
+                rating={ratingSummary?.averageRating || 0} 
+                reviewCount={ratingSummary?.totalReviews || 0}
+                size="sm"
+              />
+            </div>
 
             {/* Meta Info */}
             <div className="flex items-center gap-4 text-sm text-eagle-green/70">
