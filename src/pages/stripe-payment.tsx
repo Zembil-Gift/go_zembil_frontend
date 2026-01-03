@@ -111,7 +111,7 @@ function PaymentForm({ orderId, amount, currency, billingDetails, onSuccess, onE
           onSuccess(paymentIntent.id);
 
           setTimeout(() => {
-            window.open(`/payment-success?orderId=${orderId}&payment_intent=${paymentIntent.id}`);
+            window.location.href = `/payment-success?orderId=${orderId}&payment_intent=${paymentIntent.id}`;
           }, 1500);
         } else if (paymentIntent.status === 'processing') {
           toast({
@@ -120,7 +120,7 @@ function PaymentForm({ orderId, amount, currency, billingDetails, onSuccess, onE
           });
           
           setTimeout(() => {
-            window.open(`/payment-success?orderId=${orderId}&payment_intent=${paymentIntent.id}`);
+            window.location.href = `/payment-success?orderId=${orderId}&payment_intent=${paymentIntent.id}`;
           }, 2000);
         } else {
           setErrorMessage(`Payment status: ${paymentIntent.status}`);
