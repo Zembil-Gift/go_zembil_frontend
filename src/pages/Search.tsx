@@ -95,7 +95,7 @@ export default function Search() {
               Back to Shop
             </Button>
             <div className="h-6 w-px bg-gray-300" />
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="md:text-2xl text-lg font-bold text-gray-900 flex items-center gap-2">
               <SearchIcon className="h-6 w-6" />
               Multilingual Search
             </h1>
