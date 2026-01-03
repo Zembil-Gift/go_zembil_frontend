@@ -20,9 +20,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/ImageUpload";
-import { ArrowLeft, Package, AlertCircle, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Package, AlertCircle, Plus, Trash2, Info } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Category {
   id: number;
@@ -51,7 +51,6 @@ const attributeSchema = z.object({
 const skuSchema = z.object({
   skuCode: z.string().min(1, "SKU code is required"),
   stockQuantity: z.number().min(0, "Stock cannot be negative"),
-  currencyCode: z.string().min(1, "Currency is required"),
   amount: z.number().min(0.01, "Price must be greater than 0"),
   attributes: z.array(attributeSchema).optional(),
 });
@@ -63,9 +62,9 @@ const productSchema = z.object({
   cover: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   subCategoryId: z.string().min(1, "Category is required"),
   isFeatured: z.boolean().optional(),
-  isCustomizable: z.boolean().optional(),
   tags: z.string().optional(),
   occasion: z.string().optional(),
+  currencyCode: z.string().min(1, "Currency is required"),
   productSku: z.array(skuSchema).min(1, "At least one product SKU is required"),
 });
 
@@ -122,13 +121,12 @@ export default function CreateProduct() {
       cover: "",
       subCategoryId: "",
       isFeatured: false,
-      isCustomizable: false,
       tags: "",
       occasion: "",
+      currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : (currencies[0]?.code || ""),
       productSku: [{
         skuCode: "",
         stockQuantity: 0,
-        currencyCode: currencies[0]?.code || "",
         amount: 0,
         attributes: [],
       }],
@@ -142,24 +140,17 @@ export default function CreateProduct() {
 
   useEffect(() => {
     if (isEthiopianVendor(vendorProfile)) {
-      skuFields.forEach((_, index) => {
-        const currentCurrency = form.getValues(`productSku.${index}.currencyCode`);
-        if (currentCurrency !== "ETB") {
-          form.setValue(`productSku.${index}.currencyCode`, "ETB");
-        }
-      });
+      const currentCurrency = form.getValues("currencyCode");
+      if (currentCurrency !== "ETB") {
+        form.setValue("currencyCode", "ETB");
+      }
     }
-  }, [vendorProfile, form, skuFields]);
+  }, [vendorProfile, form]);
 
   const addSku = () => {
-    const defaultCurrency = isEthiopianVendor(vendorProfile)
-      ? "ETB" 
-      : (availableCurrencies[0]?.code || currencies[0]?.code || "");
-    
     appendSku({
       skuCode: "",
       stockQuantity: 0,
-      currencyCode: defaultCurrency,
       amount: 0,
       attributes: [],
     });
@@ -194,7 +185,6 @@ export default function CreateProduct() {
         summary: data.summary || undefined,
         subCategoryId: parseInt(data.subCategoryId),
         isFeatured: false,
-        isCustomizable: data.isCustomizable,
         tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(t => t) : undefined,
         occasion: data.occasion || undefined,
       };
@@ -207,7 +197,7 @@ export default function CreateProduct() {
           stockQuantity: sku.stockQuantity,
           isDefault: index === 0, // First SKU is default
           price: {
-            currencyCode: sku.currencyCode,
+            currencyCode: data.currencyCode,
             amount: sku.amount,
           },
           attributes: sku.attributes?.filter(attr => attr.name && attr.value) || [],
@@ -485,9 +475,51 @@ export default function CreateProduct() {
           <Card>
             <CardHeader>
               <CardTitle>Pricing *</CardTitle>
-              <CardDescription>Set the base price for your product. If you add variants, they can have their own prices too.</CardDescription>
+              <CardDescription>Set the currency and prices for your product variants.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* VAT Notice */}
+              <Alert className="border-blue-200 bg-blue-50">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertTitle className="text-blue-800">Pricing Information</AlertTitle>
+                <AlertDescription className="text-blue-700">
+                  Enter your price (what you'll receive).
+                  {vendorProfile?.vatStatus === 'VAT_REGISTERED' && (
+                    <span className="block mt-1 font-medium">
+                      As a VAT-registered vendor, VAT will be included in the customer price.
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+
+              {/* Currency Selection */}
+              {!isEthiopianVendor(vendorProfile) ? (
+                <div>
+                  <Label>Currency *</Label>
+                  <Controller
+                    name="currencyCode"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCurrencies.map((currency) => (
+                            <SelectItem key={currency.id} value={currency.code}>
+                              {currency.code} - {currency.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {form.formState.errors.currencyCode && (
+                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.currencyCode.message}</p>
+                  )}
+                </div>
+              ) : null}
+
               {/* Product SKUs Section */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -530,7 +562,7 @@ export default function CreateProduct() {
                         {/* SKU Code and Stock */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label>SKU Code *</Label>
+                            <Label>SKU Code (reference code) *</Label>
                             <Input
                               placeholder={skuFields.length === 1 ? "e.g., PROD-001" : "e.g., SHIRT-RED-M"}
                               {...form.register(`productSku.${skuIndex}.skuCode`)}
@@ -540,7 +572,7 @@ export default function CreateProduct() {
                                 {form.formState.errors.productSku[skuIndex]?.skuCode?.message}
                               </p>
                             )}
-                            <p className="text-xs text-muted-foreground mt-1">Unique identifier for inventory tracking</p>
+                            <p className="text-xs text-muted-foreground mt-1">Reference code for this variant (unique within this product)</p>
                           </div>
                           <div>
                             <Label>Stock Quantity *</Label>
@@ -570,61 +602,40 @@ export default function CreateProduct() {
                         </div>
 
                         {/* SKU Price */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label>Currency *</Label>
-                            <Controller
-                              name={`productSku.${skuIndex}.currencyCode`}
-                              control={form.control}
-                              render={({ field }) => (
-                                <Select value={field.value} onValueChange={field.onChange}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select currency" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {availableCurrencies.map((currency) => (
-                                      <SelectItem key={currency.id} value={currency.code}>
-                                        {currency.code} - {currency.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            />
-                          </div>
-                          <div>
-                            <Label>Your Price *</Label>
-                            <Controller
-                              name={`productSku.${skuIndex}.amount`}
-                              control={form.control}
-                              render={({ field }) => (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0.01"
-                                  placeholder="0.00"
-                                  value={field.value || ''}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    if (value === '') {
-                                      field.onChange(0);
-                                    } else {
-                                      // Use Math.round to avoid floating point precision issues
-                                      const numValue = parseFloat(value);
-                                      if (!isNaN(numValue)) {
-                                        // Round to 2 decimal places using Math.round to avoid floating point errors
-                                        field.onChange(Math.round(numValue * 100) / 100);
-                                      }
+                        <div>
+                          <Label>
+                            {isEthiopianVendor(vendorProfile) ? "Price (ETB) *" : `Price (${form.watch("currencyCode") || "Currency"}) *`}
+                          </Label>
+                          <Controller
+                            name={`productSku.${skuIndex}.amount`}
+                            control={form.control}
+                            render={({ field }) => (
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                placeholder="0.00"
+                                value={field.value || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '') {
+                                    field.onChange(0);
+                                  } else {
+                                    // Use Math.round to avoid floating point precision issues
+                                    const numValue = parseFloat(value);
+                                    if (!isNaN(numValue)) {
+                                      // Round to 2 decimal places using Math.round to avoid floating point errors
+                                      field.onChange(Math.round(numValue * 100) / 100);
                                     }
-                                  }}
-                                  onBlur={field.onBlur}
-                                />
-                              )}
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              This is what you'll receive. Platform fee will be added for customers.
-                            </p>
-                          </div>
+                                  }
+                                }}
+                                onBlur={field.onBlur}
+                              />
+                            )}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            This is what you'll receive. Platform fee will be added for customers.
+                          </p>
                         </div>
 
                         {/* Attributes */}
@@ -706,25 +717,6 @@ export default function CreateProduct() {
               </div>
 
 
-            </CardContent>
-          </Card>
-
-          {/* Options */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Options</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Customizable</Label>
-                  <p className="text-sm text-muted-foreground">Allow customers to customize this product</p>
-                </div>
-                <Switch
-                  checked={form.watch("isCustomizable")}
-                  onCheckedChange={(checked) => form.setValue("isCustomizable", checked)}
-                />
-              </div>
             </CardContent>
           </Card>
 

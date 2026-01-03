@@ -21,9 +21,16 @@ import {Textarea} from "@/components/ui/textarea";
 import {Label} from "@/components/ui/label";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {ImageUpload} from "@/components/ImageUpload";
-import {ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, AlertCircle, ImageIcon} from "lucide-react";
+import {ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, AlertCircle, ImageIcon, Info} from "lucide-react";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
 interface Category {
+    id: number;
+    name: string;
+    slug: string;
+}
+
+interface SubCategory {
     id: number;
     name: string;
     slug: string;
@@ -40,7 +47,6 @@ const ticketTypeSchema = z.object({
     name: z.string().min(1, "Ticket name is required"),
     description: z.string().optional(),
     capacity: z.number().min(1, "Capacity must be at least 1"),
-    currencyCode: z.string().min(1, "Currency is required"),
     amount: z.number().min(0, "Price must be 0 or greater"),
 });
 
@@ -56,6 +62,7 @@ const eventSchema = z.object({
     city: z.string().optional(),
     imageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
     categoryId: z.string().optional(),
+    currencyCode: z.string().min(1, "Currency is required"),
     ticketTypes: z.array(ticketTypeSchema).min(1, "At least one ticket type is required"),
 });
 
@@ -74,6 +81,18 @@ export default function CreateEvent() {
     const {data: categories = []} = useQuery({
         queryKey: ['categories'],
         queryFn: () => apiService.getRequest<Category[]>('/api/categories'),
+    });
+
+    const {data: allSubCategories = [], isLoading: isLoadingSubCategories} = useQuery({
+        queryKey: ['all-subcategories', categories],
+        queryFn: async () => {
+            const subCategoriesPromises = categories.map((category) =>
+                apiService.getRequest<SubCategory[]>(`/api/categories/${category.id}/sub-categories`)
+            );
+            const results = await Promise.all(subCategoriesPromises);
+            return results.flat();
+        },
+        enabled: categories.length > 0,
     });
 
     const {data: currencies = []} = useQuery({
@@ -105,12 +124,12 @@ export default function CreateEvent() {
             city: "",
             imageUrl: "",
             categoryId: "",
+            currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : "USD",
             ticketTypes: [
                 {
                     name: "",
                     description: "",
                     capacity: 0,
-                    currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : "USD",
                     amount: 1,
                 },
             ],
@@ -125,12 +144,12 @@ export default function CreateEvent() {
     // Auto-set currency for Ethiopian vendors
     useEffect(() => {
         if (isEthiopianVendor(vendorProfile)) {
-            // Set currency to ETB for all ticket types
-            ticketFields.forEach((_, index) => {
-                form.setValue(`ticketTypes.${index}.currencyCode`, 'ETB');
-            });
+            const currentCurrency = form.getValues("currencyCode");
+            if (currentCurrency !== "ETB") {
+                form.setValue("currencyCode", "ETB");
+            }
         }
-    }, [vendorProfile, ticketFields.length]);
+    }, [vendorProfile, form]);
 
     const createEventMutation = useMutation({
         mutationFn: async (data: EventFormData) => {
@@ -149,7 +168,7 @@ export default function CreateEvent() {
                     description: tt.description,
                     capacity: tt.capacity,
                     price: tt.amount,
-                    currency: tt.currencyCode,
+                    currency: data.currencyCode,
                     sortOrder: index,
                 })),
             };
@@ -327,12 +346,12 @@ export default function CreateEvent() {
                                 <Label>Category</Label>
                                 <Select onValueChange={(value) => form.setValue("categoryId", value)}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select a category (optional)"/>
+                                        <SelectValue placeholder={isLoadingSubCategories ? "Loading categories..." : "Select a category (optional)"}/>
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {categories.map((category) => (
-                                            <SelectItem key={category.id} value={category.id.toString()}>
-                                                {category.name}
+                                        {allSubCategories.map((subCategory) => (
+                                            <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
+                                                {subCategory.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -387,7 +406,7 @@ export default function CreateEvent() {
                                 <Label htmlFor="venue">Venue Name *</Label>
                                 <Input
                                     id="venue"
-                                    placeholder="e.g., Millennium Hall"
+                                    placeholder="Enter Venue Name"
                                     {...form.register("venue")}
                                 />
                                 {form.formState.errors.venue && (
@@ -412,6 +431,53 @@ export default function CreateEvent() {
                                     {...form.register("city")}
                                 />
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Pricing */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Pricing *</CardTitle>
+                            <CardDescription>Set the currency for all ticket types</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* VAT Notice */}
+                            <Alert className="border-blue-200 bg-blue-50">
+                                <Info className="h-4 w-4 text-blue-600" />
+                                <AlertTitle className="text-blue-800">Pricing Information</AlertTitle>
+                                <AlertDescription className="text-blue-700">
+                                    Enter your ticket prices (what you'll receive).
+                                    {vendorProfile?.vatStatus === 'VAT_REGISTERED' && (
+                                        <span className="block mt-1 font-medium">
+                                            As a VAT-registered vendor, VAT will be included in the customer price.
+                                        </span>
+                                    )}
+                                </AlertDescription>
+                            </Alert>
+
+                            {!isEthiopianVendor(vendorProfile) ? (
+                                <div>
+                                    <Label>Currency *</Label>
+                                    <Select
+                                        value={form.watch("currencyCode")}
+                                        onValueChange={(value) => form.setValue("currencyCode", value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select currency"/>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {availableCurrencies.map((currency) => (
+                                                <SelectItem key={currency.id} value={currency.code}>
+                                                    {currency.code} - {currency.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {form.formState.errors.currencyCode && (
+                                        <p className="text-sm text-red-600 mt-1">{form.formState.errors.currencyCode.message}</p>
+                                    )}
+                                </div>
+                            ) : null}
                         </CardContent>
                     </Card>
 
@@ -468,42 +534,17 @@ export default function CreateEvent() {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <Label>Currency *</Label>
-                                            <Select
-                                                value={form.watch(`ticketTypes.${ticketIndex}.currencyCode`)}
-                                                onValueChange={(value) =>
-                                                    form.setValue(`ticketTypes.${ticketIndex}.currencyCode`, value)
-                                                }
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select currency"/>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {availableCurrencies.map((currency) => (
-                                                        <SelectItem key={currency.id} value={currency.code}>
-                                                            {currency.code} - {currency.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {isEthiopianVendor(vendorProfile) && (
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    Ethiopian vendors can only use ETB currency
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <Label>Price *</Label>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                placeholder="0.00"
-                                                {...form.register(`ticketTypes.${ticketIndex}.amount`, {valueAsNumber: true})}
-                                            />
-                                        </div>
+                                    <div>
+                                        <Label>
+                                            {isEthiopianVendor(vendorProfile) ? "Price (ETB) *" : `Price (${form.watch("currencyCode") || "Currency"}) *`}
+                                        </Label>
+                                        <Input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            placeholder="0.00"
+                                            {...form.register(`ticketTypes.${ticketIndex}.amount`, {valueAsNumber: true})}
+                                        />
                                     </div>
                                 </div>
                             ))}
@@ -520,7 +561,6 @@ export default function CreateEvent() {
                                         name: "",
                                         description: "",
                                         capacity: 0,
-                                        currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : (availableCurrencies[0]?.code || "USD"),
                                         amount: 0,
                                     })
                                 }

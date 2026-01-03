@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useState, useEffect, useCallback, memo } from "react";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -16,10 +16,76 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ArrowLeft, Briefcase, AlertCircle, Plus, Trash2, Camera, Info } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  ArrowLeft, Briefcase, AlertCircle, Plus, Trash2, Camera, Info, 
+  Package, Calendar, GripVertical, MapPin, Clock
+} from "lucide-react";
+
+// Memoized attribute input component to prevent re-renders
+interface AttributeInputProps {
+  name: string;
+  value: string;
+  onNameChange: (value: string) => void;
+  onValueChange: (value: string) => void;
+  onRemove: () => void;
+}
+
+const AttributeInput = memo(function AttributeInput({ 
+  name, 
+  value, 
+  onNameChange, 
+  onValueChange, 
+  onRemove 
+}: AttributeInputProps) {
+  const [localName, setLocalName] = useState(name);
+  const [localValue, setLocalValue] = useState(value);
+
+  // Sync local state with props when they change externally
+  useEffect(() => {
+    setLocalName(name);
+  }, [name]);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleNameBlur = useCallback(() => {
+    if (localName !== name) {
+      onNameChange(localName);
+    }
+  }, [localName, name, onNameChange]);
+
+  const handleValueBlur = useCallback(() => {
+    if (localValue !== value) {
+      onValueChange(localValue);
+    }
+  }, [localValue, value, onValueChange]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <Input 
+        placeholder="Name (optional)" 
+        value={localName} 
+        onChange={(e) => setLocalName(e.target.value)}
+        onBlur={handleNameBlur}
+        className="w-1/3" 
+      />
+      <Input 
+        placeholder="Value (required)" 
+        value={localValue} 
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={handleValueBlur}
+        className="flex-1" 
+      />
+      <Button type="button" variant="ghost" size="sm" onClick={onRemove} className="text-destructive">
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+});
 
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
   if (!vendorProfile) return false;
@@ -27,6 +93,12 @@ const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean =>
 };
 
 interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface SubCategory {
   id: number;
   name: string;
   slug: string;
@@ -49,44 +121,72 @@ const DAYS_OF_WEEK = [
   { value: 6, label: "Saturday" },
 ];
 
+// Package attribute schema
+const packageAttributeSchema = z.object({
+  name: z.string().optional(),
+  value: z.string().min(1, "Value is required"),
+  sortOrder: z.number().default(0),
+});
+
+// Package schema - availability is now required per package
+const packageSchema = z.object({
+  packageCode: z.string().max(64).optional(),
+  name: z.string().min(1, "Package name is required").max(255),
+  description: z.string().max(5000).optional(),
+  durationMinutes: z.number().min(1).optional(),
+  basePrice: z.number().min(0.01, "Price must be greater than 0"),
+  currency: z.string().default("ETB"),
+  isDefault: z.boolean().default(false),
+  maxBookingsPerDay: z.number().min(0).default(0),
+  sortOrder: z.number().default(0),
+  // Availability settings - required for each package
+  availabilityType: z.enum(["TIME_SLOTS", "WORKING_HOURS"]).default("TIME_SLOTS"),
+  workingDays: z.array(z.number()).default([1, 2, 3, 4, 5, 6]),
+  timeSlots: z.array(z.string()).default([]),
+  workingHoursStart: z.string().default("09:00"),
+  workingHoursEnd: z.string().default("18:00"),
+  advanceBookingDays: z.number().min(1).default(30),
+  attributes: z.array(packageAttributeSchema).default([]),
+  images: z.array(z.any()).default([]),
+});
+
 const serviceSchema = z.object({
   title: z.string().min(1, "Service title is required").max(255),
   description: z.string().max(5000).optional(),
   location: z.string().min(1, "Location is required").max(500),
   city: z.string().min(1, "City is required").max(100),
   categoryId: z.string().optional(),
-  basePrice: z.number().min(0.01, "Price must be greater than 0"),
-  currency: z.string().default("ETB"),
-  durationMinutes: z.number().min(1, "Duration must be at least 1 minute").optional(),
-  availabilityType: z.enum(["TIME_SLOTS", "WORKING_HOURS"]).default("TIME_SLOTS"),
-  workingDays: z.array(z.number()).default([1, 2, 3, 4, 5, 6]),
-  // For TIME_SLOTS
-  timeSlots: z.array(z.string()).default(["09:00", "14:00", "18:00"]),
-  // For WORKING_HOURS
-  workingHoursStart: z.string().default("09:00"),
-  workingHoursEnd: z.string().default("18:00"),
-  advanceBookingDays: z.number().min(1).default(30),
-  maxBookingsPerDay: z.number().min(1).default(3),
-  // Note: rescheduleHours and cancellationPolicy are system-enforced (48h/24h tiers)
-  depositRequired: z.boolean().default(false),
-  depositPercentage: z.number().min(0).max(100).default(0),
+  packages: z.array(packageSchema).min(1, "At least one package is required"),
 });
 
+type PackageFormData = z.infer<typeof packageSchema>;
 type ServiceFormData = z.infer<typeof serviceSchema>;
 
 export default function CreateService() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const [newTimeSlot, setNewTimeSlot] = useState("");
   const [pendingImages, setPendingImages] = useState<File[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [pendingPackageImages, setPendingPackageImages] = useState<Record<number, File[]>>({});
 
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: () => apiService.getRequest<Category[]>('/api/categories'),
+  });
+
+  const { data: allSubCategories = [], isLoading: isLoadingSubCategories } = useQuery({
+    queryKey: ['all-subcategories', categories],
+    queryFn: async () => {
+      const subCategoriesPromises = categories.map((category) =>
+        apiService.getRequest<SubCategory[]>(`/api/categories/${category.id}/sub-categories`)
+      );
+      const results = await Promise.all(subCategoriesPromises);
+      return results.flat();
+    },
+    enabled: categories.length > 0,
   });
 
   const { data: currencies = [] } = useQuery({
@@ -112,115 +212,250 @@ export default function CreateService() {
       location: "",
       city: "",
       categoryId: "",
+      packages: [{
+        packageCode: "",
+        name: "",
+        description: "",
+        durationMinutes: 0,
+        basePrice: 0,
+        currency: isEthiopianVendor(vendorProfile) ? "ETB" : (currencies[0]?.code || "ETB"),
+        isDefault: true,
+        maxBookingsPerDay: 0,
+        sortOrder: 0,
+        availabilityType: "TIME_SLOTS",
+        workingDays: [1, 2, 3, 4, 5, 6],
+        timeSlots: [],
+        workingHoursStart: "09:00",
+        workingHoursEnd: "18:00",
+        advanceBookingDays: 30,
+        attributes: [],
+        images: [],
+      }],
+    },
+  });
+
+  const { fields: packageFields, append: appendPackage, remove: removePackage, update: updatePackage } = useFieldArray({
+    control: form.control,
+    name: "packages",
+  });
+
+  // Currency is now handled at the package level - Ethiopian vendors are locked to ETB
+
+  const packages = form.watch("packages");
+
+  // Package-level availability functions
+  const togglePackageWorkingDay = (packageIndex: number, day: number) => {
+    const pkg = packages[packageIndex];
+    const current = pkg.workingDays || [];
+    const newDays = current.includes(day)
+      ? current.filter(d => d !== day)
+      : [...current, day].sort();
+    updatePackage(packageIndex, { ...pkg, workingDays: newDays });
+  };
+
+  const addPackageTimeSlot = (packageIndex: number, slot: string) => {
+    const pkg = packages[packageIndex];
+    const current = pkg.timeSlots || [];
+    if (slot && !current.includes(slot)) {
+      updatePackage(packageIndex, { ...pkg, timeSlots: [...current, slot].sort() });
+    }
+  };
+
+  const removePackageTimeSlot = (packageIndex: number, slot: string) => {
+    const pkg = packages[packageIndex];
+    const current = pkg.timeSlots || [];
+    updatePackage(packageIndex, { ...pkg, timeSlots: current.filter(s => s !== slot) });
+  };
+
+  // Package image functions
+  const addPackageImages = (packageIndex: number, files: File[]) => {
+    setPendingPackageImages(prev => ({
+      ...prev,
+      [packageIndex]: [...(prev[packageIndex] || []), ...files]
+    }));
+  };
+
+  const removePackageImage = (packageIndex: number, fileIndex: number) => {
+    setPendingPackageImages(prev => ({
+      ...prev,
+      [packageIndex]: (prev[packageIndex] || []).filter((_, i) => i !== fileIndex)
+    }));
+  };
+
+  const addPackage = () => {
+    // Use ETB for Ethiopian vendors, otherwise use first available currency
+    const currency = isEthiopianVendor(vendorProfile) ? "ETB" : (availableCurrencies[0]?.code || "ETB");
+    const newPackage: PackageFormData = {
+      packageCode: ``,
+      name: "",
+      description: "",
+      durationMinutes: 60,
       basePrice: 0,
-      currency: isEthiopianVendor(vendorProfile) ? "ETB" : (currencies[0]?.code || "ETB"),
-      durationMinutes: 0,
+      currency: currency,
+      isDefault: packageFields.length === 0,
+      maxBookingsPerDay: 0,
+      sortOrder: packageFields.length,
       availabilityType: "TIME_SLOTS",
       workingDays: [1, 2, 3, 4, 5, 6],
       timeSlots: ["09:00", "14:00", "18:00"],
       workingHoursStart: "09:00",
       workingHoursEnd: "18:00",
       advanceBookingDays: 30,
-      maxBookingsPerDay: 3,
-      depositRequired: false,
-      depositPercentage: 0,
-    },
-  });
-
-  // Update currency when vendor profile loads
-  useEffect(() => {
-    if (vendorProfile && isEthiopianVendor(vendorProfile)) {
-      const currentCurrency = form.getValues("currency");
-      if (currentCurrency !== "ETB") {
-        form.setValue("currency", "ETB");
-      }
-    }
-  }, [vendorProfile, form]);
-
-  const workingDays = form.watch("workingDays");
-  const timeSlots = form.watch("timeSlots");
-  const depositRequired = form.watch("depositRequired");
-  const availabilityType = form.watch("availabilityType");
-
-
-  const toggleWorkingDay = (day: number) => {
-    const current = form.getValues("workingDays");
-    if (current.includes(day)) {
-      form.setValue("workingDays", current.filter(d => d !== day));
-    } else {
-      form.setValue("workingDays", [...current, day].sort());
-    }
+      attributes: [],
+      images: [],
+    };
+    appendPackage(newPackage);
   };
 
-  const addTimeSlot = () => {
-    if (newTimeSlot && !timeSlots.includes(newTimeSlot)) {
-      form.setValue("timeSlots", [...timeSlots, newTimeSlot].sort());
-      setNewTimeSlot("");
-    }
+  const setDefaultPackage = (index: number) => {
+    packageFields.forEach((_, i) => {
+      updatePackage(i, { ...packages[i], isDefault: i === index });
+    });
   };
 
-  const removeTimeSlot = (slot: string) => {
-    form.setValue("timeSlots", timeSlots.filter(s => s !== slot));
+  const addPackageAttribute = (packageIndex: number) => {
+    const pkg = packages[packageIndex];
+    const newAttributes = [...(pkg.attributes || []), { name: "", value: "", sortOrder: pkg.attributes?.length || 0 }];
+    updatePackage(packageIndex, { ...pkg, attributes: newAttributes });
+  };
+
+  const removePackageAttribute = (packageIndex: number, attrIndex: number) => {
+    const pkg = packages[packageIndex];
+    const newAttributes = pkg.attributes?.filter((_, i) => i !== attrIndex) || [];
+    updatePackage(packageIndex, { ...pkg, attributes: newAttributes });
+  };
+
+  const updatePackageAttribute = (packageIndex: number, attrIndex: number, field: 'name' | 'value', value: string) => {
+    const pkg = packages[packageIndex];
+    const newAttributes = [...(pkg.attributes || [])];
+    newAttributes[attrIndex] = { ...newAttributes[attrIndex], [field]: value };
+    updatePackage(packageIndex, { ...pkg, attributes: newAttributes });
   };
 
   const createServiceMutation = useMutation({
     mutationFn: async (data: ServiceFormData) => {
+      // Get the default package price and currency as the base for the service
+      const defaultPackage = data.packages.find(p => p.isDefault) || data.packages[0];
+      const basePrice = defaultPackage?.basePrice || 0;
+      const currency = defaultPackage?.currency || "ETB";
+      
+      // Service request - availability is now at package level
       const request: CreateServiceRequest = {
         title: data.title,
         description: data.description,
         location: data.location,
         city: data.city,
         categoryId: data.categoryId ? parseInt(data.categoryId) : undefined,
-        basePrice: data.basePrice,
-        currency: data.currency,
-        durationMinutes: data.durationMinutes,
-        availabilityType: data.availabilityType,
-        availabilityConfig: {
-          workingDays: data.workingDays,
-          blackoutDates: [],
-          advanceBookingDays: data.advanceBookingDays,
-          maxBookingsPerDay: data.maxBookingsPerDay,
-          ...(data.availabilityType === "TIME_SLOTS"
-            ? { timeSlots: data.timeSlots }
-            : {
-                workingHoursStart: data.workingHoursStart,
-                workingHoursEnd: data.workingHoursEnd,
-              }),
-        },
-        policiesConfig: {
-          depositRequired: data.depositRequired,
-          depositPercentage: data.depositRequired ? data.depositPercentage : 0,
-        },
+        basePrice: basePrice,
+        currency: currency,
+        policiesConfig: { depositRequired: false, depositPercentage: 0 },
       };
       
-      // Validate file sizes before creating service
-      const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
+      const maxFileSize = 10 * 1024 * 1024;
       for (const file of pendingImages) {
         if (file.size > maxFileSize) {
-          throw new Error(`Image "${file.name}" exceeds the 10MB file size limit (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+          throw new Error(`Image "${file.name}" exceeds the 10MB file size limit`);
         }
       }
       
-      // Create the service first
       const createdService = await serviceService.createService(request);
+      console.log("Service creation response:", createdService);
       
-      // Upload images if any are pending
+      if (!createdService) {
+        throw new Error("Service creation returned empty response");
+      }
+      if (!createdService.id) {
+        console.error("Service created but no ID returned:", createdService);
+        throw new Error("Service created but no ID returned");
+      }
+      
+      console.log("Service created successfully with ID:", createdService.id);
+      
+      // Upload service-level images (legacy support)
       if (pendingImages.length > 0 && createdService?.id) {
         setIsUploadingImages(true);
         try {
-          console.log(`Uploading ${pendingImages.length} images for service ${createdService.id}...`);
           await imageService.uploadServiceImages(createdService.id, pendingImages);
-          console.log(`Service ${createdService.id} images uploaded successfully`);
         } catch (imageError: any) {
-          console.error(`Failed to upload images for service ${createdService.id}:`, imageError);
-          // Don't fail the whole operation, just warn the user
-          toast({
-            title: "Warning",
-            description: "Service created but some images failed to upload. You can add them later from the edit page.",
-            variant: "destructive",
-          });
+          toast({ title: "Warning", description: "Service created but some images failed to upload.", variant: "destructive" });
         } finally {
           setIsUploadingImages(false);
+        }
+      }
+
+      // Create packages with their own availability settings
+      console.log("Package creation check - packages array:", data.packages);
+      console.log("Package creation check - length:", data.packages?.length);
+      
+      if (data.packages && data.packages.length > 0) {
+        console.log(`Creating ${data.packages.length} packages for service ${createdService.id}`);
+        for (let pkgIndex = 0; pkgIndex < data.packages.length; pkgIndex++) {
+          const pkg = data.packages[pkgIndex];
+          try {
+            const packageRequest = {
+              packageCode: pkg.packageCode || undefined,
+              name: pkg.name,
+              description: pkg.description,
+              durationMinutes: pkg.durationMinutes,
+              basePrice: pkg.basePrice,
+              currency: pkg.currency,
+              isDefault: pkg.isDefault,
+              maxBookingsPerDay: pkg.maxBookingsPerDay,
+              sortOrder: pkg.sortOrder,
+              // Availability is now required per package
+              availabilityType: pkg.availabilityType,
+              availabilityConfig: {
+                workingDays: pkg.workingDays,
+                blackoutDates: [],
+                advanceBookingDays: pkg.advanceBookingDays,
+                ...(pkg.availabilityType === "TIME_SLOTS"
+                  ? { timeSlots: pkg.timeSlots }
+                  : { workingHoursStart: pkg.workingHoursStart, workingHoursEnd: pkg.workingHoursEnd }),
+              },
+              attributes: pkg.attributes?.filter(a => a.value).map((a, i) => ({
+                name: a.name || undefined,
+                value: a.value,
+                sortOrder: i,
+              })),
+            };
+            console.log(`[Package ${pkgIndex + 1}/${data.packages.length}] Creating package "${pkg.name}"`);
+            console.log(`[Package ${pkgIndex + 1}] Request body:`, JSON.stringify(packageRequest, null, 2));
+            console.log(`[Package ${pkgIndex + 1}] Endpoint: /api/vendor/services/${createdService.id}/packages`);
+            
+            const pkgResult = await apiService.postRequest(`/api/vendor/services/${createdService.id}/packages`, packageRequest);
+            console.log(`[Package ${pkgIndex + 1}] Created successfully:`, pkgResult);
+          } catch (pkgError: any) {
+            console.error(`[Package ${pkgIndex + 1}] Failed to create package "${pkg.name}":`, pkgError);
+            console.error(`[Package ${pkgIndex + 1}] Error message:`, pkgError.message);
+            toast({ title: "Warning", description: `Package "${pkg.name}" failed to create: ${pkgError.message || 'Unknown error'}`, variant: "destructive" });
+          }
+        }
+
+        // Upload package images after packages are created
+        // We need to fetch the created packages to get their IDs
+        try {
+          const createdPackages = await apiService.getRequest<any[]>(`/api/vendor/services/${createdService.id}/packages`);
+          if (createdPackages && createdPackages.length > 0) {
+            // Match packages by name and upload images
+            for (let i = 0; i < data.packages.length; i++) {
+              const pkgData = data.packages[i];
+              const images = pendingPackageImages[i];
+              if (images && images.length > 0) {
+                // Find the created package that matches this one (by name)
+                const createdPkg = createdPackages.find(cp => cp.name === pkgData.name);
+                if (createdPkg?.id) {
+                  try {
+                    await imageService.uploadPackageImages(createdPkg.id, images);
+                  } catch (imgError: any) {
+                    console.error(`Failed to upload images for package "${pkgData.name}":`, imgError);
+                    toast({ title: "Warning", description: `Images for package "${pkgData.name}" failed to upload.`, variant: "destructive" });
+                  }
+                }
+              }
+            }
+          }
+        } catch (fetchError: any) {
+          console.error("Failed to fetch created packages for image upload:", fetchError);
         }
       }
       
@@ -229,56 +464,62 @@ export default function CreateService() {
     onSuccess: () => {
       toast({
         title: "Service Created",
-        description: "Your service has been submitted for admin approval.",
+        description: packages.length > 0 
+          ? "Your service and packages have been submitted for admin approval."
+          : "Your service has been submitted for admin approval.",
       });
       navigate("/vendor");
     },
     onError: (error: any) => {
       setIsUploadingImages(false);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create service",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Failed to create service", variant: "destructive" });
     },
   });
 
   const onSubmit = (data: ServiceFormData) => {
-    // Validate based on availability type
-    if (data.availabilityType === "TIME_SLOTS" && data.timeSlots.length === 0) {
-      toast({
-        title: "Validation Error",
-        description: "Please add at least one time slot.",
-        variant: "destructive",
-      });
+    console.log("Form submitted with data:", data);
+    
+    if (data.packages.length === 0) {
+      toast({ title: "Validation Error", description: "Please add at least one package.", variant: "destructive" });
       return;
     }
-    if (data.availabilityType === "WORKING_HOURS") {
-      if (!data.workingHoursStart || !data.workingHoursEnd) {
-        toast({
-          title: "Validation Error",
-          description: "Please specify both working hours start and end times.",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (data.workingHoursStart >= data.workingHoursEnd) {
-        toast({
-          title: "Validation Error",
-          description: "Working hours start must be before end time.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    if (data.workingDays.length === 0) {
-      toast({
-        title: "Validation Error",
-        description: "Please select at least one working day.",
-        variant: "destructive",
-      });
+    const hasDefault = data.packages.some(p => p.isDefault);
+    if (!hasDefault) {
+      toast({ title: "Validation Error", description: "Please set one package as default.", variant: "destructive" });
       return;
     }
+    
+    // Validate each package's availability settings
+    for (const pkg of data.packages) {
+      if (!pkg.name) {
+        toast({ title: "Validation Error", description: "All packages must have a name.", variant: "destructive" });
+        return;
+      }
+      if (!pkg.basePrice || pkg.basePrice <= 0) {
+        toast({ title: "Validation Error", description: `Package "${pkg.name}" must have a valid price.`, variant: "destructive" });
+        return;
+      }
+      if (!pkg.workingDays || pkg.workingDays.length === 0) {
+        toast({ title: "Validation Error", description: `Package "${pkg.name}" must have at least one working day.`, variant: "destructive" });
+        return;
+      }
+      if (pkg.availabilityType === "TIME_SLOTS" && (!pkg.timeSlots || pkg.timeSlots.length === 0)) {
+        toast({ title: "Validation Error", description: `Package "${pkg.name}" must have at least one time slot.`, variant: "destructive" });
+        return;
+      }
+      if (pkg.availabilityType === "WORKING_HOURS") {
+        if (!pkg.workingHoursStart || !pkg.workingHoursEnd) {
+          toast({ title: "Validation Error", description: `Package "${pkg.name}" must have both start and end working hours.`, variant: "destructive" });
+          return;
+        }
+        if (pkg.workingHoursStart >= pkg.workingHoursEnd) {
+          toast({ title: "Validation Error", description: `Package "${pkg.name}": Working hours start must be before end time.`, variant: "destructive" });
+          return;
+        }
+      }
+    }
+    
+    console.log("All validations passed, calling createServiceMutation.mutate");
     createServiceMutation.mutate(data);
   };
 
@@ -297,20 +538,26 @@ export default function CreateService() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container max-w-3xl mx-auto px-4">
+      <div className="container max-w-4xl mx-auto px-4">
+        {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="icon" asChild>
-            <Link to="/vendor">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
+            <Link to="/vendor"><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Create Service</h1>
-            <p className="text-muted-foreground">Add a new service to your offerings (requires admin approval)</p>
+            <p className="text-muted-foreground">Add a new service with packages (requires admin approval)</p>
           </div>
         </div>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+          console.log("Form validation errors:", errors);
+          toast({ 
+            title: "Validation Error", 
+            description: "Please check all required fields", 
+            variant: "destructive" 
+          });
+        })} className="space-y-6">
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -322,26 +569,15 @@ export default function CreateService() {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="title">Service Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="e.g., Professional Photography Session"
-                  {...form.register("title")}
-                />
+                <Input id="title" placeholder="Enter service name" {...form.register("title")} />
                 {form.formState.errors.title && (
                   <p className="text-sm text-red-600 mt-1">{form.formState.errors.title.message}</p>
                 )}
               </div>
-
               <div>
                 <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe your service in detail..."
-                  className="min-h-[120px]"
-                  {...form.register("description")}
-                />
+                <Textarea id="description" placeholder="Describe your service in detail..." className="min-h-[100px]" {...form.register("description")} />
               </div>
-
               <div>
                 <Label>Category</Label>
                 <Controller
@@ -350,13 +586,11 @@ export default function CreateService() {
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
+                        <SelectValue placeholder={isLoadingSubCategories ? "Loading categories..." : "Select a category"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id.toString()}>
-                            {category.name}
-                          </SelectItem>
+                        {allSubCategories.map((subCategory) => (
+                          <SelectItem key={subCategory.id} value={subCategory.id.toString()}>{subCategory.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -373,40 +607,28 @@ export default function CreateService() {
                 <Camera className="h-5 w-5" />
                 Service Images
               </CardTitle>
-              <CardDescription>
-                Upload images that showcase your service. The first image will be used as the cover.
-              </CardDescription>
+              <CardDescription>Upload images that showcase your service. First image will be the cover.</CardDescription>
             </CardHeader>
             <CardContent>
               <ImageUpload
                 images={[]}
-                onFilesSelected={(files) => {
-                  setPendingImages((prev) => [...prev, ...files]);
-                }}
+                onFilesSelected={(files) => setPendingImages((prev) => [...prev, ...files])}
                 maxImages={10}
                 isUploading={isUploadingImages}
                 disabled={createServiceMutation.isPending}
                 label=""
-                helperText="Upload images that showcase your service. First image will be the cover."
+                helperText=""
               />
               {pendingImages.length > 0 && (
                 <div className="mt-3">
-                  <p className="text-sm text-muted-foreground">
-                    {pendingImages.length} image(s) will be uploaded when you create the service
-                  </p>
+                  <p className="text-sm text-muted-foreground">{pendingImages.length} image(s) will be uploaded</p>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {pendingImages.map((file, index) => (
                       <div key={index} className="relative group">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={file.name}
-                          className="w-16 h-16 object-cover rounded-md border"
-                        />
+                        <img src={URL.createObjectURL(file)} alt={file.name} className="w-16 h-16 object-cover rounded-md border" />
                         <button
                           type="button"
-                          onClick={() => {
-                            setPendingImages((prev) => prev.filter((_, i) => i !== index));
-                          }}
+                          onClick={() => setPendingImages((prev) => prev.filter((_, i) => i !== index))}
                           className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -419,33 +641,25 @@ export default function CreateService() {
             </CardContent>
           </Card>
 
-
           {/* Location */}
           <Card>
             <CardHeader>
-              <CardTitle>Location</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Location
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="location">Address *</Label>
-                <Input
-                  id="location"
-                  placeholder="e.g., Bole Road, Near Edna Mall"
-                  {...form.register("location")}
-                />
+                <Input id="location" placeholder="e.g., Bole Road, Near Edna Mall" {...form.register("location")} />
                 {form.formState.errors.location && (
                   <p className="text-sm text-red-600 mt-1">{form.formState.errors.location.message}</p>
                 )}
               </div>
-              
-
               <div>
                 <Label htmlFor="city">City *</Label>
-                <Input
-                  id="city"
-                  placeholder="e.g., Addis Ababa"
-                  {...form.register("city")}
-                />
+                <Input id="city" placeholder="e.g., Addis Ababa" {...form.register("city")} />
                 {form.formState.errors.city && (
                   <p className="text-sm text-red-600 mt-1">{form.formState.errors.city.message}</p>
                 )}
@@ -453,269 +667,352 @@ export default function CreateService() {
             </CardContent>
           </Card>
 
-          {/* Pricing */}
+          {/* Service Packages */}
           <Card>
             <CardHeader>
-              <CardTitle>Pricing</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Service Packages *
+              </CardTitle>
+              <CardDescription>
+                Create packages for your service with pricing, durations, and features. At least one package is required. Each package requires admin approval.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* VAT Notice */}
               <Alert className="border-blue-200 bg-blue-50">
                 <Info className="h-4 w-4 text-blue-600" />
                 <AlertTitle className="text-blue-800">Pricing Information</AlertTitle>
                 <AlertDescription className="text-blue-700">
-                  Enter your price (what you'll receive). Platform fees and applicable taxes will be calculated and shown to customers at checkout.
+                  Enter your price (what you'll receive). Platform fee will be added for customers. The default package price will be shown on service listings.
                   {vendorProfile?.vatStatus === 'VAT_REGISTERED' && (
-                    <span className="block mt-1 font-medium">
-                      As a VAT-registered vendor, VAT will be included in the customer price.
-                    </span>
+                    <span className="block mt-1 font-medium">As a VAT-registered vendor, VAT will be included.</span>
                   )}
                 </AlertDescription>
               </Alert>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Currency *</Label>
-                  <Controller
-                    name="currency"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select currency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableCurrencies.map((currency) => (
-                            <SelectItem key={currency.id} value={currency.code}>
-                              {currency.code} - {currency.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {isEthiopianVendor(vendorProfile) && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Ethiopian vendors can only price in ETB
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="basePrice">Your Price *</Label>
-                  <Controller
-                    name="basePrice"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        placeholder="0.00"
-                        value={field.value || ''}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      />
-                    )}
-                  />
-                  {form.formState.errors.basePrice && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.basePrice.message}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    This is what you'll receive. Platform fee will be added for customers.
-                  </p>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="durationMinutes">Duration (minutes)</Label>
-                <Controller
-                  name="durationMinutes"
-                  control={form.control}
-                  render={({ field }) => (
-                    <Input
-                      type="number"
-                      min="1"
-                      placeholder=""
-                      value={field.value || ''}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 60)}
-                    />
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Availability */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Availability</CardTitle>
-              <CardDescription>Configure when customers can book your service</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Availability Type */}
-              <div>
-                <Label className="mb-3 block">Availability Type *</Label>
-                <Controller
-                  name="availabilityType"
-                  control={form.control}
-                  render={({ field }) => (
-                    <div className="flex gap-4">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          value="TIME_SLOTS"
-                          checked={field.value === "TIME_SLOTS"}
-                          onChange={() => field.onChange("TIME_SLOTS")}
-                          className="mr-2"
-                        />
-                        <span>Predefined Time Slots</span>
-                      </label>
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          value="WORKING_HOURS"
-                          checked={field.value === "WORKING_HOURS"}
-                          onChange={() => field.onChange("WORKING_HOURS")}
-                          className="mr-2"
-                        />
-                        <span>Working Hours Range</span>
-                      </label>
-                    </div>
-                  )}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {availabilityType === "TIME_SLOTS" 
-                    ? "Customers can only book at specific time slots you define (e.g., 9:00 AM, 2:00 PM, 6:00 PM)"
-                    : "Customers can book at any time within your working hours range"}
-                </p>
-              </div>
-
-              <div>
-                <Label className="mb-3 block">Working Days *</Label>
-                <div className="flex flex-wrap gap-2">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <Button
-                      key={day.value}
-                      type="button"
-                      variant={workingDays.includes(day.value) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => toggleWorkingDay(day.value)}
-                    >
-                      {day.label.slice(0, 3)}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Conditional rendering based on availability type */}
-              {availabilityType === "TIME_SLOTS" ? (
-                <div>
-                  <Label className="mb-3 block">Time Slots *</Label>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {timeSlots.map((slot) => (
-                      <div key={slot} className="flex items-center gap-1 bg-gray-100 rounded-md px-3 py-1">
-                        <span>{slot}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 w-5 p-0"
-                          onClick={() => removeTimeSlot(slot)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+              <div className="space-y-4">
+                {packageFields.map((field, index) => (
+                  <Card key={field.id} className={packages[index]?.isDefault ? "border-primary border-2" : ""}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <GripVertical className="h-4 w-4 text-muted-foreground" />
+                          <CardTitle className="text-lg">{packages[index]?.name || `Package ${index + 1}`}</CardTitle>
+                          {packages[index]?.isDefault && <Badge variant="default">Default</Badge>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {!packages[index]?.isDefault && (
+                            <Button type="button" variant="outline" size="sm" onClick={() => setDefaultPackage(index)}>Set as Default</Button>
+                          )}
+                          {packageFields.length > 1 && (
+                            <Button type="button" variant="ghost" size="sm" onClick={() => removePackage(index)} className="text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      type="time"
-                      value={newTimeSlot}
-                      onChange={(e) => setNewTimeSlot(e.target.value)}
-                      className="w-32"
-                    />
-                    <Button type="button" variant="outline" size="sm" onClick={addTimeSlot}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Slot
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="workingHoursStart">Working Hours Start *</Label>
-                    <Controller
-                      name="workingHoursStart"
-                      control={form.control}
-                      render={({ field }) => (
-                        <Input
-                          type="time"
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
-                      )}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="workingHoursEnd">Working Hours End *</Label>
-                    <Controller
-                      name="workingHoursEnd"
-                      control={form.control}
-                      render={({ field }) => (
-                        <Input
-                          type="time"
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
-                      )}
-                    />
-                  </div>
-                </div>
-              )}
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Package Code (reference code)</Label>
+                          <Input {...form.register(`packages.${index}.packageCode`)} placeholder="e.g., BASIC, PREMIUM" />
+                        </div>
+                        <div>
+                          <Label>Package Name *</Label>
+                          <Input {...form.register(`packages.${index}.name`)} placeholder="e.g., Basic Package" />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Description</Label>
+                        <Textarea {...form.register(`packages.${index}.description`)} placeholder="Describe what's included..." className="min-h-[60px]" />
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label>
+                            {isEthiopianVendor(vendorProfile) ? "Price (ETB) *" : `Price (${packages[index]?.currency || "Currency"}) *`}
+                          </Label>
+                          <Controller name={`packages.${index}.basePrice`} control={form.control} render={({ field }) => (
+                            <Input type="number" step="0.01" min="0.01" value={field.value || ''} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} />
+                          )} />
+                        </div>
+                        {!isEthiopianVendor(vendorProfile) && (
+                          <div>
+                            <Label>Currency *</Label>
+                            <Controller
+                              name={`packages.${index}.currency`}
+                              control={form.control}
+                              render={({ field }) => (
+                                <Select value={field.value} onValueChange={field.onChange}>
+                                  <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger>
+                                  <SelectContent>
+                                    {availableCurrencies.map((currency) => (
+                                      <SelectItem key={currency.id} value={currency.code}>{currency.code} - {currency.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <Label>Duration (min)</Label>
+                          <Controller name={`packages.${index}.durationMinutes`} control={form.control} render={({ field }) => (
+                            <Input type="number" min="1" value={field.value || ''} onChange={(e) => field.onChange(parseInt(e.target.value) || 60)} />
+                          )} />
+                        </div>
+                        <div>
+                          <Label>Max Bookings/Day</Label>
+                          <Controller name={`packages.${index}.maxBookingsPerDay`} control={form.control} render={({ field }) => (
+                            <Input type="number" min="0" placeholder="0 = unlimited" value={field.value || ''} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                          )} />
+                        </div>
+                      </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="advanceBookingDays">Advance Booking (days)</Label>
-                  <Controller
-                    name="advanceBookingDays"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input
-                        type="number"
-                        min="1"
-                        value={field.value || ''}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 30)}
-                      />
-                    )}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">How far in advance can customers book</p>
-                </div>
-                <div>
-                  <Label htmlFor="maxBookingsPerDay">Max Bookings Per Day</Label>
-                  <Controller
-                    name="maxBookingsPerDay"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input
-                        type="number"
-                        min="1"
-                        value={field.value || ''}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 3)}
-                      />
-                    )}
-                  />
-                </div>
+                      {/* Package Availability */}
+                      <div className="border-t pt-4 mt-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <Label className="font-medium">Package Availability</Label>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="mb-2 block text-sm">Availability Type *</Label>
+                            <Controller
+                              name={`packages.${index}.availabilityType`}
+                              control={form.control}
+                              render={({ field }) => (
+                                <div className="flex gap-4">
+                                  <label className="flex items-center cursor-pointer text-sm">
+                                    <input type="radio" value="TIME_SLOTS" checked={field.value === "TIME_SLOTS"} onChange={() => field.onChange("TIME_SLOTS")} className="mr-2" />
+                                    <span>Time Slots</span>
+                                  </label>
+                                  <label className="flex items-center cursor-pointer text-sm">
+                                    <input type="radio" value="WORKING_HOURS" checked={field.value === "WORKING_HOURS"} onChange={() => field.onChange("WORKING_HOURS")} className="mr-2" />
+                                    <span>Working Hours</span>
+                                  </label>
+                                </div>
+                              )}
+                            />
+                          </div>
+
+                          <div>
+                            <Label className="mb-2 block text-sm">Working Days *</Label>
+                            <div className="flex flex-wrap gap-1">
+                              {DAYS_OF_WEEK.map((day) => (
+                                <Button
+                                  key={day.value}
+                                  type="button"
+                                  variant={(packages[index]?.workingDays || []).includes(day.value) ? "default" : "outline"}
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => togglePackageWorkingDay(index, day.value)}
+                                >
+                                  {day.label.slice(0, 3)}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {packages[index]?.availabilityType === "TIME_SLOTS" ? (
+                            <div>
+                              <Label className="mb-2 block text-sm">Time Slots *</Label>
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                {(packages[index]?.timeSlots || []).map((slot) => (
+                                  <div key={slot} className="flex items-center gap-1 bg-gray-100 rounded-md px-2 py-1 text-sm">
+                                    <span>{slot}</span>
+                                    <Button type="button" variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => removePackageTimeSlot(index, slot)}>
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="flex gap-2">
+                                <Input
+                                  type="time"
+                                  className="w-28 h-8"
+                                  onBlur={(e) => {
+                                    if (e.target.value) {
+                                      addPackageTimeSlot(index, e.target.value);
+                                      e.target.value = '';
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      const target = e.target as HTMLInputElement;
+                                      if (target.value) {
+                                        addPackageTimeSlot(index, target.value);
+                                        target.value = '';
+                                      }
+                                    }
+                                  }}
+                                />
+                                <span className="text-xs text-muted-foreground self-center">Press Enter or blur to add</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-sm">Start Time *</Label>
+                                <Controller
+                                  name={`packages.${index}.workingHoursStart`}
+                                  control={form.control}
+                                  render={({ field }) => (
+                                    <Input type="time" className="h-8" value={field.value || ''} onChange={field.onChange} />
+                                  )}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-sm">End Time *</Label>
+                                <Controller
+                                  name={`packages.${index}.workingHoursEnd`}
+                                  control={form.control}
+                                  render={({ field }) => (
+                                    <Input type="time" className="h-8" value={field.value || ''} onChange={field.onChange} />
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <Label className="text-sm">Advance Booking (days)</Label>
+                            <Controller
+                              name={`packages.${index}.advanceBookingDays`}
+                              control={form.control}
+                              render={({ field }) => (
+                                <Input type="number" min="1" className="h-8 w-24" value={field.value || ''} onChange={(e) => field.onChange(parseInt(e.target.value) || 30)} />
+                              )}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Package Attributes */}
+                      <div className="border-t pt-4 mt-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <Label>Package Features/Attributes</Label>
+                          <Button type="button" variant="outline" size="sm" onClick={() => addPackageAttribute(index)}>
+                            <Plus className="h-3 w-3 mr-1" />Add Feature
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Add features for this package. Name is optional (e.g., "Duration: 2 hours" or just "Includes editing").
+                        </p>
+                        {packages[index]?.attributes && packages[index].attributes.length > 0 ? (
+                          <div className="space-y-2">
+                            {packages[index].attributes.map((attr, attrIndex) => (
+                              <AttributeInput
+                                key={`${index}-${attrIndex}`}
+                                name={attr.name || ''}
+                                value={attr.value}
+                                onNameChange={(value) => updatePackageAttribute(index, attrIndex, 'name', value)}
+                                onValueChange={(value) => updatePackageAttribute(index, attrIndex, 'value', value)}
+                                onRemove={() => removePackageAttribute(index, attrIndex)}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">No features added yet.</p>
+                        )}
+                      </div>
+
+                      {/* Package Images */}
+                      <div className="border-t pt-4 mt-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Camera className="h-4 w-4 text-muted-foreground" />
+                          <Label className="font-medium">Package Images</Label>
+                          {packages[index]?.isDefault && (
+                            <Badge variant="secondary" className="text-xs">Shown on listings</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Add images for this package. {packages[index]?.isDefault ? "These images will be displayed on service listings and the home page." : "First image becomes the primary image."}
+                        </p>
+                        
+                        {/* Pending Images Preview */}
+                        {(pendingPackageImages[index]?.length || 0) > 0 && (
+                          <div className="grid grid-cols-4 gap-2 mb-3">
+                            {pendingPackageImages[index]?.map((file, fileIndex) => (
+                              <div key={fileIndex} className="relative group aspect-square">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`Preview ${fileIndex + 1}`}
+                                  className="w-full h-full object-cover rounded-md border"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => removePackageImage(index, fileIndex)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                                {fileIndex === 0 && (
+                                  <Badge className="absolute bottom-1 left-1 text-xs">Primary</Badge>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Image Upload Input */}
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            id={`package-images-${index}`}
+                            onChange={(e) => {
+                              if (e.target.files) {
+                                addPackageImages(index, Array.from(e.target.files));
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                          <label htmlFor={`package-images-${index}`}>
+                            <Button type="button" variant="outline" size="sm" asChild className="cursor-pointer">
+                              <span>
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add Images
+                              </span>
+                            </Button>
+                          </label>
+                          <span className="text-xs text-muted-foreground">
+                            {pendingPackageImages[index]?.length || 0} image(s) selected
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                <Button type="button" variant="outline" onClick={addPackage} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />Add Another Package
+                </Button>
               </div>
             </CardContent>
           </Card>
-
 
           {/* Policies */}
           <Card>
             <CardHeader>
-              <CardTitle>Policies</CardTitle>
-              <CardDescription>Deposit settings for your service</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Policies
+              </CardTitle>
+              <CardDescription>Payment and cancellation policies for your service</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* System-enforced policy notice */}
+              <Alert className="border-green-200 bg-green-50">
+                <Info className="h-4 w-4 text-green-600" />
+                <AlertTitle className="text-green-800">Payment Policy</AlertTitle>
+                <AlertDescription className="text-green-700">Full payment is required at the time of booking. No deposits.</AlertDescription>
+              </Alert>
+
               <Alert className="border-blue-200 bg-blue-50">
                 <Info className="h-4 w-4 text-blue-600" />
                 <AlertTitle className="text-blue-800">Cancellation & Reschedule Policy</AlertTitle>
@@ -730,50 +1027,32 @@ export default function CreateService() {
                 </AlertDescription>
               </Alert>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Require Deposit</Label>
-                  <p className="text-sm text-muted-foreground">Require customers to pay a deposit when booking</p>
-                </div>
-                <Switch
-                  checked={depositRequired}
-                  onCheckedChange={(checked) => form.setValue("depositRequired", checked)}
-                />
-              </div>
-
-              {depositRequired && (
-                <div>
-                  <Label htmlFor="depositPercentage">Deposit Percentage (%)</Label>
-                  <Controller
-                    name="depositPercentage"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={field.value || ''}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      />
-                    )}
-                  />
-                </div>
-              )}
+              <Alert className="border-amber-200 bg-amber-50">
+                <Info className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-800">Order Confirmation</AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  After a customer books and pays, you will need to confirm the booking before it becomes active.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
 
           {/* Submit */}
-          <div className="flex justify-end gap-4">
-            <Button type="button" variant="outline" asChild>
-              <Link to="/vendor">Cancel</Link>
-            </Button>
-            <Button type="submit" disabled={createServiceMutation.isPending || isUploadingImages}>
-              {isUploadingImages 
-                ? "Uploading Images..." 
-                : createServiceMutation.isPending 
-                ? "Creating..." 
-                : "Create Service"}
-            </Button>
+          <div className="flex justify-between items-center py-4 border-t bg-white sticky bottom-0">
+            <div className="text-sm text-muted-foreground">
+              <span className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                {packages.length} package(s) configured
+              </span>
+            </div>
+            <div className="flex gap-4">
+              <Button type="button" variant="outline" asChild>
+                <Link to="/vendor">Cancel</Link>
+              </Button>
+              <Button type="submit" disabled={createServiceMutation.isPending || isUploadingImages}>
+                {isUploadingImages ? "Uploading Images..." : createServiceMutation.isPending ? "Creating..." : "Create Service"}
+              </Button>
+            </div>
           </div>
         </form>
       </div>
