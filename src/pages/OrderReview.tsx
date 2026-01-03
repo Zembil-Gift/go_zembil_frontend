@@ -382,23 +382,6 @@ export default function OrderReview() {
                   <span>{formatPrice(fromMinor(order.totals.subtotalMinor), currency)}</span>
                 </div>
 
-                {/* VAT Information - For Ethiopian orders with VAT-registered vendors */}
-                {/* Hide VAT details for DIASPORA_TO_ETHIOPIA scenario - diaspora customers don't need to see Ethiopian VAT breakdown */}
-                {order.totals.vatApplied && 
-                 order.totals.vatAmountMinor && 
-                 order.totals.vatAmountMinor > 0 && 
-                 order.totals.taxScenario !== 'DIASPORA_TO_ETHIOPIA' && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-amber-800">VAT Included ({((order.totals.vatRate || 0.15) * 100).toFixed(0)}%)</span>
-                      <span className="text-amber-800">{formatPrice(fromMinor(order.totals.vatAmountMinor), currency)}</span>
-                    </div>
-                    <p className="text-xs text-amber-700">
-                      VAT is already included in the product prices shown above.
-                    </p>
-                  </div>
-                )}
-
                 {/* US Sales Tax - For US domestic orders */}
                 {order.totals.salesTaxApplied && order.totals.salesTaxMinor && order.totals.salesTaxMinor > 0 && (
                   <div className="flex justify-between">
