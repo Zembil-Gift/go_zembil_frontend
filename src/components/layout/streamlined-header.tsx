@@ -68,8 +68,8 @@ export default function StreamlinedHeader() {
     { name: t('navigation.home'), href: "/" },
     { name: t('navigation.shop'), href: "/shop" },
     { name: t('navigation.services'), href: "/services" },
-    { name: t('navigation.custom'), href: "/custom-orders" },
     { name: t('navigation.events'), href: "/events" },
+    { name: t('navigation.custom'), href: "/custom-orders" },
   ];
 
   return (
@@ -94,7 +94,7 @@ export default function StreamlinedHeader() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center justify-center w-full space-x-1 mr-4">
+          <nav className="hidden lg:flex items-center justify-center w-full space-x-1">
             {navigation.map((item) => (
               <Link
                 key={item.name}
@@ -392,7 +392,7 @@ export default function StreamlinedHeader() {
           />
           
           {/* Mobile Menu */}
-          <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
+          <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col overflow-hidden">
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b">
@@ -408,12 +408,12 @@ export default function StreamlinedHeader() {
               </div>
 
               {/* Navigation */}
-              <nav className="flex-1 p-4 space-y-2">
+              <nav className="flex-1 p-4 space-y-2 overflow-y-auto min-h-0">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`block px-4 py-3 text-base font-medium rounded-lg transition-colors ${
+                    className={`block px-3 py-2 text-base font-medium rounded-lg transition-colors ${
                       pathname === item.href
                         ? "text-viridian-green bg-viridian-green/20"
                         : "text-eagle-green hover:text-viridian-green hover:bg-gray-50"
@@ -424,28 +424,30 @@ export default function StreamlinedHeader() {
                 ))}
                 
                 {/* Categories */}
-                <div className="px-4 py-3">
+                <div className="px-2 py-2">
                   <CategoryDropdown isMobile={true} />
                 </div>
               </nav>
 
               {/* Actions */}
-              <div className="p-4 border-t space-y-3">
+              <div className="p-3 border-t space-y-2 bg-white flex-shrink-0 max-h-[45vh] overflow-y-auto">
                 {/* Search */}
                 <Button
                   variant="outline"
-                  className="w-full justify-start"
+                  size="sm"
+                  className="w-full justify-start h-9"
                   onClick={handleSearchClick}
                 >
                   <Search className="mr-2 h-4 w-4" />
-                  Search Products
+                  Search
                 </Button>
 
                 {/* Wishlist */}
                 <Button
                   variant="outline"
+                  size="sm"
                   asChild
-                  className="w-full justify-start relative"
+                  className="w-full justify-start relative h-9"
                 >
                   <Link to="/wishlist">
                     <Heart className="mr-2 h-4 w-4" />
@@ -464,9 +466,9 @@ export default function StreamlinedHeader() {
                 {/* Language Switcher */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start">
+                    <Button variant="outline" size="sm" className="w-full justify-start h-9">
                       <Globe className="mr-2 h-4 w-4" />
-                      Language
+                      {currentLanguage === 'en-US' ? 'EN' : currentLanguage === 'am' ? 'አማ' : currentLanguage}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 bg-white">
@@ -494,59 +496,60 @@ export default function StreamlinedHeader() {
                   <div className="space-y-2">
                     {/* Admin Dashboard Link - Only for admin users */}
                     {user?.role?.toUpperCase() === 'ADMIN' && (
-                      <Button variant="outline" asChild className="w-full justify-start bg-eagle-green/10 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white">
+                      <Button variant="outline" size="sm" asChild className="w-full justify-start h-9 bg-eagle-green/10 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white">
                         <Link to="/admin">
                           <Shield className="mr-2 h-4 w-4" />
                           Admin Dashboard
                         </Link>
                       </Button>
                     )}
-                    <Button variant="outline" asChild className="w-full justify-start">
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/profile">
                         <User className="mr-2 h-4 w-4" />
-                        My Profile
+                        Profile
                       </Link>
                     </Button>
-                    <Button variant="outline" asChild className="w-full justify-start">
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/my-orders">
                         <Package className="mr-2 h-4 w-4" />
-                        My Orders
+                        Orders
                       </Link>
                     </Button>
-                    <Button variant="outline" asChild className="w-full justify-start">
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/my-tickets">
                         <Ticket className="mr-2 h-4 w-4" />
-                        My Tickets
+                        Tickets
                       </Link>
                     </Button>
-                    <Button variant="outline" asChild className="w-full justify-start">
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/register-celebrity">
                         <span className="mr-2">🌟</span>
-                        Join as Celebrity
+                        Celebrity
                       </Link>
                     </Button>
                     {/* Only show Join as Vendor if user is not a vendor */}
                     {user?.role?.toUpperCase() !== 'VENDOR' && user?.role?.toUpperCase() !== 'ADMIN' && (
-                      <Button variant="outline" asChild className="w-full justify-start">
+                      <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                         <Link to="/vendor-signup">
                           <span className="mr-2">🏪</span>
-                          Join as Vendor
+                          Join Vendor
                         </Link>
                       </Button>
                     )}
                     {/* Show Vendor Dashboard for vendors */}
                     {user?.role?.toUpperCase() === 'VENDOR' && (
-                      <Button variant="outline" asChild className="w-full justify-start bg-emerald-50 border-emerald-500 text-emerald-700 hover:bg-emerald-100">
+                      <Button variant="outline" size="sm" asChild className="w-full justify-start h-9 bg-emerald-50 border-emerald-500 text-emerald-700 hover:bg-emerald-100">
                         <Link to="/vendor">
                           <Store className="mr-2 h-4 w-4" />
-                          Vendor Dashboard
+                          Vendor
                         </Link>
                       </Button>
                     )}
                     <Button 
-                      variant="destructive" 
+                      variant="destructive"
+                      size="sm"
                       onClick={handleSignOut}
-                      className="w-full justify-start"
+                      className="w-full justify-start h-9"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       Sign Out
@@ -554,19 +557,19 @@ export default function StreamlinedHeader() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Button variant="outline" asChild className="w-full justify-start">
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/register-celebrity">
                         <span className="mr-2">🌟</span>
-                        Join as Celebrity
+                        Celebrity
                       </Link>
                     </Button>
-                    <Button variant="outline" asChild className="w-full justify-start">
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/vendor-signup">
                         <span className="mr-2">🏪</span>
-                        Join as Vendor
+                        Join Vendor
                       </Link>
                     </Button>
-                    <Button asChild className="w-full">
+                    <Button size="sm" asChild className="w-full h-9">
                       <Link to="/signin">Sign In</Link>
                     </Button>
                   </div>
