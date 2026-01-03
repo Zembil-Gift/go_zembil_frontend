@@ -30,8 +30,8 @@ interface TrendingGiftsSectionProps {
   onBudgetChange: (budget: string) => void;
 }
 
-export default function TrendingGiftsSection({ 
-  trendingGifts, 
+export default function TrendingGiftsSection({
+  trendingGifts,
 }: TrendingGiftsSectionProps) {
   const { t } = useTranslation();
   t('homepage.trending.allPrices');
@@ -43,24 +43,23 @@ export default function TrendingGiftsSection({
   return (
     <section id="gifts" className="py-16 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h2 className="font-extra-bold text-3xl sm:text-4xl text-charcoal mb-4">
-              {t('homepage.trending.title')}
-            </h2>
-            <p className="font-light text-xl text-gray-600">
-              {t('homepage.trending.subtitle')}
-            </p>
-          </div>
+        <div className="flex flex-col items-center mb-12">
+          <h2 className="text-4xl font-extrabold text-charcoal mb-4 text-center">
+            {t('homepage.trending.title')}
+          </h2>
+          <div className="w-16 h-1 bg-ethiopian-gold rounded-full mb-4"></div>
+          <p className="font-light text-xl text-gray-600 text-center max-w-2xl">
+            {t('homepage.trending.subtitle')}
+          </p>
         </div>
 
-    
+
 
         {/* Two Row Grid Layout */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {trendingGifts.slice(0, 8).map((product, index) => (
             <div key={`${product.id}-${index}`} className="flex justify-center">
-              <GiftItemCard 
+              <GiftItemCard
                 product={product}
                 className="w-full max-w-[280px]"
               />
