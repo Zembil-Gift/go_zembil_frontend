@@ -623,7 +623,7 @@ export default function EditEvent() {
                 <Label htmlFor="venue">Venue Name *</Label>
                 <Input
                   id="venue"
-                  placeholder="e.g., Millennium Hall"
+                  placeholder="Enter Venue Name"
                   {...form.register("venue")}
                 />
                 {form.formState.errors.venue && (
