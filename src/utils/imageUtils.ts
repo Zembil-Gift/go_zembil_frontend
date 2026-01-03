@@ -41,6 +41,13 @@ export function getEventImageUrl(
   return getProductImageUrl(images, placeholder);
 }
 
+export function getServiceImageUrl(
+  images?: ImageLike[] | null,
+  placeholder?: string
+): string {
+  return getProductImageUrl(images, placeholder);
+}
+
 export function hasValidImage(images?: ImageLike[] | null): boolean {
   return images != null && images.length > 0;
 }

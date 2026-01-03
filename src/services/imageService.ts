@@ -168,6 +168,44 @@ export const imageService = {
     return response.data;
   },
 
+  // Service Package Images
+  async uploadPackageImages(packageId: number, files: File[]): Promise<ImageUploadResponse> {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+
+    const response = await api.post<ImageUploadResponse>(
+      `/api/images/packages/${packageId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
+
+  async getPackageImages(packageId: number): Promise<ImageDto[]> {
+    const response = await api.get<ImageDto[]>(`/api/images/packages/${packageId}`);
+    return response.data;
+  },
+
+  async deletePackageImage(packageId: number, imageId: number): Promise<void> {
+    await api.delete(`/api/images/packages/${packageId}/images/${imageId}`);
+  },
+
+  async setPackagePrimaryImage(packageId: number, imageId: number): Promise<ImageDto> {
+    const response = await api.put<ImageDto>(`/api/images/packages/${packageId}/images/${imageId}/primary`);
+    return response.data;
+  },
+
+  async reorderPackageImages(packageId: number, imageIds: number[]): Promise<ImageDto[]> {
+    const response = await api.put<ImageDto[]>(`/api/images/packages/${packageId}/reorder`, imageIds);
+    return response.data;
+  },
+
   // Vendor Logo
   async uploadVendorLogo(vendorId: number, file: File): Promise<ImageDto> {
     const formData = new FormData();
