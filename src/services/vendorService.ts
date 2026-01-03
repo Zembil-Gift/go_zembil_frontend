@@ -154,6 +154,13 @@ export interface PriceUpdateRequest {
   skuCode?: string;
   vendorId?: number;
   vendorName?: string;
+  // Vendor prices (what vendor submitted - vendors see these)
+  currentVendorPrice?: PriceDto;
+  newVendorPrice?: PriceDto;
+  // Customer prices (what customers will pay - for admin review)
+  currentCustomerPrice?: PriceDto;
+  newCustomerPrice?: PriceDto;
+  // Legacy fields for backward compatibility
   currentPrice?: PriceDto;
   newPrice: PriceDto;
   reason?: string;
@@ -195,6 +202,13 @@ export interface ServicePriceUpdateRequest {
   serviceName?: string;
   vendorId?: number;
   vendorName?: string;
+  // Vendor prices (what vendor submitted - vendors see these)
+  currentVendorPrice?: PriceDto;
+  newVendorPrice?: PriceDto;
+  // Customer prices (what customers will pay - for admin review)
+  currentCustomerPrice?: PriceDto;
+  newCustomerPrice?: PriceDto;
+  // Legacy fields for backward compatibility
   currentPrice?: PriceDto;
   newPrice: PriceDto;
   reason?: string;
@@ -690,6 +704,19 @@ export const vendorService = {
 
   getPendingCategoryChangeRequestForService: (serviceId: number) =>
     apiService.getRequest<ServiceCategoryChangeRequest | null>(`/api/vendor/change-requests/check/SERVICE/${serviceId}/CATEGORY_CHANGE`),
+
+  // ==================== Service Package Price Update Requests ====================
+  createServicePackagePriceUpdateRequest: (_serviceId: number, packageId: number, request: { newPrice: PriceDto; reason?: string }) =>
+    apiService.postRequest<ServicePriceUpdateRequest>(`/api/vendor/change-requests/service-packages/${packageId}/price`, {
+      newPrice: request.newPrice,
+      reason: request.reason,
+    }),
+
+  getMyServicePackagePriceUpdateRequests: (page = 0, size = 20) =>
+    apiService.getRequest<PageResponse<ServicePriceUpdateRequest>>(`/api/vendor/change-requests/entity-type/SERVICE_PACKAGE?page=${page}&size=${size}`),
+
+  getPendingPriceRequestForServicePackage: (packageId: number) =>
+    apiService.getRequest<ServicePriceUpdateRequest | null>(`/api/vendor/change-requests/check/SERVICE_PACKAGE/${packageId}/PRICE_UPDATE`),
 };
 
 export default vendorService;

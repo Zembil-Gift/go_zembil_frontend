@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { vendorService, VendorProfile, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse, ServicePriceUpdateRequest, CategoryChangeRequest, ServiceCategoryChangeRequest } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService, ImageDto } from "@/services/imageService";
+import { certificateService } from "@/services/certificateService";
 import { getProductImageUrl, getEventImageUrl } from "@/utils/imageUtils";
 import { serviceOrderService, ServiceOrderResponse } from "@/services/serviceOrderService";
 import { serviceService, ServiceResponse } from "@/services/serviceService";
@@ -66,6 +67,9 @@ import {
   XCircle,
   Briefcase,
   X,
+  Award,
+  Download,
+  Loader2,
 } from "lucide-react";
 
 // Helper function to check if vendor is Ethiopian
@@ -321,57 +325,74 @@ export default function VendorDashboardNew() {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Products</span>
-            </TabsTrigger>
-            <TabsTrigger value="events" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Events</span>
-            </TabsTrigger>
-            <TabsTrigger value="services" className="flex items-center gap-2">
-              <Briefcase className="h-4 w-4" />
-              <span className="hidden sm:inline">Services</span>
-            </TabsTrigger>
-            <TabsTrigger value="check-in" className="flex items-center gap-2">
-              <ScanLine className="h-4 w-4" />
-              <span className="hidden sm:inline">Check-In</span>
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="flex items-center gap-2">
+          <div className="w-full overflow-x-auto pb-2">
+            <TabsList className="inline-flex w-auto min-w-full lg:min-w-0">
+              <TabsTrigger value="overview" className="flex items-center gap-2 whitespace-nowrap">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Overview</span>
+              </TabsTrigger>
+            {/* Products tab - only for PRODUCT and HYBRID vendors */}
+            {(vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID') && (
+              <TabsTrigger value="products" className="flex items-center gap-2 whitespace-nowrap">
+                <Package className="h-4 w-4" />
+                <span className="hidden sm:inline">Products</span>
+              </TabsTrigger>
+            )}
+            {/* Events tab - only for SERVICE and HYBRID vendors */}
+            {(vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID') && (
+              <TabsTrigger value="events" className="flex items-center gap-2 whitespace-nowrap">
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">Events</span>
+              </TabsTrigger>
+            )}
+            {/* Services tab - only for SERVICE and HYBRID vendors */}
+            {(vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID') && (
+              <TabsTrigger value="services" className="flex items-center gap-2 whitespace-nowrap">
+                <Briefcase className="h-4 w-4" />
+                <span className="hidden sm:inline">Services</span>
+              </TabsTrigger>
+            )}
+            {/* Check-in tab - only for SERVICE and HYBRID vendors (for events) */}
+            {(vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID') && (
+              <TabsTrigger value="check-in" className="flex items-center gap-2 whitespace-nowrap">
+                <ScanLine className="h-4 w-4" />
+                <span className="hidden sm:inline">Check-In</span>
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="payments" className="flex items-center gap-2 whitespace-nowrap">
               <CreditCard className="h-4 w-4" />
               <span className="hidden sm:inline">Payments</span>
             </TabsTrigger>
-            <TabsTrigger value="requests" className="flex items-center gap-2">
+            <TabsTrigger value="requests" className="flex items-center gap-2 whitespace-nowrap">
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">Requests</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
+            <TabsTrigger value="settings" className="flex items-center gap-2 whitespace-nowrap">
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Settings</span>
             </TabsTrigger>
           </TabsList>
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{products.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {products.filter(p => p.status === 'ACTIVE').length} active
-                  </p>
-                </CardContent>
-              </Card>
+              {/* Products card - only for PRODUCT and HYBRID vendors */}
+              {(vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID') && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{products.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {products.filter(p => p.status === 'ACTIVE').length} active
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -889,8 +910,13 @@ export default function VendorDashboardNew() {
                         <div className="flex items-center space-x-2">
                           {getStatusBadge(service.status)}
                           <span className="font-medium">
-                            {serviceService.formatPrice(service.basePriceMinor, service.currency)}
+                            {serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.currency ?? service.currency)}
                           </span>
+                          {service.hasPackages && (
+                            <Badge variant="outline" className="text-xs">
+                              {service.packages?.length || 0} packages
+                            </Badge>
+                          )}
                           <Button asChild variant="outline" size="sm">
                             <Link to={`/vendor/services/${service.id}/edit`}>Edit</Link>
                           </Button>
@@ -2466,7 +2492,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             <div className="flex items-center gap-2 mt-2">
                               {getStatusBadge(service.status)}
                               <span className="text-sm text-muted-foreground">
-                                Price: {serviceService.formatPrice(service.basePriceMinor, service.currency)}
+                                Price: {serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.currency ?? service.currency)}
                               </span>
                             </div>
                             {service.description && (
@@ -4019,40 +4045,176 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="break-words">
               <Label className="text-muted-foreground">Business Name</Label>
-              <p className="font-medium">{vendorProfile?.businessName || '-'}</p>
+              <p className="font-medium break-words">{vendorProfile?.businessName || '-'}</p>
             </div>
-            <div>
+            <div className="break-words">
               <Label className="text-muted-foreground">Business Email</Label>
-              <p className="font-medium">{vendorProfile?.businessEmail || '-'}</p>
+              <p className="font-medium break-all">{vendorProfile?.businessEmail || '-'}</p>
             </div>
-            <div>
+            <div className="break-words">
               <Label className="text-muted-foreground">Business Phone</Label>
-              <p className="font-medium">{vendorProfile?.businessPhone || '-'}</p>
+              <p className="font-medium break-words">{vendorProfile?.businessPhone || '-'}</p>
             </div>
-            <div>
+            <div className="break-words">
               <Label className="text-muted-foreground">Contact Name</Label>
-              <p className="font-medium">{vendorProfile?.contactName || '-'}</p>
+              <p className="font-medium break-words">{vendorProfile?.contactName || '-'}</p>
             </div>
-            <div>
+            <div className="break-words">
               <Label className="text-muted-foreground">City</Label>
-              <p className="font-medium">{vendorProfile?.city || '-'}</p>
+              <p className="font-medium break-words">{vendorProfile?.city || '-'}</p>
             </div>
-            <div>
+            <div className="break-words">
               <Label className="text-muted-foreground">Country</Label>
-              <p className="font-medium">{vendorProfile?.country || '-'}</p>
+              <p className="font-medium break-words">{vendorProfile?.country || '-'}</p>
             </div>
           </div>
           {vendorProfile?.description && (
             <div className="mt-4">
               <Label className="text-muted-foreground">Description</Label>
-              <p className="text-sm mt-1">{vendorProfile.description}</p>
+              <p className="text-sm mt-1 break-words">{vendorProfile.description}</p>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Onboarding Certificate */}
+      <VendorCertificateCard />
     </div>
+  );
+}
+
+// Vendor Certificate Card Component
+function VendorCertificateCard() {
+  const { toast } = useToast();
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const { data: certificate, isLoading } = useQuery({
+    queryKey: ['vendor', 'my-certificate'],
+    queryFn: () => certificateService.getMyCertificate(),
+  });
+
+  const handleDownloadPdf = async () => {
+    setIsDownloading(true);
+    try {
+      const blob = await certificateService.downloadMyCertificatePdf();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'my-onboarding-certificate.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast({ title: "Success", description: "Certificate downloaded successfully" });
+    } catch (error) {
+      console.error('Error downloading certificate:', error);
+      toast({
+        title: "Error",
+        description: "Failed to download certificate. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Award className="h-5 w-5" />
+            Onboarding Certificate
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+            <span className="ml-2">Loading certificate...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!certificate) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Award className="h-5 w-5" />
+            Onboarding Certificate
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+            <XCircle className="h-12 w-12 text-gray-300 mb-4" />
+            <p className="text-sm">No certificate found for your account.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Award className="h-5 w-5 text-emerald-600" />
+          Onboarding Certificate
+        </CardTitle>
+        <CardDescription>
+          Your vendor onboarding completion certificate.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
+          <CheckCircle className="h-8 w-8 text-green-600 flex-shrink-0" />
+          <div className="flex-1">
+            <h4 className="font-medium text-green-900">Certificate Verified</h4>
+            <p className="text-sm text-green-700">
+              Issued on {new Date(certificate.issuedAt).toLocaleDateString()}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleDownloadPdf}
+            disabled={isDownloading}
+          >
+            {isDownloading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+              </>
+            )}
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-3 bg-gray-50 rounded-lg border break-words">
+            <Label className="text-muted-foreground text-xs">Certificate Code</Label>
+            <p className="font-mono font-bold text-emerald-600 break-all">{certificate.certificateCode}</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg border break-words">
+            <Label className="text-muted-foreground text-xs">Vendor Type</Label>
+            <p className="font-medium break-words">{certificate.vendorType}</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg border break-words">
+            <Label className="text-muted-foreground text-xs">Full Name</Label>
+            <p className="font-medium break-words">{certificate.fullName}</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg border break-words">
+            <Label className="text-muted-foreground text-xs">Email</Label>
+            <p className="font-medium break-all">{certificate.email}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

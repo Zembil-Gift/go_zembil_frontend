@@ -7,6 +7,7 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { vendorService, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse, VendorProfile, CategoryChangeRequest } from "@/services/vendorService";
+import serviceService, { ServiceResponse, UpdateServiceRequest } from "@/services/serviceService";
 
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
   if (!vendorProfile) return false;
@@ -45,6 +46,7 @@ import {
   Ticket,
   FolderTree,
   Trash2,
+  Wrench,
 } from "lucide-react";
 
 interface Category {
@@ -105,11 +107,20 @@ const categoryChangeEditSchema = z.object({
   reason: z.string().min(1, "Reason is required"),
 });
 
+const serviceEditSchema = z.object({
+  title: z.string().min(1, "Service title is required"),
+  description: z.string().optional(),
+  location: z.string().optional(),
+  city: z.string().optional(),
+  categoryId: z.string().optional(),
+});
+
 type ProductEditForm = z.infer<typeof productEditSchema>;
 type PriceUpdateEditForm = z.infer<typeof priceUpdateEditSchema>;
 type EventEditForm = z.infer<typeof eventEditSchema>;
 type EventPriceUpdateEditForm = z.infer<typeof eventPriceUpdateEditSchema>;
 type CategoryChangeEditForm = z.infer<typeof categoryChangeEditSchema>;
+type ServiceEditForm = z.infer<typeof serviceEditSchema>;
 
 export default function VendorRequests() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -122,12 +133,14 @@ export default function VendorRequests() {
   const [editEventOpen, setEditEventOpen] = useState(false);
   const [editEventPriceOpen, setEditEventPriceOpen] = useState(false);
   const [editCategoryChangeOpen, setEditCategoryChangeOpen] = useState(false);
+  const [editServiceOpen, setEditServiceOpen] = useState(false);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedPriceUpdate, setSelectedPriceUpdate] = useState<PriceUpdateRequest | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventResponse | null>(null);
   const [selectedEventPriceUpdate, setSelectedEventPriceUpdate] = useState<EventPriceUpdateResponse | null>(null);
   const [selectedCategoryChange, setSelectedCategoryChange] = useState<CategoryChangeRequest | null>(null);
+  const [selectedService, setSelectedService] = useState<ServiceResponse | null>(null);
 
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
 
@@ -193,6 +206,12 @@ export default function VendorRequests() {
     enabled: isAuthenticated && isVendor,
   });
 
+  const { data: servicesData, isLoading: servicesLoading } = useQuery({
+    queryKey: ['vendor', 'pending-services'],
+    queryFn: () => serviceService.getMyPendingRejectedServices(0, 100),
+    enabled: isAuthenticated && isVendor,
+  });
+
   const pendingProducts = (productsData?.content || []).filter(
     (p) => p.status === 'PENDING' || p.status === 'REJECTED'
   );
@@ -204,6 +223,9 @@ export default function VendorRequests() {
   );
   const pendingEventPriceRequests = (eventPriceRequestsData?.content || []).filter(
     (r) => r.status === 'PENDING' || r.status === 'REJECTED'
+  );
+  const pendingServices = (servicesData?.content || []).filter(
+    (s) => s.status === 'PENDING_APPROVAL' || s.status === 'REJECTED'
   );
   const pendingCategoryChangeRequests = (categoryChangeRequestsData || []).filter(
     (r) => r.status === 'PENDING' || r.status === 'REJECTED'
@@ -290,6 +312,20 @@ export default function VendorRequests() {
     },
   });
 
+  const editServiceMutation = useMutation({
+    mutationFn: (data: { serviceId: number; service: UpdateServiceRequest }) =>
+      serviceService.editPendingService(data.serviceId, data.service),
+    onSuccess: () => {
+      toast({ title: "Success", description: "Service updated and resubmitted for review." });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-services'] });
+      setEditServiceOpen(false);
+      setSelectedService(null);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update service", variant: "destructive" });
+    },
+  });
+
   const productForm = useForm<ProductEditForm>({
     resolver: zodResolver(productEditSchema),
     defaultValues: {
@@ -340,6 +376,17 @@ export default function VendorRequests() {
     defaultValues: {
       newSubCategoryId: "",
       reason: "",
+    },
+  });
+
+  const serviceForm = useForm<ServiceEditForm>({
+    resolver: zodResolver(serviceEditSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      location: "",
+      city: "",
+      categoryId: "",
     },
   });
 
@@ -403,6 +450,18 @@ export default function VendorRequests() {
       reason: request.reason || "",
     });
     setEditCategoryChangeOpen(true);
+  };
+
+  const openServiceEdit = (service: ServiceResponse) => {
+    setSelectedService(service);
+    serviceForm.reset({
+      title: service.title,
+      description: service.description || "",
+      location: service.location || "",
+      city: service.city || "",
+      categoryId: service.categoryId?.toString() || "",
+    });
+    setEditServiceOpen(true);
   };
 
   const onProductSubmit = (data: ProductEditForm) => {
@@ -474,6 +533,20 @@ export default function VendorRequests() {
     });
   };
 
+  const onServiceSubmit = (data: ServiceEditForm) => {
+    if (!selectedService?.id) return;
+    editServiceMutation.mutate({
+      serviceId: selectedService.id,
+      service: {
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        city: data.city,
+        categoryId: data.categoryId ? parseInt(data.categoryId) : undefined,
+      },
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     const upperStatus = status?.toUpperCase();
     switch (upperStatus) {
@@ -491,7 +564,7 @@ export default function VendorRequests() {
   };
 
   const getRequestCount = () => {
-    return pendingProducts.length + pendingPriceRequests.length + pendingEvents.length + pendingEventPriceRequests.length + pendingCategoryChangeRequests.length;
+    return pendingProducts.length + pendingPriceRequests.length + pendingEvents.length + pendingEventPriceRequests.length + pendingCategoryChangeRequests.length + pendingServices.length;
   };
 
   if (authLoading) {
@@ -534,7 +607,7 @@ export default function VendorRequests() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Products</span>
@@ -568,6 +641,13 @@ export default function VendorRequests() {
               <span className="hidden sm:inline">Event Prices</span>
               {pendingEventPriceRequests.length > 0 && (
                 <Badge variant="secondary" className="ml-1">{pendingEventPriceRequests.length}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="services" className="flex items-center gap-2">
+              <Wrench className="h-4 w-4" />
+              <span className="hidden sm:inline">Services</span>
+              {pendingServices.length > 0 && (
+                <Badge variant="secondary" className="ml-1">{pendingServices.length}</Badge>
               )}
             </TabsTrigger>
           </TabsList>
@@ -669,8 +749,9 @@ export default function VendorRequests() {
                 ) : (
                   <div className="space-y-4">
                     {pendingPriceRequests.map((request) => {
-                      const currentPrice = request.currentPrice?.prices?.[0];
-                      const newPrice = request.newPrice?.prices?.[0];
+                      // Use vendor prices for display to vendors
+                      const currentPrice = request.currentVendorPrice || request.currentPrice?.prices?.[0];
+                      const newPrice = request.newVendorPrice || request.newPrice?.prices?.[0];
                       return (
                         <div key={request.id} className="border rounded-lg p-4">
                           <div className="flex items-start justify-between">
@@ -683,14 +764,14 @@ export default function VendorRequests() {
                                 <div>
                                   <span className="text-sm text-muted-foreground">Current: </span>
                                   <span className="font-medium">
-                                    {currentPrice?.currencyCode} {currentPrice?.amount?.toFixed(2)}
+                                    {currentPrice?.currencyCode} {(currentPrice?.vendorAmount ?? currentPrice?.amount)?.toFixed(2)}
                                   </span>
                                 </div>
                                 <span className="text-muted-foreground">→</span>
                                 <div>
                                   <span className="text-sm text-muted-foreground">New: </span>
                                   <span className="font-medium text-blue-600">
-                                    {newPrice?.currencyCode} {newPrice?.amount?.toFixed(2)}
+                                    {newPrice?.currencyCode} {(newPrice?.vendorAmount ?? newPrice?.amount)?.toFixed(2)}
                                   </span>
                                 </div>
                               </div>
@@ -921,8 +1002,9 @@ export default function VendorRequests() {
                 ) : (
                   <div className="space-y-4">
                     {pendingEventPriceRequests.map((request) => {
-                      const currentPrice = request.currentPrice?.prices?.[0];
-                      const newPrice = request.newPrice?.prices?.[0];
+                      // Use vendor prices for display to vendors
+                      const currentPrice = request.currentVendorPrice || request.currentPrice?.prices?.[0];
+                      const newPrice = request.newVendorPrice || request.newPrice?.prices?.[0];
                       return (
                         <div key={request.id} className="border rounded-lg p-4">
                           <div className="flex items-start justify-between">
@@ -933,14 +1015,14 @@ export default function VendorRequests() {
                                 <div>
                                   <span className="text-sm text-muted-foreground">Current: </span>
                                   <span className="font-medium">
-                                    {currentPrice?.currencyCode} {currentPrice?.amount?.toFixed(2)}
+                                    {currentPrice?.currencyCode} {(currentPrice?.vendorAmount ?? currentPrice?.amount)?.toFixed(2)}
                                   </span>
                                 </div>
                                 <span className="text-muted-foreground">→</span>
                                 <div>
                                   <span className="text-sm text-muted-foreground">New: </span>
                                   <span className="font-medium text-blue-600">
-                                    {newPrice?.currencyCode} {newPrice?.amount?.toFixed(2)}
+                                    {newPrice?.currencyCode} {(newPrice?.vendorAmount ?? newPrice?.amount)?.toFixed(2)}
                                   </span>
                                 </div>
                               </div>
@@ -973,6 +1055,84 @@ export default function VendorRequests() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Service Creation Requests Tab */}
+          <TabsContent value="services" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wrench className="h-5 w-5" />
+                  Service Creation Requests
+                </CardTitle>
+                <CardDescription>
+                  Services pending approval or rejected by admin. Edit and resubmit rejected services.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {servicesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : pendingServices.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                    <p className="text-muted-foreground">No pending or rejected services</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingServices.map((service) => (
+                      <div key={service.id} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-4">
+                            {service.primaryImageUrl ? (
+                              <img 
+                                src={service.primaryImageUrl} 
+                                alt={service.title} 
+                                className="h-16 w-16 rounded object-cover"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                              />
+                            ) : (
+                              <div className="h-16 w-16 rounded bg-gray-200 flex items-center justify-center">
+                                <Wrench className="h-8 w-8 text-gray-400" />
+                              </div>
+                            )}
+                            <div>
+                              <h3 className="font-semibold">{service.title}</h3>
+                              <p className="text-sm text-muted-foreground">{service.categoryName}</p>
+                              {service.location && (
+                                <p className="text-sm text-muted-foreground">{service.location}, {service.city}</p>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                {getStatusBadge(service.status)}
+                                <span className="text-sm text-muted-foreground">
+                                  Created: {new Date(service.createdAt || '').toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => openServiceEdit(service)}>
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                        {service.rejectionReason && (
+                          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                                <p className="text-sm text-red-700">{service.rejectionReason}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -1450,6 +1610,90 @@ export default function VendorRequests() {
               </Button>
               <Button type="submit" disabled={editCategoryChangeMutation.isPending}>
                 {editCategoryChangeMutation.isPending ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Save & Resubmit'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Service Dialog */}
+      <Dialog open={editServiceOpen} onOpenChange={setEditServiceOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Service</DialogTitle>
+            <DialogDescription>
+              Update your service details and resubmit for review.
+              {selectedService?.status === 'REJECTED' && (
+                <span className="block mt-2 text-amber-600">
+                  This service was rejected. Editing will resubmit it for approval.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={serviceForm.handleSubmit(onServiceSubmit)} className="space-y-4">
+            <div>
+              <Label htmlFor="serviceTitle">Service Title *</Label>
+              <Input id="serviceTitle" {...serviceForm.register("title")} />
+              {serviceForm.formState.errors.title && (
+                <p className="text-sm text-red-600 mt-1">{serviceForm.formState.errors.title.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="serviceDescription">Description</Label>
+              <Textarea 
+                id="serviceDescription" 
+                {...serviceForm.register("description")} 
+                rows={4}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="serviceLocation">Location</Label>
+                <Input id="serviceLocation" {...serviceForm.register("location")} placeholder="e.g., Main Street 123" />
+              </div>
+              <div>
+                <Label htmlFor="serviceCity">City</Label>
+                <Input id="serviceCity" {...serviceForm.register("city")} placeholder="e.g., Addis Ababa" />
+              </div>
+            </div>
+
+            <div>
+              <Label>Category</Label>
+              <Controller
+                name="categoryId"
+                control={serviceForm.control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allSubCategories.map((subCategory) => (
+                        <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
+                          {subCategory.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditServiceOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editServiceMutation.isPending}>
+                {editServiceMutation.isPending ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                     Submitting...

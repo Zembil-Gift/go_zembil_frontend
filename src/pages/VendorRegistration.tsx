@@ -29,6 +29,16 @@ const vendorRegistrationSchema = z.object({
     country: z.string().min(2, "Country is required"),
     zipCode: z.string().min(5, "ZIP/Postal code is required"),
   }),
+  birthDate: z.string().min(1, "Birth date is required").refine((date) => {
+    const birthDate = new Date(date);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age >= 18;
+  }, "You must be at least 18 years old to register as a vendor"),
   website: z.string().url("Invalid website URL").optional().or(z.literal("")),
   socialMediaLinks: z.object({
     instagram: z.string().url("Invalid Instagram URL").optional().or(z.literal("")),
@@ -115,6 +125,7 @@ export default function VendorRegistration() {
       businessDescription: "",
       phoneNumber: "",
       email: "",
+      birthDate: "",
       businessAddress: {
         street: "",
         city: "",
@@ -275,6 +286,20 @@ export default function VendorRegistration() {
                   />
                   {form.formState.errors.ownerName && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.ownerName.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="birthDate">Owner's Birth Date *</Label>
+                  <Input
+                    id="birthDate"
+                    type="date"
+                    {...form.register("birthDate")}
+                  />
+                  {form.formState.errors.birthDate && (
+                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.birthDate.message}</p>
                   )}
                 </div>
               </div>

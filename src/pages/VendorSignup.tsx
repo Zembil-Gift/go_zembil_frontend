@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,9 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/apiService";
-import { certificateService, CertificateResponse } from "@/services/certificateService";
 import { vendorTermsService, VendorTermsResponse } from "@/services/vendorTermsService";
-import { User, Mail, Phone, Lock, Globe, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Award, Loader2, Play, Pause } from "lucide-react";
+import { User, Mail, Phone, Lock, Globe, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Play, Pause, Download } from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 
 interface Category {
@@ -34,6 +33,17 @@ interface Currency {
   isDefault: boolean;
 }
 
+interface CertificateResponse {
+  certificateCode: string;
+  email: string;
+  fullName: string;
+  vendorType: string;
+  issuedAt: string;
+  expiresAt: string;
+  isUsed: boolean;
+  isValid: boolean;
+}
+
 const COUNTRIES = [
   { value: "United States", label: "United States" },
   { value: "Ethiopia", label: "Ethiopia" },
@@ -41,9 +51,8 @@ const COUNTRIES = [
   { value: "United Kingdom", label: "United Kingdom" },
   { value: "Europe", label: "Europe" },
   { value: "Australia", label: "Australia" },
-  {value: "Middle East", label: "Middle East" },
+  { value: "Middle East", label: "Middle East" },
 ];
-
 
 const VENDOR_TYPES = [
   { value: "PRODUCT", label: "Product Vendor", description: "I sell physical goods that require delivery" },
@@ -57,54 +66,75 @@ const VAT_STATUS_OPTIONS = [
   { value: "VAT_EXEMPT", label: "VAT Exempt", description: "My business is exempt from VAT" },
 ];
 
-const ONBOARDING_VIDEO_URL = "/videos/vendor-onboarding.mp4";
+// Video URLs for each vendor type
+const ONBOARDING_VIDEOS: Record<string, string> = {
+  PRODUCT: "/videos/vendor-onboarding-product.mp4",
+  SERVICE: "/videos/vendor-onboarding-service.mp4",
+  HYBRID: "/videos/vendor-onboarding-hybrid.mp4",
+};
 
-type OnboardingStep = "video" | "certificate" | "form" | "terms";
+const DEFAULT_VIDEO_URL = "/videos/vendor-onboarding.mp4";
 
-// Format seconds to MM:SS
+type OnboardingStep = "form" | "terms" | "video";
+
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+// Phone number validation with international support
+const phoneRegex = /^\+?[1-9]\d{6,14}$/;
+const phoneValidation = z
+  .string()
+  .min(7, "Phone number must be at least 7 digits")
+  .max(15, "Phone number must not exceed 15 digits")
+  .regex(phoneRegex, "Please enter a valid phone number with country code (e.g., +251911234567)");
+
+// Username validation: 3-20 chars, alphanumeric + underscores, must start with letter
+const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/;
+const usernameValidation = z
+  .string()
+  .min(3, "Username must be at least 3 characters")
+  .max(20, "Username must not exceed 20 characters")
+  .regex(usernameRegex, "Username must start with a letter and contain only letters, numbers, and underscores");
+
 const vendorSignupSchema = z
   .object({
     firstName: z.string().min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
-    username: z.string().min(3, "Username must be at least 3 characters"),
+    username: usernameValidation,
     email: z.string().email("Please enter a valid email address"),
-    phoneNumber: z
-      .string()
-      .min(10, "Phone number must be at least 10 digits")
-      .regex(/^\+?\d+$/, "Phone number must contain only numbers and optional + at start"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
+    phoneNumber: phoneValidation,
+    password: z.string().min(8, "Password must be at least 8 characters")
       .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/, "Password must contain both letters and numbers"),
     confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
-    birthDate: z.string().min(1, "Birth date is required"),
+    birthDate: z.string().min(1, "Birth date is required").refine((date) => {
+      const birthDate = new Date(date);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+      return age >= 18;
+    }, "You must be at least 18 years old to sign up as a vendor"),
     preferredCurrencyCode: z.string().optional(),
     businessName: z.string().min(2, "Business name must be at least 2 characters").max(200),
     description: z.string().max(1000, "Description must be less than 1000 characters").optional(),
     businessEmail: z.string().email("Valid business email is required"),
-    businessPhone: z.string().min(10, "Business phone is required"),
+    businessPhone: phoneValidation,
     contactName: z.string().optional(),
     city: z.string().min(2, "City is required"),
     country: z.string().min(2, "Country is required"),
     categoryId: z.string().min(1, "Please select a category"),
     vendorType: z.string().min(1, "Please select a vendor type"),
     vatStatus: z.string().optional(),
-    certificateCode: z.string().min(1, "Certificate code is required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ["confirmPassword"],
     message: "Passwords must match",
   })
   .refine((data) => {
-    if (data.country === "Ethiopia" && !data.vatStatus) {
-      return false;
-    }
+    if (data.country === "Ethiopia" && !data.vatStatus) return false;
     return true;
   }, {
     path: ["vatStatus"],
@@ -113,23 +143,24 @@ const vendorSignupSchema = z
 
 type VendorSignupForm = z.infer<typeof vendorSignupSchema>;
 
-
 export default function VendorSignup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>("video");
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>("form");
   const [acceptedTerms, setAcceptedTerms] = useState<Record<number, boolean>>({});
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [hasWatchedVideo, setHasWatchedVideo] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [certificateEmail, setCertificateEmail] = useState("");
-  const [certificateFullName, setCertificateFullName] = useState("");
+  const [maxWatchedTime, setMaxWatchedTime] = useState(0);
   const [generatedCertificate, setGeneratedCertificate] = useState<CertificateResponse | null>(null);
-  const [certificateCode, setCertificateCode] = useState("");
-  const [isCertificateValidated, setIsCertificateValidated] = useState(false);
   const [termsData, setTermsData] = useState<VendorTermsResponse | null>(null);
   const [isLoadingTerms, setIsLoadingTerms] = useState(false);
+  const [allTermsAccepted, setAllTermsAccepted] = useState(false);
+  const [formData, setFormData] = useState<Partial<VendorSignupForm> | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const termsScrollRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -139,14 +170,34 @@ export default function VendorSignup() {
     setIsVideoPlaying(false);
     toast({
       title: "Video Completed!",
-      description: "You can now generate your onboarding certificate.",
+      description: "You can now complete your registration.",
       variant: "default",
     });
   };
 
   const handleVideoTimeUpdate = () => {
     if (videoRef.current) {
-      setVideoProgress(videoRef.current.currentTime);
+      const currentTime = videoRef.current.currentTime;
+      setVideoProgress(currentTime);
+      // Update max watched time (allow small buffer for natural playback variations)
+      if (currentTime > maxWatchedTime) {
+        setMaxWatchedTime(currentTime);
+      }
+    }
+  };
+
+  const handleVideoSeeking = () => {
+    if (videoRef.current) {
+      const seekTime = videoRef.current.currentTime;
+      // If trying to seek forward beyond max watched time, reset to max watched
+      if (seekTime > maxWatchedTime + 0.5) {
+        videoRef.current.currentTime = maxWatchedTime;
+        toast({
+          title: "Cannot Skip Forward",
+          description: "Please watch the video without skipping ahead.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -167,19 +218,38 @@ export default function VendorSignup() {
     }
   };
 
+  const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!videoRef.current || videoDuration === 0) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const seekTime = percentage * videoDuration;
+    
+    // Only allow seeking to positions already watched (rewind only, no skip forward)
+    if (seekTime <= maxWatchedTime) {
+      videoRef.current.currentTime = seekTime;
+      setVideoProgress(seekTime);
+    } else {
+      toast({
+        title: "Cannot Skip Forward",
+        description: "You can only rewind to previously watched sections.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies'],
     queryFn: async () => {
-      const response = await apiService.getRequest<Currency[]>('/api/currencies');
-      return response;
+      return await apiService.getRequest<Currency[]>('/api/currencies');
     },
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const response = await apiService.getRequest<Category[]>('/api/categories');
-      return response;
+      return await apiService.getRequest<Category[]>('/api/categories');
     },
   });
 
@@ -188,37 +258,14 @@ export default function VendorSignup() {
   const form = useForm<VendorSignupForm>({
     resolver: zodResolver(vendorSignupSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      username: "",
-      email: "",
-      phoneNumber: "",
-      password: "",
-      confirmPassword: "",
-      birthDate: "",
-      preferredCurrencyCode: "",
-      businessName: "",
-      description: "",
-      businessEmail: "",
-      businessPhone: "",
-      contactName: "",
-      city: "",
-      country: "",
-      categoryId: "",
-      vendorType: "",
-      vatStatus: "",
-      certificateCode: "",
+      firstName: "", lastName: "", username: "", email: "", phoneNumber: "",
+      password: "", confirmPassword: "", birthDate: "", preferredCurrencyCode: "",
+      businessName: "", description: "", businessEmail: "", businessPhone: "",
+      contactName: "", city: "", country: "", categoryId: "", vendorType: "", vatStatus: "",
     },
   });
 
-  // Fetch terms when vendor type changes
   const selectedVendorType = form.watch("vendorType");
-  
-  useEffect(() => {
-    if (selectedVendorType && currentStep === "terms") {
-      fetchTermsForVendorType(selectedVendorType);
-    }
-  }, [selectedVendorType, currentStep]);
 
   const fetchTermsForVendorType = async (vendorType: string) => {
     setIsLoadingTerms(true);
@@ -226,99 +273,90 @@ export default function VendorSignup() {
       const terms = await vendorTermsService.getTermsByVendorType(vendorType);
       setTermsData(terms);
       setAcceptedTerms({});
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load terms and conditions",
-        variant: "destructive",
-      });
+      setAllTermsAccepted(false);
+      setHasScrolledToBottom(false);
+    } catch {
+      toast({ title: "Error", description: "Failed to load terms and conditions", variant: "destructive" });
     } finally {
       setIsLoadingTerms(false);
     }
   };
 
-  const allTermsAccepted = termsData ? termsData.terms.every(term => acceptedTerms[term.id]) : false;
-
-  const handleTermToggle = (termId: number) => {
-    setAcceptedTerms(prev => ({
-      ...prev,
-      [termId]: !prev[termId]
-    }));
-  };
-
-  const handleAcceptAll = () => {
-    if (termsData) {
-      const allAccepted: Record<number, boolean> = {};
-      termsData.terms.forEach(term => {
-        allAccepted[term.id] = true;
-      });
-      setAcceptedTerms(allAccepted);
+  const handleTermsScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const element = e.currentTarget;
+    const scrolledToBottom = element.scrollHeight - element.scrollTop <= element.clientHeight + 10;
+    if (scrolledToBottom && !hasScrolledToBottom) {
+      setHasScrolledToBottom(true);
     }
   };
 
-  const handleRejectAll = () => {
-    setAcceptedTerms({});
+  const handleAcceptAllTerms = (checked: boolean) => {
+    setAllTermsAccepted(checked);
+    if (checked && termsData) {
+      const allAccepted: Record<number, boolean> = {};
+      termsData.terms.forEach(term => { allAccepted[term.id] = true; });
+      setAcceptedTerms(allAccepted);
+    } else {
+      setAcceptedTerms({});
+    }
   };
 
-  const acceptedCount = Object.values(acceptedTerms).filter(Boolean).length;
-
+  // Generate certificate mutation
   const generateCertificateMutation = useMutation({
     mutationFn: async () => {
-      return certificateService.generateCertificate({
-        email: certificateEmail,
-        fullName: certificateFullName,
+      const vendorType = formData?.vendorType || form.getValues("vendorType");
+      const email = formData?.email || form.getValues("email");
+      const firstName = formData?.firstName || form.getValues("firstName");
+      const lastName = formData?.lastName || form.getValues("lastName");
+      
+      return await apiService.postRequest<CertificateResponse>('/api/vendor-certificates/generate', {
+        email,
+        fullName: `${firstName} ${lastName}`,
+        vendorType,
       });
     },
     onSuccess: (data) => {
       setGeneratedCertificate(data);
-      toast({
-        title: "Certificate Generated!",
-        description: "Your onboarding certificate has been generated. Please download it and save the certificate code.",
-        variant: "default",
-      });
+      toast({ title: "Certificate Generated!", description: "Your onboarding certificate is ready.", variant: "default" });
     },
     onError: (error: any) => {
-      toast({
-        title: "Certificate Generation Failed",
-        description: error.message || "Failed to generate certificate. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Certificate Generation Failed", description: error.message || "Please try again.", variant: "destructive" });
     },
   });
 
-  const validateCertificateMutation = useMutation({
-    mutationFn: async () => {
-      return certificateService.validateCertificate(certificateCode);
-    },
-    onSuccess: (data) => {
-      if (data.isValid) {
-        setIsCertificateValidated(true);
-        form.setValue("certificateCode", certificateCode);
-        if (data.email) {
-          form.setValue("email", data.email);
-        }
-        toast({
-          title: "Certificate Validated!",
-          description: "Your certificate is valid. You can now proceed with registration.",
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Invalid Certificate",
-          description: data.message,
-          variant: "destructive",
-        });
+  // Download certificate PDF (public endpoint, no auth needed)
+  const handleDownloadCertificatePdf = async () => {
+    if (!generatedCertificate) return;
+    
+    setIsDownloadingPdf(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/vendor-certificates/${generatedCertificate.certificateCode}/pdf`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to download PDF');
       }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Validation Failed",
-        description: error.message || "Failed to validate certificate. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `onboarding-certificate-${generatedCertificate.certificateCode}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({ title: "Downloaded!", description: "Certificate PDF downloaded successfully." });
+    } catch {
+      toast({ title: "Error", description: "Failed to download certificate PDF.", variant: "destructive" });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
+  // Signup mutation
   const signupMutation = useMutation({
     mutationFn: async (data: VendorSignupForm) => {
       const acceptedTermIds = termsData ? termsData.terms.filter(t => acceptedTerms[t.id]).map(t => t.id) : [];
@@ -343,54 +381,110 @@ export default function VendorSignup() {
         vendorType: data.vendorType,
         vatStatus: data.country === "Ethiopia" && data.vatStatus ? data.vatStatus : undefined,
         supportedPaymentProviders: ["STRIPE", "CHAPA"],
-        certificateCode: data.certificateCode,
+        certificateCode: generatedCertificate?.certificateCode || "",
         termsVersion: termsData?.version || 1,
-        acceptedTermIds: acceptedTermIds,
+        acceptedTermIds,
       };
 
-      console.log('Vendor signup payload:', JSON.stringify(payload, null, 2));
       return await apiService.postRequest('/api/vendors/signup', payload);
     },
     onSuccess: () => {
       toast({
         title: "Vendor Account Created Successfully!",
-        description: "Your vendor account has been created. Please check your email for verification and await admin approval.",
+        description: "Please check your email for verification and await admin approval.",
         variant: "default",
       });
       navigate("/signin");
     },
     onError: (error: any) => {
-      toast({
-        title: "Signup Failed",
-        description: error.message || "Failed to create vendor account. Please try again.",
-        variant: "destructive",
+      // Use generic message for security - don't reveal if email/username exists
+      const errorMsg = error?.message?.toLowerCase() || "";
+      const isUserExistsError = errorMsg.includes("email") || errorMsg.includes("username") || errorMsg.includes("already");
+      toast({ 
+        title: "Signup Failed", 
+        description: isUserExistsError 
+          ? "An account with these details already exists. Please sign in instead."
+          : (error.message || "Please try again."), 
+        variant: "destructive" 
       });
     },
   });
 
   const handleProceedToTerms = async () => {
-    const isValid = await form.trigger();
+    const fieldsToValidate = [
+      "firstName", "lastName", "username", "email", "phoneNumber",
+      "password", "confirmPassword", "birthDate", "businessName",
+      "businessEmail", "businessPhone", "city", "country", "categoryId", "vendorType"
+    ] as const;
+    
+    const isValid = await form.trigger(fieldsToValidate);
+    const country = form.getValues("country");
+    const vatStatus = form.getValues("vatStatus");
+    
+    if (country === "Ethiopia" && !vatStatus) {
+      form.setError("vatStatus", { message: "VAT status is required for Ethiopian vendors" });
+      return;
+    }
+    
     if (isValid) {
-      const vendorType = form.getValues("vendorType");
-      if (vendorType) {
-        await fetchTermsForVendorType(vendorType);
-        setCurrentStep("terms");
+      // Check for duplicate email and username before proceeding
+      const email = form.getValues("email");
+      const username = form.getValues("username");
+      
+      try {
+        const [emailExists, usernameExists] = await Promise.all([
+          apiService.getRequest<boolean>(`/api/users/check-email?email=${encodeURIComponent(email)}`),
+          apiService.getRequest<boolean>(`/api/users/check-username?username=${encodeURIComponent(username)}`)
+        ]);
+        
+        if (emailExists || usernameExists) {
+          // Use generic message for security - don't reveal which one exists
+          form.setError("email", { message: "An account with these details already exists. Please sign in instead." });
+          toast({ title: "Account Exists", description: "An account with these details already exists. Please sign in instead.", variant: "destructive" });
+          return;
+        }
+      } catch (error) {
+        toast({ title: "Validation Error", description: "Could not verify account availability. Please try again.", variant: "destructive" });
+        return;
       }
+      
+      const vendorType = form.getValues("vendorType");
+      setFormData(form.getValues());
+      await fetchTermsForVendorType(vendorType);
+      setCurrentStep("terms");
     }
   };
 
-  const onSubmit = async (data: VendorSignupForm) => {
+  const handleProceedToVideo = () => {
     if (!allTermsAccepted) {
-      toast({
-        title: "Terms Required",
-        description: "Please accept all terms and conditions to continue.",
-        variant: "destructive",
-      });
+      toast({ title: "Terms Required", description: "Please accept all terms and conditions.", variant: "destructive" });
+      return;
+    }
+    setHasWatchedVideo(false);
+    setVideoProgress(0);
+    setMaxWatchedTime(0);
+    setIsVideoPlaying(false);
+    setGeneratedCertificate(null);
+    setCurrentStep("video");
+  };
+
+  const onSubmit = async (data: VendorSignupForm) => {
+    if (!generatedCertificate) {
+      toast({ title: "Certificate Required", description: "Please generate your certificate first.", variant: "destructive" });
       return;
     }
     await signupMutation.mutateAsync(data);
   };
 
+  const getVideoUrl = () => {
+    const vendorType = formData?.vendorType || selectedVendorType;
+    return ONBOARDING_VIDEOS[vendorType] || DEFAULT_VIDEO_URL;
+  };
+
+  const getVendorTypeLabel = () => {
+    const vendorType = formData?.vendorType || selectedVendorType;
+    return VENDOR_TYPES.find(t => t.value === vendorType)?.label || "Vendor";
+  };
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -398,76 +492,378 @@ export default function VendorSignup() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="flex justify-center mb-6">
-            <GoGeramiLogo 
-              size="lg"
-              variant="icon"
-              className="h-16 w-16"
-            />
+            <GoGeramiLogo size="lg" variant="icon" className="h-16 w-16" />
           </Link>
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <h1 className="text-4xl font-bold text-gray-900">Vendor Signup</h1>
-          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Vendor Signup</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Create your vendor account and join goGerami's marketplace.
           </p>
           <p className="text-sm text-gray-500 mt-2">
             Already have an account?{" "}
-            <Link to="/signin" className="text-emerald-600 hover:text-emerald-700 font-medium">
-              Sign in here
-            </Link>
+            <Link to="/signin" className="text-emerald-600 hover:text-emerald-700 font-medium">Sign in here</Link>
           </p>
         </div>
 
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-center space-x-2 sm:space-x-4">
-            <div className={`flex items-center ${currentStep === "video" ? "text-emerald-600" : hasWatchedVideo ? "text-emerald-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "video" ? "border-emerald-600 bg-emerald-50" : hasWatchedVideo ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
-                {hasWatchedVideo ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <PlayCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
-              </div>
-              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Video</span>
-            </div>
-            <div className="w-8 sm:w-16 h-0.5 bg-gray-300">
-              <div className={`h-full transition-all duration-300 ${hasWatchedVideo ? "bg-emerald-600 w-full" : "w-0"}`} />
-            </div>
-            <div className={`flex items-center ${currentStep === "certificate" ? "text-emerald-600" : isCertificateValidated ? "text-emerald-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "certificate" ? "border-emerald-600 bg-emerald-50" : isCertificateValidated ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
-                {isCertificateValidated ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <Award className="w-4 h-4 sm:w-5 sm:h-5" />}
-              </div>
-              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Certificate</span>
-            </div>
-            <div className="w-8 sm:w-16 h-0.5 bg-gray-300">
-              <div className={`h-full transition-all duration-300 ${isCertificateValidated ? "bg-emerald-600 w-full" : "w-0"}`} />
-            </div>
-            <div className={`flex items-center ${currentStep === "form" ? "text-emerald-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "form" ? "border-emerald-600 bg-emerald-50" : currentStep === "terms" ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
-                {currentStep === "terms" ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <User className="w-4 h-4 sm:w-5 sm:h-5" />}
+            <div className={`flex items-center ${currentStep === "form" ? "text-emerald-600" : formData ? "text-emerald-600" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "form" ? "border-emerald-600 bg-emerald-50" : formData ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
+                {formData && currentStep !== "form" ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <User className="w-4 h-4 sm:w-5 sm:h-5" />}
               </div>
               <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Details</span>
             </div>
             <div className="w-8 sm:w-16 h-0.5 bg-gray-300">
-              <div className={`h-full transition-all duration-300 ${currentStep === "terms" ? "bg-emerald-600 w-full" : "w-0"}`} />
+              <div className={`h-full transition-all duration-300 ${formData ? "bg-emerald-600 w-full" : "w-0"}`} />
             </div>
-            <div className={`flex items-center ${currentStep === "terms" ? "text-emerald-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "terms" ? "border-emerald-600 bg-emerald-50" : "border-gray-300"}`}>
-                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+            
+            <div className={`flex items-center ${currentStep === "terms" ? "text-emerald-600" : allTermsAccepted ? "text-emerald-600" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "terms" ? "border-emerald-600 bg-emerald-50" : allTermsAccepted ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
+                {allTermsAccepted && currentStep !== "terms" ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <FileText className="w-4 h-4 sm:w-5 sm:h-5" />}
               </div>
               <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Terms</span>
+            </div>
+            <div className="w-8 sm:w-16 h-0.5 bg-gray-300">
+              <div className={`h-full transition-all duration-300 ${allTermsAccepted ? "bg-emerald-600 w-full" : "w-0"}`} />
+            </div>
+            
+            <div className={`flex items-center ${currentStep === "video" ? "text-emerald-600" : generatedCertificate ? "text-emerald-600" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "video" ? "border-emerald-600 bg-emerald-50" : generatedCertificate ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
+                {generatedCertificate ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <PlayCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
+              </div>
+              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Video & Complete</span>
             </div>
           </div>
         </div>
 
 
-        {/* Step 1: Onboarding Video */}
+        {/* Step 1: Registration Form */}
+        {currentStep === "form" && (
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <User className="w-5 h-5" />
+                <span>Personal Information</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <Input id="firstName" {...form.register("firstName")} />
+                  {form.formState.errors.firstName && <p className="text-sm text-red-600 mt-1">{form.formState.errors.firstName.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Input id="lastName" {...form.register("lastName")} />
+                  {form.formState.errors.lastName && <p className="text-sm text-red-600 mt-1">{form.formState.errors.lastName.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="username">Username *</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input id="username" className="pl-10" {...form.register("username")} maxLength={20} />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">3-20 characters, start with a letter, letters/numbers/underscores only</p>
+                  {form.formState.errors.username && <p className="text-sm text-red-600 mt-1">{form.formState.errors.username.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input id="email" type="email" className="pl-10" {...form.register("email")} />
+                  </div>
+                  {form.formState.errors.email && <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="phoneNumber">Phone Number *</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input id="phoneNumber" placeholder="+251911000000" className="pl-10" maxLength={15} {...form.register("phoneNumber")} />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +251, +1, +44). 7-15 digits.</p>
+                  {form.formState.errors.phoneNumber && <p className="text-sm text-red-600 mt-1">{form.formState.errors.phoneNumber.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="birthDate">Birth Date *</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input id="birthDate" type="date" className="pl-10" {...form.register("birthDate")} />
+                  </div>
+                  {form.formState.errors.birthDate && <p className="text-sm text-red-600 mt-1">{form.formState.errors.birthDate.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="password">Password *</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input id="password" type={showPassword ? "text" : "password"} className="pl-10 pr-10" {...form.register("password")} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {form.formState.errors.password && <p className="text-sm text-red-600 mt-1">{form.formState.errors.password.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input id="confirmPassword" type={showConfirm ? "text" : "password"} className="pl-10 pr-10" {...form.register("confirmPassword")} />
+                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
+                      {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {form.formState.errors.confirmPassword && <p className="text-sm text-red-600 mt-1">{form.formState.errors.confirmPassword.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="country">Country *</Label>
+                  <Select onValueChange={(value) => {
+                    form.setValue("country", value);
+                    if (value === "Ethiopia") form.setValue("preferredCurrencyCode", "ETB");
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country.value} value={country.value}>{country.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.country && <p className="text-sm text-red-600 mt-1">{form.formState.errors.country.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="preferredCurrencyCode">Preferred Currency</Label>
+                  <Select 
+                    onValueChange={(value) => form.setValue("preferredCurrencyCode", value)}
+                    value={form.watch("preferredCurrencyCode") || (form.watch("country") === "Ethiopia" ? "ETB" : defaultCurrency)}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger>
+                    <SelectContent>
+                      {(form.watch("country") === "Ethiopia" ? currencies.filter(c => c.code === "ETB") : currencies).map((currency) => (
+                        <SelectItem key={currency.id} value={currency.code}>{currency.name} ({currency.symbol})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Building2 className="w-5 h-5" />
+                <span>Business Information</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="businessName">Business Name *</Label>
+                <Input id="businessName" {...form.register("businessName")} />
+                {form.formState.errors.businessName && <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessName.message}</p>}
+              </div>
+
+              <div>
+                <Label htmlFor="description">Business Description</Label>
+                <Textarea id="description" placeholder="Describe your business..." className="min-h-[100px]" {...form.register("description")} />
+              </div>
+
+              <div>
+                <Label htmlFor="categoryId">Business Category *</Label>
+                <Select onValueChange={(value) => form.setValue("categoryId", value)}>
+                  <SelectTrigger><SelectValue placeholder="Select your business category" /></SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>{category.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.categoryId && <p className="text-sm text-red-600 mt-1">{form.formState.errors.categoryId.message}</p>}
+              </div>
+
+              <div>
+                <Label htmlFor="vendorType">Vendor Type *</Label>
+                <Select onValueChange={(value) => form.setValue("vendorType", value)}>
+                  <SelectTrigger><SelectValue placeholder="Select your vendor type" /></SelectTrigger>
+                  <SelectContent>
+                    {VENDOR_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.watch("vendorType") && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {VENDOR_TYPES.find(t => t.value === form.watch("vendorType"))?.description}
+                  </p>
+                )}
+                {form.formState.errors.vendorType && <p className="text-sm text-red-600 mt-1">{form.formState.errors.vendorType.message}</p>}
+              </div>
+
+              {form.watch("country") === "Ethiopia" && (
+                <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
+                  <Label htmlFor="vatStatus" className="text-amber-800">VAT Registration Status *</Label>
+                  <Select onValueChange={(value) => form.setValue("vatStatus", value)} value={form.watch("vatStatus") || undefined}>
+                    <SelectTrigger className="mt-2"><SelectValue placeholder="Select your VAT status" /></SelectTrigger>
+                    <SelectContent>
+                      {VAT_STATUS_OPTIONS.map((status) => (
+                        <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.vatStatus && <p className="text-sm text-red-600 mt-1">{form.formState.errors.vatStatus.message}</p>}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="businessEmail">Business Email *</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input id="businessEmail" type="email" className="pl-10" {...form.register("businessEmail")} />
+                  </div>
+                  {form.formState.errors.businessEmail && <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessEmail.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="businessPhone">Business Phone *</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input id="businessPhone" placeholder="+251911111111" className="pl-10" maxLength={15} {...form.register("businessPhone")} />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +251, +1, +44). 7-15 digits.</p>
+                  {form.formState.errors.businessPhone && <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessPhone.message}</p>}
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="contactName">Contact Person Name</Label>
+                <Input id="contactName" placeholder="Primary contact person" {...form.register("contactName")} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Globe className="w-5 h-5" />
+                <span>Business Location</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <Label htmlFor="city">City *</Label>
+                <Input id="city" placeholder="Enter City" {...form.register("city")} />
+                {form.formState.errors.city && <p className="text-sm text-red-600 mt-1">{form.formState.errors.city.message}</p>}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end pt-6">
+            <Button type="button" onClick={handleProceedToTerms} className="bg-emerald-600 hover:bg-emerald-700 px-8">
+              Continue to Terms & Conditions
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </form>
+        )}
+
+
+        {/* Step 2: Terms and Conditions */}
+        {currentStep === "terms" && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="w-5 h-5 text-emerald-600" />
+                <span>Terms & Conditions</span>
+              </CardTitle>
+              <CardDescription>
+                Please read all terms and conditions for {getVendorTypeLabel()} vendors.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoadingTerms ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                  <span className="ml-2">Loading terms...</span>
+                </div>
+              ) : termsData ? (
+                <>
+                  <div 
+                    ref={termsScrollRef}
+                    onScroll={handleTermsScroll}
+                    className="space-y-4 max-h-[500px] overflow-y-auto pr-2 p-4 border rounded-lg bg-gray-50"
+                  >
+                    <div className="space-y-6">
+                      {termsData.terms.map((term, index) => (
+                        <div key={term.id} className="p-4 rounded-lg border bg-white">
+                          <h3 className="font-semibold text-gray-900 flex items-center mb-2">
+                            <span className="text-emerald-600 mr-2">{index + 1}.</span>
+                            {term.title}
+                          </h3>
+                          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{term.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {!hasScrolledToBottom && (
+                      <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-8 pb-4 text-center">
+                        <p className="text-sm text-amber-600 font-medium animate-bounce">↓ Scroll down to read all terms ↓</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={`p-4 rounded-lg border transition-all duration-200 ${
+                    allTermsAccepted ? "border-emerald-200 bg-emerald-50" : hasScrolledToBottom ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-50 opacity-60"
+                  }`}>
+                    <div className="flex items-start space-x-3">
+                      <Checkbox id="accept-all-terms" checked={allTermsAccepted} onCheckedChange={handleAcceptAllTerms} disabled={!hasScrolledToBottom} className="mt-1" />
+                      <div className="flex-1">
+                        <label htmlFor="accept-all-terms" className={`font-medium cursor-pointer flex items-center ${hasScrolledToBottom ? "text-gray-900" : "text-gray-500"}`}>
+                          <CheckCircle2 className={`w-5 h-5 mr-2 ${allTermsAccepted ? "text-emerald-600" : "text-gray-400"}`} />
+                          I have read and accept all {termsData.terms.length} terms and conditions
+                        </label>
+                        {!hasScrolledToBottom && <p className="text-xs text-amber-600 mt-1">Please scroll to the bottom to read all terms before accepting</p>}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500">No terms found for this vendor type.</div>
+              )}
+
+              <div className="flex justify-between pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setCurrentStep("form")}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Details
+                </Button>
+                <Button type="button" onClick={handleProceedToVideo} disabled={!allTermsAccepted} className="bg-emerald-600 hover:bg-emerald-700">
+                  Continue to Onboarding Video
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: Video & Complete Registration */}
         {currentStep === "video" && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <PlayCircle className="w-5 h-5 text-emerald-600" />
-                <span>Vendor Onboarding Video</span>
+                <span>{getVendorTypeLabel()} Onboarding Video</span>
               </CardTitle>
               <CardDescription>
-                Watch this video completely to learn how to navigate goGerami as a vendor.
+                Watch this video completely to learn how to navigate goGerami as a {getVendorTypeLabel().toLowerCase()}.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -478,35 +874,37 @@ export default function VendorSignup() {
                   onEnded={handleVideoEnded}
                   onTimeUpdate={handleVideoTimeUpdate}
                   onLoadedMetadata={handleVideoLoadedMetadata}
+                  onSeeking={handleVideoSeeking}
                   onPlay={() => setIsVideoPlaying(true)}
                   onPause={() => setIsVideoPlaying(false)}
                   controlsList="nodownload noplaybackrate"
                   disablePictureInPicture
                   playsInline
                 >
-                  <source src={ONBOARDING_VIDEO_URL} type="video/mp4" />
+                  <source src={getVideoUrl()} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
                 
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                   <div className="flex items-center gap-3">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handlePlayPause}
-                      className="text-white hover:bg-white/20"
-                    >
+                    <Button type="button" variant="ghost" size="sm" onClick={handlePlayPause} className="text-white hover:bg-white/20">
                       {isVideoPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                     </Button>
-                    
-                    <div className="flex-1 h-2 bg-white/30 rounded-full overflow-hidden">
+                    <div 
+                      className="flex-1 h-2 bg-white/30 rounded-full overflow-hidden cursor-pointer relative"
+                      onClick={handleProgressBarClick}
+                    >
+                      {/* Watched portion (clickable area) */}
                       <div 
-                        className="h-full bg-emerald-500 transition-all duration-200"
-                        style={{ width: `${videoDuration > 0 ? (videoProgress / videoDuration) * 100 : 0}%` }}
+                        className="absolute h-full bg-white/20" 
+                        style={{ width: `${videoDuration > 0 ? (maxWatchedTime / videoDuration) * 100 : 0}%` }} 
+                      />
+                      {/* Current progress */}
+                      <div 
+                        className="h-full bg-emerald-500 transition-all duration-200 relative z-10" 
+                        style={{ width: `${videoDuration > 0 ? (videoProgress / videoDuration) * 100 : 0}%` }} 
                       />
                     </div>
-                    
                     <span className="text-white text-sm font-mono min-w-[80px] text-right">
                       {formatTime(videoProgress)} / {formatTime(videoDuration)}
                     </span>
@@ -525,650 +923,80 @@ export default function VendorSignup() {
                     ) : (
                       <>
                         <PlayCircle className="w-5 h-5 text-amber-600 mr-2" />
-                        <span className="font-medium text-amber-900">
-                          {videoProgress > 0 ? 'Keep watching...' : 'Please watch the entire video'}
-                        </span>
+                        <span className="font-medium text-amber-900">{videoProgress > 0 ? 'Keep watching...' : 'Please watch the entire video'}</span>
                       </>
                     )}
                   </div>
                   {!hasWatchedVideo && videoDuration > 0 && (
-                    <span className="text-sm text-amber-700">
-                      {Math.round((videoProgress / videoDuration) * 100)}% complete
-                    </span>
+                    <span className="text-sm text-amber-700">{Math.round((videoProgress / videoDuration) * 100)}% complete</span>
                   )}
                 </div>
               </div>
 
-
-              {hasWatchedVideo && !generatedCertificate && (
-                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200 space-y-4">
-                  <h4 className="font-medium text-emerald-900 flex items-center">
-                    <Award className="w-5 h-5 mr-2" />
-                    Generate Your Onboarding Certificate
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="certFullName">Full Name *</Label>
-                      <Input
-                        id="certFullName"
-                        placeholder="Enter your full name"
-                        value={certificateFullName}
-                        onChange={(e) => setCertificateFullName(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="certEmail">Email *</Label>
-                      <Input
-                        id="certEmail"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={certificateEmail}
-                        onChange={(e) => setCertificateEmail(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => generateCertificateMutation.mutate()}
-                    disabled={!certificateEmail || !certificateFullName || generateCertificateMutation.isPending}
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    {generateCertificateMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Award className="w-4 h-4 mr-2" />
-                        Generate Certificate
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-
-              {generatedCertificate && (
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-green-900 flex items-center">
-                      <CheckCircle2 className="w-5 h-5 mr-2" />
-                      Certificate Generated Successfully!
-                    </h4>
-                  </div>
-                  <div className="bg-white p-4 rounded border">
-                    <p className="text-sm text-gray-600 mb-2">Your Certificate Code:</p>
-                    <p className="text-xl font-mono font-bold text-emerald-600">{generatedCertificate.certificateCode}</p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Valid until: {new Date(generatedCertificate.expiresAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(generatedCertificate.certificateCode);
-                      toast({ title: "Copied!", description: "Certificate code copied to clipboard" });
-                    }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    Copy Certificate Code
-                  </Button>
-                </div>
-              )}
-
-              <div className="flex justify-end pt-4 border-t">
-                <Button
-                  type="button"
-                  onClick={() => setCurrentStep("certificate")}
-                  disabled={!hasWatchedVideo}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  Continue to Certificate Validation
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-
-        {/* Step 2: Certificate Validation */}
-        {currentStep === "certificate" && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Award className="w-5 h-5 text-emerald-600" />
-                <span>Validate Your Certificate</span>
-              </CardTitle>
-              <CardDescription>
-                Enter your onboarding certificate code to proceed with registration.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="certificateCode">Certificate Code *</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="certificateCode"
-                    placeholder="CERT-XXXXXXXXXXXX"
-                    value={certificateCode}
-                    onChange={(e) => {
-                      setCertificateCode(e.target.value.toUpperCase());
-                      setIsCertificateValidated(false);
-                    }}
-                    className="font-mono"
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => validateCertificateMutation.mutate()}
-                    disabled={!certificateCode || validateCertificateMutation.isPending}
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    {validateCertificateMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Validate"
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {isCertificateValidated && (
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-center">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 mr-2" />
-                    <span className="font-medium text-green-900">Certificate Validated Successfully!</span>
-                  </div>
-                </div>
-              )}
-
-              {!isCertificateValidated && (
-                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                  <h4 className="font-medium text-amber-900 mb-2">Don't have a certificate?</h4>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setCurrentStep("video")}
-                    size="sm"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Go Back to Video
-                  </Button>
-                </div>
-              )}
-
-              <div className="flex justify-between pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep("video")}>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Video
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => setCurrentStep("form")}
-                  disabled={!isCertificateValidated}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  Continue to Registration
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-
-        {/* Step 3: Registration Form */}
-        {currentStep === "form" && (
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-          <div className="flex justify-start mb-4">
-            <Button type="button" variant="outline" onClick={() => setCurrentStep("certificate")}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Certificate
-            </Button>
-          </div>
-
-          {/* Personal Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="w-5 h-5" />
-                <span>Personal Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">First Name *</Label>
-                  <Input id="firstName" {...form.register("firstName")} />
-                  {form.formState.errors.firstName && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.firstName.message}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="lastName">Last Name *</Label>
-                  <Input id="lastName" {...form.register("lastName")} />
-                  {form.formState.errors.lastName && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.lastName.message}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="username">Username *</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="username" className="pl-10" {...form.register("username")} />
-                  </div>
-                  {form.formState.errors.username && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.username.message}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="email" type="email" className="pl-10" {...form.register("email")} />
-                  </div>
-                  {form.formState.errors.email && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="phoneNumber">Phone Number *</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="phoneNumber" placeholder="+251911000000" className="pl-10" {...form.register("phoneNumber")} />
-                  </div>
-                  {form.formState.errors.phoneNumber && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.phoneNumber.message}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="birthDate">Birth Date *</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="birthDate" type="date" className="pl-10" {...form.register("birthDate")} />
-                  </div>
-                  {form.formState.errors.birthDate && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.birthDate.message}</p>
-                  )}
-                </div>
-              </div>
-
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="password">Password *</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      className="pl-10 pr-10"
-                      {...form.register("password")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {form.formState.errors.password && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.password.message}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirm ? "text" : "password"}
-                      className="pl-10 pr-10"
-                      {...form.register("confirmPassword")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirm(!showConfirm)}
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                    >
-                      {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {form.formState.errors.confirmPassword && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.confirmPassword.message}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="country">Country *</Label>
-                  <Select onValueChange={(value) => {
-                    form.setValue("country", value);
-                    if (value === "Ethiopia") {
-                      form.setValue("preferredCurrencyCode", "ETB");
-                    }
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country.value} value={country.value}>
-                          {country.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.country && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.country.message}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="preferredCurrencyCode">Preferred Currency</Label>
-                  <Select 
-                    onValueChange={(value) => form.setValue("preferredCurrencyCode", value)}
-                    value={form.watch("preferredCurrencyCode") || (form.watch("country") === "Ethiopia" ? "ETB" : defaultCurrency)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(form.watch("country") === "Ethiopia" 
-                        ? currencies.filter(c => c.code === "ETB")
-                        : currencies
-                      ).map((currency) => (
-                        <SelectItem key={currency.id} value={currency.code}>
-                          {currency.name} ({currency.symbol})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-
-          {/* Business Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Building2 className="w-5 h-5" />
-                <span>Business Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="businessName">Business Name *</Label>
-                <Input id="businessName" {...form.register("businessName")} />
-                {form.formState.errors.businessName && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessName.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="description">Business Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe your business..."
-                  className="min-h-[100px]"
-                  {...form.register("description")}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="categoryId">Business Category *</Label>
-                <Select onValueChange={(value) => form.setValue("categoryId", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your business category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.categoryId && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.categoryId.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="vendorType">Vendor Type *</Label>
-                <Select onValueChange={(value) => form.setValue("vendorType", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your vendor type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VENDOR_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.watch("vendorType") && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {VENDOR_TYPES.find(t => t.value === form.watch("vendorType"))?.description}
-                  </p>
-                )}
-                {form.formState.errors.vendorType && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.vendorType.message}</p>
-                )}
-              </div>
-
-              {form.watch("country") === "Ethiopia" && (
-                <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
-                  <Label htmlFor="vatStatus" className="text-amber-800">VAT Registration Status *</Label>
-                  <Select 
-                    onValueChange={(value) => form.setValue("vatStatus", value)}
-                    value={form.watch("vatStatus") || undefined}
-                  >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select your VAT status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {VAT_STATUS_OPTIONS.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
-                          {status.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.vatStatus && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.vatStatus.message}</p>
-                  )}
-                </div>
-              )}
-
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="businessEmail">Business Email *</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="businessEmail" type="email" className="pl-10" {...form.register("businessEmail")} />
-                  </div>
-                  {form.formState.errors.businessEmail && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessEmail.message}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="businessPhone">Business Phone *</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="businessPhone" placeholder="+251911111111" className="pl-10" {...form.register("businessPhone")} />
-                  </div>
-                  {form.formState.errors.businessPhone && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessPhone.message}</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="contactName">Contact Person Name</Label>
-                <Input id="contactName" placeholder="Primary contact person" {...form.register("contactName")} />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Location Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Globe className="w-5 h-5" />
-                <span>Business Location</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="city">City *</Label>
-                <Input id="city" placeholder="Enter City" {...form.register("city")} />
-                {form.formState.errors.city && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.city.message}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Continue to Terms Button */}
-          <div className="flex justify-end pt-6">
-            <Button
-              type="button"
-              onClick={handleProceedToTerms}
-              className="bg-emerald-600 hover:bg-emerald-700 px-8"
-            >
-              Continue to Terms & Conditions
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-        </form>
-        )}
-
-
-        {/* Step 4: Terms and Conditions */}
-        {currentStep === "terms" && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="w-5 h-5 text-emerald-600" />
-                <span>Terms & Conditions</span>
-              </CardTitle>
-              <CardDescription>
-                Please read and accept all terms and conditions for {form.watch("vendorType")} vendors to complete your registration.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isLoadingTerms ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-                  <span className="ml-2">Loading terms...</span>
-                </div>
-              ) : termsData ? (
-                <>
-                  {/* Accept All / Reject All Buttons */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        {acceptedCount} of {termsData.terms.length} terms accepted
-                      </span>
-                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-emerald-600 transition-all duration-300" 
-                          style={{ width: `${(acceptedCount / termsData.terms.length) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleRejectAll}
-                        disabled={acceptedCount === 0}
-                      >
-                        Clear All
-                      </Button>
-                      <Button 
-                        type="button" 
-                        size="sm"
-                        onClick={handleAcceptAll}
-                        disabled={allTermsAccepted}
+              {/* Certificate Generation & Download */}
+              {hasWatchedVideo && (
+                <div className="space-y-4">
+                  {!generatedCertificate ? (
+                    <div className="p-6 bg-emerald-50 rounded-lg border border-emerald-200 text-center">
+                      <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
+                      <h4 className="font-medium text-emerald-900 text-lg mb-2">Ready to Complete Registration</h4>
+                      <p className="text-sm text-emerald-700 mb-4">
+                        Generate your onboarding certificate and complete your vendor registration.
+                      </p>
+                      <Button
+                        type="button"
+                        onClick={() => generateCertificateMutation.mutate()}
+                        disabled={generateCertificateMutation.isPending}
                         className="bg-emerald-600 hover:bg-emerald-700"
                       >
-                        <CheckCircle2 className="w-4 h-4 mr-2" />
-                        Accept All
+                        {generateCertificateMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Generating Certificate...
+                          </>
+                        ) : (
+                          "Generate Certificate & Continue"
+                        )}
                       </Button>
                     </div>
-                  </div>
-
-                  {/* Terms List */}
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                    {termsData.terms.map((term, index) => (
-                      <div
-                        key={term.id}
-                        className={`p-4 rounded-lg border transition-all duration-200 ${
-                          acceptedTerms[term.id] 
-                            ? "border-emerald-200 bg-emerald-50" 
-                            : "border-gray-200 bg-white hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="flex items-start space-x-3">
-                          <Checkbox
-                            id={`term-${term.id}`}
-                            checked={acceptedTerms[term.id] || false}
-                            onCheckedChange={() => handleTermToggle(term.id)}
-                            className="mt-1"
-                          />
-                          <div className="flex-1">
-                            <label 
-                              htmlFor={`term-${term.id}`} 
-                              className="font-medium text-gray-900 cursor-pointer flex items-center"
-                            >
-                              <span className="text-emerald-600 mr-2">{index + 1}.</span>
-                              {term.title}
-                            </label>
-                            <p className="text-sm text-gray-600 mt-1">{term.description}</p>
-                          </div>
-                          {acceptedTerms[term.id] && (
-                            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                          )}
-                        </div>
+                  ) : (
+                    <div className="p-6 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center justify-center mb-4">
+                        <CheckCircle2 className="w-12 h-12 text-green-600" />
                       </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No terms found for this vendor type.
+                      <h4 className="font-medium text-green-900 text-lg text-center mb-4">Certificate Generated!</h4>
+                      <p className="text-sm text-green-700 text-center mb-4">
+                        Your onboarding certificate is ready. You can download it for your records.
+                      </p>
+                      <div className="flex justify-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleDownloadCertificatePdf}
+                          disabled={isDownloadingPdf}
+                        >
+                          {isDownloadingPdf ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="w-4 h-4 mr-2" />
+                          )}
+                          Download Certificate PDF
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-
-              {/* Navigation Buttons */}
               <div className="flex justify-between pt-4 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCurrentStep("form")}
-                >
+                <Button type="button" variant="outline" onClick={() => setCurrentStep("terms")}>
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Details
+                  Back to Terms
                 </Button>
                 <Button
                   type="button"
                   onClick={form.handleSubmit(onSubmit)}
-                  disabled={!allTermsAccepted || signupMutation.isPending}
+                  disabled={!generatedCertificate || signupMutation.isPending}
                   className="bg-emerald-600 hover:bg-emerald-700"
                 >
                   {signupMutation.isPending ? (
@@ -1177,7 +1005,7 @@ export default function VendorSignup() {
                       Creating Account...
                     </>
                   ) : (
-                    "Create Vendor Account"
+                    "Complete Registration"
                   )}
                 </Button>
               </div>
