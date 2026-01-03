@@ -50,6 +50,7 @@ import AdminServices from "@/pages/admin/AdminServices";
 import AdminTax from "@/pages/admin/AdminTax";
 import AdminCurrency from "@/pages/admin/AdminCurrency";
 import AdminDelivery from "@/pages/admin/AdminDelivery";
+import AdminFeaturedAds from "@/pages/admin/AdminFeaturedAds";
 
 import VendorDashboard from "@/pages/vendor/VendorDashboard";
 import VendorServiceOrders from "@/pages/vendor/VendorServiceOrders";
@@ -395,6 +396,7 @@ export default function Router() {
           <Route path="admin/tax" element={<AdminRoute><AdminTax /></AdminRoute>} />
           <Route path="admin/currency" element={<AdminRoute><AdminCurrency /></AdminRoute>} />
           <Route path="admin/delivery" element={<AdminRoute><AdminDelivery /></AdminRoute>} />
+          <Route path="admin/featured-ads" element={<AdminRoute><AdminFeaturedAds /></AdminRoute>} />
           
           {/* Catch all route */}
           <Route path="*" element={<NotFound />} />
