@@ -82,11 +82,20 @@ export default function SignIn() {
         description: "Welcome to goGerami!",
       });
 
-      // Get return URL and navigate
-      const returnUrl = getReturnUrl();
+      const userRole = result.user?.role?.toUpperCase();
       localStorage.removeItem("returnTo");
-      console.log('Navigating to:', returnUrl);
-      navigate(returnUrl);
+      
+      if (userRole === 'ADMIN') {
+        console.log('Admin user detected, navigating to admin dashboard');
+        navigate('/admin');
+      } else if (userRole === 'VENDOR') {
+        console.log('Vendor user detected, navigating to vendor dashboard');
+        navigate('/vendor');
+      } else {
+        const returnUrl = getReturnUrl();
+        console.log('Navigating to:', returnUrl);
+        navigate(returnUrl);
+      }
     } catch (err: any) {
       console.error('Login error:', err);
       toast({

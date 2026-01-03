@@ -1,19 +1,19 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import {useState} from "react";
+import {Link, useNavigate} from "react-router-dom";
+import {z} from "zod";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent} from "@/components/ui/card";
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
+import {Input} from "@/components/ui/input";
+import {Separator} from "@/components/ui/separator";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {useToast} from "@/hooks/use-toast";
 import authService from "@/services/authService";
-import { apiService } from "@/services/apiService";
-import { Eye, EyeOff, Mail, Phone, Lock, User, Coins } from "lucide-react";
+import {apiService} from "@/services/apiService";
+import {Coins, Eye, EyeOff, Lock, Mail, Phone, User} from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 
 interface Currency {
@@ -25,16 +25,27 @@ interface Currency {
   isDefault: boolean;
 }
 
+const phoneRegex = /^\+?[1-9]\d{6,14}$/;
+const phoneValidation = z
+  .string()
+  .min(7, "Phone number must be at least 7 digits")
+  .max(15, "Phone number must not exceed 15 digits")
+  .regex(phoneRegex, "Please enter a valid phone number with country code (e.g., +251911234567)");
+
+const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/;
+const usernameValidation = z
+  .string()
+  .min(8, "Username must be at least 8 characters")
+  .max(20, "Username must not exceed 20 characters")
+  .regex(usernameRegex, "Username must start with a letter and contain only letters, numbers, and underscores");
+
 const signupSchema = z
   .object({
     firstName: z.string().min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
-    username: z.string().min(3, "Username must be at least 3 characters"),
+    username: usernameValidation,
     email: z.string().email("Please enter a valid email address"),
-    phoneNumber: z
-      .string()
-      .min(10, "Please enter a valid phone number")
-      .regex(/^\+?\d+$/, "Phone number must contain only numbers and optional + at start"),
+    phoneNumber: phoneValidation,
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
@@ -83,20 +94,18 @@ export default function SignUp() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
-      const result = await authService.register({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        username: data.username,
-        email: data.email,
-        phoneNumber: data.phoneNumber,
-        password: data.password,
-        role: 'CUSTOMER',
-        preferredCurrencyCode: data.preferredCurrencyCode || defaultCurrency,
+        return await authService.register({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          username: data.username,
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+          password: data.password,
+          role: 'CUSTOMER',
+          preferredCurrencyCode: data.preferredCurrencyCode || defaultCurrency,
       });
-      
-      return result;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
         title: "Account created successfully!", 
         description: "Welcome to goGerami! You can now sign in with your credentials." 
@@ -112,9 +121,14 @@ export default function SignUp() {
         response: error?.response,
         stack: error?.stack
       });
+      // Use generic message for security - don't reveal if email/username exists
+      const errorMsg = error?.message?.toLowerCase() || "";
+      const isUserExistsError = errorMsg.includes("email") || errorMsg.includes("username") || errorMsg.includes("already");
       toast({
         title: "Sign up failed",
-        description: error?.message || "Unable to create account. Please check your details and try again.",
+        description: isUserExistsError 
+          ? "Account already exists. Please sign in instead."
+          : (error?.message || "Unable to create account. Please check your details and try again."),
         variant: "destructive",
         duration: 5000,
       });
@@ -185,6 +199,7 @@ export default function SignUp() {
                           <Input {...field} placeholder="Choose a username" className="pl-10 h-11" />
                         </div>
                       </FormControl>
+                      <p className="text-xs text-gray-500 mt-1">6-20 characters, start with a letter, letters/numbers/underscores only</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -216,9 +231,10 @@ export default function SignUp() {
                       <FormControl>
                         <div className="relative">
                           <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                          <Input {...field} type="tel" placeholder="+251911234567" className="pl-10 h-11" />
+                          <Input {...field} type="tel" placeholder="(eg. +251911234567)" className="pl-10 h-11" maxLength={15} />
                         </div>
                       </FormControl>
+                      <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +251, +1, +44). 7-15 digits.</p>
                       <FormMessage />
                     </FormItem>
                   )}
