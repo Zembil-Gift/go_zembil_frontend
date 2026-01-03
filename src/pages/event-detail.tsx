@@ -25,7 +25,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { getEventImageUrl } from '@/utils/imageUtils';
 import { useAuth } from '@/hooks/useAuth';
-import { VendorCard } from '@/components/reviews';
+import { VendorCard, EventReviewsSection } from '@/components/reviews';
 import { reviewService } from '@/services/reviewService';
 
 import { 
@@ -347,7 +347,7 @@ export default function EventDetail() {
             >
               {/* Main Image */}
               <div 
-                className="relative aspect-[16/9] max-h-[400px] rounded-2xl overflow-hidden mb-4 cursor-pointer group"
+                className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-4 cursor-pointer group"
                 onClick={() => eventImages.length > 0 && openLightbox(selectedImageIndex)}
               >
                 {eventImages.length > 0 ? (
@@ -530,6 +530,17 @@ export default function EventDetail() {
               >
                 <h3 className="font-bold text-eagle-green mb-3">Event Organizer</h3>
                 <VendorCard vendor={vendorProfile} />
+              </motion.div>
+            )}
+
+            {/* Event Reviews Section */}
+            {isAPIEvent && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.35 }}
+              >
+                <EventReviewsSection eventId={Number(slug)} />
               </motion.div>
             )}
 
