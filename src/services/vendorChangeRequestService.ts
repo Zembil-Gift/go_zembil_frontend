@@ -27,9 +27,13 @@ export interface VendorChangeRequestDto {
   vendorId: number;
   vendorName?: string;
   
-  // For price updates (using PriceDto structure)
-  currentPrice?: PriceDto;
-  newPrice?: PriceDto;
+  // For price updates - vendor prices (what vendor submitted)
+  currentVendorPrice?: PriceDto;
+  newVendorPrice?: PriceDto;
+  
+  // For price updates - customer prices (what customers will pay - for admin review)
+  currentCustomerPrice?: PriceDto;
+  newCustomerPrice?: PriceDto;
   
   // For category changes
   currentSubCategoryId?: number;
