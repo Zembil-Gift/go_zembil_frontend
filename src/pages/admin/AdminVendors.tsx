@@ -38,10 +38,12 @@ import {
   FileText,
   Clock,
   Download,
-  ScrollText
+  ScrollText,
+  Award
 } from 'lucide-react';
 import { adminService } from '@/services/adminService';
 import { vendorTermsService, VendorTermsAcceptanceResponse } from '@/services/vendorTermsService';
+import { certificateService, CertificateResponse } from '@/services/certificateService';
 
 export default function AdminVendors() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,6 +52,7 @@ export default function AdminVendors() {
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [vendorDetail, setVendorDetail] = useState<any>(null);
   const [termsAcceptance, setTermsAcceptance] = useState<VendorTermsAcceptanceResponse | null>(null);
+  const [vendorCertificate, setVendorCertificate] = useState<CertificateResponse | null>(null);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [actionVendor, setActionVendor] = useState<any>(null);
@@ -125,6 +128,7 @@ export default function AdminVendors() {
     setShowDetailDialog(true);
     setIsLoadingDetail(true);
     setTermsAcceptance(null);
+    setVendorCertificate(null);
     
     try {
       const detail = await adminService.getVendorById(vendor.id);
@@ -133,6 +137,10 @@ export default function AdminVendors() {
       // Fetch terms acceptance
       const terms = await vendorTermsService.getVendorTermsAcceptance(vendor.id);
       setTermsAcceptance(terms);
+      
+      // Fetch certificate
+      const cert = await certificateService.getVendorCertificate(vendor.id);
+      setVendorCertificate(cert);
     } catch (error) {
       console.error('Failed to fetch vendor details:', error);
       toast({
@@ -347,9 +355,10 @@ export default function AdminVendors() {
             </div>
           ) : vendorDetail && (
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="info">Information</TabsTrigger>
                 <TabsTrigger value="terms">Terms</TabsTrigger>
+                <TabsTrigger value="certificate">Certificate</TabsTrigger>
                 <TabsTrigger value="payout">Payout</TabsTrigger>
               </TabsList>
               
@@ -526,6 +535,105 @@ export default function AdminVendors() {
 
               {/* Payout Tab */}
               <TabsContent value="payout" className="space-y-4 mt-4">
+
+              {/* Certificate Tab */}
+              <TabsContent value="certificate" className="space-y-4 mt-4">
+                {vendorCertificate ? (
+                  <>
+                    <div className="flex items-center gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
+                      <Award className="h-8 w-8 text-green-600" />
+                      <div className="flex-1">
+                        <h4 className="font-medium text-green-900">Onboarding Certificate</h4>
+                        <p className="text-sm text-green-700">
+                          Issued on {new Date(vendorCertificate.issuedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const blob = await certificateService.downloadVendorCertificatePdf(vendorDetail.id);
+                            
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `vendor-${vendorDetail.id}-certificate.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                          } catch (error) {
+                            console.error('Error downloading PDF:', error);
+                            toast({
+                              title: 'Error',
+                              description: 'Failed to download certificate PDF. Please try again.',
+                              variant: 'destructive',
+                            });
+                          }
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download PDF
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="p-3 bg-gray-50 rounded-lg border">
+                        <p className="text-xs text-gray-500">Certificate Code</p>
+                        <p className="text-lg font-mono font-bold text-emerald-600">
+                          {vendorCertificate.certificateCode}
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-gray-50 rounded-lg border">
+                          <p className="text-xs text-gray-500">Full Name</p>
+                          <p className="text-sm font-medium">{vendorCertificate.fullName}</p>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-lg border">
+                          <p className="text-xs text-gray-500">Email</p>
+                          <p className="text-sm font-medium">{vendorCertificate.email}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-gray-50 rounded-lg border">
+                          <p className="text-xs text-gray-500">Vendor Type</p>
+                          <p className="text-sm font-medium">{vendorCertificate.vendorType}</p>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-lg border">
+                          <p className="text-xs text-gray-500">Status</p>
+                          <Badge className={vendorCertificate.isUsed ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}>
+                            {vendorCertificate.isUsed ? "Used" : "Unused"}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-gray-50 rounded-lg border">
+                          <p className="text-xs text-gray-500">Issued At</p>
+                          <p className="text-sm font-medium">
+                            {new Date(vendorCertificate.issuedAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-lg border">
+                          <p className="text-xs text-gray-500">Expires At</p>
+                          <p className="text-sm font-medium">
+                            {new Date(vendorCertificate.expiresAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                    <XCircle className="h-12 w-12 text-gray-300 mb-4" />
+                    <h4 className="font-medium text-gray-900">No Certificate Found</h4>
+                    <p className="text-sm">This vendor does not have an onboarding certificate on record.</p>
+                  </div>
+                )}
+              </TabsContent>
                 <div className="flex items-center gap-3 p-4 rounded-lg border">
                   <CreditCard className="h-8 w-8 text-gray-400" />
                   <div className="flex-1">

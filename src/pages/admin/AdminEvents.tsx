@@ -528,20 +528,26 @@ export default function AdminEvents() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {priceRequests.map((request: any) => (
-                      <TableRow key={request.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{request.eventTitle}</div>
-                            <div className="text-sm text-gray-500">{request.ticketTypeName}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {formatCurrency(request.currentPriceMinor, request.currentCurrencyCode)}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {formatCurrency(request.newPriceMinor, request.newCurrencyCode)}
-                        </TableCell>
+                    {priceRequests.map((request: any) => {
+                      // Admin sees customer prices (what customers will pay)
+                      const currentCustomerPriceMinor = request.currentCustomerPriceMinor ?? request.currentPriceMinor;
+                      const newCustomerPriceMinor = request.newCustomerPriceMinor ?? request.newPriceMinor;
+                      const currencyCode = request.currentCurrencyCode || request.newCurrencyCode || 'ETB';
+                      
+                      return (
+                        <TableRow key={request.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{request.eventTitle}</div>
+                              <div className="text-sm text-gray-500">{request.ticketTypeName}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(currentCustomerPriceMinor, currencyCode)}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {formatCurrency(newCustomerPriceMinor, currencyCode)}
+                          </TableCell>
                         <TableCell>
                           <p className="text-sm text-gray-600 max-w-xs truncate" title={request.reason}>
                             {request.reason}
@@ -580,7 +586,8 @@ export default function AdminEvents() {
                           )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               ) : (

@@ -592,12 +592,17 @@ export default function AdminProducts() {
                   </TableHeader>
                   <TableBody>
                     {priceRequests.map((request: any) => {
-                      // Use amount (major units) if available, otherwise convert from minor units
-                      const currentPrice = request.currentPrice?.amount ?? (request.currentPrice?.unitAmountMinor ? request.currentPrice.unitAmountMinor / 100 : 0);
-                      const newPrice = request.newPrice?.amount ?? (request.newPrice?.unitAmountMinor ? request.newPrice.unitAmountMinor / 100 : 0);
-                      const currency = request.currentPrice?.currencyCode || request.newPrice?.currencyCode || 'ETB';
-                      const priceDiff = newPrice - currentPrice;
-                      const percentChange = currentPrice > 0 ? ((priceDiff / currentPrice) * 100).toFixed(1) : 0;
+                      // Admin sees customer prices (what customers will pay)
+                      const currentCustomerPrice = request.currentCustomerPrice?.amount ?? 
+                        (request.currentCustomerPrice?.unitAmountMinor ? request.currentCustomerPrice.unitAmountMinor / 100 : 
+                        request.currentPrice?.amount ?? (request.currentPrice?.unitAmountMinor ? request.currentPrice.unitAmountMinor / 100 : 0));
+                      const newCustomerPrice = request.newCustomerPrice?.amount ?? 
+                        (request.newCustomerPrice?.unitAmountMinor ? request.newCustomerPrice.unitAmountMinor / 100 : 
+                        request.newPrice?.amount ?? (request.newPrice?.unitAmountMinor ? request.newPrice.unitAmountMinor / 100 : 0));
+                      const currency = request.currentCustomerPrice?.currencyCode || request.newCustomerPrice?.currencyCode || 
+                        request.currentPrice?.currencyCode || request.newPrice?.currencyCode || 'ETB';
+                      const priceDiff = newCustomerPrice - currentCustomerPrice;
+                      const percentChange = currentCustomerPrice > 0 ? ((priceDiff / currentCustomerPrice) * 100).toFixed(1) : 0;
                       
                       return (
                         <TableRow key={request.id}>
@@ -611,11 +616,11 @@ export default function AdminProducts() {
                             </div>
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {formatAmount(currentPrice, currency)}
+                            {formatAmount(currentCustomerPrice, currency)}
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             <span className={priceDiff > 0 ? 'text-red-600' : priceDiff < 0 ? 'text-green-600' : ''}>
-                              {formatAmount(newPrice, currency)}
+                              {formatAmount(newCustomerPrice, currency)}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">

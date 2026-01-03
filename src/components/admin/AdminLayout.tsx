@@ -13,7 +13,8 @@ import {
   DollarSign,
   Receipt,
   Truck,
-  Briefcase
+  Briefcase,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +31,7 @@ const navItems = [
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/services', label: 'Services', icon: Briefcase },
   { href: '/admin/events', label: 'Events', icon: Calendar },
+  { href: '/admin/featured-ads', label: 'Featured & Ads', icon: Star },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
   { href: '/admin/subcategories', label: 'Subcategories', icon: Layers },
   { href: '/admin/delivery', label: 'Delivery', icon: Truck },

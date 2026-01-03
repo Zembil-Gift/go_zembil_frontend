@@ -173,10 +173,14 @@ export interface EventPriceUpdateRequest {
   eventTitle: string;
   ticketTypeId: number;
   ticketTypeName: string;
+  // Vendor prices (what vendor submitted)
   currentPriceMinor: number;
   currentCurrencyCode: string;
   newPriceMinor: number;
   newCurrencyCode: string;
+  // Customer prices (what customers will pay - for admin review)
+  currentCustomerPriceMinor?: number;
+  newCustomerPriceMinor?: number;
   reason: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   vendorId: number;
@@ -336,8 +340,15 @@ export interface ProductPriceUpdateRequestDto {
   productName?: string;
   productSkuId?: number;  // Backend uses productSkuId, not skuId
   skuCode?: string;
-  currentPrice?: ProductPriceDto;  // Backend returns PriceDto object
-  newPrice?: ProductPriceDto;      // Backend returns PriceDto object
+  // Vendor prices (what vendor submitted)
+  currentVendorPrice?: ProductPriceDto;
+  newVendorPrice?: ProductPriceDto;
+  // Customer prices (what customers will pay - for admin review)
+  currentCustomerPrice?: ProductPriceDto;
+  newCustomerPrice?: ProductPriceDto;
+  // Legacy fields for backward compatibility
+  currentPrice?: ProductPriceDto;
+  newPrice?: ProductPriceDto;
   reason: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   vendorId: number;
@@ -363,6 +374,13 @@ export interface ServicePriceUpdateRequestDto {
   id: number;
   serviceId: number;
   serviceName?: string;
+  // Vendor prices (what vendor submitted)
+  currentVendorPrice?: ServicePriceDto;
+  newVendorPrice?: ServicePriceDto;
+  // Customer prices (what customers will pay - for admin review)
+  currentCustomerPrice?: ServicePriceDto;
+  newCustomerPrice?: ServicePriceDto;
+  // Legacy fields for backward compatibility
   currentPrice?: ServicePriceDto;
   newPrice?: ServicePriceDto;
   reason: string;
@@ -720,6 +738,10 @@ class AdminService {
     return await apiService.postRequest<EventResponse>(`/api/admin/events/${eventId}/featured?featured=${featured}`, {});
   }
 
+  async setEventAd(eventId: number, isAd: boolean): Promise<EventResponse> {
+    return await apiService.postRequest<EventResponse>(`/api/admin/events/${eventId}/ad?isAd=${isAd}`, {});
+  }
+
   // ==================== EVENT PRICE UPDATE REQUESTS (UNIFIED SYSTEM) ====================
   // Event price updates now use the unified VendorChangeRequest system
   
@@ -762,6 +784,24 @@ class AdminService {
 
   async rejectProduct(productId: number, reason: string): Promise<any> {
     return await apiService.putRequest<any>(`/api/v1/products/${productId}/reject?reason=${encodeURIComponent(reason)}`, {});
+  }
+
+  async setSkuFeatured(skuId: number, featured: boolean): Promise<any> {
+    return await apiService.patchRequest<any>(`/api/admin/products/skus/${skuId}/featured?featured=${featured}`, {});
+  }
+
+  async setSkuAd(skuId: number, isAd: boolean): Promise<any> {
+    return await apiService.patchRequest<any>(`/api/admin/products/skus/${skuId}/ad?isAd=${isAd}`, {});
+  }
+
+  // ==================== SERVICE PACKAGE FEATURED/AD ====================
+
+  async setServicePackageFeatured(packageId: number, featured: boolean): Promise<any> {
+    return await apiService.patchRequest<any>(`/api/admin/service-packages/${packageId}/featured?featured=${featured}`, {});
+  }
+
+  async setServicePackageAd(packageId: number, isAd: boolean): Promise<any> {
+    return await apiService.patchRequest<any>(`/api/admin/service-packages/${packageId}/ad?isAd=${isAd}`, {});
   }
 
   
