@@ -61,6 +61,11 @@ export interface ServiceOrderResponse {
   // Service info
   service?: ServiceResponse;
   
+  // Package info (if booked with a specific package)
+  packageId?: number;
+  packageName?: string;
+  packageCode?: string;
+  
   // Booking details
   scheduledDateTime: string;
   
@@ -106,6 +111,7 @@ export interface ServiceOrderResponse {
 
 export interface CreateServiceOrderRequest {
   serviceId: number;
+  packageId?: number; // Optional - uses default package if not specified
   scheduledDateTime: string; // ISO date-time string
   contactEmail: string;
   contactPhone?: string;

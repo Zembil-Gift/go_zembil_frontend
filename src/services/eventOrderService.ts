@@ -196,6 +196,12 @@ class EventOrderService {
     );
   }
 
+  async getAdEvents(limit = 5): Promise<EventResponse[]> {
+    return apiService.getRequest<EventResponse[]>(
+      `/api/events/ads?limit=${limit}`
+    );
+  }
+
   async searchEvents(
     query?: string,
     city?: string,

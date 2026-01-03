@@ -224,6 +224,18 @@ class ProductService {
   }
 
   /**
+   * Get ad products
+   */
+  async getAdProducts(limit: number = 5): Promise<Product[]> {
+    try {
+      const url = `/api/v1/products/ads?limit=${limit}`;
+      return await apiService.getRequest<Product[]>(url);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Filter products
    */
   async filterProducts(filter: {
