@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -88,6 +88,18 @@ export default function ProductDetail() {
     queryFn: () => productService.getProductById(Number(productId)),
     enabled: !!productId,
   });
+
+  // Auto-select first available SKU when product loads
+  useEffect(() => {
+    if (product?.productSku && product.productSku.length > 0 && selectedSkuId === null) {
+      // Find first SKU with stock, or just the first SKU if none have stock
+      const firstAvailableSku = product.productSku.find(sku => (sku.stockQuantity || 0) > 0);
+      const skuToSelect = firstAvailableSku || product.productSku[0];
+      if (skuToSelect?.id) {
+        setSelectedSkuId(skuToSelect.id);
+      }
+    }
+  }, [product, selectedSkuId]);
 
   const selectedSku = useMemo(() => {
     if (!product?.productSku || product.productSku.length === 0) return null;

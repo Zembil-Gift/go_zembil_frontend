@@ -14,13 +14,14 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  ZoomIn
+  ZoomIn,
+  Check
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { ServiceReviewsSection } from '@/components/reviews';
 
 import { serviceService, PoliciesConfig, AvailabilityConfig } from '@/services/serviceService';
 
@@ -30,6 +31,7 @@ export default function ServiceDetail() {
   
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
 
   const { data: service, isLoading, error } = useQuery({
     queryKey: ['service', id],
@@ -37,22 +39,73 @@ export default function ServiceDetail() {
     enabled: !!id,
   });
 
+  // Get the currently selected package
+  const selectedPackage = useMemo(() => {
+    if (!service) return null;
+    if (selectedPackageId) {
+      return service.packages?.find(pkg => pkg.id === selectedPackageId) || service.defaultPackage;
+    }
+    return service.defaultPackage;
+  }, [service, selectedPackageId]);
+
+  // Get available packages for variants display
+  const availablePackages = useMemo(() => {
+    if (!service?.packages || service.packages.length <= 1) return [];
+    return service.packages.filter(pkg => pkg.status === 'APPROVED');
+  }, [service]);
+
   const policies = useMemo<PoliciesConfig>(() => {
     if (!service) return {};
     return serviceService.parsePoliciesConfig(service);
   }, [service]);
 
+  // Get availability from selected package (package-level availability takes priority)
   const availability = useMemo<AvailabilityConfig>(() => {
+    // First try to get from selected package
+    if (selectedPackage?.availabilityConfig) {
+      return selectedPackage.availabilityConfig;
+    }
+    // Fallback to service-level availability
     if (!service) return {};
     return serviceService.parseAvailabilityConfig(service);
-  }, [service]);
+  }, [selectedPackage, service]);
+
+  // Get availability type from selected package
+  const availabilityType = useMemo(() => {
+    return selectedPackage?.availabilityType || service?.availabilityType;
+  }, [selectedPackage, service]);
 
   const displayImages = useMemo(() => {
-    if (!service?.images || service.images.length === 0) return [];
-    return service.images
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(img => img.fullUrl);
-  }, [service]);
+    const images: string[] = [];
+    
+    // First, add selected package images (shown first)
+    if (selectedPackage?.images && selectedPackage.images.length > 0) {
+      const packageImages = [...selectedPackage.images]
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map(img => img.fullUrl);
+      images.push(...packageImages);
+    }
+    
+    // Then, add service-level images at the end
+    if (service?.images && service.images.length > 0) {
+      const serviceImages = [...service.images]
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map(img => img.fullUrl);
+      images.push(...serviceImages);
+    }
+    
+    return images;
+  }, [service, selectedPackage]);
+
+  // Get price from selected package if available, otherwise use base price
+  const displayPrice = useMemo(() => {
+    return selectedPackage?.basePriceMinor ?? service?.basePriceMinor ?? 0;
+  }, [selectedPackage, service]);
+
+  const displayCurrency = useMemo(() => {
+    return selectedPackage?.currency ?? service?.currency ?? 'ETB';
+  }, [selectedPackage, service]);
+
   useMemo(() => {
     if (!service) return undefined;
     return serviceService.getPrimaryImageUrl(service);
@@ -240,7 +293,7 @@ export default function ServiceDetail() {
                       {/* Price Badge */}
                       <div className="absolute bottom-4 right-4">
                         <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
-                          From {serviceService.formatPrice(service.basePriceMinor, service.currency)}
+                          From {serviceService.formatPrice(displayPrice, displayCurrency)}
                         </Badge>
                       </div>
                     </div>
@@ -288,7 +341,7 @@ export default function ServiceDetail() {
                     {/* Price Badge */}
                     <div className="absolute bottom-4 right-4">
                       <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
-                        From {serviceService.formatPrice(service.basePriceMinor, service.currency)}
+                        From {serviceService.formatPrice(displayPrice, displayCurrency)}
                       </Badge>
                     </div>
                   </div>
@@ -307,36 +360,77 @@ export default function ServiceDetail() {
                   </h1>
                 </div>
 
-                <div className="flex items-center gap-4 text-sm flex-wrap">
-                  {service.vendorName && (
-                    <>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4 text-viridian-green" />
-                        <span className="font-light text-eagle-green/70">
-                          by {service.vendorName}
-                        </span>
-                      </div>
-                      <Separator orientation="vertical" className="h-4" />
-                    </>
-                  )}
-                  
-                  {service.durationMinutes && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4 text-viridian-green" />
-                      <span className="font-light text-eagle-green/70">
-                        {service.durationMinutes} minutes
-                      </span>
-                    </div>
-                  )}
-                </div>
+                {service.vendorName && (
+                  <div className="flex items-center gap-1 text-sm">
+                    <Users className="h-4 w-4 text-viridian-green" />
+                    <span className="font-light text-eagle-green/70">
+                      by {service.vendorName}
+                    </span>
+                  </div>
+                )}
               </div>
             </motion.div>
+
+            {/* Package Variants */}
+            {availablePackages.length > 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-bold text-eagle-green">Available Packages</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {availablePackages.map((pkg) => (
+                        <button
+                          key={pkg.id}
+                          onClick={() => setSelectedPackageId(pkg.id)}
+                          className={`p-4 rounded-lg border-2 transition-all text-left ${
+                            selectedPackage?.id === pkg.id
+                              ? 'border-viridian-green bg-june-bud/10'
+                              : 'border-gray-200 hover:border-viridian-green/50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-bold text-eagle-green">{pkg.name}</h4>
+                            {pkg.isDefault && (
+                              <Badge className="bg-viridian-green text-white text-xs">Default</Badge>
+                            )}
+                          </div>
+                          {pkg.description && (
+                            <p className="text-sm font-light text-eagle-green/70 mb-2 line-clamp-2">
+                              {pkg.description}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="font-bold text-eagle-green">
+                              {serviceService.formatPrice(pkg.basePriceMinor, pkg.currency)}
+                            </span>
+                            {pkg.durationMinutes && (
+                              <span className="text-sm font-light text-eagle-green/70 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {pkg.durationMinutes}m
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+
 
             {/* Description */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
             >
               <Card>
                 <CardHeader>
@@ -357,39 +451,111 @@ export default function ServiceDetail() {
                       </div>
                     )}
                     
-                    <div>
-                      <h4 className="font-bold text-eagle-green mb-2">Working Days</h4>
-                      <p className="font-light text-eagle-green/70">
-                        {workingDaysDisplay}
-                      </p>
-                    </div>
+                    {/* Working Days - from package availability */}
+                    {availability.workingDays && availability.workingDays.length > 0 && (
+                      <div>
+                        <h4 className="font-bold text-eagle-green mb-2">Working Days</h4>
+                        <p className="font-light text-eagle-green/70">
+                          {workingDaysDisplay}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Working Hours Display - from package availability */}
+                    {availabilityType === 'WORKING_HOURS' && availability.workingHoursStart && availability.workingHoursEnd && (
+                      <div>
+                        <h4 className="font-bold text-eagle-green mb-2">Working Hours</h4>
+                        <p className="font-light text-eagle-green/70">
+                          {availability.workingHoursStart} - {availability.workingHoursEnd}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Time Slots Display - from package availability */}
+                    {availabilityType === 'TIME_SLOTS' && availability.timeSlots && availability.timeSlots.length > 0 && (
+                      <div>
+                        <h4 className="font-bold text-eagle-green mb-2">Available Time Slots</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {availability.timeSlots.map((slot, index) => (
+                            <span key={index} className="px-2 py-1 bg-june-bud/20 text-eagle-green rounded text-sm">
+                              {slot}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Max Bookings Per Day - from package */}
+                    {selectedPackage?.maxBookingsPerDay && selectedPackage.maxBookingsPerDay > 0 && (
+                      <div>
+                        <h4 className="font-bold text-eagle-green mb-2">Daily Availability</h4>
+                        <p className="font-light text-eagle-green/70">
+                          Limited to {selectedPackage.maxBookingsPerDay} bookings per day
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
 
+            {/* Package Attributes */}
+            {selectedPackage?.attributes && selectedPackage.attributes.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.25 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-bold text-eagle-green">Package Details</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 gap-4">
+                      {selectedPackage.attributes
+                        .sort((a, b) => a.sortOrder - b.sortOrder)
+                        .map((attr) => (
+                          <div key={attr.id} className="flex items-start gap-2">
+                            <Check className="h-5 w-5 text-viridian-green flex-shrink-0 mt-0.5" />
+                            <div>
+                              {attr.name && (
+                                <span className="font-bold text-eagle-green">{attr.name}: </span>
+                              )}
+                              <span className="font-light text-eagle-green/80">{attr.value}</span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
             {/* Policies */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
             >
               <Card>
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Shield className="h-5 w-5" />
-                    Cancellation & Refund Policy
+                    Payment & Cancellation Policy
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <h4 className="font-bold text-eagle-green mb-1">Deposit Required</h4>
+                      <h4 className="font-bold text-eagle-green mb-1">Payment</h4>
                       <p className="font-light text-eagle-green/70 text-sm">
-                        {policies.depositRequired ? 
-                          `${policies.depositPercentage || 30}% deposit required to book` :
-                          'No deposit required'
-                        }
+                        Full payment required at booking
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-eagle-green mb-1">Confirmation</h4>
+                      <p className="font-light text-eagle-green/70 text-sm">
+                        Vendor confirmation required after payment
                       </p>
                     </div>
                   </div>
@@ -422,6 +588,15 @@ export default function ServiceDetail() {
                 </CardContent>
               </Card>
             </motion.div>
+
+            {/* Service Reviews Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+            >
+              <ServiceReviewsSection serviceId={service.id} />
+            </motion.div>
           </div>
 
           {/* Booking Panel */}
@@ -441,42 +616,41 @@ export default function ServiceDetail() {
                     </h3>
                   </div>
 
-                  <div className="space-y-3">
-                    {service.city && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-viridian-green" />
-                        <span className="font-light text-eagle-green">
-                          {service.city}{service.location ? `, ${service.location}` : ''}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {service.durationMinutes && (
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-viridian-green" />
-                        <span className="font-light text-eagle-green">
-                          {service.durationMinutes} minutes duration
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                  {service.city && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-viridian-green" />
+                      <span className="font-light text-eagle-green">
+                        {service.city}{service.location ? `, ${service.location}` : ''}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="bg-june-bud/10 rounded-lg p-4">
                     <div className="text-center">
-                      <p className="font-light text-eagle-green/70 text-sm mb-2">Starting from</p>
+                      {selectedPackage && (
+                        <p className="font-bold text-eagle-green text-sm mb-2">{selectedPackage.name}</p>
+                      )}
+                      <p className="font-light text-eagle-green/70 text-sm mb-2">
+                        {availablePackages.length > 1 ? 'Selected Package Price' : 'Starting from'}
+                      </p>
                       <p className="font-bold text-eagle-green text-2xl">
-                        {serviceService.formatPrice(service.basePriceMinor, service.currency)}
+                        {serviceService.formatPrice(displayPrice, displayCurrency)}
                       </p>
-                      <p className="font-light text-eagle-green/70 text-xs">
-                        Final price depends on your requirements
-                      </p>
+                      {selectedPackage?.durationMinutes && (
+                        <p className="font-light text-eagle-green/70 text-xs mt-1">
+                          Duration: {selectedPackage.durationMinutes} minutes
+                        </p>
+                      )}
                     </div>
                   </div>
 
                   <Button 
                     variant="outline" 
                     className="w-full border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white font-bold h-12"
-                    onClick={() => navigate(`/service-checkout/${service.id}`)}
+                    onClick={() => {
+                      const packageParam = selectedPackageId ? `?packageId=${selectedPackageId}` : '';
+                      navigate(`/service-checkout/${service.id}${packageParam}`);
+                    }}
                   >
                     <Calendar className="h-4 w-4 mr-2" />
                     Book Now
