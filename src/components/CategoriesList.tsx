@@ -59,7 +59,7 @@ const CategoriesList = forwardRef<HTMLDivElement, CategoriesListProps>(
         {CATEGORIES.map((category) => {
           const Icon = category.icon;
           const isExpanded = expandedCategory === category.id;
-          const hasSubcategories = category.subcategories.length > 0;
+          const hasSubcategories = category.subcategories && category.subcategories.length > 0;
 
           return (
             <div key={category.id} className={`${isMobile ? 'border-b border-gray-50 last:border-b-0' : 'border-b border-gray-100 last:border-b-0 pb-2 last:pb-0'}`}>
@@ -118,7 +118,7 @@ const CategoriesList = forwardRef<HTMLDivElement, CategoriesListProps>(
                     aria-live="polite"
                   >
                     <div className={`space-y-1 ${isMobile ? 'pb-4' : 'py-2'}`}>
-                      {category.subcategories.map((subcategory) => (
+                      {category.subcategories?.map((subcategory) => (
                         <Button
                           key={subcategory.id}
                           variant="ghost"
