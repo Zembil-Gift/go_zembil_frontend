@@ -1193,7 +1193,8 @@ interface Category {
 
 const productSkuEditSchema = z.object({
   id: z.number().optional(),
-  skuCode: z.string().min(1, "SKU code is required"),
+  skuCode: z.string().optional(),
+  skuName: z.string().optional(),
   stockQuantity: z.number().min(0, "Stock cannot be negative"),
   currencyCode: z.string().min(1, "Currency is required"),
   amount: z.number().min(0.01, "Price must be greater than 0"),
@@ -2902,10 +2903,25 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        {/* SKU Name */}
+                        <div>
+                          <Label>Variant Name (optional)</Label>
+                          <Input
+                            placeholder={productSkuFields.length === 1 ? "e.g., Default" : "e.g., Red Medium"}
+                            {...productForm.register(`productSku.${skuIndex}.skuName`)}
+                          />
+                          {productForm.formState.errors.productSku?.[skuIndex]?.skuName && (
+                            <p className="text-sm text-red-600 mt-1">
+                              {productForm.formState.errors.productSku[skuIndex]?.skuName?.message}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">A friendly name for this variant</p>
+                        </div>
+
                         {/* SKU Code and Stock */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label>SKU Code *</Label>
+                            <Label>SKU Code (optional)</Label>
                             <Input
                               placeholder={productSkuFields.length === 1 ? "e.g., PROD-001" : "e.g., SHIRT-RED-M"}
                               {...productForm.register(`productSku.${skuIndex}.skuCode`)}

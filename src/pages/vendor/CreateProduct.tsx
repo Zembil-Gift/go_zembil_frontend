@@ -49,7 +49,8 @@ const attributeSchema = z.object({
 });
 
 const skuSchema = z.object({
-  skuCode: z.string().min(1, "SKU code is required"),
+  skuCode: z.string().optional(),
+  skuName: z.string().optional(),
   stockQuantity: z.number().min(0, "Stock cannot be negative"),
   amount: z.number().min(0.01, "Price must be greater than 0"),
   attributes: z.array(attributeSchema).optional(),
@@ -292,14 +293,6 @@ export default function CreateProduct() {
     
     for (let i = 0; i < data.productSku.length; i++) {
       const sku = data.productSku[i];
-      if (!sku.skuCode || sku.skuCode.trim() === "") {
-        toast({
-          title: "Validation Error",
-          description: `SKU #${i + 1} requires a SKU code.`,
-          variant: "destructive",
-        });
-        return;
-      }
       
       const skuImages = pendingSkuImages[i] || [];
       if (skuImages.length === 0) {
@@ -559,10 +552,25 @@ export default function CreateProduct() {
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        {/* SKU Name */}
+                        <div>
+                          <Label>Variant Name (optional)</Label>
+                          <Input
+                            placeholder={skuFields.length === 1 ? "e.g., Default" : "e.g., Red Medium"}
+                            {...form.register(`productSku.${skuIndex}.skuName`)}
+                          />
+                          {form.formState.errors.productSku?.[skuIndex]?.skuName && (
+                            <p className="text-sm text-red-600 mt-1">
+                              {form.formState.errors.productSku[skuIndex]?.skuName?.message}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">A friendly name for this variant (e.g., "Red Large T-Shirt")</p>
+                        </div>
+
                         {/* SKU Code and Stock */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label>SKU Code (reference code) *</Label>
+                            <Label>SKU Code (optional)</Label>
                             <Input
                               placeholder={skuFields.length === 1 ? "e.g., PROD-001" : "e.g., SHIRT-RED-M"}
                               {...form.register(`productSku.${skuIndex}.skuCode`)}
@@ -572,7 +580,7 @@ export default function CreateProduct() {
                                 {form.formState.errors.productSku[skuIndex]?.skuCode?.message}
                               </p>
                             )}
-                            <p className="text-xs text-muted-foreground mt-1">Reference code for this variant (unique within this product)</p>
+                            <p className="text-xs text-muted-foreground mt-1">Optional reference code for this variant</p>
                           </div>
                           <div>
                             <Label>Stock Quantity *</Label>
