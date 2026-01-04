@@ -80,7 +80,7 @@ const attributeSchema = z.object({
 const skuSchema = z.object({
   id: z.number().optional(),
   skuCode: z.string().optional(),
-  skuName: z.string().optional(),
+  skuName: z.string().min(1, "Variant name is required"),
   stockQuantity: z.number().min(0, "Stock cannot be negative"),
   // Price fields are read-only in edit mode
   currencyCode: z.string().optional(),

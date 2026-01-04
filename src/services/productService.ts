@@ -35,7 +35,8 @@ export function extractPriceAmount(price?: Price): number {
 
 export interface ProductSku {
   id?: number;
-  skuCode: string;
+  skuCode?: string; // Internal code for vendor/admin management
+  skuName: string;  // Display name shown to customers (required)
   price?: Price;
   stockQuantity?: number;
   attributes?: ProductAttribute[];

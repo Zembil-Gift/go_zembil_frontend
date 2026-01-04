@@ -9,7 +9,8 @@ interface CartItem {
   image: string;
   quantity: number;
   skuId?: number;
-  skuCode?: string;
+  skuCode?: string;   // Internal code for vendor management
+  skuName?: string;   // Display name shown to customers
   customization?: any;
 }
 

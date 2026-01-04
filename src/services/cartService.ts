@@ -32,7 +32,8 @@ export interface CartItem {
   // Optional nested SKU details
   productSku?: {
     id: number;
-    skuCode: string;
+    skuCode?: string;  // Internal code for vendor management
+    skuName: string;   // Display name shown to customers
     images?: Array<{
       id: number;
       url: string;

@@ -1194,7 +1194,7 @@ interface Category {
 const productSkuEditSchema = z.object({
   id: z.number().optional(),
   skuCode: z.string().optional(),
-  skuName: z.string().optional(),
+  skuName: z.string().min(1, "Variant name is required"),
   stockQuantity: z.number().min(0, "Stock cannot be negative"),
   currencyCode: z.string().min(1, "Currency is required"),
   amount: z.number().min(0.01, "Price must be greater than 0"),

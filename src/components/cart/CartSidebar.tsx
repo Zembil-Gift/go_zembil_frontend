@@ -157,6 +157,9 @@ export function CartSidebar() {
                     <h4 className="font-medium text-sm line-clamp-2">
                       {item.product?.name || "Unknown Product"}
                     </h4>
+                    {item.productSku?.skuName && (
+                      <p className="text-xs text-gray-500">{item.productSku.skuName}</p>
+                    )}
                     
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">

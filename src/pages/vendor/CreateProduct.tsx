@@ -50,7 +50,7 @@ const attributeSchema = z.object({
 
 const skuSchema = z.object({
   skuCode: z.string().optional(),
-  skuName: z.string().optional(),
+  skuName: z.string().min(1, "Variant name is required"),
   stockQuantity: z.number().min(0, "Stock cannot be negative"),
   amount: z.number().min(0.01, "Price must be greater than 0"),
   attributes: z.array(attributeSchema).optional(),
@@ -127,6 +127,7 @@ export default function CreateProduct() {
       currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : (currencies[0]?.code || ""),
       productSku: [{
         skuCode: "",
+        skuName: "",
         stockQuantity: 0,
         amount: 0,
         attributes: [],
@@ -151,6 +152,7 @@ export default function CreateProduct() {
   const addSku = () => {
     appendSku({
       skuCode: "",
+      skuName: "",
       stockQuantity: 0,
       amount: 0,
       attributes: [],

@@ -246,6 +246,7 @@ export default function ProductDetail() {
         quantity,
         skuId: selectedSku?.id,
         skuCode: selectedSku?.skuCode,
+        skuName: selectedSku?.skuName,
       });
       
       toast({
@@ -590,7 +591,7 @@ export default function ProductDetail() {
                           )}
                         </div>
                         <div>
-                          <div className="font-medium text-sm">{sku.skuCode}</div>
+                          <div className="font-medium text-sm">{sku.skuName}</div>
                           {sku.attributes && sku.attributes.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-1">
                               {sku.attributes.map((attr, idx) => (
@@ -780,10 +781,12 @@ export default function ProductDetail() {
               <div className="bg-white rounded-lg p-6">
                 <h3 className="font-semibold text-lg mb-4">Product Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="font-medium">SKU:</span>
-                    <span className="ml-2 text-gray-600">{product.productSku ?  product.productSku[0].skuCode : "N/A"}</span>
-                  </div>
+                  {selectedSku?.skuName && (
+                    <div>
+                      <span className="font-medium">Variant:</span>
+                      <span className="ml-2 text-gray-600">{selectedSku.skuName}</span>
+                    </div>
+                  )}
                   <div>
                     <span className="font-medium">Customizable:</span>
                     <span className="ml-2 text-gray-600">
