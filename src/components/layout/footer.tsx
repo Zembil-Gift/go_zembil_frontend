@@ -43,7 +43,7 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold text-lg mb-4">{t('footer.shop')}</h3>
             <ul className="space-y-3">
-              <li><Link to="/about" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.aboutUs')}</Link></li>
+              {/* <li><Link to="/about" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.aboutUs')}</Link></li> */}
               <li><Link to="/gifts" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.allGifts')}</Link></li>
               <li><Link to="/gifts?category=occasions" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.occasions')}</Link></li>
               <li><Link to="/gifts?category=cultural" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.culturalReligious')}</Link></li>
