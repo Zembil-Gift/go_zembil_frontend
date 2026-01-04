@@ -49,7 +49,7 @@ const signupSchema = z
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
-      .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/, "Password must contain both letters and numbers"),
+      .regex(/^(?=.*[A-Za-z])(?=.*\d)/, "Password must contain both letters and numbers"),
     confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
     preferredCurrencyCode: z.string().optional(),
   })
@@ -199,7 +199,7 @@ export default function SignUp() {
                           <Input {...field} placeholder="Choose a username" className="pl-10 h-11" />
                         </div>
                       </FormControl>
-                      <p className="text-xs text-gray-500 mt-1">6-20 characters, start with a letter, letters/numbers/underscores only</p>
+                      <p className="text-xs text-gray-500 mt-1">8-20 characters, start with a letter, letters/numbers/underscores only</p>
                       <FormMessage />
                     </FormItem>
                   )}

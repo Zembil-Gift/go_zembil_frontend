@@ -91,11 +91,11 @@ const phoneValidation = z
   .max(15, "Phone number must not exceed 15 digits")
   .regex(phoneRegex, "Please enter a valid phone number with country code (e.g., +251911234567)");
 
-// Username validation: 3-20 chars, alphanumeric + underscores, must start with letter
+// Username validation: 8-20 chars, alphanumeric + underscores, must start with letter
 const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/;
 const usernameValidation = z
   .string()
-  .min(3, "Username must be at least 3 characters")
+  .min(8, "Username must be at least 8 characters")
   .max(20, "Username must not exceed 20 characters")
   .regex(usernameRegex, "Username must start with a letter and contain only letters, numbers, and underscores");
 
@@ -568,7 +568,7 @@ export default function VendorSignup() {
                     <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input id="username" className="pl-10" {...form.register("username")} maxLength={20} />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">3-20 characters, start with a letter, letters/numbers/underscores only</p>
+                  <p className="text-xs text-gray-500 mt-1">8-20 characters, start with a letter, letters/numbers/underscores only</p>
                   {form.formState.errors.username && <p className="text-sm text-red-600 mt-1">{form.formState.errors.username.message}</p>}
                 </div>
                 <div>

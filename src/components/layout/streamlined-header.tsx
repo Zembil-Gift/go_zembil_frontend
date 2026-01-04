@@ -521,12 +521,12 @@ export default function StreamlinedHeader() {
                         Tickets
                       </Link>
                     </Button>
-                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
+                    {/* <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/register-celebrity">
                         <span className="mr-2">🌟</span>
                         Celebrity
                       </Link>
-                    </Button>
+                    </Button> */}
                     {/* Only show Join as Vendor if user is not a vendor */}
                     {user?.role?.toUpperCase() !== 'VENDOR' && user?.role?.toUpperCase() !== 'ADMIN' && (
                       <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
