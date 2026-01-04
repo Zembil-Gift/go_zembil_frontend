@@ -409,7 +409,7 @@ export default function ServiceDetail() {
                             <span className="font-bold text-eagle-green">
                               {serviceService.formatPrice(pkg.basePriceMinor, pkg.currency)}
                             </span>
-                            {pkg.durationMinutes && (
+                            {pkg.durationMinutes != null && pkg.durationMinutes > 0 && (
                               <span className="text-sm font-light text-eagle-green/70 flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
                                 {pkg.durationMinutes}m
@@ -486,7 +486,7 @@ export default function ServiceDetail() {
                     )}
 
                     {/* Max Bookings Per Day - from package */}
-                    {selectedPackage?.maxBookingsPerDay && selectedPackage.maxBookingsPerDay > 0 && (
+                    {selectedPackage?.maxBookingsPerDay != null && selectedPackage.maxBookingsPerDay > 0 && (
                       <div>
                         <h4 className="font-bold text-eagle-green mb-2">Daily Availability</h4>
                         <p className="font-light text-eagle-green/70">
@@ -636,7 +636,7 @@ export default function ServiceDetail() {
                       <p className="font-bold text-eagle-green text-2xl">
                         {serviceService.formatPrice(displayPrice, displayCurrency)}
                       </p>
-                      {selectedPackage?.durationMinutes && (
+                      {selectedPackage?.durationMinutes != null && selectedPackage.durationMinutes > 0 && (
                         <p className="font-light text-eagle-green/70 text-xs mt-1">
                           Duration: {selectedPackage.durationMinutes} minutes
                         </p>

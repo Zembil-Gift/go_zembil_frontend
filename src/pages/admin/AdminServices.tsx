@@ -526,7 +526,7 @@ export default function AdminServices() {
                               <MapPin className="h-4 w-4" />
                               {service.city}
                             </span>
-                            {service.durationMinutes && (
+                            {service.durationMinutes != null && service.durationMinutes > 0 && (
                               <span className="flex items-center gap-1">
                                 <Clock className="h-4 w-4" />
                                 {service.durationMinutes} min
@@ -765,13 +765,13 @@ export default function AdminServices() {
                               <DollarSign className="h-4 w-4" />
                               {serviceService.formatPrice(pkg.basePriceMinor || 0, pkg.currency || 'ETB')}
                             </span>
-                            {pkg.durationMinutes && (
+                            {pkg.durationMinutes != null && pkg.durationMinutes > 0 && (
                               <span className="flex items-center gap-1">
                                 <Clock className="h-4 w-4" />
                                 {pkg.durationMinutes} min
                               </span>
                             )}
-                            {pkg.maxBookingsPerDay && pkg.maxBookingsPerDay > 0 && (
+                            {pkg.maxBookingsPerDay != null && pkg.maxBookingsPerDay > 0 && (
                               <span>Max {pkg.maxBookingsPerDay} bookings/day</span>
                             )}
                           </div>
@@ -994,7 +994,7 @@ export default function AdminServices() {
                   <span className="text-muted-foreground">City:</span>
                   <p className="font-medium">{selectedService.city}</p>
                 </div>
-                {selectedService.durationMinutes && (
+                {selectedService.durationMinutes != null && selectedService.durationMinutes > 0 && (
                   <div>
                     <span className="text-muted-foreground">Duration:</span>
                     <p className="font-medium">{selectedService.durationMinutes} minutes</p>
@@ -1019,13 +1019,13 @@ export default function AdminServices() {
                 <div>
                   <span className="text-sm text-muted-foreground">Availability:</span>
                   <div className="mt-1 text-sm space-y-1">
-                    {selectedService.availabilityConfig.timeSlots && (
+                    {selectedService.availabilityConfig.timeSlots && selectedService.availabilityConfig.timeSlots.length > 0 && (
                       <p>Time Slots: {selectedService.availabilityConfig.timeSlots.join(', ')}</p>
                     )}
-                    {selectedService.availabilityConfig.maxBookingsPerDay && (
+                    {selectedService.availabilityConfig.maxBookingsPerDay != null && selectedService.availabilityConfig.maxBookingsPerDay > 0 && (
                       <p>Max Bookings/Day: {selectedService.availabilityConfig.maxBookingsPerDay}</p>
                     )}
-                    {selectedService.availabilityConfig.advanceBookingDays && (
+                    {selectedService.availabilityConfig.advanceBookingDays != null && selectedService.availabilityConfig.advanceBookingDays > 0 && (
                       <p>Advance Booking: {selectedService.availabilityConfig.advanceBookingDays} days</p>
                     )}
                   </div>

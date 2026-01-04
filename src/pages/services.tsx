@@ -176,7 +176,7 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
                   <span>{service.city}</span>
                 </div>
               )}
-              {service.durationMinutes && (
+              {service.durationMinutes != null && service.durationMinutes > 0 && (
                 <div className="flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
                   <span>{service.durationMinutes} min</span>

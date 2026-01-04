@@ -837,7 +837,7 @@ export default function EditService() {
                                 <DollarSign className="h-4 w-4" />
                                 {formatPrice(pkg.vendorPriceMinor || pkg.basePriceMinor, pkg.currency)}
                               </span>
-                              {pkg.durationMinutes && (
+                              {pkg.durationMinutes != null && pkg.durationMinutes > 0 && (
                                 <span className="flex items-center gap-1">
                                   <Clock className="h-4 w-4" />
                                   {pkg.durationMinutes} min

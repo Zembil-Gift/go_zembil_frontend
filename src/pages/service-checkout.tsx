@@ -499,7 +499,7 @@ export default function ServiceCheckout() {
                             {service.city}{service.location ? `, ${service.location}` : ''}
                           </p>
                         )}
-                        {service.durationMinutes && (
+                        {service.durationMinutes != null && service.durationMinutes > 0 && (
                           <p className="flex items-center gap-2">
                             <Clock className="h-4 w-4" />
                             {service.durationMinutes} minutes
@@ -909,7 +909,7 @@ export default function ServiceCheckout() {
                   {/* Service */}
                   <div>
                     <p className="font-bold text-eagle-green">{service.title}</p>
-                    {service.durationMinutes && (
+                    {service.durationMinutes != null && service.durationMinutes > 0 && (
                       <p className="text-sm font-light text-eagle-green/70">
                         {service.durationMinutes} minutes
                       </p>
