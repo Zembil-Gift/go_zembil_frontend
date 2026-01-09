@@ -106,8 +106,13 @@ const vendorSignupSchema = z
     username: usernameValidation,
     email: z.string().email("Please enter a valid email address"),
     phoneNumber: phoneValidation,
-    password: z.string().min(8, "Password must be at least 8 characters")
-      .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/, "Password must contain both letters and numbers"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/^(?=.*[a-z])/, "Password must contain at least one lowercase letter")
+      .regex(/^(?=.*[A-Z])/, "Password must contain at least one uppercase letter")
+      .regex(/^(?=.*\d)/, "Password must contain at least one number")
+      .regex(/^(?=.*[@$!%*?&#^()_+=\-\[\]{}|;:',.<>/~`])/, "Password must contain at least one special character"),
     confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
     birthDate: z.string().min(1, "Birth date is required").refine((date) => {
       const birthDate = new Date(date);
@@ -427,19 +432,20 @@ export default function VendorSignup() {
     }
     
     if (isValid) {
-      // Check for duplicate email and username before proceeding
+      // Check for duplicate email, username, and phone number before proceeding
       const email = form.getValues("email");
       const username = form.getValues("username");
+      const phoneNumber = form.getValues("phoneNumber");
       
       try {
-        const [emailExists, usernameExists] = await Promise.all([
+        const [emailExists, usernameExists, phoneExists] = await Promise.all([
           apiService.getRequest<boolean>(`/api/users/check-email?email=${encodeURIComponent(email)}`),
-          apiService.getRequest<boolean>(`/api/users/check-username?username=${encodeURIComponent(username)}`)
+          apiService.getRequest<boolean>(`/api/users/check-username?username=${encodeURIComponent(username)}`),
+          apiService.getRequest<boolean>(`/api/users/check-phone?phoneNumber=${encodeURIComponent(phoneNumber)}`)
         ]);
         
-        if (emailExists || usernameExists) {
-          // Use generic message for security - don't reveal which one exists
-          form.setError("email", { message: "An account with these details already exists. Please sign in instead." });
+        if (emailExists || usernameExists || phoneExists) {
+          // Use generic message for security - don't reveal which field exists
           toast({ title: "Account Exists", description: "An account with these details already exists. Please sign in instead.", variant: "destructive" });
           return;
         }
@@ -611,6 +617,7 @@ export default function VendorSignup() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">At least 8 characters with uppercase, lowercase, number, and special character</p>
                   {form.formState.errors.password && <p className="text-sm text-red-600 mt-1">{form.formState.errors.password.message}</p>}
                 </div>
                 <div>

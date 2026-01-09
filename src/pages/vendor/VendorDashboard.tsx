@@ -13,6 +13,9 @@ import { certificateService } from "@/services/certificateService";
 import { getProductImageUrl, getEventImageUrl } from "@/utils/imageUtils";
 import { serviceOrderService, ServiceOrderResponse } from "@/services/serviceOrderService";
 import { serviceService, ServiceResponse } from "@/services/serviceService";
+import { customOrderTemplateService } from "@/services/customOrderTemplateService";
+import { customOrderService } from "@/services/customOrderService";
+import type { CustomOrder, CustomOrderTemplate, PagedCustomOrderTemplateResponse, PagedCustomOrderResponse } from "@/types/customOrders";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +73,9 @@ import {
   Award,
   Download,
   Loader2,
+  ShoppingBag,
+  User,
+  MessageSquare,
 } from "lucide-react";
 
 // Helper function to check if vendor is Ethiopian
@@ -140,6 +146,25 @@ export default function VendorDashboardNew() {
   const { data: servicesData } = useQuery({
     queryKey: ['vendor', 'services'],
     queryFn: () => serviceService.getMyServices(undefined, 0, 100),
+    enabled: isAuthenticated && isVendor,
+  });
+
+  // Fetch vendor custom templates
+  const { data: customTemplatesData } = useQuery<PagedCustomOrderTemplateResponse>({
+    queryKey: ['vendor', 'custom-templates', vendorProfile?.id],
+    queryFn: async (): Promise<PagedCustomOrderTemplateResponse> => {
+      if (!vendorProfile?.id) {
+        return { content: [], totalElements: 0, totalPages: 0, size: 100, number: 0, first: true, last: true, empty: true };
+      }
+      return customOrderTemplateService.getByVendor(vendorProfile.id, 0, 100);
+    },
+    enabled: isAuthenticated && isVendor && !!vendorProfile?.id,
+  });
+
+  // Fetch vendor custom orders
+  const { data: customOrdersData } = useQuery<PagedCustomOrderResponse>({
+    queryKey: ['vendor', 'custom-orders'],
+    queryFn: () => customOrderService.getByVendor(0, 100),
     enabled: isAuthenticated && isVendor,
   });
 
@@ -260,6 +285,8 @@ export default function VendorDashboardNew() {
   const events = eventsData?.content || [];
   const serviceOrders = serviceOrdersData?.content || [];
   const services = servicesData?.content || [];
+  const customTemplates: CustomOrderTemplate[] = customTemplatesData?.content || [];
+  const customOrders: CustomOrder[] = customOrdersData?.content || [];
 
   // Calculate service order statistics
   const serviceOrderStats = {
@@ -272,6 +299,28 @@ export default function VendorDashboardNew() {
     revenue: serviceOrders
       .filter((o: ServiceOrderResponse) => o.status === 'COMPLETED')
       .reduce((sum: number, o: ServiceOrderResponse) => sum + (o.totalAmountMinor || 0), 0),
+  };
+
+  // Calculate custom template statistics
+  const customTemplateStats = {
+    pending: customTemplates.filter(t => t.status === 'PENDING_APPROVAL').length,
+    approved: customTemplates.filter(t => t.status === 'APPROVED').length,
+    rejected: customTemplates.filter(t => t.status === 'REJECTED').length,
+    total: customTemplates.length,
+  };
+
+  // Calculate custom order statistics
+  const customOrderStats = {
+    submitted: customOrders.filter((o: CustomOrder) => o.status === 'SUBMITTED').length,
+    priceProposed: customOrders.filter((o: CustomOrder) => o.status === 'PRICE_PROPOSED').length,
+    confirmed: customOrders.filter((o: CustomOrder) => o.status === 'CONFIRMED').length,
+    paid: customOrders.filter((o: CustomOrder) => o.status === 'PAID').length,
+    inProgress: customOrders.filter((o: CustomOrder) => o.status === 'IN_PROGRESS').length,
+    completed: customOrders.filter((o: CustomOrder) => o.status === 'COMPLETED').length,
+    total: customOrders.length,
+    needsAction: customOrders.filter((o: CustomOrder) => 
+      o.status === 'SUBMITTED' || o.status === 'PAID'
+    ).length,
   };
 
   const getStatusBadge = (status: string) => {
@@ -352,6 +401,21 @@ export default function VendorDashboardNew() {
                 <span className="hidden sm:inline">Services</span>
               </TabsTrigger>
             )}
+            {/* Custom Templates tab - available for all vendors */}
+            <TabsTrigger value="custom-templates" className="flex items-center gap-2 whitespace-nowrap">
+              <Layers className="h-4 w-4" />
+              <span className="hidden sm:inline">Custom Templates</span>
+            </TabsTrigger>
+            {/* Custom Orders tab - available for all vendors */}
+            <TabsTrigger value="custom-orders" className="flex items-center gap-2 whitespace-nowrap">
+              <ShoppingBag className="h-4 w-4" />
+              <span className="hidden sm:inline">Custom Orders</span>
+              {customOrderStats.needsAction > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                  {customOrderStats.needsAction}
+                </Badge>
+              )}
+            </TabsTrigger>
             {/* Check-in tab - only for SERVICE and HYBRID vendors (for events) */}
             {(vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID') && (
               <TabsTrigger value="check-in" className="flex items-center gap-2 whitespace-nowrap">
@@ -433,6 +497,19 @@ export default function VendorDashboardNew() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Custom Templates</CardTitle>
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{customTemplateStats.total}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {customTemplateStats.pending} pending • {customTemplateStats.approved} approved
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
@@ -477,7 +554,7 @@ export default function VendorDashboardNew() {
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <CardContent className="grid grid-cols-2 md:grid-cols-6 gap-4">
                 <Button asChild variant="outline" className="h-20 flex-col">
                   <Link to="/vendor/products/new">
                     <Plus className="h-6 w-6 mb-2" />
@@ -488,6 +565,12 @@ export default function VendorDashboardNew() {
                   <Link to="/vendor/events/new">
                     <Calendar className="h-6 w-6 mb-2" />
                     <span>Create Event</span>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="h-20 flex-col">
+                  <Link to="/vendor/custom-templates/new">
+                    <Layers className="h-6 w-6 mb-2" />
+                    <span>Custom Template</span>
                   </Link>
                 </Button>
                 <Button variant="outline" className="h-20 flex-col" onClick={() => setActiveTab('requests')}>
@@ -910,7 +993,7 @@ export default function VendorDashboardNew() {
                         <div className="flex items-center space-x-2">
                           {getStatusBadge(service.status)}
                           <span className="font-medium">
-                            {serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.currency ?? service.currency)}
+                            {serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.basePrice ?? service.basePrice, service.defaultPackage?.currency ?? service.currency)}
                           </span>
                           {service.hasPackages && (
                             <Badge variant="outline" className="text-xs">
@@ -927,6 +1010,271 @@ export default function VendorDashboardNew() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Custom Templates Tab */}
+          <TabsContent value="custom-templates" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Custom Order Templates</h2>
+              <Button asChild>
+                <Link to="/vendor/custom-templates/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Template
+                </Link>
+              </Button>
+            </div>
+
+            {/* Template Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Total Templates</CardTitle>
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{customTemplateStats.total}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+                  <Clock className="h-4 w-4 text-amber-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-amber-600">
+                    {customTemplateStats.pending}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Approved</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    {customTemplateStats.approved}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+                  <XCircle className="h-4 w-4 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">
+                    {customTemplateStats.rejected}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Templates */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Recent Templates</CardTitle>
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/vendor/custom-templates">View All</Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {customTemplates.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Layers className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-muted-foreground mb-4">No custom templates created yet.</p>
+                    <Button asChild>
+                      <Link to="/vendor/custom-templates/new">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Your First Template
+                      </Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {customTemplates.slice(0, 5).map((template) => (
+                      <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-12 w-12 rounded bg-eagle-green/10 flex items-center justify-center">
+                            <Layers className="h-6 w-6 text-eagle-green" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{template.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {customOrderTemplateService.formatTemplatePrice(template)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {template.fields.length} field{template.fields.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {getStatusBadge(template.status)}
+                          <Button asChild variant="outline" size="sm">
+                            <Link to={`/vendor/custom-templates/${template.id}`}>View</Link>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Custom Orders Tab */}
+          <TabsContent value="custom-orders" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Custom Orders</h2>
+              <Button asChild variant="outline">
+                <Link to="/vendor/custom-orders">
+                  View All Orders
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                </Link>
+              </Button>
+            </div>
+
+            {/* Order Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">New Orders</CardTitle>
+                  <Clock className="h-4 w-4 text-amber-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-amber-600">
+                    {customOrderStats.submitted}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Awaiting your price proposal</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Price Proposed</CardTitle>
+                  <DollarSign className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {customOrderStats.priceProposed}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Awaiting customer response</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Paid</CardTitle>
+                  <CreditCard className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    {customOrderStats.paid}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Ready to start working</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                  <Package className="h-4 w-4 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {customOrderStats.inProgress}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Currently being fulfilled</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Orders */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Recent Orders</CardTitle>
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/vendor/custom-orders">View All</Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {customOrders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <ShoppingBag className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-muted-foreground mb-4">No custom orders yet.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Once customers order from your templates, they'll appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {customOrders.slice(0, 5).map((order: CustomOrder) => (
+                      <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-10 w-10 rounded-full bg-june-bud/20 flex items-center justify-center">
+                            <User className="h-5 w-5 text-eagle-green" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{order.templateName}</p>
+                            <p className="text-sm text-muted-foreground">
+                              #{order.orderNumber} • {order.customerName}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <div className="text-right">
+                            <p className="font-semibold">
+                              {customOrderService.formatPrice(
+                                order.finalVendorPriceMinor || order.baseVendorPriceMinor || order.finalPriceMinor || order.basePriceMinor,
+                                order.finalVendorPrice || order.baseVendorPrice || order.finalPrice || order.basePrice,
+                                order.currencyCode || 'ETB'
+                              )}
+                            </p>
+                            <Badge className={customOrderService.getStatusBadgeColor(order.status)}>
+                              {customOrderService.getStatusText(order.status)}
+                            </Badge>
+                          </div>
+                          <Button asChild variant="outline" size="sm">
+                            <Link to={`/vendor/custom-orders/${order.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions for Orders Needing Attention */}
+            {customOrderStats.needsAction > 0 && (
+              <Card className="border-amber-200 bg-amber-50">
+                <CardHeader>
+                  <CardTitle className="text-amber-800 flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    Orders Needing Your Attention
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {customOrderStats.submitted > 0 && (
+                      <p className="text-sm text-amber-700">
+                        • <strong>{customOrderStats.submitted}</strong> order{customOrderStats.submitted !== 1 ? 's' : ''} waiting for your price proposal
+                      </p>
+                    )}
+                    {customOrderStats.paid > 0 && (
+                      <p className="text-sm text-amber-700">
+                        • <strong>{customOrderStats.paid}</strong> paid order{customOrderStats.paid !== 1 ? 's' : ''} ready to start
+                      </p>
+                    )}
+                  </div>
+                  <Button asChild className="mt-4">
+                    <Link to="/vendor/custom-orders">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Review Orders
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Check-In Tab */}
@@ -1747,7 +2095,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
           occasion: data.occasion,
           productSku: data.productSku.map((sku, index) => ({
             id: sku.id,
-            skuCode: sku.skuCode,
+            skuCode: sku.skuCode || "", // Provide default empty string for required field
             stockQuantity: sku.stockQuantity,
             isDefault: index === 0, // First SKU is default
             price: {
@@ -2493,7 +2841,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             <div className="flex items-center gap-2 mt-2">
                               {getStatusBadge(service.status)}
                               <span className="text-sm text-muted-foreground">
-                                Price: {serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.currency ?? service.currency)}
+                                Price: {serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.basePrice ?? service.basePrice, service.defaultPackage?.currency ?? service.currency)}
                               </span>
                             </div>
                             {service.description && (
@@ -2865,6 +3213,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                   size="sm"
                   onClick={() => appendProductSku({
                     skuCode: "",
+                    skuName: "", // Add default empty skuName (required field)
                     stockQuantity: 0,
                     currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : (availableCurrencies[0]?.code || ""),
                     amount: 0,

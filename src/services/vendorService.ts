@@ -304,7 +304,8 @@ export interface EventResponse {
   vendorId: number;
   vendorName?: string;
   ticketTypes?: TicketType[];
-  startingPriceMinor?: number;
+  startingPriceMinor?: number;  // Minor units (backward compatibility)
+  startingPrice?: number;       // Major units for display (from backend)
   currency?: string;
   totalCapacity?: number;
   totalAvailable?: number;
@@ -326,13 +327,15 @@ export interface TicketType {
   soldCount: number;
   availableCount?: number;
   // Backend returns these fields directly (not nested)
-  priceMinor?: number;       // Customer-facing price (includes platform commission)
-  vendorPriceMinor?: number; // Vendor's price (what vendor receives)
+  priceMinor?: number;        // Customer-facing price in minor units (backward compatibility)
+  vendorPriceMinor?: number;  // Vendor's price in minor units (backward compatibility)
+  price?: number;             // Customer-facing price in major units (for display)
+  vendorPrice?: number;       // Vendor's price in major units (for display)
   currency?: string;
   originalCurrency?: string;
   originalPriceMinor?: number;
   // Legacy field for compatibility
-  price?: { prices: TicketTypePrice[] };
+  priceObj?: { prices: TicketTypePrice[] };
   isActive: boolean;
   isAvailable?: boolean;
   sortOrder?: number;
