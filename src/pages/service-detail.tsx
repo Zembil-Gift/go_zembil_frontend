@@ -98,7 +98,12 @@ export default function ServiceDetail() {
   }, [service, selectedPackage]);
 
   // Get price from selected package if available, otherwise use base price
-  const displayPrice = useMemo(() => {
+  // Prefer backend-calculated major units (basePrice) over minor units
+  const displayPriceMajor = useMemo(() => {
+    return selectedPackage?.basePrice ?? service?.basePrice ?? undefined;
+  }, [selectedPackage, service]);
+
+  const displayPriceMinor = useMemo(() => {
     return selectedPackage?.basePriceMinor ?? service?.basePriceMinor ?? 0;
   }, [selectedPackage, service]);
 
@@ -293,7 +298,7 @@ export default function ServiceDetail() {
                       {/* Price Badge */}
                       <div className="absolute bottom-4 right-4">
                         <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
-                          From {serviceService.formatPrice(displayPrice, displayCurrency)}
+                          From {serviceService.formatPrice(displayPriceMinor, displayPriceMajor, displayCurrency)}
                         </Badge>
                       </div>
                     </div>
@@ -341,7 +346,7 @@ export default function ServiceDetail() {
                     {/* Price Badge */}
                     <div className="absolute bottom-4 right-4">
                       <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
-                        From {serviceService.formatPrice(displayPrice, displayCurrency)}
+                        From {serviceService.formatPrice(displayPriceMinor, displayPriceMajor, displayCurrency)}
                       </Badge>
                     </div>
                   </div>
@@ -407,7 +412,7 @@ export default function ServiceDetail() {
                           )}
                           <div className="flex items-center justify-between mt-2">
                             <span className="font-bold text-eagle-green">
-                              {serviceService.formatPrice(pkg.basePriceMinor, pkg.currency)}
+                              {serviceService.formatPrice(pkg.basePriceMinor, pkg.basePrice, pkg.currency)}
                             </span>
                             {pkg.durationMinutes != null && pkg.durationMinutes > 0 && (
                               <span className="text-sm font-light text-eagle-green/70 flex items-center gap-1">
@@ -634,7 +639,7 @@ export default function ServiceDetail() {
                         {availablePackages.length > 1 ? 'Selected Package Price' : 'Starting from'}
                       </p>
                       <p className="font-bold text-eagle-green text-2xl">
-                        {serviceService.formatPrice(displayPrice, displayCurrency)}
+                        {serviceService.formatPrice(displayPriceMinor, displayPriceMajor, displayCurrency)}
                       </p>
                       {selectedPackage?.durationMinutes != null && selectedPackage.durationMinutes > 0 && (
                         <p className="font-light text-eagle-green/70 text-xs mt-1">

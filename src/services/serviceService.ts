@@ -49,6 +49,8 @@ export interface ServiceResponse {
   vendorName?: string;
   basePriceMinor: number;
   vendorPriceMinor?: number;
+  basePrice?: number;
+  vendorPrice?: number;
   currency: string;
   durationMinutes?: number;
   images?: ServiceImage[];
@@ -97,8 +99,10 @@ export interface ServicePackageResponse {
   approvedAt?: string;
   maxBookingsPerDay?: number;
   sortOrder: number;
-  basePriceMinor: number;
-  vendorPriceMinor?: number;
+  basePriceMinor: number;      // Minor units (backward compatibility)
+  vendorPriceMinor?: number;   // Minor units (backward compatibility)
+  basePrice?: number;          // Major units for display (from backend)
+  vendorPrice?: number;        // Major units for display (from backend)
   currency: string;
   availabilityType?: AvailabilityType;
   availabilityConfig?: AvailabilityConfig;
@@ -418,22 +422,6 @@ class ServiceService {
   // ==================== Utility Methods ====================
 
   /**
-   * Format price from minor units to display string
-   */
-  formatPrice(priceMinor: number, currency: string): string {
-    const amount = priceMinor / 100;
-    if (currency === 'ETB') {
-      return `${amount.toLocaleString('en-ET', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ETB`;
-    }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency || 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  }
-
-  /**
    * Get primary image URL from service
    */
   getPrimaryImageUrl(service: ServiceResponse): string | undefined {
@@ -489,6 +477,54 @@ class ServiceService {
    */
   getSystemRescheduleHours(): number {
     return 48;
+  }
+
+  /**
+   * Get service price in major units. Prefers backend-calculated major units if available.
+   */
+  getServicePrice(service: ServiceResponse): number {
+    // Prefer backend-provided major units, fallback to conversion if not available
+    if (service.basePrice != null) return service.basePrice;
+    // Fallback: convert minor to major (default 2 decimal places)
+    return service.basePriceMinor / 100;
+  }
+
+  /**
+   * Get package price in major units. Prefers backend-calculated major units if available.
+   */
+  getPackagePrice(pkg: ServicePackageResponse): number {
+    // Prefer backend-provided major units, fallback to conversion if not available
+    if (pkg.basePrice != null) return pkg.basePrice;
+    // Fallback: convert minor to major (default 2 decimal places)
+    return pkg.basePriceMinor / 100;
+  }
+
+  /**
+   * Format price for display using backend-provided major units.
+   * IMPORTANT: Backend provides 'amount' fields in major units - use those directly.
+   * 
+   * @deprecated Prefer using formatCurrency from lib/currency with backend-provided amount fields.
+   */
+  formatPrice(priceMinor: number | undefined, priceMajorOrCurrency?: number | string, currency: string = 'ETB'): string {
+    let amount: number;
+    let curr: string = currency;
+    
+    // Handle backward compatibility: if second arg is string, it's currency (old signature)
+    if (typeof priceMajorOrCurrency === 'string') {
+      curr = priceMajorOrCurrency;
+      console.warn('formatPrice: Using deprecated minor units conversion. Backend should provide major units.');
+      amount = priceMinor ? priceMinor / 100 : 0;
+    } else {
+      // New signature: priceMajorOrCurrency is the major units - USE THIS
+      amount = priceMajorOrCurrency ?? 0;
+    }
+    
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: curr,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount);
   }
 }
 

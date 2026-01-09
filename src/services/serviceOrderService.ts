@@ -1,5 +1,6 @@
 import { apiService } from './apiService';
 import { ServiceResponse } from './serviceService';
+import { getCurrencyDecimals, formatCurrency } from '@/lib/currency';
 
 /**
  * Service Order types matching the backend ServiceOrderResponse DTO
@@ -284,19 +285,15 @@ class ServiceOrderService {
   // ==================== Utility Methods ====================
 
   /**
-   * Format price from minor units to display string
+   * @deprecated Use formatCurrency from lib/currency with backend-provided major units.
+   * Backend now provides prices in major units via 'amount' fields.
    */
-  formatPrice(priceMinor: number, currency: string): string {
-    const amount = priceMinor / 100;
-    if (currency === 'ETB') {
-      return `${amount.toLocaleString('en-ET', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ETB`;
-    }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency || 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
+  formatPrice(priceMinor: number, currency: string | undefined | null): string {
+    console.warn('formatPrice with minor units is deprecated. Use formatCurrency with backend-provided amount instead.');
+    const curr = currency || 'ETB';
+    const decimals = getCurrencyDecimals(curr);
+    const amount = priceMinor / Math.pow(10, decimals);
+    return formatCurrency(amount, curr);
   }
 
   /**

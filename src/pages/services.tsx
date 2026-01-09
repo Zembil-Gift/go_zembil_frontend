@@ -55,7 +55,9 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
   const hasSecondImage = !!secondaryImage && !secondaryImageError;
 
   // Get price from default package if available, otherwise use base price
-  const displayPrice = service.defaultPackage?.basePriceMinor ?? service.basePriceMinor;
+  // Prefer backend-calculated major units (basePrice) over minor units
+  const displayPriceMajor = service.defaultPackage?.basePrice ?? service.basePrice;
+  const displayPriceMinor = service.defaultPackage?.basePriceMinor ?? service.basePriceMinor;
   const displayCurrency = service.defaultPackage?.currency ?? service.currency;
 
   // Fetch service rating summary
@@ -131,7 +133,7 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
             {/* Price Badge */}
             <div className="absolute bottom-3 right-3">
               <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
-                From {serviceService.formatPrice(displayPrice, displayCurrency)}
+                From {serviceService.formatPrice(displayPriceMinor, displayPriceMajor, displayCurrency)}
               </Badge>
             </div>
 

@@ -88,7 +88,11 @@ export default function ServiceCheckout() {
     return serviceService.parseAvailabilityConfig(service);
   }, [service]);
 
-  const displayPrice = useMemo(() => {
+  const displayPriceMajor = useMemo(() => {
+    return service?.defaultPackage?.basePrice ?? service?.basePrice ?? undefined;
+  }, [service]);
+
+  const displayPriceMinor = useMemo(() => {
     return service?.defaultPackage?.basePriceMinor ?? service?.basePriceMinor ?? 0;
   }, [service]);
 
@@ -952,7 +956,7 @@ export default function ServiceCheckout() {
                     <div className="flex justify-between items-center">
                       <span className="font-light text-eagle-green">Total</span>
                       <span className="font-bold text-eagle-green text-2xl">
-                        {serviceService.formatPrice(displayPrice, displayCurrency)}
+                        {serviceService.formatPrice(displayPriceMinor, displayPriceMajor, displayCurrency)}
                       </span>
                     </div>
                   </div>
