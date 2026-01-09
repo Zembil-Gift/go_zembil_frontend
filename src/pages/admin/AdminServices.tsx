@@ -420,7 +420,7 @@ export default function AdminServices() {
                           </TableCell>
                           <TableCell className="text-sm">{service.vendorName || `Vendor #${service.vendorId}`}</TableCell>
                           <TableCell className="text-sm">{service.city}</TableCell>
-                          <TableCell className="text-sm">{serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.currency ?? service.currency)}</TableCell>
+                          <TableCell className="text-sm">{serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.basePrice ?? service.basePrice, service.defaultPackage?.currency ?? service.currency)}</TableCell>
                           <TableCell>{getStatusBadge(service.status)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
@@ -520,7 +520,7 @@ export default function AdminServices() {
                           <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
                             <span className="flex items-center gap-1">
                               <DollarSign className="h-4 w-4" />
-                              {serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.currency ?? service.currency)}
+                              {serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.basePrice ?? service.basePrice, service.defaultPackage?.currency ?? service.currency)}
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="h-4 w-4" />
@@ -763,7 +763,7 @@ export default function AdminServices() {
                           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                             <span className="flex items-center gap-1">
                               <DollarSign className="h-4 w-4" />
-                              {serviceService.formatPrice(pkg.basePriceMinor || 0, pkg.currency || 'ETB')}
+                              {serviceService.formatPrice(pkg.basePriceMinor || 0, pkg.basePrice, pkg.currency || 'ETB')}
                             </span>
                             {pkg.durationMinutes != null && pkg.durationMinutes > 0 && (
                               <span className="flex items-center gap-1">
@@ -984,7 +984,7 @@ export default function AdminServices() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Price:</span>
-                  <p className="font-medium">{serviceService.formatPrice(selectedService.defaultPackage?.basePriceMinor ?? selectedService.basePriceMinor, selectedService.defaultPackage?.currency ?? selectedService.currency)}</p>
+                  <p className="font-medium">{serviceService.formatPrice(selectedService.defaultPackage?.basePriceMinor ?? selectedService.basePriceMinor, selectedService.defaultPackage?.basePrice ?? selectedService.basePrice, selectedService.defaultPackage?.currency ?? selectedService.currency)}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Location:</span>

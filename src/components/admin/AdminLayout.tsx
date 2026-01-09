@@ -14,7 +14,9 @@ import {
   Receipt,
   Truck,
   Briefcase,
-  Star
+  Star,
+  FileText,
+  ShoppingBag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +33,8 @@ const navItems = [
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/services', label: 'Services', icon: Briefcase },
   { href: '/admin/events', label: 'Events', icon: Calendar },
+  { href: '/admin/custom-templates', label: 'Custom Templates', icon: FileText },
+  { href: '/admin/custom-orders', label: 'Custom Orders', icon: ShoppingBag },
   { href: '/admin/featured-ads', label: 'Featured & Ads', icon: Star },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
   { href: '/admin/subcategories', label: 'Subcategories', icon: Layers },
