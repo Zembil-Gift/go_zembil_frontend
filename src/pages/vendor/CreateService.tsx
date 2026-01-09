@@ -218,7 +218,7 @@ export default function CreateService() {
         description: "",
         durationMinutes: 0,
         basePrice: 0,
-        currency: isEthiopianVendor(vendorProfile) ? "ETB" : (currencies[0]?.code || "ETB"),
+        currency: "ETB", // Will be updated by useEffect when vendorProfile loads
         isDefault: true,
         maxBookingsPerDay: 0,
         sortOrder: 0,
@@ -233,6 +233,20 @@ export default function CreateService() {
       }],
     },
   });
+
+  // Update package currency when vendorProfile and currencies load
+  useEffect(() => {
+    if (vendorProfile && currencies.length > 0) {
+      const currency = isEthiopianVendor(vendorProfile) ? "ETB" : (currencies[0]?.code || "ETB");
+      const currentPackages = form.getValues('packages');
+      if (currentPackages.length > 0 && currentPackages[0].currency !== currency) {
+        // Update all packages with the correct currency
+        currentPackages.forEach((pkg, index) => {
+          form.setValue(`packages.${index}.currency`, currency);
+        });
+      }
+    }
+  }, [vendorProfile, currencies, form]);
 
   const { fields: packageFields, append: appendPackage, remove: removePackage, update: updatePackage } = useFieldArray({
     control: form.control,

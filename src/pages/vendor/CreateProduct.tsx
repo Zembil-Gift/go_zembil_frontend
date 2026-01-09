@@ -124,7 +124,7 @@ export default function CreateProduct() {
       isFeatured: false,
       tags: "",
       occasion: "",
-      currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : (currencies[0]?.code || ""),
+      currencyCode: "ETB", // Will be updated by useEffect when vendorProfile loads
       productSku: [{
         skuCode: "",
         skuName: "",
@@ -140,14 +140,13 @@ export default function CreateProduct() {
     name: "productSku",
   });
 
+  // Update currencyCode when vendorProfile and currencies load
   useEffect(() => {
-    if (isEthiopianVendor(vendorProfile)) {
-      const currentCurrency = form.getValues("currencyCode");
-      if (currentCurrency !== "ETB") {
-        form.setValue("currencyCode", "ETB");
-      }
+    if (vendorProfile && currencies.length > 0) {
+      const currency = isEthiopianVendor(vendorProfile) ? "ETB" : (currencies[0]?.code || "ETB");
+      form.setValue('currencyCode', currency);
     }
-  }, [vendorProfile, form]);
+  }, [vendorProfile, currencies, form]);
 
   const addSku = () => {
     appendSku({
@@ -197,6 +196,7 @@ export default function CreateProduct() {
         console.log("Adding SKUs to payload");
         productPayload.productSku = data.productSku.map((sku, index) => ({
           skuCode: sku.skuCode,
+          skuName: sku.skuName, // Add skuName to payload
           stockQuantity: sku.stockQuantity,
           isDefault: index === 0, // First SKU is default
           price: {

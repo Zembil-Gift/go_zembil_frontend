@@ -124,7 +124,7 @@ export default function CreateEvent() {
             city: "",
             imageUrl: "",
             categoryId: "",
-            currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : "USD",
+            currencyCode: "ETB", // Will be updated by useEffect when vendorProfile loads
             ticketTypes: [
                 {
                     name: "",
@@ -141,15 +141,13 @@ export default function CreateEvent() {
         name: "ticketTypes",
     });
 
-    // Auto-set currency for Ethiopian vendors
+    // Update currencyCode when vendorProfile and currencies load
     useEffect(() => {
-        if (isEthiopianVendor(vendorProfile)) {
-            const currentCurrency = form.getValues("currencyCode");
-            if (currentCurrency !== "ETB") {
-                form.setValue("currencyCode", "ETB");
-            }
+        if (vendorProfile && currencies.length > 0) {
+            const currency = isEthiopianVendor(vendorProfile) ? "ETB" : (currencies[0]?.code || "ETB");
+            form.setValue('currencyCode', currency);
         }
-    }, [vendorProfile, form]);
+    }, [vendorProfile, currencies, form]);
 
     const createEventMutation = useMutation({
         mutationFn: async (data: EventFormData) => {
