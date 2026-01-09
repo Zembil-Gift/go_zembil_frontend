@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { customOrderTemplateService } from "@/services/customOrderTemplateService";
 import type { CategoryWithTemplateCount } from "@/types/customOrders";
 import { Skeleton } from "@/components/ui/skeleton";
+import z from "zod";
 
 
 const customOrderSchema = z.object({
@@ -68,7 +69,6 @@ const clearDraft = () => {
     console.warn('Failed to clear draft:', error);
   }
 };
-*/
 
 // Category icon mapping based on name
 const getCategoryIcon = (categoryName: string) => {
