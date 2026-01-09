@@ -37,6 +37,26 @@ class ApiService {
   }
 
   /**
+   * POST request with FormData (for file uploads)
+   */
+  async postFormData<T>(url: string, formData: FormData): Promise<T> {
+    try {
+      const response: AxiosResponse<T> = await api.post(url, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || 
+        error.message || 
+        'An error occurred while uploading file'
+      );
+    }
+  }
+
+  /**
    * Generic PUT request
    */
   async putRequest<T, D = any>(url: string, data?: D): Promise<T> {

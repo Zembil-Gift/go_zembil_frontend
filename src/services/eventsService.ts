@@ -682,15 +682,14 @@ export class EventsService {
           contact: 'sara@shegerdecor.com'
         },
         availability: {
-          workingDays: [5, 6, 0],
-          blackoutDates: ['2024-02-22'] // Book release event date
+          workingDays: [1, 2, 3, 4, 5, 6, 0],
+          blackoutDates: []
         },
-        createdAt: '2023-10-05T09:00:00Z',
-        updatedAt: '2024-01-08T13:15:00Z'
+        createdAt: '2023-12-01T10:00:00Z',
+        updatedAt: '2024-01-15T14:30:00Z'
       }
     ];
   }
 }
 
 export const eventsService = new EventsService();
-

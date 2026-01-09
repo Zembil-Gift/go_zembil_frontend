@@ -14,7 +14,10 @@ export interface TicketType {
   id: number;
   name: string;
   description?: string;
-  priceMinor: number;
+  priceMinor: number;         // Minor units (backward compatibility)
+  vendorPriceMinor?: number;  // Minor units (backward compatibility)
+  price?: number;             // Major units for display (from backend)
+  vendorPrice?: number;       // Major units for display (from backend)
   currency: string;
   originalCurrency?: string;
   originalPriceMinor?: number;
@@ -52,7 +55,8 @@ export interface EventResponse {
   isFeatured: boolean;
   isSoldOut: boolean;
   ticketTypes: TicketType[];
-  startingPriceMinor?: number;
+  startingPriceMinor?: number;  // Minor units (backward compatibility)
+  startingPrice?: number;       // Major units for display (from backend)
   vendorId: number;
   vendorName?: string;
   eventTypeId?: number;
@@ -278,6 +282,24 @@ class EventOrderService {
   majorToMinor(amountMajor: number, currency: string = 'ETB'): number {
     const decimalPlaces = this.getDecimalPlaces(currency);
     return Math.round(amountMajor * Math.pow(10, decimalPlaces));
+  }
+
+  /**
+   * Get ticket price in major units. Prefers backend-calculated major units if available.
+   */
+  getTicketPrice(ticket: TicketType): number {
+    // Prefer backend-provided major units, fallback to conversion if not available
+    if (ticket.price != null) return ticket.price;
+    return this.minorToMajor(ticket.priceMinor, ticket.currency);
+  }
+
+  /**
+   * Get event starting price in major units. Prefers backend-calculated major units if available.
+   */
+  getStartingPrice(event: EventResponse): number {
+    // Prefer backend-provided major units, fallback to conversion if not available
+    if (event.startingPrice != null) return event.startingPrice;
+    return this.minorToMajor(event.startingPriceMinor ?? 0, event.currency ?? 'ETB');
   }
 
   formatCurrency(amountMinor: number, currency: string): string {

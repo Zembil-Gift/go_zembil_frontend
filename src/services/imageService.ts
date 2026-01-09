@@ -1,5 +1,9 @@
 import api from './api';
 
+export interface GenericFileUploadResponse {
+  fileUrl: string;       // Backend returns 'fileUrl' not 'url'
+  originalFilename: string;
+}
 
 export interface ImageDto {
   id: number;
@@ -24,6 +28,49 @@ export interface ImageUploadResponse {
 export type ImageEntityType = 'product' | 'sku' | 'event';
 
 export const imageService = {
+  /**
+   * Generic file upload for custom order fields
+   * Uploads a single file and returns the URL
+   */
+  async uploadCustomOrderFile(file: File): Promise<GenericFileUploadResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post<GenericFileUploadResponse>(
+      '/api/images/custom-orders/upload',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
+
+  // Custom Order Template Images
+  async uploadTemplateImages(templateId: number, files: File[]): Promise<any> {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+
+    const response = await api.post<any>(
+      `/api/custom-order-templates/${templateId}/images`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
+
+  async deleteTemplateImage(templateId: number, imageId: number): Promise<void> {
+    await api.delete(`/api/custom-order-templates/${templateId}/images/${imageId}`);
+  },
+
   async uploadProductImages(productId: number, files: File[]): Promise<ImageUploadResponse> {
     const formData = new FormData();
     files.forEach((file) => {

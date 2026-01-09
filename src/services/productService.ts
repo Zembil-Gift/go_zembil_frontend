@@ -14,20 +14,25 @@ export interface Price {
   currencyCode?: string;
   currencyId?: number;
   unitAmountMinor?: number;
-  amount?: number;
+  amount?: number;  // Backend provides this in major units - USE THIS FOR DISPLAY
   useExchangeRate?: boolean;
   active?: boolean;
 }
 
 /**
  * Extract the display price from a Price object.
- * Uses 'amount' if available, otherwise calculates from 'unitAmountMinor'.
+ * Uses backend-provided 'amount' field (in major units) directly.
+ * NO CONVERSION IS DONE - the backend has already converted to the preferred currency.
  */
 export function extractPriceAmount(price?: Price): number {
   if (!price) return 0;
+  
+  // Backend provides 'amount' in major units - use it directly!
   if (price.amount != null && price.amount > 0) return price.amount;
+  
+  // DEPRECATED: Legacy fallback for old data without 'amount' field
   if (price.unitAmountMinor != null && price.unitAmountMinor > 0) {
-    // Convert minor units (cents) to major units (dollars)
+    console.warn('extractPriceAmount: amount field missing, falling back to unitAmountMinor conversion. This should not happen with updated backend.');
     return price.unitAmountMinor / 100;
   }
   return 0;

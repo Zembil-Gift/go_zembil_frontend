@@ -47,8 +47,11 @@ export interface UpdateDeliveryPersonRequest {
 
 export interface DeliveryAssignmentDto {
   id: number;
-  orderId: number;
-  orderNumber: string;
+  orderId?: number;
+  orderNumber?: string;
+  customOrderId?: number;
+  customOrderNumber?: string;
+  orderType: 'REGULAR' | 'CUSTOM';
   deliveryPersonId: number;
   deliveryPersonName: string;
   status: DeliveryStatus;
@@ -74,8 +77,11 @@ export interface DeliveryAssignmentDto {
 
 export interface AdminDeliveryAssignmentDto {
   id: number;
-  orderId: number;
-  orderNumber: string;
+  orderId?: number;
+  orderNumber?: string;
+  customOrderId?: number;
+  customOrderNumber?: string;
+  orderType: 'REGULAR' | 'CUSTOM';
   deliveryPersonId: number;
   deliveryPersonName: string;
   status: DeliveryStatus;

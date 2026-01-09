@@ -12,3 +12,5 @@ export { default as AdminPriceUpdates } from './AdminPriceUpdates';
 export { default as AdminDelivery } from './AdminDelivery';
 export { default as AdminFeaturedAds } from './AdminFeaturedAds';
 export { default as AdminServices } from './AdminServices';
+export { default as AdminCustomTemplates } from './AdminCustomTemplates';
+export { default as AdminCustomOrders } from './AdminCustomOrders';

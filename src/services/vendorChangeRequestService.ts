@@ -220,18 +220,33 @@ class VendorChangeRequestService {
 
   // ==================== UTILITY FUNCTIONS ====================
 
+
   formatPrice(priceDto: PriceDto | undefined, defaultCurrency: string = 'ETB'): string {
     if (!priceDto) return 'N/A';
-    const amount = priceDto.amount ?? (priceDto.unitAmountMinor ? priceDto.unitAmountMinor / 100 : 0);
     const currency = priceDto.currencyCode || defaultCurrency;
+    const decimals = currency === 'ETB' ? 0 : currency === 'USD' ? 2 : 2;
     const symbol = currency === 'ETB' ? 'ETB ' : currency === 'USD' ? '$' : `${currency} `;
-    return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    
+    if (priceDto.amount != null) {
+      return `${symbol}${priceDto.amount.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+    }
+    
+    console.warn('formatPrice: amount field missing, falling back to unitAmountMinor conversion.');
+    const divisor = Math.pow(10, decimals);
+    const amount = priceDto.unitAmountMinor ? priceDto.unitAmountMinor / divisor : 0;
+    return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
   }
 
+  /**
+   * @deprecated Use formatPrice with PriceDto instead. Backend provides major units.
+   */
   formatPriceMinor(amountMinor: number, currency: string = 'ETB'): string {
-    const amount = amountMinor / 100;
+    console.warn('formatPriceMinor is deprecated. Use formatPrice with PriceDto instead.');
+    const decimals = currency === 'ETB' ? 0 : currency === 'USD' ? 2 : 2;
+    const divisor = Math.pow(10, decimals);
+    const amount = amountMinor / divisor;
     const symbol = currency === 'ETB' ? 'ETB ' : currency === 'USD' ? '$' : `${currency} `;
-    return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
   }
 
   getEntityTypeLabel(entityType: EntityType): string {

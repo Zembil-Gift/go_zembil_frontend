@@ -54,5 +54,17 @@ export function hasValidImage(images?: ImageLike[] | null): boolean {
 
 export const getSkuImageUrl = getProductImageUrl;
 
+// Get template image URL (custom order templates)
+export function getTemplateImageUrl(
+  images?: ImageLike[] | null,
+  placeholder?: string
+): string {
+  return getProductImageUrl(images, placeholder);
+}
+
+export function getAllTemplateImages(images?: ImageLike[] | null): string[] {
+  return getAllProductImages(images);
+}
+
 // Re-export for backward compatibility
 export type SimpleImage = BaseImage;
