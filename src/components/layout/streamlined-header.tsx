@@ -279,6 +279,12 @@ export default function StreamlinedHeader() {
                         <span>My Tickets</span>
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/my-custom-orders" className="flex items-center">
+                        <Package className="mr-2 h-4 w-4" />
+                        <span>My Custom Orders</span>
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/register-celebrity" className="flex items-center">
@@ -519,6 +525,12 @@ export default function StreamlinedHeader() {
                       <Link to="/my-tickets">
                         <Ticket className="mr-2 h-4 w-4" />
                         Tickets
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
+                      <Link to="/my-custom-orders">
+                        <Package className="mr-2 h-4 w-4" />
+                        Custom Orders
                       </Link>
                     </Button>
                     {/* <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">

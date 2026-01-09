@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import ScrollToTop from "./ScrollToTop";
@@ -30,6 +30,8 @@ import ServiceCheckout from "@/pages/service-checkout";
 import ServiceConfirmation from "@/pages/service-confirmation";
 import MyServiceOrders from "@/pages/my-service-orders";
 import MyEventTickets from "@/pages/my-event-tickets";
+import MyOrders from "@/pages/MyOrders";
+import TrackOrder from "@/pages/TrackOrder";
 import StripePayment from "@/pages/stripe-payment";
 import ChapaPayment from "@/pages/chapa-payment";
 import PaymentSuccess from "@/pages/payment-success";
@@ -51,6 +53,8 @@ import AdminTax from "@/pages/admin/AdminTax";
 import AdminCurrency from "@/pages/admin/AdminCurrency";
 import AdminDelivery from "@/pages/admin/AdminDelivery";
 import AdminFeaturedAds from "@/pages/admin/AdminFeaturedAds";
+import AdminCustomTemplates from "@/pages/admin/AdminCustomTemplates";
+import AdminCustomOrders from "@/pages/admin/AdminCustomOrders";
 
 import VendorDashboard from "@/pages/vendor/VendorDashboard";
 import VendorServiceOrders from "@/pages/vendor/VendorServiceOrders";
@@ -66,6 +70,16 @@ import EventPriceUpdate from "@/pages/vendor/EventPriceUpdate";
 import ChapaOnboarding from "@/pages/vendor/ChapaOnboarding";
 import StripeOnboardingReturn from "@/pages/vendor/StripeOnboardingReturn";
 import StripeOnboardingRefresh from "@/pages/vendor/StripeOnboardingRefresh";
+import VendorCustomTemplates from "@/pages/vendor/VendorCustomTemplates";
+import VendorCustomTemplateDetail from "@/pages/vendor/VendorCustomTemplateDetail";
+import CreateCustomTemplate from "@/pages/vendor/CreateCustomTemplate";
+import VendorCustomOrders from "@/pages/vendor/VendorCustomOrders";
+import VendorCustomOrderDetail from "@/pages/vendor/VendorCustomOrderDetail";
+import MyCustomOrders from "@/pages/customer/MyCustomOrders";
+import CustomerCustomOrderDetail from "@/pages/customer/CustomerCustomOrderDetail";
+import CustomOrderCategories from "@/pages/customer/CustomOrderCategories";
+import CustomOrderTemplates from "@/pages/customer/CustomOrderTemplates";
+import CreateCustomOrder from "@/pages/customer/CreateCustomOrder";
 
 import {
   DeliveryLayout,
@@ -325,6 +339,24 @@ export default function Router() {
             </ProtectedRoute>
           } />
           
+          <Route path="custom-orders/categories" element={
+            <ProtectedRoute>
+              <CustomOrderCategories />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="custom-orders/category/:categoryId" element={
+            <ProtectedRoute>
+              <CustomOrderTemplates />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="custom-orders/template/:templateId" element={
+            <ProtectedRoute>
+              <CreateCustomOrder />
+            </ProtectedRoute>
+          } />
+          
           <Route path="payment/stripe" element={
             <ProtectedRoute>
               <StripePayment />
@@ -355,9 +387,33 @@ export default function Router() {
             </ProtectedRoute>
           } />
           
+          <Route path="my-orders" element={
+            <ProtectedRoute>
+              <MyOrders />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="track/:orderId" element={
+            <ProtectedRoute>
+              <TrackOrder />
+            </ProtectedRoute>
+          } />
+          
           <Route path="my-service-orders" element={
             <ProtectedRoute>
               <MyServiceOrders />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="my-custom-orders" element={
+            <ProtectedRoute>
+              <MyCustomOrders />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="my-custom-orders/:orderId" element={
+            <ProtectedRoute>
+              <CustomerCustomOrderDetail />
             </ProtectedRoute>
           } />
           
@@ -367,24 +423,35 @@ export default function Router() {
             </ProtectedRoute>
           } />
           
-          {/* Vendor Routes */}
-          <Route path="vendor" element={<VendorRoute><VendorDashboard /></VendorRoute>} />
-          <Route path="vendor/service-orders" element={<VendorRoute><VendorServiceOrders /></VendorRoute>} />
-          <Route path="vendor/service-calendar" element={<VendorRoute><VendorServiceCalendar /></VendorRoute>} />
-          <Route path="vendor/products/new" element={<VendorRoute><CreateProduct /></VendorRoute>} />
-          <Route path="vendor/products/:id/edit" element={<VendorRoute><EditProduct /></VendorRoute>} />
-          <Route path="vendor/products/:id/price" element={<VendorRoute><ProductPriceUpdate /></VendorRoute>} />
-          <Route path="vendor/events/new" element={<VendorRoute><CreateEvent /></VendorRoute>} />
-          <Route path="vendor/events/:id/edit" element={<VendorRoute><EditEvent /></VendorRoute>} />
-          <Route path="vendor/events/:id/price" element={<VendorRoute><EventPriceUpdate /></VendorRoute>} />
-          <Route path="vendor/services/new" element={<VendorRoute><CreateService /></VendorRoute>} />
-          <Route path="vendor/services/:id/edit" element={<VendorRoute><EditService /></VendorRoute>} />
+          {/* Catch all route */}
+          <Route path="*" element={<NotFound />} />
+        </Route>
 
-          <Route path="vendor/payments/chapa" element={<VendorRoute><ChapaOnboarding /></VendorRoute>} />
-          <Route path="vendor/onboarding/return" element={<VendorRoute><StripeOnboardingReturn /></VendorRoute>} />
-          <Route path="vendor/onboarding/refresh" element={<VendorRoute><StripeOnboardingRefresh /></VendorRoute>} />
-          
-          {/* Admin Routes */}
+        {/* Vendor Routes - Outside main Layout to avoid navbar */}
+        <Route path="/vendor" element={<VendorRoute><div className="min-h-screen bg-gray-50"><Outlet /></div></VendorRoute>}>
+          <Route index element={<VendorDashboard />} />
+          <Route path="service-orders" element={<VendorServiceOrders />} />
+          <Route path="service-calendar" element={<VendorServiceCalendar />} />
+          <Route path="products/new" element={<CreateProduct />} />
+          <Route path="products/:id/edit" element={<EditProduct />} />
+          <Route path="products/:id/price" element={<ProductPriceUpdate />} />
+          <Route path="events/new" element={<CreateEvent />} />
+          <Route path="events/:id/edit" element={<EditEvent />} />
+          <Route path="events/:id/price" element={<EventPriceUpdate />} />
+          <Route path="services/new" element={<CreateService />} />
+          <Route path="services/:id/edit" element={<EditService />} />
+          <Route path="payments/chapa" element={<ChapaOnboarding />} />
+          <Route path="onboarding/return" element={<StripeOnboardingReturn />} />
+          <Route path="onboarding/refresh" element={<StripeOnboardingRefresh />} />
+          <Route path="custom-templates" element={<VendorCustomTemplates />} />
+          <Route path="custom-templates/new" element={<CreateCustomTemplate />} />
+          <Route path="custom-templates/:id" element={<VendorCustomTemplateDetail />} />
+          <Route path="custom-orders" element={<VendorCustomOrders />} />
+          <Route path="custom-orders/:orderId" element={<VendorCustomOrderDetail />} />
+        </Route>
+
+        {/* Admin Routes - Inside Layout but with custom header handling */}
+        <Route path="/" element={<Layout />}>
           <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
           <Route path="admin/vendors" element={<AdminRoute><AdminVendors /></AdminRoute>} />
@@ -397,9 +464,8 @@ export default function Router() {
           <Route path="admin/currency" element={<AdminRoute><AdminCurrency /></AdminRoute>} />
           <Route path="admin/delivery" element={<AdminRoute><AdminDelivery /></AdminRoute>} />
           <Route path="admin/featured-ads" element={<AdminRoute><AdminFeaturedAds /></AdminRoute>} />
-          
-          {/* Catch all route */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="admin/custom-templates" element={<AdminRoute><AdminCustomTemplates /></AdminRoute>} />
+          <Route path="admin/custom-orders" element={<AdminRoute><AdminCustomOrders /></AdminRoute>} />
         </Route>
 
         {/* Delivery Person Routes - Outside main Layout to avoid navbar */}

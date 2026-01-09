@@ -49,7 +49,10 @@ const signupSchema = z
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
-      .regex(/^(?=.*[A-Za-z])(?=.*\d)/, "Password must contain both letters and numbers"),
+      .regex(/^(?=.*[a-z])/, "Password must contain at least one lowercase letter")
+      .regex(/^(?=.*[A-Z])/, "Password must contain at least one uppercase letter")
+      .regex(/^(?=.*\d)/, "Password must contain at least one number")
+      .regex(/^(?=.*[@$!%*?&#^()_+=\-\[\]{}|;:',.<>/~`])/, "Password must contain at least one special character"),
     confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
     preferredCurrencyCode: z.string().optional(),
   })
@@ -301,6 +304,7 @@ export default function SignUp() {
                             </button>
                           </div>
                         </FormControl>
+                        <p className="text-xs text-gray-500 mt-1">At least 8 characters with uppercase, lowercase, number, and special character</p>
                         <FormMessage />
                       </FormItem>
                     )}

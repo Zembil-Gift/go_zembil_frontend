@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { paymentService } from '@/services/paymentService';
 import { apiService } from '@/services/apiService';
 import { eventOrderService } from '@/services/eventOrderService';
+import { customOrderService } from '@/services/customOrderService';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -284,6 +285,10 @@ export default function StripePaymentPage() {
         // Event order - fetch event order details and initialize payment
         orderDetails = await eventOrderService.getOrder(orderIdNum);
         response = await eventOrderService.initializePayment(orderIdNum, 'STRIPE');
+      } else if (type === 'custom') {
+        // Custom order - fetch custom order details and initialize payment
+        orderDetails = await customOrderService.getById(orderIdNum);
+        response = await customOrderService.initPayment(orderIdNum, 'STRIPE');
       } else {
         // Product order - fetch order details and initialize payment
         orderDetails = await apiService.getRequest<any>(`/api/orders/${orderIdNum}`);
@@ -293,8 +298,10 @@ export default function StripePaymentPage() {
       // Extract amount from order details
       const orderAmount = type === 'event' 
         ? orderDetails?.totalAmountMinor || 0
+        : type === 'custom'
+        ? (orderDetails?.finalPriceMinor || orderDetails?.basePriceMinor || 0)
         : orderDetails?.totals?.totalMinor || 0;
-      const orderCurrency = orderDetails?.currency || 'USD';
+      const orderCurrency = orderDetails?.currency || orderDetails?.currencyCode || 'USD';
 
 
       if (!response.clientSecret) {

@@ -320,7 +320,8 @@ export default function EditProduct() {
         // Include SKU updates (excluding price changes)
         productSku: data.productSku.map((sku, index) => ({
           id: sku.id,
-          skuCode: sku.skuCode,
+          skuCode: sku.skuCode || "", // Provide default empty string for required field
+          skuName: sku.skuName, // Add skuName to payload
           stockQuantity: sku.stockQuantity,
           isDefault: index === 0,
           attributes: sku.attributes?.filter(attr => attr.name && attr.value) || [],
@@ -422,6 +423,7 @@ export default function EditProduct() {
 
     appendSku({
       skuCode: "",
+      skuName: "", // Add default empty skuName (required field)
       stockQuantity: 0,
       currencyCode: defaultCurrency,
       currentPrice: 0,

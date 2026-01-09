@@ -119,7 +119,8 @@ export default function DeliveryAssignments() {
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-3">
                           <span className="font-semibold text-lg">
-                            #{assignment.orderNumber}
+                            {assignment.orderType === 'CUSTOM' && <span className="text-purple-600 text-sm mr-1">CUSTOM</span>}
+                            #{assignment.customOrderNumber || assignment.orderNumber}
                           </span>
                           <Badge className={getStatusColor(assignment.status)}>
                             {assignment.status.replace("_", " ")}

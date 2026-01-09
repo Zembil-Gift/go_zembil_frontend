@@ -235,22 +235,6 @@ function TrackContent() {
             )}
           </div>
         )}
-
-        {/* Help Section */}
-        <Card className="mt-8">
-          <CardContent className="p-6 text-center">
-            <h3 className="text-xl font-semibold text-charcoal mb-4">Need Help?</h3>
-            <p className="text-gray-600 mb-4">
-              Can't find your order or have questions about delivery? We're here to help.
-            </p>
-            <Button variant="outline" className="mr-4">
-              Contact Support
-            </Button>
-            <Button className="bg-ethiopian-gold hover:bg-amber text-white">
-              Chat with Us
-            </Button>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );

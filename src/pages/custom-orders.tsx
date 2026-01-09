@@ -1,23 +1,18 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
-  Palette, Camera, Heart, Star, CheckCircle, Clock, ArrowRight, Save, Upload, X, FileImage, 
-  Shirt, Wrench, Music, Sparkles, Gift, Crown, Coffee, Timer, Plus
+  Palette, Camera, Heart, Star, CheckCircle, ArrowRight, Sparkles, Gift, Crown, Coffee,
+  Shirt, Wrench, Music, Package, Users, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProtectedRoute from "@/components/protected-route";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
-import { orderService, CustomOrderRequest } from "@/services/orderService";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import FadeIn from "@/components/animations/FadeIn";
+import { useQuery } from "@tanstack/react-query";
+import { customOrderTemplateService } from "@/services/customOrderTemplateService";
+import type { CategoryWithTemplateCount } from "@/types/customOrders";
+import { Skeleton } from "@/components/ui/skeleton";
+
 
 const customOrderSchema = z.object({
   type: z.string().min(1, "Please select an order type"),
@@ -73,782 +68,304 @@ const clearDraft = () => {
     console.warn('Failed to clear draft:', error);
   }
 };
+*/
+
+// Category icon mapping based on name
+const getCategoryIcon = (categoryName: string) => {
+  if (!categoryName) return Package;
+  const name = categoryName.toLowerCase();
+  if (name.includes('art') || name.includes('paint') || name.includes('portrait')) return Palette;
+  if (name.includes('embroid') || name.includes('cloth') || name.includes('shirt') || name.includes('fashion')) return Shirt;
+  if (name.includes('wood') || name.includes('craft') || name.includes('tool')) return Wrench;
+  if (name.includes('jewel') || name.includes('accessori')) return Star;
+  if (name.includes('ceramic') || name.includes('pottery')) return Palette;
+  if (name.includes('basket') || name.includes('gift')) return Gift;
+  if (name.includes('song') || name.includes('music')) return Music;
+  if (name.includes('photo') || name.includes('album') || name.includes('camera')) return Camera;
+  if (name.includes('letter') || name.includes('love') || name.includes('heart')) return Heart;
+  if (name.includes('leather')) return Sparkles;
+  if (name.includes('crown') || name.includes('traditional')) return Crown;
+  if (name.includes('coffee')) return Coffee;
+  if (name.includes('handmade') || name.includes('sparkle')) return Sparkles;
+  return Package;
+};
 
 function CustomOrdersContent() {
-  const { toast } = useToast();
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-  const [hasDraft, setHasDraft] = useState(false);
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [filePreviews, setFilePreviews] = useState<{ file: File; preview: string }[]>([]);
-
-  // Load draft on component mount
-  useEffect(() => {
-    const draft = loadDraft();
-    if (draft && Object.keys(draft).length > 0) {
-      setHasDraft(true);
-    }
-  }, []);
-
-  const form = useForm<CustomOrderForm>({
-    resolver: zodResolver(customOrderSchema),
-    defaultValues: {
-      type: "",
-      title: "",
-      description: "",
-      budget: "",
-      deadline: "",
-      estimatedDelivery: "",
-      recipientInfo: "",
-      specialRequests: "",
-      referenceImages: [],
-    },
+  // Fetch categories with template counts from API
+  const { data: categories, isLoading: isCategoriesLoading } = useQuery({
+    queryKey: ['custom-order-categories'],
+    queryFn: () => customOrderTemplateService.getCategoriesWithTemplates(),
   });
-
-  // Auto-save draft functionality
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      // Only save if form has meaningful content
-      const hasContent = value.title || value.description || value.type;
-      if (hasContent) {
-        setIsAutoSaving(true);
-        const timeoutId = setTimeout(() => {
-          saveDraft(value as Partial<CustomOrderForm>);
-          setIsAutoSaving(false);
-        }, 1000); // Debounce auto-save by 1 second
-        
-        return () => clearTimeout(timeoutId);
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [form]);
-
-  const loadDraftData = () => {
-    const draft = loadDraft();
-    if (draft) {
-      Object.entries(draft).forEach(([key, value]) => {
-        if (value) {
-          form.setValue(key as keyof CustomOrderForm, value);
-        }
-      });
-      setHasDraft(false);
-      toast({
-        title: "Draft loaded",
-        description: "Your saved draft has been restored.",
-      });
-    }
-  };
-
-  const customOrderMutation = useMutation({
-    mutationFn: async (data: CustomOrderForm) => {
-      // Map form data to backend schema
-      const backendData: CustomOrderRequest = {
-        title: data.title,
-        description: data.description,
-        category: data.type,
-        budget: parseFloat(data.budget.split('-')[0].replace(/[^0-9.]/g, '')) || null,
-        deadline: null, // We could parse this to actual date if needed
-        customerNotes: [data.recipientInfo, data.specialRequests].filter(Boolean).join('\n\n'),
-      };
-      
-      return await orderService.submitCustomOrder(backendData);
-    },
-    onSuccess: () => {
-      setShowSuccessAnimation(true);
-      clearDraft(); // Clear saved draft on successful submission
-      
-      toast({
-        title: "Custom order submitted successfully!",
-        description: "We'll match you with the perfect artist and get back to you within 24 hours.",
-        duration: 5000,
-      });
-      
-      // Reset form after animation
-      setTimeout(() => {
-        form.reset();
-        setShowSuccessAnimation(false);
-      }, 3000);
-    },
-    onError: (error: any) => {
-      console.error('Custom order submission error:', error);
-      
-      let errorMessage = "Please try again later.";
-      if (error.message?.includes('401')) {
-        errorMessage = "Please sign in to submit a custom order.";
-      } else if (error.message?.includes('400')) {
-        errorMessage = "Please check your form data and try again.";
-      }
-      
-      toast({
-        title: "Submission failed",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 5000,
-      });
-    },
-  });
-
-  const onSubmit = async (data: CustomOrderForm) => {
-    // Validate all required fields are filled
-    const requiredFields = ['type', 'title', 'description', 'budget', 'deadline'];
-    const missingFields = requiredFields.filter(field => !data[field as keyof CustomOrderForm]);
-    
-    if (missingFields.length > 0) {
-      toast({
-        title: "Please fill all required fields",
-        description: `Missing: ${missingFields.join(', ')}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    customOrderMutation.mutate(data);
-  };
-
-  const orderTypes = [
-    { value: "custom-portrait", label: "Custom Portrait", description: "Personalized artwork", icon: Palette },
-    { value: "embroidery", label: "Embroidery", description: "Hand-stitched designs", icon: Shirt },
-    { value: "wood-crafts", label: "Wood Crafts", description: "Handcrafted items", icon: Wrench },
-    { value: "custom-jewelry", label: "Custom Jewelry", description: "Personalized accessories", icon: Star },
-    { value: "painted-ceramics", label: "Painted Ceramics", description: "Artistic pottery", icon: Palette },
-    { value: "personalized-baskets", label: "Personalized Baskets", description: "Custom gift baskets", icon: Gift },
-    { value: "custom-songs", label: "Custom Songs", description: "Personalized music", icon: Music },
-    { value: "photo-albums", label: "Photo Albums", description: "Memory collections", icon: Camera },
-    { value: "love-letters", label: "Love Letters", description: "Handwritten messages", icon: Heart },
-    { value: "leather-goods", label: "Leather Goods", description: "Handcrafted leather", icon: Sparkles },
-    { value: "traditional-crowns", label: "Traditional Crowns", description: "Cultural headpieces", icon: Crown },
-    { value: "coffee-accessories", label: "Coffee Accessories", description: "Brewing essentials", icon: Coffee },
-  ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Success Animation Overlay */}
-      <AnimatePresence>
-        {showSuccessAnimation && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          >
+    <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-br from-eagle-green via-eagle-green to-viridian-green overflow-hidden">
+        {/* Pattern overlay */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="w-full h-full" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 10L40 30L30 50L20 30L30 10Z' fill='white'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'repeat'
+          }}></div>
+        </div>
+
+        {/* Decorative circles */}
+        <div className="absolute -top-20 -right-20 w-80 h-80 bg-june-bud/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-20 w-96 h-96 bg-viridian-green/30 rounded-full blur-3xl"></div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+          <FadeIn delay={0.1}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-june-bud/20 rounded-xl backdrop-blur-sm">
+                <Sparkles className="h-8 w-8 text-june-bud" />
+              </div>
+              <span className="text-june-bud font-gotham-medium text-lg uppercase tracking-wider">
+                Custom Handmade Orders
+              </span>
+            </div>
+            <h1 className="text-5xl lg:text-6xl xl:text-7xl font-gotham-bold text-white mb-6 leading-tight">
+              Create Something
+              <span className="block text-june-bud">Uniquely Yours</span>
+            </h1>
+            <p className="text-xl lg:text-2xl font-gotham-light text-white/90 max-w-3xl leading-relaxed mb-8">
+              Commission unique, personalized pieces from talented Ethiopian artists. 
+              Turn your vision into a meaningful gift with our fully integrated custom order system.
+            </p>
+            
+            {/* CTA Button */}
             <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.5, opacity: 0 }}
-              transition={{ type: "spring", duration: 0.5 }}
-              className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", duration: 0.6 }}
-                className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
-              >
-                <CheckCircle className="text-green-600" size={40} />
-              </motion.div>
-              <motion.h3
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-2xl font-bold text-charcoal mb-2"
-              >
-                Order Submitted!
-              </motion.h3>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="text-gray-600"
-              >
-                We'll match you with the perfect artist and get back to you within 24 hours.
-              </motion.p>
+              <Link to="/custom-orders/categories">
+                <Button 
+                  size="lg" 
+                  className="bg-june-bud hover:bg-june-bud/90 text-eagle-green font-gotham-bold text-lg px-8 py-4 h-auto rounded-xl shadow-2xl hover:shadow-3xl transition-all duration-300"
+                >
+                  <span>Browse Categories</span>
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </FadeIn>
+        </div>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <h1 className="font-bold text-4xl text-eagle-green mb-4">
-            Custom Handmade Orders
-          </h1>
-          <p className="text-xl font-light text-viridian-green max-w-3xl mx-auto">
-            Commission unique, personalized pieces from talented Ethiopian artists. Turn your vision into a meaningful gift.
-          </p>
-        </motion.div>
+        {/* Wave divider */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
+            <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" className="fill-light-cream" />
+          </svg>
+        </div>
+      </section>
 
-        {/* Draft Alert */}
-        <AnimatePresence>
-          {hasDraft && (
+      {/* Features Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 -mt-4 relative z-10">
+        <FadeIn delay={0.2}>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-gotham-bold text-eagle-green mb-4">
+              Why Choose Our Custom Order System?
+            </h2>
+            <p className="text-lg font-gotham-light text-eagle-green/70 max-w-2xl mx-auto">
+              Experience a seamless, professional custom ordering process designed for both customers and vendors.
+            </p>
+          </div>
+        </FadeIn>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+          {[
+            {
+              icon: Users,
+              title: "Vendor Templates",
+              description: "Browse professionally created templates from verified vendors with customizable options.",
+              color: "from-eagle-green/20 to-viridian-green/10"
+            },
+            {
+              icon: Package,
+              title: "Dynamic Customization",
+              description: "Fill out custom fields, upload images, and specify exactly what you want.",
+              color: "from-june-bud/20 to-yellow/10"
+            },
+            {
+              icon: Zap,
+              title: "Real-time Chat",
+              description: "Communicate directly with vendors to refine your order and track progress.",
+              color: "from-viridian-green/20 to-eagle-green/10"
+            }
+          ].map((feature, index) => (
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
+              key={feature.title}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mb-6"
+              transition={{ delay: 0.3 + index * 0.1 }}
+              whileHover={{ y: -4 }}
             >
-              <Card className="border-yellow/30 bg-june-bud/10">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Save className="text-eagle-green" size={20} />
-                      <div>
-                        <h4 className="font-bold text-eagle-green">Draft Found</h4>
-                        <p className="text-sm font-light text-eagle-green/70">You have a saved draft from a previous session.</p>
-                      </div>
+              <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-xl">
+                <CardContent className="p-6 text-center">
+                  <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center`}>
+                    <feature.icon className="h-8 w-8 text-eagle-green" />
+                  </div>
+                  <h3 className="text-xl font-gotham-bold text-eagle-green mb-3">
+                    {feature.title}
+                  </h3>
+                  <p className="font-gotham-light text-eagle-green/70 leading-relaxed">
+                    {feature.description}
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* How It Works Section */}
+        <FadeIn delay={0.5}>
+          <div className="bg-white rounded-2xl shadow-xl p-8 lg:p-12">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl lg:text-4xl font-gotham-bold text-eagle-green mb-4">
+                How It Works
+              </h2>
+              <p className="text-lg font-gotham-light text-eagle-green/70">
+                Simple steps to get your custom order created and delivered
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[
+                { 
+                  step: 1, 
+                  title: "Browse Categories", 
+                  description: "Explore different categories and find vendors offering custom templates",
+                  icon: Package
+                },
+                { 
+                  step: 2, 
+                  title: "Customize Order", 
+                  description: "Fill out the vendor's custom fields and upload any reference materials",
+                  icon: Palette
+                },
+                { 
+                  step: 3, 
+                  title: "Negotiate & Pay", 
+                  description: "Chat with the vendor to finalize details and pricing, then pay securely",
+                  icon: CheckCircle
+                },
+                { 
+                  step: 4, 
+                  title: "Receive Creation", 
+                  description: "Track progress and receive your unique handmade item with delivery",
+                  icon: Gift
+                }
+              ].map((item, index) => (
+                <motion.div
+                  key={item.step}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + index * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="relative mb-6">
+                    <div className="w-16 h-16 bg-gradient-to-br from-eagle-green to-viridian-green rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <item.icon className="h-8 w-8 text-white" />
                     </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setHasDraft(false)}
-                        className="border-eagle-green/30 text-eagle-green hover:bg-eagle-green/10"
-                      >
-                        Ignore
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={loadDraftData}
-                        className="bg-eagle-green hover:bg-viridian-green text-white"
-                      >
-                        Load Draft
-                      </Button>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-june-bud rounded-full flex items-center justify-center text-eagle-green font-gotham-bold text-sm shadow-md">
+                      {item.step}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  <h3 className="text-lg font-gotham-bold text-eagle-green mb-3">
+                    {item.title}
+                  </h3>
+                  <p className="font-gotham-light text-eagle-green/70 text-sm leading-relaxed">
+                    {item.description}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </FadeIn>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Order Form */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-2"
-          >
-            <Card className="shadow-lg border-eagle-green/10">
-              <CardHeader className="relative bg-gradient-to-r from-june-bud/5 to-white">
-                <CardTitle className="text-2xl font-bold text-eagle-green">Submit Your Custom Order</CardTitle>
-                {isAutoSaving && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute top-6 right-6 flex items-center space-x-2 text-sm text-gray-500"
+        {/* Popular Categories Preview */}
+        <FadeIn delay={0.7}>
+          <div className="mt-16">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl lg:text-4xl font-gotham-bold text-eagle-green mb-4">
+                Browse Categories
+              </h2>
+              <p className="text-lg font-gotham-light text-eagle-green/70">
+                Discover custom order templates from our talented vendors
+              </p>
+            </div>
+
+            {isCategoriesLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+                {[...Array(8)].map((_, index) => (
+                  <Card key={index} className="border-0 shadow-md bg-white rounded-xl">
+                    <CardContent className="p-4 text-center">
+                      <Skeleton className="w-12 h-12 rounded-xl mx-auto mb-3" />
+                      <Skeleton className="h-4 w-24 mx-auto mb-2" />
+                      <Skeleton className="h-3 w-16 mx-auto" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : categories && categories.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+                {categories.map((category: CategoryWithTemplateCount, index: number) => {
+                  const IconComponent = getCategoryIcon(category.categoryName);
+                  return (
+                    <motion.div
+                      key={category.categoryId}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.8 + index * 0.05 }}
+                      whileHover={{ scale: 1.05 }}
+                      className="group"
+                    >
+                      <Link to={`/custom-orders/category/${category.categoryId}`}>
+                        <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white rounded-xl cursor-pointer">
+                          <CardContent className="p-4 text-center">
+                            <div className="w-12 h-12 bg-gradient-to-br from-june-bud/20 to-viridian-green/10 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:from-june-bud/30 group-hover:to-viridian-green/20 transition-colors">
+                              <IconComponent className="h-6 w-6 text-eagle-green" />
+                            </div>
+                            <h3 className="font-gotham-bold text-eagle-green text-sm mb-1">
+                              {category.categoryName}
+                            </h3>
+                            <p className="text-xs font-gotham-light text-eagle-green/60">
+                              {category.templateCount} {category.templateCount === 1 ? 'template' : 'templates'}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Package className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
+                <p className="text-lg font-gotham-light text-eagle-green/70">
+                  No categories available yet. Check back soon!
+                </p>
+              </div>
+            )}
+
+            <div className="text-center">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link to="/custom-orders/categories">
+                  <Button 
+                    size="lg" 
+                    className="bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold px-8 py-3 h-auto rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                   >
-                    <Clock size={16} className="animate-spin" />
-                    <span>Auto-saving...</span>
-                  </motion.div>
-                )}
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" noValidate>
-                    <FormField
-                      control={form.control}
-                      name="type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-bold text-eagle-green">
-                            Order Type <span className="text-yellow">*</span>
-                          </FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger 
-                                className="h-12 bg-white border border-gray-300 focus:ring-2 focus:ring-viridian-green focus:border-viridian-green hover:border-eagle-green/50 transition-colors"
-                                aria-describedby="type-description"
-                                aria-required="true"
-                              >
-                                <SelectValue placeholder="Select the type of custom order" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md max-h-[300px] overflow-y-auto z-50">
-                              {orderTypes.map((type) => (
-                                <SelectItem 
-                                  key={type.value} 
-                                  value={type.value}
-                                  className="px-4 py-3 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10"
-                                >
-                                  <div className="flex items-center space-x-3 w-full">
-                                    <type.icon size={16} className="text-eagle-green flex-shrink-0" />
-                                    <div className="flex flex-col min-w-0 flex-1">
-                                      <span className="font-bold text-gray-900 text-sm">{type.label}</span>
-                                      <span className="text-xs text-gray-600 font-light leading-tight">{type.description}</span>
-                                    </div>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <p id="type-description" className="text-sm text-gray-500">
-                            Choose the category that best matches your custom order
-                          </p>
-                          <FormMessage className="text-warm-red" />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-bold text-eagle-green">
-                            Project Title <span className="text-yellow">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field} 
-                              placeholder="Brief title for your custom order" 
-                              className="h-12 focus:ring-2 focus:ring-viridian-green focus:border-eagle-green/30 border-eagle-green/20"
-                              aria-describedby="title-description"
-                              aria-required="true"
-                              maxLength={200}
-                            />
-                          </FormControl>
-                          <div className="flex justify-between items-center">
-                            <p id="title-description" className="text-sm text-gray-500">
-                              A clear, descriptive title for your project
-                            </p>
-                            <span className="text-xs text-gray-400">
-                              {field.value?.length || 0}/200
-                            </span>
-                          </div>
-                          <FormMessage className="text-warm-red" />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-bold text-eagle-green">
-                            Detailed Description <span className="text-yellow">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              placeholder="Describe your vision in detail. Include colors, style preferences, size requirements, and any specific elements you want included."
-                              className="min-h-[120px] focus:ring-2 focus:ring-viridian-green focus:border-eagle-green/30 border-eagle-green/20 resize-none"
-                              aria-describedby="description-description"
-                              aria-required="true"
-                              maxLength={2000}
-                            />
-                          </FormControl>
-                          <div className="flex justify-between items-center">
-                            <p id="description-description" className="text-sm text-gray-500">
-                              The more details you provide, the better we can match you with the right artist
-                            </p>
-                            <span className="text-xs text-gray-400">
-                              {field.value?.length || 0}/2000
-                            </span>
-                          </div>
-                          <FormMessage className="text-warm-red" />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="budget"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-base font-bold text-eagle-green">
-                              Budget Range (ETB) <span className="text-yellow">*</span>
-                            </FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger 
-                                  className="h-12 bg-white border border-gray-300 focus:ring-2 focus:ring-viridian-green focus:border-viridian-green hover:border-eagle-green/50 transition-colors"
-                                  aria-required="true"
-                                >
-                                  <SelectValue placeholder="Select budget range" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md z-50">
-                                <SelectItem value="1000-2500" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">1,000 - 2,500 ETB (~$7-18)</SelectItem>
-                                <SelectItem value="2500-5000" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">2,500 - 5,000 ETB (~$18-37)</SelectItem>
-                                <SelectItem value="5000-10000" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">5,000 - 10,000 ETB (~$37-74)</SelectItem>
-                                <SelectItem value="10000+" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">10,000+ ETB (~$74+)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage className="text-yellow" />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="deadline"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-base font-bold text-eagle-green">
-                              Timeline <span className="text-yellow">*</span>
-                            </FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger 
-                                  className="h-12 bg-white border border-gray-300 focus:ring-2 focus:ring-viridian-green focus:border-viridian-green hover:border-eagle-green/50 transition-colors"
-                                  aria-required="true"
-                                >
-                                  <SelectValue placeholder="When do you need this?" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md z-50">
-                                <SelectItem value="1-week" className="px-4 py-3 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10">
-                                  <div className="flex items-center space-x-2">
-                                    <Badge variant="secondary" className="bg-yellow/20 text-eagle-green">Rush</Badge>
-                                    <span className="text-gray-900">Within 1 week</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="2-weeks" className="px-4 py-3 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">Within 2 weeks</SelectItem>
-                                <SelectItem value="1-month" className="px-4 py-3 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">Within 1 month</SelectItem>
-                                <SelectItem value="flexible" className="px-4 py-3 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10">
-                                  <div className="flex items-center space-x-2">
-                                    <Badge variant="secondary" className="bg-june-bud/30 text-eagle-green">Best Price</Badge>
-                                    <span className="text-gray-900">Flexible timeline</span>
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage className="text-yellow" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="estimatedDelivery"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-bold text-eagle-green flex items-center gap-2">
-                            <Timer size={16} className="text-viridian-green" />
-                            Estimated Delivery Time
-                          </FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger 
-                                className="h-12 bg-white border border-gray-300 focus:ring-2 focus:ring-viridian-green focus:border-viridian-green hover:border-eagle-green/50 transition-colors"
-                              >
-                                <SelectValue placeholder="Expected delivery timeframe" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md z-50">
-                              <SelectItem value="3-5-days" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">3-5 business days</SelectItem>
-                              <SelectItem value="1-week" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">1 week</SelectItem>
-                              <SelectItem value="2-weeks" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">2 weeks</SelectItem>
-                              <SelectItem value="3-4-weeks" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">3-4 weeks</SelectItem>
-                              <SelectItem value="1-2-months" className="px-4 py-2 hover:bg-viridian-green/10 focus:bg-viridian-green/10 cursor-pointer transition-colors data-[highlighted]:bg-viridian-green/10 text-gray-900">1-2 months</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <p className="text-sm font-light text-eagle-green/70">
-                            This helps set delivery expectations based on your timeline
-                          </p>
-                          <FormMessage className="text-yellow" />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="recipientInfo"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-bold text-eagle-green">
-                            Recipient Information (Optional)
-                          </FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              placeholder="Tell us about the recipient. Their interests, personality, or the occasion can help artists create something more personal."
-                              className="min-h-[80px] focus:ring-2 focus:ring-viridian-green focus:border-eagle-green/30 border-eagle-green/20 resize-none"
-                              aria-describedby="recipient-description"
-                              maxLength={1000}
-                            />
-                          </FormControl>
-                          <div className="flex justify-between items-center">
-                            <p id="recipient-description" className="text-sm text-gray-500">
-                              Help us personalize the creation for the recipient
-                            </p>
-                            <span className="text-xs text-gray-400">
-                              {field.value?.length || 0}/1000
-                            </span>
-                          </div>
-                          <FormMessage className="text-warm-red" />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="specialRequests"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-bold text-eagle-green">
-                            Special Requests (Optional)
-                          </FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              placeholder="Any additional requirements, shipping instructions, or specific artist preferences."
-                              className="min-h-[80px] focus:ring-2 focus:ring-viridian-green focus:border-eagle-green/30 border-eagle-green/20 resize-none"
-                              aria-describedby="requests-description"
-                              maxLength={1000}
-                            />
-                          </FormControl>
-                          <div className="flex justify-between items-center">
-                            <p id="requests-description" className="text-sm text-gray-500">
-                              Any specific requirements or preferences for the order
-                            </p>
-                            <span className="text-xs text-gray-400">
-                              {field.value?.length || 0}/1000
-                            </span>
-                          </div>
-                          <FormMessage className="text-warm-red" />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Multiple File Upload Section */}
-                    <div className="space-y-3">
-                      <label className="text-base font-bold text-eagle-green flex items-center gap-2">
-                        <Upload size={16} className="text-viridian-green" />
-                        Upload Reference Images (Optional)
-                      </label>
-                      <p className="text-sm font-light text-eagle-green/70">
-                        You can attach multiple images or sketches to help us understand your idea better. Max 5 files.
-                      </p>
-                      
-                      {/* File Upload Area */}
-                      <div className="border-2 border-dashed border-eagle-green/30 rounded-lg p-6 text-center hover:border-viridian-green transition-colors duration-200">
-                        {uploadedFiles.length > 0 ? (
-                          <div className="space-y-4">
-                            {/* File Preview */}
-                            {filePreview && (
-                              <div className="flex justify-center">
-                                <div className="relative">
-                                  <img 
-                                    src={filePreview} 
-                                    alt="Preview" 
-                                    className="max-h-32 max-w-32 object-cover rounded-lg border"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setUploadedFile(null);
-                                      setFilePreview(null);
-                                      form.setValue('referenceImage', null);
-                                    }}
-                                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
-                                  >
-                                    <X size={12} />
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* File Info */}
-                            <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
-                              <FileImage size={16} className="text-ethiopian-gold" />
-                              <span>{uploadedFile.name}</span>
-                              <span className="text-gray-400">
-                                ({(uploadedFile.size / (1024 * 1024)).toFixed(1)} MB)
-                              </span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            <Upload size={24} className="mx-auto text-gray-400" />
-                            <div>
-                              <p className="text-sm text-gray-600 mb-2">
-                                Drop your image here, or{" "}
-                                <label className="text-ethiopian-gold hover:text-ethiopian-gold/80 cursor-pointer font-medium">
-                                  browse
-                                  <input
-                                    type="file"
-                                    className="hidden"
-                                    accept=".jpg,.jpeg,.png,.pdf"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) {
-                                        // Validate file size (5MB max)
-                                        if (file.size > 5 * 1024 * 1024) {
-                                          toast({
-                                            title: "File too large",
-                                            description: "Please select a file smaller than 5MB.",
-                                            variant: "destructive",
-                                          });
-                                          return;
-                                        }
-                                        
-                                        // Validate file type
-                                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-                                        if (!allowedTypes.includes(file.type)) {
-                                          toast({
-                                            title: "Invalid file type",
-                                            description: "Please upload a JPG, PNG, or PDF file.",
-                                            variant: "destructive",
-                                          });
-                                          return;
-                                        }
-                                        
-                                        setUploadedFile(file);
-                                        form.setValue('referenceImage', file);
-                                        
-                                        // Create preview for images
-                                        if (file.type.startsWith('image/')) {
-                                          const reader = new FileReader();
-                                          reader.onload = (e) => {
-                                            setFilePreview(e.target?.result as string);
-                                          };
-                                          reader.readAsDataURL(file);
-                                        }
-                                      }
-                                    }}
-                                  />
-                                </label>
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                Supports: JPG, PNG, PDF • Max 5MB
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="pt-4"
-                    >
-                      <Button
-                        type="submit"
-                        disabled={customOrderMutation.isPending}
-                        className="w-full bg-eagle-green hover:bg-viridian-green text-white h-14 text-lg font-bold transition-all duration-200 shadow-lg hover:shadow-xl focus:ring-4 focus:ring-yellow/20"
-                        aria-describedby="submit-description"
-                      >
-                        <div className="flex items-center justify-center space-x-2">
-                          {customOrderMutation.isPending ? (
-                            <>
-                              <Clock size={20} className="animate-spin" />
-                              <span>Submitting...</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>Submit Custom Order</span>
-                              <ArrowRight size={20} />
-                            </>
-                          )}
-                        </div>
-                      </Button>
-                    </motion.div>
-                    <p id="submit-description" className="text-sm text-gray-500 text-center mt-2">
-                      By submitting, you agree to our terms and conditions
-                    </p>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Order Types Info */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="space-y-6"
-          >
-            <motion.div
-              whileHover={{ y: -2 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-eagle-green/10">
-                <CardHeader className="bg-gradient-to-r from-june-bud/5 to-white">
-                  <CardTitle className="text-xl font-bold text-eagle-green flex items-center space-x-2">
-                    <Palette className="text-viridian-green" size={24} />
-                    <span>Order Types</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {orderTypes.map((type, index) => (
-                    <motion.div
-                      key={type.value}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.6 + index * 0.1 }}
-                      className="flex items-start space-x-3 p-3 rounded-lg hover:bg-june-bud/10 transition-colors cursor-pointer"
-                    >
-                      <motion.div
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        className="w-10 h-10 bg-eagle-green/10 rounded-lg flex items-center justify-center flex-shrink-0"
-                      >
-                        <type.icon className="text-eagle-green" size={20} />
-                      </motion.div>
-                      <div>
-                        <h4 className="font-bold text-eagle-green">{type.label}</h4>
-                        <p className="text-sm font-light text-eagle-green/70">
-                          {type.description}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ y: -2 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-eagle-green/10">
-                <CardHeader className="bg-gradient-to-r from-june-bud/5 to-white">
-                  <CardTitle className="text-xl font-bold text-eagle-green flex items-center space-x-2">
-                    <CheckCircle className="text-viridian-green" size={24} />
-                    <span>How It Works</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {[
-                    { step: 1, text: "Submit your custom order request with detailed description" },
-                    { step: 2, text: "We match you with the perfect artist within 24 hours" },
-                    { step: 3, text: "Artist creates your piece and sends progress updates" },
-                    { step: 4, text: "Your custom gift is carefully packaged and delivered" }
-                  ].map((item, index) => (
-                    <motion.div
-                      key={item.step}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 1.0 + index * 0.1 }}
-                      className="flex items-start space-x-3 p-3 rounded-lg hover:bg-june-bud/10 transition-colors"
-                    >
-                      <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        className="w-8 h-8 bg-eagle-green text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                      >
-                        {item.step}
-                      </motion.div>
-                      <p className="text-sm font-light text-eagle-green/80 pt-1">{item.text}</p>
-                    </motion.div>
-                  ))}
-                </CardContent>
-              </Card>
-            </motion.div>
-          </motion.div>
-        </div>
-      </main>
+                    <span>View All Categories</span>
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </motion.div>
+            </div>
+          </div>
+        </FadeIn>
+      </section>
     </div>
   );
 }

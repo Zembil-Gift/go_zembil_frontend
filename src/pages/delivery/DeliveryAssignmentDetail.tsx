@@ -320,7 +320,9 @@ export default function DeliveryAssignmentDetail() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Order #{assignment.orderNumber}</h1>
+          <h1 className="text-2xl font-bold">
+            {assignment.orderType === 'CUSTOM' ? 'Custom ' : ''}Order #{assignment.customOrderNumber || assignment.orderNumber}
+          </h1>
           <Badge className={getStatusColor(assignment.status)}>
             {assignment.status.replace("_", " ")}
           </Badge>
