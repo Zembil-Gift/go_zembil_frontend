@@ -71,6 +71,9 @@ function CustomerCustomOrderDetailContent() {
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   
+  // Get user's preferred currency (fallback to USD)
+  const preferredCurrency = user?.preferredCurrencyCode || 'USD';
+  
   const [activeTab, setActiveTab] = useState('details');
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -85,13 +88,13 @@ function CustomerCustomOrderDetailContent() {
 
   // Helper to get the order currency (backend sends currencyCode)
   const getOrderCurrency = (order: any): string => {
-    return order?.currencyCode || order?.currency || 'USD';
+    return order?.currencyCode || order?.currency || preferredCurrency;
   };
 
-  // Fetch order details
+  // Fetch order details with user's preferred currency
   const { data: order, isLoading: orderLoading } = useQuery({
-    queryKey: ['custom-order', orderIdNum],
-    queryFn: () => customOrderService.getById(orderIdNum),
+    queryKey: ['custom-order', orderIdNum, preferredCurrency],
+    queryFn: () => customOrderService.getById(orderIdNum, preferredCurrency),
     enabled: isAuthenticated && orderIdNum > 0,
   });
 
@@ -124,7 +127,7 @@ function CustomerCustomOrderDetailContent() {
     mutationFn: () => customOrderService.acceptPrice(orderIdNum),
     onSuccess: () => {
       toast({ title: 'Price Accepted', description: 'You can now proceed to payment.' });
-      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
+      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum, preferredCurrency] });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -135,7 +138,7 @@ function CustomerCustomOrderDetailContent() {
     mutationFn: () => customOrderService.rejectPrice(orderIdNum),
     onSuccess: () => {
       toast({ title: 'Price Rejected', description: 'The vendor will be notified to propose a new price.' });
-      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
+      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum, preferredCurrency] });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -146,7 +149,7 @@ function CustomerCustomOrderDetailContent() {
     mutationFn: (reason: string) => customOrderService.cancel(orderIdNum, reason),
     onSuccess: () => {
       toast({ title: 'Order Cancelled', description: 'Your order has been cancelled.' });
-      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
+      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum, preferredCurrency] });
       setCancelDialogOpen(false);
       setCancelReason('');
     },

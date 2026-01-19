@@ -325,6 +325,20 @@ export default function CreateCustomTemplate() {
                 />
               </div>
               
+              {/* VAT Notice */}
+              <Alert className="border-blue-200 bg-blue-50">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertTitle className="text-blue-800">Pricing Information</AlertTitle>
+                <AlertDescription className="text-blue-700">
+                  Enter your base price (what you'll receive).
+                  {vendorProfile?.vatStatus === 'VAT_REGISTERED' && (
+                    <span className="block mt-1 font-medium">
+                      As a VAT-registered vendor, VAT will be included in the customer price.
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>

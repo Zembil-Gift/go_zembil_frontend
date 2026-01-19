@@ -10,16 +10,26 @@ import type {
 
 class CustomOrderTemplateService {
   
-  async getById(templateId: number): Promise<CustomOrderTemplate> {
-    return await apiService.getRequest<CustomOrderTemplate>(`/api/custom-order-templates/${templateId}`);
+  async getById(templateId: number, currency?: string): Promise<CustomOrderTemplate> {
+    const url = currency 
+      ? `/api/custom-order-templates/${templateId}?currency=${currency}`
+      : `/api/custom-order-templates/${templateId}`;
+    return await apiService.getRequest<CustomOrderTemplate>(url);
   }
 
   async getByCategory(
     categoryId: number, 
     page: number = 0, 
-    size: number = 20
+    size: number = 20,
+    currency?: string
   ): Promise<PagedCustomOrderTemplateResponse> {
-    const url = `/api/custom-order-templates/category/${categoryId}?page=${page}&size=${size}`;
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('size', size.toString());
+    if (currency) {
+      params.append('currency', currency);
+    }
+    const url = `/api/custom-order-templates/category/${categoryId}?${params.toString()}`;
     return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
   }
 
@@ -167,43 +177,6 @@ class CustomOrderTemplateService {
         return fieldType;
     }
   }
-
-
-  validateCreateRequest(data: CreateCustomOrderTemplateRequest): string[] {
-    const errors: string[] = [];
-
-    if (!data.name?.trim()) {
-      errors.push('Template name is required');
-    }
-
-    if (!data.basePriceMinor || data.basePriceMinor <= 0) {
-      errors.push('Base price must be greater than 0');
-    }
-
-    if (!data.currencyId) {
-      errors.push('Currency is required');
-    }
-
-    if (!data.fields || data.fields.length === 0) {
-      errors.push('At least one customization field is required');
-    }
-
-    // Validate fields
-    data.fields?.forEach((field, index) => {
-      if (!field.fieldName?.trim()) {
-        errors.push(`Field ${index + 1}: Field name is required`);
-      }
-      if (!field.fieldType) {
-        errors.push(`Field ${index + 1}: Field type is required`);
-      }
-      if (field.sortOrder < 0) {
-        errors.push(`Field ${index + 1}: Sort order must be non-negative`);
-      }
-    });
-
-    return errors;
-  }
-
   sortFieldsBySortOrder<T extends { sortOrder: number }>(fields: T[]): T[] {
     return [...fields].sort((a, b) => a.sortOrder - b.sortOrder);
   }

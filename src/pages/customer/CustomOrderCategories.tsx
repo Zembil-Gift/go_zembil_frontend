@@ -43,10 +43,10 @@ export default function CustomOrderCategories() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
         {/* Hero skeleton */}
-        <div className="relative bg-gradient-to-br from-eagle-green via-eagle-green to-viridian-green">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <Skeleton className="h-12 w-96 mb-4 bg-white/20" />
-            <Skeleton className="h-6 w-80 bg-white/20" />
+        <div className="bg-gradient-to-r from-eagle-green to-viridian-green">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Skeleton className="h-8 w-64 mb-2 bg-white/20" />
+            <Skeleton className="h-5 w-96 bg-white/20" />
           </div>
         </div>
 
@@ -81,51 +81,24 @@ export default function CustomOrderCategories() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-eagle-green via-eagle-green to-viridian-green overflow-hidden">
-        {/* Pattern overlay */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="w-full h-full" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 10L40 30L30 50L20 30L30 10Z' fill='white'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'repeat'
-          }}></div>
-        </div>
-
-        {/* Decorative circles */}
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-june-bud/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-20 w-96 h-96 bg-viridian-green/30 rounded-full blur-3xl"></div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+      {/* Simplified Hero Section */}
+      <section className="bg-gradient-to-r from-eagle-green to-viridian-green">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <FadeIn delay={0.1}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-june-bud/20 rounded-xl backdrop-blur-sm">
-                <Sparkles className="h-6 w-6 text-june-bud" />
-              </div>
-              <span className="text-june-bud font-gotham-medium text-sm uppercase tracking-wider">
-                Custom Orders
-              </span>
+            <div className="flex items-center gap-2 mb-2">
+              <h1 className="text-2xl lg:text-3xl font-gotham-bold text-white">
+                Custom Order Categories
+              </h1>
             </div>
-            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-gotham-bold text-white mb-4 leading-tight">
-              Create Something
-              <span className="block text-june-bud">Uniquely Yours</span>
-            </h1>
-            <p className="text-lg lg:text-xl font-gotham-light text-white/80 max-w-2xl leading-relaxed">
-              Browse categories and find talented vendors who can bring your custom ideas to life.
-              From personalized gifts to bespoke creations.
+            <p className="text-sm lg:text-base font-gotham-light text-white/80 max-w-2xl">
+              Browse categories and find talented vendors who can bring your custom ideas to life
             </p>
           </FadeIn>
-        </div>
-
-        {/* Wave divider */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
-            <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" className="fill-light-cream" />
-          </svg>
         </div>
       </section>
 
       {/* Categories Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 -mt-4 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
         <FadeIn delay={0.2}>
           <div className="flex items-center gap-2 mb-8">
             <Package className="h-5 w-5 text-viridian-green" />

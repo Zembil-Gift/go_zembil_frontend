@@ -27,17 +27,25 @@ class CustomOrderService {
 
   /**
    * Get customer's own orders
+   * @param page - Page number (0-indexed)
+   * @param size - Page size
+   * @param status - Optional status filter
+   * @param currency - Optional preferred currency for price conversion (e.g., 'ETB', 'USD')
    */
   async getByCustomer(
     page: number = 0, 
     size: number = 20,
-    status?: CustomOrderStatus
+    status?: CustomOrderStatus,
+    currency?: string
   ): Promise<PagedCustomOrderResponse> {
     const queryParams = new URLSearchParams();
     queryParams.append('page', page.toString());
     queryParams.append('size', size.toString());
     if (status) {
       queryParams.append('status', status);
+    }
+    if (currency) {
+      queryParams.append('currency', currency);
     }
     
     const url = `/api/custom-orders/customer?${queryParams.toString()}`;

@@ -1,74 +1,74 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   Palette, Camera, Heart, Star, CheckCircle, ArrowRight, Sparkles, Gift, Crown, Coffee,
-  Shirt, Wrench, Music, Package, Users, Zap
+  Shirt, Wrench, Music, Package, Users, Zap, ChevronDown, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProtectedRoute from "@/components/protected-route";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import FadeIn from "@/components/animations/FadeIn";
 import { useQuery } from "@tanstack/react-query";
 import { customOrderTemplateService } from "@/services/customOrderTemplateService";
 import type { CategoryWithTemplateCount } from "@/types/customOrders";
 import { Skeleton } from "@/components/ui/skeleton";
-import z from "zod";
+import { useState, useEffect } from "react";
 
 
-const customOrderSchema = z.object({
-  type: z.string().min(1, "Please select an order type"),
-  title: z.string().min(3, "Title must be at least 3 characters").max(200, "Title must be less than 200 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters").max(2000, "Description must be less than 2000 characters"),
-  budget: z.string().min(1, "Please enter your budget"),
-  deadline: z.string().min(1, "Please select a deadline"),
-  estimatedDelivery: z.string().optional(),
-  recipientInfo: z.string().max(1000, "Recipient info must be less than 1000 characters").optional(),
-  specialRequests: z.string().max(1000, "Special requests must be less than 1000 characters").optional(),
-  referenceImages: z.array(z.any()).optional(),
-});
+// const customOrderSchema = z.object({
+//   type: z.string().min(1, "Please select an order type"),
+//   title: z.string().min(3, "Title must be at least 3 characters").max(200, "Title must be less than 200 characters"),
+//   description: z.string().min(10, "Description must be at least 10 characters").max(2000, "Description must be less than 2000 characters"),
+//   budget: z.string().min(1, "Please enter your budget"),
+//   deadline: z.string().min(1, "Please select a deadline"),
+//   estimatedDelivery: z.string().optional(),
+//   recipientInfo: z.string().max(1000, "Recipient info must be less than 1000 characters").optional(),
+//   specialRequests: z.string().max(1000, "Special requests must be less than 1000 characters").optional(),
+//   referenceImages: z.array(z.any()).optional(),
+// });
 
-type CustomOrderForm = z.infer<typeof customOrderSchema>;
+// type CustomOrderForm = z.infer<typeof customOrderSchema>;
 
 // Draft management functions
-const DRAFT_KEY = 'custom-order-draft';
+// const DRAFT_KEY = 'custom-order-draft';
 
-const saveDraft = (data: Partial<CustomOrderForm>) => {
-  try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({
-      ...data,
-      savedAt: new Date().toISOString()
-    }));
-  } catch (error) {
-    console.warn('Failed to save draft:', error);
-  }
-};
+// const saveDraft = (data: Partial<CustomOrderForm>) => {
+//   try {
+//     localStorage.setItem(DRAFT_KEY, JSON.stringify({
+//       ...data,
+//       savedAt: new Date().toISOString()
+//     }));
+//   } catch (error) {
+//     console.warn('Failed to save draft:', error);
+//   }
+// };
 
-const loadDraft = (): Partial<CustomOrderForm> | null => {
-  try {
-    const stored = localStorage.getItem(DRAFT_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      // Only load if saved within last 7 days
-      const savedAt = new Date(parsed.savedAt);
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      if (savedAt > weekAgo) {
-        delete parsed.savedAt;
-        return parsed;
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to load draft:', error);
-  }
-  return null;
-};
-
-const clearDraft = () => {
-  try {
-    localStorage.removeItem(DRAFT_KEY);
-  } catch (error) {
-    console.warn('Failed to clear draft:', error);
-  }
-};
+// const loadDraft = (): Partial<CustomOrderForm> | null => {
+//   try {
+//     const stored = localStorage.getItem(DRAFT_KEY);
+//     if (stored) {
+//       const parsed = JSON.parse(stored);
+//       // Only load if saved within last 7 days
+//       const savedAt = new Date(parsed.savedAt);
+//       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+//       if (savedAt > weekAgo) {
+//         delete parsed.savedAt;
+//         return parsed;
+//       }
+//     }
+//   } catch (error) {
+//     console.warn('Failed to load draft:', error);
+//   }
+//   return null;
+// };
+//
+// const clearDraft = () => {
+//   try {
+//     localStorage.removeItem(DRAFT_KEY);
+//   } catch (error) {
+//     console.warn('Failed to clear draft:', error);
+//   }
+// };
 
 // Category icon mapping based on name
 const getCategoryIcon = (categoryName: string) => {
@@ -91,6 +91,26 @@ const getCategoryIcon = (categoryName: string) => {
 };
 
 function CustomOrdersContent() {
+  // State for "Why Choose" section visibility with localStorage persistence
+  const [isFeaturesExpanded, setIsFeaturesExpanded] = useState(() => {
+    const saved = localStorage.getItem('custom-orders-features-expanded');
+    return saved === null ? false : saved === 'true'; // Default to collapsed
+  });
+
+  // State for "How It Works" guide visibility with localStorage persistence
+  const [isGuideExpanded, setIsGuideExpanded] = useState(() => {
+    const saved = localStorage.getItem('custom-orders-guide-expanded');
+    return saved === null ? true : saved === 'true'; // Default to expanded on first visit
+  });
+
+  useEffect(() => {
+    localStorage.setItem('custom-orders-features-expanded', isFeaturesExpanded.toString());
+  }, [isFeaturesExpanded]);
+
+  useEffect(() => {
+    localStorage.setItem('custom-orders-guide-expanded', isGuideExpanded.toString());
+  }, [isGuideExpanded]);
+
   // Fetch categories with template counts from API
   const { data: categories, isLoading: isCategoriesLoading } = useQuery({
     queryKey: ['custom-order-categories'],
@@ -99,186 +119,222 @@ function CustomOrdersContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-eagle-green via-eagle-green to-viridian-green overflow-hidden">
-        {/* Pattern overlay */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="w-full h-full" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 10L40 30L30 50L20 30L30 10Z' fill='white'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'repeat'
-          }}></div>
-        </div>
-
-        {/* Decorative circles */}
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-june-bud/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-20 w-96 h-96 bg-viridian-green/30 rounded-full blur-3xl"></div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+      {/* Simplified Hero Section */}
+      <section className="bg-gradient-to-r from-eagle-green to-viridian-green">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <FadeIn delay={0.1}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-june-bud/20 rounded-xl backdrop-blur-sm">
-                <Sparkles className="h-8 w-8 text-june-bud" />
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <h1 className="text-2xl lg:text-3xl font-gotham-bold text-white">
+                    Custom Orders
+                  </h1>
+                </div>
+                <p className="text-sm lg:text-base font-gotham-light text-white/80 max-w-2xl">
+                  Commission unique, personalized pieces from talented Ethiopian artists
+                </p>
               </div>
-              <span className="text-june-bud font-gotham-medium text-lg uppercase tracking-wider">
-                Custom Handmade Orders
-              </span>
-            </div>
-            <h1 className="text-5xl lg:text-6xl xl:text-7xl font-gotham-bold text-white mb-6 leading-tight">
-              Create Something
-              <span className="block text-june-bud">Uniquely Yours</span>
-            </h1>
-            <p className="text-xl lg:text-2xl font-gotham-light text-white/90 max-w-3xl leading-relaxed mb-8">
-              Commission unique, personalized pieces from talented Ethiopian artists. 
-              Turn your vision into a meaningful gift with our fully integrated custom order system.
-            </p>
-            
-            {/* CTA Button */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Link to="/custom-orders/categories">
+              <Link to="/custom-orders/categories" className="hidden md:block">
                 <Button 
                   size="lg" 
-                  className="bg-june-bud hover:bg-june-bud/90 text-eagle-green font-gotham-bold text-lg px-8 py-4 h-auto rounded-xl shadow-2xl hover:shadow-3xl transition-all duration-300"
+                  className="bg-june-bud hover:bg-june-bud/90 text-eagle-green font-gotham-bold px-6 py-3 h-auto rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <span>Browse Categories</span>
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-            </motion.div>
+            </div>
           </FadeIn>
-        </div>
-
-        {/* Wave divider */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
-            <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" className="fill-light-cream" />
-          </svg>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 -mt-4 relative z-10">
+      {/* Features Section - Collapsible */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <FadeIn delay={0.2}>
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-gotham-bold text-eagle-green mb-4">
-              Why Choose Our Custom Order System?
-            </h2>
-            <p className="text-lg font-gotham-light text-eagle-green/70 max-w-2xl mx-auto">
-              Experience a seamless, professional custom ordering process designed for both customers and vendors.
-            </p>
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+            {/* Toggle Header */}
+            <button
+              onClick={() => setIsFeaturesExpanded(!isFeaturesExpanded)}
+              className="w-full p-6 lg:p-8 flex items-center justify-between hover:bg-light-cream/30 transition-colors duration-200 group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-june-bud/20 to-viridian-green/10 rounded-xl group-hover:from-june-bud/30 group-hover:to-viridian-green/20 transition-colors">
+                  <Sparkles className="h-6 w-6 text-eagle-green" />
+                </div>
+                <div className="text-left">
+                  <h2 className="text-2xl lg:text-3xl font-gotham-bold text-eagle-green mb-1">
+                    Why Choose Our Custom Order System?
+                  </h2>
+                  <p className="text-sm font-gotham-light text-eagle-green/70">
+                    {isFeaturesExpanded ? 'Click to hide features' : 'Click to see key features and benefits'}
+                  </p>
+                </div>
+              </div>
+              <motion.div
+                animate={{ rotate: isFeaturesExpanded ? 180 : 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ChevronDown className="h-6 w-6 text-eagle-green" />
+              </motion.div>
+            </button>
+
+            {/* Collapsible Content */}
+            <AnimatePresence>
+              {isFeaturesExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-8 pb-8 lg:px-12 lg:pb-12 border-t border-eagle-green/10">
+                    <div className="pt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                      {[
+                        {
+                          icon: Users,
+                          title: "Vendor Templates",
+                          description: "Browse professionally created templates from verified vendors with customizable options.",
+                          color: "from-eagle-green/20 to-viridian-green/10"
+                        },
+                        {
+                          icon: Package,
+                          title: "Dynamic Customization",
+                          description: "Fill out custom fields, upload images, and specify exactly what you want.",
+                          color: "from-june-bud/20 to-yellow/10"
+                        },
+                        {
+                          icon: Zap,
+                          title: "Real-time Chat",
+                          description: "Communicate directly with vendors to refine your order and track progress.",
+                          color: "from-viridian-green/20 to-eagle-green/10"
+                        }
+                      ].map((feature, index) => (
+                        <motion.div
+                          key={feature.title}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.1 + index * 0.1 }}
+                          whileHover={{ y: -4 }}
+                        >
+                          <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-xl">
+                            <CardContent className="p-6 text-center">
+                              <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center`}>
+                                <feature.icon className="h-8 w-8 text-eagle-green" />
+                              </div>
+                              <h3 className="text-xl font-gotham-bold text-eagle-green mb-3">
+                                {feature.title}
+                              </h3>
+                              <p className="font-gotham-light text-eagle-green/70 leading-relaxed">
+                                {feature.description}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </FadeIn>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          {[
-            {
-              icon: Users,
-              title: "Vendor Templates",
-              description: "Browse professionally created templates from verified vendors with customizable options.",
-              color: "from-eagle-green/20 to-viridian-green/10"
-            },
-            {
-              icon: Package,
-              title: "Dynamic Customization",
-              description: "Fill out custom fields, upload images, and specify exactly what you want.",
-              color: "from-june-bud/20 to-yellow/10"
-            },
-            {
-              icon: Zap,
-              title: "Real-time Chat",
-              description: "Communicate directly with vendors to refine your order and track progress.",
-              color: "from-viridian-green/20 to-eagle-green/10"
-            }
-          ].map((feature, index) => (
-            <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 + index * 0.1 }}
-              whileHover={{ y: -4 }}
-            >
-              <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-xl">
-                <CardContent className="p-6 text-center">
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center`}>
-                    <feature.icon className="h-8 w-8 text-eagle-green" />
-                  </div>
-                  <h3 className="text-xl font-gotham-bold text-eagle-green mb-3">
-                    {feature.title}
-                  </h3>
-                  <p className="font-gotham-light text-eagle-green/70 leading-relaxed">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* How It Works Section */}
+        {/* How It Works Section - Collapsible */}
         <FadeIn delay={0.5}>
-          <div className="bg-white rounded-2xl shadow-xl p-8 lg:p-12">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl lg:text-4xl font-gotham-bold text-eagle-green mb-4">
-                How It Works
-              </h2>
-              <p className="text-lg font-gotham-light text-eagle-green/70">
-                Simple steps to get your custom order created and delivered
-              </p>
-            </div>
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* Toggle Header */}
+            <button
+              onClick={() => setIsGuideExpanded(!isGuideExpanded)}
+              className="w-full p-6 lg:p-8 flex items-center justify-between hover:bg-light-cream/30 transition-colors duration-200 group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-eagle-green/20 to-viridian-green/10 rounded-xl group-hover:from-eagle-green/30 group-hover:to-viridian-green/20 transition-colors">
+                  <Info className="h-6 w-6 text-eagle-green" />
+                </div>
+                <div className="text-left">
+                  <h2 className="text-2xl lg:text-3xl font-gotham-bold text-eagle-green mb-1">
+                    How It Works
+                  </h2>
+                  <p className="text-sm font-gotham-light text-eagle-green/70">
+                    {isGuideExpanded ? 'Click to hide guide' : 'Click to see how to place a custom order'}
+                  </p>
+                </div>
+              </div>
+              <motion.div
+                animate={{ rotate: isGuideExpanded ? 180 : 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ChevronDown className="h-6 w-6 text-eagle-green" />
+              </motion.div>
+            </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                { 
-                  step: 1, 
-                  title: "Browse Categories", 
-                  description: "Explore different categories and find vendors offering custom templates",
-                  icon: Package
-                },
-                { 
-                  step: 2, 
-                  title: "Customize Order", 
-                  description: "Fill out the vendor's custom fields and upload any reference materials",
-                  icon: Palette
-                },
-                { 
-                  step: 3, 
-                  title: "Negotiate & Pay", 
-                  description: "Chat with the vendor to finalize details and pricing, then pay securely",
-                  icon: CheckCircle
-                },
-                { 
-                  step: 4, 
-                  title: "Receive Creation", 
-                  description: "Track progress and receive your unique handmade item with delivery",
-                  icon: Gift
-                }
-              ].map((item, index) => (
+            {/* Collapsible Content */}
+            <AnimatePresence>
+              {isGuideExpanded && (
                 <motion.div
-                  key={item.step}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 + index * 0.1 }}
-                  className="text-center"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
                 >
-                  <div className="relative mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-eagle-green to-viridian-green rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <item.icon className="h-8 w-8 text-white" />
-                    </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-june-bud rounded-full flex items-center justify-center text-eagle-green font-gotham-bold text-sm shadow-md">
-                      {item.step}
+                  <div className="px-8 pb-8 lg:px-12 lg:pb-12 border-t border-eagle-green/10">
+                    <div className="pt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                      {[
+                        { 
+                          step: 1, 
+                          title: "Browse Categories", 
+                          description: "Explore different categories and find vendors offering custom templates",
+                          icon: Package
+                        },
+                        { 
+                          step: 2, 
+                          title: "Customize Order", 
+                          description: "Fill out the vendor's custom fields and upload any reference materials",
+                          icon: Palette
+                        },
+                        { 
+                          step: 3, 
+                          title: "Pay", 
+                          description: "Chat with the vendor to finalize details and pricing, then pay securely",
+                          icon: CheckCircle
+                        },
+                        { 
+                          step: 4, 
+                          title: "Receive Creation", 
+                          description: "Track progress and receive your unique handmade item with delivery",
+                          icon: Gift
+                        }
+                      ].map((item, index) => (
+                        <motion.div
+                          key={item.step}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.1 + index * 0.1 }}
+                          className="text-center"
+                        >
+                          <div className="relative mb-6">
+                            <div className="w-16 h-16 bg-gradient-to-br from-eagle-green to-viridian-green rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                              <item.icon className="h-8 w-8 text-white" />
+                            </div>
+                            <div className="absolute -top-2 -right-2 w-8 h-8 bg-june-bud rounded-full flex items-center justify-center text-eagle-green font-gotham-bold text-sm shadow-md">
+                              {item.step}
+                            </div>
+                          </div>
+                          <h3 className="text-lg font-gotham-bold text-eagle-green mb-3">
+                            {item.title}
+                          </h3>
+                          <p className="font-gotham-light text-eagle-green/70 text-sm leading-relaxed">
+                            {item.description}
+                          </p>
+                        </motion.div>
+                      ))}
                     </div>
                   </div>
-                  <h3 className="text-lg font-gotham-bold text-eagle-green mb-3">
-                    {item.title}
-                  </h3>
-                  <p className="font-gotham-light text-eagle-green/70 text-sm leading-relaxed">
-                    {item.description}
-                  </p>
                 </motion.div>
-              ))}
-            </div>
+              )}
+            </AnimatePresence>
           </div>
         </FadeIn>
 

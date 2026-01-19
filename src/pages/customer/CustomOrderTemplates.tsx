@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import FadeIn from '@/components/animations/FadeIn';
+import { useAuth } from '@/hooks/useAuth';
 
 import { customOrderTemplateService } from '@/services/customOrderTemplateService';
 import type { CustomOrderTemplate, CustomOrderTemplateField } from '@/types/customOrders';
@@ -131,13 +132,17 @@ function TemplateCard({ template }: { template: CustomOrderTemplate }) {
 export default function CustomOrderTemplates() {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(0);
   const categoryIdNum = categoryId ? parseInt(categoryId) : 0;
+  
+  // Get user's preferred currency (fallback to USD)
+  const preferredCurrency = user?.preferredCurrencyCode || 'USD';
 
-  // Fetch templates for category
+  // Fetch templates for category with user's preferred currency
   const { data: templatesData, isLoading } = useQuery({
-    queryKey: ['custom-order-templates', categoryIdNum, currentPage],
-    queryFn: () => customOrderTemplateService.getByCategory(categoryIdNum, currentPage, 20),
+    queryKey: ['custom-order-templates', categoryIdNum, currentPage, preferredCurrency],
+    queryFn: () => customOrderTemplateService.getByCategory(categoryIdNum, currentPage, 20, preferredCurrency),
     enabled: categoryIdNum > 0,
   });
 

@@ -63,9 +63,12 @@ function CreateCustomOrderContent() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   const templateIdNum = templateId ? parseInt(templateId) : 0;
+  
+  // Get user's preferred currency (fallback to USD)
+  const preferredCurrency = user?.preferredCurrencyCode || 'USD';
   
   const [fieldValues, setFieldValues] = useState<{ [fieldId: number]: FieldValue }>({});
   const [additionalDescription, setAdditionalDescription] = useState('');
@@ -76,10 +79,10 @@ function CreateCustomOrderContent() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  // Fetch template details
+  // Fetch template details with user's preferred currency
   const { data: template, isLoading } = useQuery({
-    queryKey: ['custom-order-template', templateIdNum],
-    queryFn: () => customOrderTemplateService.getById(templateIdNum),
+    queryKey: ['custom-order-template', templateIdNum, preferredCurrency],
+    queryFn: () => customOrderTemplateService.getById(templateIdNum, preferredCurrency),
     enabled: templateIdNum > 0,
   });
 
