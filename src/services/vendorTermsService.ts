@@ -4,14 +4,18 @@ export interface TermItem {
   id: number;
   termKey: string;
   title: string;
+  summary: string | null;
   description: string;
   sortOrder: number;
+  isUniversal: boolean;
 }
 
 export interface VendorTermsResponse {
   vendorType: string;
   version: number;
   terms: TermItem[];
+  fullTermsContent?: string;
+  fullTermsPdfUrl?: string;
 }
 
 export interface AcceptedTerm {
@@ -66,6 +70,21 @@ export const vendorTermsService = {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to download PDF: ${response.status} ${response.statusText}`);
+    }
+    
+    return response.blob();
+  },
+
+  /**
+   * Download full terms and conditions PDF
+   */
+  downloadFullTermsPdf: async (): Promise<Blob> => {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/vendor-terms/full-document/pdf`, {
+      method: 'GET',
     });
     
     if (!response.ok) {

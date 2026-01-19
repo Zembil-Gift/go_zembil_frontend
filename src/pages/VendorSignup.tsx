@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
+import { isValidPhoneNumber, parsePhoneNumberFromString } from "libphonenumber-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,10 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/apiService";
 import { vendorTermsService, VendorTermsResponse } from "@/services/vendorTermsService";
-import { User, Mail, Phone, Lock, Globe, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Play, Pause, Download } from "lucide-react";
+import { User, Mail, Lock, Globe, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Play, Pause, Download, ExternalLink, Shield, DollarSign, Package, MessageCircle, Scale, FileCheck } from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 
 interface Category {
@@ -83,13 +87,23 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-// Phone number validation with international support
-const phoneRegex = /^\+?[1-9]\d{6,14}$/;
+// Phone number validation using libphonenumber (E.164 format)
 const phoneValidation = z
   .string()
-  .min(7, "Phone number must be at least 7 digits")
-  .max(15, "Phone number must not exceed 15 digits")
-  .regex(phoneRegex, "Please enter a valid phone number with country code (e.g., +251911234567)");
+  .min(1, "Phone number is required")
+  .refine(
+    (val) => {
+      if (!val) return false;
+      // Validate using libphonenumber-js
+      return isValidPhoneNumber(val);
+    },
+    "Please enter a valid phone number"
+  )
+  .transform((val) => {
+    // Normalize to E.164 format for storage
+    const parsed = parsePhoneNumberFromString(val);
+    return parsed?.format("E.164") || val;
+  });
 
 // Username validation: 8-20 chars, alphanumeric + underscores, must start with letter
 const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/;
@@ -153,7 +167,6 @@ export default function VendorSignup() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("form");
   const [acceptedTerms, setAcceptedTerms] = useState<Record<number, boolean>>({});
-  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [hasWatchedVideo, setHasWatchedVideo] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -165,7 +178,8 @@ export default function VendorSignup() {
   const [allTermsAccepted, setAllTermsAccepted] = useState(false);
   const [formData, setFormData] = useState<Partial<VendorSignupForm> | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const termsScrollRef = useRef<HTMLDivElement>(null);
+  const [showFullTermsModal, setShowFullTermsModal] = useState(false);
+  const [selectedTermForDetail, setSelectedTermForDetail] = useState<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -279,19 +293,10 @@ export default function VendorSignup() {
       setTermsData(terms);
       setAcceptedTerms({});
       setAllTermsAccepted(false);
-      setHasScrolledToBottom(false);
     } catch {
       toast({ title: "Error", description: "Failed to load terms and conditions", variant: "destructive" });
     } finally {
       setIsLoadingTerms(false);
-    }
-  };
-
-  const handleTermsScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const element = e.currentTarget;
-    const scrolledToBottom = element.scrollHeight - element.scrollTop <= element.clientHeight + 10;
-    if (scrolledToBottom && !hasScrolledToBottom) {
-      setHasScrolledToBottom(true);
     }
   };
 
@@ -304,6 +309,24 @@ export default function VendorSignup() {
     } else {
       setAcceptedTerms({});
     }
+  };
+
+  // Get icon for term by key
+  const getTermIcon = (termKey: string) => {
+    const icons: Record<string, React.ReactNode> = {
+      quality: <Shield className="w-5 h-5" />,
+      pricing: <DollarSign className="w-5 h-5" />,
+      fulfillment: <Package className="w-5 h-5" />,
+      inventory: <Package className="w-5 h-5" />,
+      returns: <ArrowLeft className="w-5 h-5" />,
+      communication: <MessageCircle className="w-5 h-5" />,
+      safety: <Shield className="w-5 h-5" />,
+      commission: <DollarSign className="w-5 h-5" />,
+      content: <FileCheck className="w-5 h-5" />,
+      data: <Lock className="w-5 h-5" />,
+      termination: <Scale className="w-5 h-5" />,
+    };
+    return icons[termKey] || <FileText className="w-5 h-5" />;
   };
 
   // Generate certificate mutation
@@ -463,7 +486,7 @@ export default function VendorSignup() {
 
   const handleProceedToVideo = () => {
     if (!allTermsAccepted) {
-      toast({ title: "Terms Required", description: "Please accept all terms and conditions.", variant: "destructive" });
+      toast({ title: "Terms Required", description: "Please read and accept the full Terms & Conditions.", variant: "destructive" });
       return;
     }
     setHasWatchedVideo(false);
@@ -590,11 +613,22 @@ export default function VendorSignup() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="phoneNumber">Phone Number *</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="phoneNumber" placeholder="+251911000000" className="pl-10" maxLength={15} {...form.register("phoneNumber")} />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +251, +1, +44). 7-15 digits.</p>
+                  <PhoneInput
+                    id="phoneNumber"
+                    value={form.watch("phoneNumber")}
+                    onChange={(value, isValid, e164) => {
+                      form.setValue("phoneNumber", e164 || value, { shouldValidate: true });
+                      if (!isValid && value.length > 3) {
+                        form.setError("phoneNumber", { message: "Please enter a valid phone number" });
+                      } else {
+                        form.clearErrors("phoneNumber");
+                      }
+                    }}
+                    defaultCountry="ET"
+                    placeholder="911 234 567"
+                    error={!!form.formState.errors.phoneNumber}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Select your country and enter your phone number</p>
                   {form.formState.errors.phoneNumber && <p className="text-sm text-red-600 mt-1">{form.formState.errors.phoneNumber.message}</p>}
                 </div>
                 <div>
@@ -743,11 +777,22 @@ export default function VendorSignup() {
                 </div>
                 <div>
                   <Label htmlFor="businessPhone">Business Phone *</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="businessPhone" placeholder="+251911111111" className="pl-10" maxLength={15} {...form.register("businessPhone")} />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +251, +1, +44). 7-15 digits.</p>
+                  <PhoneInput
+                    id="businessPhone"
+                    value={form.watch("businessPhone")}
+                    onChange={(value, isValid, e164) => {
+                      form.setValue("businessPhone", e164 || value, { shouldValidate: true });
+                      if (!isValid && value.length > 3) {
+                        form.setError("businessPhone", { message: "Please enter a valid business phone number" });
+                      } else {
+                        form.clearErrors("businessPhone");
+                      }
+                    }}
+                    defaultCountry="ET"
+                    placeholder="911 111 111"
+                    error={!!form.formState.errors.businessPhone}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Select country and enter your business phone number</p>
                   {form.formState.errors.businessPhone && <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessPhone.message}</p>}
                 </div>
               </div>
@@ -794,7 +839,7 @@ export default function VendorSignup() {
                 <span>Terms & Conditions</span>
               </CardTitle>
               <CardDescription>
-                Please read all terms and conditions for {getVendorTypeLabel()} vendors.
+                Review the key points below and accept the full legal terms to continue.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -805,40 +850,103 @@ export default function VendorSignup() {
                 </div>
               ) : termsData ? (
                 <>
-                  <div 
-                    ref={termsScrollRef}
-                    onScroll={handleTermsScroll}
-                    className="space-y-4 max-h-[500px] overflow-y-auto pr-2 p-4 border rounded-lg bg-gray-50"
-                  >
-                    <div className="space-y-6">
-                      {termsData.terms.map((term, index) => (
-                        <div key={term.id} className="p-4 rounded-lg border bg-white">
-                          <h3 className="font-semibold text-gray-900 flex items-center mb-2">
-                            <span className="text-emerald-600 mr-2">{index + 1}.</span>
-                            {term.title}
-                          </h3>
-                          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{term.description}</p>
+                  {/* Key Points Summary Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {termsData.terms.map((term) => (
+                      <div
+                        key={term.id}
+                        className="p-4 rounded-lg border bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => setSelectedTermForDetail(selectedTermForDetail === term.id ? null : term.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                            {getTermIcon(term.termKey)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-gray-900 text-sm">{term.title}</h4>
+                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                              {term.summary || term.description.substring(0, 100) + '...'}
+                            </p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                    {!hasScrolledToBottom && (
-                      <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-8 pb-4 text-center">
-                        <p className="text-sm text-amber-600 font-medium animate-bounce">↓ Scroll down to read all terms ↓</p>
+                        {selectedTermForDetail === term.id && (
+                          <div className="mt-3 pt-3 border-t">
+                            <p className="text-sm text-gray-700">{term.summary || term.description.substring(0, 200)}</p>
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="p-0 h-auto text-emerald-600 mt-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowFullTermsModal(true);
+                              }}
+                            >
+                              Read full details <ExternalLink className="w-3 h-3 ml-1" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
 
+                  {/* View Full Terms Button */}
+                  <div className="flex justify-center pt-4">
+                    <Dialog open={showFullTermsModal} onOpenChange={setShowFullTermsModal}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="gap-2">
+                          <FileText className="w-4 h-4" />
+                          View Full Terms & Conditions
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[80vh]">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-emerald-600" />
+                            goGerami Vendor Terms & Conditions
+                          </DialogTitle>
+                          <DialogDescription>
+                            Please read carefully before accepting
+                          </DialogDescription>
+                        </DialogHeader>
+                        <ScrollArea className="h-[60vh] pr-4">
+                          <div className="space-y-8">
+                            {termsData.terms.map((term, index) => (
+                              <div key={term.id} className="space-y-2">
+                                <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                                  <span className="text-emerald-600">{index + 1}.</span>
+                                  {term.title}
+                                </h3>
+                                <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed pl-6">
+                                  {term.description}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  {/* Acceptance Checkbox */}
                   <div className={`p-4 rounded-lg border transition-all duration-200 ${
-                    allTermsAccepted ? "border-emerald-200 bg-emerald-50" : hasScrolledToBottom ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-50 opacity-60"
+                    allTermsAccepted ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20" : "border-gray-300 bg-white"
                   }`}>
                     <div className="flex items-start space-x-3">
-                      <Checkbox id="accept-all-terms" checked={allTermsAccepted} onCheckedChange={handleAcceptAllTerms} disabled={!hasScrolledToBottom} className="mt-1" />
+                      <Checkbox
+                        id="accept-all-terms"
+                        checked={allTermsAccepted}
+                        onCheckedChange={handleAcceptAllTerms}
+                        className="mt-0.5"
+                      />
                       <div className="flex-1">
-                        <label htmlFor="accept-all-terms" className={`font-medium cursor-pointer flex items-center ${hasScrolledToBottom ? "text-gray-900" : "text-gray-500"}`}>
+                        <label htmlFor="accept-all-terms" className="font-medium cursor-pointer flex items-center text-gray-900">
                           <CheckCircle2 className={`w-5 h-5 mr-2 ${allTermsAccepted ? "text-emerald-600" : "text-gray-400"}`} />
-                          I have read and accept all {termsData.terms.length} terms and conditions
+                          I have read and agree to the full goGerami Vendor Terms & Conditions
                         </label>
-                        {!hasScrolledToBottom && <p className="text-xs text-amber-600 mt-1">Please scroll to the bottom to read all terms before accepting</p>}
+                        <p className="text-xs text-gray-500 mt-1">
+                          By checking this box, you acknowledge that you have read, understood, and agree to be bound by all {termsData.terms.length} sections of the Terms & Conditions.
+                        </p>
                       </div>
                     </div>
                   </div>
