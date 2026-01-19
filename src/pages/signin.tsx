@@ -4,16 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { FaFacebook } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import {useLogin} from "../hooks/useLogin";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
+import OAuth2Buttons from "@/components/auth/OAuth2Buttons";
 
 const signinSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -98,11 +96,39 @@ export default function SignIn() {
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      toast({
-        title: "Sign in failed",
-        description: err?.message || "Invalid email or password. Please try again.",
-        variant: "destructive",
-      });
+      
+      // Check if error is due to email not verified
+      const errorResponse = err?.response?.data || err;
+      const isEmailNotVerified = 
+        errorResponse?.error === 'EMAIL_NOT_VERIFIED' || 
+        err?.message?.toLowerCase().includes('verify your email') ||
+        errorResponse?.details?.requiresVerification;
+      
+      if (isEmailNotVerified) {
+        // Extract email from error response if available
+        const email = errorResponse?.details?.email || data.email;
+        
+        toast({
+          title: "Email verification required",
+          description: "Please verify your email to continue. A verification code has been sent.",
+        });
+        
+        // Redirect to email verification page
+        setTimeout(() => {
+          navigate('/verify-email', { 
+            state: { 
+              email: email,
+              returnUrl: getReturnUrl()
+            }
+          });
+        }, 500);
+      } else {
+        toast({
+          title: "Sign in failed",
+          description: err?.message || "Invalid email or password. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
   return (
@@ -189,35 +215,24 @@ export default function SignIn() {
               </form>
             </Form>
 
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">Or continue with</span>
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="w-full h-11 justify-center"
-                  disabled
-                  aria-label="Continue with Facebook"
-                >
-                  <FaFacebook className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-11 justify-center"
-                  disabled
-                  aria-label="Continue with Google"
-                >
-                  <FcGoogle className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
+            <OAuth2Buttons 
+              disabled={signinMutation.isPending}
+              onSuccess={() => {
+                const userRole = localStorage.getItem('user') 
+                  ? JSON.parse(localStorage.getItem('user')!).role?.toUpperCase() 
+                  : null;
+                localStorage.removeItem("returnTo");
+                
+                if (userRole === 'ADMIN') {
+                  navigate('/admin');
+                } else if (userRole === 'VENDOR') {
+                  navigate('/vendor');
+                } else {
+                  const returnUrl = getReturnUrl();
+                  navigate(returnUrl);
+                }
+              }}
+            />
 
             <div className="mt-6 text-center text-sm">
               <span className="text-gray-600">Don't have an account? </span>

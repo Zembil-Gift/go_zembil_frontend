@@ -4,17 +4,20 @@ import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useMutation, useQuery} from "@tanstack/react-query";
+import {isValidPhoneNumber, parsePhoneNumberFromString} from "libphonenumber-js";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Separator} from "@/components/ui/separator";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {PhoneInput} from "@/components/ui/phone-input";
 import {useToast} from "@/hooks/use-toast";
 import authService from "@/services/authService";
 import {apiService} from "@/services/apiService";
-import {Coins, Eye, EyeOff, Lock, Mail, Phone, User} from "lucide-react";
+import {Coins, Eye, EyeOff, Lock, Mail, User} from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
+import OAuth2Buttons from "@/components/auth/OAuth2Buttons";
 
 interface Currency {
   id: number;
@@ -25,12 +28,21 @@ interface Currency {
   isDefault: boolean;
 }
 
-const phoneRegex = /^\+?[1-9]\d{6,14}$/;
+// Phone number validation using libphonenumber (E.164 format)
 const phoneValidation = z
   .string()
-  .min(7, "Phone number must be at least 7 digits")
-  .max(15, "Phone number must not exceed 15 digits")
-  .regex(phoneRegex, "Please enter a valid phone number with country code (e.g., +251911234567)");
+  .min(1, "Phone number is required")
+  .refine(
+    (val) => {
+      if (!val) return false;
+      return isValidPhoneNumber(val);
+    },
+    "Please enter a valid phone number"
+  )
+  .transform((val) => {
+    const parsed = parsePhoneNumberFromString(val);
+    return parsed?.format("E.164") || val;
+  });
 
 const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/;
 const usernameValidation = z
@@ -108,15 +120,34 @@ export default function SignUp() {
           preferredCurrencyCode: data.preferredCurrencyCode || defaultCurrency,
       });
     },
-    onSuccess: () => {
-      toast({
-        title: "Account created successfully!", 
-        description: "Welcome to goGerami! You can now sign in with your credentials." 
-      });
-      setTimeout(() => {
-        console.log('Navigating to signin...');
-        navigate('/signin');
-      }, 1500);
+    onSuccess: (response, variables) => {
+      // Check if email verification is required
+      if (response.requiresEmailVerification) {
+        toast({
+          title: "Account created!", 
+          description: "Please verify your email to continue." 
+        });
+        // Redirect to email verification page
+        setTimeout(() => {
+          const returnUrl = new URLSearchParams(window.location.search).get('returnUrl');
+          navigate('/verify-email', { 
+            state: { 
+              email: variables.email,
+              returnUrl: returnUrl ? decodeURIComponent(returnUrl) : '/'
+            }
+          });
+        }, 500);
+      } else {
+        // Email verification not required (unlikely but handle it)
+        toast({
+          title: "Account created successfully!", 
+          description: "Welcome to goGerami! You are now logged in." 
+        });
+        setTimeout(() => {
+          const returnUrl = new URLSearchParams(window.location.search).get('returnUrl');
+          navigate(returnUrl ? decodeURIComponent(returnUrl) : '/');
+        }, 1000);
+      }
     },
     onError: (error: any) => {
       console.error('Error details:', {
@@ -232,12 +263,18 @@ export default function SignUp() {
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">Phone number</FormLabel>
                       <FormControl>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                          <Input {...field} type="tel" placeholder="(eg. +251911234567)" className="pl-10 h-11" maxLength={15} />
-                        </div>
+                        <PhoneInput
+                          id="phoneNumber"
+                          value={field.value}
+                          onChange={(value, _isValid, e164) => {
+                            field.onChange(e164 || value);
+                          }}
+                          defaultCountry="ET"
+                          placeholder="911 234 567"
+                          error={!!form.formState.errors.phoneNumber}
+                        />
                       </FormControl>
-                      <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +251, +1, +44). 7-15 digits.</p>
+                      <p className="text-xs text-gray-500 mt-1">Select your country and enter your phone number</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -349,6 +386,17 @@ export default function SignUp() {
                 </Button>
               </form>
             </Form>
+
+            <OAuth2Buttons 
+              disabled={signupMutation.isPending}
+              onSuccess={() => {
+                toast({
+                  title: "Account created successfully!",
+                  description: "Welcome to goGerami!",
+                });
+                navigate('/');
+              }}
+            />
 
             <div className="mt-6">
               <div className="relative">
