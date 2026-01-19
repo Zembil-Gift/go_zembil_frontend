@@ -10,6 +10,7 @@ import About from "@/pages/about";
 import Contact from "@/pages/contact";
 import SignIn from "@/pages/signin";
 import SignUp from "@/pages/signup";
+import VerifyEmail from "@/pages/verify-email";
 import Gifts from "@/pages/gifts";
 import Shop from "@/pages/shop";
 import Cart from "@/pages/cart";
@@ -284,6 +285,7 @@ export default function Router() {
           {/* Auth Routes */}
           <Route path="signin" element={<SignIn />} />
           <Route path="signup" element={<SignUp />} />
+          <Route path="verify-email" element={<VerifyEmail />} />
           <Route path="vendor-signup" element={<VendorSignup />} />
           
           {/* Main Pages */}
