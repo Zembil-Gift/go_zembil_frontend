@@ -65,7 +65,7 @@ export default function FeaturesSection() {
           <h3 className="font-extra-bold text-2xl mb-4">{t('homepage.cta.title')}</h3>
           <p className="font-light text-lg mb-6 opacity-90">{t('homepage.cta.subtitle')}</p>
           <Button asChild className="bg-white text-eagle-green hover:bg-gray-100">
-            <a href="/api/login">{t('homepage.cta.button')}</a>
+            <a href="/shop">{t('homepage.cta.button')}</a>
           </Button>
         </div>
       </div>

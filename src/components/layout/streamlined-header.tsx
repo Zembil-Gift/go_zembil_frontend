@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { useIncompleteProfile } from "@/hooks/useIncompleteProfile";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useQuery } from "@tanstack/react-query";
 import CategoryDropdown from "@/components/category-dropdown";
@@ -47,6 +48,7 @@ export default function StreamlinedHeader() {
   
   // Use the wishlist hook for count
   const { getWishlistCount } = useWishlist();
+  const { isIncomplete } = useIncompleteProfile();
 
   const cartItems = cartData?.items || [];
   const cartCount = Array.isArray(cartItems) ? cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
@@ -230,14 +232,37 @@ export default function StreamlinedHeader() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-eagle-green hover:text-viridian-green p-2"
+                      className="text-eagle-green hover:text-viridian-green p-2 relative"
                     >
                       <User className="h-5 w-5" />
+                      {isIncomplete && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                        </span>
+                      )}
                       <span className="sr-only">Profile</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52 bg-white">
-                    {/* Admin Link - Only shown for admin users */}
+                    {/* Profile Incomplete Notice */}
+                    {isIncomplete && (
+                      <>
+                        <div className="px-2 py-2 text-sm">
+                          <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
+                            <span className="text-amber-600 mt-0.5">⚠️</span>
+                            <div>
+                              <p className="font-medium text-amber-900 text-xs">Complete your profile</p>
+                              <p className="text-amber-700 text-xs mt-0.5">Add missing details</p>
+                              <Link to="/profile?tab=personal" className="text-amber-800 hover:text-amber-900 text-xs font-medium underline mt-1 inline-block">
+                                Complete now →
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
                     {user?.role?.toUpperCase() === 'ADMIN' && (
                       <>
                         <DropdownMenuItem asChild>
@@ -249,7 +274,6 @@ export default function StreamlinedHeader() {
                         <DropdownMenuSeparator />
                       </>
                     )}
-                    {/* Vendor Link - Only shown for vendor users */}
                     {user?.role?.toUpperCase() === 'VENDOR' && (
                       <>
                         <DropdownMenuItem asChild>
@@ -286,16 +310,16 @@ export default function StreamlinedHeader() {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
+                    {/* <DropdownMenuItem asChild>
                       <Link to="/register-celebrity" className="flex items-center">
                         <span className="mr-2">🌟</span>
                         <span>Join as Celebrity</span>
                       </Link>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
                     {user?.role?.toUpperCase() !== 'VENDOR' && user?.role?.toUpperCase() !== 'ADMIN' && (
                       <DropdownMenuItem asChild>
                         <Link to="/vendor-signup" className="flex items-center">
-                          <span className="mr-2">🏪</span>
+                          <Store className="mr-2 h-4 w-4" />
                           <span>Join as Vendor</span>
                         </Link>
                       </DropdownMenuItem>
@@ -321,15 +345,15 @@ export default function StreamlinedHeader() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48 bg-white">
-                      <DropdownMenuItem asChild>
+                      {/* <DropdownMenuItem asChild>
                         <Link to="/register-celebrity" className="flex items-center">
                           <span className="mr-2">🌟</span>
                           <span>Join as Celebrity</span>
                         </Link>
-                      </DropdownMenuItem>
+                      </DropdownMenuItem> */}
                       <DropdownMenuItem asChild>
                         <Link to="/vendor-signup" className="flex items-center">
-                          <span className="mr-2">🏪</span>
+                          <Store className="mr-2 h-4 w-4" />
                           <span>Join as Vendor</span>
                         </Link>
                       </DropdownMenuItem>
@@ -543,7 +567,7 @@ export default function StreamlinedHeader() {
                     {user?.role?.toUpperCase() !== 'VENDOR' && user?.role?.toUpperCase() !== 'ADMIN' && (
                       <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                         <Link to="/vendor-signup">
-                          <span className="mr-2">🏪</span>
+                          <Store className="mr-2 h-4 w-4" />
                           Join Vendor
                         </Link>
                       </Button>
@@ -577,7 +601,7 @@ export default function StreamlinedHeader() {
                     </Button>
                     <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/vendor-signup">
-                        <span className="mr-2">🏪</span>
+                        <Store className="mr-2 h-4 w-4" />
                         Join Vendor
                       </Link>
                     </Button>

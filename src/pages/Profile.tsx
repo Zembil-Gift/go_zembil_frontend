@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useIncompleteProfile } from "@/hooks/useIncompleteProfile";
 import { apiService } from "@/services/apiService";
 import { 
   User, 
@@ -27,7 +30,9 @@ import {
   ShoppingBag,
   Heart,
   Settings,
-  Loader2
+  Loader2,
+  AlertCircle,
+  Coins
 } from "lucide-react";
 
 // Profile form schema
@@ -38,9 +43,19 @@ const profileSchema = z.object({
   phoneNumber: z.string().optional(),
   username: z.string().min(3, "Username must be at least 3 characters").optional(),
   birthDate: z.string().optional(),
+  preferredCurrencyCode: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
+
+interface Currency {
+  id: number;
+  code: string;
+  name: string;
+  symbol: string;
+  isActive: boolean;
+  isDefault: boolean;
+}
 
 interface UserProfile {
   userId: number;
@@ -56,13 +71,18 @@ interface UserProfile {
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { isIncomplete, missingFields, isOAuth2User } = useIncompleteProfile();
 
   const userRole = user?.role?.toUpperCase();
   const isVendor = userRole === 'VENDOR';
   const isAdmin = userRole === 'ADMIN';
+  
+  // Auto-switch to personal tab if incomplete and coming from navbar
+  const defaultTab = searchParams.get('tab') || 'personal';
 
   // Fetch user profile
   const { data: profile, isLoading, error } = useQuery({
@@ -74,6 +94,15 @@ export default function Profile() {
     enabled: !!user,
   });
 
+  // Fetch available currencies
+  const { data: currencies = [] } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: async () => {
+      const response = await apiService.getRequest<Currency[]>('/api/currencies');
+      return response;
+    },
+  });
+
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -83,6 +112,7 @@ export default function Profile() {
       phoneNumber: "",
       username: "",
       birthDate: "",
+      preferredCurrencyCode: "",
     },
   });
 
@@ -96,6 +126,7 @@ export default function Profile() {
         phoneNumber: profile.phoneNumber || "",
         username: profile.username || "",
         birthDate: profile.birthDate || "",
+        preferredCurrencyCode: profile.preferredCurrencyCode || "USD",
       });
     }
   }, [profile, form]);
@@ -152,6 +183,7 @@ export default function Profile() {
         phoneNumber: profile.phoneNumber || "",
         username: profile.username || "",
         birthDate: profile.birthDate || "",
+        preferredCurrencyCode: profile.preferredCurrencyCode || "USD",
       });
     }
     setIsEditing(false);
@@ -210,6 +242,37 @@ export default function Profile() {
           <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
           <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
         </div>
+
+        {/* Incomplete Profile Alert */}
+        {isIncomplete && (
+          <Alert className="mb-6 border-amber-300 bg-amber-50">
+            <AlertCircle className="h-5 w-5 text-amber-600" />
+            <AlertTitle className="text-amber-900 font-semibold">Complete Your Profile</AlertTitle>
+            <AlertDescription className="text-amber-800">
+              {isOAuth2User && (
+                <p className="mb-2">
+                  You signed up with {user?.email} using social login. To access all features, please add the following information:
+                </p>
+              )}
+              <ul className="list-disc list-inside space-y-1">
+                {missingFields.includes('username') && <li>Username (choose a unique username for your profile)</li>}
+                {missingFields.includes('phoneNumber') && <li>Phone Number</li>}
+                {missingFields.includes('birthDate') && <li>Date of Birth</li>}
+                {missingFields.includes('password') && isOAuth2User && <li>Password (to enable standard login)</li>}
+              </ul>
+              {!isEditing && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3 border-amber-600 text-amber-900 hover:bg-amber-100"
+                  onClick={() => setIsEditing(true)}
+                >
+                  Complete Now
+                </Button>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Profile Summary Card */}
@@ -448,10 +511,34 @@ export default function Profile() {
                     {/* Preferred Currency */}
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
-                        <Settings className="w-4 h-4 text-gray-500" />
+                        <Coins className="w-4 h-4 text-gray-500" />
                         Preferred Currency
                       </Label>
-                      <p className="text-gray-900 py-2">{profile?.preferredCurrencyCode || 'USD'}</p>
+                      {isEditing ? (
+                        <Select
+                          value={form.watch("preferredCurrencyCode")}
+                          onValueChange={(value) => form.setValue("preferredCurrencyCode", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {currencies
+                              .filter(c => c.isActive)
+                              .map((currency) => (
+                                <SelectItem key={currency.code} value={currency.code}>
+                                  {currency.code} - {currency.name} ({currency.symbol})
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <p className="text-gray-900 py-2">
+                          {currencies.find(c => c.code === profile?.preferredCurrencyCode)?.name || profile?.preferredCurrencyCode || 'USD'}
+                          {' '}
+                          ({currencies.find(c => c.code === profile?.preferredCurrencyCode)?.symbol || '$'})
+                        </p>
+                      )}
                     </div>
 
                     {/* Account Role */}

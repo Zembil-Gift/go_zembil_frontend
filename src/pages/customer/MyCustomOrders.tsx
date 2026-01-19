@@ -46,17 +46,21 @@ const STATUS_OPTIONS: { value: CustomOrderStatus | 'ALL'; label: string }[] = [
 
 function MyCustomOrdersContent() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [statusFilter, setStatusFilter] = useState<CustomOrderStatus | 'ALL'>('ALL');
   const [page, setPage] = useState(0);
+  
+  // Get user's preferred currency (fallback to USD)
+  const preferredCurrency = user?.preferredCurrencyCode || 'USD';
 
-  // Fetch customer's orders
+  // Fetch customer's orders with preferred currency
   const { data: ordersData, isLoading, isError } = useQuery({
-    queryKey: ['my-custom-orders', page, statusFilter],
+    queryKey: ['my-custom-orders', page, statusFilter, preferredCurrency],
     queryFn: () => customOrderService.getByCustomer(
       page, 
       20, 
-      statusFilter === 'ALL' ? undefined : statusFilter
+      statusFilter === 'ALL' ? undefined : statusFilter,
+      preferredCurrency
     ),
     enabled: isAuthenticated,
   });

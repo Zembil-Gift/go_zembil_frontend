@@ -494,14 +494,16 @@ export default function GiftExperiences() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-4">
-            Gift Experiences
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Share the joy of Ethiopian culture and unforgettable experiences with your loved ones. 
-            Send meaningful gifts that create lasting memories.
+        {/* Simplified Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <Gift className="h-6 w-6 text-amber-600" />
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              Gift Experiences
+            </h1>
+          </div>
+          <p className="text-base text-gray-600 max-w-3xl">
+            Share the joy of Ethiopian culture with your loved ones
           </p>
         </div>
 
