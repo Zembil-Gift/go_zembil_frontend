@@ -1,44 +1,69 @@
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
-import {authService} from "@/services/authService";
+import { useEffect, useState, useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { authService } from "@/services/authService";
+import { tokenManager } from "@/services/tokenManager";
 
 export function useAuth() {
   const queryClient = useQueryClient();
-  
-  const hasToken = authService.isAuthenticated();
-  
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        await authService.initialize();
+      } catch (error) {
+        console.error('Failed to initialize auth:', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+    initialize();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = tokenManager.subscribe((token, user) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    });
+    return unsubscribe;
+  }, [queryClient]);
+
+  const hasToken = tokenManager.isAuthenticated();
+
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],
     queryFn: async () => {
-      if (!authService.isAuthenticated()) {
+      if (!tokenManager.isAuthenticated()) {
         return null;
       }
 
       try {
-          return await authService.fetchCurrentUser();
+        return await authService.fetchCurrentUser();
       } catch (error) {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            return JSON.parse(storedUser);
-          } catch {
-            return null;
-          }
-        }
-        return null;
+        // On error, try to get from tokenManager or localStorage
+        const storedUser = tokenManager.getUser() || authService.getCurrentUser();
+        return storedUser;
       }
     },
     retry: false,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: hasToken,
+    enabled: isInitialized && hasToken,
   });
 
-  console.log('useAuth state:', { hasToken, user: !!user, isLoading, error: !!error });
+  console.log('useAuth state:', { hasToken, user: !!user, isLoading, isInitialized, error: !!error });
 
   const logout = useMutation({
     mutationFn: async () => {
       queryClient.clear();
       await authService.logout();
+      return Promise.resolve();
+    },
+  });
+
+  const logoutAll = useMutation({
+    mutationFn: async () => {
+      queryClient.clear();
+      await authService.logoutAll();
       return Promise.resolve();
     },
   });
@@ -50,13 +75,20 @@ export function useAuth() {
     },
   });
 
+  // Get time until token expires
+  const timeUntilExpiry = useCallback(() => {
+    return tokenManager.getTimeUntilExpiry();
+  }, []);
+
   return {
     user,
-    isLoading,
-    isAuthenticated: hasToken, // Use synchronous token check
+    isLoading: !isInitialized || isLoading,
+    isAuthenticated: isInitialized && hasToken,
     logout: logout.mutate,
+    logoutAll: logoutAll.mutate,
     login: login.mutate,
     isLoggingOut: logout.isPending,
     isLoggingIn: login.isPending,
+    timeUntilExpiry,
   };
 }

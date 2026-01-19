@@ -1,4 +1,5 @@
 import { apiService } from './apiService';
+import { tokenManager } from './tokenManager';
 
 // Types for authentication
 export interface LoginRequest {
@@ -28,8 +29,10 @@ export interface AuthResponse {
     lastName: string;
     profileImageUrl?: string;
     role: string;
+    emailVerified?: boolean;
   };
   expiresIn: number;
+  requiresEmailVerification?: boolean;
 }
 
 export interface ForgotPasswordRequest {
@@ -42,8 +45,46 @@ export interface ResetPasswordRequest {
   confirmPassword: string;
 }
 
+// OAuth2 Types
+export type OAuth2Provider = 'GOOGLE' | 'FACEBOOK';
+
+export interface OAuth2LoginRequest {
+  accessToken: string;
+  provider: OAuth2Provider;
+}
+
+// Email Verification Types
+export interface SendOtpRequest {
+  email: string;
+}
+
+export interface VerifyOtpRequest {
+  email: string;
+  otpCode: string;
+}
+
+export interface OtpResponse {
+  success: boolean;
+  message: string;
+  email?: string;
+  expiresInSeconds?: number;
+}
+
+export interface VerificationStatusResponse {
+  email: string;
+  emailVerified: boolean;
+  message: string;
+}
+
 // Authentication service
 class AuthService {
+  /**
+   * Initialize the auth service - call on app startup
+   */
+  async initialize(): Promise<boolean> {
+    return tokenManager.initialize();
+  }
+
   /**
    * User login
    */
@@ -51,9 +92,8 @@ class AuthService {
     const loginData: LoginRequest = { emailOrPhone, password };
     const response = await apiService.postRequest<AuthResponse>('/auth/login', loginData);
 
-    // Store token and user data - using 'token' key to match API interceptor
+    // Store token in memory (not localStorage) using tokenManager
     if (response.accessToken) {
-      localStorage.setItem('token', response.accessToken);
       // Normalize user object (backend might use 'userId' instead of 'id')
       const normalizedUser = {
         ...response.user,
@@ -61,7 +101,32 @@ class AuthService {
       };
       console.log('Login response user:', response.user);
       console.log('Normalized user:', normalizedUser);
-      localStorage.setItem('user', JSON.stringify(normalizedUser));
+      
+      // Set token in memory with expiration tracking
+      tokenManager.setTokenData(response.accessToken, response.expiresIn, normalizedUser);
+    }
+    
+    return response;
+  }
+
+  /**
+   * OAuth2 login/signup (Google or Facebook)
+   */
+  async loginWithOAuth2(accessToken: string, provider: OAuth2Provider): Promise<AuthResponse> {
+    const loginData: OAuth2LoginRequest = { accessToken, provider };
+    const response = await apiService.postRequest<AuthResponse>('/auth/oauth2/login', loginData);
+
+    // Store token in memory using tokenManager
+    if (response.accessToken) {
+      const normalizedUser = {
+        ...response.user,
+        id: response.user.id || (response.user as any).userId,
+      };
+      console.log('OAuth2 Login response user:', response.user);
+      console.log('Normalized user:', normalizedUser);
+      
+      // Set token in memory with expiration tracking
+      tokenManager.setTokenData(response.accessToken, response.expiresIn, normalizedUser);
     }
     
     return response;
@@ -73,10 +138,14 @@ class AuthService {
   async register(userData: RegisterRequest): Promise<AuthResponse> {
     const response = await apiService.postRequest<AuthResponse>('/api/users/register', userData);
     
-    // Store token and user data - using 'token' key to match API interceptor
+    // Store token in memory using tokenManager
     if (response.accessToken) {
-      localStorage.setItem('token', response.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      const normalizedUser = {
+        ...response.user,
+        id: response.user.id || (response.user as any).userId,
+      };
+      
+      tokenManager.setTokenData(response.accessToken, response.expiresIn, normalizedUser);
     }
     
     return response;
@@ -86,19 +155,17 @@ class AuthService {
    * User logout
    */
   async logout(): Promise<void> {
-    try {
-      await apiService.postRequest('/auth/logout');
-    } catch (error) {
-      // Even if server logout fails, clear local storage
-      console.warn('Server logout failed:', error);
-    } finally {
-      // Clear local storage
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      // Redirect to login page
-      window.location.href = '/signin';
-    }
+    await tokenManager.logout();
+    // Redirect to login page
+    window.location.href = '/signin';
+  }
+
+  /**
+   * Logout from all sessions
+   */
+  async logoutAll(): Promise<void> {
+    await tokenManager.logoutAll();
+    window.location.href = '/signin';
   }
 
   /**
@@ -131,22 +198,34 @@ class AuthService {
 
   /**
    * Refresh authentication token
+   * Note: This is now handled automatically by the tokenManager
    */
   async refreshToken(): Promise<AuthResponse> {
-    const response = await apiService.postRequest<AuthResponse>('/auth/refresh');
-    
-    if (response.accessToken) {
-      localStorage.setItem('token', response.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
+    const success = await tokenManager.refreshAccessToken();
+    if (!success) {
+      throw new Error('Failed to refresh token');
     }
     
-    return response;
+    const user = tokenManager.getUser();
+    const accessToken = tokenManager.getAccessToken();
+    
+    return {
+      accessToken: accessToken || '',
+      expiresIn: tokenManager.getTimeUntilExpiry(),
+      user: user as any,
+    };
   }
 
   /**
-   * Get current user from localStorage
+   * Get current user from memory/localStorage
    */
   getCurrentUser(): any | null {
+    // First try from tokenManager (memory)
+    const user = tokenManager.getUser();
+    if (user) {
+      return user;
+    }
+    // Fallback to localStorage for initial load
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   }
@@ -175,17 +254,86 @@ class AuthService {
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('token');
-    return !!token;
+    return tokenManager.isAuthenticated();
   }
 
   /**
    * Get authentication token
    */
   getToken(): string | null {
-    return localStorage.getItem('token');
+    return tokenManager.getAccessToken();
+  }
+
+  /**
+   * Get time until token expires in seconds
+   */
+  getTimeUntilExpiry(): number {
+    return tokenManager.getTimeUntilExpiry();
+  }
+
+  /**
+   * Subscribe to auth state changes
+   */
+  onAuthStateChange(callback: (token: string | null, user: any) => void): () => void {
+    return tokenManager.subscribe(callback);
+  }
+
+  // ==================== Email Verification Methods ====================
+
+  /**
+   * Send OTP to email for verification
+   */
+  async sendVerificationOtp(email: string): Promise<OtpResponse> {
+    const request: SendOtpRequest = { email };
+    return await apiService.postRequest<OtpResponse>('/auth/email-verification/send-otp', request);
+  }
+
+  /**
+   * Verify OTP code
+   */
+  async verifyOtp(email: string, otpCode: string): Promise<AuthResponse> {
+    const request: VerifyOtpRequest = { email, otpCode };
+    const response = await apiService.postRequest<AuthResponse>('/auth/email-verification/verify-otp', request);
+
+    // Store token on successful verification
+    if (response.accessToken) {
+      const normalizedUser = {
+        ...response.user,
+        id: response.user.id || (response.user as any).userId,
+      };
+      tokenManager.setTokenData(response.accessToken, response.expiresIn, normalizedUser);
+    }
+
+    return response;
+  }
+
+  /**
+   * Resend OTP to email
+   */
+  async resendVerificationOtp(email: string): Promise<OtpResponse> {
+    const request: SendOtpRequest = { email };
+    return await apiService.postRequest<OtpResponse>('/auth/email-verification/resend-otp', request);
+  }
+
+  /**
+   * Check email verification status
+   */
+  async checkVerificationStatus(email: string): Promise<VerificationStatusResponse> {
+    return await apiService.getRequest<VerificationStatusResponse>(
+      `/auth/email-verification/status?email=${encodeURIComponent(email)}`
+    );
+  }
+
+  /**
+   * Get remaining time for active OTP
+   */
+  async getOtpRemainingTime(email: string): Promise<{ hasActiveOtp: boolean; remainingSeconds: number }> {
+    return await apiService.getRequest<{ hasActiveOtp: boolean; remainingSeconds: number }>(
+      `/auth/email-verification/otp-status?email=${encodeURIComponent(email)}`
+    );
   }
 }
+
 
 export const authService = new AuthService();
 export default authService;
