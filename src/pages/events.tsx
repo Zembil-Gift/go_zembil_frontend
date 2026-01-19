@@ -3,8 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import FadeIn from '@/components/animations/FadeIn';
-import SlideIn from '@/components/animations/SlideIn';
-import { 
+import {
   Calendar, 
   MapPin, 
   Clock, 
@@ -13,8 +12,7 @@ import {
   Globe, 
   ChevronDown,
   ChevronRight,
-  Ticket,
-  Sparkles
+  Ticket
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -137,50 +135,24 @@ export default function Events() {
   };
   return (
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-eagle-green via-eagle-green to-viridian-green overflow-hidden">
-        {/* Pattern overlay */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="w-full h-full" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 10L40 30L30 50L20 30L30 10Z' fill='white'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'repeat'
-          }}></div>
-        </div>
-
-        {/* Decorative circles */}
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-june-bud/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-20 w-96 h-96 bg-viridian-green/30 rounded-full blur-3xl"></div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+      {/* Simplified Hero Section */}
+      <section className="bg-gradient-to-r from-eagle-green to-viridian-green">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <FadeIn delay={0.1}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-june-bud/20 rounded-xl backdrop-blur-sm">
-                <Ticket className="h-6 w-6 text-june-bud" />
-              </div>
-              <span className="text-june-bud font-gotham-medium text-sm uppercase tracking-wider">
-                Gift Experiences
-              </span>
+            <div className="flex items-center gap-2 mb-2">
+              <Ticket className="h-5 w-5 text-june-bud" />
+              <h1 className="text-2xl lg:text-3xl font-gotham-bold text-white">
+                Events & Experiences
+              </h1>
             </div>
-            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-gotham-bold text-white mb-4 leading-tight">
-              Discover Amazing
-              <span className="block text-june-bud">Events & Experiences</span>
-            </h1>
-            <p className="text-lg lg:text-xl font-gotham-light text-white/80 max-w-2xl leading-relaxed">
-              Gift unforgettable moments and memories. From concerts to cultural celebrations,
-              find the perfect event in Ethiopia and U.S. Habesha communities.
+            <p className="text-sm lg:text-base font-gotham-light text-white/80 max-w-2xl">
+              Gift unforgettable moments from concerts to cultural celebrations
             </p>
           </FadeIn>
         </div>
-
-        {/* Wave divider */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
-            <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" className="fill-light-cream" />
-          </svg>
-        </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 -mt-4 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* Sticky Filter Bar */}
         <motion.div 
           className="sticky top-0 z-20 bg-white border-b border-june-bud/20 py-4 mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
