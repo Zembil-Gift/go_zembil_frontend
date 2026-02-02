@@ -227,7 +227,7 @@ export default function Landing() {
 
                   <div className="relative h-full bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl flex flex-col">
                     {ad.type === 'product' && (
-                      <a href={`/product-detail/${ad.data.id}`} className="flex flex-col h-full">
+                      <a href={`/product/${ad.data.id}`} className="flex flex-col h-full">
                         <div className="relative h-64 overflow-hidden">
                           <div className="absolute top-4 left-4 z-20">
                             <span className="px-3 py-1 text-[10px] font-bold tracking-widest text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
