@@ -45,6 +45,7 @@ interface ProductSkuItem {
   };
   images?: Array<{
     url: string;
+    fullUrl?: string;
     isPrimary?: boolean;
   }>;
 }
@@ -364,7 +365,7 @@ export default function AdminFeaturedAds() {
                     </TableHeader>
                     <TableBody>
                       {productSkus.map((sku) => {
-                        const skuImage = sku.images?.find(img => img.isPrimary)?.url || sku.images?.[0]?.url;
+                        const skuImage = sku.images?.find(img => img.isPrimary)?.fullUrl || sku.images?.[0]?.fullUrl || sku.images?.find(img => img.isPrimary)?.url || sku.images?.[0]?.url;
                         return (
                           <TableRow key={sku.id}>
                             <TableCell>

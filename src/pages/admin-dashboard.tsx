@@ -94,9 +94,18 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Helper function to check if user is an admin (ADMIN or SUPER_ADMIN)
+  const isAdmin = (role: string | undefined): boolean => {
+    if (!role) return false;
+    const upperRole = role.toUpperCase();
+    return upperRole === 'ADMIN' || upperRole === 'SUPER_ADMIN';
+  };
+
+  const userIsAdmin = isAdmin(user?.role);
+
   // Redirect to home if not authenticated or not an admin
   useEffect(() => {
-    if (!isLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!isLoading && (!isAuthenticated || !userIsAdmin)) {
       toast({
         title: "Access Denied",
         description: "You need administrator access to view this page.",
@@ -107,40 +116,40 @@ export default function AdminDashboard() {
       }, 1500);
       return;
     }
-  }, [isAuthenticated, isLoading, user, toast]);
+  }, [isAuthenticated, isLoading, userIsAdmin, toast]);
 
   // Fetch platform statistics
   useQuery({
-    queryKey: ["/api/admin/stats"],
-    enabled: isAuthenticated && user?.role === "admin",
+    queryKey: ["/api/admin/dashboard/stats"],
+    enabled: isAuthenticated && userIsAdmin,
     retry: false,
   });
 
   // Fetch all users
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && userIsAdmin,
     retry: false,
   });
 
   // Fetch all vendors
   const { data: vendors = [], isLoading: vendorsLoading } = useQuery<Vendor[]>({
     queryKey: ["/api/admin/vendors"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && userIsAdmin,
     retry: false,
   });
 
   // Fetch all orders
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/admin/orders"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && userIsAdmin,
     retry: false,
   });
 
   // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && userIsAdmin,
   });
 
   const form = useForm<CategoryForm>({

@@ -37,6 +37,7 @@ import {
   TrendingUp,
   TrendingDown,
   AlertTriangle,
+  RotateCcw,
 } from 'lucide-react';
 import { serviceService, ServiceResponse, ServiceStatus, ServicePackageResponse } from '@/services/serviceService';
 import { adminService, ServicePriceUpdateRequestDto, ServiceCategoryChangeRequestDto } from '@/services/adminService';
@@ -189,6 +190,21 @@ export default function AdminServices() {
     },
     onError: (error: any) => {
       toast({ title: 'Error', description: error.message || 'Failed to suspend service', variant: 'destructive' });
+    },
+  });
+
+  // Unsuspend service mutation
+  const unsuspendServiceMutation = useMutation({
+    mutationFn: (serviceId: number) => serviceService.unsuspendService(serviceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'all-services'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'pending-services'] });
+      toast({ title: 'Success', description: 'Service unsuspended and restored to Approved status' });
+      setSelectedService(null);
+      setShowViewDialog(false);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to unsuspend service', variant: 'destructive' });
     },
   });
 
@@ -461,6 +477,17 @@ export default function AdminServices() {
                                   onClick={() => setRejectDialog({ open: true, serviceId: service.id, type: 'suspend' })}
                                 >
                                   <Ban className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {service.status === 'SUSPENDED' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-green-600 hover:text-green-700"
+                                  onClick={() => unsuspendServiceMutation.mutate(service.id)}
+                                  disabled={unsuspendServiceMutation.isPending}
+                                >
+                                  <RotateCcw className="h-4 w-4" />
                                 </Button>
                               )}
                             </div>
@@ -1090,6 +1117,19 @@ export default function AdminServices() {
               >
                 <Ban className="h-4 w-4 mr-2" />
                 Suspend
+              </Button>
+            )}
+            {selectedService?.status === 'SUSPENDED' && (
+              <Button
+                variant="outline"
+                className="text-green-600 hover:text-green-700"
+                onClick={() => {
+                  unsuspendServiceMutation.mutate(selectedService.id);
+                }}
+                disabled={unsuspendServiceMutation.isPending}
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Unsuspend
               </Button>
             )}
           </DialogFooter>

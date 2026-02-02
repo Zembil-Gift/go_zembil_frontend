@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -39,29 +40,58 @@ import {
   Video,
 } from 'lucide-react';
 import { customOrderTemplateService } from '@/services/customOrderTemplateService';
-import type { CustomOrderTemplate } from '@/types/customOrders';
+import type { CustomOrderTemplate, CustomOrderTemplateStatus } from '@/types/customOrders';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function AdminCustomTemplates() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedTemplate, setSelectedTemplate] = useState<CustomOrderTemplate | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [activeTab, setActiveTab] = useState('pending');
+
+  // Get admin's preferred currency
+  const adminCurrency = user?.preferredCurrency?.code || 'USD';
 
   // Fetch pending templates
   const { data: pendingData, isLoading } = useQuery({
-    queryKey: ['admin', 'pending-custom-templates'],
-    queryFn: () => customOrderTemplateService.getPending(0, 100),
+    queryKey: ['admin', 'pending-custom-templates', adminCurrency],
+    queryFn: () => customOrderTemplateService.getPending(0, 100, adminCurrency),
+  });
+
+  // Fetch all templates
+  const { data: allData, isLoading: allLoading } = useQuery({
+    queryKey: ['admin', 'all-custom-templates', adminCurrency],
+    queryFn: () => customOrderTemplateService.getAll(0, 100, undefined, adminCurrency),
   });
 
   const pendingTemplates = pendingData?.content || [];
+  const allTemplates = allData?.content || [];
+
+  const getStatusBadge = (status: CustomOrderTemplateStatus) => {
+    switch (status) {
+      case 'PENDING_APPROVAL':
+        return <Badge className="bg-amber-100 text-amber-800">Pending Approval</Badge>;
+      case 'APPROVED':
+        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
+      case 'REJECTED':
+        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+      case 'ARCHIVED':
+        return <Badge className="bg-gray-100 text-gray-800">Archived</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
 
   // Approve mutation
   const approveMutation = useMutation({
     mutationFn: (templateId: number) => customOrderTemplateService.approve(templateId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'pending-custom-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'all-custom-templates'] });
       toast({ title: 'Success', description: 'Template approved successfully' });
       setShowViewDialog(false);
       setSelectedTemplate(null);
@@ -81,6 +111,7 @@ export default function AdminCustomTemplates() {
       customOrderTemplateService.reject(templateId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'pending-custom-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'all-custom-templates'] });
       toast({ title: 'Success', description: 'Template rejected' });
       setShowRejectDialog(false);
       setShowViewDialog(false);
@@ -128,33 +159,31 @@ export default function AdminCustomTemplates() {
   return (
     <AdminLayout 
       title="Custom Order Templates" 
-      description="Review and approve vendor custom order templates"
+      description="Review and manage vendor custom order templates"
     >
-      <div className="space-y-6">
-        {/* Stats Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-amber-100 rounded-lg">
-                <Clock className="h-6 w-6 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Pending Approval</p>
-                <p className="text-2xl font-bold">{pendingTemplates.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="pending" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Pending ({pendingTemplates.length})
+          </TabsTrigger>
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            All Templates ({allTemplates.length})
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Pending Templates */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-eagle-green" />
-              Templates Awaiting Approval
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Pending Templates Tab */}
+        <TabsContent value="pending">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-amber-500" />
+                Templates Awaiting Approval
+              </CardTitle>
+              <CardDescription>Review and approve or reject pending templates</CardDescription>
+            </CardHeader>
+            <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-eagle-green" />
@@ -206,10 +235,7 @@ export default function AdminCustomTemplates() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4 text-gray-400" />
-                          {customOrderTemplateService.formatTemplatePrice(template)}
-                        </div>
+                        {customOrderTemplateService.formatTemplatePrice(template)}
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">{template.fields.length} fields</Badge>
@@ -256,7 +282,103 @@ export default function AdminCustomTemplates() {
             )}
           </CardContent>
         </Card>
-      </div>
+      </TabsContent>
+
+      {/* All Templates Tab */}
+      <TabsContent value="all">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-eagle-green" />
+              All Custom Order Templates
+            </CardTitle>
+            <CardDescription>View all custom order templates in the system</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {allLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-eagle-green" />
+              </div>
+            ) : allTemplates.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No templates found</h3>
+                <p className="text-gray-500">No custom order templates have been created yet</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Template</TableHead>
+                    <TableHead>Vendor</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Base Price</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Fields</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {allTemplates.map((template) => (
+                    <TableRow key={template.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{template.name}</p>
+                          <p className="text-sm text-gray-500 line-clamp-1">
+                            {template.description || 'No description'}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Store className="h-4 w-4 text-gray-400" />
+                          <span>{template.vendorName}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {template.categoryName ? (
+                          <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                            <Tag className="h-3 w-3" />
+                            {template.categoryName}
+                          </Badge>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {customOrderTemplateService.formatTemplatePrice(template)}
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(template.status)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{template.fields.length} fields</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(template.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedTemplate(template);
+                            setShowViewDialog(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
 
       {/* View Template Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>

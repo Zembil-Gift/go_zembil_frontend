@@ -39,7 +39,9 @@ import {
   Clock,
   Download,
   ScrollText,
-  Award
+  Award,
+  UserX,
+  UserCheck
 } from 'lucide-react';
 import { adminService } from '@/services/adminService';
 import { vendorTermsService, VendorTermsAcceptanceResponse } from '@/services/vendorTermsService';
@@ -55,6 +57,7 @@ export default function AdminVendors() {
   const [vendorCertificate, setVendorCertificate] = useState<CertificateResponse | null>(null);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
+  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [actionVendor, setActionVendor] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -109,6 +112,47 @@ export default function AdminVendors() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to decline vendor',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for deactivating vendor (via user deactivation)
+  const deactivateMutation = useMutation({
+    mutationFn: (userId: number) => adminService.deactivateUser(userId),
+    onSuccess: () => {
+      toast({
+        title: 'Vendor Deactivated',
+        description: 'The vendor account has been deactivated.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'vendors'] });
+      setShowDeactivateDialog(false);
+      setActionVendor(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to deactivate vendor',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for reactivating vendor (via user reactivation)
+  const reactivateMutation = useMutation({
+    mutationFn: (userId: number) => adminService.reactivateUser(userId),
+    onSuccess: () => {
+      toast({
+        title: 'Vendor Reactivated',
+        description: 'The vendor account has been reactivated.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'vendors'] });
+      setActionVendor(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reactivate vendor',
         variant: 'destructive',
       });
     },
@@ -214,6 +258,7 @@ export default function AdminVendors() {
                   <TableHead>Contact</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Account</TableHead>
                   <TableHead>Payout</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -224,8 +269,8 @@ export default function AdminVendors() {
                     <TableCell>
                       <div>
                         <div className="font-medium text-eagle-green">{vendor.businessName}</div>
-                        {vendor.categoryName && (
-                          <div className="text-sm text-gray-500">{vendor.categoryName}</div>
+                        {vendor.vendorCategoryName && (
+                          <div className="text-sm text-gray-500">{vendor.vendorCategoryName}</div>
                         )}
                       </div>
                     </TableCell>
@@ -264,6 +309,13 @@ export default function AdminVendors() {
                           <Clock className="h-3 w-3 mr-1" />
                           Pending
                         </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {vendor.isActive !== false ? (
+                        <Badge className="bg-green-100 text-green-800">Active</Badge>
+                      ) : (
+                        <Badge className="bg-red-100 text-red-800">Inactive</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -317,6 +369,32 @@ export default function AdminVendors() {
                               <XCircle className="h-4 w-4" />
                             </Button>
                           </>
+                        )}
+                        {/* Show deactivate/reactivate for approved vendors */}
+                        {vendor.isApproved && (
+                          vendor.isActive !== false ? (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                              onClick={() => {
+                                setActionVendor(vendor);
+                                setShowDeactivateDialog(true);
+                              }}
+                            >
+                              <UserX className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              onClick={() => reactivateMutation.mutate(vendor.userId)}
+                              disabled={reactivateMutation.isPending}
+                            >
+                              <UserCheck className="h-4 w-4" />
+                            </Button>
+                          )
                         )}
                       </div>
                     </TableCell>
@@ -373,8 +451,8 @@ export default function AdminVendors() {
                     <h3 className="text-lg font-bold text-eagle-green">
                       {vendorDetail.businessName}
                     </h3>
-                    {vendorDetail.categoryName && (
-                      <Badge variant="outline" className="mt-1">{vendorDetail.categoryName}</Badge>
+                    {vendorDetail.vendorCategoryName && (
+                      <Badge variant="outline" className="mt-1">{vendorDetail.vendorCategoryName}</Badge>
                     )}
                   </div>
                 </div>
@@ -791,6 +869,53 @@ export default function AdminVendors() {
                 <>
                   <XCircle className="h-4 w-4 mr-2" />
                   Decline
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deactivate Confirmation Dialog */}
+      <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserX className="h-5 w-5 text-orange-600" />
+              Deactivate Vendor
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to deactivate <strong>{actionVendor?.businessName}</strong>? 
+              <br /><br />
+              This will prevent the vendor from logging in and their products will not be visible to customers. 
+              You can reactivate their account later if needed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDeactivateDialog(false);
+                setActionVendor(null);
+              }}
+              disabled={deactivateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="bg-orange-600 hover:bg-orange-700"
+              onClick={() => actionVendor && deactivateMutation.mutate(actionVendor.userId)}
+              disabled={deactivateMutation.isPending}
+            >
+              {deactivateMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deactivating...
+                </>
+              ) : (
+                <>
+                  <UserX className="h-4 w-4 mr-2" />
+                  Deactivate
                 </>
               )}
             </Button>

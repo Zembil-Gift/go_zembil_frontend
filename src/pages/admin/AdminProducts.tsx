@@ -104,6 +104,7 @@ export default function AdminProducts() {
     type: 'product' 
   });
   const [rejectReason, setRejectReason] = useState('');
+  const [approvingProductId, setApprovingProductId] = useState<number | null>(null);
 
   // Fetch all products
   const { data: allProductsData, isLoading: allProductsLoading } = useQuery({
@@ -150,15 +151,20 @@ export default function AdminProducts() {
 
   // Approve product mutation
   const approveProductMutation = useMutation({
-    mutationFn: (productId: number) => adminService.approveProduct(productId),
+    mutationFn: (productId: number) => {
+      setApprovingProductId(productId);
+      return adminService.approveProduct(productId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'all-products'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'pending-products'] });
       toast({ title: 'Success', description: 'Product approved successfully' });
       setSelectedProduct(null);
+      setApprovingProductId(null);
     },
     onError: (error: any) => {
       toast({ title: 'Error', description: error.message || 'Failed to approve product', variant: 'destructive' });
+      setApprovingProductId(null);
     },
   });
 
@@ -447,10 +453,14 @@ export default function AdminProducts() {
                                   <Button
                                     size="sm"
                                     onClick={() => approveProductMutation.mutate(product.id)}
-                                    disabled={approveProductMutation.isPending}
+                                    disabled={approvingProductId === product.id}
                                     className="bg-green-600 hover:bg-green-700"
                                   >
-                                    <Check className="h-4 w-4" />
+                                    {approvingProductId === product.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Check className="h-4 w-4" />
+                                    )}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -533,10 +543,14 @@ export default function AdminProducts() {
                           </Button>
                           <Button
                             onClick={() => approveProductMutation.mutate(product.id)}
-                            disabled={approveProductMutation.isPending}
+                            disabled={approvingProductId === product.id}
                             className="bg-green-600 hover:bg-green-700"
                           >
-                            <Check className="h-4 w-4 mr-2" />
+                            {approvingProductId === product.id ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Check className="h-4 w-4 mr-2" />
+                            )}
                             Approve
                           </Button>
                           <Button

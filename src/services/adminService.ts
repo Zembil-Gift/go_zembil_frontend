@@ -615,6 +615,23 @@ class AdminService {
     return await apiService.putRequest<AdminUserDto>(`/api/admin/users/${userId}/status`, { isActive });
   }
 
+  /**
+   * Deactivate a user account (soft delete)
+   */
+  async deactivateUser(userId: number): Promise<void> {
+    return await apiService.postRequest<void>(`/api/users/${userId}/deactivate`, {});
+  }
+
+  /**
+   * Reactivate a previously deactivated user account
+   */
+  async reactivateUser(userId: number): Promise<void> {
+    return await apiService.postRequest<void>(`/api/users/${userId}/reactivate`, {});
+  }
+
+  /**
+   * @deprecated Use deactivateUser instead for soft delete
+   */
   async deleteUser(userId: number): Promise<void> {
     return await apiService.deleteRequest<void>(`/api/users/${userId}`);
   }

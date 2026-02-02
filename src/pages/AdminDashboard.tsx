@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { adminService } from "@/services/adminService";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,35 +102,46 @@ export default function AdminDashboard() {
   const [selectedCelebrity, setSelectedCelebrity] = useState<PendingCelebrity | null>(null);
 
   // Check if user is admin
-  const isAdmin = (user as any)?.role === 'admin';
+  const isAdmin = (user as any)?.role?.toUpperCase() === 'ADMIN';
 
   // Fetch admin statistics
-  const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
-    queryKey: ['/api/admin/stats'],
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['admin', 'dashboard-stats'],
+    queryFn: () => adminService.getDashboardStats(),
+    enabled: isAdmin,
+    retry: 1,
+  });
+
+  // Fetch all vendors and extract pending ones
+  const { data: allVendorsData, isLoading: vendorsLoading } = useQuery({
+    queryKey: ['admin', 'vendors'],
+    queryFn: async () => {
+      try {
+        const response = await adminService.getVendors(0, 100);
+        return response.content || [];
+      } catch (error) {
+        console.error('Failed to fetch vendors:', error);
+        return [];
+      }
+    },
     enabled: isAdmin,
   });
 
-  // Fetch orders for admin
-  const { data: orders = [], isLoading: ordersLoading } = useQuery<AdminOrder[]>({
-    queryKey: ['/api/admin/orders'],
-    enabled: isAdmin,
-  });
+  // Filter vendors for pending approval (isApproved is null or false)
+  const pendingVendors = (allVendorsData || []).filter((vendor: any) => 
+    vendor.isApproved === null || vendor.isApproved === false
+  );
 
-  // Fetch pending vendors
-  const { data: pendingVendors = [], isLoading: vendorsLoading } = useQuery<PendingVendor[]>({
-    queryKey: ['/api/admin/vendors/pending'],
-    enabled: isAdmin,
-  });
-
-  // Fetch pending celebrities
-  const { data: pendingCelebrities = [], isLoading: celebritiesLoading } = useQuery<PendingCelebrity[]>({
-    queryKey: ['/api/admin/celebrities/pending'],
-    enabled: isAdmin,
-  });
+  // Fetch pending celebrities (commented out as endpoint may not exist)
+  // const { data: pendingCelebrities = [], isLoading: celebritiesLoading } = useQuery<PendingCelebrity[]>({
+  //   queryKey: ['/api/admin/celebrities/pending'],
+  //   enabled: isAdmin,
+  // });
 
   // Mutation for updating order status
   const updateOrderMutation = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: number; status: string }) => {
+      // This endpoint may not exist - need to implement or remove
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
@@ -141,8 +153,8 @@ export default function AdminDashboard() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      // queryClient.invalidateQueries({ queryKey: ['/api/admin/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard-stats'] });
       toast({
         title: "Order Updated",
         description: "Order status has been updated successfully",
@@ -160,28 +172,25 @@ export default function AdminDashboard() {
   // Mutation for approving/rejecting vendors
   const updateVendorStatusMutation = useMutation({
     mutationFn: async ({ vendorId, status }: { vendorId: number; status: 'approved' | 'rejected' }) => {
-      const response = await fetch(`/api/admin/vendors/${vendorId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status }),
-      });
-      if (!response.ok) throw new Error('Failed to update vendor');
-      return response.json();
+      if (status === 'approved') {
+        return await adminService.approveVendor(vendorId);
+      } else {
+        await adminService.declineVendor(vendorId);
+        return { success: true };
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/vendors/pending'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'vendors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard-stats'] });
       toast({
         title: "Vendor Updated",
         description: "Vendor status has been updated successfully",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to update vendor status",
+        description: error.message || "Failed to update vendor status",
         variant: "destructive",
       });
     },
@@ -495,18 +504,18 @@ export default function AdminDashboard() {
                     <div className="text-center py-8 text-gray-500">No pending vendors</div>
                   ) : (
                     <div className="grid gap-4">
-                      {pendingVendors.map((vendor: PendingVendor) => (
+                      {pendingVendors.map((vendor: any) => (
                         <Card key={vendor.id}>
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start">
                               <div className="space-y-2">
                                 <h3 className="font-semibold">{vendor.businessName}</h3>
-                                <p className="text-sm text-gray-600">Owner: {vendor.ownerName}</p>
-                                <p className="text-sm text-gray-600">Email: {vendor.email}</p>
-                                <p className="text-sm text-gray-600">Type: {vendor.businessType}</p>
-                                <p className="text-sm text-gray-600">Phone: {vendor.phone}</p>
+                                <p className="text-sm text-gray-600">Email: {vendor.businessEmail}</p>
+                                <p className="text-sm text-gray-600">Phone: {vendor.businessPhone || 'Not provided'}</p>
+                                <p className="text-sm text-gray-600">City: {vendor.city || 'Not provided'}</p>
+                                <p className="text-sm text-gray-600">Category: {vendor.vendorCategoryName || 'Not specified'}</p>
                                 <Badge variant="outline">
-                                  {vendor.status}
+                                  {vendor.isApproved === null ? 'pending' : (vendor.isApproved ? 'approved' : 'rejected')}
                                 </Badge>
                               </div>
                               <div className="flex space-x-2">

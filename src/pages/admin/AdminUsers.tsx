@@ -1,26 +1,13 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {useState} from 'react';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import {Card, CardContent} from '@/components/ui/card';
+import {Badge} from '@/components/ui/badge';
+import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
+import {Label} from '@/components/ui/label';
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -39,21 +26,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  Users, 
-  Search,
+import {useToast} from '@/hooks/use-toast';
+import {useAuth} from '@/hooks/useAuth';
+import {
   Eye,
   Loader2,
   Mail,
-  Phone,
   MapPin,
+  Phone,
+  Search,
+  Shield,
+  UserCheck,
   UserCog,
   UserPlus,
-  Trash2
+  Users,
+  UserX
 } from 'lucide-react';
-import { adminService } from '@/services/adminService';
-import { userService, CreateAdminRequest } from '@/services/userService';
+import {adminService} from '@/services/adminService';
+import {CreateAdminRequest, userService} from '@/services/userService';
+import {Role, rolePermissionService} from '@/services/rolePermissionService';
 
 export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,14 +66,18 @@ export default function AdminUsers() {
     preferredCurrency: 'ETB'
   });
   const { toast } = useToast();
+  const { isSuperAdmin, hasPermission } = useAuth();
   const queryClient = useQueryClient();
+
+  hasPermission('USER_UPDATE') || hasPermission('USER_DELETE');
+  isSuperAdmin() || hasPermission('ADMIN_CREATE');
+  const canAssignRoles = isSuperAdmin();
 
   const { data: usersData, isLoading } = useQuery({
     queryKey: ['admin', 'users'],
     queryFn: async () => {
       try {
-        const response = await adminService.getUsers(0, 100);
-        return response;
+        return await adminService.getUsers(0, 100);
       } catch (error) {
         console.error('Failed to fetch users:', error);
         return { content: [], totalElements: 0, totalPages: 0, size: 0, number: 0 };
@@ -100,6 +95,13 @@ export default function AdminUsers() {
         return [];
       }
     },
+  });
+
+  // Fetch all roles for super admin role assignment
+  const { data: roles = [] } = useQuery({
+    queryKey: ['admin', 'roles'],
+    queryFn: () => rolePermissionService.getAllRoles(),
+    enabled: canAssignRoles,
   });
 
   const users = usersData?.content || [];
@@ -177,22 +179,42 @@ export default function AdminUsers() {
     },
   });
 
-  // Mutation for deleting user
-  const deleteUserMutation = useMutation({
-    mutationFn: (userId: number) => adminService.deleteUser(userId),
+  // Mutation for deactivating user (soft delete)
+  const deactivateUserMutation = useMutation({
+    mutationFn: (userId: number) => adminService.deactivateUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
       toast({
-        title: 'User deleted',
-        description: 'User has been deleted successfully',
+        title: 'User deactivated',
+        description: 'User account has been deactivated successfully',
       });
       setShowDeleteDialog(false);
       setSelectedUser(null);
     },
     onError: (error: any) => {
       toast({
-        title: 'Error deleting user',
-        description: error.message || 'Failed to delete user',
+        title: 'Error deactivating user',
+        description: error.message || 'Failed to deactivate user',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for reactivating user
+  const reactivateUserMutation = useMutation({
+    mutationFn: (userId: number) => adminService.reactivateUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast({
+        title: 'User reactivated',
+        description: 'User account has been reactivated successfully',
+      });
+      setSelectedUser(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error reactivating user',
+        description: error.message || 'Failed to reactivate user',
         variant: 'destructive',
       });
     },
@@ -221,14 +243,18 @@ export default function AdminUsers() {
     setShowViewDialog(true);
   };
 
-  const handleDeleteUser = (user: any) => {
+  const handleDeactivateUser = (user: any) => {
     setSelectedUser(user);
     setShowDeleteDialog(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDeactivate = () => {
     if (!selectedUser) return;
-    deleteUserMutation.mutate(selectedUser.userId || selectedUser.id);
+    deactivateUserMutation.mutate(selectedUser.userId || selectedUser.id);
+  };
+
+  const handleReactivateUser = (user: any) => {
+    reactivateUserMutation.mutate(user.userId || user.id);
   };
 
   const handleCreateAdmin = () => {
@@ -375,15 +401,31 @@ export default function AdminUsers() {
                           <UserCog className="h-4 w-4 mr-1" />
                           Role
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => handleDeleteUser(user)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
+                        {/* Don't show deactivate/reactivate for super admins */}
+                        {user.role !== 'SUPER_ADMIN' && (
+                          user.isActive !== false ? (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleDeactivateUser(user)}
+                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            >
+                              <UserX className="h-4 w-4 mr-1" />
+                              Deactivate
+                            </Button>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleReactivateUser(user)}
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              disabled={reactivateUserMutation.isPending}
+                            >
+                              <UserCheck className="h-4 w-4 mr-1" />
+                              Reactivate
+                            </Button>
+                          )
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -496,30 +538,53 @@ export default function AdminUsers() {
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">New Role</label>
-              <Select value={newRole} onValueChange={setNewRole}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select new role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CUSTOMER">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Customer
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="VENDOR">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Vendor
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="ADMIN">
-                    <div className="flex items-center gap-2">
-                      Admin
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              {canAssignRoles && roles.length > 0 ? (
+                /* Super admin sees all roles from database */
+                <Select value={newRole} onValueChange={setNewRole}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select new role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role: Role) => (
+                      <SelectItem key={role.roleId} value={role.code}>
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          {role.name}
+                          {role.isSystemRole && (
+                            <Badge variant="outline" className="ml-1 text-xs">System</Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                /* Regular admins see limited role options */
+                <Select value={newRole} onValueChange={setNewRole}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select new role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CUSTOMER">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Customer
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="VENDOR">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Vendor
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="ADMIN">
+                      <div className="flex items-center gap-2">
+                        Admin
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             {newRole === 'ADMIN' && selectedUser?.role?.toUpperCase() !== 'ADMIN' && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -689,28 +754,28 @@ export default function AdminUsers() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete User Confirmation Dialog */}
+      {/* Deactivate User Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-red-600" />
-              Delete User
+              <UserX className="h-5 w-5 text-orange-600" />
+              Deactivate User
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{selectedUser?.firstName} {selectedUser?.lastName}</strong>?
+              Are you sure you want to deactivate <strong>{selectedUser?.firstName} {selectedUser?.lastName}</strong>?
               <br /><br />
-              This action cannot be undone. This will permanently delete the user account and all associated data.
+              This will prevent the user from logging in. You can reactivate their account later if needed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
-              onClick={handleConfirmDelete}
+              className="bg-orange-600 hover:bg-orange-700"
+              onClick={handleConfirmDeactivate}
             >
-              {deleteUserMutation.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-              Yes, Delete User
+              {deactivateUserMutation.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Yes, Deactivate
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
