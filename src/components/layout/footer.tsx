@@ -56,11 +56,11 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold text-lg mb-4">{t('footer.support')}</h3>
             <ul className="space-y-3">
-              <li><Link to="/track" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.trackOrder')}</Link></li>
-              <li><Link to="/delivery" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.deliveryInfo')}</Link></li>
+              <li><Link to="/my-orders" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.trackOrder')}</Link></li>
+              {/* <li><Link to="/delivery" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.deliveryInfo')}</Link></li> */}
               <li><Link to="/returns" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.returnsExchanges')}</Link></li>
               <li><Link to="/contact" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.contactUs')}</Link></li>
-              <li><Link to="/faq" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.faq')}</Link></li>
+              {/* <li><Link to="/faq" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.faq')}</Link></li> */}
             </ul>
           </div>
 
