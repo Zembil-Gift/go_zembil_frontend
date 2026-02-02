@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,16 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import { apiService } from "@/services/apiService";
 import { tokenManager } from "@/services/tokenManager";
-import { Mail, RefreshCw, CheckCircle2, ArrowLeft, Shield } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Mail, RefreshCw, CheckCircle2, Shield } from "lucide-react";
+import { motion } from "framer-motion";
 
-// OTP validation schema
-const otpSchema = z.object({
+z.object({
   otp: z.string().length(6, "Please enter the 6-digit code"),
 });
-
-type OtpForm = z.infer<typeof otpSchema>;
-
 interface VerifyOtpResponse {
   accessToken: string;
   expiresIn: number;
@@ -55,7 +49,6 @@ export default function VerifyEmail() {
   
   const [otpValues, setOtpValues] = useState<string[]>(Array(6).fill(''));
   const [countdown, setCountdown] = useState(0);
-  const [isResending, setIsResending] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -130,7 +123,11 @@ export default function VerifyEmail() {
         if (userRole === 'ADMIN') {
           navigate('/admin');
         } else if (userRole === 'VENDOR') {
-          navigate('/vendor');
+          toast({
+            title: "Email Verified Successfully!",
+            description: "Your vendor account is pending admin approval. You'll be notified once approved.",
+          });
+          navigate('/signin');
         } else {
           navigate(returnUrl || '/');
         }
@@ -153,11 +150,13 @@ export default function VerifyEmail() {
   // Resend OTP mutation
   const resendMutation = useMutation({
     mutationFn: async (): Promise<OtpResponse> => {
+      console.log('Resending OTP for email:', email);
       return await apiService.postRequest<OtpResponse>('/auth/email-verification/resend-otp', {
         email,
       });
     },
     onSuccess: (response) => {
+      console.log('Resend success:', response);
       setCountdown(response.expiresInSeconds || 300);
       toast({
         title: "Code Sent!",
@@ -169,7 +168,15 @@ export default function VerifyEmail() {
       inputRefs.current[0]?.focus();
     },
     onError: (error: any) => {
+      console.error('Resend error:', error);
       const message = error?.message || "Failed to resend code. Please try again.";
+      
+      // If error mentions waiting time, extract it and set countdown
+      const waitMatch = message.match(/wait (\d+) seconds/);
+      if (waitMatch) {
+        setCountdown(parseInt(waitMatch[1]));
+      }
+      
       toast({
         title: "Error",
         description: message,
@@ -222,7 +229,16 @@ export default function VerifyEmail() {
   };
 
   const handleResend = () => {
-    if (countdown > 0) return;
+    console.log('handleResend called, countdown:', countdown, 'isPending:', resendMutation.isPending);
+    if (countdown > 0) {
+      console.log('Resend blocked by countdown');
+      return;
+    }
+    if (resendMutation.isPending) {
+      console.log('Resend already in progress');
+      return;
+    }
+    console.log('Calling resendMutation.mutate()');
     resendMutation.mutate();
   };
 
@@ -230,14 +246,6 @@ export default function VerifyEmail() {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Mask email for display
-  const maskEmail = (email: string) => {
-    if (!email || !email.includes('@')) return email;
-    const [local, domain] = email.split('@');
-    if (local.length <= 2) return `${local.charAt(0)}***@${domain}`;
-    return `${local.charAt(0)}***${local.charAt(local.length - 1)}@${domain}`;
   };
 
   if (isVerified) {
@@ -280,7 +288,7 @@ export default function VerifyEmail() {
             We've sent a verification code to
           </p>
           <p className="text-viridian-green font-medium mt-1">
-            {maskEmail(email)}
+            {email}
           </p>
         </div>
 
@@ -379,16 +387,9 @@ export default function VerifyEmail() {
           </CardContent>
         </Card>
 
-        {/* Back to Sign In */}
-        <div className="text-center mt-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/signin')}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Sign In
-          </Button>
+        {/* Help text */}
+        <div className="text-center mt-6 text-sm text-gray-500">
+          <p>Need help? Contact support at info@afrodebab.com</p>
         </div>
       </div>
     </div>
