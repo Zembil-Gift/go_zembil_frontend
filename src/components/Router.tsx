@@ -56,10 +56,21 @@ import AdminDelivery from "@/pages/admin/AdminDelivery";
 import AdminFeaturedAds from "@/pages/admin/AdminFeaturedAds";
 import AdminCustomTemplates from "@/pages/admin/AdminCustomTemplates";
 import AdminCustomOrders from "@/pages/admin/AdminCustomOrders";
+import AdminRoles from "@/pages/admin/AdminRoles";
+import AdminPermissions from "@/pages/admin/AdminPermissions";
 
-import VendorDashboard from "@/pages/vendor/VendorDashboard";
+import VendorDashboardLayout from "@/pages/vendor/VendorDashboardLayout";
+import VendorOverview from "@/pages/vendor/VendorOverview";
+import VendorProductsPage from "@/pages/vendor/VendorProductsPage";
+import VendorEventsPage from "@/pages/vendor/VendorEventsPage";
+import VendorServicesPage from "@/pages/vendor/VendorServicesPage";
+import VendorPaymentsPage from "@/pages/vendor/VendorPaymentsPage";
+import VendorCheckInPage from "@/pages/vendor/VendorCheckInPage";
+import VendorSettingsPage from "@/pages/vendor/VendorSettingsPage";
+import VendorRequests from "@/pages/vendor/VendorRequests";
 import VendorServiceOrders from "@/pages/vendor/VendorServiceOrders";
 import VendorServiceCalendar from "@/pages/vendor/VendorServiceCalendar";
+import VendorProductOrders from "@/pages/vendor/VendorProductOrders";
 import CreateProduct from "@/pages/vendor/CreateProduct";
 import CreateEvent from "@/pages/vendor/CreateEvent";
 import CreateService from "@/pages/vendor/CreateService";
@@ -122,7 +133,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const userRole = user?.role?.toUpperCase();
-  const isAdmin = userRole === 'ADMIN';
+  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
   React.useEffect(() => {
     if (!isLoading && isAuthenticated && !isAdmin) {
@@ -260,7 +271,8 @@ function HomeRoute() {
     );
   }
 
-  if (isAuthenticated && user?.role?.toUpperCase() === 'ADMIN') {
+  const userRole = user?.role?.toUpperCase();
+  if (isAuthenticated && (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN')) {
     return <Navigate to="/admin" replace />;
   }
 
@@ -430,44 +442,54 @@ export default function Router() {
         </Route>
 
         {/* Vendor Routes - Outside main Layout to avoid navbar */}
-        <Route path="/vendor" element={<VendorRoute><div className="min-h-screen bg-gray-50"><Outlet /></div></VendorRoute>}>
-          <Route index element={<VendorDashboard />} />
-          <Route path="service-orders" element={<VendorServiceOrders />} />
-          <Route path="service-calendar" element={<VendorServiceCalendar />} />
+        <Route path="/vendor" element={<VendorRoute><VendorDashboardLayout /></VendorRoute>}>
+          <Route index element={<VendorOverview />} />
+          <Route path="products" element={<VendorProductsPage />} />
           <Route path="products/new" element={<CreateProduct />} />
           <Route path="products/:id/edit" element={<EditProduct />} />
           <Route path="products/:id/price" element={<ProductPriceUpdate />} />
+          <Route path="events" element={<VendorEventsPage />} />
           <Route path="events/new" element={<CreateEvent />} />
           <Route path="events/:id/edit" element={<EditEvent />} />
           <Route path="events/:id/price" element={<EventPriceUpdate />} />
+          <Route path="services" element={<VendorServicesPage />} />
           <Route path="services/new" element={<CreateService />} />
           <Route path="services/:id/edit" element={<EditService />} />
-          <Route path="payments/chapa" element={<ChapaOnboarding />} />
-          <Route path="onboarding/return" element={<StripeOnboardingReturn />} />
-          <Route path="onboarding/refresh" element={<StripeOnboardingRefresh />} />
+          <Route path="service-orders" element={<VendorServiceOrders />} />
+          <Route path="service-calendar" element={<VendorServiceCalendar />} />
+          <Route path="product-orders" element={<VendorProductOrders />} />
           <Route path="custom-templates" element={<VendorCustomTemplates />} />
           <Route path="custom-templates/new" element={<CreateCustomTemplate />} />
           <Route path="custom-templates/:id" element={<VendorCustomTemplateDetail />} />
           <Route path="custom-orders" element={<VendorCustomOrders />} />
           <Route path="custom-orders/:orderId" element={<VendorCustomOrderDetail />} />
+          <Route path="check-in" element={<VendorCheckInPage />} />
+          <Route path="payments" element={<VendorPaymentsPage />} />
+          <Route path="payments/chapa" element={<ChapaOnboarding />} />
+          <Route path="onboarding/return" element={<StripeOnboardingReturn />} />
+          <Route path="onboarding/refresh" element={<StripeOnboardingRefresh />} />
+          <Route path="requests" element={<VendorRequests />} />
+          <Route path="settings" element={<VendorSettingsPage />} />
         </Route>
 
-        {/* Admin Routes - Inside Layout but with custom header handling */}
-        <Route path="/" element={<Layout />}>
-          <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-          <Route path="admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-          <Route path="admin/vendors" element={<AdminRoute><AdminVendors /></AdminRoute>} />
-          <Route path="admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
-          <Route path="admin/services" element={<AdminRoute><AdminServices /></AdminRoute>} />
-          <Route path="admin/events" element={<AdminRoute><AdminEvents /></AdminRoute>} />
-          <Route path="admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
-          <Route path="admin/subcategories" element={<AdminRoute><AdminSubcategories /></AdminRoute>} />
-          <Route path="admin/tax" element={<AdminRoute><AdminTax /></AdminRoute>} />
-          <Route path="admin/currency" element={<AdminRoute><AdminCurrency /></AdminRoute>} />
-          <Route path="admin/delivery" element={<AdminRoute><AdminDelivery /></AdminRoute>} />
-          <Route path="admin/featured-ads" element={<AdminRoute><AdminFeaturedAds /></AdminRoute>} />
-          <Route path="admin/custom-templates" element={<AdminRoute><AdminCustomTemplates /></AdminRoute>} />
-          <Route path="admin/custom-orders" element={<AdminRoute><AdminCustomOrders /></AdminRoute>} />
+        {/* Admin Routes - Outside main Layout to avoid navbar/footer */}
+        <Route path="/admin" element={<AdminRoute><div className="min-h-screen"><Outlet /></div></AdminRoute>}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="vendors" element={<AdminVendors />} />
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="services" element={<AdminServices />} />
+          <Route path="events" element={<AdminEvents />} />
+          <Route path="categories" element={<AdminCategories />} />
+          <Route path="subcategories" element={<AdminSubcategories />} />
+          <Route path="tax" element={<AdminTax />} />
+          <Route path="currency" element={<AdminCurrency />} />
+          <Route path="delivery" element={<AdminDelivery />} />
+          <Route path="featured-ads" element={<AdminFeaturedAds />} />
+          <Route path="custom-templates" element={<AdminCustomTemplates />} />
+          <Route path="custom-orders" element={<AdminCustomOrders />} />
+          <Route path="roles" element={<AdminRoles />} />
+          <Route path="permissions" element={<AdminPermissions />} />
         </Route>
 
         {/* Delivery Person Routes - Outside main Layout to avoid navbar */}
