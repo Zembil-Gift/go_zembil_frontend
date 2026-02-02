@@ -1,38 +1,49 @@
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link, useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { useIncompleteProfile } from "@/hooks/useIncompleteProfile";
-import { apiService } from "@/services/apiService";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar,
-  Edit2,
-  Save,
-  X,
-  Store,
-  ShoppingBag,
-  Heart,
-  Settings,
-  Loader2,
+import {useEffect, useState} from "react";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {z} from "zod";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {Link} from "react-router-dom";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import {Badge} from "@/components/ui/badge";
+import {Separator} from "@/components/ui/separator";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {useToast} from "@/hooks/use-toast";
+import {useAuth} from "@/hooks/useAuth";
+import {useIncompleteProfile} from "@/hooks/useIncompleteProfile";
+import {apiService} from "@/services/apiService";
+import {
   AlertCircle,
-  Coins
+  Calendar,
+  Coins,
+  Edit2,
+  Eye,
+  EyeOff,
+  Heart,
+  Loader2,
+  Lock,
+  Mail,
+  Phone,
+  Save,
+  ShoppingBag,
+  Store,
+  User,
+  X
 } from "lucide-react";
 
 // Profile form schema
@@ -47,6 +58,27 @@ const profileSchema = z.object({
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
+
+const passwordSchema = z.object({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type PasswordFormData = z.infer<typeof passwordSchema>;
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "New password must be at least 8 characters"),
+  confirmPassword: z.string()
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 interface Currency {
   id: number;
@@ -67,11 +99,11 @@ interface UserProfile {
   role: string;
   birthDate?: string;
   preferredCurrencyCode?: string;
+  hasPassword?: boolean;
 }
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
-  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -81,15 +113,10 @@ export default function Profile() {
   const isVendor = userRole === 'VENDOR';
   const isAdmin = userRole === 'ADMIN';
   
-  // Auto-switch to personal tab if incomplete and coming from navbar
-  const defaultTab = searchParams.get('tab') || 'personal';
-
-  // Fetch user profile
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['userProfile'],
     queryFn: async () => {
-      const response = await apiService.getRequest<UserProfile>('/api/users/me');
-      return response;
+      return await apiService.getRequest<UserProfile>('/api/users/me');
     },
     enabled: !!user,
   });
@@ -98,8 +125,7 @@ export default function Profile() {
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies'],
     queryFn: async () => {
-      const response = await apiService.getRequest<Currency[]>('/api/currencies');
-      return response;
+      return await apiService.getRequest<Currency[]>('/api/currencies');
     },
   });
 
@@ -130,6 +156,98 @@ export default function Profile() {
       });
     }
   }, [profile, form]);
+
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+
+  const passwordForm = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  const changePasswordForm = useForm<ChangePasswordFormData>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  const setPasswordMutation = useMutation({
+    mutationFn: async (data: PasswordFormData) => {
+      const userId = profile?.userId || user?.id;
+      await apiService.postRequest<void>(`/api/users/${userId}/password`, { password: data.password });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      // Update local storage user object to reflect password is set
+      const currentUserStr = localStorage.getItem('user');
+      if (currentUserStr) {
+        const parsedUser = JSON.parse(currentUserStr);
+        const updatedUser = {
+          ...parsedUser,
+          hasPassword: true,
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+      toast({
+        title: "Password Set",
+        description: "Your password has been set successfully. You can now log in with your email and password.",
+      });
+      setIsPasswordDialogOpen(false);
+      passwordForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to set password",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: ChangePasswordFormData) => {
+      const userId = profile?.userId || user?.id;
+      await apiService.postRequest<void>(`/api/users/${userId}/change-password`, { 
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword 
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Password Changed",
+        description: "Your password has been updated successfully.",
+      });
+      setIsChangePasswordDialogOpen(false);
+      changePasswordForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to change password",
+        description: error.message || "Incorrect current password",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onPasswordSubmit = (data: PasswordFormData) => {
+    setPasswordMutation.mutate(data);
+  };
+
+  const onChangePasswordSubmit = (data: ChangePasswordFormData) => {
+    changePasswordMutation.mutate(data);
+  };
+
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
@@ -464,6 +582,189 @@ export default function Profile() {
                 </TabsContent>
 
                 <TabsContent value="account" className="mt-6 space-y-6">
+                  {/* Password Setting for OAuth Users */}
+                  {profile && !profile.hasPassword && (
+                    <Alert className="mb-6 border-blue-200 bg-blue-50">
+                      <Lock className="h-5 w-5 text-blue-600" />
+                      <AlertTitle className="text-blue-900 font-semibold">Set a Password</AlertTitle>
+                      <AlertDescription className="text-blue-800">
+                        <p className="mb-3">
+                          You currently don't have a password set because you signed up with a social account. 
+                          Setting a password allows you to log in with your email address directly.
+                        </p>
+                        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white border-none">
+                              Create Password
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Create Password</DialogTitle>
+                              <DialogDescription>
+                                Set a password to enable email/password login.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="password">New Password</Label>
+                                <div className="relative">
+                                  <Input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Enter new password"
+                                    {...passwordForm.register("password")}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                                  >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  </button>
+                                </div>
+                                {passwordForm.formState.errors.password && (
+                                  <p className="text-red-500 text-sm">{passwordForm.formState.errors.password.message}</p>
+                                )}
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                                <div className="relative">
+                                  <Input
+                                    id="confirmPassword"
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    placeholder="Confirm new password"
+                                    {...passwordForm.register("confirmPassword")}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                                  >
+                                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  </button>
+                                </div>
+                                {passwordForm.formState.errors.confirmPassword && (
+                                  <p className="text-red-500 text-sm">{passwordForm.formState.errors.confirmPassword.message}</p>
+                                )}
+                              </div>
+                              <DialogFooter>
+                                <Button type="submit" disabled={setPasswordMutation.isPending}>
+                                  {setPasswordMutation.isPending && (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  )}
+                                  Set Password
+                                </Button>
+                              </DialogFooter>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* Change Password Button */}
+                  {profile && profile.hasPassword && (
+                    <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-semibold text-gray-900">Password</h3>
+                          <p className="text-sm text-gray-500">Change your account password securely.</p>
+                        </div>
+                        <Dialog open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" className="gap-2">
+                              <Lock className="h-4 w-4" />
+                              Change Password
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Change Password</DialogTitle>
+                              <DialogDescription>
+                                Enter your current password and a new password.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={changePasswordForm.handleSubmit(onChangePasswordSubmit)} className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="currentPassword">Current Password</Label>
+                                <div className="relative">
+                                  <Input
+                                    id="currentPassword"
+                                    type={showCurrentPassword ? "text" : "password"}
+                                    placeholder="Enter current password"
+                                    {...changePasswordForm.register("currentPassword")}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                    className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                                  >
+                                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  </button>
+                                </div>
+                                {changePasswordForm.formState.errors.currentPassword && (
+                                  <p className="text-red-500 text-sm">{changePasswordForm.formState.errors.currentPassword.message}</p>
+                                )}
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="newPassword">New Password</Label>
+                                <div className="relative">
+                                  <Input
+                                    id="newPassword"
+                                    type={showNewPassword ? "text" : "password"}
+                                    placeholder="Enter new password"
+                                    {...changePasswordForm.register("newPassword")}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                    className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                                  >
+                                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  </button>
+                                </div>
+                                {changePasswordForm.formState.errors.newPassword && (
+                                  <p className="text-red-500 text-sm">{changePasswordForm.formState.errors.newPassword.message}</p>
+                                )}
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="confirmNewPassword">Confirm New Password</Label>
+                                <div className="relative">
+                                  <Input
+                                    id="confirmNewPassword"
+                                    type={showConfirmNewPassword ? "text" : "password"}
+                                    placeholder="Confirm new password"
+                                    {...changePasswordForm.register("confirmPassword")}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                                    className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                                  >
+                                    {showConfirmNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  </button>
+                                </div>
+                                {changePasswordForm.formState.errors.confirmPassword && (
+                                  <p className="text-red-500 text-sm">{changePasswordForm.formState.errors.confirmPassword.message}</p>
+                                )}
+                              </div>
+                              <DialogFooter>
+                                <Button type="submit" disabled={changePasswordMutation.isPending}>
+                                  {changePasswordMutation.isPending && (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  )}
+                                  Change Password
+                                </Button>
+                              </DialogFooter>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-4">
                     {/* Email */}
                     <div className="space-y-2">
