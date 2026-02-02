@@ -133,6 +133,10 @@ export default function EventPriceUpdate() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'events'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-event-price-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'event-price-requests'] });
       toast({
         title: "Price Update Requested",
         description: "Your ticket price update request has been submitted for admin approval.",
