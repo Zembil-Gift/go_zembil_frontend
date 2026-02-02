@@ -419,6 +419,13 @@ class ServiceService {
     return await apiService.postRequest<ServiceResponse>(`/api/services/${id}/suspend?reason=${encodeURIComponent(reason)}`);
   }
 
+  /**
+   * Unsuspend a service (admin only)
+   */
+  async unsuspendService(id: number): Promise<ServiceResponse> {
+    return await apiService.postRequest<ServiceResponse>(`/api/services/${id}/unsuspend`);
+  }
+
   // ==================== Utility Methods ====================
 
   /**
@@ -437,18 +444,37 @@ class ServiceService {
 
   /**
    * Parse availability config from service
+   * Checks service-level config first, then falls back to default package config
    */
   parseAvailabilityConfig(service: ServiceResponse): AvailabilityConfig {
-    if (!service.availabilityConfig) {
-      return {
-        workingDays: [1, 2, 3, 4, 5, 6, 0],
-        blackoutDates: [],
-        advanceBookingDays: 30,
-        maxBookingsPerDay: 3,
-        timeSlots: ['09:00', '14:00', '18:00'],
-      };
+    // First check service-level availability config with workingDays
+    if (service.availabilityConfig && service.availabilityConfig.workingDays) {
+      return service.availabilityConfig;
     }
-    return service.availabilityConfig;
+    
+    // Fall back to default package availability config if available with workingDays
+    if (service.defaultPackage?.availabilityConfig?.workingDays) {
+      return service.defaultPackage.availabilityConfig;
+    }
+    
+    // If service has availabilityConfig without workingDays, still use it (may have other settings)
+    if (service.availabilityConfig) {
+      return service.availabilityConfig;
+    }
+    
+    // If default package has availabilityConfig without workingDays, use it
+    if (service.defaultPackage?.availabilityConfig) {
+      return service.defaultPackage.availabilityConfig;
+    }
+    
+    // Default fallback - all days available
+    return {
+      workingDays: [0, 1, 2, 3, 4, 5, 6],
+      blackoutDates: [],
+      advanceBookingDays: 30,
+      maxBookingsPerDay: 3,
+      timeSlots: ['09:00', '14:00', '18:00'],
+    };
   }
 
   /**

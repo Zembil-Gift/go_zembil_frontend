@@ -85,7 +85,15 @@ export default function ServiceCheckout() {
   // Parse configs
   const availability = useMemo<AvailabilityConfig>(() => {
     if (!service) return {};
-    return serviceService.parseAvailabilityConfig(service);
+    const config = serviceService.parseAvailabilityConfig(service);
+    // Debug: log availability config source
+    console.log('Availability Config Debug:', {
+      serviceAvailabilityConfig: service.availabilityConfig,
+      defaultPackageAvailabilityConfig: service.defaultPackage?.availabilityConfig,
+      parsedConfig: config,
+      workingDays: config.workingDays,
+    });
+    return config;
   }, [service]);
 
   const displayPriceMajor = useMemo(() => {
@@ -117,17 +125,44 @@ export default function ServiceCheckout() {
     const workingDays = availability.workingDays || [0, 1, 2, 3, 4, 5, 6];
     const blackoutDates = availability.blackoutDates || [];
     const advanceBookingDays = availability.advanceBookingDays || 60; 
+    
+    // Debug: log what workingDays are being used
+    console.log('Calendar Dates Debug:', {
+      workingDays,
+      availableDatesFromAPI: availableDates,
+      advanceBookingDays,
+    });
+    
     for (let i = 1; i <= advanceBookingDays; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       const dayOfWeek = date.getDay();
-      const dateStr = date.toISOString().split('T')[0];
+      // Format date in local timezone (avoid toISOString which uses UTC)
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
 
       if (workingDays.includes(dayOfWeek) && !blackoutDates.includes(dateStr)) {
         dates.push(dateStr);
       }
     }
-    return availableDates || dates;
+    
+    // If API returns available dates, filter them by workingDays as well
+    if (availableDates && availableDates.length > 0) {
+      const filtered = availableDates.filter(dateStr => {
+        // Parse date in local timezone to avoid day-of-week shifts
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        const dayOfWeek = date.getDay();
+        return workingDays.includes(dayOfWeek) && !blackoutDates.includes(dateStr);
+      });
+      console.log('Using API dates filtered:', filtered.slice(0, 5), '...');
+      return filtered;
+    }
+    
+    console.log('Using local dates:', dates.slice(0, 5), '...');
+    return dates;
   }, [availability, availableDates]);
 
   // Generate calendar grid for the current month
@@ -151,8 +186,8 @@ export default function ServiceCheckout() {
     
     // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      const dateStr = date.toISOString().split('T')[0];
+      // Format date as YYYY-MM-DD in local timezone (avoid toISOString which uses UTC)
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       grid.push(dateStr);
     }
     
@@ -166,8 +201,12 @@ export default function ServiceCheckout() {
 
   // Filter available dates for current month
   const availableDatesInMonth = useMemo(() => {
-    const monthStart = currentMonth.toISOString().split('T')[0];
-    const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).toISOString().split('T')[0];
+    // Format month boundaries in local timezone
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
     
     return calendarDates.filter(date => date >= monthStart && date <= monthEnd);
   }, [calendarDates, currentMonth]);
@@ -390,19 +429,22 @@ export default function ServiceCheckout() {
   };
 
   const isToday = (dateStr: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    return dateStr === today;
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return dateStr === todayStr;
   };
 
   const isTomorrow = (dateStr: string) => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return dateStr === tomorrow.toISOString().split('T')[0];
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+    return dateStr === tomorrowStr;
   };
 
   const isPastDate = (dateStr: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    return dateStr < today;
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return dateStr < todayStr;
   };
 
   const formatTime = (timeStr: string) => {
@@ -599,12 +641,6 @@ export default function ServiceCheckout() {
                           }`}
                         >
                           <span className="font-semibold">{getDayOfMonth(dateStr)}</span>
-                          {todayDate && (
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-                          )}
-                          {tomorrowDate && (
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full"></div>
-                          )}
                         </button>
                       );
                     })}
@@ -613,14 +649,6 @@ export default function ServiceCheckout() {
                   {/* Legend */}
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="flex flex-wrap gap-4 justify-center text-xs">
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span className="text-eagle-green/70">Today</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-eagle-green/70">Tomorrow</span>
-                      </div>
                       <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-eagle-green rounded"></div>
                         <span className="text-eagle-green/70">Selected</span>
