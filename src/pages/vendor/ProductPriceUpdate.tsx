@@ -129,6 +129,10 @@ export default function ProductPriceUpdate() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'my-products'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-price-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['product', productId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'product-price-requests'] });
       toast({
         title: "Price Update Requested",
         description: "Your price update request has been submitted for admin approval.",

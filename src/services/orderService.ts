@@ -12,7 +12,7 @@ export interface OrderItem {
 }
 
 export interface Order {
-  id: number;
+  orderId: number;
   userId: string;
   orderNumber: string;
   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
@@ -51,6 +51,14 @@ export interface Order {
   actualDeliveryDate?: string;
   trackingCode?: string;
   notes?: string;
+  deliveryConfirmedAt?: string;
+  revenueEarned?: boolean;
+  totals?: {
+    totalMinor?: number;
+    subtotalMinor?: number;
+    [key: string]: any;
+  };
+  lines?: any[];
   createdAt: string;
   updatedAt: string;
 }
@@ -115,6 +123,81 @@ export interface CustomOrderResponse {
   success: boolean;
   orderId: string;
   message: string;
+}
+
+// Vendor Order Types
+export interface VendorOrderItem {
+  id: number;
+  productId: number;
+  productName: string;
+  productImage?: string;
+  skuId?: number;
+  skuCode?: string;
+  quantity: number;
+  unitAmountMinor: number;
+  totalAmountMinor: number;
+  currency: string;
+}
+
+export interface VendorOrderDeliveryInfo {
+  assignmentId: number;
+  deliveryPersonId: number;
+  deliveryPersonName: string;
+  deliveryPersonPhone?: string;
+  deliveryPersonEmail?: string;
+  vehicleType?: string;
+  vehicleNumber?: string;
+  status: 'ASSIGNED' | 'ACCEPTED' | 'PICKED_UP' | 'IN_TRANSIT' | 'ARRIVED' | 'DELIVERED' | 'FAILED' | 'RETURNED' | 'CANCELLED';
+  assignedAt?: string;
+  expectedDeliveryAt?: string;
+  pickedUpAt?: string;
+  deliveredAt?: string;
+  proofImageUrl?: string;
+  pickupImageUrl?: string;
+  notes?: string;
+}
+
+export interface VendorOrder {
+  orderId: number;
+  orderNumber: string;
+  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+  paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  items: VendorOrderItem[];
+  subtotalMinor: number;
+  totalAmountMinor: number;
+  vendorAmountMinor: number;
+  platformFeeMinor?: number;
+  vatAmountMinor?: number;
+  currency: string;
+  shippingAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipcode?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+  };
+  deliveryInfo?: VendorOrderDeliveryInfo;
+  giftWrap?: boolean;
+  cardMessage?: string;
+  trackingCode?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorOrdersResponse {
+  content: VendorOrder[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
 }
 
 class OrderService {
@@ -270,6 +353,126 @@ class OrderService {
         'Failed to submit custom order'
       );
     }
+  }
+
+  // ==================== Vendor Order Operations ====================
+
+  /**
+   * Get vendor's product orders (orders containing vendor's products)
+   */
+  async getVendorOrders(page: number = 0, size: number = 20, status?: string): Promise<VendorOrdersResponse> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('page', page.toString());
+    queryParams.append('size', size.toString());
+    if (status) queryParams.append('status', status);
+    
+    return await apiService.getRequest<VendorOrdersResponse>(`/api/vendor/orders?${queryParams.toString()}`);
+  }
+
+  /**
+   * Get a specific vendor order by ID
+   */
+  async getVendorOrderById(orderId: number): Promise<VendorOrder> {
+    return await apiService.getRequest<VendorOrder>(`/api/vendor/orders/${orderId}`);
+  }
+
+  /**
+   * Update vendor order status (mark as ready for delivery, etc.)
+   */
+  async updateVendorOrderStatus(orderId: number, status: string, notes?: string): Promise<VendorOrder> {
+    const data = { status, notes };
+    return await apiService.putRequest<VendorOrder>(`/api/vendor/orders/${orderId}/status`, data);
+  }
+
+  /**
+   * Confirm delivery of an order (user confirms they received the item)
+   * This triggers revenue recognition and vendor payout eligibility
+   */
+  async confirmDelivery(orderId: number): Promise<Order> {
+    return await apiService.postRequest<Order>(`/api/orders/${orderId}/confirm-delivery`);
+  }
+
+  // ==================== Helper Methods ====================
+
+  /**
+   * Format price from minor units
+   */
+  formatPrice(amountMinor: number | undefined, currency: string = 'USD'): string {
+    if (amountMinor === undefined || amountMinor === null) return '-';
+    const amount = amountMinor / 100;
+    const currencySymbol = currency === 'ETB' ? 'ETB ' : '$';
+    return `${currencySymbol}${amount.toFixed(2)}`;
+  }
+
+  /**
+   * Get order status display info
+   */
+  getStatusDisplay(status: string): { text: string; bgColor: string; color: string } {
+    const statusMap: Record<string, { text: string; bgColor: string; color: string }> = {
+      'PENDING': { text: 'Pending', bgColor: 'bg-yellow-100', color: 'text-yellow-700' },
+      'CONFIRMED': { text: 'Confirmed', bgColor: 'bg-blue-100', color: 'text-blue-700' },
+      'PROCESSING': { text: 'Processing', bgColor: 'bg-purple-100', color: 'text-purple-700' },
+      'SHIPPED': { text: 'Shipped', bgColor: 'bg-indigo-100', color: 'text-indigo-700' },
+      'DELIVERED': { text: 'Delivered', bgColor: 'bg-green-100', color: 'text-green-700' },
+      'CANCELLED': { text: 'Cancelled', bgColor: 'bg-red-100', color: 'text-red-700' },
+      'REFUNDED': { text: 'Refunded', bgColor: 'bg-gray-100', color: 'text-gray-700' },
+    };
+    return statusMap[status] || { text: status, bgColor: 'bg-gray-100', color: 'text-gray-700' };
+  }
+
+  /**
+   * Get delivery status display info
+   */
+  getDeliveryStatusDisplay(status: string): { text: string; bgColor: string; color: string } {
+    const statusMap: Record<string, { text: string; bgColor: string; color: string }> = {
+      'ASSIGNED': { text: 'Assigned', bgColor: 'bg-blue-100', color: 'text-blue-700' },
+      'ACCEPTED': { text: 'Accepted', bgColor: 'bg-cyan-100', color: 'text-cyan-700' },
+      'PICKED_UP': { text: 'Picked Up', bgColor: 'bg-purple-100', color: 'text-purple-700' },
+      'IN_TRANSIT': { text: 'In Transit', bgColor: 'bg-indigo-100', color: 'text-indigo-700' },
+      'ARRIVED': { text: 'Arrived', bgColor: 'bg-orange-100', color: 'text-orange-700' },
+      'DELIVERED': { text: 'Delivered', bgColor: 'bg-green-100', color: 'text-green-700' },
+      'FAILED': { text: 'Failed', bgColor: 'bg-red-100', color: 'text-red-700' },
+      'RETURNED': { text: 'Returned', bgColor: 'bg-amber-100', color: 'text-amber-700' },
+      'CANCELLED': { text: 'Cancelled', bgColor: 'bg-gray-100', color: 'text-gray-700' },
+    };
+    return statusMap[status] || { text: status, bgColor: 'bg-gray-100', color: 'text-gray-700' };
+  }
+
+  /**
+   * Get payment status display info
+   */
+  getPaymentStatusDisplay(status: string): { text: string; bgColor: string; color: string } {
+    const statusMap: Record<string, { text: string; bgColor: string; color: string }> = {
+      'PENDING': { text: 'Pending', bgColor: 'bg-yellow-100', color: 'text-yellow-700' },
+      'PAID': { text: 'Paid', bgColor: 'bg-green-100', color: 'text-green-700' },
+      'FAILED': { text: 'Failed', bgColor: 'bg-red-100', color: 'text-red-700' },
+      'REFUNDED': { text: 'Refunded', bgColor: 'bg-gray-100', color: 'text-gray-700' },
+    };
+    return statusMap[status] || { text: status, bgColor: 'bg-gray-100', color: 'text-gray-700' };
+  }
+
+  /**
+   * Format date
+   */
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
+  /**
+   * Format date and time
+   */
+  formatDateTime(dateString: string): string {
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 }
 

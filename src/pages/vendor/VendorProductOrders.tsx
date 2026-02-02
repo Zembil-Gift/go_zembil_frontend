@@ -184,7 +184,8 @@ export default function VendorProductOrders() {
                         Paid
                       </Badge>
                     )}
-                    {hasDelivery && deliveryStatusDisplay && (
+                    {/* Only show delivery status badge if order isn't already showing DELIVERED status */}
+                    {hasDelivery && deliveryStatusDisplay && order.status !== 'DELIVERED' && (
                       <Badge className={`${deliveryStatusDisplay.bgColor} ${deliveryStatusDisplay.color} border-none`}>
                         {getDeliveryStatusIcon(order.deliveryInfo!.status)}
                         <span className="ml-1">{deliveryStatusDisplay.text}</span>
