@@ -1,11 +1,8 @@
-import { FcGoogle } from "react-icons/fc";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useOAuth2Login } from "@/hooks/useOAuth2Login";
 import { useOAuth2SDK } from "@/hooks/useOAuth2SDK";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
 import authService from "@/services/authService";
 
@@ -14,10 +11,10 @@ interface OAuth2ButtonsProps {
   disabled?: boolean;
 }
 
-export function OAuth2Buttons({ onSuccess, disabled = false }: OAuth2ButtonsProps) {
+export function OAuth2Buttons({ onSuccess}: OAuth2ButtonsProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { loginWithGoogle, isLoading, data } = useOAuth2Login();
+  const {  data } = useOAuth2Login();
   const { isGoogleReady, hasGoogleConfig } = useOAuth2SDK();
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -52,9 +49,13 @@ export function OAuth2Buttons({ onSuccess, disabled = false }: OAuth2ButtonsProp
               }
             } catch (error: any) {
               console.error('Google login error:', error);
+              
+              const errorMessage = error?.message || "Failed to sign in with Google. Please try again.";
+              const isDeactivated = errorMessage.toLowerCase().includes('deactivated');
+              
               toast({
-                title: "Google sign in failed",
-                description: error?.message || "Failed to sign in with Google. Please try again.",
+                title: isDeactivated ? "Account Deactivated" : "Google sign in failed",
+                description: errorMessage,
                 variant: "destructive",
               });
             } finally {
