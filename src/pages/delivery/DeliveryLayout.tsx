@@ -115,7 +115,7 @@ export default function DeliveryLayout() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col items-start">
-                    <span className="text-sm font-medium">
+                    <span className="text-sm text-start font-medium">
                       {user?.firstName} {user?.lastName}
                     </span>
                     <span className="text-xs text-gray-500">Delivery Person</span>
