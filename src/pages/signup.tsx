@@ -12,6 +12,9 @@ import {Input} from "@/components/ui/input";
 import {Separator} from "@/components/ui/separator";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {PhoneInput} from "@/components/ui/phone-input";
+import {Checkbox} from "@/components/ui/checkbox";
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription} from "@/components/ui/dialog";
+import {ScrollArea} from "@/components/ui/scroll-area";
 import {useToast} from "@/hooks/use-toast";
 import authService from "@/services/authService";
 import {apiService} from "@/services/apiService";
@@ -67,6 +70,9 @@ const signupSchema = z
       .regex(/^(?=.*[@$!%*?&#^()_+=\-\[\]{}|;:',.<>/~`])/, "Password must contain at least one special character"),
     confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
     preferredCurrencyCode: z.string().optional(),
+    acceptedTerms: z.boolean().refine(val => val === true, {
+      message: "You must accept the Terms and Conditions to continue",
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ["confirmPassword"],
@@ -78,6 +84,7 @@ type SignupForm = z.infer<typeof signupSchema>;
 export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -104,6 +111,7 @@ export default function SignUp() {
       password: "",
       confirmPassword: "",
       preferredCurrencyCode: "",
+      acceptedTerms: false,
     },
   });
 
@@ -230,7 +238,7 @@ export default function SignUp() {
                       <FormControl>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                          <Input {...field} placeholder="Choose a username" className="pl-10 h-11" />
+                          <Input {...field} placeholder="Choose a username" className="pl-10 h-11" autoComplete="off" />
                         </div>
                       </FormControl>
                       <p className="text-xs text-gray-500 mt-1">8-20 characters, start with a letter, letters/numbers/underscores only</p>
@@ -248,7 +256,7 @@ export default function SignUp() {
                       <FormControl>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                          <Input {...field} type="email" placeholder="Enter your email" className="pl-10 h-11" />
+                          <Input {...field} type="email" placeholder="Enter your email" className="pl-10 h-11" autoComplete="username" />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -331,6 +339,7 @@ export default function SignUp() {
                               type={showPassword ? "text" : "password"}
                               placeholder="Create a password"
                               className="pl-10 pr-10 h-11"
+                              autoComplete="new-password"
                             />
                             <button
                               type="button"
@@ -361,6 +370,7 @@ export default function SignUp() {
                               type={showConfirm ? "text" : "password"}
                               placeholder="Confirm your password"
                               className="pl-10 pr-10 h-11"
+                              autoComplete="new-password"
                             />
                             <button
                               type="button"
@@ -376,6 +386,35 @@ export default function SignUp() {
                     )}
                   />
                 </div>
+
+                {/* Terms and Conditions Checkbox */}
+                <FormField
+                  control={form.control}
+                  name="acceptedTerms"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm font-normal">
+                          I agree to the{" "}
+                          <button
+                            type="button"
+                            onClick={() => setShowTermsDialog(true)}
+                            className="text-viridian-green hover:text-viridian-green/80 underline font-medium"
+                          >
+                            Terms and Conditions
+                          </button>
+                        </FormLabel>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
 
                 <Button
                   type="submit"
@@ -421,6 +460,119 @@ export default function SignUp() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Terms and Conditions Dialog */}
+      <Dialog open={showTermsDialog} onOpenChange={setShowTermsDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Terms and Conditions</DialogTitle>
+            <DialogDescription>
+              Please read our terms and conditions carefully before signing up.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[50vh] pr-4">
+            <div className="space-y-4 text-sm text-gray-700">
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">1. Account Registration</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>You must provide accurate and complete information during registration</li>
+                  <li>You are responsible for maintaining the confidentiality of your account credentials</li>
+                  <li>You must be at least 18 years old to create an account</li>
+                  <li>One person may only create one customer account</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">2. Using Our Platform</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>You agree to use goGerami only for lawful purposes</li>
+                  <li>You will not engage in fraudulent transactions or misuse the platform</li>
+                  <li>You will treat vendors and other users with respect</li>
+                  <li>You will not attempt to manipulate reviews or ratings</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">3. Orders and Payments</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>All orders are subject to vendor acceptance and availability</li>
+                  <li>Prices are displayed in your selected currency and may include applicable taxes</li>
+                  <li>Payment must be completed at the time of order unless otherwise specified</li>
+                  <li>You agree to pay all fees associated with your purchases</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">4. Delivery and Gifts</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Delivery times are estimates provided by vendors</li>
+                  <li>You are responsible for providing accurate delivery addresses</li>
+                  <li>Gift recipients may be contacted regarding their delivery</li>
+                  <li>Some items may have restrictions on delivery locations</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">5. Returns and Refunds</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Return and refund policies vary by vendor</li>
+                  <li>You must review the vendor's return policy before purchasing</li>
+                  <li>Disputes should first be addressed with the vendor</li>
+                  <li>goGerami may mediate disputes when necessary</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">6. Privacy and Data</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Your personal information is collected and used as described in our Privacy Policy</li>
+                  <li>We may send you notifications about orders, promotions, and platform updates</li>
+                  <li>You can manage your communication preferences in your account settings</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">7. Limitation of Liability</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>goGerami is a marketplace connecting buyers and vendors</li>
+                  <li>We are not responsible for vendor products or services</li>
+                  <li>Our liability is limited to the amount you paid for the transaction in question</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">8. Changes to Terms</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>We may update these terms from time to time</li>
+                  <li>Continued use of the platform constitutes acceptance of updated terms</li>
+                  <li>Significant changes will be communicated via email or platform notification</li>
+                </ul>
+              </section>
+
+              <p className="text-gray-600 mt-4 pt-4 border-t">
+                If you have questions about these terms, please contact our support team at{" "}
+                <a href="mailto:support@gogerami.com" className="text-viridian-green hover:underline">
+                  support@gogerami.com
+                </a>
+              </p>
+            </div>
+          </ScrollArea>
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowTermsDialog(false)}>
+              Close
+            </Button>
+            <Button 
+              className="bg-viridian-green hover:bg-viridian-green/90"
+              onClick={() => {
+                form.setValue("acceptedTerms", true);
+                setShowTermsDialog(false);
+              }}
+            >
+              I Accept
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

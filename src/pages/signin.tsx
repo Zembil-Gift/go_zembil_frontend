@@ -83,7 +83,7 @@ export default function SignIn() {
       const userRole = result.user?.role?.toUpperCase();
       localStorage.removeItem("returnTo");
       
-      if (userRole === 'ADMIN') {
+      if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
         console.log('Admin user detected, navigating to admin dashboard');
         navigate('/admin');
       } else if (userRole === 'VENDOR') {
@@ -110,18 +110,16 @@ export default function SignIn() {
         
         toast({
           title: "Email verification required",
-          description: "Please verify your email to continue. A verification code has been sent.",
+          description: "A verification code has been sent to your email.",
         });
         
-        // Redirect to email verification page
-        setTimeout(() => {
-          navigate('/verify-email', { 
-            state: { 
-              email: email,
-              returnUrl: getReturnUrl()
-            }
-          });
-        }, 500);
+        // Redirect immediately to email verification page
+        navigate('/verify-email', { 
+          state: { 
+            email: email,
+            returnUrl: getReturnUrl()
+          }
+        });
       } else {
         toast({
           title: "Sign in failed",
@@ -223,7 +221,7 @@ export default function SignIn() {
                   : null;
                 localStorage.removeItem("returnTo");
                 
-                if (userRole === 'ADMIN') {
+                if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
                   navigate('/admin');
                 } else if (userRole === 'VENDOR') {
                   navigate('/vendor');

@@ -38,6 +38,7 @@ interface TokenData {
     lastName: string;
     profileImageUrl?: string;
     role: string;
+    permissions?: string[];
   };
 }
 
@@ -52,6 +53,7 @@ interface RefreshResponse {
     lastName: string;
     profileImageUrl?: string;
     role: string;
+    permissions?: string[];
   };
 }
 
@@ -84,7 +86,6 @@ class TokenAuthManager {
       const success = await this.refreshAccessToken();
       return success;
     } catch (error) {
-      console.log('TokenAuthManager: No valid session found');
       return false;
     }
   }
@@ -110,8 +111,6 @@ class TokenAuthManager {
     
     // Notify listeners
     this.notifyListeners();
-    
-    console.log('TokenAuthManager: Token set, expires at', new Date(expiresAt).toISOString());
   }
 
   /**
@@ -125,7 +124,6 @@ class TokenAuthManager {
 
     // Check if token is expired (with buffer)
     if (this.isTokenExpired()) {
-      console.log('TokenAuthManager: Token expired');
       return null;
     }
 
@@ -180,7 +178,6 @@ class TokenAuthManager {
     // Prevent rapid refresh attempts
     const now = Date.now();
     if (now - this.lastRefreshAttempt < MIN_REFRESH_INTERVAL_MS) {
-      console.log('TokenAuthManager: Refresh throttled');
       return this.isAuthenticated();
     }
     this.lastRefreshAttempt = now;
@@ -198,8 +195,6 @@ class TokenAuthManager {
 
   private async doRefresh(): Promise<boolean> {
     try {
-      console.log('TokenAuthManager: Refreshing token...');
-      
       // Call refresh endpoint - the refresh token is in HttpOnly cookie
       const response = await api.post<RefreshResponse>('/auth/refresh', {}, {
         // Don't include auth header for refresh - we use the cookie
@@ -215,11 +210,8 @@ class TokenAuthManager {
       };
 
       this.setTokenData(accessToken, expiresIn, normalizedUser);
-      
-      console.log('TokenAuthManager: Token refreshed successfully');
       return true;
     } catch (error: any) {
-      console.error('TokenAuthManager: Refresh failed', error?.response?.status);
       
       // Clear token data on refresh failure
       this.clearTokenData();
@@ -242,7 +234,6 @@ class TokenAuthManager {
     }
     
     this.notifyListeners();
-    console.log('TokenAuthManager: Token cleared');
   }
 
   /**
@@ -306,13 +297,10 @@ class TokenAuthManager {
     
     if (timeUntilRefresh <= 0) {
       // Token already expired or about to expire, refresh immediately
-      console.log('TokenAuthManager: Token expiring soon, refreshing now');
       this.refreshAccessToken();
       return;
     }
 
-    console.log(`TokenAuthManager: Scheduling refresh in ${Math.floor(timeUntilRefresh / 1000)}s`);
-    
     this.refreshTimer = setTimeout(() => {
       this.refreshAccessToken();
     }, timeUntilRefresh);
