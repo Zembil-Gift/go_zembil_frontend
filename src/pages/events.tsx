@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import FadeIn from '@/components/animations/FadeIn';
-import {
+import SlideIn from '@/components/animations/SlideIn';
+import { 
   Calendar, 
   MapPin, 
   Clock, 
@@ -12,7 +13,8 @@ import {
   Globe, 
   ChevronDown,
   ChevronRight,
-  Ticket
+  Ticket,
+  Sparkles
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
