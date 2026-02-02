@@ -30,6 +30,7 @@ export interface AuthResponse {
     profileImageUrl?: string;
     role: string;
     emailVerified?: boolean;
+    hasPassword?: boolean;
   };
   expiresIn: number;
   requiresEmailVerification?: boolean;
@@ -99,8 +100,6 @@ class AuthService {
         ...response.user,
         id: response.user.id || (response.user as any).userId,
       };
-      console.log('Login response user:', response.user);
-      console.log('Normalized user:', normalizedUser);
       
       // Set token in memory with expiration tracking
       tokenManager.setTokenData(response.accessToken, response.expiresIn, normalizedUser);
@@ -234,13 +233,11 @@ class AuthService {
   async fetchCurrentUser(): Promise<any> {
     try {
       const response = await apiService.getRequest<any>('/api/users/me');
-      console.log('fetchCurrentUser raw response:', response);
       // Normalize user object (backend might use 'userId' instead of 'id')
       const normalizedUser = {
         ...response,
         id: response.id || response.userId,
       };
-      console.log('fetchCurrentUser normalized:', normalizedUser);
       // Update local storage with fresh data
       localStorage.setItem('user', JSON.stringify(normalizedUser));
       return normalizedUser;
