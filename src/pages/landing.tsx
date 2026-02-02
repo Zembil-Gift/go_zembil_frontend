@@ -45,7 +45,7 @@ export default function Landing() {
   });
 
   // Fetch featured events
-  const { data: featuredEventsResponse, isLoading: isLoadingEvents } = useQuery({
+  const { data: featuredEventsResponse} = useQuery({
     queryKey: ["events", "featured"],
     queryFn: async () => {
       try {
@@ -59,7 +59,7 @@ export default function Landing() {
   });
 
   // Fetch featured services
-  const { data: featuredServicesResponse, isLoading: isLoadingServices } = useQuery({
+  const { data: featuredServicesResponse} = useQuery({
     queryKey: ["services", "featured"],
     queryFn: async () => {
       try {
