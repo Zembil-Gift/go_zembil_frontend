@@ -42,6 +42,8 @@ export interface VendorPublicProfile {
   logoUrl?: string;
   city?: string;
   country?: string;
+  vendorCategoryId?: number;
+  vendorCategoryName?: string;
   ratingSummary: RatingSummary;
   totalProducts: number;
   memberSince: string;
