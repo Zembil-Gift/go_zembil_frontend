@@ -100,7 +100,7 @@ function CustomOrdersContent() {
   // State for "How It Works" guide visibility with localStorage persistence
   const [isGuideExpanded, setIsGuideExpanded] = useState(() => {
     const saved = localStorage.getItem('custom-orders-guide-expanded');
-    return saved === null ? true : saved === 'true'; // Default to expanded on first visit
+    return saved === null ? false : saved === 'true'; // Default to expanded on first visit
   });
 
   useEffect(() => {
@@ -126,18 +126,18 @@ function CustomOrdersContent() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <h1 className="text-2xl lg:text-3xl font-gotham-bold text-white">
+                  <h1 className="text-2xl lg:text-3xl font--bold text-white">
                     Custom Orders
                   </h1>
                 </div>
-                <p className="text-sm lg:text-base font-gotham-light text-white/80 max-w-2xl">
+                <p className="text-sm lg:text-base font--light text-white/80 max-w-2xl">
                   Commission unique, personalized pieces from talented Ethiopian artists
                 </p>
               </div>
               <Link to="/custom-orders/categories" className="hidden md:block">
                 <Button 
                   size="lg" 
-                  className="bg-june-bud hover:bg-june-bud/90 text-eagle-green font-gotham-bold px-6 py-3 h-auto rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="bg-june-bud hover:bg-june-bud/90 text-eagle-green font--bold px-6 py-3 h-auto rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <span>Browse Categories</span>
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -162,10 +162,10 @@ function CustomOrdersContent() {
                   <Sparkles className="h-6 w-6 text-eagle-green" />
                 </div>
                 <div className="text-left">
-                  <h2 className="text-2xl lg:text-3xl font-gotham-bold text-eagle-green mb-1">
+                  <h2 className="text-2xl lg:text-3xl font--bold text-eagle-green mb-1">
                     Why Choose Our Custom Order System?
                   </h2>
-                  <p className="text-sm font-gotham-light text-eagle-green/70">
+                  <p className="text-sm font--light text-eagle-green/70">
                     {isFeaturesExpanded ? 'Click to hide features' : 'Click to see key features and benefits'}
                   </p>
                 </div>
@@ -222,10 +222,10 @@ function CustomOrdersContent() {
                               <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center`}>
                                 <feature.icon className="h-8 w-8 text-eagle-green" />
                               </div>
-                              <h3 className="text-xl font-gotham-bold text-eagle-green mb-3">
+                              <h3 className="text-xl font--bold text-eagle-green mb-3">
                                 {feature.title}
                               </h3>
-                              <p className="font-gotham-light text-eagle-green/70 leading-relaxed">
+                              <p className="font--light text-eagle-green/70 leading-relaxed">
                                 {feature.description}
                               </p>
                             </CardContent>
@@ -253,10 +253,10 @@ function CustomOrdersContent() {
                   <Info className="h-6 w-6 text-eagle-green" />
                 </div>
                 <div className="text-left">
-                  <h2 className="text-2xl lg:text-3xl font-gotham-bold text-eagle-green mb-1">
+                  <h2 className="text-2xl lg:text-3xl font--bold text-eagle-green mb-1">
                     How It Works
                   </h2>
-                  <p className="text-sm font-gotham-light text-eagle-green/70">
+                  <p className="text-sm font--light text-eagle-green/70">
                     {isGuideExpanded ? 'Click to hide guide' : 'Click to see how to place a custom order'}
                   </p>
                 </div>
@@ -318,14 +318,14 @@ function CustomOrdersContent() {
                             <div className="w-16 h-16 bg-gradient-to-br from-eagle-green to-viridian-green rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                               <item.icon className="h-8 w-8 text-white" />
                             </div>
-                            <div className="absolute -top-2 -right-2 w-8 h-8 bg-june-bud rounded-full flex items-center justify-center text-eagle-green font-gotham-bold text-sm shadow-md">
+                            <div className="absolute -top-2 -right-2 w-8 h-8 bg-june-bud rounded-full flex items-center justify-center text-eagle-green font--bold text-sm shadow-md">
                               {item.step}
                             </div>
                           </div>
-                          <h3 className="text-lg font-gotham-bold text-eagle-green mb-3">
+                          <h3 className="text-lg font--bold text-eagle-green mb-3">
                             {item.title}
                           </h3>
-                          <p className="font-gotham-light text-eagle-green/70 text-sm leading-relaxed">
+                          <p className="font--light text-eagle-green/70 text-sm leading-relaxed">
                             {item.description}
                           </p>
                         </motion.div>
@@ -342,10 +342,10 @@ function CustomOrdersContent() {
         <FadeIn delay={0.7}>
           <div className="mt-16">
             <div className="text-center mb-12">
-              <h2 className="text-3xl lg:text-4xl font-gotham-bold text-eagle-green mb-4">
+              <h2 className="text-3xl lg:text-4xl font--bold text-eagle-green mb-4">
                 Browse Categories
               </h2>
-              <p className="text-lg font-gotham-light text-eagle-green/70">
+              <p className="text-lg font--light text-eagle-green/70">
                 Discover custom order templates from our talented vendors
               </p>
             </div>
@@ -381,10 +381,10 @@ function CustomOrdersContent() {
                             <div className="w-12 h-12 bg-gradient-to-br from-june-bud/20 to-viridian-green/10 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:from-june-bud/30 group-hover:to-viridian-green/20 transition-colors">
                               <IconComponent className="h-6 w-6 text-eagle-green" />
                             </div>
-                            <h3 className="font-gotham-bold text-eagle-green text-sm mb-1">
+                            <h3 className="font--bold text-eagle-green text-sm mb-1">
                               {category.categoryName}
                             </h3>
-                            <p className="text-xs font-gotham-light text-eagle-green/60">
+                            <p className="text-xs font--light text-eagle-green/60">
                               {category.templateCount} {category.templateCount === 1 ? 'template' : 'templates'}
                             </p>
                           </CardContent>
@@ -397,7 +397,7 @@ function CustomOrdersContent() {
             ) : (
               <div className="text-center py-12">
                 <Package className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
-                <p className="text-lg font-gotham-light text-eagle-green/70">
+                <p className="text-lg font--light text-eagle-green/70">
                   No categories available yet. Check back soon!
                 </p>
               </div>
@@ -411,7 +411,7 @@ function CustomOrdersContent() {
                 <Link to="/custom-orders/categories">
                   <Button 
                     size="lg" 
-                    className="bg-eagle-green hover:bg-viridian-green text-white font-gotham-bold px-8 py-3 h-auto rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="bg-eagle-green hover:bg-viridian-green text-white font--bold px-8 py-3 h-auto rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                   >
                     <span>View All Categories</span>
                     <ArrowRight className="ml-2 h-5 w-5" />

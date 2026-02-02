@@ -52,11 +52,21 @@ import { orderChatService } from '@/services/orderChatService';
 import type { OrderChatMessage, CustomOrderValue, CustomOrderStatus } from '@/types/customOrders';
 
 
-// Status timeline configuration
+// Status timeline configuration - full timeline for negotiable orders
 const STATUS_TIMELINE: { status: CustomOrderStatus; label: string; icon: React.ElementType }[] = [
   { status: 'SUBMITTED', label: 'Submitted', icon: Clock },
   { status: 'PRICE_PROPOSED', label: 'Price Proposed', icon: DollarSign },
   { status: 'CONFIRMED', label: 'Confirmed', icon: CheckCircle },
+  { status: 'PAID', label: 'Paid', icon: CreditCard },
+  { status: 'IN_PROGRESS', label: 'In Progress', icon: Package },
+  { status: 'COMPLETED', label: 'Completed', icon: CheckCircle },
+  { status: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', icon: Truck },
+  { status: 'DELIVERED', label: 'Delivered', icon: CheckCircle },
+];
+
+// Status timeline for non-negotiable orders (skips price proposal and confirmation)
+const NON_NEGOTIABLE_STATUS_TIMELINE: { status: CustomOrderStatus; label: string; icon: React.ElementType }[] = [
+  { status: 'CONFIRMED', label: 'Order Placed', icon: CheckCircle },
   { status: 'PAID', label: 'Paid', icon: CreditCard },
   { status: 'IN_PROGRESS', label: 'In Progress', icon: Package },
   { status: 'COMPLETED', label: 'Completed', icon: CheckCircle },
@@ -128,6 +138,7 @@ function CustomerCustomOrderDetailContent() {
     onSuccess: () => {
       toast({ title: 'Price Accepted', description: 'You can now proceed to payment.' });
       queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum, preferredCurrency] });
+      queryClient.invalidateQueries({ queryKey: ['my-custom-orders'] });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -139,6 +150,7 @@ function CustomerCustomOrderDetailContent() {
     onSuccess: () => {
       toast({ title: 'Price Rejected', description: 'The vendor will be notified to propose a new price.' });
       queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum, preferredCurrency] });
+      queryClient.invalidateQueries({ queryKey: ['my-custom-orders'] });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -150,6 +162,7 @@ function CustomerCustomOrderDetailContent() {
     onSuccess: () => {
       toast({ title: 'Order Cancelled', description: 'Your order has been cancelled.' });
       queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum, preferredCurrency] });
+      queryClient.invalidateQueries({ queryKey: ['my-custom-orders'] });
       setCancelDialogOpen(false);
       setCancelReason('');
     },
@@ -320,12 +333,6 @@ function CustomerCustomOrderDetailContent() {
     }
   };
 
-  // Get current status index for timeline
-  const getCurrentStatusIndex = (status: CustomOrderStatus): number => {
-    if (status === 'CANCELLED') return -1;
-    return STATUS_TIMELINE.findIndex(s => s.status === status);
-  };
-
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -364,12 +371,17 @@ function CustomerCustomOrderDetailContent() {
     );
   }
 
-  const canRespondToPrice = customOrderService.canCustomerRespondToPrice(order.status);
+  // For non-negotiable templates, customer cannot respond to price (there's no negotiation)
+  const isNonNegotiable = order.templateNegotiable === false;
+  const canRespondToPrice = !isNonNegotiable && customOrderService.canCustomerRespondToPrice(order.status);
   const canPay = customOrderService.canCustomerPay(order.status);
   const canCancel = customOrderService.canCustomerCancel(order.status);
   const statusBadgeColor = customOrderService.getStatusBadgeColor(order.status);
   const statusText = customOrderService.getStatusText(order.status);
-  const currentStatusIndex = getCurrentStatusIndex(order.status);
+  
+  // Get the appropriate timeline based on negotiability
+  const timeline = isNonNegotiable ? NON_NEGOTIABLE_STATUS_TIMELINE : STATUS_TIMELINE;
+  const currentStatusIndex = timeline.findIndex(s => s.status === order.status);
 
 
   return (
@@ -403,7 +415,7 @@ function CustomerCustomOrderDetailContent() {
             <CardContent className="p-4 sm:p-6">
               {/* Mobile: Vertical Layout */}
               <div className="sm:hidden space-y-3">
-                {STATUS_TIMELINE.map((step, index) => {
+                {timeline.map((step, index) => {
                   const isCompleted = index <= currentStatusIndex;
                   const isCurrent = index === currentStatusIndex;
                   const Icon = step.icon;
@@ -437,7 +449,7 @@ function CustomerCustomOrderDetailContent() {
 
               {/* Desktop: Horizontal Layout */}
               <div className="hidden sm:flex items-start relative">
-                {STATUS_TIMELINE.map((step, index) => {
+                {timeline.map((step, index) => {
                   const isCompleted = index <= currentStatusIndex;
                   const isCurrent = index === currentStatusIndex;
                   const Icon = step.icon;
@@ -454,7 +466,7 @@ function CustomerCustomOrderDetailContent() {
                         `}>
                           <Icon className="h-5 w-5" />
                         </div>
-                        {index < STATUS_TIMELINE.length - 1 && (
+                        {index < timeline.length - 1 && (
                           <div className={`
                             absolute left-1/2 top-5 w-full h-1 rounded
                             ${index < currentStatusIndex ? 'bg-eagle-green' : 'bg-gray-200'}
@@ -501,6 +513,7 @@ function CustomerCustomOrderDetailContent() {
                 >
                   Order Details
                 </TabsTrigger>
+                {!isNonNegotiable && (
                 <TabsTrigger 
                   value="chat"
                   className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
@@ -508,6 +521,7 @@ function CustomerCustomOrderDetailContent() {
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Chat with Vendor
                 </TabsTrigger>
+                )}
                 <TabsTrigger 
                   value="history"
                   className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
@@ -557,7 +571,8 @@ function CustomerCustomOrderDetailContent() {
                 )}
               </TabsContent>
 
-              {/* Chat Tab */}
+              {/* Chat Tab - Only for negotiable orders */}
+              {!isNonNegotiable && (
               <TabsContent value="chat" className="space-y-4">
                 <Card className="h-[500px] flex flex-col">
                   <CardHeader className="pb-2">
@@ -682,6 +697,7 @@ function CustomerCustomOrderDetailContent() {
                   </CardContent>
                 </Card>
               </TabsContent>
+              )}
 
               {/* History Tab */}
               <TabsContent value="history" className="space-y-6">
@@ -783,9 +799,21 @@ function CustomerCustomOrderDetailContent() {
             {/* Pricing */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-eagle-green text-lg">Pricing</CardTitle>
+                <CardTitle className="text-eagle-green text-lg flex items-center justify-between">
+                  Pricing
+                  {isNonNegotiable && (
+                    <Badge className="bg-viridian-green/10 text-viridian-green border-viridian-green/30">
+                      Fixed Price
+                    </Badge>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {isNonNegotiable && (
+                  <p className="text-sm text-viridian-green bg-viridian-green/5 p-2 rounded-md">
+                    This order has a fixed price with no negotiation required.
+                  </p>
+                )}
                 <div className="flex justify-between">
                   <span className="text-eagle-green/70">Base Price</span>
                   <span className="text-eagle-green">

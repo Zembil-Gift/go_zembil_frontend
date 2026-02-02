@@ -77,9 +77,14 @@ function TemplateCard({ template }: { template: CustomOrderTemplate }) {
             )}
             
             {/* Price Badge */}
-            <div className="absolute bottom-3 right-3">
+            <div className="absolute bottom-3 right-3 flex gap-2">
+              {template.negotiable === false && (
+                <Badge className="bg-viridian-green/90 text-white border-none font-medium backdrop-blur-sm">
+                  Fixed Price
+                </Badge>
+              )}
               <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
-                From {customOrderTemplateService.formatTemplatePrice(template)}
+                {template.negotiable === false ? '' : 'From '}{customOrderTemplateService.formatTemplatePrice(template)}
               </Badge>
             </div>
           </div>

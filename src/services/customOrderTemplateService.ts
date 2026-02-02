@@ -66,8 +66,28 @@ class CustomOrderTemplateService {
     return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
   }
 
-  async getPending(page: number = 0, size: number = 20): Promise<PagedCustomOrderTemplateResponse> {
-    const url = `/api/custom-order-templates/pending?page=${page}&size=${size}`;
+  async getPending(page: number = 0, size: number = 20, currency?: string): Promise<PagedCustomOrderTemplateResponse> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('size', size.toString());
+    if (currency) {
+      params.append('currency', currency);
+    }
+    const url = `/api/custom-order-templates/pending?${params.toString()}`;
+    return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
+  }
+
+  async getAll(page: number = 0, size: number = 20, status?: string, currency?: string): Promise<PagedCustomOrderTemplateResponse> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('size', size.toString());
+    if (status) {
+      params.append('status', status);
+    }
+    if (currency) {
+      params.append('currency', currency);
+    }
+    const url = `/api/custom-order-templates/all?${params.toString()}`;
     return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
   }
 

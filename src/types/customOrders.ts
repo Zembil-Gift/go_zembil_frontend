@@ -64,6 +64,7 @@ export interface CustomOrderTemplate {
   parentCategoryId?: number;
   parentCategoryName?: string;
   status: CustomOrderTemplateStatus;
+  negotiable?: boolean;
   rejectionReason?: string;
   approvedById?: number;
   approvedByName?: string;
@@ -125,6 +126,9 @@ export interface CustomOrder {
   orderNumber: string;
   templateId: number;
   templateName: string;
+  templateDescription?: string;
+  /** Whether the template requires price negotiation. True = negotiable, False = fixed price */
+  templateNegotiable?: boolean;
   customerId: number;
   customerName: string;
   customerEmail: string;
@@ -178,6 +182,8 @@ export interface CreateCustomOrderTemplateRequest {
   basePrice: number;
   currency: string;
   categoryId?: number;
+  /** Whether price negotiation is required. True = negotiable (default), False = fixed price */
+  negotiable?: boolean;
   fields: {
     fieldName: string;
     fieldType: CustomizationFieldType;
@@ -193,6 +199,8 @@ export interface UpdateCustomOrderTemplateRequest {
   basePrice?: number;
   currency?: string;
   categoryId?: number;
+  /** Whether price negotiation is required. True = negotiable, False = fixed price */
+  negotiable?: boolean;
   fields?: {
     fieldName: string;
     fieldType: CustomizationFieldType;
