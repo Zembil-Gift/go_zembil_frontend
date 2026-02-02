@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
-import { X, Upload, Star, Loader2} from 'lucide-react';
+import { X, Upload, Star, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ImageDto } from '@/services/imageService';
+import imageCompression from 'browser-image-compression';
 
 interface ImageUploadProps {
   images?: ImageDto[];
@@ -18,6 +19,7 @@ interface ImageUploadProps {
   showPrimarySelector?: boolean;
   accept?: string;
   maxFileSizeMB?: number;
+  enableCompression?: boolean;
 }
 
 interface PreviewImage {
@@ -40,9 +42,11 @@ export function ImageUpload({
   showPrimarySelector = true,
   accept = 'image/jpeg,image/png,image/gif,image/webp',
   maxFileSizeMB = 10,
+  enableCompression = true,
 }: ImageUploadProps) {
   const [previewImages, setPreviewImages] = useState<PreviewImage[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,7 +55,11 @@ export function ImageUpload({
 
   const validateFile = useCallback((file: File): string | null => {
     const acceptedTypes = accept.split(',').map((t) => t.trim());
-    if (!acceptedTypes.includes(file.type)) {
+    // Basic type check - strict mimetype check can be complex
+    if (!acceptedTypes.some(type => {
+        if (type.endsWith('/*')) return file.type.startsWith(type.replace('/*', ''));
+        return file.type === type;
+    })) {
       return `File type ${file.type} is not supported. Accepted: ${accept}`;
     }
     if (file.size > maxFileSizeMB * 1024 * 1024) {
@@ -60,7 +68,32 @@ export function ImageUpload({
     return null;
   }, [accept, maxFileSizeMB]);
 
-  const handleFiles = useCallback((files: FileList | File[]) => {
+  const compressImage = async (file: File): Promise<File> => {
+    // Only compress if it's an image and valid
+    if (!file.type.startsWith('image/') || file.type.includes('gif')) {
+       return file;
+    }
+
+    const options = {
+      maxSizeMB: 1, // Compress to ~1MB
+      maxWidthOrHeight: 1920, // Max dimension 1920px (Full HD)
+      useWebWorker: true,
+      fileType: 'image/webp', // Convert to efficient WebP format
+      initialQuality: 0.8,
+    };
+
+    try {
+      const compressedBlob = await imageCompression(file, options);
+      // Create a new file with the same name (but .webp extension)
+      const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+      return new File([compressedBlob], newName, { type: 'image/webp', lastModified: Date.now() });
+    } catch (error) {
+      console.error("Image compression failed:", error);
+      return file; // Return original if compression fails
+    }
+  };
+
+  const handleFiles = useCallback(async (files: FileList | File[]) => {
     setError(null);
     const fileArray = Array.from(files);
     
@@ -73,8 +106,8 @@ export function ImageUpload({
 
     const filesToAdd = fileArray.slice(0, availableSlots);
     const validFiles: File[] = [];
-    const newPreviews: PreviewImage[] = [];
 
+    // First validate all files
     for (const file of filesToAdd) {
       const validationError = validateFile(file);
       if (validationError) {
@@ -82,18 +115,47 @@ export function ImageUpload({
         continue;
       }
       validFiles.push(file);
-      newPreviews.push({
-        id: `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        file,
-        preview: URL.createObjectURL(file),
-      });
+    }
+    
+    if (validFiles.length === 0) return;
+
+    if (enableCompression) {
+      setIsCompressing(true);
+      try {
+        const processedFiles: File[] = [];
+        const newPreviews: PreviewImage[] = [];
+
+        for (const file of validFiles) {
+          const processedFile = await compressImage(file);
+          processedFiles.push(processedFile);
+          
+          newPreviews.push({
+            id: `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            file: processedFile,
+            preview: URL.createObjectURL(processedFile),
+          });
+        }
+        
+        setPreviewImages((prev) => [...prev, ...newPreviews]);
+        onFilesSelected?.(processedFiles);
+      } finally {
+        setIsCompressing(false);
+      }
+    } else {
+        // No compression
+        const newPreviews: PreviewImage[] = [];
+        for (const file of validFiles) {
+           newPreviews.push({
+            id: `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            file: file,
+            preview: URL.createObjectURL(file), // Immediate preview for raw files
+          });
+        }
+        setPreviewImages((prev) => [...prev, ...newPreviews]);
+        onFilesSelected?.(validFiles);
     }
 
-    if (validFiles.length > 0) {
-      setPreviewImages((prev) => [...prev, ...newPreviews]);
-      onFilesSelected?.(validFiles);
-    }
-  }, [maxImages, totalImages, validateFile, onFilesSelected]);
+  }, [maxImages, totalImages, validateFile, onFilesSelected, enableCompression]);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -289,7 +351,15 @@ export function ImageUpload({
             aria-label="Upload images"
           />
 
-          {isUploading ? (
+          {isCompressing ? (
+            <>
+              <Sparkles className="h-8 w-8 animate-pulse text-amber-500" />
+              <div className="text-center">
+                 <p className="text-sm font-medium text-amber-600">Optimizing images...</p>
+                 <p className="text-xs text-muted-foreground mt-1">Compressing for faster upload</p>
+              </div>
+            </>
+          ) : isUploading ? (
             <>
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Uploading...</p>
