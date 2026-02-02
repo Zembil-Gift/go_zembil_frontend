@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -110,6 +110,7 @@ export default function EditService() {
   useNavigate(); // Keep hook to avoid conditional hook warning
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Dialog states
   const [showCategoryChangeDialog, setShowCategoryChangeDialog] = useState(false);
@@ -323,6 +324,8 @@ export default function EditService() {
     onSuccess: () => {
       toast({ title: "Service Updated", description: "Your service has been updated successfully." });
       refetchService();
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'services'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-services'] });
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to update service", variant: "destructive" });

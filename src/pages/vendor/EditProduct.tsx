@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/ImageUpload";
+import { TagInput } from "@/components/TagInput";
 import { 
   ArrowLeft, 
   Package, 
@@ -94,9 +95,17 @@ const productEditSchema = z.object({
   summary: z.string().max(500).optional(),
   subCategoryId: z.string().min(1, "Category is required"),
   isCustomizable: z.boolean().optional(),
-  tags: z.string().optional(),
+  tags: z.array(z.string()).optional(),
   occasion: z.string().optional(),
   productSku: z.array(skuSchema).min(1, "At least one product SKU is required"),
+}).refine((data) => {
+  // Check for duplicate variant names
+  const variantNames = data.productSku.map(sku => sku.skuName.trim().toLowerCase());
+  const uniqueNames = new Set(variantNames);
+  return uniqueNames.size === variantNames.length;
+}, {
+  message: "Each variant must have a unique name",
+  path: ["productSku"],
 });
 
 type ProductEditFormData = z.infer<typeof productEditSchema>;
@@ -190,7 +199,7 @@ export default function EditProduct() {
       summary: "",
       subCategoryId: "",
       isCustomizable: false,
-      tags: "",
+      tags: [],
       occasion: "",
       productSku: [],
     },
@@ -212,6 +221,7 @@ export default function EditProduct() {
             return {
               id: sku.id,
               skuCode: sku.skuCode || "",
+              skuName: sku.skuName || "",
               stockQuantity: sku.stockQuantity || 0,
               currencyCode,
               currentPrice,
@@ -224,6 +234,7 @@ export default function EditProduct() {
           })
         : [{
             skuCode: "",
+            skuName: "",
             stockQuantity: 0,
             currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : currencies[0]?.code || "",
             currentPrice: product.price?.vendorAmount || product.price?.prices?.[0]?.amount || 0,
@@ -289,7 +300,7 @@ export default function EditProduct() {
         summary: product.summary || "",
         subCategoryId: product.subCategoryId?.toString() || "",
         isCustomizable: product.isCustomizable || false,
-        tags: product.tags?.join(", ") || "",
+        tags: product.tags || [],
         occasion: product.occasion || "",
         productSku: skuData,
       });
@@ -315,7 +326,7 @@ export default function EditProduct() {
         // Only include subCategoryId for PENDING/REJECTED products (can change directly)
         ...(isPendingOrRejected && { subCategoryId: data.subCategoryId ? parseInt(data.subCategoryId) : undefined }),
         isCustomizable: data.isCustomizable,
-        tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(t => t) : undefined,
+        tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
         occasion: data.occasion || undefined,
         // Include SKU updates (excluding price changes)
         productSku: data.productSku.map((sku, index) => ({
@@ -506,9 +517,46 @@ export default function EditProduct() {
 
   const onError = (errors: any) => {
     console.log("Form validation errors:", errors);
+    
+    const errorMessages: string[] = [];
+    if (errors.name) errorMessages.push("Product name is required");
+    if (errors.subCategoryId) errorMessages.push("Category is required");
+    if (errors.productSku) {
+      let foundSpecificSkuError = false;
+      // Check for refine validation error (duplicate names) - it's in the root property
+      if (errors.productSku.root?.message) {
+        errorMessages.push(errors.productSku.root.message);
+        foundSpecificSkuError = true;
+      } else if (errors.productSku.message) {
+        errorMessages.push(errors.productSku.message);
+        foundSpecificSkuError = true;
+      } else if (Array.isArray(errors.productSku)) {
+        // Individual SKU field errors
+        errors.productSku.forEach((skuError: any, index: number) => {
+          if (skuError) {
+            const variantLabel = `Variant ${index + 1}`;
+            if (skuError.skuName) {
+              errorMessages.push(`${variantLabel}: ${skuError.skuName.message}`);
+              foundSpecificSkuError = true;
+            }
+            if (skuError.stockQuantity) {
+              errorMessages.push(`${variantLabel}: ${skuError.stockQuantity.message}`);
+              foundSpecificSkuError = true;
+            }
+          }
+        });
+      }
+      // Only show generic message if there are SKU errors but we didn't find specific field errors
+      if (!foundSpecificSkuError) {
+        errorMessages.push("Please check variant details - ensure all required fields are filled");
+      }
+    }
+    
     toast({
       title: "Validation Error",
-      description: "Please fill in all required fields correctly.",
+      description: errorMessages.length > 0 
+        ? errorMessages.join(". ") 
+        : "Please fill in all required fields correctly.",
       variant: "destructive",
     });
   };
@@ -746,11 +794,18 @@ export default function EditProduct() {
               </div>
 
               <div>
-                <Label htmlFor="tags">Tags (comma separated)</Label>
-                <Input
-                  id="tags"
-                  placeholder="gift, premium, handmade"
-                  {...form.register("tags")}
+                <Label htmlFor="tags">Tags</Label>
+                <Controller
+                  name="tags"
+                  control={form.control}
+                  render={({ field }) => (
+                    <TagInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Enter tag"
+                      maxTags={10}
+                    />
+                  )}
                 />
               </div>
             </CardContent>
@@ -805,7 +860,7 @@ export default function EditProduct() {
                     <CardContent className="space-y-4">
                       {/* SKU Name */}
                       <div>
-                        <Label>Variant Name (optional)</Label>
+                        <Label>Variant Name *</Label>
                         <Input
                           placeholder={skuFields.length === 1 ? "e.g., Default" : "e.g., Red Medium"}
                           {...form.register(`productSku.${skuIndex}.skuName`)}
@@ -815,7 +870,7 @@ export default function EditProduct() {
                             {form.formState.errors.productSku[skuIndex]?.skuName?.message}
                           </p>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">A friendly name for this variant</p>
+                        <p className="text-xs text-muted-foreground mt-1">A unique friendly name for this variant</p>
                       </div>
 
                       {/* SKU Code and Stock */}

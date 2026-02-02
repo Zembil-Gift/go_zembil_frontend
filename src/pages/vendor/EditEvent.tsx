@@ -59,9 +59,10 @@ const ticketTypeSchema = z.object({
   name: z.string().min(1, "Ticket name is required"),
   description: z.string().optional(),
   capacity: z.number().min(1, "Capacity must be at least 1"),
-  // Price fields are read-only for existing tickets
+  // Price fields - editable for pending/rejected events
   currencyCode: z.string().optional(),
   currentPrice: z.number().optional(),
+  newPrice: z.number().optional(),  // For pending/rejected events
   isActive: z.boolean().optional(),
 });
 
@@ -202,6 +203,7 @@ export default function EditEvent() {
         // Convert from minor units (cents) to major units (dollars/birr)
         // Use vendorPriceMinor - what the vendor receives (before platform commission)
         currentPrice: tt.vendorPriceMinor ? tt.vendorPriceMinor / 100 : 0,
+        newPrice: tt.vendorPriceMinor ? tt.vendorPriceMinor / 100 : 0,  // Initialize with current price
         isActive: tt.isActive,
       })) || [];
 
@@ -248,10 +250,27 @@ export default function EditEvent() {
         country: data.country,
       };
 
-      // Use the appropriate endpoint based on event status
+      // For pending/rejected events, include ticket price updates
       const isPendingOrRejected = event?.status === 'PENDING' || event?.status === 'REJECTED';
-
+      
       if (isPendingOrRejected) {
+        // Build ticket type updates with price changes
+        const ticketTypeUpdates = data.ticketTypes
+          .filter(tt => tt.id && tt.newPrice !== undefined && tt.newPrice !== tt.currentPrice)
+          .map(tt => ({
+            ticketTypeId: tt.id!,
+            name: tt.name,
+            description: tt.description,
+            capacity: tt.capacity,
+            isActive: tt.isActive,
+            newPrice: tt.newPrice,
+            currencyCode: tt.currencyCode || 'ETB',
+          }));
+
+        if (ticketTypeUpdates.length > 0) {
+          eventPayload.ticketTypeUpdates = ticketTypeUpdates;
+        }
+
         return vendorService.editPendingOrRejectedEvent(eventId, eventPayload);
       } else {
         return vendorService.updateEvent(eventId, eventPayload);
@@ -456,18 +475,31 @@ export default function EditEvent() {
           </Alert>
         )}
 
-        {/* Price Update Notice */}
-        <Alert className="mb-6 border-blue-200 bg-blue-50">
-          <DollarSign className="h-4 w-4 text-blue-600" />
-          <AlertTitle className="text-blue-800">Ticket Price Updates</AlertTitle>
-          <AlertDescription className="text-blue-700">
-            Ticket price changes require admin approval. Go to the{' '}
-            <Link to="/vendor" className="font-medium underline">
-              Requests tab
-            </Link>{' '}
-            in your dashboard to submit price change requests.
-          </AlertDescription>
-        </Alert>
+        {/* Price Update Notice - only show for approved events */}
+        {event.status === 'APPROVED' && (
+          <Alert className="mb-6 border-blue-200 bg-blue-50">
+            <DollarSign className="h-4 w-4 text-blue-600" />
+            <AlertTitle className="text-blue-800">Ticket Price Updates</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              Ticket price changes for approved events require admin approval. Go to the{' '}
+              <Link to="/vendor" className="font-medium underline">
+                Requests tab
+              </Link>{' '}
+              in your dashboard to submit price change requests.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Price Update Info for pending/rejected events */}
+        {(event.status === 'PENDING' || event.status === 'REJECTED') && (
+          <Alert className="mb-6 border-green-200 bg-green-50">
+            <Info className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-800">Direct Price Updates Allowed</AlertTitle>
+            <AlertDescription className="text-green-700">
+              You can update ticket prices directly for pending or rejected events. Changes will be reviewed when you resubmit.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
           {/* Basic Information */}
@@ -739,32 +771,55 @@ export default function EditEvent() {
                       />
                     </div>
 
-                    {/* Current Price (Read-only for existing tickets) */}
-                    {ticketId && currentPrice !== undefined && (
-                      <div className="p-3 bg-gray-50 rounded-lg border">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Label className="text-sm text-muted-foreground">Current Price</Label>
-                            <p className="text-lg font-semibold">
-                              {currencyCode} {currentPrice?.toFixed(2)}
+                    {/* Price field - editable for pending/rejected, read-only for approved */}
+                    {ticketId && (
+                      <div className="space-y-2">
+                        {(event.status === 'PENDING' || event.status === 'REJECTED') ? (
+                          <div className="space-y-2">
+                            <Label>Price ({currencyCode}) *</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="Enter new price"
+                              {...form.register(`ticketTypes.${ticketIndex}.newPrice`, { valueAsNumber: true })}
+                            />
+                            {currentPrice !== undefined && (
+                              <p className="text-sm text-muted-foreground">
+                                Current: {currencyCode} {currentPrice?.toFixed(2)}
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              You can update prices directly for pending/rejected events
                             </p>
                           </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              toast({
-                                title: "Price Change Request",
-                                description: "Go to your dashboard's Requests tab to submit a ticket price change request.",
-                              });
-                              navigate("/vendor");
-                            }}
-                          >
-                            <DollarSign className="h-4 w-4 mr-1" />
-                            Request Price Change
-                          </Button>
-                        </div>
+                        ) : (
+                          <div className="p-3 bg-gray-50 rounded-lg border">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <Label className="text-sm text-muted-foreground">Current Price</Label>
+                                <p className="text-lg font-semibold">
+                                  {currencyCode} {currentPrice?.toFixed(2)}
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  toast({
+                                    title: "Price Change Request",
+                                    description: "Go to your dashboard's Requests tab to submit a ticket price change request.",
+                                  });
+                                  navigate("/vendor");
+                                }}
+                              >
+                                <DollarSign className="h-4 w-4 mr-1" />
+                                Request Price Change
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
