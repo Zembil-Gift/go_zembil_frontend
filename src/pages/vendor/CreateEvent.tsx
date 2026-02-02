@@ -2,7 +2,7 @@ import {useState, useEffect} from "react";
 import {useForm, useFieldArray} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";
-import {useMutation, useQuery} from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {useNavigate, Link} from "react-router-dom";
 import {useAuth} from "@/hooks/useAuth";
 import {useToast} from "@/hooks/use-toast";
@@ -53,7 +53,7 @@ const ticketTypeSchema = z.object({
 const eventSchema = z.object({
     title: z.string().min(1, "Event title is required").max(255),
     description: z.string().min(10, "Description must be at least 10 characters"),
-    shortDescription: z.string().max(500).optional(),
+    summary: z.string().min(1, "Summary is required").max(500),
     startDateTime: z.string().min(1, "Start date/time is required"),
     endDateTime: z.string().min(1, "End date/time is required"),
     timezone: z.string().optional(),
@@ -72,6 +72,7 @@ export default function CreateEvent() {
     const navigate = useNavigate();
     const {user, isAuthenticated} = useAuth();
     const {toast} = useToast();
+    const queryClient = useQueryClient();
 
     const isVendor = user?.role?.toUpperCase() === 'VENDOR';
 
@@ -115,7 +116,7 @@ export default function CreateEvent() {
         defaultValues: {
             title: "",
             description: "",
-            shortDescription: "",
+            summary: "",
             startDateTime: "",
             endDateTime: "",
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -154,6 +155,7 @@ export default function CreateEvent() {
             const eventPayload: CreateEventRequest = {
                 title: data.title,
                 description: data.description,
+                summary: data.summary,
                 location: data.venue,
                 city: data.city || '',
                 eventDate: data.startDateTime,
@@ -194,6 +196,12 @@ export default function CreateEvent() {
             return createdEvent;
         },
         onSuccess: () => {
+            // Invalidate relevant queries so lists refresh immediately
+            queryClient.invalidateQueries({ queryKey: ['vendor', 'events'] });
+            queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-events'] });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'pending-events'] });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'all-events'] });
+            
             toast({
                 title: "Event Created",
                 description: "Your event has been submitted for admin approval.",
@@ -287,12 +295,15 @@ export default function CreateEvent() {
                             </div>
 
                             <div>
-                                <Label htmlFor="shortDescription">Short Description</Label>
+                                <Label htmlFor="summary">Summary *</Label>
                                 <Input
-                                    id="shortDescription"
+                                    id="summary"
                                     placeholder="Brief event summary"
-                                    {...form.register("shortDescription")}
+                                    {...form.register("summary")}
                                 />
+                                {form.formState.errors.summary && (
+                                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.summary.message}</p>
+                                )}
                             </div>
 
                             <div>

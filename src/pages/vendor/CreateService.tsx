@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, memo } from "react";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -152,7 +152,7 @@ const packageSchema = z.object({
 
 const serviceSchema = z.object({
   title: z.string().min(1, "Service title is required").max(255),
-  description: z.string().max(5000).optional(),
+  description: z.string().min(1, "Description is required").max(5000),
   location: z.string().min(1, "Location is required").max(500),
   city: z.string().min(1, "City is required").max(100),
   categoryId: z.string().optional(),
@@ -166,6 +166,7 @@ export default function CreateService() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [pendingImages, setPendingImages] = useState<File[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [pendingPackageImages, setPendingPackageImages] = useState<Record<number, File[]>>({});
@@ -241,7 +242,7 @@ export default function CreateService() {
       const currentPackages = form.getValues('packages');
       if (currentPackages.length > 0 && currentPackages[0].currency !== currency) {
         // Update all packages with the correct currency
-        currentPackages.forEach((pkg, index) => {
+        currentPackages.forEach((_pkg, index) => {
           form.setValue(`packages.${index}.currency`, currency);
         });
       }
@@ -401,81 +402,99 @@ export default function CreateService() {
       console.log("Package creation check - packages array:", data.packages);
       console.log("Package creation check - length:", data.packages?.length);
       
-      if (data.packages && data.packages.length > 0) {
-        console.log(`Creating ${data.packages.length} packages for service ${createdService.id}`);
-        for (let pkgIndex = 0; pkgIndex < data.packages.length; pkgIndex++) {
-          const pkg = data.packages[pkgIndex];
-          try {
-            const packageRequest = {
-              packageCode: pkg.packageCode || undefined,
-              name: pkg.name,
-              description: pkg.description,
-              durationMinutes: pkg.durationMinutes,
-              basePrice: pkg.basePrice,
-              currency: pkg.currency,
-              isDefault: pkg.isDefault,
-              maxBookingsPerDay: pkg.maxBookingsPerDay,
-              sortOrder: pkg.sortOrder,
-              // Availability is now required per package
-              availabilityType: pkg.availabilityType,
-              availabilityConfig: {
-                workingDays: pkg.workingDays,
-                blackoutDates: [],
-                advanceBookingDays: pkg.advanceBookingDays,
-                ...(pkg.availabilityType === "TIME_SLOTS"
-                  ? { timeSlots: pkg.timeSlots }
-                  : { workingHoursStart: pkg.workingHoursStart, workingHoursEnd: pkg.workingHoursEnd }),
-              },
-              attributes: pkg.attributes?.filter(a => a.value).map((a, i) => ({
-                name: a.name || undefined,
-                value: a.value,
-                sortOrder: i,
-              })),
-            };
-            console.log(`[Package ${pkgIndex + 1}/${data.packages.length}] Creating package "${pkg.name}"`);
-            console.log(`[Package ${pkgIndex + 1}] Request body:`, JSON.stringify(packageRequest, null, 2));
-            console.log(`[Package ${pkgIndex + 1}] Endpoint: /api/vendor/services/${createdService.id}/packages`);
-            
-            const pkgResult = await apiService.postRequest(`/api/vendor/services/${createdService.id}/packages`, packageRequest);
-            console.log(`[Package ${pkgIndex + 1}] Created successfully:`, pkgResult);
-          } catch (pkgError: any) {
-            console.error(`[Package ${pkgIndex + 1}] Failed to create package "${pkg.name}":`, pkgError);
-            console.error(`[Package ${pkgIndex + 1}] Error message:`, pkgError.message);
-            toast({ title: "Warning", description: `Package "${pkg.name}" failed to create: ${pkgError.message || 'Unknown error'}`, variant: "destructive" });
-          }
-        }
-
-        // Upload package images after packages are created
-        // We need to fetch the created packages to get their IDs
+      if (!data.packages || data.packages.length === 0) {
+        throw new Error("At least one package is required. Please add a package before submitting.");
+      }
+      
+      console.log(`Creating ${data.packages.length} packages for service ${createdService.id}`);
+      const packageErrors: string[] = [];
+      
+      for (let pkgIndex = 0; pkgIndex < data.packages.length; pkgIndex++) {
+        const pkg = data.packages[pkgIndex];
         try {
-          const createdPackages = await apiService.getRequest<any[]>(`/api/vendor/services/${createdService.id}/packages`);
-          if (createdPackages && createdPackages.length > 0) {
-            // Match packages by name and upload images
-            for (let i = 0; i < data.packages.length; i++) {
-              const pkgData = data.packages[i];
-              const images = pendingPackageImages[i];
-              if (images && images.length > 0) {
-                // Find the created package that matches this one (by name)
-                const createdPkg = createdPackages.find(cp => cp.name === pkgData.name);
-                if (createdPkg?.id) {
-                  try {
-                    await imageService.uploadPackageImages(createdPkg.id, images);
-                  } catch (imgError: any) {
-                    console.error(`Failed to upload images for package "${pkgData.name}":`, imgError);
-                    toast({ title: "Warning", description: `Images for package "${pkgData.name}" failed to upload.`, variant: "destructive" });
-                  }
+          const packageRequest = {
+            packageCode: pkg.packageCode || undefined,
+            name: pkg.name,
+            description: pkg.description,
+            durationMinutes: pkg.durationMinutes || undefined,
+            basePrice: pkg.basePrice,
+            currency: pkg.currency,
+            isDefault: pkg.isDefault,
+            maxBookingsPerDay: pkg.maxBookingsPerDay,
+            sortOrder: pkg.sortOrder,
+            // Availability is now required per package
+            availabilityType: pkg.availabilityType,
+            availabilityConfig: {
+              workingDays: pkg.workingDays,
+              blackoutDates: [],
+              advanceBookingDays: pkg.advanceBookingDays,
+              ...(pkg.availabilityType === "TIME_SLOTS"
+                ? { timeSlots: pkg.timeSlots }
+                : { workingHoursStart: pkg.workingHoursStart, workingHoursEnd: pkg.workingHoursEnd }),
+            },
+            attributes: pkg.attributes?.filter(a => a.value).map((a, i) => ({
+              name: a.name || undefined,
+              value: a.value,
+              sortOrder: i,
+            })),
+          };
+          console.log(`[Package ${pkgIndex + 1}/${data.packages.length}] Creating package "${pkg.name}"`);
+          console.log(`[Package ${pkgIndex + 1}] Request body:`, JSON.stringify(packageRequest, null, 2));
+          console.log(`[Package ${pkgIndex + 1}] Endpoint: /api/vendor/services/${createdService.id}/packages`);
+          
+          const pkgResult = await serviceService.createPackage(createdService.id, packageRequest as any);
+          console.log(`[Package ${pkgIndex + 1}] Created successfully:`, pkgResult);
+        } catch (pkgError: any) {
+          console.error(`[Package ${pkgIndex + 1}] Failed to create package "${pkg.name}":`, pkgError);
+          console.error(`[Package ${pkgIndex + 1}] Error message:`, pkgError.message);
+          packageErrors.push(`Package "${pkg.name}": ${pkgError.message || 'Unknown error'}`);
+        }
+      }
+      
+      // If all packages failed to create, throw an error
+      if (packageErrors.length === data.packages.length) {
+        throw new Error(`Failed to create packages: ${packageErrors.join('; ')}`);
+      } else if (packageErrors.length > 0) {
+        // Some packages failed - show warning but continue
+        toast({ title: "Warning", description: `Some packages failed to create: ${packageErrors.join('; ')}`, variant: "destructive" });
+      }
+
+      // Upload package images after packages are created
+      // We need to fetch the created packages to get their IDs
+      try {
+        const createdPackages = await apiService.getRequest<any[]>(`/api/vendor/services/${createdService.id}/packages`);
+        if (createdPackages && createdPackages.length > 0) {
+          // Match packages by name and upload images
+          for (let i = 0; i < data.packages.length; i++) {
+            const pkgData = data.packages[i];
+            const images = pendingPackageImages[i];
+            if (images && images.length > 0) {
+              // Find the created package that matches this one (by name)
+              const createdPkg = createdPackages.find(cp => cp.name === pkgData.name);
+              if (createdPkg?.id) {
+                try {
+                  await imageService.uploadPackageImages(createdPkg.id, images);
+                } catch (imgError: any) {
+                  console.error(`Failed to upload images for package "${pkgData.name}":`, imgError);
+                  toast({ title: "Warning", description: `Images for package "${pkgData.name}" failed to upload.`, variant: "destructive" });
                 }
               }
             }
           }
-        } catch (fetchError: any) {
-          console.error("Failed to fetch created packages for image upload:", fetchError);
         }
+      } catch (fetchError: any) {
+        console.error("Failed to fetch created packages for image upload:", fetchError);
       }
       
       return createdService;
     },
     onSuccess: () => {
+      // Invalidate relevant queries so lists refresh immediately
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'services'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-services'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'pending-services'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'all-services'] });
+      
       toast({
         title: "Service Created",
         description: packages.length > 0 
@@ -589,8 +608,16 @@ export default function CreateService() {
                 )}
               </div>
               <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" placeholder="Describe your service in detail..." className="min-h-[100px]" {...form.register("description")} />
+                <Label htmlFor="description">Description *</Label>
+                <Textarea 
+                  id="description" 
+                  placeholder="Describe your service in detail..." 
+                  className="min-h-[100px]" 
+                  {...form.register("description")} 
+                />
+                {form.formState.errors.description && (
+                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.description.message}</p>
+                )}
               </div>
               <div>
                 <Label>Category</Label>
@@ -1052,7 +1079,7 @@ export default function CreateService() {
           </Card>
 
           {/* Submit */}
-          <div className="flex justify-between items-center py-4 border-t bg-white sticky bottom-0">
+          <div className="flex justify-between items-center py-4 border-t bg-white sticky bottom-0 -mx-4 px-4 sm:-mx-0 sm:px-0">
             <div className="text-sm text-muted-foreground">
               <span className="flex items-center gap-2">
                 <Package className="h-4 w-4" />

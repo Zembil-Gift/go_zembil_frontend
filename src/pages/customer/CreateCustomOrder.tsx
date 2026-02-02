@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -64,6 +64,7 @@ function CreateCustomOrderContent() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, user } = useAuth();
+  const queryClient = useQueryClient();
   
   const templateIdNum = templateId ? parseInt(templateId) : 0;
   
@@ -115,11 +116,27 @@ function CreateCustomOrderContent() {
   const createOrderMutation = useMutation({
     mutationFn: (data: CreateCustomOrderRequest) => customOrderService.create(data),
     onSuccess: (order) => {
-      toast({
-        title: 'Order Submitted!',
-        description: `Your custom order #${order.orderNumber} has been submitted successfully.`,
-      });
-      navigate(`/my-custom-orders/${order.id}`);
+      // Invalidate relevant queries so lists refresh immediately
+      queryClient.invalidateQueries({ queryKey: ['my-custom-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'custom-orders'] });
+      
+      const isNonNegotiable = template?.negotiable === false;
+      
+      if (isNonNegotiable) {
+        toast({
+          title: 'Order Created!',
+          description: `Your order #${order.orderNumber} is ready for payment.`,
+        });
+        // For non-negotiable orders, redirect to order detail which will show payment options
+        navigate(`/my-custom-orders/${order.id}?action=pay`);
+      } else {
+        toast({
+          title: 'Order Submitted!',
+          description: `Your custom order #${order.orderNumber} has been submitted successfully.`,
+        });
+        navigate(`/my-custom-orders/${order.id}`);
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -275,9 +292,20 @@ function CreateCustomOrderContent() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateDescription = () => {
+    if (!additionalDescription.trim()) {
+      setErrors(prev => ({...prev, [-1]: "Description is required"}));
+      return false;
+    }
+    return true;
+  }
+
   // Handle form submission
   const handleSubmit = () => {
-    if (!validateForm()) {
+    const isFormValid = validateForm();
+    const isDescriptionValid = validateDescription();
+    
+    if (!isFormValid || !isDescriptionValid) {
       toast({
         title: 'Validation Error',
         description: 'Please fill in all required fields correctly.',
@@ -563,13 +591,21 @@ function CreateCustomOrderContent() {
                     </div>
                     
                     <div className="bg-june-bud/10 rounded-lg p-4">
-                      <p className="text-sm text-eagle-green/70 mb-1">Base Price</p>
+                      <p className="text-sm text-eagle-green/70 mb-1">
+                        {template.negotiable === false ? 'Price' : 'Base Price'}
+                      </p>
                       <p className="text-2xl font-bold text-eagle-green">
                         {customOrderTemplateService.formatTemplatePrice(template)}
                       </p>
-                      <p className="text-xs text-eagle-green/60 mt-1">
-                        Final price may vary based on customizations
-                      </p>
+                      {template.negotiable === false ? (
+                        <p className="text-xs text-viridian-green mt-1 font-medium">
+                          ✓ Fixed price - pay directly without negotiation
+                        </p>
+                      ) : (
+                        <p className="text-xs text-eagle-green/60 mt-1">
+                          Final price may vary based on customizations
+                        </p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -597,15 +633,31 @@ function CreateCustomOrderContent() {
 
                   {/* Additional Description */}
                   <div className="space-y-2 pt-4 border-t">
-                    <Label className="text-eagle-green font-medium">
-                      Additional Notes (Optional)
+                    <Label htmlFor="additionalDescription" className="text-eagle-green font-medium">
+                      Description <span className="text-red-500">*</span>
                     </Label>
                     <Textarea
+                      id="additionalDescription"
                       value={additionalDescription}
-                      onChange={(e) => setAdditionalDescription(e.target.value)}
-                      placeholder="Any special requests or additional information for the vendor..."
-                      className="min-h-[100px]"
+                      onChange={(e) => {
+                        setAdditionalDescription(e.target.value);
+                        if (e.target.value.trim() && errors[-1]) {
+                             setErrors(prev => {
+                                const newErrors = { ...prev };
+                                delete newErrors[-1];
+                                return newErrors;
+                              });
+                        }
+                      }}
+                      placeholder="Please provide a detailed description of your request..."
+                      className={`min-h-[100px] ${errors[-1] ? 'border-red-500' : ''}`}
                     />
+                     {errors[-1] && (
+                        <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {errors[-1]}
+                        </p>
+                      )}
                   </div>
                   
                   {/* Submit Button */}
@@ -623,12 +675,15 @@ function CreateCustomOrderContent() {
                       ) : (
                         <>
                           <CheckCircle className="h-4 w-4 mr-2" />
-                          Submit Order
+                          {template.negotiable === false ? 'Place Order & Pay' : 'Submit Order'}
                         </>
                       )}
                     </Button>
                     <p className="text-xs text-eagle-green/60 text-center mt-2">
-                      The vendor will review your order and propose a final price
+                      {template.negotiable === false 
+                        ? 'You will be redirected to payment after submission'
+                        : 'The vendor will review your order and propose a final price'
+                      }
                     </p>
                   </div>
                 </CardContent>

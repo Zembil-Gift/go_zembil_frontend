@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -48,10 +49,11 @@ const customizationFieldSchema = z.object({
 // Template schema
 const templateSchema = z.object({
   name: z.string().min(1, "Template name is required").max(255),
-  description: z.string().max(5000).optional(),
+  description: z.string().min(1, "Description is required").max(5000),
   basePrice: z.number().min(0.01, "Base price must be greater than 0"),
   currency: z.string().min(3, "Currency is required").max(3),
   categoryId: z.number().optional(),
+  negotiable: z.boolean().default(true),
   fields: z.array(customizationFieldSchema).min(1, "At least one customization field is required"),
 });
 
@@ -85,6 +87,7 @@ export default function CreateCustomTemplate() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [pendingImages, setPendingImages] = useState<File[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
@@ -134,6 +137,7 @@ export default function CreateCustomTemplate() {
       basePrice: 0,
       currency: "ETB", // Will be updated by useEffect when vendorProfile loads
       categoryId: 0,
+      negotiable: true,
       fields: [{
         fieldName: "",
         fieldType: 'TEXT',
@@ -152,7 +156,7 @@ export default function CreateCustomTemplate() {
     }
   }, [vendorProfile, currencies, form]);
 
-  const { fields: fieldArray, append: appendField, remove: removeField, update: updateField } = useFieldArray({
+  const { fields: fieldArray, append: appendField, remove: removeField} = useFieldArray({
     control: form.control,
     name: "fields",
   });
@@ -171,19 +175,6 @@ export default function CreateCustomTemplate() {
     appendField(newField);
   };
 
-  // Update field sort order for drag and drop (simplified)
-  const moveField = (fromIndex: number, toIndex: number) => {
-    const newFields = [...fields];
-    const [movedField] = newFields.splice(fromIndex, 1);
-    newFields.splice(toIndex, 0, movedField);
-    
-    // Update sort orders
-    newFields.forEach((field, index) => {
-      updateField(index, { ...field, sortOrder: index });
-    });
-  };
-
-  // Create template mutation
   const createTemplateMutation = useMutation({
     mutationFn: async (data: TemplateFormData) => {
       const request: CreateCustomOrderTemplateRequest = {
@@ -192,6 +183,7 @@ export default function CreateCustomTemplate() {
         basePrice: data.basePrice, // Send major units directly - backend handles conversion
         currency: data.currency,
         categoryId: data.categoryId || undefined,
+        negotiable: data.negotiable, // Whether price negotiation is required
         fields: data.fields.map((field, index) => ({
           fieldName: field.fieldName,
           fieldType: field.fieldType,
@@ -223,6 +215,11 @@ export default function CreateCustomTemplate() {
       return createdTemplate;
     },
     onSuccess: () => {
+      // Invalidate relevant queries so lists refresh immediately
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'pending-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'all-templates'] });
+      
       toast({
         title: "Template Created",
         description: "Your custom order template has been submitted for admin approval.",
@@ -316,13 +313,16 @@ export default function CreateCustomTemplate() {
               </div>
               
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Description *</Label>
                 <Textarea 
                   id="description" 
                   placeholder="Describe your customizable product/service..." 
                   className="min-h-[100px]" 
                   {...form.register("description")} 
                 />
+                {form.formState.errors.description && (
+                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.description.message}</p>
+                )}
               </div>
               
               {/* VAT Notice */}
@@ -432,6 +432,44 @@ export default function CreateCustomTemplate() {
                     </Select>
                   )}
                 />
+              </div>
+
+              {/* Pricing Type Toggle */}
+              <div className="pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="negotiable" className="text-base font-medium">
+                      Negotiable Pricing
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {form.watch('negotiable') 
+                        ? "Customers must negotiate and agree on the final price before payment"
+                        : "Customers pay the base price directly without negotiation"
+                      }
+                    </p>
+                  </div>
+                  <Controller
+                    name="negotiable"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Switch
+                        id="negotiable"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+                
+                {!form.watch('negotiable') && (
+                  <Alert className="mt-3 border-blue-200 bg-blue-50">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-700">
+                      <strong>Fixed Price Mode:</strong> Customers will pay the base price directly. 
+                      You can start working on the order immediately after payment without negotiation.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -646,14 +684,21 @@ export default function CreateCustomTemplate() {
 
               <Alert className="border-blue-200 bg-blue-50">
                 <Info className="h-4 w-4 text-blue-600" />
-                <AlertTitle className="text-blue-800">Pricing & Negotiation</AlertTitle>
+                <AlertTitle className="text-blue-800">Pricing Options</AlertTitle>
                 <AlertDescription className="text-blue-700">
-                  <p className="mb-2">The base price you set is a starting point:</p>
+                  <p className="mb-2"><strong>Negotiable (Default):</strong></p>
+                  <ul className="list-disc list-inside text-sm space-y-1 mb-3">
+                    <li>Customers see the base price as "starting from" price</li>
+                    <li>You can adjust the final price based on their requirements</li>
+                    <li>Price negotiation happens through the order chat</li>
+                    <li>Payment is only processed after both parties agree</li>
+                  </ul>
+                  <p className="mb-2"><strong>Fixed Price (Non-Negotiable):</strong></p>
                   <ul className="list-disc list-inside text-sm space-y-1">
-                    <li>Customers will see this as the "starting from" price</li>
-                    <li>You can adjust the final price based on their specific requirements</li>
-                    <li>Price negotiation happens through the order chat system</li>
-                    <li>Payment is only processed after both parties agree on the final price</li>
+                    <li>Customers pay the base price directly</li>
+                    <li>No negotiation step required</li>
+                    <li>You can start working immediately after payment</li>
+                    <li>Faster checkout for customers</li>
                   </ul>
                 </AlertDescription>
               </Alert>

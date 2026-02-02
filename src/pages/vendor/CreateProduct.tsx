@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
+import { TagInput } from "@/components/TagInput";
 import { ArrowLeft, Package, AlertCircle, Plus, Trash2, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -52,21 +53,29 @@ const skuSchema = z.object({
   skuCode: z.string().optional(),
   skuName: z.string().min(1, "Variant name is required"),
   stockQuantity: z.number().min(0, "Stock cannot be negative"),
-  amount: z.number().min(0.01, "Price must be greater than 0"),
+  amount: z.number().min(0, "Price must be a valid number"),
   attributes: z.array(attributeSchema).optional(),
 });
 
 const productSchema = z.object({
   name: z.string().min(1, "Product name is required").max(255),
-  description: z.string().max(1000).optional(),
-  summary: z.string().max(500).optional(),
+  description: z.string().min(1, "Description is required").max(1000),
+  summary: z.string().min(1, "Summary is required").max(500),
   cover: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  subCategoryId: z.string().min(1, "Category is required"),
+  subCategoryId: z.string().min(1, "Sub-Category is required"),
   isFeatured: z.boolean().optional(),
-  tags: z.string().optional(),
+  tags: z.array(z.string()).optional(),
   occasion: z.string().optional(),
   currencyCode: z.string().min(1, "Currency is required"),
   productSku: z.array(skuSchema).min(1, "At least one product SKU is required"),
+}).refine((data) => {
+  // Check for duplicate variant names
+  const variantNames = data.productSku.map(sku => sku.skuName.trim().toLowerCase());
+  const uniqueNames = new Set(variantNames);
+  return uniqueNames.size === variantNames.length;
+}, {
+  message: "Each variant must have a unique name",
+  path: ["productSku"],
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -75,6 +84,7 @@ export default function CreateProduct() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
 
@@ -122,7 +132,7 @@ export default function CreateProduct() {
       cover: "",
       subCategoryId: "",
       isFeatured: false,
-      tags: "",
+      tags: [],
       occasion: "",
       currencyCode: "ETB", // Will be updated by useEffect when vendorProfile loads
       productSku: [{
@@ -187,7 +197,7 @@ export default function CreateProduct() {
         summary: data.summary || undefined,
         subCategoryId: parseInt(data.subCategoryId),
         isFeatured: false,
-        tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(t => t) : undefined,
+        tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
         occasion: data.occasion || undefined,
       };
 
@@ -240,22 +250,24 @@ export default function CreateProduct() {
                 console.log(`SKU ${sku.id} images uploaded successfully`);
               } catch (skuImageError: any) {
                 console.error(`Failed to upload images for SKU ${sku.id}:`, skuImageError);
+                // Rollback: Delete the created product
+                try {
+                  await vendorService.deleteProduct(createdProduct.id);
+                  console.log(`Product ${createdProduct.id} rolled back due to image upload failure`);
+                } catch (deleteError) {
+                  console.error("Failed to rollback product:", deleteError);
+                }
+                
                 if (skuImageError?.response?.status === 413 || skuImageError?.response?.data?.error === 'FILE_SIZE_EXCEEDED') {
                   throw new Error(skuImageError?.response?.data?.message || "File size exceeds the maximum allowed limit");
                 }
+                throw new Error("Image upload failed. Product creation has been rolled back. Please try again.");
               }
             }
           }
         } catch (error: any) {
-          if (error.message?.includes("File size exceeds") || error.message?.includes("10MB")) {
-            throw error;
-          }
-          console.error("Error during SKU image upload:", error);
-          toast({
-            title: "Warning",
-            description: "Product created but some SKU images failed to upload. You can add them later.",
-            variant: "destructive",
-          });
+          setIsUploadingImages(false);
+          throw error; // Re-throw to trigger onError
         } finally {
           setIsUploadingImages(false);
         }
@@ -264,6 +276,13 @@ export default function CreateProduct() {
       return createdProduct;
     },
     onSuccess: () => {
+      // Invalidate relevant queries so lists refresh immediately
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'my-products'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'products'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'pending-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'all-products'] });
+      
       toast({
         title: "Product Created",
         description: "Your product has been submitted for admin approval.",
@@ -315,19 +334,46 @@ export default function CreateProduct() {
     
     const errorMessages: string[] = [];
     if (errors.name) errorMessages.push("Product name is required");
-    if (errors.subCategoryId) errorMessages.push("Category is required");
+    if (errors.subCategoryId) errorMessages.push("Sub-Category is required");
     if (errors.productSku) {
-      if (errors.productSku.message) {
+      let foundSpecificSkuError = false;
+      // Check for refine validation error (duplicate names) - it's in the root property
+      if (errors.productSku.root?.message) {
+        errorMessages.push(errors.productSku.root.message);
+        foundSpecificSkuError = true;
+      } else if (errors.productSku.message) {
         errorMessages.push(errors.productSku.message);
-      } else {
-        errorMessages.push("Please check SKU details - at least one valid SKU is required");
+        foundSpecificSkuError = true;
+      } else if (Array.isArray(errors.productSku)) {
+        // Individual SKU field errors
+        errors.productSku.forEach((skuError: any, index: number) => {
+          if (skuError) {
+            const variantLabel = `Variant ${index + 1}`;
+            if (skuError.skuName) {
+              errorMessages.push(`${variantLabel}: ${skuError.skuName.message}`);
+              foundSpecificSkuError = true;
+            }
+            if (skuError.amount) {
+              errorMessages.push(`${variantLabel}: ${skuError.amount.message}`);
+              foundSpecificSkuError = true;
+            }
+            if (skuError.stockQuantity) {
+              errorMessages.push(`${variantLabel}: ${skuError.stockQuantity.message}`);
+              foundSpecificSkuError = true;
+            }
+          }
+        });
+      }
+      // Only show generic message if there are SKU errors but we didn't find specific field errors
+      if (!foundSpecificSkuError) {
+        errorMessages.push("Please check variant details - ensure all required fields are filled");
       }
     }
     
     toast({
       title: "Validation Error",
       description: errorMessages.length > 0 
-        ? errorMessages.join(", ") 
+        ? errorMessages.join(". ") 
         : "Please fill in all required fields correctly.",
       variant: "destructive",
     });
@@ -385,22 +431,28 @@ export default function CreateProduct() {
               </div>
 
               <div>
-                <Label htmlFor="summary">Short Summary</Label>
+                <Label htmlFor="summary">Short Summary *</Label>
                 <Input
                   id="summary"
                   placeholder="Brief product summary"
                   {...form.register("summary")}
                 />
+                {form.formState.errors.summary && (
+                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.summary.message}</p>
+                )}
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
                   placeholder="Detailed product description"
                   className="min-h-[120px]"
                   {...form.register("description")}
                 />
+                {form.formState.errors.description && (
+                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.description.message}</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -456,11 +508,18 @@ export default function CreateProduct() {
               </div>
 
               <div>
-                <Label htmlFor="tags">Tags (comma separated)</Label>
-                <Input
-                  id="tags"
-                  placeholder="gift, premium, handmade"
-                  {...form.register("tags")}
+                <Label htmlFor="tags">Tags</Label>
+                <Controller
+                  name="tags"
+                  control={form.control}
+                  render={({ field }) => (
+                    <TagInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Enter tag"
+                      maxTags={10}
+                    />
+                  )}
                 />
               </div>
             </CardContent>
@@ -556,7 +615,7 @@ export default function CreateProduct() {
                       <CardContent className="space-y-4">
                         {/* SKU Name */}
                         <div>
-                          <Label>Variant Name (optional)</Label>
+                          <Label>Variant Name *</Label>
                           <Input
                             placeholder={skuFields.length === 1 ? "e.g., Default" : "e.g., Red Medium"}
                             {...form.register(`productSku.${skuIndex}.skuName`)}
@@ -623,7 +682,7 @@ export default function CreateProduct() {
                               <Input
                                 type="number"
                                 step="0.01"
-                                min="0.01"
+                                min="0"
                                 placeholder="0.00"
                                 value={field.value || ''}
                                 onChange={(e) => {
