@@ -1,4 +1,5 @@
 import { apiService } from './apiService';
+import { tokenManager } from './tokenManager';
 
 export interface CertificateGenerationRequest {
   email: string;
@@ -80,14 +81,21 @@ export const certificateService = {
    * Download my certificate PDF (for logged-in vendors)
    */
   downloadMyCertificatePdf: async (): Promise<Blob> => {
+    const token = tokenManager.getAccessToken();
+    if (!token) {
+      throw new Error('Not authenticated - no token found');
+    }
+    
     const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/vendor-certificates/my-certificate/pdf`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('PDF download failed:', response.status, errorText);
       throw new Error(`Failed to download PDF: ${response.status} ${response.statusText}`);
     }
     
