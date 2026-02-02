@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient, QueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { vendorService, VendorProfile, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse, ServicePriceUpdateRequest, CategoryChangeRequest, ServiceCategoryChangeRequest } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService, ImageDto } from "@/services/imageService";
@@ -27,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
 import { TicketScanner } from "@/components/vendor/TicketScanner";
+import { TagInput } from "@/components/TagInput";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +46,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Store,
   Package,
@@ -76,6 +87,9 @@ import {
   ShoppingBag,
   User,
   MessageSquare,
+  LogOut,
+  Menu,
+  ChevronRight,
 } from "lucide-react";
 
 // Helper function to check if vendor is Ethiopian
@@ -85,10 +99,17 @@ const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean =>
 };
 
 export default function VendorDashboardNew() {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/signin');
+  };
 
   // Check if user is a vendor
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
@@ -348,95 +369,220 @@ export default function VendorDashboardNew() {
     }
   };
 
+  const navigationItems = [
+    { value: 'overview', label: 'Overview', icon: BarChart3, show: true },
+    { value: 'products', label: 'Products', icon: Package, show: vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID' },
+    { value: 'events', label: 'Events', icon: Calendar, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
+    { value: 'services', label: 'Services', icon: Briefcase, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
+    { value: 'custom-templates', label: 'Custom Templates', icon: Layers, show: true },
+    { value: 'custom-orders', label: 'Custom Orders', icon: ShoppingBag, show: true, badge: customOrderStats.needsAction },
+    { value: 'check-in', label: 'Check-In', icon: ScanLine, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
+    { value: 'payments', label: 'Payments', icon: CreditCard, show: true },
+    { value: 'requests', label: 'Requests', icon: Clock, show: true },
+    { value: 'settings', label: 'Settings', icon: Settings, show: true },
+  ].filter(item => item.show);
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-eagle-green text-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Store className="h-10 w-10" />
-              <div>
-                <h1 className="text-2xl font-bold">{vendorProfile?.businessName || 'Vendor Dashboard'}</h1>
-                <p className="text-emerald-100">Manage your products, events, and payments</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
+      {/* Mobile Header */}
+      <div className="fixed top-0 left-0 right-0 h-16 bg-eagle-green border-b border-white/10 z-50 lg:hidden">
+        <div className="flex items-center justify-between h-full px-4">
+          <div className="flex items-center gap-2">
+            <Store className="h-6 w-6 text-june-bud" />
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-white truncate max-w-[150px]">
+                {vendorProfile?.businessName || 'Vendor'}
+              </span>
               {vendorProfile?.isApproved ? (
-                <Badge className="bg-green-500 text-white">Approved</Badge>
+                <Badge className="bg-green-500 text-white text-[10px] h-4 px-1 w-fit">Approved</Badge>
               ) : (
-                <Badge className="bg-amber-500 text-white">Pending Approval</Badge>
+                <Badge className="bg-amber-500 text-white text-[10px] h-4 px-1 w-fit">Pending</Badge>
               )}
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-june-bud text-eagle-green text-xs">
+                      {user?.firstName?.[0]}{user?.lastName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{user?.firstName} {user?.lastName}</span>
+                    <span className="text-xs text-muted-foreground">Vendor</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-white hover:bg-white/10"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="w-full overflow-x-auto pb-2">
-            <TabsList className="inline-flex w-auto min-w-full lg:min-w-0">
-              <TabsTrigger value="overview" className="flex items-center gap-2 whitespace-nowrap">
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Overview</span>
-              </TabsTrigger>
-            {/* Products tab - only for PRODUCT and HYBRID vendors */}
-            {(vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID') && (
-              <TabsTrigger value="products" className="flex items-center gap-2 whitespace-nowrap">
-                <Package className="h-4 w-4" />
-                <span className="hidden sm:inline">Products</span>
-              </TabsTrigger>
-            )}
-            {/* Events tab - only for SERVICE and HYBRID vendors */}
-            {(vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID') && (
-              <TabsTrigger value="events" className="flex items-center gap-2 whitespace-nowrap">
-                <Calendar className="h-4 w-4" />
-                <span className="hidden sm:inline">Events</span>
-              </TabsTrigger>
-            )}
-            {/* Services tab - only for SERVICE and HYBRID vendors */}
-            {(vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID') && (
-              <TabsTrigger value="services" className="flex items-center gap-2 whitespace-nowrap">
-                <Briefcase className="h-4 w-4" />
-                <span className="hidden sm:inline">Services</span>
-              </TabsTrigger>
-            )}
-            {/* Custom Templates tab - available for all vendors */}
-            <TabsTrigger value="custom-templates" className="flex items-center gap-2 whitespace-nowrap">
-              <Layers className="h-4 w-4" />
-              <span className="hidden sm:inline">Custom Templates</span>
-            </TabsTrigger>
-            {/* Custom Orders tab - available for all vendors */}
-            <TabsTrigger value="custom-orders" className="flex items-center gap-2 whitespace-nowrap">
-              <ShoppingBag className="h-4 w-4" />
-              <span className="hidden sm:inline">Custom Orders</span>
-              {customOrderStats.needsAction > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                  {customOrderStats.needsAction}
-                </Badge>
+      {/* Backdrop for mobile sidebar */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside 
+        className={cn(
+          "fixed top-16 lg:top-0 left-0 bottom-0 w-64 bg-eagle-green z-40 transition-transform duration-300 ease-in-out overflow-y-auto",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* Desktop Header */}
+          <div className="hidden lg:block p-4 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <Store className="h-8 w-8 text-june-bud flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-white truncate">
+                  {vendorProfile?.businessName || 'Vendor Dashboard'}
+                </h2>
+                <p className="text-xs text-emerald-100 truncate">Manage your business</p>
+              </div>
+            </div>
+            <div className="mt-2">
+              {vendorProfile?.isApproved ? (
+                <Badge className="bg-green-500 text-white text-xs">Approved</Badge>
+              ) : (
+                <Badge className="bg-amber-500 text-white text-xs">Pending Approval</Badge>
               )}
-            </TabsTrigger>
-            {/* Check-in tab - only for SERVICE and HYBRID vendors (for events) */}
-            {(vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID') && (
-              <TabsTrigger value="check-in" className="flex items-center gap-2 whitespace-nowrap">
-                <ScanLine className="h-4 w-4" />
-                <span className="hidden sm:inline">Check-In</span>
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="payments" className="flex items-center gap-2 whitespace-nowrap">
-              <CreditCard className="h-4 w-4" />
-              <span className="hidden sm:inline">Payments</span>
-            </TabsTrigger>
-            <TabsTrigger value="requests" className="flex items-center gap-2 whitespace-nowrap">
-              <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">Requests</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2 whitespace-nowrap">
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Settings</span>
-            </TabsTrigger>
-          </TabsList>
+            </div>
           </div>
+          
+          {/* Navigation */}
+          <nav className="flex-1 px-3 py-4 space-y-1">
+            {navigationItems.map((item) => {
+              const isActive = activeTab === item.value;
+              const Icon = item.icon;
+              
+              return (
+                <button
+                  key={item.value}
+                  onClick={() => {
+                    setActiveTab(item.value);
+                    setSidebarOpen(false);
+                  }}
+                  className={cn(
+                    'w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all',
+                    isActive 
+                      ? 'bg-june-bud text-eagle-green shadow-lg' 
+                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  )}
+                >
+                  <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {item.badge && item.badge > 0 && (
+                    <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1.5 text-xs flex items-center justify-center">
+                      {item.badge}
+                    </Badge>
+                  )}
+                  {isActive && <ChevronRight className="h-4 w-4 flex-shrink-0 ml-2" />}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Desktop User Profile */}
+          <div className="hidden lg:block p-4 border-t border-white/10">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start gap-3 h-auto py-2 text-white hover:bg-white/10 hover:text-white">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-june-bud text-eagle-green">
+                      {user?.firstName?.[0]}{user?.lastName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col items-start flex-1 min-w-0">
+                    <span className="text-sm text-start font-medium truncate w-full">
+                      {user?.firstName} {user?.lastName}
+                    </span>
+                    <span className="text-xs text-white/70">Vendor</span>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <div className="pt-16 lg:pt-0 lg:pl-64 min-h-screen">
+        <main className="p-4 sm:p-6 lg:p-8">
+        
+        {/* Vendor Approval Status Banner */}
+        {vendorProfile && !vendorProfile.isApproved && (
+          <div className="mb-6 rounded-lg border-2 border-amber-300 bg-amber-50 p-4 sm:p-6">
+            <div className="flex items-start gap-4">
+              <div className="rounded-full bg-amber-100 p-3">
+                <Clock className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-amber-800">
+                  Your Vendor Account is Pending Approval
+                </h3>
+                <p className="mt-1 text-sm text-amber-700">
+                  Thank you for registering as a vendor! Your account is currently being reviewed by our team. 
+                  Once approved, you'll be able to create products, events, services, and custom order templates.
+                </p>
+                <p className="mt-2 text-sm text-amber-600">
+                  You'll receive an email notification once your account has been approved.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Badge className="bg-amber-200 text-amber-800 border-amber-300">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Review in Progress
+                  </Badge>
+                  <Badge variant="outline" className="border-amber-300 text-amber-700">
+                    Products: Disabled
+                  </Badge>
+                  <Badge variant="outline" className="border-amber-300 text-amber-700">
+                    Events: Disabled
+                  </Badge>
+                  <Badge variant="outline" className="border-amber-300 text-amber-700">
+                    Services: Disabled
+                  </Badge>
+                  <Badge variant="outline" className="border-amber-300 text-amber-700">
+                    Custom Orders: Disabled
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
@@ -553,26 +699,52 @@ export default function VendorDashboardNew() {
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
+                {!vendorProfile?.isApproved && (
+                  <CardDescription className="text-amber-600">
+                    Some actions are disabled until your vendor account is approved.
+                  </CardDescription>
+                )}
               </CardHeader>
               <CardContent className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                <Button asChild variant="outline" className="h-20 flex-col">
-                  <Link to="/vendor/products/new">
-                    <Plus className="h-6 w-6 mb-2" />
-                    <span>Add Product</span>
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" className="h-20 flex-col">
-                  <Link to="/vendor/events/new">
-                    <Calendar className="h-6 w-6 mb-2" />
-                    <span>Create Event</span>
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" className="h-20 flex-col">
-                  <Link to="/vendor/custom-templates/new">
-                    <Layers className="h-6 w-6 mb-2" />
-                    <span>Custom Template</span>
-                  </Link>
-                </Button>
+                {vendorProfile?.isApproved ? (
+                  <Button asChild variant="outline" className="h-20 flex-col">
+                    <Link to="/vendor/products/new">
+                      <Plus className="h-6 w-6 mb-2" />
+                      <span>Add Product</span>
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="h-20 flex-col opacity-50 cursor-not-allowed" disabled>
+                    <Plus className="h-6 w-6 mb-2 text-gray-400" />
+                    <span className="text-gray-400">Add Product</span>
+                  </Button>
+                )}
+                {vendorProfile?.isApproved ? (
+                  <Button asChild variant="outline" className="h-20 flex-col">
+                    <Link to="/vendor/events/new">
+                      <Calendar className="h-6 w-6 mb-2" />
+                      <span>Create Event</span>
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="h-20 flex-col opacity-50 cursor-not-allowed" disabled>
+                    <Calendar className="h-6 w-6 mb-2 text-gray-400" />
+                    <span className="text-gray-400">Create Event</span>
+                  </Button>
+                )}
+                {vendorProfile?.isApproved ? (
+                  <Button asChild variant="outline" className="h-20 flex-col">
+                    <Link to="/vendor/custom-templates/new">
+                      <Layers className="h-6 w-6 mb-2" />
+                      <span>Custom Template</span>
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="h-20 flex-col opacity-50 cursor-not-allowed" disabled>
+                    <Layers className="h-6 w-6 mb-2 text-gray-400" />
+                    <span className="text-gray-400">Custom Template</span>
+                  </Button>
+                )}
                 <Button variant="outline" className="h-20 flex-col" onClick={() => setActiveTab('requests')}>
                   <Clock className="h-6 w-6 mb-2" />
                   <span>My Requests</span>
@@ -636,12 +808,19 @@ export default function VendorDashboardNew() {
           <TabsContent value="products" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">My Products</h2>
-              <Button asChild>
-                <Link to="/vendor/products/new">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Product
-                </Link>
-              </Button>
+              {vendorProfile?.isApproved ? (
+                <Button asChild>
+                  <Link to="/vendor/products/new">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Product
+                  </Link>
+                </Button>
+              ) : (
+                <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+                  <Plus className="h-4 w-4 mr-2 text-gray-400" />
+                  <span className="text-gray-400">Add Product</span>
+                </Button>
+              )}
             </div>
 
             {products.length === 0 ? (
@@ -650,12 +829,19 @@ export default function VendorDashboardNew() {
                   <Package className="h-16 w-16 text-gray-300 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900">No products yet</h3>
                   <p className="text-muted-foreground mb-4">Start by creating your first product</p>
-                  <Button asChild>
-                    <Link to="/vendor/products/new">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Product
-                    </Link>
-                  </Button>
+                  {vendorProfile?.isApproved ? (
+                    <Button asChild>
+                      <Link to="/vendor/products/new">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Product
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+                      <Plus className="h-4 w-4 mr-2 text-gray-400" />
+                      <span className="text-gray-400">Create Product</span>
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -729,12 +915,19 @@ export default function VendorDashboardNew() {
           <TabsContent value="events" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">My Events</h2>
-              <Button asChild>
-                <Link to="/vendor/events/new">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Event
-                </Link>
-              </Button>
+              {vendorProfile?.isApproved ? (
+                <Button asChild>
+                  <Link to="/vendor/events/new">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Event
+                  </Link>
+                </Button>
+              ) : (
+                <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+                  <Plus className="h-4 w-4 mr-2 text-gray-400" />
+                  <span className="text-gray-400">Create Event</span>
+                </Button>
+              )}
             </div>
 
             {events.length === 0 ? (
@@ -743,12 +936,19 @@ export default function VendorDashboardNew() {
                   <Calendar className="h-16 w-16 text-gray-300 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900">No events yet</h3>
                   <p className="text-muted-foreground mb-4">Start by creating your first event</p>
-                  <Button asChild>
-                    <Link to="/vendor/events/new">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Event
-                    </Link>
-                  </Button>
+                  {vendorProfile?.isApproved ? (
+                    <Button asChild>
+                      <Link to="/vendor/events/new">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Event
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+                      <Plus className="h-4 w-4 mr-2 text-gray-400" />
+                      <span className="text-gray-400">Create Event</span>
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -844,12 +1044,19 @@ export default function VendorDashboardNew() {
                     Manage Orders
                   </Link>
                 </Button>
-                <Button asChild>
-                  <Link to="/vendor/services/new">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Service
-                  </Link>
-                </Button>
+                {vendorProfile?.isApproved ? (
+                  <Button asChild>
+                    <Link to="/vendor/services/new">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Service
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+                    <Plus className="h-4 w-4 mr-2 text-gray-400" />
+                    <span className="text-gray-400">Add Service</span>
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -950,24 +1157,38 @@ export default function VendorDashboardNew() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>My Services</CardTitle>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/vendor/services/new">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Service
-                  </Link>
-                </Button>
+                {vendorProfile?.isApproved ? (
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/vendor/services/new">
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Service
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" className="opacity-50 cursor-not-allowed" disabled>
+                    <Plus className="h-4 w-4 mr-1 text-gray-400" />
+                    <span className="text-gray-400">Add Service</span>
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 {services.length === 0 ? (
                   <div className="text-center py-8">
                     <Briefcase className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-muted-foreground mb-4">No services created yet.</p>
-                    <Button asChild>
-                      <Link to="/vendor/services/new">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Your First Service
-                      </Link>
-                    </Button>
+                    {vendorProfile?.isApproved ? (
+                      <Button asChild>
+                        <Link to="/vendor/services/new">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Your First Service
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+                        <Plus className="h-4 w-4 mr-2 text-gray-400" />
+                        <span className="text-gray-400">Create Your First Service</span>
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -1016,12 +1237,19 @@ export default function VendorDashboardNew() {
           <TabsContent value="custom-templates" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Custom Order Templates</h2>
-              <Button asChild>
-                <Link to="/vendor/custom-templates/new">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Template
-                </Link>
-              </Button>
+              {vendorProfile?.isApproved ? (
+                <Button asChild>
+                  <Link to="/vendor/custom-templates/new">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Template
+                  </Link>
+                </Button>
+              ) : (
+                <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+                  <Plus className="h-4 w-4 mr-2 text-gray-400" />
+                  <span className="text-gray-400">Create Template</span>
+                </Button>
+              )}
             </div>
 
             {/* Template Stats */}
@@ -1083,12 +1311,19 @@ export default function VendorDashboardNew() {
                   <div className="text-center py-8">
                     <Layers className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-muted-foreground mb-4">No custom templates created yet.</p>
-                    <Button asChild>
-                      <Link to="/vendor/custom-templates/new">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Your First Template
-                      </Link>
-                    </Button>
+                    {vendorProfile?.isApproved ? (
+                      <Button asChild>
+                        <Link to="/vendor/custom-templates/new">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Your First Template
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+                        <Plus className="h-4 w-4 mr-2 text-gray-400" />
+                        <span className="text-gray-400">Create Your First Template</span>
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -1428,6 +1663,7 @@ export default function VendorDashboardNew() {
             <VendorSettings vendorProfile={vendorProfile} queryClient={queryClient} />
           </TabsContent>
         </Tabs>
+        </main>
       </div>
 
       {/* Deactivate Product Dialog */}
@@ -1558,7 +1794,7 @@ const productEditSchema = z.object({
   description: z.string().optional(),
   summary: z.string().optional(),
   subCategoryId: z.string().optional(),
-  tags: z.string().optional(),
+  tags: z.array(z.string()).optional(),
   occasion: z.string().optional(),
   productSku: z.array(productSkuEditSchema).min(1, "At least one SKU is required"),
 });
@@ -1901,7 +2137,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       description: "",
       summary: "",
       subCategoryId: "",
-      tags: "",
+      tags: [],
       occasion: "",
       productSku: [{
         skuCode: "",
@@ -2091,7 +2327,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
           description: data.description,
           summary: data.summary,
           subCategoryId: data.subCategoryId ? parseInt(data.subCategoryId) : undefined,
-          tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(t => t) : undefined,
+          tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
           occasion: data.occasion,
           productSku: data.productSku.map((sku, index) => ({
             id: sku.id,
@@ -3195,8 +3431,19 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               </div>
 
               <div>
-                <Label htmlFor="tags">Tags (comma separated)</Label>
-                <Input id="tags" {...productForm.register("tags")} placeholder="gift, premium, handmade" />
+                <Label htmlFor="tags">Tags</Label>
+                <Controller
+                  name="tags"
+                  control={productForm.control}
+                  render={({ field }) => (
+                    <TagInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Enter tag"
+                      maxTags={10}
+                    />
+                  )}
+                />
               </div>
             </div>
 
@@ -4424,10 +4671,6 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
               <p className="font-medium break-words">{vendorProfile?.businessPhone || '-'}</p>
             </div>
             <div className="break-words">
-              <Label className="text-muted-foreground">Contact Name</Label>
-              <p className="font-medium break-words">{vendorProfile?.contactName || '-'}</p>
-            </div>
-            <div className="break-words">
               <Label className="text-muted-foreground">City</Label>
               <p className="font-medium break-words">{vendorProfile?.city || '-'}</p>
             </div>
@@ -4456,9 +4699,11 @@ function VendorCertificateCard() {
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const { data: certificate, isLoading } = useQuery({
+  const { data: certificate, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['vendor', 'my-certificate'],
     queryFn: () => certificateService.getMyCertificate(),
+    retry: 2,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const handleDownloadPdf = async () => {
@@ -4478,7 +4723,7 @@ function VendorCertificateCard() {
       console.error('Error downloading certificate:', error);
       toast({
         title: "Error",
-        description: "Failed to download certificate. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to download certificate. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -4486,7 +4731,7 @@ function VendorCertificateCard() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isRefetching) {
     return (
       <Card>
         <CardHeader>
@@ -4517,7 +4762,20 @@ function VendorCertificateCard() {
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-gray-500">
             <XCircle className="h-12 w-12 text-gray-300 mb-4" />
-            <p className="text-sm">No certificate found for your account.</p>
+            <p className="text-sm mb-2">No certificate found for your account.</p>
+            <p className="text-xs text-gray-400 mb-4 text-center max-w-xs">
+              If you completed the onboarding video, your certificate should appear here. 
+              Try refreshing if you just completed the process.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="text-emerald-600"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
           </div>
         </CardContent>
       </Card>

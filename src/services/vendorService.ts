@@ -19,8 +19,8 @@ export interface VendorProfile {
   chapaSubaccountId?: string;
   chapaAccountStatus: string;
   payoutEnabled: boolean;
-  categoryId?: number;
-  categoryName?: string;
+  vendorCategoryId?: number;
+  vendorCategoryName?: string;
   vatStatus?: 'VAT_REGISTERED' | 'NOT_VAT_REGISTERED' | 'VAT_EXEMPT';
   vendorType?: string;
 }
@@ -262,7 +262,8 @@ export interface CreateTicketType {
 
 export interface CreateEventRequest {
   title: string;
-  description?: string;
+  description: string;
+  summary: string;
   location: string;        // Backend uses 'location' not 'venue'
   city: string;
   eventDate: string;       // Backend uses 'eventDate' not 'startDateTime'
@@ -284,6 +285,17 @@ export interface UpdateEventRequest {
   city?: string;
   country?: string;
   imageUrl?: string;
+  ticketTypeUpdates?: TicketTypeUpdate[];
+}
+
+export interface TicketTypeUpdate {
+  ticketTypeId: number;
+  name?: string;
+  description?: string;
+  capacity?: number;
+  isActive?: boolean;
+  newPrice?: number;  // Vendor's price in major units
+  currencyCode?: string;
 }
 
 export interface EventResponse {
@@ -525,7 +537,7 @@ export const vendorService = {
       reason: request.reason,
     }),
 
-  getVendorPriceUpdateRequests: (vendorId: number, page = 0, size = 20) =>
+  getVendorPriceUpdateRequests: (_vendorId: number, page = 0, size = 20) =>
     apiService.getRequest<PageResponse<PriceUpdateRequest>>(`/api/vendor/change-requests/entity-type/PRODUCT?page=${page}&size=${size}`),
 
   getMyPendingRejectedPriceRequests: (page = 0, size = 20) =>
@@ -652,7 +664,7 @@ export const vendorService = {
   createCategoryChangeRequest: (productId: number, request: { newSubCategoryId: number; reason?: string }) =>
     apiService.postRequest<CategoryChangeRequest>(`/api/vendor/change-requests/products/${productId}/category`, request),
 
-  getVendorCategoryChangeRequests: (vendorId: number, page = 0, size = 20) =>
+  getVendorCategoryChangeRequests: (_vendorId: number, page = 0, size = 20) =>
     apiService.getRequest<PageResponse<CategoryChangeRequest>>(`/api/vendor/change-requests/entity-type/PRODUCT?page=${page}&size=${size}`),
 
   getMyPendingRejectedCategoryChangeRequests: (page = 0, size = 20) =>

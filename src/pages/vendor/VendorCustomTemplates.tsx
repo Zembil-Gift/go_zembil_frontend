@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { customOrderTemplateService } from "@/services/customOrderTemplateService";
 import { vendorService } from "@/services/vendorService";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,9 +31,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  ArrowLeft,
 } from "lucide-react";
-import type { CustomOrderTemplate, CustomOrderTemplateStatus } from "@/types/customOrders";
+import type { CustomOrderTemplate, CustomOrderTemplateStatus, PagedCustomOrderTemplateResponse } from "@/types/customOrders";
 
 export default function VendorCustomTemplates() {
   const { user, isAuthenticated } = useAuth();
@@ -55,20 +54,22 @@ export default function VendorCustomTemplates() {
   });
 
   // Fetch vendor's templates
-  const { data: templatesData, isLoading, refetch } = useQuery({
+  const { data: templatesData, isLoading, refetch } = useQuery<PagedCustomOrderTemplateResponse>({
     queryKey: ['vendor', 'custom-templates', vendorProfile?.id, statusFilter],
-    queryFn: () => {
-      if (!vendorProfile?.id) return Promise.resolve({ content: [], totalElements: 0 });
+    queryFn: async (): Promise<PagedCustomOrderTemplateResponse> => {
+      if (!vendorProfile?.id) {
+        return { content: [], totalElements: 0, totalPages: 0, size: 50, number: 0, first: true, last: true, empty: true };
+      }
       const status = statusFilter === "ALL" ? undefined : statusFilter;
       return customOrderTemplateService.getByVendor(vendorProfile.id, 0, 50, status);
     },
     enabled: isAuthenticated && isVendor && !!vendorProfile?.id,
   });
 
-  const templates = templatesData?.content || [];
+  const templates: CustomOrderTemplate[] = templatesData?.content || [];
 
   // Filter templates by search query
-  const filteredTemplates = templates.filter(template =>
+  const filteredTemplates = templates.filter((template: CustomOrderTemplate) =>
     template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     template.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     template.categoryName?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -77,9 +78,9 @@ export default function VendorCustomTemplates() {
   // Group templates by status for tabs
   const templatesByStatus = {
     all: filteredTemplates,
-    pending: filteredTemplates.filter(t => t.status === 'PENDING_APPROVAL'),
-    approved: filteredTemplates.filter(t => t.status === 'APPROVED'),
-    rejected: filteredTemplates.filter(t => t.status === 'REJECTED'),
+    pending: filteredTemplates.filter((t: CustomOrderTemplate) => t.status === 'PENDING_APPROVAL'),
+    approved: filteredTemplates.filter((t: CustomOrderTemplate) => t.status === 'APPROVED'),
+    rejected: filteredTemplates.filter((t: CustomOrderTemplate) => t.status === 'REJECTED'),
   };
 
   const getStatusBadge = (status: CustomOrderTemplateStatus) => {
@@ -121,36 +122,17 @@ export default function VendorCustomTemplates() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-eagle-green text-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" asChild className="text-white hover:bg-white/10">
-                <Link to="/vendor">
-                  <ArrowLeft className="h-5 w-5" />
-                </Link>
-              </Button>
-              <div className="flex items-center space-x-3">
-                <Package className="h-8 w-8" />
-                <div>
-                  <h1 className="text-2xl font-bold">Custom Order Templates</h1>
-                  <p className="text-emerald-100">Manage your customizable product/service templates</p>
-                </div>
-              </div>
-            </div>
-            <Button asChild className="bg-white text-eagle-green hover:bg-gray-100">
-              <Link to="/vendor/custom-templates/new">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Template
-              </Link>
-            </Button>
-          </div>
-        </div>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Custom Order Templates</h2>
+        <Button asChild>
+          <Link to="/vendor/custom-templates/new">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Template
+          </Link>
+        </Button>
       </div>
-
-      <div className="container mx-auto px-4 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
@@ -278,7 +260,7 @@ export default function VendorCustomTemplates() {
                 </Card>
               ) : (
                 <div className="grid gap-4">
-                  {statusTemplates.map((template) => (
+                  {statusTemplates.map((template: CustomOrderTemplate) => (
                     <Card key={template.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between">
@@ -357,7 +339,7 @@ export default function VendorCustomTemplates() {
             </TabsContent>
           ))}
         </Tabs>
-      </div>
+
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open, template: null })}>

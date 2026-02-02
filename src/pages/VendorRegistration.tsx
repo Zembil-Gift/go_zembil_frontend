@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,15 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Store, Upload, MapPin, Globe, FileText, Image, CheckCircle, Package, Palette } from "lucide-react";
+import { vendorCategoryService, VendorCategory } from "@/services/vendorCategoryService";
+import { Store, Upload, MapPin, Globe, FileText, Image, CheckCircle, Package, Palette, Loader2 } from "lucide-react";
 
 const vendorRegistrationSchema = z.object({
-  businessName: z.string().min(2, "Business name must be at least 2 characters").max(200, "Business name is too long"),
-  businessType: z.string().min(1, "Please select a business type"),
+  businessName: z.string()
+    .min(2, "Business name must be at least 2 characters")
+    .max(200, "Business name is too long")
+    .regex(/^[a-zA-Z0-9\s\-'&.]+$/, "Business name contains invalid characters. Only letters, numbers, spaces, hyphens, apostrophes, ampersands, and periods are allowed"),
+  vendorCategoryId: z.string().min(1, "Please select a business category"),
   ownerName: z.string().min(2, "Owner name must be at least 2 characters").max(200, "Owner name is too long"),
   businessDescription: z.string().min(100, "Business description must be at least 100 characters").max(1000, "Description is too long"),
   phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
@@ -54,24 +58,7 @@ const vendorRegistrationSchema = z.object({
 
 type VendorRegistrationForm = z.infer<typeof vendorRegistrationSchema>;
 
-const BUSINESS_TYPES = [
-  "Gift Shop",
-  "Custom Orders",
-  "Artisan Products", 
-  "Traditional Crafts",
-  "Cultural Items",
-  "Jewelry & Accessories",
-  "Home & Decor",
-  "Food & Beverages",
-  "Clothing & Textiles",
-  "Beauty & Personal Care",
-  "Electronics & Gadgets",
-  "Books & Stationery",
-  "Toys & Games",
-  "Outdoor & Sports",
-  "Other"
-];
-
+// Product categories that vendors can sell (these are different from vendor business categories)
 const PRODUCT_CATEGORIES = [
   "Ethiopian Traditional Items",
   "Custom Engraved Products",
@@ -116,11 +103,19 @@ export default function VendorRegistration() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Fetch vendor categories from API
+  const { data: vendorCategories = [], isLoading: isLoadingCategories } = useQuery({
+    queryKey: ['vendor-categories'],
+    queryFn: () => vendorCategoryService.getAllActiveCategories(),
+  });
+
   const form = useForm<VendorRegistrationForm>({
     resolver: zodResolver(vendorRegistrationSchema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
     defaultValues: {
       businessName: "",
-      businessType: "",
+      vendorCategoryId: "",
       ownerName: "",
       businessDescription: "",
       phoneNumber: "",
@@ -222,6 +217,7 @@ export default function VendorRegistration() {
 
       const submissionData = {
         ...data,
+        vendorCategoryId: data.vendorCategoryId ? parseInt(data.vendorCategoryId) : undefined,
         city: data.businessAddress.city,
         country: data.businessAddress.country,
         socialMediaLinks: cleanedSocialMedia,
@@ -233,6 +229,26 @@ export default function VendorRegistration() {
       console.error("Vendor registration error:", error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const onError = (errors: any) => {
+    // Count all errors
+    const errorCount = Object.keys(errors).length;
+    
+    // Show toast with error count
+    toast({
+      title: "Validation Errors",
+      description: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''} before submitting.`,
+      variant: "destructive",
+    });
+
+    // Scroll to first error
+    const firstErrorField = Object.keys(errors)[0];
+    const element = document.getElementById(firstErrorField);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.focus();
     }
   };
 
@@ -252,7 +268,7 @@ export default function VendorRegistration() {
           </p>
         </div>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-8">
           {/* Business Information */}
           <Card>
             <CardHeader>
@@ -305,21 +321,27 @@ export default function VendorRegistration() {
               </div>
 
               <div>
-                <Label htmlFor="businessType">Business Type *</Label>
-                <Select onValueChange={(value) => form.setValue("businessType", value)}>
+                <Label htmlFor="vendorCategoryId">Business Category *</Label>
+                <Select 
+                  onValueChange={(value) => form.setValue("vendorCategoryId", value)}
+                  disabled={isLoadingCategories}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select your business type" />
+                    <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select your business category"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {BUSINESS_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
+                    {vendorCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                        {category.description && (
+                          <span className="text-muted-foreground text-xs ml-2">- {category.description}</span>
+                        )}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {form.formState.errors.businessType && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessType.message}</p>
+                {form.formState.errors.vendorCategoryId && (
+                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.vendorCategoryId.message}</p>
                 )}
               </div>
 

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,14 +18,18 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/apiService";
 import { vendorTermsService, VendorTermsResponse } from "@/services/vendorTermsService";
+import { vendorCategoryService } from "@/services/vendorCategoryService";
 import { User, Mail, Lock, Globe, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Play, Pause, Download, ExternalLink, Shield, DollarSign, Package, MessageCircle, Scale, FileCheck } from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 
-interface Category {
+interface VendorCategory {
   id: number;
   name: string;
   slug: string;
   description?: string;
+  iconName?: string;
+  isActive: boolean;
+  displayOrder: number;
 }
 
 interface Currency {
@@ -137,14 +141,16 @@ const vendorSignupSchema = z
       return age >= 18;
     }, "You must be at least 18 years old to sign up as a vendor"),
     preferredCurrencyCode: z.string().optional(),
-    businessName: z.string().min(2, "Business name must be at least 2 characters").max(200),
+    businessName: z.string()
+      .min(2, "Business name must be at least 2 characters")
+      .max(200, "Business name is too long")
+      .regex(/^[a-zA-Z0-9\s\-'&.]+$/, "Business name contains invalid characters. Only letters, numbers, spaces, hyphens, apostrophes, ampersands, and periods are allowed"),
     description: z.string().max(1000, "Description must be less than 1000 characters").optional(),
     businessEmail: z.string().email("Valid business email is required"),
     businessPhone: phoneValidation,
-    contactName: z.string().optional(),
     city: z.string().min(2, "City is required"),
     country: z.string().min(2, "Country is required"),
-    categoryId: z.string().min(1, "Please select a category"),
+    vendorCategoryId: z.string().min(1, "Please select a business category"),
     vendorType: z.string().min(1, "Please select a vendor type"),
     vatStatus: z.string().optional(),
   })
@@ -178,21 +184,73 @@ export default function VendorSignup() {
   const [allTermsAccepted, setAllTermsAccepted] = useState(false);
   const [formData, setFormData] = useState<Partial<VendorSignupForm> | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);
   const [showFullTermsModal, setShowFullTermsModal] = useState(false);
   const [selectedTermForDetail, setSelectedTermForDetail] = useState<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleVideoEnded = () => {
-    setHasWatchedVideo(true);
-    setIsVideoPlaying(false);
-    toast({
-      title: "Video Completed!",
-      description: "You can now complete your registration.",
-      variant: "default",
-    });
-  };
+  const { data: currencies = [] } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: async () => {
+      return await apiService.getRequest<Currency[]>('/api/currencies');
+    },
+  });
+
+  const { data: vendorCategories = [] } = useQuery({
+    queryKey: ['vendor-categories'],
+    queryFn: () => vendorCategoryService.getAllActiveCategories(),
+  });
+
+  const defaultCurrency = currencies.find(c => c.isDefault)?.code || 'USD';
+
+  const form = useForm<VendorSignupForm>({
+    resolver: zodResolver(vendorSignupSchema),
+    mode: "onTouched",
+    reValidateMode: "onChange",
+    defaultValues: {
+      firstName: "", lastName: "", username: "", email: "", phoneNumber: "",
+      password: "", confirmPassword: "", birthDate: "", preferredCurrencyCode: "",
+      businessName: "", description: "", businessEmail: "", businessPhone: "",
+      city: "", country: "", vendorCategoryId: "", vendorType: "", vatStatus: "",
+    },
+  });
+
+  // Generate certificate mutation
+  const generateCertificateMutation = useMutation({
+    mutationFn: async () => {
+      const vendorType = formData?.vendorType || form.getValues("vendorType");
+      const email = formData?.email || form.getValues("email");
+      const firstName = formData?.firstName || form.getValues("firstName");
+      const lastName = formData?.lastName || form.getValues("lastName");
+      
+      return await apiService.postRequest<CertificateResponse>('/api/vendor-certificates/generate', {
+        email,
+        fullName: `${firstName} ${lastName}`,
+        vendorType,
+      });
+    },
+    onSuccess: (data) => {
+      setGeneratedCertificate(data);
+      toast({ title: "Certificate Generated!", description: "Your onboarding certificate is ready.", variant: "default" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Certificate Generation Failed", description: error.message || "Please try again.", variant: "destructive" });
+    },
+  });
+
+  // Automatically trigger certificate generation if video is already watched
+  useEffect(() => {
+    if (currentStep === "video" && hasWatchedVideo && !generatedCertificate && !generateCertificateMutation.isPending && !generateCertificateMutation.isError && form.getValues("email")) {
+      // Small delay to ensure render cycle complete
+      const timer = setTimeout(() => {
+        generateCertificateMutation.mutate();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep, hasWatchedVideo, generatedCertificate, form]);
+
 
   const handleVideoTimeUpdate = () => {
     if (videoRef.current) {
@@ -201,6 +259,15 @@ export default function VendorSignup() {
       // Update max watched time (allow small buffer for natural playback variations)
       if (currentTime > maxWatchedTime) {
         setMaxWatchedTime(currentTime);
+        
+        // Save progress to localStorage
+        const email = form.getValues("email");
+        if (email) {
+          localStorage.setItem(`vendor_video_progress_${email}`, JSON.stringify({
+            maxWatchedTime: currentTime,
+            hasWatchedVideo: false
+          }));
+        }
       }
     }
   };
@@ -209,7 +276,8 @@ export default function VendorSignup() {
     if (videoRef.current) {
       const seekTime = videoRef.current.currentTime;
       // If trying to seek forward beyond max watched time, reset to max watched
-      if (seekTime > maxWatchedTime + 0.5) {
+      // Allow a small buffer (1s) to prevent sticking
+      if (!hasWatchedVideo && seekTime > maxWatchedTime + 1.0) {
         videoRef.current.currentTime = maxWatchedTime;
         toast({
           title: "Cannot Skip Forward",
@@ -223,6 +291,10 @@ export default function VendorSignup() {
   const handleVideoLoadedMetadata = () => {
     if (videoRef.current) {
       setVideoDuration(videoRef.current.duration);
+      // Resume if partially watched and not completed
+      if (maxWatchedTime > 0 && !hasWatchedVideo) {
+        videoRef.current.currentTime = maxWatchedTime;
+      }
     }
   };
 
@@ -257,32 +329,6 @@ export default function VendorSignup() {
       });
     }
   };
-
-  const { data: currencies = [] } = useQuery({
-    queryKey: ['currencies'],
-    queryFn: async () => {
-      return await apiService.getRequest<Currency[]>('/api/currencies');
-    },
-  });
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      return await apiService.getRequest<Category[]>('/api/categories');
-    },
-  });
-
-  const defaultCurrency = currencies.find(c => c.isDefault)?.code || 'USD';
-
-  const form = useForm<VendorSignupForm>({
-    resolver: zodResolver(vendorSignupSchema),
-    defaultValues: {
-      firstName: "", lastName: "", username: "", email: "", phoneNumber: "",
-      password: "", confirmPassword: "", birthDate: "", preferredCurrencyCode: "",
-      businessName: "", description: "", businessEmail: "", businessPhone: "",
-      contactName: "", city: "", country: "", categoryId: "", vendorType: "", vatStatus: "",
-    },
-  });
 
   const selectedVendorType = form.watch("vendorType");
 
@@ -329,28 +375,28 @@ export default function VendorSignup() {
     return icons[termKey] || <FileText className="w-5 h-5" />;
   };
 
-  // Generate certificate mutation
-  const generateCertificateMutation = useMutation({
-    mutationFn: async () => {
-      const vendorType = formData?.vendorType || form.getValues("vendorType");
-      const email = formData?.email || form.getValues("email");
-      const firstName = formData?.firstName || form.getValues("firstName");
-      const lastName = formData?.lastName || form.getValues("lastName");
-      
-      return await apiService.postRequest<CertificateResponse>('/api/vendor-certificates/generate', {
-        email,
-        fullName: `${firstName} ${lastName}`,
-        vendorType,
+  const handleVideoEnded = () => {
+    setHasWatchedVideo(true);
+    setIsVideoPlaying(false);
+    
+    // Save completion state
+    const email = form.getValues("email");
+    if (email) {
+      localStorage.setItem(`vendor_video_progress_${email}`, JSON.stringify({
+        maxWatchedTime: videoDuration,
+        hasWatchedVideo: true
+      }));
+    }
+    
+    if (!generatedCertificate) {
+      toast({
+        title: "Video Completed!",
+        description: "Generating your onboarding certificate...",
+        variant: "default",
       });
-    },
-    onSuccess: (data) => {
-      setGeneratedCertificate(data);
-      toast({ title: "Certificate Generated!", description: "Your onboarding certificate is ready.", variant: "default" });
-    },
-    onError: (error: any) => {
-      toast({ title: "Certificate Generation Failed", description: error.message || "Please try again.", variant: "destructive" });
-    },
-  });
+      generateCertificateMutation.mutate();
+    }
+  };
 
   // Download certificate PDF (public endpoint, no auth needed)
   const handleDownloadCertificatePdf = async () => {
@@ -384,6 +430,36 @@ export default function VendorSignup() {
     }
   };
 
+  // Download onboarding video
+  const handleDownloadVideo = async () => {
+    setIsDownloadingVideo(true);
+    try {
+      const videoUrl = getVideoUrl();
+      const response = await fetch(videoUrl);
+      
+      if (!response.ok) {
+        throw new Error('Failed to download video');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const vendorType = form.getValues("vendorType") || "general";
+      a.download = `gogerami-vendor-onboarding-${vendorType.toLowerCase()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({ title: "Downloaded!", description: "Onboarding video downloaded successfully." });
+    } catch {
+      toast({ title: "Error", description: "Failed to download video. Please try again.", variant: "destructive" });
+    } finally {
+      setIsDownloadingVideo(false);
+    }
+  };
+
   // Signup mutation
   const signupMutation = useMutation({
     mutationFn: async (data: VendorSignupForm) => {
@@ -402,10 +478,9 @@ export default function VendorSignup() {
         description: data.description || undefined,
         businessEmail: data.businessEmail,
         businessPhone: data.businessPhone,
-        contactName: data.contactName || undefined,
         city: data.city,
         country: data.country,
-        categoryId: parseInt(data.categoryId),
+        vendorCategoryId: parseInt(data.vendorCategoryId),
         vendorType: data.vendorType,
         vatStatus: data.country === "Ethiopia" && data.vatStatus ? data.vatStatus : undefined,
         supportedPaymentProviders: ["STRIPE", "CHAPA"],
@@ -414,15 +489,29 @@ export default function VendorSignup() {
         acceptedTermIds,
       };
 
-      return await apiService.postRequest('/api/vendors/signup', payload);
+      return await apiService.postRequest<{
+        user: { id: number; email: string; firstName: string; lastName: string };
+        vendor: any;
+        message: string;
+        requiresEmailVerification?: boolean;
+      }>('/api/vendors/signup', payload);
     },
-    onSuccess: () => {
+    onSuccess: (response, variables) => {
+      // Always redirect to email verification for vendors
       toast({
-        title: "Vendor Account Created Successfully!",
-        description: "Please check your email for verification and await admin approval.",
+        title: "Vendor Account Created!",
+        description: "Please verify your email to continue.",
         variant: "default",
       });
-      navigate("/signin");
+      // Redirect to email verification page
+      setTimeout(() => {
+        navigate('/verify-email', { 
+          state: { 
+            email: variables.email,
+            returnUrl: '/signin'
+          }
+        });
+      }, 500);
     },
     onError: (error: any) => {
       // Use generic message for security - don't reveal if email/username exists
@@ -442,7 +531,7 @@ export default function VendorSignup() {
     const fieldsToValidate = [
       "firstName", "lastName", "username", "email", "phoneNumber",
       "password", "confirmPassword", "birthDate", "businessName",
-      "businessEmail", "businessPhone", "city", "country", "categoryId", "vendorType"
+      "businessEmail", "businessPhone", "city", "country", "vendorCategoryId", "vendorType"
     ] as const;
     
     const isValid = await form.trigger(fieldsToValidate);
@@ -451,37 +540,59 @@ export default function VendorSignup() {
     
     if (country === "Ethiopia" && !vatStatus) {
       form.setError("vatStatus", { message: "VAT status is required for Ethiopian vendors" });
+    }
+    
+    if (!isValid || (country === "Ethiopia" && !vatStatus)) {
+      // Count all errors
+      const errors = form.formState.errors;
+      const errorCount = Object.keys(errors).reduce((count, key) => {
+        const error = errors[key as keyof typeof errors];
+        return count + (error ? 1 : 0);
+      }, 0);
+      
+      toast({
+        title: "Validation Errors",
+        description: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''} before continuing.`,
+        variant: "destructive",
+      });
+
+      // Scroll to first error
+      const firstErrorField = Object.keys(errors)[0];
+      const element = document.getElementById(firstErrorField);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.focus();
+      }
+      
       return;
     }
     
-    if (isValid) {
-      // Check for duplicate email, username, and phone number before proceeding
-      const email = form.getValues("email");
-      const username = form.getValues("username");
-      const phoneNumber = form.getValues("phoneNumber");
+    // Check for duplicate email, username, and phone number before proceeding
+    const email = form.getValues("email");
+    const username = form.getValues("username");
+    const phoneNumber = form.getValues("phoneNumber");
+    
+    try {
+      const [emailExists, usernameExists, phoneExists] = await Promise.all([
+        apiService.getRequest<boolean>(`/api/users/check-email?email=${encodeURIComponent(email)}`),
+        apiService.getRequest<boolean>(`/api/users/check-username?username=${encodeURIComponent(username)}`),
+        apiService.getRequest<boolean>(`/api/users/check-phone?phoneNumber=${encodeURIComponent(phoneNumber)}`)
+      ]);
       
-      try {
-        const [emailExists, usernameExists, phoneExists] = await Promise.all([
-          apiService.getRequest<boolean>(`/api/users/check-email?email=${encodeURIComponent(email)}`),
-          apiService.getRequest<boolean>(`/api/users/check-username?username=${encodeURIComponent(username)}`),
-          apiService.getRequest<boolean>(`/api/users/check-phone?phoneNumber=${encodeURIComponent(phoneNumber)}`)
-        ]);
-        
-        if (emailExists || usernameExists || phoneExists) {
-          // Use generic message for security - don't reveal which field exists
-          toast({ title: "Account Exists", description: "An account with these details already exists. Please sign in instead.", variant: "destructive" });
-          return;
-        }
-      } catch (error) {
-        toast({ title: "Validation Error", description: "Could not verify account availability. Please try again.", variant: "destructive" });
+      if (emailExists || usernameExists || phoneExists) {
+        // Use generic message for security - don't reveal which field exists
+        toast({ title: "Account Exists", description: "An account with these details already exists. Please sign in instead.", variant: "destructive" });
         return;
       }
-      
-      const vendorType = form.getValues("vendorType");
-      setFormData(form.getValues());
-      await fetchTermsForVendorType(vendorType);
-      setCurrentStep("terms");
+    } catch (error) {
+      toast({ title: "Validation Error", description: "Could not verify account availability. Please try again.", variant: "destructive" });
+      return;
     }
+    
+    const vendorType = form.getValues("vendorType");
+    setFormData(form.getValues());
+    await fetchTermsForVendorType(vendorType);
+    setCurrentStep("terms");
   };
 
   const handleProceedToVideo = () => {
@@ -489,9 +600,29 @@ export default function VendorSignup() {
       toast({ title: "Terms Required", description: "Please read and accept the full Terms & Conditions.", variant: "destructive" });
       return;
     }
-    setHasWatchedVideo(false);
-    setVideoProgress(0);
-    setMaxWatchedTime(0);
+    
+    // Check for saved progress
+    const email = form.getValues("email");
+    const savedProgress = email ? localStorage.getItem(`vendor_video_progress_${email}`) : null;
+    
+    if (savedProgress) {
+      try {
+        const { maxWatchedTime: savedMax, hasWatchedVideo: savedHasWatched } = JSON.parse(savedProgress);
+        setHasWatchedVideo(savedHasWatched);
+        setMaxWatchedTime(savedMax || 0);
+        setVideoProgress(savedMax || 0);
+      } catch (e) {
+        console.error("Failed to parse video progress", e);
+        setHasWatchedVideo(false);
+        setVideoProgress(0);
+        setMaxWatchedTime(0);
+      }
+    } else {
+      setHasWatchedVideo(false);
+      setVideoProgress(0);
+      setMaxWatchedTime(0);
+    }
+
     setIsVideoPlaying(false);
     setGeneratedCertificate(null);
     setCurrentStep("video");
@@ -595,7 +726,7 @@ export default function VendorSignup() {
                   <Label htmlFor="username">Username *</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="username" className="pl-10" {...form.register("username")} maxLength={20} />
+                    <Input id="username" className="pl-10" {...form.register("username")} maxLength={20} autoComplete="off" />
                   </div>
                   <p className="text-xs text-gray-500 mt-1">8-20 characters, start with a letter, letters/numbers/underscores only</p>
                   {form.formState.errors.username && <p className="text-sm text-red-600 mt-1">{form.formState.errors.username.message}</p>}
@@ -604,7 +735,7 @@ export default function VendorSignup() {
                   <Label htmlFor="email">Email *</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="email" type="email" className="pl-10" {...form.register("email")} />
+                    <Input id="email" type="email" className="pl-10" {...form.register("email")} autoComplete="username" />
                   </div>
                   {form.formState.errors.email && <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>}
                 </div>
@@ -646,7 +777,7 @@ export default function VendorSignup() {
                   <Label htmlFor="password">Password *</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="password" type={showPassword ? "text" : "password"} className="pl-10 pr-10" {...form.register("password")} />
+                    <Input id="password" type={showPassword ? "text" : "password"} className="pl-10 pr-10" {...form.register("password")} autoComplete="new-password" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -658,7 +789,7 @@ export default function VendorSignup() {
                   <Label htmlFor="confirmPassword">Confirm Password *</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="confirmPassword" type={showConfirm ? "text" : "password"} className="pl-10 pr-10" {...form.register("confirmPassword")} />
+                    <Input id="confirmPassword" type={showConfirm ? "text" : "password"} className="pl-10 pr-10" {...form.register("confirmPassword")} autoComplete="new-password" />
                     <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
                       {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -670,10 +801,13 @@ export default function VendorSignup() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="country">Country *</Label>
-                  <Select onValueChange={(value) => {
-                    form.setValue("country", value);
-                    if (value === "Ethiopia") form.setValue("preferredCurrencyCode", "ETB");
-                  }}>
+                  <Select 
+                    value={form.watch("country")}
+                    onValueChange={(value) => {
+                      form.setValue("country", value);
+                      if (value === "Ethiopia") form.setValue("preferredCurrencyCode", "ETB");
+                    }}
+                  >
                     <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
                     <SelectContent>
                       {COUNTRIES.map((country) => (
@@ -721,21 +855,21 @@ export default function VendorSignup() {
               </div>
 
               <div>
-                <Label htmlFor="categoryId">Business Category *</Label>
-                <Select onValueChange={(value) => form.setValue("categoryId", value)}>
+                <Label htmlFor="vendorCategoryId">Business Category *</Label>
+                <Select value={form.watch("vendorCategoryId")} onValueChange={(value) => form.setValue("vendorCategoryId", value)}>
                   <SelectTrigger><SelectValue placeholder="Select your business category" /></SelectTrigger>
                   <SelectContent>
-                    {categories.map((category) => (
+                    {vendorCategories.map((category) => (
                       <SelectItem key={category.id} value={category.id.toString()}>{category.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {form.formState.errors.categoryId && <p className="text-sm text-red-600 mt-1">{form.formState.errors.categoryId.message}</p>}
+                {form.formState.errors.vendorCategoryId && <p className="text-sm text-red-600 mt-1">{form.formState.errors.vendorCategoryId.message}</p>}
               </div>
 
               <div>
                 <Label htmlFor="vendorType">Vendor Type *</Label>
-                <Select onValueChange={(value) => form.setValue("vendorType", value)}>
+                <Select value={form.watch("vendorType")} onValueChange={(value) => form.setValue("vendorType", value)}>
                   <SelectTrigger><SelectValue placeholder="Select your vendor type" /></SelectTrigger>
                   <SelectContent>
                     {VENDOR_TYPES.map((type) => (
@@ -797,21 +931,6 @@ export default function VendorSignup() {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="contactName">Contact Person Name</Label>
-                <Input id="contactName" placeholder="Primary contact person" {...form.register("contactName")} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Globe className="w-5 h-5" />
-                <span>Business Location</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
               <div>
                 <Label htmlFor="city">City *</Label>
                 <Input id="city" placeholder="Enter City" {...form.register("city")} />
@@ -1023,6 +1142,21 @@ export default function VendorSignup() {
                     <span className="text-white text-sm font-mono min-w-[80px] text-right">
                       {formatTime(videoProgress)} / {formatTime(videoDuration)}
                     </span>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleDownloadVideo}
+                      disabled={isDownloadingVideo}
+                      className="text-white hover:bg-white/20"
+                      title="Download video for offline viewing"
+                    >
+                      {isDownloadingVideo ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Download className="w-5 h-5" />
+                      )}
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -1054,25 +1188,27 @@ export default function VendorSignup() {
                   {!generatedCertificate ? (
                     <div className="p-6 bg-emerald-50 rounded-lg border border-emerald-200 text-center">
                       <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
-                      <h4 className="font-medium text-emerald-900 text-lg mb-2">Ready to Complete Registration</h4>
+                      <h4 className="font-medium text-emerald-900 text-lg mb-2">
+                         {generateCertificateMutation.isPending ? "Generating Certificate..." : "Certificate Generation Needed"}
+                      </h4>
                       <p className="text-sm text-emerald-700 mb-4">
-                        Generate your onboarding certificate and complete your vendor registration.
+                         {generateCertificateMutation.isPending 
+                            ? "Please wait while we generate your onboarding certificate." 
+                            : "Click below to generate your certificate."}
                       </p>
-                      <Button
-                        type="button"
-                        onClick={() => generateCertificateMutation.mutate()}
-                        disabled={generateCertificateMutation.isPending}
-                        className="bg-emerald-600 hover:bg-emerald-700"
-                      >
-                        {generateCertificateMutation.isPending ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Generating Certificate...
-                          </>
-                        ) : (
-                          "Generate Certificate & Continue"
-                        )}
-                      </Button>
+                      {generateCertificateMutation.isPending ? (
+                         <div className="flex justify-center py-2">
+                           <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                         </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={() => generateCertificateMutation.mutate()}
+                          className="bg-emerald-600 hover:bg-emerald-700"
+                        >
+                          Generate Certificate
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <div className="p-6 bg-green-50 rounded-lg border border-green-200">

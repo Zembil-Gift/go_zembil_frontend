@@ -119,7 +119,9 @@ export default function VendorCustomOrders() {
   const OrderCard = ({ order }: { order: CustomOrder }) => {
     const statusBadgeColor = customOrderService.getStatusBadgeColor(order.status);
     const statusText = customOrderService.getStatusText(order.status);
-    const canProposePrice = customOrderService.canVendorProposePrice(order.status);
+    // For non-negotiable templates, vendor cannot propose price
+    const isNonNegotiable = order.templateNegotiable === false;
+    const canProposePrice = !isNonNegotiable && customOrderService.canVendorProposePrice(order.status);
     const canMarkInProgress = customOrderService.canVendorMarkInProgress(order.status);
     const canMarkCompleted = customOrderService.canVendorMarkCompleted(order.status);
 
@@ -147,6 +149,11 @@ export default function VendorCustomOrders() {
                       {getStatusIcon(order.status)}
                       <span className="ml-1">{statusText}</span>
                     </Badge>
+                    {isNonNegotiable && (
+                      <Badge className="bg-viridian-green/10 text-viridian-green border-viridian-green/20">
+                        Fixed Price
+                      </Badge>
+                    )}
                     {order.paymentStatus === 'PAID' && (
                       <Badge className="bg-green-100 text-green-700 border-none">
                         <CheckCircle className="h-3 w-3 mr-1" />
@@ -290,38 +297,18 @@ export default function VendorCustomOrders() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-eagle-green text-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" asChild className="text-white hover:bg-white/10">
-                <Link to="/vendor">
-                  <ArrowLeft className="h-5 w-5" />
-                </Link>
-              </Button>
-              <div className="flex items-center space-x-3">
-                <Package className="h-8 w-8" />
-                <div>
-                  <h1 className="text-2xl font-bold">Custom Orders</h1>
-                  <p className="text-emerald-100">Manage your custom order requests</p>
-                </div>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              className="border-white text-white hover:bg-white hover:text-eagle-green"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-        </div>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Custom Orders</h2>
+        <Button
+          variant="outline"
+          onClick={() => refetch()}
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
-
-      <div className="container mx-auto px-4 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <Card>
@@ -514,7 +501,6 @@ export default function VendorCustomOrders() {
             </TabsContent>
           </Tabs>
         )}
-      </div>
     </div>
   );
 }

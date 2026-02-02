@@ -119,6 +119,14 @@ export default function VendorDetail() {
                   <h1 className="text-2xl font-bold text-charcoal">{vendor.businessName}</h1>
                   <Badge className="bg-viridian-green/10 text-viridian-green">Verified Seller</Badge>
                 </div>
+                
+                {vendor.vendorCategoryName && (
+                  <div className="mb-2">
+                    <Badge variant="outline" className="text-sm">
+                      {vendor.vendorCategoryName}
+                    </Badge>
+                  </div>
+                )}
 
                 {/* Rating */}
                 <div className="flex items-center gap-2 mb-3">

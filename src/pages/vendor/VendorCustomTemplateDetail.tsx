@@ -387,14 +387,23 @@ export default function VendorCustomTemplateDetail() {
             {/* Price Card */}
             <Card>
               <CardHeader>
-                <CardTitle>Pricing</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Pricing
+                  {template.negotiable === false && (
+                    <Badge className="bg-viridian-green/10 text-viridian-green border-viridian-green/30">
+                      Fixed Price
+                    </Badge>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-eagle-green">
                     {customOrderTemplateService.formatTemplatePrice(template)}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">Base price</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {template.negotiable === false ? 'Fixed price (no negotiation)' : 'Base price (negotiable)'}
+                  </p>
                   
                   {canEdit && (
                     <Button
@@ -421,6 +430,16 @@ export default function VendorCustomTemplateDetail() {
                 <CardTitle>Quick Stats</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Pricing Type</span>
+                  <Badge variant="outline" className={template.negotiable === false 
+                    ? "bg-viridian-green/5 text-viridian-green border-viridian-green/20" 
+                    : "bg-amber-50 text-amber-700 border-amber-200"
+                  }>
+                    {template.negotiable === false ? 'Fixed' : 'Negotiable'}
+                  </Badge>
+                </div>
+                <Separator />
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Customization Fields</span>
                   <span className="font-medium">{template.fields?.length || 0}</span>

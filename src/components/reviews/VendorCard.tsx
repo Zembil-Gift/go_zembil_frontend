@@ -76,6 +76,14 @@ export function VendorCard({ vendor, compact = false }: VendorCardProps) {
               </Badge>
             </div>
 
+            {vendor.vendorCategoryName && (
+              <div className="mb-2">
+                <Badge variant="outline" className="text-xs">
+                  {vendor.vendorCategoryName}
+                </Badge>
+              </div>
+            )}
+
             <CompactRating
               rating={vendor.ratingSummary.averageRating}
               reviewCount={vendor.ratingSummary.totalReviews}

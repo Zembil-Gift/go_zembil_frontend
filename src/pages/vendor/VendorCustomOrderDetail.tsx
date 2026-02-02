@@ -62,11 +62,19 @@ import { orderChatService } from '@/services/orderChatService';
 import { vendorService, VendorProfile } from '@/services/vendorService';
 import type { OrderChatMessage, CustomOrderValue, CustomOrderStatus } from '@/types/customOrders';
 
-// Status timeline configuration
 const STATUS_TIMELINE: { status: CustomOrderStatus; label: string; icon: React.ElementType }[] = [
   { status: 'SUBMITTED', label: 'Submitted', icon: Clock },
   { status: 'PRICE_PROPOSED', label: 'Price Proposed', icon: DollarSign },
   { status: 'CONFIRMED', label: 'Confirmed', icon: CheckCircle },
+  { status: 'PAID', label: 'Paid', icon: CreditCard },
+  { status: 'IN_PROGRESS', label: 'In Progress', icon: Play },
+  { status: 'COMPLETED', label: 'Completed', icon: CheckCircle },
+  { status: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', icon: Truck },
+  { status: 'DELIVERED', label: 'Delivered', icon: CheckCircle },
+];
+
+const NON_NEGOTIABLE_STATUS_TIMELINE: { status: CustomOrderStatus; label: string; icon: React.ElementType }[] = [
+  { status: 'CONFIRMED', label: 'Order Placed', icon: CheckCircle },
   { status: 'PAID', label: 'Paid', icon: CreditCard },
   { status: 'IN_PROGRESS', label: 'In Progress', icon: Play },
   { status: 'COMPLETED', label: 'Completed', icon: CheckCircle },
@@ -167,6 +175,8 @@ export default function VendorCustomOrderDetail() {
     onSuccess: () => {
       toast({ title: 'Price Proposed', description: 'Your price proposal has been sent to the customer.' });
       queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
       setPriceDialogOpen(false);
       setProposedPrice('');
     },
@@ -180,6 +190,8 @@ export default function VendorCustomOrderDetail() {
     onSuccess: () => {
       toast({ title: 'Status Updated', description: 'Order marked as in progress.' });
       queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -191,6 +203,8 @@ export default function VendorCustomOrderDetail() {
     onSuccess: () => {
       toast({ title: 'Order Completed', description: 'Order has been marked as completed.' });
       queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -202,6 +216,8 @@ export default function VendorCustomOrderDetail() {
     onSuccess: () => {
       toast({ title: 'Order Cancelled', description: 'The order has been cancelled.' });
       queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
       setCancelDialogOpen(false);
       setCancelReason('');
     },
@@ -381,15 +397,20 @@ export default function VendorCustomOrderDetail() {
     );
   }
 
-  const canProposePrice = customOrderService.canVendorProposePrice(order.status);
+  // For non-negotiable templates, vendor cannot propose price (it's already set)
+  const isNonNegotiable = order.templateNegotiable === false;
+  const canProposePrice = !isNonNegotiable && customOrderService.canVendorProposePrice(order.status);
   const canMarkInProgress = customOrderService.canVendorMarkInProgress(order.status);
   const canMarkCompleted = customOrderService.canVendorMarkCompleted(order.status);
   const canCancel = customOrderService.canVendorCancel(order.status);
   const statusBadgeColor = customOrderService.getStatusBadgeColor(order.status);
   const statusText = customOrderService.getStatusText(order.status);
 
+  // Get the appropriate timeline based on negotiability
+  const timeline = isNonNegotiable ? NON_NEGOTIABLE_STATUS_TIMELINE : STATUS_TIMELINE;
+  
   // Get current status index for timeline
-  const currentStatusIndex = STATUS_TIMELINE.findIndex(s => s.status === order.status);
+  const currentStatusIndex = timeline.findIndex(s => s.status === order.status);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -422,7 +443,7 @@ export default function VendorCustomOrderDetail() {
             <CardContent className="p-4 sm:p-6">
               {/* Mobile: Vertical Layout */}
               <div className="sm:hidden space-y-3">
-                {STATUS_TIMELINE.map((step, index) => {
+                {timeline.map((step, index) => {
                   const isCompleted = index <= currentStatusIndex;
                   const isCurrent = index === currentStatusIndex;
                   const Icon = step.icon;
@@ -520,6 +541,7 @@ export default function VendorCustomOrderDetail() {
                 >
                   Order Details
                 </TabsTrigger>
+                {!isNonNegotiable && (
                 <TabsTrigger 
                   value="chat"
                   className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
@@ -527,6 +549,7 @@ export default function VendorCustomOrderDetail() {
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Chat
                 </TabsTrigger>
+                )}
                 <TabsTrigger 
                   value="history"
                   className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
@@ -576,7 +599,8 @@ export default function VendorCustomOrderDetail() {
                 )}
               </TabsContent>
 
-              {/* Chat Tab */}
+              {/* Chat Tab - Only for negotiable orders */}
+              {!isNonNegotiable && (
               <TabsContent value="chat" className="space-y-4">
                 <Card className="h-[500px] flex flex-col">
                   <CardHeader className="pb-2">
@@ -700,6 +724,7 @@ export default function VendorCustomOrderDetail() {
                   </CardContent>
                 </Card>
               </TabsContent>
+              )}
 
               {/* History Tab */}
               <TabsContent value="history" className="space-y-6">
@@ -808,9 +833,21 @@ export default function VendorCustomOrderDetail() {
             {/* Pricing */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-eagle-green text-lg">Pricing</CardTitle>
+                <CardTitle className="text-eagle-green text-lg flex items-center justify-between">
+                  Pricing
+                  {isNonNegotiable && (
+                    <Badge className="bg-viridian-green/10 text-viridian-green border-viridian-green/30">
+                      Fixed Price
+                    </Badge>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {isNonNegotiable && (
+                  <p className="text-sm text-viridian-green bg-viridian-green/5 p-2 rounded-md">
+                    This is a fixed price order. Customer paid the base price directly.
+                  </p>
+                )}
                 <div className="flex justify-between">
                   <span className="text-eagle-green/70">Base Price</span>
                   <span className="text-eagle-green">
