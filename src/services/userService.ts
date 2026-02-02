@@ -18,6 +18,7 @@ export interface User {
   preferences: UserPreferences;
   createdAt: string;
   updatedAt: string;
+  hasPassword?: boolean;
 }
 
 export interface Address {

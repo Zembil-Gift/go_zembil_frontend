@@ -9,10 +9,12 @@ interface User {
   phoneNumber: string;
   firstName: string;
   lastName: string;
+  username?: string;
   profileImageUrl?: string;
   role: string;
   emailVerified?: boolean;
   permissions?: string[];
+  hasPassword?: boolean;
 }
 
 interface AuthContextValue {
