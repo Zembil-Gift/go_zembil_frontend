@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { vendorService, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse, VendorProfile, CategoryChangeRequest } from "@/services/vendorService";
+import { vendorService, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse, VendorProfile, CategoryChangeRequest, PriceDto } from "@/services/vendorService";
 import serviceService, { ServiceResponse, UpdateServiceRequest } from "@/services/serviceService";
 
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
@@ -126,7 +126,27 @@ export default function VendorRequests() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const isVendor = user?.role?.toUpperCase() === 'VENDOR';
+
+  const { data: vendorProfile } = useQuery({
+    queryKey: ['vendor', 'profile'],
+    queryFn: () => vendorService.getMyProfile(),
+    enabled: isAuthenticated && isVendor,
+  });
+
+  // Set initial active tab based on vendor type
   const [activeTab, setActiveTab] = useState("products");
+
+  // Update active tab when vendor profile loads
+  useEffect(() => {
+    if (vendorProfile) {
+      const initialTab = vendorProfile.vendorType === 'SERVICE' ? 'events' : 
+                        vendorProfile.vendorType === 'PRODUCT' ? 'products' :
+                        'products'; // Default for HYBRID
+      setActiveTab(initialTab);
+    }
+  }, [vendorProfile]);
 
   const [editProductOpen, setEditProductOpen] = useState(false);
   const [editPriceUpdateOpen, setEditPriceUpdateOpen] = useState(false);
@@ -141,14 +161,6 @@ export default function VendorRequests() {
   const [selectedEventPriceUpdate, setSelectedEventPriceUpdate] = useState<EventPriceUpdateResponse | null>(null);
   const [selectedCategoryChange, setSelectedCategoryChange] = useState<CategoryChangeRequest | null>(null);
   const [selectedService, setSelectedService] = useState<ServiceResponse | null>(null);
-
-  const isVendor = user?.role?.toUpperCase() === 'VENDOR';
-
-  const { data: vendorProfile } = useQuery({
-    queryKey: ['vendor', 'profile'],
-    queryFn: () => vendorService.getMyProfile(),
-    enabled: isAuthenticated && isVendor,
-  });
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies'],
@@ -227,8 +239,8 @@ export default function VendorRequests() {
   const pendingServices = (servicesData?.content || []).filter(
     (s) => s.status === 'PENDING_APPROVAL' || s.status === 'REJECTED'
   );
-  const pendingCategoryChangeRequests = (categoryChangeRequestsData || []).filter(
-    (r) => r.status === 'PENDING' || r.status === 'REJECTED'
+  const pendingCategoryChangeRequests = (Array.isArray(categoryChangeRequestsData) ? categoryChangeRequestsData : categoryChangeRequestsData?.content || []).filter(
+    (r: CategoryChangeRequest) => r.status === 'PENDING' || r.status === 'REJECTED'
   );
 
   const editProductMutation = useMutation({
@@ -261,7 +273,7 @@ export default function VendorRequests() {
 
   const editEventMutation = useMutation({
     mutationFn: (data: { eventId: number; event: any }) =>
-      vendorService.editPendingEvent(data.eventId, data.event),
+      vendorService.editPendingOrRejectedEvent(data.eventId, data.event),
     onSuccess: () => {
       toast({ title: "Success", description: "Event updated and resubmitted for review." });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'events'] });
@@ -408,7 +420,7 @@ export default function VendorRequests() {
 
   const openPriceUpdateEdit = (request: PriceUpdateRequest) => {
     setSelectedPriceUpdate(request);
-    const newPrice = request.newPrice?.prices?.[0];
+    const newPrice = request.newPrice;
     priceUpdateForm.reset({
       currencyCode: newPrice?.currencyCode || currencies[0]?.code || "",
       amount: newPrice?.amount || 0,
@@ -422,22 +434,21 @@ export default function VendorRequests() {
     eventForm.reset({
       title: event.title,
       description: event.description || "",
-      shortDescription: event.shortDescription || "",
-      venue: event.venue || "",
-      address: event.address || "",
+      shortDescription: event.description || "",
+      venue: event.location || "",
+      address: event.location || "",
       city: event.city || "",
-      country: event.country || "",
-      imageUrl: event.imageUrl || "",
+      country: "",
+      imageUrl: event.bannerImageUrl || "",
     });
     setEditEventOpen(true);
   };
 
   const openEventPriceEdit = (request: EventPriceUpdateResponse) => {
     setSelectedEventPriceUpdate(request);
-    const newPrice = request.newPrice?.prices?.[0];
     eventPriceForm.reset({
-      currencyCode: newPrice?.currencyCode || currencies[0]?.code || "",
-      amount: newPrice?.amount || 0,
+      currencyCode: request.newCurrencyCode || currencies[0]?.code || "",
+      amount: (request.newPriceMinor || 0) / 100,
       reason: request.reason || "",
     });
     setEditEventPriceOpen(true);
@@ -489,11 +500,9 @@ export default function VendorRequests() {
       request: {
         ...selectedPriceUpdate,
         newPrice: {
-          prices: [{
-            currencyCode: data.currencyCode,
-            amount: data.amount,
-          }],
-        },
+          currencyCode: data.currencyCode,
+          amount: data.amount,
+        } as PriceDto,
         reason: data.reason,
       },
     });
@@ -607,21 +616,31 @@ export default function VendorRequests() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Products</span>
-              {pendingProducts.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{pendingProducts.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="product-prices" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              <span className="hidden sm:inline">Product Prices</span>
-              {pendingPriceRequests.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{pendingPriceRequests.length}</Badge>
-              )}
-            </TabsTrigger>
+          <TabsList className={`grid w-full ${
+            // Dynamically calculate grid columns based on vendor type
+            vendorProfile?.vendorType === 'PRODUCT' ? 'grid-cols-3' :
+            vendorProfile?.vendorType === 'SERVICE' ? 'grid-cols-3' :
+            'grid-cols-6'
+          } lg:w-auto lg:inline-grid`}>
+            {/* Product-related tabs - Only for PRODUCT and HYBRID vendors */}
+            {(vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID') && (
+              <>
+                <TabsTrigger value="products" className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  <span className="hidden sm:inline">Products</span>
+                  {pendingProducts.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">{pendingProducts.length}</Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="product-prices" className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  <span className="hidden sm:inline">Product Prices</span>
+                  {pendingPriceRequests.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">{pendingPriceRequests.length}</Badge>
+                  )}
+                </TabsTrigger>
+              </>
+            )}
             <TabsTrigger value="category-changes" className="flex items-center gap-2">
               <FolderTree className="h-4 w-4" />
               <span className="hidden sm:inline">Categories</span>
@@ -629,27 +648,32 @@ export default function VendorRequests() {
                 <Badge variant="secondary" className="ml-1">{pendingCategoryChangeRequests.length}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="events" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Events</span>
-              {pendingEvents.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{pendingEvents.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="event-prices" className="flex items-center gap-2">
-              <Ticket className="h-4 w-4" />
-              <span className="hidden sm:inline">Event Prices</span>
-              {pendingEventPriceRequests.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{pendingEventPriceRequests.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="services" className="flex items-center gap-2">
-              <Wrench className="h-4 w-4" />
-              <span className="hidden sm:inline">Services</span>
-              {pendingServices.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{pendingServices.length}</Badge>
-              )}
-            </TabsTrigger>
+            {/* Event/Service-related tabs - Only for SERVICE and HYBRID vendors */}
+            {(vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID') && (
+              <>
+                <TabsTrigger value="events" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span className="hidden sm:inline">Events</span>
+                  {pendingEvents.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">{pendingEvents.length}</Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="event-prices" className="flex items-center gap-2">
+                  <Ticket className="h-4 w-4" />
+                  <span className="hidden sm:inline">Event Prices</span>
+                  {pendingEventPriceRequests.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">{pendingEventPriceRequests.length}</Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="services" className="flex items-center gap-2">
+                  <Wrench className="h-4 w-4" />
+                  <span className="hidden sm:inline">Services</span>
+                  {pendingServices.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">{pendingServices.length}</Badge>
+                  )}
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           {/* Product Creation Requests Tab */}
@@ -750,8 +774,8 @@ export default function VendorRequests() {
                   <div className="space-y-4">
                     {pendingPriceRequests.map((request) => {
                       // Use vendor prices for display to vendors
-                      const currentPrice = request.currentVendorPrice || request.currentPrice?.prices?.[0];
-                      const newPrice = request.newVendorPrice || request.newPrice?.prices?.[0];
+                      const currentPrice = request.currentVendorPrice || request.currentPrice;
+                      const newPrice = request.newVendorPrice || request.newPrice;
                       return (
                         <div key={request.id} className="border rounded-lg p-4">
                           <div className="flex items-start justify-between">
@@ -934,7 +958,7 @@ export default function VendorRequests() {
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-4">
                             <img 
-                              src={getEventImageUrl(event.images, event.imageUrl)} 
+                              src={getEventImageUrl(event.images, event.bannerImageUrl)} 
                               alt={event.title} 
                               className="h-16 w-24 rounded object-cover"
                               onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
@@ -944,9 +968,9 @@ export default function VendorRequests() {
                             </div>
                             <div>
                               <h3 className="font-semibold">{event.title}</h3>
-                              <p className="text-sm text-muted-foreground">{event.venue}</p>
+                              <p className="text-sm text-muted-foreground">{event.location}</p>
                               <p className="text-sm text-muted-foreground">
-                                {new Date(event.startDateTime).toLocaleDateString()} - {new Date(event.endDateTime).toLocaleDateString()}
+                                {new Date(event.eventDate).toLocaleDateString()}{event.eventEndDate ? ` - ${new Date(event.eventEndDate).toLocaleDateString()}` : ''}
                               </p>
                               <div className="flex items-center gap-2 mt-2">
                                 {getStatusBadge(event.status)}
@@ -1003,8 +1027,8 @@ export default function VendorRequests() {
                   <div className="space-y-4">
                     {pendingEventPriceRequests.map((request) => {
                       // Use vendor prices for display to vendors
-                      const currentPrice = request.currentVendorPrice || request.currentPrice?.prices?.[0];
-                      const newPrice = request.newVendorPrice || request.newPrice?.prices?.[0];
+                      const currentPrice = { amount: request.currentPriceMinor / 100, currencyCode: request.currentCurrencyCode };
+                      const newPrice = { amount: request.newPriceMinor / 100, currencyCode: request.newCurrencyCode };
                       return (
                         <div key={request.id} className="border rounded-lg p-4">
                           <div className="flex items-start justify-between">
@@ -1015,14 +1039,14 @@ export default function VendorRequests() {
                                 <div>
                                   <span className="text-sm text-muted-foreground">Current: </span>
                                   <span className="font-medium">
-                                    {currentPrice?.currencyCode} {(currentPrice?.vendorAmount ?? currentPrice?.amount)?.toFixed(2)}
+                                    {currentPrice?.currencyCode} {currentPrice?.amount?.toFixed(2)}
                                   </span>
                                 </div>
                                 <span className="text-muted-foreground">→</span>
                                 <div>
                                   <span className="text-sm text-muted-foreground">New: </span>
                                   <span className="font-medium text-blue-600">
-                                    {newPrice?.currencyCode} {(newPrice?.vendorAmount ?? newPrice?.amount)?.toFixed(2)}
+                                    {newPrice?.currencyCode} {newPrice?.amount?.toFixed(2)}
                                   </span>
                                 </div>
                               </div>

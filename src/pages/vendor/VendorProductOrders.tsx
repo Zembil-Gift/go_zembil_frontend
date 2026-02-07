@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
   Package, 
@@ -24,11 +24,13 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { AuthenticatedImage, useAuthenticatedImageViewer } from '@/components/AuthenticatedImage';
 
 import { 
   orderService, 
@@ -38,11 +40,62 @@ import {
 
 export default function VendorProductOrders() {
   const { toast } = useToast();
+  const { openImage } = useAuthenticatedImageViewer();
+  const queryClient = useQueryClient();
   
   const [selectedOrder, setSelectedOrder] = useState<VendorOrder | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  // Rejection dialog state
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [orderToReject, setOrderToReject] = useState<VendorOrder | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  // Accept order mutation
+  const acceptOrderMutation = useMutation({
+    mutationFn: (orderId: number) => orderService.acceptOrder(orderId),
+    onSuccess: () => {
+      toast({
+        title: 'Order Accepted',
+        description: 'The order has been confirmed and is ready for processing.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['vendor-product-orders'] });
+      setDetailDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to accept order',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Deny order mutation
+  const denyOrderMutation = useMutation({
+    mutationFn: ({ orderId, reason }: { orderId: number; reason: string }) => 
+      orderService.denyOrder(orderId, reason),
+    onSuccess: () => {
+      toast({
+        title: 'Order Rejected',
+        description: 'The order has been rejected and the customer will be notified.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['vendor-product-orders'] });
+      setRejectDialogOpen(false);
+      setDetailDialogOpen(false);
+      setRejectionReason('');
+      setOrderToReject(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reject order',
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Fetch vendor's product orders
   const { data: ordersData, isLoading, refetch } = useQuery({
@@ -67,7 +120,7 @@ export default function VendorProductOrders() {
 
   // Categorize orders
   const pendingOrders = filteredOrders.filter((order: VendorOrder) => 
-    order.status === 'PENDING' || order.status === 'CONFIRMED'
+    order.status === 'PENDING' || order.status === 'PLACED' || order.status === 'CONFIRMED'
   );
 
   const processingOrders = filteredOrders.filter((order: VendorOrder) => 
@@ -79,7 +132,7 @@ export default function VendorProductOrders() {
   );
 
   const completedOrders = filteredOrders.filter((order: VendorOrder) => 
-    ['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(order.status)
+    ['DELIVERED', 'CANCELLED', 'REFUNDED', 'REJECTED'].includes(order.status)
   );
 
   const copyToClipboard = (text: string, label: string) => {
@@ -94,6 +147,8 @@ export default function VendorProductOrders() {
     switch (status) {
       case 'PENDING':
         return <Clock className="h-4 w-4 text-yellow-600" />;
+      case 'PLACED':
+        return <Clock className="h-4 w-4 text-purple-600" />;
       case 'CONFIRMED':
         return <CheckCircle className="h-4 w-4 text-blue-600" />;
       case 'PROCESSING':
@@ -106,6 +161,8 @@ export default function VendorProductOrders() {
         return <XCircle className="h-4 w-4 text-red-600" />;
       case 'REFUNDED':
         return <AlertCircle className="h-4 w-4 text-gray-600" />;
+      case 'REJECTED':
+        return <XCircle className="h-4 w-4 text-red-600" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-600" />;
     }
@@ -178,7 +235,7 @@ export default function VendorProductOrders() {
                       {getStatusIcon(order.status)}
                       <span className="ml-1">{statusDisplay.text}</span>
                     </Badge>
-                    {order.paymentStatus === 'PAID' && (
+                    {(order.paymentStatus === 'PAID' || order.paymentStatus === 'COMPLETED') && (
                       <Badge className="bg-green-100 text-green-700 border-none">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Paid
@@ -402,13 +459,12 @@ export default function VendorProductOrders() {
             <div className="flex gap-3">
               {deliveryInfo.pickupImageUrl && (
                 <div className="text-center">
-                  <img 
+                  <AuthenticatedImage 
                     src={deliveryInfo.pickupImageUrl} 
                     alt="Pickup proof"
                     className="w-20 h-20 rounded-lg object-cover cursor-pointer hover:opacity-80"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.open(deliveryInfo.pickupImageUrl, '_blank');
+                    onClick={() => {
+                      openImage(deliveryInfo.pickupImageUrl ?? '');
                     }}
                   />
                   <p className="text-xs text-indigo-600 mt-1">Pickup</p>
@@ -416,13 +472,12 @@ export default function VendorProductOrders() {
               )}
               {deliveryInfo.proofImageUrl && (
                 <div className="text-center">
-                  <img 
+                  <AuthenticatedImage 
                     src={deliveryInfo.proofImageUrl} 
                     alt="Delivery proof"
                     className="w-20 h-20 rounded-lg object-cover cursor-pointer hover:opacity-80"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.open(deliveryInfo.proofImageUrl, '_blank');
+                    onClick={() => {
+                      openImage(deliveryInfo.proofImageUrl ?? '');
                     }}
                   />
                   <p className="text-xs text-indigo-600 mt-1">Delivery</p>
@@ -536,7 +591,7 @@ export default function VendorProductOrders() {
 
         {/* Orders Tabs */}
         <Tabs defaultValue="pending" className="space-y-4">
-          <TabsList className="bg-eagle-green/5 p-1 rounded-lg">
+          <TabsList className="bg-eagle-green/5 p-1 rounded-lg grid grid-cols-4 w-full">
             <TabsTrigger value="pending" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white">
               New Orders ({pendingOrders.length})
             </TabsTrigger>
@@ -623,6 +678,41 @@ export default function VendorProductOrders() {
                       </Badge>
                     </div>
                   </div>
+
+                  {/* Action Buttons for PLACED orders */}
+                  {selectedOrder.status === 'PLACED' && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <h4 className="font-bold text-purple-800 mb-2 flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Order Awaiting Your Approval
+                      </h4>
+                      <p className="text-sm text-purple-700 mb-4">
+                        This order has been placed and paid. Please review and accept or reject the order.
+                      </p>
+                      <div className="flex gap-3">
+                        <Button
+                          onClick={() => acceptOrderMutation.mutate(selectedOrder.orderId)}
+                          disabled={acceptOrderMutation.isPending}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          {acceptOrderMutation.isPending ? 'Accepting...' : 'Accept Order'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setOrderToReject(selectedOrder);
+                            setRejectDialogOpen(true);
+                          }}
+                          disabled={denyOrderMutation.isPending}
+                          className="border-red-300 text-red-600 hover:bg-red-50"
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Reject Order
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
                   <Separator />
 
@@ -840,6 +930,67 @@ export default function VendorProductOrders() {
                 </div>
               </>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Reject Order Dialog */}
+        <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+          <DialogContent className="max-w-md bg-white">
+            <DialogHeader>
+              <DialogTitle className="font-bold text-red-600 flex items-center gap-2">
+                <XCircle className="h-5 w-5" />
+                Reject Order
+              </DialogTitle>
+              <DialogDescription>
+                {orderToReject && (
+                  <>Rejecting order #{orderToReject.orderNumber}. Please provide a reason for rejection.</>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div>
+                <label className="text-sm font-medium text-eagle-green mb-2 block">
+                  Rejection Reason <span className="text-red-500">*</span>
+                </label>
+                <Textarea
+                  placeholder="e.g., Item out of stock, Cannot fulfill within delivery timeframe, etc."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+              <p className="text-xs text-eagle-green/60">
+                The customer will be notified of this rejection with the reason provided.
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRejectDialogOpen(false);
+                  setRejectionReason('');
+                  setOrderToReject(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (orderToReject && rejectionReason.trim()) {
+                    denyOrderMutation.mutate({ 
+                      orderId: orderToReject.orderId, 
+                      reason: rejectionReason.trim() 
+                    });
+                  }
+                }}
+                disabled={!rejectionReason.trim() || denyOrderMutation.isPending}
+              >
+                {denyOrderMutation.isPending ? 'Rejecting...' : 'Confirm Rejection'}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

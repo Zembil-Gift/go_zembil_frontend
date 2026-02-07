@@ -127,7 +127,7 @@ export default function VerifyEmail() {
             title: "Email Verified Successfully!",
             description: "Your vendor account is pending admin approval. You'll be notified once approved.",
           });
-          navigate('/signin');
+          navigate('/vendor');
         } else {
           navigate(returnUrl || '/');
         }

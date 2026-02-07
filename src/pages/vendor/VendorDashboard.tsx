@@ -2430,8 +2430,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
           const originalTicket = selectedEvent.ticketTypes?.find(tt => tt.id === ticketType.id);
           // Get original price from various possible sources
           const originalPriceMinor = originalTicket?.vendorPriceMinor ?? originalTicket?.priceMinor;
-          const originalPriceMajor = originalPriceMinor ? originalPriceMinor / 100 : originalTicket?.price?.prices?.[0]?.amount;
-          const originalCurrency = originalTicket?.currency ?? originalTicket?.price?.prices?.[0]?.currencyCode;
+          const originalPriceMajor = originalPriceMinor ? originalPriceMinor / 100 : originalTicket?.priceObj?.prices?.[0]?.amount;
+          const originalCurrency = originalTicket?.currency ?? originalTicket?.priceObj?.prices?.[0]?.currencyCode;
           
           if (originalPriceMajor !== undefined && (originalPriceMajor !== ticketType.amount || originalCurrency !== ticketType.currencyCode)) {
             // Price changed - submit price update request

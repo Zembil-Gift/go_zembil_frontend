@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,19 +21,51 @@ import {
   Store,
   Package,
   ShoppingCart,
-  TrendingUp,
   Plus,
   Edit,
   Eye,
   DollarSign,
-  Users,
-  Clock,
-  CheckCircle,
   AlertCircle,
   Star,
-  MoreHorizontal,
-  Settings
 } from "lucide-react";
+
+// Type definitions for vendor dashboard
+interface VendorProfile {
+  businessName: string;
+  email: string;
+  phone: string;
+  address: string;
+  status: string;
+  rating?: string;
+  totalOrders?: number;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  inventory: number;
+  isActive: boolean;
+  images?: string[];
+}
+
+interface Order {
+  orderId: number;
+  orderNumber: string;
+  customerName: string;
+  customerPhone: string;
+  items?: unknown[];
+  totalAmountMinor: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+}
 
 const productSchema = z.object({
   name: z.string().min(1, "Product name is required"),
@@ -49,9 +83,10 @@ type ProductForm = z.infer<typeof productSchema>;
 
 export default function VendorDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [_selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
 
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
@@ -73,28 +108,28 @@ export default function VendorDashboard() {
   }, [isAuthenticated, isLoading, user, toast]);
 
   // Fetch vendor profile
-  const { data: vendorProfile } = useQuery({
+  const { data: vendorProfile } = useQuery<VendorProfile>({
     queryKey: ["/api/vendor/profile"],
     enabled: isAuthenticated && user?.role === "vendor",
     retry: false,
   });
 
   // Fetch vendor products
-  const { data: products = [], isLoading: productsLoading } = useQuery({
+  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/vendor/products"],
     enabled: isAuthenticated && user?.role === "vendor",
     retry: false,
   });
 
   // Fetch vendor orders
-  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+  const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/vendor/orders"],
     enabled: isAuthenticated && user?.role === "vendor",
     retry: false,
   });
 
   // Fetch categories for product form
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
     enabled: isAuthenticated && user?.role === "vendor",
   });
@@ -184,21 +219,63 @@ export default function VendorDashboard() {
     },
   });
 
+  const acceptOrderMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      return await apiRequest("POST", `/api/vendor/orders/${orderId}/accept`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/vendor/orders"] });
+      toast({
+        title: "Order accepted",
+        description: "Order has been confirmed and customer notified.",
+      });
+    },
+    onError: (_error) => {
+      toast({
+        title: "Error",
+        description: "Failed to accept order.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const denyOrderMutation = useMutation({
+    mutationFn: async ({ orderId, reason }: { orderId: number; reason: string }) => {
+      return await apiRequest("POST", `/api/vendor/orders/${orderId}/deny?reason=${encodeURIComponent(reason)}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/vendor/orders"] });
+      toast({
+        title: "Order denied",
+        description: "Order has been cancelled and customer notified.",
+      });
+    },
+    onError: (_error) => {
+      toast({
+        title: "Error",
+        description: "Failed to deny order.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const calculateMetrics = () => {
     const totalProducts = products.length;
-    const activeProducts = products.filter((p: any) => p.isActive).length;
+    const activeProducts = products.filter((p) => p.isActive).length;
     const totalOrders = orders.length;
-    const completedOrders = orders.filter((o: any) => o.status === "delivered").length;
-    const pendingOrders = orders.filter((o: any) => ["pending", "confirmed", "processing"].includes(o.status)).length;
+    const completedOrders = orders.filter((o) => o.status === "DELIVERED").length;
+    const placedOrders = orders.filter((o) => o.status === "PLACED").length;
+    const pendingOrders = orders.filter((o) => ["PENDING", "PLACED", "CONFIRMED", "PROCESSING"].includes(o.status)).length;
     const totalRevenue = orders
-      .filter((o: any) => o.status === "delivered")
-      .reduce((sum: number, order: any) => sum + parseFloat(order.total || "0"), 0);
+      .filter((o) => o.status === "DELIVERED")
+      .reduce((sum: number, order) => sum + (order.totalAmountMinor / 100), 0);
 
     return {
       totalProducts,
       activeProducts,
       totalOrders,
       completedOrders,
+      placedOrders,
       pendingOrders,
       totalRevenue,
     };
@@ -226,8 +303,10 @@ export default function VendorDashboard() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    const lowerStatus = status?.toLowerCase();
+    switch (lowerStatus) {
       case "pending": return "bg-amber-100 text-amber-800";
+      case "placed": return "bg-purple-100 text-purple-800";
       case "confirmed": return "bg-blue-100 text-blue-800";
       case "processing": return "bg-purple-100 text-purple-800";
       case "shipped": return "bg-orange-100 text-orange-800";
@@ -300,7 +379,7 @@ export default function VendorDashboard() {
                 <CardContent>
                   <div className="text-2xl font-bold">{metrics.totalOrders}</div>
                   <p className="text-xs text-muted-foreground">
-                    {metrics.pendingOrders} pending
+                    {metrics.placedOrders} awaiting approval
                   </p>
                 </CardContent>
               </Card>
@@ -347,18 +426,18 @@ export default function VendorDashboard() {
                 ) : orders.length > 0 ? (
                   <div className="space-y-4">
                     {orders.slice(0, 5).map((order: any) => (
-                      <div key={order.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div key={order.orderId} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                         <div className="flex items-center space-x-4">
                           <div>
-                            <p className="font-medium">Order #{order.id.slice(0, 8)}</p>
-                            <p className="text-sm text-gray-600">{order.recipientName}</p>
+                            <p className="font-medium">Order #{order.orderNumber}</p>
+                            <p className="text-sm text-gray-600">{order.customerName}</p>
                           </div>
                         </div>
                         <div className="text-right">
                           <Badge className={getStatusColor(order.status)}>
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1).toLowerCase()}
                           </Badge>
-                          <p className="text-sm text-gray-600 mt-1">{order.total} ETB</p>
+                          <p className="text-sm text-gray-600 mt-1">{(order.totalAmountMinor / 100).toFixed(2)} {order.currency}</p>
                         </div>
                       </div>
                     ))}
@@ -644,6 +723,53 @@ export default function VendorDashboard() {
               <h2 className="text-2xl font-bold text-charcoal">Order Management</h2>
             </div>
 
+            {/* Order Status Filter Tabs */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={orderStatusFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setOrderStatusFilter('all')}
+              >
+                All ({orders.length})
+              </Button>
+              <Button
+                variant={orderStatusFilter === 'PLACED' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setOrderStatusFilter('PLACED')}
+                className={orderStatusFilter !== 'PLACED' && orders.filter((o: any) => o.status === 'PLACED').length > 0 ? 'border-purple-500 text-purple-700' : ''}
+              >
+                Awaiting Approval ({orders.filter((o: any) => o.status === 'PLACED').length})
+              </Button>
+              <Button
+                variant={orderStatusFilter === 'CONFIRMED' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setOrderStatusFilter('CONFIRMED')}
+              >
+                Confirmed ({orders.filter((o: any) => o.status === 'CONFIRMED').length})
+              </Button>
+              <Button
+                variant={orderStatusFilter === 'PROCESSING' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setOrderStatusFilter('PROCESSING')}
+              >
+                Processing ({orders.filter((o: any) => o.status === 'PROCESSING').length})
+              </Button>
+              <Button
+                variant={orderStatusFilter === 'SHIPPED' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setOrderStatusFilter('SHIPPED')}
+              >
+                Shipped ({orders.filter((o: any) => o.status === 'SHIPPED').length})
+              </Button>
+              <Button
+                variant={orderStatusFilter === 'DELIVERED' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setOrderStatusFilter('DELIVERED')}
+              >
+                Delivered ({orders.filter((o: any) => o.status === 'DELIVERED').length})
+              </Button>
+            </div>
+
             {ordersLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ethiopian-gold"></div>
@@ -664,50 +790,86 @@ export default function VendorDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {orders.map((order: any) => (
-                        <TableRow key={order.id}>
+                      {orders
+                        .filter((order: any) => orderStatusFilter === 'all' || order.status === orderStatusFilter)
+                        .map((order: any) => (
+                        <TableRow key={order.orderId}>
                           <TableCell className="font-medium">
-                            #{order.id.slice(0, 8)}
+                            #{order.orderNumber}
                           </TableCell>
                           <TableCell>
                             <div>
-                              <p className="font-medium">{order.recipientName}</p>
-                              <p className="text-sm text-gray-600">{order.recipientPhone}</p>
+                              <p className="font-medium">{order.customerName}</p>
+                              <p className="text-sm text-gray-600">{order.customerPhone}</p>
                             </div>
                           </TableCell>
                           <TableCell>
                             {order.items?.length || 0} items
                           </TableCell>
                           <TableCell className="font-medium">
-                            {order.total} ETB
+                            {(order.totalAmountMinor / 100).toFixed(2)} {order.currency}
                           </TableCell>
                           <TableCell>
-                            <Badge className={getStatusColor(order.status)}>
-                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            <Badge className={getStatusColor(order.status.toLowerCase())}>
+                              {order.status.charAt(0).toUpperCase() + order.status.slice(1).toLowerCase()}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             {new Date(order.createdAt).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
-                            <Select
-                              value={order.status}
-                              onValueChange={(status) => 
-                                updateOrderStatusMutation.mutate({ orderId: order.id, status })
-                              }
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="confirmed">Confirmed</SelectItem>
-                                <SelectItem value="processing">Processing</SelectItem>
-                                <SelectItem value="shipped">Shipped</SelectItem>
-                                <SelectItem value="delivered">Delivered</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            {order.status === 'PLACED' ? (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="bg-green-600 hover:bg-green-700"
+                                  onClick={() => acceptOrderMutation.mutate(order.orderId)}
+                                  disabled={acceptOrderMutation.isPending}
+                                >
+                                  {acceptOrderMutation.isPending ? 'Accepting...' : 'Accept'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => {
+                                    const reason = prompt('Please provide a reason for denying this order:');
+                                    if (reason && reason.trim()) {
+                                      denyOrderMutation.mutate({ orderId: order.orderId, reason: reason.trim() });
+                                    } else if (reason !== null) {
+                                      toast({
+                                        title: "Rejection reason required",
+                                        description: "Please provide a valid reason for denying this order.",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                  disabled={denyOrderMutation.isPending}
+                                >
+                                  {denyOrderMutation.isPending ? 'Denying...' : 'Deny'}
+                                </Button>
+                              </div>
+                            ) : (
+                              <Select
+                                value={order.status}
+                                onValueChange={(status) => 
+                                  updateOrderStatusMutation.mutate({ orderId: order.orderId, status })
+                                }
+                              >
+                                <SelectTrigger className="w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="placed">Placed</SelectItem>
+                                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                                  <SelectItem value="processing">Processing</SelectItem>
+                                  <SelectItem value="shipped">Shipped</SelectItem>
+                                  <SelectItem value="delivered">Delivered</SelectItem>
+                                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}

@@ -254,31 +254,37 @@ export default function VendorOverview() {
           )}
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-6 gap-4">
-          {vendorProfile?.isApproved ? (
-            <Button asChild variant="outline" className="h-20 flex-col">
-              <Link to="/vendor/products/new">
-                <Plus className="h-6 w-6 mb-2" />
-                <span>Add Product</span>
-              </Link>
-            </Button>
-          ) : (
-            <Button variant="outline" className="h-20 flex-col opacity-50 cursor-not-allowed" disabled>
-              <Plus className="h-6 w-6 mb-2 text-gray-400" />
-              <span className="text-gray-400">Add Product</span>
-            </Button>
+          {/* Add Product - Only for PRODUCT and HYBRID vendors */}
+          {(vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID') && (
+            vendorProfile?.isApproved ? (
+              <Button asChild variant="outline" className="h-20 flex-col">
+                <Link to="/vendor/products/new">
+                  <Plus className="h-6 w-6 mb-2" />
+                  <span>Add Product</span>
+                </Link>
+              </Button>
+            ) : (
+              <Button variant="outline" className="h-20 flex-col opacity-50 cursor-not-allowed" disabled>
+                <Plus className="h-6 w-6 mb-2 text-gray-400" />
+                <span className="text-gray-400">Add Product</span>
+              </Button>
+            )
           )}
-          {vendorProfile?.isApproved ? (
-            <Button asChild variant="outline" className="h-20 flex-col">
-              <Link to="/vendor/events/new">
-                <Calendar className="h-6 w-6 mb-2" />
-                <span>Create Event</span>
-              </Link>
-            </Button>
-          ) : (
-            <Button variant="outline" className="h-20 flex-col opacity-50 cursor-not-allowed" disabled>
-              <Calendar className="h-6 w-6 mb-2 text-gray-400" />
-              <span className="text-gray-400">Create Event</span>
-            </Button>
+          {/* Create Event - Only for SERVICE and HYBRID vendors */}
+          {(vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID') && (
+            vendorProfile?.isApproved ? (
+              <Button asChild variant="outline" className="h-20 flex-col">
+                <Link to="/vendor/events/new">
+                  <Calendar className="h-6 w-6 mb-2" />
+                  <span>Create Event</span>
+                </Link>
+              </Button>
+            ) : (
+              <Button variant="outline" className="h-20 flex-col opacity-50 cursor-not-allowed" disabled>
+                <Calendar className="h-6 w-6 mb-2 text-gray-400" />
+                <span className="text-gray-400">Create Event</span>
+              </Button>
+            )
           )}
           {vendorProfile?.isApproved ? (
             <Button asChild variant="outline" className="h-20 flex-col">

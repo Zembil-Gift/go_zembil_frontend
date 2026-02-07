@@ -19,18 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/apiService";
 import { vendorTermsService, VendorTermsResponse } from "@/services/vendorTermsService";
 import { vendorCategoryService } from "@/services/vendorCategoryService";
-import { User, Mail, Lock, Globe, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Play, Pause, Download, ExternalLink, Shield, DollarSign, Package, MessageCircle, Scale, FileCheck } from "lucide-react";
+import { User, Mail, Lock, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Play, Pause, Download, ExternalLink, Shield, DollarSign, Package, MessageCircle, Scale, FileCheck } from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
-
-interface VendorCategory {
-  id: number;
-  name: string;
-  slug: string;
-  description?: string;
-  iconName?: string;
-  isActive: boolean;
-  displayOrder: number;
-}
 
 interface Currency {
   id: number;
@@ -496,7 +486,7 @@ export default function VendorSignup() {
         requiresEmailVerification?: boolean;
       }>('/api/vendors/signup', payload);
     },
-    onSuccess: (response, variables) => {
+    onSuccess: (_response, variables) => {
       // Always redirect to email verification for vendors
       toast({
         title: "Vendor Account Created!",
