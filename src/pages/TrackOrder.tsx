@@ -1,29 +1,17 @@
 import { useParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Package, Truck, Clock, MapPin, Phone, Mail, ArrowLeft, Loader2, ThumbsUp } from 'lucide-react';
+import { CheckCircle, Package, Truck, Clock, MapPin, Phone, Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { isUnauthorizedError } from '@/lib/authUtils';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import orderService, { Order } from '@/services/orderService';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
 export default function TrackOrder() {
   const { orderId } = useParams<{ orderId: string }>();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const { data: order, isLoading, error } = useQuery<Order>({
     queryKey: ['order', orderId],
@@ -54,31 +42,6 @@ export default function TrackOrder() {
       }, 500);
     }
   }, [error, toast]);
-
-  // Mutation for confirming delivery
-  const confirmDeliveryMutation = useMutation({
-    mutationFn: () => orderService.confirmDelivery(order!.orderId),
-    onSuccess: () => {
-      toast({
-        title: "Delivery Confirmed!",
-        description: "Thank you for confirming your order delivery.",
-      });
-      queryClient.invalidateQueries({ queryKey: ['order', orderId] });
-      setShowConfirmDialog(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to confirm delivery",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Check if delivery confirmation is needed (status is DELIVERED but not yet confirmed by user)
-  const isDeliveredAndNeedsConfirmation = order && 
-    order.status?.toLowerCase() === 'delivered' && 
-    !order.deliveryConfirmedAt;
 
   const getStatusSteps = (currentStatus: string) => {
     const statuses = [
@@ -355,29 +318,21 @@ export default function TrackOrder() {
           </CardContent>
         </Card>
 
-        {/* Confirm Delivery Section - shown when order is delivered but not yet confirmed by user */}
-        {isDeliveredAndNeedsConfirmation && (
-          <Card className="mb-8 border-green-200 bg-green-50">
+        {/* Delivery Status Messages */}
+        {order.status?.toLowerCase() === 'delivered' && !order.deliveryConfirmedAt && (
+          <Card className="mb-8 border-amber-200 bg-amber-50">
             <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <ThumbsUp className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Did you receive your order?</h3>
-                    <p className="text-sm text-gray-600">
-                      Please confirm that you have received your delivery.
-                    </p>
-                  </div>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-amber-600" />
                 </div>
-                <Button
-                  onClick={() => setShowConfirmDialog(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Confirm Delivery
-                </Button>
+                <div>
+                  <h3 className="font-semibold text-amber-800">Delivery Pending Verification</h3>
+                  <p className="text-sm text-amber-700">
+                    Your order has been delivered and is pending verification by our team.
+                    You will receive an email confirmation once verified.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -394,7 +349,7 @@ export default function TrackOrder() {
                 <div>
                   <h3 className="font-semibold text-green-800">Delivery Confirmed</h3>
                   <p className="text-sm text-green-600">
-                    You confirmed receiving this order on{' '}
+                    Your order was verified and confirmed on{' '}
                     {new Date(order.deliveryConfirmedAt).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',
@@ -407,39 +362,6 @@ export default function TrackOrder() {
           </Card>
         )}
       </div>
-
-      {/* Confirm Delivery Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Delivery</AlertDialogTitle>
-            <AlertDialogDescription>
-              By confirming, you acknowledge that you have received your order and are satisfied with the delivery.
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={confirmDeliveryMutation.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => confirmDeliveryMutation.mutate()}
-              disabled={confirmDeliveryMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {confirmDeliveryMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Confirming...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Yes, I Received It
-                </>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

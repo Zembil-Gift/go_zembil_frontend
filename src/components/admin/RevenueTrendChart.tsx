@@ -43,13 +43,21 @@ const chartConfig = {
     label: 'Events',
     color: BRAND_COLORS.viridianGreen,
   },
+  serviceRevenue: {
+    label: 'Services',
+    color: BRAND_COLORS.warmRed,
+  },
+  customOrderRevenue: {
+    label: 'Custom Orders',
+    color: BRAND_COLORS.juneBud,
+  },
   ordersCount: {
     label: 'Orders',
     color: BRAND_COLORS.ethiopianGold,
   },
   avgOrderValue: {
     label: 'Avg Order',
-    color: BRAND_COLORS.juneBud,
+    color: '#8B5CF6', // Purple color for avg order value
   },
 } satisfies ChartConfig;
 
@@ -246,6 +254,44 @@ export function RevenueTrendChart({
                   strokeWidth: 2,
                 }}
               />
+              <Line
+                yAxisId="revenue"
+                type="monotone"
+                dataKey="serviceRevenue"
+                stroke={BRAND_COLORS.warmRed}
+                strokeWidth={3}
+                dot={{
+                  fill: BRAND_COLORS.warmRed,
+                  r: 4,
+                  strokeWidth: 2,
+                  stroke: '#fff',
+                }}
+                activeDot={{
+                  r: 6,
+                  fill: BRAND_COLORS.warmRed,
+                  stroke: '#fff',
+                  strokeWidth: 2,
+                }}
+              />
+              <Line
+                yAxisId="revenue"
+                type="monotone"
+                dataKey="customOrderRevenue"
+                stroke={BRAND_COLORS.juneBud}
+                strokeWidth={3}
+                dot={{
+                  fill: BRAND_COLORS.juneBud,
+                  r: 4,
+                  strokeWidth: 2,
+                  stroke: '#fff',
+                }}
+                activeDot={{
+                  r: 6,
+                  fill: BRAND_COLORS.juneBud,
+                  stroke: '#fff',
+                  strokeWidth: 2,
+                }}
+              />
               
               {/* Orders Bar */}
               {showOrders && (
@@ -264,16 +310,16 @@ export function RevenueTrendChart({
                   yAxisId="revenue"
                   type="monotone"
                   dataKey="avgOrderValue"
-                  stroke={BRAND_COLORS.juneBud}
+                  stroke="#8B5CF6"
                   strokeWidth={2}
                   strokeDasharray="5 5"
                   dot={{
-                    fill: BRAND_COLORS.juneBud,
+                    fill: '#8B5CF6',
                     r: 3,
                   }}
                   activeDot={{
                     r: 5,
-                    fill: BRAND_COLORS.juneBud,
+                    fill: '#8B5CF6',
                   }}
                 />
               )}
@@ -297,6 +343,20 @@ export function RevenueTrendChart({
             />
             <span className="text-sm text-muted-foreground">Event Revenue</span>
           </div>
+          <div className="flex items-center gap-2">
+            <div
+              className="h-3 w-3 rounded-full"
+              style={{ backgroundColor: BRAND_COLORS.warmRed }}
+            />
+            <span className="text-sm text-muted-foreground">Service Revenue</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div
+              className="h-3 w-3 rounded-full"
+              style={{ backgroundColor: BRAND_COLORS.juneBud }}
+            />
+            <span className="text-sm text-muted-foreground">Custom Order Revenue</span>
+          </div>
           {showOrders && (
             <div className="flex items-center gap-2">
               <div
@@ -310,7 +370,7 @@ export function RevenueTrendChart({
             <div className="flex items-center gap-2">
               <div
                 className="h-3 w-6 border-t-2 border-dashed"
-                style={{ borderColor: BRAND_COLORS.juneBud }}
+                style={{ borderColor: '#8B5CF6' }}
               />
               <span className="text-sm text-muted-foreground">Avg Order Value</span>
             </div>

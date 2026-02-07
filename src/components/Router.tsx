@@ -35,6 +35,8 @@ import MyOrders from "@/pages/MyOrders";
 import TrackOrder from "@/pages/TrackOrder";
 import StripePayment from "@/pages/stripe-payment";
 import ChapaPayment from "@/pages/chapa-payment";
+import TelebirrPayment from "@/pages/telebirr-payment";
+import TelebirrReturn from "@/pages/telebirr-return";
 import PaymentSuccess from "@/pages/payment-success";
 import Checkout from "@/pages/Checkout";
 import OrderReview from "@/pages/OrderReview";
@@ -53,6 +55,9 @@ import AdminServices from "@/pages/admin/AdminServices";
 import AdminTax from "@/pages/admin/AdminTax";
 import AdminCurrency from "@/pages/admin/AdminCurrency";
 import AdminDelivery from "@/pages/admin/AdminDelivery";
+// import AdminDeliveryPersonnel from "@/pages/admin/AdminDeliveryPersonnel";
+// import AdminOrderAssignments from "@/pages/admin/AdminOrderAssignments";
+// import AdminDeliveryConfirmations from "@/pages/admin/AdminDeliveryConfirmations";
 import AdminFeaturedAds from "@/pages/admin/AdminFeaturedAds";
 import AdminCustomTemplates from "@/pages/admin/AdminCustomTemplates";
 import AdminCustomOrders from "@/pages/admin/AdminCustomOrders";
@@ -100,6 +105,7 @@ import {
   DeliveryAssignmentDetail,
   DeliveryHistory,
   DeliveryProfile,
+  AvailableOrders,
 } from "@/pages/delivery";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -389,6 +395,18 @@ export default function Router() {
             </ProtectedRoute>
           } />
           
+          <Route path="payment/telebirr" element={
+            <ProtectedRoute>
+              <TelebirrPayment />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="payment/telebirr/return" element={
+            <ProtectedRoute>
+              <TelebirrReturn />
+            </ProtectedRoute>
+          } />
+          
           <Route path="payment-success" element={
             <ProtectedRoute>
               <PaymentSuccess />
@@ -485,6 +503,9 @@ export default function Router() {
           <Route path="tax" element={<AdminTax />} />
           <Route path="currency" element={<AdminCurrency />} />
           <Route path="delivery" element={<AdminDelivery />} />
+          {/* <Route path="delivery-personnel" element={<AdminDeliveryPersonnel />} />
+          <Route path="order-assignments" element={<AdminOrderAssignments />} />
+          <Route path="delivery-confirmations" element={<AdminDeliveryConfirmations />} /> */}
           <Route path="featured-ads" element={<AdminFeaturedAds />} />
           <Route path="custom-templates" element={<AdminCustomTemplates />} />
           <Route path="custom-orders" element={<AdminCustomOrders />} />
@@ -495,6 +516,7 @@ export default function Router() {
         {/* Delivery Person Routes - Outside main Layout to avoid navbar */}
         <Route path="/delivery" element={<DeliveryRoute><DeliveryLayout /></DeliveryRoute>}>
           <Route index element={<DeliveryDashboard />} />
+          <Route path="available-orders" element={<AvailableOrders />} />
           <Route path="assignments" element={<DeliveryAssignments />} />
           <Route path="assignments/:assignmentId" element={<DeliveryAssignmentDetail />} />
           <Route path="history" element={<DeliveryHistory />} />
