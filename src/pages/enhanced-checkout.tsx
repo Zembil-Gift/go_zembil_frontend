@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import PaymentMethodSelector, { PaymentMethodType } from '@/components/PaymentMethodSelector';
 import StripeCheckout from '@/components/StripeCheckout';
+import { ChapaCheckout } from '@/components/ChapaCheckout';
+import { TelebirrCheckout } from '@/components/TelebirrCheckout';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { formatPrice } from '@/lib/currency';
@@ -481,19 +483,43 @@ export default function EnhancedCheckout() {
             />
           )}
 
-          {/* Placeholder for other payment methods */}
-          {currentStep === 3 && selectedPaymentMethod !== 'stripe' && (
+          {/* Chapa Payment */}
+          {currentStep === 3 && selectedPaymentMethod === 'chapa' && (
+            <ChapaCheckout
+              amount={calculateTotal() * 100} // Convert to minor units
+              currency="ETB"
+              orderData={orderData}
+              userInfo={{
+                email: form.getValues('recipientEmail'),
+                firstName: form.getValues('recipientName').split(' ')[0] || 'Customer',
+                lastName: form.getValues('recipientName').split(' ').slice(1).join(' ') || '',
+                phoneNumber: form.getValues('recipientPhone'),
+              }}
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+            />
+          )}
+
+          {/* TeleBirr Payment */}
+          {currentStep === 3 && selectedPaymentMethod === 'telebirr' && (
+            <TelebirrCheckout
+              amount={calculateTotal() * 100} // Convert to minor units
+              currency="ETB"
+              orderData={orderData}
+              orderType="product"
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+            />
+          )}
+
+          {/* Placeholder for PayPal - not yet integrated */}
+          {currentStep === 3 && selectedPaymentMethod === 'paypal' && (
             <Card>
               <CardContent className="pt-6">
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    {selectedPaymentMethod === 'paypal' && 
-                      'PayPal integration is ready but requires API credentials. Please add PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET to enable this payment method.'}
-                    {selectedPaymentMethod === 'chapa' && 
-                      'Chapa integration is ready but requires API credentials. Please add CHAPA_SECRET_KEY to enable Ethiopian payment processing.'}
-                    {selectedPaymentMethod === 'telebirr' && 
-                      'Telebirr integration is ready but requires API credentials. Please add TELEBIRR_API_KEY to enable mobile money payments.'}
+                    PayPal integration is ready but requires API credentials. Please add PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET to enable this payment method.
                   </AlertDescription>
                 </Alert>
                 

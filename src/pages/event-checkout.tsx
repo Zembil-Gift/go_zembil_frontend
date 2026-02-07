@@ -57,7 +57,7 @@ export default function EventCheckout() {
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [giftMessage, setGiftMessage] = useState('');
-  const [paymentProvider, setPaymentProvider] = useState<'stripe' | 'chapa'>('stripe');
+  const [paymentProvider, setPaymentProvider] = useState<'stripe' | 'chapa' | 'telebirr'>('stripe');
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch event details
@@ -180,7 +180,7 @@ export default function EventCheckout() {
         contactEmail,
         contactPhone,
         giftMessage: giftMessage || undefined,
-        paymentProvider: paymentProvider.toUpperCase() as 'STRIPE' | 'CHAPA',
+        paymentProvider: paymentProvider.toUpperCase() as 'STRIPE' | 'CHAPA' | 'TELEBIRR',
       };
 
       // Create order
@@ -494,7 +494,7 @@ export default function EventCheckout() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <RadioGroup value={paymentProvider} onValueChange={(value) => setPaymentProvider(value as 'stripe' | 'chapa')}>
+                  <RadioGroup value={paymentProvider} onValueChange={(value) => setPaymentProvider(value as 'stripe' | 'chapa' | 'telebirr')}>
                     <div className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${paymentProvider === 'stripe' ? 'border-eagle-green bg-june-bud/10' : 'border-gray-200 hover:border-eagle-green/50'}`}>
                       <RadioGroupItem value="stripe" id="stripe" />
                       <Label htmlFor="stripe" className="flex-1 cursor-pointer">
@@ -510,10 +510,20 @@ export default function EventCheckout() {
                       <Label htmlFor="chapa" className="flex-1 cursor-pointer">
                         <span className="font-bold text-eagle-green">Chapa</span>
                         <p className="text-sm font-light text-eagle-green/70">
-                          Pay with Telebirr, CBE Birr, Awash Bank, or other local options
+                          Pay with CBE Birr, Awash Bank, or other local banks
                         </p>
                       </Label>
                       <img src="/chapa-logo.png" alt="Chapa" className="h-8 w-auto" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    </div>
+                    <div className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${paymentProvider === 'telebirr' ? 'border-eagle-green bg-june-bud/10' : 'border-gray-200 hover:border-eagle-green/50'}`}>
+                      <RadioGroupItem value="telebirr" id="telebirr" />
+                      <Label htmlFor="telebirr" className="flex-1 cursor-pointer">
+                        <span className="font-bold text-eagle-green">TeleBirr</span>
+                        <p className="text-sm font-light text-eagle-green/70">
+                          Pay with TeleBirr Wallet, Bank Account, or Cards
+                        </p>
+                      </Label>
+                      <img src="/telebirr-logo.png" alt="TeleBirr" className="h-8 w-auto" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                     </div>
                   </RadioGroup>
                 </CardContent>

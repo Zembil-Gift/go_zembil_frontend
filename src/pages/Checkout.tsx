@@ -71,7 +71,7 @@ export default function Checkout() {
   const [giftWrap, setGiftWrap] = useState(false);
   const [cardMessage, setCardMessage] = useState("");
   const [discountCode, setDiscountCode] = useState("");
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'stripe' | 'chapa'>('stripe');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'stripe' | 'chapa' | 'telebirr'>('stripe');
 
   const totalPrice = getTotalPrice();
   const totalItems = getTotalItems();
@@ -201,7 +201,7 @@ export default function Checkout() {
         state: shippingInfo.state || shippingInfo.city,
         postalCode: shippingInfo.postalCode || '',
         country: shippingInfo.country,
-        contactName: user?.name || '',
+        contactName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '',
         contactPhone: contactPhone,
         type: 'SHIPPING',
         isDefault: true,
@@ -242,7 +242,7 @@ export default function Checkout() {
           state: shippingInfo.state || shippingInfo.city,
           postalCode: shippingInfo.postalCode || '',
           country: shippingInfo.country,
-          contactName: user?.name || '',
+          contactName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '',
           contactPhone: contactPhone,
           type: 'BILLING',
           isDefault: false,
@@ -285,7 +285,7 @@ export default function Checkout() {
           state: billingInfo.state || billingInfo.city,
           postalCode: billingInfo.postalCode || '',
           country: billingInfo.country,
-          contactName: user?.name || '',
+          contactName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '',
           contactPhone: contactPhone,
           type: 'BILLING',
           isDefault: false,
@@ -330,7 +330,7 @@ export default function Checkout() {
 
       console.log('Order created - full response:', JSON.stringify(orderResponse, null, 2));
 
-      const orderId = (orderResponse as any).orderId || orderResponse.id;
+      const orderId = (orderResponse as any).orderId;
       if (!orderId) {
         console.error('Order response missing ID:', orderResponse);
         throw new Error('Order created but no order ID returned. Please check your orders.');
@@ -728,7 +728,37 @@ export default function Checkout() {
                         <span className="text-xs text-gray-500">(Ethiopia)</span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Telebirr, M-Pesa, CBE Birr, Bank Transfer
+                        CBE Birr, M-Pesa, Awash Bank, Bank Transfer
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* TeleBirr Option */}
+                <div 
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    selectedPaymentMethod === 'telebirr' 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedPaymentMethod('telebirr')}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      selectedPaymentMethod === 'telebirr' ? 'border-blue-500' : 'border-gray-300'
+                    }`}>
+                      {selectedPaymentMethod === 'telebirr' && (
+                        <div className="w-3 h-3 rounded-full bg-blue-500" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="h-5 w-5 text-blue-600" />
+                        <span className="font-medium">TeleBirr</span>
+                        <span className="text-xs text-gray-500">(Ethiopia)</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        TeleBirr Wallet, Bank Account, Cards
                       </p>
                     </div>
                   </div>
@@ -815,21 +845,7 @@ export default function Checkout() {
                   <span>{formatPrice(totalPrice, cartCurrency)}</span>
                 </div>
 
-                {/* Tax Information Notice */}
-                <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-600 space-y-1">
-                  <p className="font-medium text-gray-700">Tax Information:</p>
-                  {shippingInfo.country === "Ethiopia" && (
-                    <p>• Ethiopian orders: VAT (15%) is included in product prices for VAT-registered vendors</p>
-                  )}
-                  {shippingInfo.country === "United States" && (
-                    <p>• US orders: Sales tax will be calculated based on your delivery state</p>
-                  )}
-                  {!shippingInfo.country && (
-                    <p>• Applicable taxes will be calculated based on your delivery location</p>
-                  )}
-                  <p className="text-gray-500 mt-1">Final tax breakdown will be shown on the order review page.</p>
-                </div>
-
+            
                 {/* Estimated Total */}
                 <div className="flex justify-between font-semibold text-lg pt-2">
                   <span>Estimated Total</span>
