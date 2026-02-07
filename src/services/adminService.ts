@@ -75,6 +75,8 @@ export interface RevenueTrendDataPoint {
   date: string;
   productRevenue: number;
   eventRevenue: number;
+  serviceRevenue: number;
+  customOrderRevenue: number;
   totalRevenue: number;
   ordersCount: number;
   avgOrderValue: number;
@@ -452,15 +454,22 @@ export interface PaginatedResponse<T> {
 
 // Admin Order DTOs (matching backend)
 export interface AdminOrderItemDto {
+  orderItemId: number;
   productId: number;
   productName: string;
+  skuId?: number;
+  skuCode?: string;
   quantity: number;
-  priceMinor: number;
+  unitPrice: number;
+  totalPrice: number;
   currency: string;
 }
 
 export interface AdminAddressDto {
-  street?: string;
+  addressId?: number;
+  addressLine1?: string;
+  addressLine2?: string;
+  street?: string; // keeping for backward compat if needed, but backend sends addressLine1
   city?: string;
   state?: string;
   country?: string;
@@ -472,21 +481,43 @@ export interface AdminOrderDto {
   orderNumber: string;
   userId: number;
   userEmail: string;
-  vendorId: number;
-  vendorName: string;
+  vendorId?: number;
+  vendorName?: string;
+  customerName?: string;
   status: string;
+  deliveryType?: string;
   paymentStatus: string;
   paymentMethod?: string;
-  totalAmountMinor: number;
+  paymentProvider?: string;
+  subtotal?: number;
+  shippingCost?: number;
+  taxAmount?: number;
+  discountAmount?: number;
+  totalAmount: number;
   currency: string;
+  itemCount?: number;
   items: AdminOrderItemDto[];
   shippingAddress?: AdminAddressDto;
   billingAddress?: AdminAddressDto;
   recipientName?: string;
-  recipientPhone?: string;
-  giftMessage?: string;
+  recipientPhone?: string; // Backend doesn't seem to have recipientPhone explicitly on top level, but maybe it does or uses shipping address?
+  // Checking Java DTO: has recipientName, but not recipientPhone. But shippingAddress has phone? No, AddressSummary has no phone. 
+  // Wait, AddressSummary in Java: addressLine1, 2, city, state, postalCode, country. No phone.
+  // AdminOrderDto Java: contactPhone, contactEmail. 
+  
+  giftMessage?: string; // cardMessage in Java
   createdAt: string;
   updatedAt?: string;
+  // Delivery confirmation fields
+  deliveryConfirmedAt?: string;
+  deliveryConfirmedBy?: number;
+  revenueEarned?: boolean;
+  revenueEarnedAt?: string;
+  // Delivery proof images
+  deliveryProofImageUrl?: string;
+  pickupProofImageUrl?: string;
+  deliveryPersonName?: string;
+  deliveredAt?: string;
 }
 
 // Admin Event Order DTOs
@@ -694,6 +725,38 @@ class AdminService {
     return await apiService.postRequest<AdminOrderDto>(url, {});
   }
 
+  // ==================== DELIVERY CONFIRMATION MANAGEMENT ====================
+  
+  /**
+   * Get orders pending delivery confirmation (DELIVERED but not confirmed by admin)
+   */
+  async getOrdersPendingDeliveryConfirmation(page: number = 0, size: number = 20): Promise<PaginatedResponse<AdminOrderDto>> {
+    return await apiService.getRequest<PaginatedResponse<AdminOrderDto>>(
+      `/api/admin/orders/pending-delivery-confirmation?page=${page}&size=${size}`
+    );
+  }
+
+  /**
+   * Confirm delivery after reviewing proof images (recognizes revenue)
+   */
+  async confirmOrderDelivery(orderId: number): Promise<AdminOrderDto> {
+    return await apiService.postRequest<AdminOrderDto>(
+      `/api/admin/orders/${orderId}/confirm-delivery`,
+      {}
+    );
+  }
+
+  /**
+   * Reject delivery confirmation with reason
+   */
+  async rejectOrderDeliveryConfirmation(orderId: number, reason: string): Promise<AdminOrderDto> {
+    return await apiService.postRequest<AdminOrderDto>(
+      `/api/admin/orders/${orderId}/reject-delivery-confirmation?reason=${encodeURIComponent(reason)}`,
+      {}
+    );
+  }
+
+  // ==================== EVENT ORDER MANAGEMENT ====================
   
   async getEventOrders(page: number = 0, size: number = 20, status?: string, search?: string): Promise<PaginatedResponse<AdminEventOrderDto>> {
     let url = `/api/admin/event-orders?page=${page}&size=${size}`;

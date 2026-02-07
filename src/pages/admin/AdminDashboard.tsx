@@ -315,6 +315,86 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+            {/* Pending Approvals */}
+      <div className="mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Pending Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Pending Events */}
+            {(stats?.pendingApprovals?.events || 0) > 0 && (
+              <Link 
+                to="/admin/events" 
+                className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900">
+                    <Calendar className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Events</p>
+                    <p className="text-xs text-muted-foreground">{stats?.pendingApprovals?.events} pending approval</p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-amber-600" />
+              </Link>
+            )}
+
+            {/* Pending Products */}
+            {(stats?.pendingApprovals?.products || 0) > 0 && (
+              <Link 
+                to="/admin/products" 
+                className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900">
+                    <Package className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Products</p>
+                    <p className="text-xs text-muted-foreground">{stats?.pendingApprovals?.products} pending review</p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-blue-600" />
+              </Link>
+            )}
+
+            {/* Pending Price Updates */}
+            {(stats?.pendingApprovals?.productPriceUpdates || 0) > 0 && (
+              <Link 
+                to="/admin/products" 
+                className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-950/30 rounded-lg hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-green-100 dark:bg-green-900">
+                    <DollarSign className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Price Updates</p>
+                    <p className="text-xs text-muted-foreground">{stats?.pendingApprovals?.productPriceUpdates} requests</p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-green-600" />
+              </Link>
+            )}
+
+            {!stats?.pendingApprovals?.events && 
+             !stats?.pendingApprovals?.products && 
+             !stats?.pendingApprovals?.productPriceUpdates && (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground col-span-full">
+                <CheckCircle className="h-12 w-12 text-green-500 mb-3" />
+                <p className="font-medium">All caught up!</p>
+                <p className="text-sm">No pending actions</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Revenue Trends Chart */}
       <div className="mb-6">
         <RevenueTrendChart
@@ -599,86 +679,7 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Pending Approvals */}
-      <div className="mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-500" />
-              Pending Actions
-            </CardTitle>
-            <CardDescription>Items requiring your attention</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Pending Events */}
-            {(stats?.pendingApprovals?.events || 0) > 0 && (
-              <Link 
-                to="/admin/events" 
-                className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900">
-                    <Calendar className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Events</p>
-                    <p className="text-xs text-muted-foreground">{stats?.pendingApprovals?.events} pending approval</p>
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-amber-600" />
-              </Link>
-            )}
 
-            {/* Pending Products */}
-            {(stats?.pendingApprovals?.products || 0) > 0 && (
-              <Link 
-                to="/admin/products" 
-                className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900">
-                    <Package className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Products</p>
-                    <p className="text-xs text-muted-foreground">{stats?.pendingApprovals?.products} pending review</p>
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-blue-600" />
-              </Link>
-            )}
-
-            {/* Pending Price Updates */}
-            {(stats?.pendingApprovals?.productPriceUpdates || 0) > 0 && (
-              <Link 
-                to="/admin/products" 
-                className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-950/30 rounded-lg hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-green-100 dark:bg-green-900">
-                    <DollarSign className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Price Updates</p>
-                    <p className="text-xs text-muted-foreground">{stats?.pendingApprovals?.productPriceUpdates} requests</p>
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-green-600" />
-              </Link>
-            )}
-
-            {!stats?.pendingApprovals?.events && 
-             !stats?.pendingApprovals?.products && 
-             !stats?.pendingApprovals?.productPriceUpdates && (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground col-span-full">
-                <CheckCircle className="h-12 w-12 text-green-500 mb-3" />
-                <p className="font-medium">All caught up!</p>
-                <p className="text-sm">No pending actions</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Bottom Row - Orders Overview & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

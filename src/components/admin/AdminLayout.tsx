@@ -174,7 +174,10 @@ export default function AdminLayout({ children, title, description, hideHeader =
           <nav className="flex-1 px-3 py-4 space-y-1">
             {allNavItems.map((item) => {
               const isActive = location.pathname === item.href || 
-                (item.href !== '/admin' && location.pathname.startsWith(item.href));
+                (item.href !== '/admin' && location.pathname.startsWith(item.href) && location.pathname !== '/admin/delivery-confirmations');
+              
+              // Better active check needed if we have overlapping prefixes
+              // e.g. /admin/delivery vs /admin/delivery-confirmations
               
               // Check if this is a super admin only item
               const isSuperAdminItem = superAdminNavItems.some(i => i.href === item.href);
