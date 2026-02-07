@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { deliveryService } from "@/services/deliveryService";
+import { ShoppingBag } from "lucide-react";
 
 export default function DeliveryDashboard() {
   const { toast } = useToast();
@@ -35,6 +36,13 @@ export default function DeliveryDashboard() {
   const { data: activeAssignments } = useQuery({
     queryKey: ["delivery", "assignments", "active"],
     queryFn: () => deliveryService.getActiveAssignments({ size: 10 }),
+  });
+
+  // Fetch available orders count
+  const { data: availableOrdersCount } = useQuery({
+    queryKey: ["delivery", "available-orders-count"],
+    queryFn: () => deliveryService.getAvailableOrdersCount(),
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Update status mutation
@@ -82,24 +90,23 @@ export default function DeliveryDashboard() {
   const assignments = activeAssignments?.content || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-6">
-      {/* Simple Header */}
-      <div className="bg-white border-b px-4 py-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">
-              Hi, {dashboard?.name?.split(" ")[0] || "Driver"}
-            </h1>
-            <p className="text-xs text-gray-500">{dashboard?.employeeId}</p>
-          </div>
-          <Select
-            value={dashboard?.status || "AVAILABLE"}
-            onValueChange={(value) => updateStatusMutation.mutate(value)}
-          >
-            <SelectTrigger className="w-32 h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Hi, {dashboard?.name?.split(" ")[0] || "Driver"}
+          </h1>
+          <p className="text-gray-500">{dashboard?.employeeId}</p>
+        </div>
+        <Select
+          value={dashboard?.status || "AVAILABLE"}
+          onValueChange={(value) => updateStatusMutation.mutate(value)}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
               <SelectItem value="AVAILABLE">
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-500 rounded-full"></span>
@@ -126,42 +133,61 @@ export default function DeliveryDashboard() {
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
       </div>
 
-      {/* Main Content */}
-      <div className="px-4 pt-4">
-        {/* Quick Count */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-medium text-gray-700">
-            Your Deliveries
-          </h2>
-          <span className="text-sm text-gray-500">
-            {assignments.length} active
-          </span>
-        </div>
+      {/* Available Orders Card */}
+      {availableOrdersCount !== undefined && availableOrdersCount > 0 && (
+        <Link to="/delivery/available-orders">
+          <Card className="mb-6 bg-gradient-to-r from-green-500 to-green-600 text-white border-0 hover:shadow-lg transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 rounded-lg">
+                      <ShoppingBag className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-lg">{availableOrdersCount} Orders Available</p>
+                      <p className="text-sm text-white/80">Tap to view and accept</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-6 w-6 text-white/80" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
 
-        {/* Assignments List */}
-        {assignments.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="py-12">
-              <div className="text-center text-gray-500">
-                <Package className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                <p className="font-medium">No deliveries right now</p>
-                <p className="text-sm mt-1">New assignments will appear here</p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-3">
+      {/* Quick Count */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-medium text-gray-700">
+          Your Deliveries
+        </h2>
+        <span className="text-sm text-gray-500">
+          {assignments.length} active
+        </span>
+      </div>
+
+      {/* Assignments List */}
+      {assignments.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="py-12">
+            <div className="text-center text-gray-500">
+              <Package className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+              <p className="font-medium">No deliveries right now</p>
+              <p className="text-sm mt-1">New assignments will appear here</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
             {assignments.map((assignment) => (
-              <Link
-                key={assignment.id}
-                to={`/delivery/assignments/${assignment.id}`}
-                className="block"
-              >
-                <Card className="hover:shadow-md transition-shadow active:bg-gray-50">
-                  <CardContent className="p-4">
+            <Link
+              key={assignment.id}
+              to={`/delivery/assignments/${assignment.id}`}
+              className="block"
+            >
+              <Card className="hover:shadow-md transition-shadow active:bg-gray-50">
+                <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         {/* Status Badge & Order Number */}
@@ -206,17 +232,16 @@ export default function DeliveryDashboard() {
           </div>
         )}
 
-        {/* View All Link */}
-        {assignments.length > 0 && (
-          <div className="mt-4 text-center">
-            <Button variant="outline" size="sm" asChild className="w-full">
-              <Link to="/delivery/assignments">
-                View All Assignments
-              </Link>
-            </Button>
-          </div>
-        )}
-      </div>
+      {/* View All Link */}
+      {assignments.length > 0 && (
+        <div className="mt-4 text-center">
+          <Button variant="outline" size="sm" asChild className="w-full">
+            <Link to="/delivery/assignments">
+              View All Assignments
+            </Link>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

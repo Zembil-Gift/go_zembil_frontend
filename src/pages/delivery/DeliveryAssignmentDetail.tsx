@@ -46,12 +46,14 @@ import {
 } from "lucide-react";
 import { deliveryService, DeliveryStatus } from "@/services/deliveryService";
 import { imageService } from "@/services/imageService";
+import { AuthenticatedImage, useAuthenticatedImageViewer } from "@/components/AuthenticatedImage";
 
 export default function DeliveryAssignmentDetail() {
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { openImage } = useAuthenticatedImageViewer();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const pickupFileInputRef = useRef<HTMLInputElement>(null);
@@ -60,7 +62,7 @@ export default function DeliveryAssignmentDetail() {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showFailDialog, setShowFailDialog] = useState(false);
   const [showPickupProofDialog, setShowPickupProofDialog] = useState(false);
-  const [proofImageUrl, setProofImageUrl] = useState("");
+  const [_proofImageUrl, setProofImageUrl] = useState("");
   const [proofImagePreview, setProofImagePreview] = useState<string | null>(null);
   const [proofImageFile, setProofImageFile] = useState<File | null>(null);
   const [pickupImagePreview, setPickupImagePreview] = useState<string | null>(null);
@@ -246,7 +248,6 @@ export default function DeliveryAssignmentDetail() {
     if (pickupCameraInputRef.current) pickupCameraInputRef.current.value = "";
   };
 
-  // Upload the image and complete delivery
   const handleCompleteDelivery = async () => {
     if (!proofImageFile) {
       toast({ title: "Image Required", description: "Please capture or select a proof image", variant: "destructive" });
@@ -439,10 +440,11 @@ export default function DeliveryAssignmentDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <img
+                <AuthenticatedImage
                   src={assignment.pickupImageUrl}
                   alt="Pickup proof"
-                  className="max-w-full rounded-lg"
+                  className="max-w-full rounded-lg cursor-pointer hover:opacity-90"
+                  onClick={() => openImage(assignment.pickupImageUrl ?? '')}
                 />
                 {assignment.pickupUploadedAt && (
                   <p className="text-sm text-gray-500 mt-2">
@@ -463,10 +465,11 @@ export default function DeliveryAssignmentDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <img
+                <AuthenticatedImage
                   src={assignment.proofImageUrl}
                   alt="Delivery proof"
-                  className="max-w-full rounded-lg"
+                  className="max-w-full rounded-lg cursor-pointer hover:opacity-90"
+                  onClick={() => openImage(assignment.proofImageUrl ?? '')}
                 />
                 <p className="text-sm text-gray-500 mt-2">
                   Recipient: {assignment.recipientName || "N/A"}
@@ -522,7 +525,7 @@ export default function DeliveryAssignmentDetail() {
                 {/* Pickup Proof Button - shown when ACCEPTED and no pickup proof yet */}
                 {assignment.status === "ACCEPTED" && !assignment.pickupImageUrl && (
                   <Button
-                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                     onClick={() => setShowPickupProofDialog(true)}
                   >
                     <Camera className="mr-2 h-4 w-4" />
@@ -572,7 +575,7 @@ export default function DeliveryAssignmentDetail() {
 
                 {assignment.status === "ARRIVED" && (
                   <Button
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
                     onClick={() => setShowCompleteDialog(true)}
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
@@ -623,7 +626,6 @@ export default function DeliveryAssignmentDetail() {
         </div>
       </div>
 
-      {/* Complete Delivery Dialog */}
       <Dialog open={showCompleteDialog} onOpenChange={(open) => {
         setShowCompleteDialog(open);
         if (!open) {
@@ -727,7 +729,7 @@ export default function DeliveryAssignmentDetail() {
               Cancel
             </Button>
             <Button
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 text-white"
               onClick={handleCompleteDelivery}
               disabled={!proofImageFile || isUploadingImage}
             >
@@ -861,7 +863,7 @@ export default function DeliveryAssignmentDetail() {
               Cancel
             </Button>
             <Button
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
               onClick={handleUploadPickupProof}
               disabled={!pickupImageFile || isUploadingPickupImage}
             >

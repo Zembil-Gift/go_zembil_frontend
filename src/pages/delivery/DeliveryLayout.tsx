@@ -20,6 +20,7 @@ import {
   Menu,
   X,
   Truck,
+  ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -28,6 +29,11 @@ const sidebarItems = [
     title: "Dashboard",
     icon: LayoutDashboard,
     href: "/delivery",
+  },
+  {
+    title: "Available Orders",
+    icon: ShoppingBag,
+    href: "/delivery/available-orders",
   },
   {
     title: "My Deliveries",

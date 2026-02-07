@@ -96,16 +96,11 @@ export default function DeliveryHistory() {
                       {getStatusIcon(delivery.status)}
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">#{delivery.orderNumber}</span>
-                          <Badge className={getStatusColor(delivery.status)}>
-                            {delivery.status}
-                          </Badge>
-                        </div>
-                        <span className="text-lg font-semibold">
-                          {(delivery.totalAmountMinor / 100).toFixed(2)} {delivery.currencyCode}
-                        </span>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-semibold">#{delivery.orderNumber}</span>
+                        <Badge className={getStatusColor(delivery.status)}>
+                          {delivery.status}
+                        </Badge>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">

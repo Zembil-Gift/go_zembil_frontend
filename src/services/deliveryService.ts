@@ -327,4 +327,19 @@ export const deliveryService = {
     const url = `/api/delivery/history${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return apiService.getRequest<PagedResponse<DeliveryAssignmentDto>>(url);
   },
+
+  // Available Orders (Self-Assignment)
+  getAvailableOrders: (params?: { page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/delivery/available-orders${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<OrderReadyForDeliveryDto>>(url);
+  },
+
+  getAvailableOrdersCount: () =>
+    apiService.getRequest<number>('/api/delivery/available-orders/count'),
+
+  selfAssignOrder: (orderId: number) =>
+    apiService.postRequest<DeliveryAssignmentDto>(`/api/delivery/orders/${orderId}/accept`, {}),
 };
