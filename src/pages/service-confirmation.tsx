@@ -32,10 +32,8 @@ export default function ServiceConfirmation() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Can also get order by order number from query params
   const orderNumber = searchParams.get('orderNumber');
 
-  // Fetch order details
   const { data: order, isLoading, error } = useQuery({
     queryKey: ['service-order', orderId, orderNumber],
     queryFn: async () => {
@@ -49,7 +47,6 @@ export default function ServiceConfirmation() {
     enabled: !!orderId || !!orderNumber,
   });
 
-  // Copy order number to clipboard
   const copyOrderNumber = () => {
     if (order?.orderNumber) {
       navigator.clipboard.writeText(order.orderNumber);

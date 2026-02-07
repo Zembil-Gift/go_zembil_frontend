@@ -400,23 +400,6 @@ export default function ServiceCheckout() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const formatDateLong = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   const formatMonthYear = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       month: 'long',
@@ -426,19 +409,6 @@ export default function ServiceCheckout() {
 
   const getDayOfMonth = (dateStr: string) => {
     return new Date(dateStr).getDate();
-  };
-
-  const isToday = (dateStr: string) => {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    return dateStr === todayStr;
-  };
-
-  const isTomorrow = (dateStr: string) => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-    return dateStr === tomorrowStr;
   };
 
   const isPastDate = (dateStr: string) => {
@@ -617,8 +587,6 @@ export default function ServiceCheckout() {
                       const isAvailable = availableDatesInMonth.includes(dateStr);
                       const isSelected = selectedDate === dateStr;
                       const isPast = isPastDate(dateStr);
-                      const todayDate = isToday(dateStr);
-                      const tomorrowDate = isTomorrow(dateStr);
                       
                       return (
                         <button
