@@ -1,11 +1,13 @@
 import { apiService } from './apiService';
 
-export type PaymentProvider = 'STRIPE' | 'CHAPA';
+export type PaymentProvider = 'STRIPE' | 'CHAPA' | 'TELEBIRR';
 
 export interface PaymentInitResponse {
   clientSecret: string;
   paymentIntentId?: string;
   publishableKey?: string;
+  checkoutUrl?: string;  // For Chapa and TeleBirr redirects
+  paymentId?: string;    // Provider reference (tx_ref for Chapa, merch_order_id for TeleBirr)
   orderId: number;
   amount: number;
   currency: string;

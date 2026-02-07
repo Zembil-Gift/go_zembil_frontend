@@ -182,9 +182,14 @@ export default function OrderReview() {
 
     setIsProcessing(true);
 
-    const paymentPath = paymentMethod === 'chapa' 
-      ? `/payment/chapa?orderId=${order.orderId}`
-      : `/payment/stripe?orderId=${order.orderId}`;
+    let paymentPath: string;
+    if (paymentMethod === 'chapa') {
+      paymentPath = `/payment/chapa?orderId=${order.orderId}`;
+    } else if (paymentMethod === 'telebirr') {
+      paymentPath = `/payment/telebirr?orderId=${order.orderId}`;
+    } else {
+      paymentPath = `/payment/stripe?orderId=${order.orderId}`;
+    }
     
     navigate(paymentPath);
   };
@@ -451,6 +456,11 @@ export default function OrderReview() {
                       <span className="flex items-center gap-2">
                         <Smartphone className="h-4 w-4" />
                         Pay with Chapa
+                      </span>
+                    ) : paymentMethod === 'telebirr' ? (
+                      <span className="flex items-center gap-2">
+                        <Smartphone className="h-4 w-4" />
+                        Pay with TeleBirr
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">

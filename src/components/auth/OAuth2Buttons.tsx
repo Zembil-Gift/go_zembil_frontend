@@ -86,17 +86,22 @@ export function OAuth2Buttons({ onSuccess}: OAuth2ButtonsProps) {
     const userData = loginData?.user || data?.user;
     if (userData) {
       const userRole = userData.role?.toUpperCase();
+      console.log('OAuth2 post-login navigation - User role:', userRole, 'Full user data:', userData);
       localStorage.removeItem("returnTo");
       
-      if (userRole === 'ADMIN') {
+      if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+        console.log('Navigating to admin dashboard');
         navigate('/admin');
       } else if (userRole === 'VENDOR') {
+        console.log('Navigating to vendor dashboard');
         navigate('/vendor');
       } else {
         const returnUrl = localStorage.getItem('returnTo') || '/';
+        console.log('Navigating to return URL:', returnUrl);
         navigate(returnUrl);
       }
     } else {
+      console.log('No user data available, navigating to home');
       navigate('/');
     }
   };

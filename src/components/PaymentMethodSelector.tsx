@@ -42,9 +42,11 @@ export default function PaymentMethodSelector({
   const [telebirrPhone, setTelebirrPhone] = useState('');
   
   const formattedAmount = formatPrice(amount, currency);
+  
+  // Detect Ethiopian context from location OR currency
   const isEthiopian = userLocation ? 
     (userLocation.toLowerCase() === 'ethiopia' || userLocation.toLowerCase() === 'et') : 
-    false;
+    (currency === 'ETB'); // Default to Ethiopian if currency is ETB
 
   const paymentMethods: PaymentMethodOption[] = [
     {
@@ -76,12 +78,12 @@ export default function PaymentMethodSelector({
     },
     {
       id: 'telebirr',
-      title: 'Telebirr',
-      description: 'Ethiopian mobile money service',
+      title: 'TeleBirr',
+      description: 'Ethio Telecom Mobile Money - TeleBirr Wallet, Bank & Cards',
       icon: <Smartphone className="w-6 h-6" />,
       availability: 'ethiopia',
-      status: 'placeholder',
-      badges: ['Mobile Money', 'ETB']
+      status: 'active',
+      badges: ['Mobile Money', 'ETB', 'Bank', 'Cards']
     }
   ];
 

@@ -160,8 +160,11 @@ export interface VendorOrderDeliveryInfo {
 export interface VendorOrder {
   orderId: number;
   orderNumber: string;
-  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
-  paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  status: 'PENDING' | 'PLACED' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED' | 'REJECTED';
+  paymentStatus: 'PENDING' | 'PAID' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+  rejectionReason?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
   customerName: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -385,12 +388,23 @@ class OrderService {
   }
 
   /**
-   * Confirm delivery of an order (user confirms they received the item)
-   * This triggers revenue recognition and vendor payout eligibility
+   * Accept a placed order (moves to CONFIRMED status)
    */
-  async confirmDelivery(orderId: number): Promise<Order> {
-    return await apiService.postRequest<Order>(`/api/orders/${orderId}/confirm-delivery`);
+  async acceptOrder(orderId: number): Promise<VendorOrder> {
+    return await apiService.postRequest<VendorOrder>(`/api/vendor/orders/${orderId}/accept`, {});
   }
+
+  /**
+   * Deny a placed order with a reason (moves to CANCELLED status)
+   */
+  async denyOrder(orderId: number, reason: string): Promise<VendorOrder> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('reason', reason);
+    return await apiService.postRequest<VendorOrder>(`/api/vendor/orders/${orderId}/deny?${queryParams.toString()}`, {});
+  }
+
+  // Note: Delivery confirmation is now handled by admin via adminService.confirmOrderDelivery()
+  // Admin reviews delivery proof images before confirming delivery and recognizing revenue.
 
   // ==================== Helper Methods ====================
 
@@ -410,12 +424,14 @@ class OrderService {
   getStatusDisplay(status: string): { text: string; bgColor: string; color: string } {
     const statusMap: Record<string, { text: string; bgColor: string; color: string }> = {
       'PENDING': { text: 'Pending', bgColor: 'bg-yellow-100', color: 'text-yellow-700' },
+      'PLACED': { text: 'Awaiting Approval', bgColor: 'bg-purple-100', color: 'text-purple-700' },
       'CONFIRMED': { text: 'Confirmed', bgColor: 'bg-blue-100', color: 'text-blue-700' },
       'PROCESSING': { text: 'Processing', bgColor: 'bg-purple-100', color: 'text-purple-700' },
       'SHIPPED': { text: 'Shipped', bgColor: 'bg-indigo-100', color: 'text-indigo-700' },
       'DELIVERED': { text: 'Delivered', bgColor: 'bg-green-100', color: 'text-green-700' },
       'CANCELLED': { text: 'Cancelled', bgColor: 'bg-red-100', color: 'text-red-700' },
       'REFUNDED': { text: 'Refunded', bgColor: 'bg-gray-100', color: 'text-gray-700' },
+      'REJECTED': { text: 'Rejected', bgColor: 'bg-red-100', color: 'text-red-700' },
     };
     return statusMap[status] || { text: status, bgColor: 'bg-gray-100', color: 'text-gray-700' };
   }
@@ -445,6 +461,7 @@ class OrderService {
     const statusMap: Record<string, { text: string; bgColor: string; color: string }> = {
       'PENDING': { text: 'Pending', bgColor: 'bg-yellow-100', color: 'text-yellow-700' },
       'PAID': { text: 'Paid', bgColor: 'bg-green-100', color: 'text-green-700' },
+      'COMPLETED': { text: 'Paid', bgColor: 'bg-green-100', color: 'text-green-700' },
       'FAILED': { text: 'Failed', bgColor: 'bg-red-100', color: 'text-red-700' },
       'REFUNDED': { text: 'Refunded', bgColor: 'bg-gray-100', color: 'text-gray-700' },
     };
