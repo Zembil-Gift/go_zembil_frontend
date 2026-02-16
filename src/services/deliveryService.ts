@@ -263,6 +263,27 @@ export const adminDeliveryService = {
     const url = `/api/admin/delivery/orders/ready-for-delivery${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return apiService.getRequest<PagedResponse<OrderReadyForDeliveryDto>>(url);
   },
+
+  // Custom Order Delivery Assignment Management
+  assignCustomOrderToDeliveryPerson: (data: { customOrderId: number; deliveryPersonId: number; notes?: string }) =>
+    apiService.postRequest<AdminDeliveryAssignmentDto>('/api/admin/delivery/custom-order-assignments', data),
+
+  getCustomOrderAssignments: (params?: { status?: string; page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/admin/delivery/custom-order-assignments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<AdminDeliveryAssignmentDto>>(url);
+  },
+
+  getCustomOrdersReadyForDelivery: (params?: { page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/admin/delivery/custom-orders/ready-for-delivery${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<OrderReadyForDeliveryDto>>(url);
+  },
 };
 
 // Delivery Person Service (for delivery person's own operations)
@@ -342,4 +363,16 @@ export const deliveryService = {
 
   selfAssignOrder: (orderId: number) =>
     apiService.postRequest<DeliveryAssignmentDto>(`/api/delivery/orders/${orderId}/accept`, {}),
+
+  // Custom Order Self-Assignment
+  getAvailableCustomOrders: (params?: { page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/delivery/available-custom-orders${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.getRequest<PagedResponse<OrderReadyForDeliveryDto>>(url);
+  },
+
+  selfAssignCustomOrder: (customOrderId: number) =>
+    apiService.postRequest<DeliveryAssignmentDto>(`/api/delivery/custom-orders/${customOrderId}/accept`, {}),
 };
