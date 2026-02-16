@@ -50,6 +50,24 @@ class CategoryService {
   }
 
   /**
+   * Search categories
+   */
+  async searchCategories(query?: string): Promise<CategoryResponse[]> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (query?.trim()) {
+        queryParams.append('query', query.trim());
+      }
+      const suffix = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      const response = await apiService.getRequest<CategoryResponse[]>(`/api/categories/search${suffix}`);
+      return response.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    } catch (error) {
+      console.error('Failed to search categories:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get subcategories for a specific category
    */
   async getSubCategories(categoryId: number): Promise<SubCategoryResponse[]> {

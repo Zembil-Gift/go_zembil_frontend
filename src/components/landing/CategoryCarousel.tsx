@@ -7,6 +7,27 @@ import { parseUrlParams, buildUrlParams } from "../../shared/categories";
 import { useCategories, SubCategoryResponse } from "@/hooks/useCategories";
 import { getIconByName } from "./iconMapping";
 
+const getImagePath = (slug: string): string | null => {
+  const imageMap: Record<string, string> = {
+    'birthday': 'birthday.png',
+    'graduation': 'graduation.png',
+    'new-baby': 'new-baby.png',
+    'wedding': 'wedding.png',
+    'housewarming': 'housewarming.png',
+    'family-reunion': 'family-reunion.png',
+    'promotion': 'promotion.png',
+    'anniversary': 'anniversary.png',
+    'retirement': 'retirement.png',
+    'first-day-school': 'first-day-school.png',
+    'engagement': 'engagement.png',
+    'mothers-day': 'mothers-day.png',
+    'fathers-day': 'fathers-day.png',
+    'valentines-day': 'valentines-day.png'
+  };
+  
+  return imageMap[slug] ? `/attached_assets/${imageMap[slug]}` : null;
+};
+
 interface CategoryCarouselProps {
   activeCategory: string;
   onCategoryChange: (category: string) => void;
@@ -47,7 +68,21 @@ export default function CategoryCarousel({
 
   // Get current category data from API response
   const currentCategoryData = categories?.find(cat => cat.slug === selectedCategory);
-  const currentSubcategories = currentCategoryData?.subcategories || [];
+  const currentSubcategories = React.useMemo(() => {
+    if (!currentCategoryData?.subcategories) return [];
+    
+    // Sort subcategories to prioritize those with images
+    return [...currentCategoryData.subcategories].sort((a, b) => {
+      const aHasImage = selectedCategory === 'occasions' ? !!getImagePath(a.slug) : !!a.imageUrl;
+      const bHasImage = selectedCategory === 'occasions' ? !!getImagePath(b.slug) : !!b.imageUrl;
+      
+      if (aHasImage && !bHasImage) return -1;
+      if (!aHasImage && bHasImage) return 1;
+      
+      // Secondary sort by display order if both have or both don't have images
+      return (a.displayOrder || 0) - (b.displayOrder || 0);
+    });
+  }, [currentCategoryData, selectedCategory]);
 
   // Main category selection handler
   const handleCategorySelect = (categorySlug: string) => {
@@ -176,28 +211,6 @@ export default function CategoryCarousel({
       }
     }
   }, [selectedCategory, selectedSubcategory, currentSubcategories]);
-
-  // Generate image path for occasions
-  const getImagePath = (slug: string): string | null => {
-    const imageMap: Record<string, string> = {
-      'birthday': 'birthday.png',
-      'graduation': 'graduation.png',
-      'new-baby': 'new-baby.png',
-      'wedding': 'wedding.png',
-      'housewarming': 'housewarming.png',
-      'family-reunion': 'family-reunion.png',
-      'promotion': 'promotion.png',
-      'anniversary': 'anniversary.png',
-      'retirement': 'retirement.png',
-      'first-day-school': 'first-day-school.png',
-      'engagement': 'engagement.png',
-      'mothers-day': 'mothers-day.png',
-      'fathers-day': 'fathers-day.png',
-      'valentines-day': 'valentines-day.png'
-    };
-    
-    return imageMap[slug] ? `/attached_assets/${imageMap[slug]}` : null;
-  };
 
   // Build category tabs from API data
   const categoryTabs = categories?.map(cat => ({
