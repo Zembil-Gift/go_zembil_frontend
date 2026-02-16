@@ -210,10 +210,8 @@ export default function EditProduct() {
     name: "productSku",
   });
 
-  // Populate form when product data is loaded
   useEffect(() => {
     if (product && allSubCategories.length > 0) {
-      // Load SKU data
       const skuData = (product.productSku && product.productSku.length > 0)
         ? product.productSku.map(sku => {
             const currencyCode = sku.price?.currencyCode || sku.price?.prices?.[0]?.currencyCode || "";
@@ -785,11 +783,24 @@ export default function EditProduct() {
               </div>
 
               <div>
-                <Label htmlFor="occasion">Occasion</Label>
-                <Input
-                  id="occasion"
-                  placeholder="e.g., Birthday, Wedding, Christmas"
-                  {...form.register("occasion")}
+                <Label htmlFor="occasion">Occasion (Optional)</Label>
+                <Controller
+                  name="occasion"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="occasion">
+                        <SelectValue placeholder="Select occasion" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NEW_YEAR">New Year</SelectItem>
+                        <SelectItem value="BIRTHDAY">Birthday</SelectItem>
+                        <SelectItem value="TIMKET">Timket</SelectItem>
+                        <SelectItem value="EASTER">Easter</SelectItem>
+                        <SelectItem value="CHRISTMAS">Christmas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
               </div>
 
@@ -1020,24 +1031,7 @@ export default function EditProduct() {
             </CardContent>
           </Card>
 
-          {/* Options */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Options</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Customizable</Label>
-                  <p className="text-sm text-muted-foreground">Allow customers to customize this product</p>
-                </div>
-                <Switch
-                  checked={form.watch("isCustomizable")}
-                  onCheckedChange={(checked) => form.setValue("isCustomizable", checked)}
-                />
-              </div>
-            </CardContent>
-          </Card>
+    
 
           {/* Submit */}
           <div className="flex justify-end gap-4">

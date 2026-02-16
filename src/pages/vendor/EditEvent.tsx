@@ -69,36 +69,18 @@ const ticketTypeSchema = z.object({
 const eventEditSchema = z.object({
   title: z.string().min(1, "Event title is required").max(255),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  shortDescription: z.string().max(500).optional(),
+  summary: z.string().max(500).optional(),
   startDateTime: z.string().min(1, "Start date/time is required"),
   endDateTime: z.string().min(1, "End date/time is required"),
   timezone: z.string().optional(),
-  venue: z.string().min(1, "Venue is required"),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  country: z.string().optional(),
+  location: z.string().min(1, "Location is required"),
+  city: z.string().min(1, "City is required"),
   categoryId: z.string().optional(),
   organizerContact: z.string().optional(),
   ticketTypes: z.array(ticketTypeSchema).min(1, "At least one ticket type is required"),
 });
 
 type EventEditFormData = z.infer<typeof eventEditSchema>;
-
-const COUNTRIES = [
-  { value: "Ethiopia", label: "Ethiopia" },
-  { value: "United States", label: "United States" },
-  { value: "Kenya", label: "Kenya" },
-  { value: "United Kingdom", label: "United Kingdom" },
-  { value: "Canada", label: "Canada" },
-];
-
-// Ethiopian vendors can only create/edit events in Ethiopia
-const getAvailableCountries = (vendorProfile: VendorProfile | undefined) => {
-  if (isEthiopianVendor(vendorProfile)) {
-    return [{ value: "Ethiopia", label: "Ethiopia" }];
-  }
-  return COUNTRIES;
-};
 
 export default function EditEvent() {
   const { id } = useParams<{ id: string }>();
@@ -154,14 +136,12 @@ export default function EditEvent() {
     defaultValues: {
       title: "",
       description: "",
-      shortDescription: "",
+      summary: "",
       startDateTime: "",
       endDateTime: "",
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      venue: "",
-      address: "",
+      location: "",
       city: "",
-      country: "",
       categoryId: "",
       organizerContact: "",
       ticketTypes: [],
@@ -207,20 +187,15 @@ export default function EditEvent() {
         isActive: tt.isActive,
       })) || [];
 
-      // Ethiopian vendors should always have Ethiopia as country
-      const countryValue = isEthiopianVendor(vendorProfile) ? "Ethiopia" : "";
-
       form.reset({
         title: event.title || "",
         description: event.description || "",
-        shortDescription: "",
+        summary: event.summary || "",
         startDateTime: event.eventDate ? new Date(event.eventDate).toISOString().slice(0, 16) : "",
         endDateTime: event.eventEndDate ? new Date(event.eventEndDate).toISOString().slice(0, 16) : "",
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        venue: event.location || "",
-        address: "",
+        location: event.location || "",
         city: event.city || "",
-        country: countryValue,
         categoryId: event.eventTypeId?.toString() || "",
         organizerContact: event.organizerContact || "",
         ticketTypes: ticketData,
@@ -241,13 +216,11 @@ export default function EditEvent() {
       const eventPayload: UpdateEventRequest = {
         title: data.title,
         description: data.description,
-        shortDescription: data.shortDescription,
+        summary: data.summary,
         startDateTime: data.startDateTime,
         endDateTime: data.endDateTime,
-        venue: data.venue,
-        address: data.address,
+        location: data.location,
         city: data.city,
-        country: data.country,
       };
 
       // For pending/rejected events, include ticket price updates
@@ -524,11 +497,11 @@ export default function EditEvent() {
               </div>
 
               <div>
-                <Label htmlFor="shortDescription">Short Description</Label>
+                <Label htmlFor="summary">Short Description</Label>
                 <Input
-                  id="shortDescription"
+                  id="summary"
                   placeholder="Brief event summary"
-                  {...form.register("shortDescription")}
+                  {...form.register("summary")}
                 />
               </div>
 
@@ -652,61 +625,27 @@ export default function EditEvent() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="venue">Venue Name *</Label>
+                <Label htmlFor="location">Location *</Label>
                 <Input
-                  id="venue"
-                  placeholder="Enter Venue Name"
-                  {...form.register("venue")}
+                  id="location"
+                  placeholder="Enter event location (venue, address, etc.)"
+                  {...form.register("location")}
                 />
-                {form.formState.errors.venue && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.venue.message}</p>
+                {form.formState.errors.location && (
+                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.location.message}</p>
                 )}
               </div>
 
               <div>
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="city">City *</Label>
                 <Input
-                  id="address"
-                  placeholder="Street address"
-                  {...form.register("address")}
+                  id="city"
+                  placeholder="City"
+                  {...form.register("city")}
                 />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    placeholder="City"
-                    {...form.register("city")}
-                  />
-                </div>
-                <div>
-                  <Label>Country</Label>
-                  <Controller
-                    name="country"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getAvailableCountries(vendorProfile).map((country) => (
-                            <SelectItem key={country.value} value={country.value}>
-                              {country.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {isEthiopianVendor(vendorProfile) && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Ethiopian vendors can only create events in Ethiopia
-                    </p>
-                  )}
-                </div>
+                {form.formState.errors.city && (
+                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.city.message}</p>
+                )}
               </div>
             </CardContent>
           </Card>
