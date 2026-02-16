@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { 
-  Package, 
+import {
+  Package,
   Clock,
   CheckCircle,
   XCircle,
@@ -16,7 +16,7 @@ import {
   Truck,
   MapPin,
   Copy,
-  ShoppingBag
+  ShoppingBag, Play
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -56,19 +56,42 @@ export default function VendorProductOrders() {
   // Accept order mutation
   const acceptOrderMutation = useMutation({
     mutationFn: (orderId: number) => orderService.acceptOrder(orderId),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: 'Order Accepted',
         description: 'The order has been confirmed and is ready for processing.',
       });
-      queryClient.invalidateQueries({ queryKey: ['vendor-product-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-product-orders'] });
       setDetailDialogOpen(false);
+      setSelectedOrder(null);
     },
     onError: (error: any) => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to accept order',
-        variant: 'destructive',
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update order status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ orderId, status, notes }: { orderId: number; status: string; notes?: string }) => 
+      orderService.updateVendorOrderStatus(orderId, status, notes),
+    onSuccess: async (updatedOrder) => {
+      toast({
+        title: 'Status Updated',
+        description: `Order status moved to ${updatedOrder.status}.`,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-product-orders'] });
+      setDetailDialogOpen(false);
+      setSelectedOrder(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update order status',
+        variant: "destructive",
       });
     },
   });
@@ -77,22 +100,23 @@ export default function VendorProductOrders() {
   const denyOrderMutation = useMutation({
     mutationFn: ({ orderId, reason }: { orderId: number; reason: string }) => 
       orderService.denyOrder(orderId, reason),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: 'Order Rejected',
         description: 'The order has been rejected and the customer will be notified.',
       });
-      queryClient.invalidateQueries({ queryKey: ['vendor-product-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-product-orders'] });
       setRejectDialogOpen(false);
       setDetailDialogOpen(false);
       setRejectionReason('');
       setOrderToReject(null);
+      setSelectedOrder(null);
     },
     onError: (error: any) => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to reject order',
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -131,8 +155,13 @@ export default function VendorProductOrders() {
     order.status === 'SHIPPED'
   );
 
+  const awaitingConfirmationOrders = filteredOrders.filter((order: VendorOrder) => 
+    order.status === 'DELIVERED' && !order.deliveryConfirmedAt
+  );
+
   const completedOrders = filteredOrders.filter((order: VendorOrder) => 
-    ['DELIVERED', 'CANCELLED', 'REFUNDED', 'REJECTED'].includes(order.status)
+    (order.status === 'DELIVERED' && !!order.deliveryConfirmedAt) ||
+    ['CANCELLED', 'REFUNDED', 'REJECTED'].includes(order.status)
   );
 
   const copyToClipboard = (text: string, label: string) => {
@@ -591,7 +620,7 @@ export default function VendorProductOrders() {
 
         {/* Orders Tabs */}
         <Tabs defaultValue="pending" className="space-y-4">
-          <TabsList className="bg-eagle-green/5 p-1 rounded-lg grid grid-cols-4 w-full">
+          <TabsList className="bg-eagle-green/5 p-1 rounded-lg grid grid-cols-5 w-full">
             <TabsTrigger value="pending" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white">
               New Orders ({pendingOrders.length})
             </TabsTrigger>
@@ -600,6 +629,9 @@ export default function VendorProductOrders() {
             </TabsTrigger>
             <TabsTrigger value="shipped" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white">
               Shipped ({shippedOrders.length})
+            </TabsTrigger>
+            <TabsTrigger value="awaiting" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white">
+              Awaiting Confirmation ({awaitingConfirmationOrders.length})
             </TabsTrigger>
             <TabsTrigger value="completed" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white">
               Completed ({completedOrders.length})
@@ -627,6 +659,14 @@ export default function VendorProductOrders() {
               shippedOrders.length === 0 
                 ? <EmptyState message="No orders in transit" />
                 : <div className="space-y-4">{shippedOrders.map((order: VendorOrder) => <OrderCard key={order.orderId} order={order} />)}</div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="awaiting">
+            {isLoading ? <LoadingState /> : (
+              awaitingConfirmationOrders.length === 0 
+                ? <EmptyState message="No orders awaiting confirmation" />
+                : <div className="space-y-4">{awaitingConfirmationOrders.map((order: VendorOrder) => <OrderCard key={order.orderId} order={order} />)}</div>
             )}
           </TabsContent>
 
@@ -711,6 +751,48 @@ export default function VendorProductOrders() {
                           Reject Order
                         </Button>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons for CONFIRMED orders */}
+                  {selectedOrder.status === 'CONFIRMED' && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+                        <Play className="h-4 w-4" />
+                        Order Confirmed
+                      </h4>
+                      <p className="text-sm text-blue-700 mb-4">
+                        You've accepted this order. Start processing it when you're ready to prepare the items.
+                      </p>
+                      <Button
+                        onClick={() => updateStatusMutation.mutate({ orderId: selectedOrder.orderId, status: 'PROCESSING' })}
+                        disabled={updateStatusMutation.isPending}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Package className="h-4 w-4 mr-2" />
+                        {updateStatusMutation.isPending ? 'Updating...' : 'Start Processing'}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Action Buttons for PROCESSING orders */}
+                  {selectedOrder.status === 'PROCESSING' && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                      <h4 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
+                        <Package className="h-4 w-4" />
+                        Order in Processing
+                      </h4>
+                      <p className="text-sm text-orange-700 mb-4">
+                        Once you've handed over the items to the delivery service, mark the order as shipped.
+                      </p>
+                      <Button
+                        onClick={() => updateStatusMutation.mutate({ orderId: selectedOrder.orderId, status: 'SHIPPED' })}
+                        disabled={updateStatusMutation.isPending}
+                        className="bg-orange-600 hover:bg-orange-600 text-white"
+                      >
+                        <Truck className="h-4 w-4 mr-2" />
+                        {updateStatusMutation.isPending ? 'Updating...' : 'Mark as Shipped'}
+                      </Button>
                     </div>
                   )}
 

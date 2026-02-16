@@ -71,8 +71,8 @@ export default function VendorCustomTemplates() {
   // Filter templates by search query
   const filteredTemplates = templates.filter((template: CustomOrderTemplate) =>
     template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    template.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    template.categoryName?.toLowerCase().includes(searchQuery.toLowerCase())
+    (template.description && template.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (template.categoryName && template.categoryName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   // Group templates by status for tabs
@@ -280,7 +280,7 @@ export default function VendorCustomTemplates() {
                             
                             <div className="flex items-center gap-4 text-sm text-gray-500">
                               <span>
-                                Base Price: {customOrderTemplateService.formatTemplatePrice(template)}
+                                Your Price: {customOrderTemplateService.formatVendorTemplatePrice(template)}
                               </span>
                               {template.categoryName && (
                                 <span>Category: {template.categoryName}</span>

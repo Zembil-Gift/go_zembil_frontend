@@ -344,7 +344,12 @@ export default function VendorDashboardNew() {
     ).length,
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, deliveryConfirmedAt?: string) => {
+    // Special handling for DELIVERED orders awaiting admin confirmation
+    if (status?.toUpperCase() === 'DELIVERED' && !deliveryConfirmedAt) {
+      return <Badge className="bg-purple-100 text-purple-800">Awaiting Confirmation</Badge>;
+    }
+    
     switch (status?.toUpperCase()) {
       case 'ACTIVE':
       case 'APPROVED':
@@ -353,6 +358,12 @@ export default function VendorDashboardNew() {
       case 'PENDING':
       case 'PENDING_APPROVAL':
         return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
+      case 'PLACED':
+        return <Badge className="bg-purple-100 text-purple-800">Awaiting Confirmation</Badge>;
+      case 'CONFIRMED':
+        return <Badge className="bg-blue-100 text-blue-800">Confirmed</Badge>;
+      case 'DELIVERED':
+        return <Badge className="bg-green-100 text-green-800">Delivered</Badge>;
       case 'REJECTED':
       case 'DISABLED':
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
@@ -388,15 +399,14 @@ export default function VendorDashboardNew() {
       <div className="fixed top-0 left-0 right-0 h-16 bg-eagle-green border-b border-white/10 z-50 lg:hidden">
         <div className="flex items-center justify-between h-full px-4">
           <div className="flex items-center gap-2">
-            <Store className="h-6 w-6 text-june-bud" />
             <div className="flex flex-col">
               <span className="text-sm font-bold text-white truncate max-w-[150px]">
                 {vendorProfile?.businessName || 'Vendor'}
               </span>
               {vendorProfile?.isApproved ? (
-                <Badge className="bg-green-500 text-white text-[10px] h-4 px-1 w-fit">Approved</Badge>
+                <Badge className="bg-green-500 text-white text-[10px] font-light h-4 px-1 w-fit">Approved</Badge>
               ) : (
-                <Badge className="bg-amber-500 text-white text-[10px] h-4 px-1 w-fit">Pending</Badge>
+                <Badge className="bg-amber-500 text-white text-[10px] font-light h-4 px-1 w-fit">Pending</Badge>
               )}
             </div>
           </div>
@@ -456,7 +466,6 @@ export default function VendorDashboardNew() {
           {/* Desktop Header */}
           <div className="hidden lg:block p-4 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <Store className="h-8 w-8 text-june-bud flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-bold text-white truncate">
                   {vendorProfile?.businessName || 'Vendor Dashboard'}
@@ -1214,7 +1223,7 @@ export default function VendorDashboardNew() {
                         <div className="flex items-center space-x-2">
                           {getStatusBadge(service.status)}
                           <span className="font-medium">
-                            {serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.basePrice ?? service.basePrice, service.defaultPackage?.currency ?? service.currency)}
+                            {serviceService.formatPrice(service.defaultPackage?.basePrice ?? service.basePrice ?? 0, service.defaultPackage?.currency ?? service.currency)}
                           </span>
                           {service.hasPackages && (
                             <Badge variant="outline" className="text-xs">
@@ -1457,8 +1466,7 @@ export default function VendorDashboardNew() {
                           <div className="text-right">
                             <p className="font-semibold">
                               {customOrderService.formatPrice(
-                                order.finalVendorPriceMinor || order.baseVendorPriceMinor || order.finalPriceMinor || order.basePriceMinor,
-                                order.finalVendorPrice || order.baseVendorPrice || order.finalPrice || order.basePrice,
+                                order.finalVendorPrice || order.baseVendorPrice || order.finalPrice || order.basePrice ?? 0,
                                 order.currencyCode || 'ETB'
                               )}
                             </p>
@@ -2385,7 +2393,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       request: {
         ...selectedPriceUpdate,
         newPrice: {
-          currencyCode: data.currencyCode,
+          currencyCode: isEthiopianVendor(vendorProfile) ? 'ETB' : data.currencyCode,
           amount: data.amount,
         },
         reason: data.reason,
@@ -2436,6 +2444,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
           if (originalPriceMajor !== undefined && (originalPriceMajor !== ticketType.amount || originalCurrency !== ticketType.currencyCode)) {
             // Price changed - submit price update request
             await vendorService.requestEventPriceUpdate({
+              eventId: selectedEvent.id,
               ticketTypeId: ticketType.id,
               newPrice: ticketType.amount,
               newCurrency: ticketType.currencyCode,
@@ -3077,7 +3086,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             <div className="flex items-center gap-2 mt-2">
                               {getStatusBadge(service.status)}
                               <span className="text-sm text-muted-foreground">
-                                Price: {serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.basePrice ?? service.basePrice, service.defaultPackage?.currency ?? service.currency)}
+                                Price: {serviceService.formatPrice(service.defaultPackage?.basePrice ?? service.basePrice ?? 0, service.defaultPackage?.currency ?? service.currency)}
                               </span>
                             </div>
                             {service.description && (
@@ -3731,30 +3740,32 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={priceUpdateForm.handleSubmit(onPriceUpdateSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className={isEthiopianVendor(vendorProfile) ? "" : "grid grid-cols-2 gap-4"}>
+              {!isEthiopianVendor(vendorProfile) && (
+                <div>
+                  <Label>Currency *</Label>
+                  <Controller
+                    name="currencyCode"
+                    control={priceUpdateForm.control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCurrencies.map((currency) => (
+                            <SelectItem key={currency.id} value={currency.code}>
+                              {currency.code}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              )}
               <div>
-                <Label>Currency *</Label>
-                <Controller
-                  name="currencyCode"
-                  control={priceUpdateForm.control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {currencies.map((currency) => (
-                          <SelectItem key={currency.id} value={currency.code}>
-                            {currency.code}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-              <div>
-                <Label>New Price *</Label>
+                <Label>{isEthiopianVendor(vendorProfile) ? "New Price (ETB) *" : "New Price *"}</Label>
                 <Controller
                   name="amount"
                   control={priceUpdateForm.control}

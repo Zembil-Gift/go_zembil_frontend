@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ import {
   Plus,
   Edit,
   RotateCcw,
+  Search,
   XCircle,
 } from "lucide-react";
 
@@ -32,6 +34,8 @@ export default function VendorEventsPage() {
   const queryClient = useQueryClient();
   
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   // State for cancel dialog
   const [cancelEventDialog, setCancelEventDialog] = useState<{ open: boolean; eventId: number | null; eventTitle: string }>({
@@ -82,6 +86,12 @@ export default function VendorEventsPage() {
 
   const events: EventResponse[] = eventsData?.content || [];
 
+  const filteredEvents = events.filter((event) =>
+    event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (event.city && event.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (event.location && event.location.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   const getStatusBadge = (status: string) => {
     switch (status?.toUpperCase()) {
       case 'ACTIVE':
@@ -117,47 +127,67 @@ export default function VendorEventsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">My Events</h2>
-        {vendorProfile?.isApproved ? (
-          <Button asChild>
-            <Link to="/vendor/events/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Event
-            </Link>
-          </Button>
-        ) : (
-          <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
-            <Plus className="h-4 w-4 mr-2 text-gray-400" />
-            <span className="text-gray-400">Create Event</span>
-          </Button>
-        )}
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+        <div>
+          <h2 className="text-xl font-semibold">My Events</h2>
+          <p className="text-sm text-muted-foreground">Manage your hosted events</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search events..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          {vendorProfile?.isApproved ? (
+            <Button asChild>
+              <Link to="/vendor/events/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Event
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+              <Plus className="h-4 w-4 mr-2 text-gray-400" />
+              <span className="text-gray-400">Create Event</span>
+            </Button>
+          )}
+        </div>
       </div>
 
-      {events.length === 0 ? (
+      {filteredEvents.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Calendar className="h-16 w-16 text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">No events yet</h3>
-            <p className="text-muted-foreground mb-4">Start by creating your first event</p>
-            {vendorProfile?.isApproved ? (
-              <Button asChild>
-                <Link to="/vendor/events/new">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Event
-                </Link>
-              </Button>
-            ) : (
-              <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
-                <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                <span className="text-gray-400">Create Event</span>
-              </Button>
+            <h3 className="text-lg font-medium text-gray-900">
+              {searchQuery ? "No events match your search" : "No events yet"}
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              {searchQuery ? "Try a different search term" : "Start by creating your first event"}
+            </p>
+            {!searchQuery && (
+              vendorProfile?.isApproved ? (
+                <Button asChild>
+                  <Link to="/vendor/events/new">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Event
+                  </Link>
+                </Button>
+              ) : (
+                <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+                  <Plus className="h-4 w-4 mr-2 text-gray-400" />
+                  <span className="text-gray-400">Create Event</span>
+                </Button>
+              )
             )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {events.map((event) => (
+          {filteredEvents.map((event) => (
             <Card key={event.id}>
               <CardContent className="flex items-center justify-between p-4">
                 <div className="flex items-center space-x-4">
@@ -186,6 +216,9 @@ export default function VendorEventsPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button asChild variant="outline" size="sm">
+                    <Link to={`/vendor/events/${event.id}`}>View Details</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
                     <Link to={`/vendor/events/${event.id}/edit`}>
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
@@ -193,9 +226,6 @@ export default function VendorEventsPage() {
                   </Button>
                   <Button asChild variant="outline" size="sm">
                     <Link to={`/vendor/events/${event.id}/price`}>Update Price</Link>
-                  </Button>
-                  <Button asChild variant="outline" size="sm">
-                    <Link to={`/vendor/events/${event.id}/analytics`}>Analytics</Link>
                   </Button>
                   {event.status?.toUpperCase() === 'CANCELLED' ? (
                     <Button

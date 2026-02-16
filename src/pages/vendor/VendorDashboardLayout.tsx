@@ -32,6 +32,7 @@ import {
   LogOut,
   Menu,
   ChevronRight,
+  Percent,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -127,8 +128,9 @@ export default function VendorDashboardLayout() {
     { value: 'events', path: '/vendor/events', label: 'Events', icon: Calendar, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
     { value: 'services', path: '/vendor/services', label: 'Services', icon: Briefcase, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
     { value: 'service-orders', path: '/vendor/service-orders', label: 'Service Bookings', icon: Calendar, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
-    { value: 'custom-templates', path: '/vendor/custom-templates', label: 'Custom Templates', icon: Layers, show: true },
-    { value: 'custom-orders', path: '/vendor/custom-orders', label: 'Custom Orders', icon: ShoppingBag, show: true, badge: customOrdersNeedsAction },
+    { value: 'discounts', path: '/vendor/discounts', label: 'Discounts', icon: Percent, show: true },
+    { value: 'custom-templates', path: '/vendor/custom-templates', label: 'Custom Templates', icon: Layers, show: vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID' },
+    { value: 'custom-orders', path: '/vendor/custom-orders', label: 'Custom Orders', icon: ShoppingBag, show: vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID', badge: customOrdersNeedsAction },
     { value: 'check-in', path: '/vendor/check-in', label: 'Check-In', icon: ScanLine, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
     { value: 'payments', path: '/vendor/payments', label: 'Payments', icon: CreditCard, show: true },
     { value: 'requests', path: '/vendor/requests', label: 'Requests', icon: Clock, show: true },
@@ -149,9 +151,10 @@ export default function VendorDashboardLayout() {
   };
 
   const activeTab = getActiveTab();
+  const isCustomOrderDetailPage = location.pathname.startsWith('/vendor/custom-orders/');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={cn('min-h-screen', isCustomOrderDetailPage ? 'bg-white' : 'bg-gray-50')}>
       {/* Mobile Header */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-eagle-green border-b border-white/10 z-50 lg:hidden">
         <div className="flex items-center justify-between h-full px-4">
@@ -224,7 +227,6 @@ export default function VendorDashboardLayout() {
           {/* Desktop Header */}
           <div className="hidden lg:block p-4 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <Store className="h-8 w-8 text-june-bud flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-bold text-white truncate">
                   {vendorProfile?.businessName || 'Vendor Dashboard'}
@@ -234,7 +236,7 @@ export default function VendorDashboardLayout() {
             </div>
             <div className="mt-2">
               {vendorProfile?.isApproved ? (
-                <Badge className="bg-green-500 text-white text-xs">Approved</Badge>
+                <Badge className="bg-green-600 text-white text-xs font-light">Approved</Badge>
               ) : (
                 <Badge className="bg-amber-500 text-white text-xs">Pending Approval</Badge>
               )}
@@ -305,7 +307,7 @@ export default function VendorDashboardLayout() {
 
       {/* Main content */}
       <div className="pt-16 lg:pt-0 lg:pl-64 min-h-screen">
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className={cn(isCustomOrderDetailPage ? 'p-0' : 'p-4 sm:p-6 lg:p-8')}>
           {/* Vendor Approval Status Banner */}
           {vendorProfile && !vendorProfile.isApproved && (
             <div className="mb-6 rounded-lg border-2 border-amber-300 bg-amber-50 p-4 sm:p-6">

@@ -446,9 +446,12 @@ export default function VendorRequests() {
 
   const openEventPriceEdit = (request: EventPriceUpdateResponse) => {
     setSelectedEventPriceUpdate(request);
+    const newVP = request.newVendorPrice;
+    const prefillAmount = newVP?.vendorAmount ?? (newVP?.vendorAmountMinor != null ? newVP.vendorAmountMinor / 100 : 0);
+    const prefillCurrency = newVP?.currencyCode || request.newCurrencyCode || currencies[0]?.code || "";
     eventPriceForm.reset({
-      currencyCode: request.newCurrencyCode || currencies[0]?.code || "",
-      amount: (request.newPriceMinor || 0) / 100,
+      currencyCode: prefillCurrency,
+      amount: prefillAmount,
       reason: request.reason || "",
     });
     setEditEventPriceOpen(true);
@@ -500,7 +503,7 @@ export default function VendorRequests() {
       request: {
         ...selectedPriceUpdate,
         newPrice: {
-          currencyCode: data.currencyCode,
+          currencyCode: isEthiopianVendor(vendorProfile) ? 'ETB' : data.currencyCode,
           amount: data.amount,
         } as PriceDto,
         reason: data.reason,
@@ -521,13 +524,9 @@ export default function VendorRequests() {
     editEventPriceMutation.mutate({
       requestId: selectedEventPriceUpdate.id,
       request: {
-        ticketTypeId: selectedEventPriceUpdate.ticketTypeId,
-        newPrice: {
-          prices: [{
-            currencyCode: data.currencyCode,
-            amount: data.amount,
-          }],
-        },
+        ticketTypeId: selectedEventPriceUpdate.entityId || selectedEventPriceUpdate.ticketTypeId || 0,
+        newPrice: data.amount,
+        newCurrency: data.currencyCode,
         reason: data.reason,
       },
     });
@@ -619,7 +618,7 @@ export default function VendorRequests() {
           <TabsList className={`grid w-full ${
             // Dynamically calculate grid columns based on vendor type
             vendorProfile?.vendorType === 'PRODUCT' ? 'grid-cols-3' :
-            vendorProfile?.vendorType === 'SERVICE' ? 'grid-cols-3' :
+            vendorProfile?.vendorType === 'SERVICE' ? 'grid-cols-4' :
             'grid-cols-6'
           } lg:w-auto lg:inline-grid`}>
             {/* Product-related tabs - Only for PRODUCT and HYBRID vendors */}
@@ -1026,27 +1025,35 @@ export default function VendorRequests() {
                 ) : (
                   <div className="space-y-4">
                     {pendingEventPriceRequests.map((request) => {
-                      // Use vendor prices for display to vendors
-                      const currentPrice = { amount: request.currentPriceMinor / 100, currencyCode: request.currentCurrencyCode };
-                      const newPrice = { amount: request.newPriceMinor / 100, currencyCode: request.newCurrencyCode };
+                      // Use vendor prices from unified VendorChangeRequestDto
+                      const currentVP = request.currentVendorPrice;
+                      const newVP = request.newVendorPrice;
+                      const currentAmount = currentVP?.vendorAmount ?? (currentVP?.vendorAmountMinor != null ? currentVP.vendorAmountMinor / 100 : 0);
+                      const newAmount = newVP?.vendorAmount ?? (newVP?.vendorAmountMinor != null ? newVP.vendorAmountMinor / 100 : 0);
+                      const currentCurrency = currentVP?.currencyCode || 'ETB';
+                      const newCurrency = newVP?.currencyCode || 'ETB';
+                      // entityName is "EventTitle - TicketTypeName"
+                      const nameParts = (request.entityName || '').split(' - ');
+                      const displayEventTitle = request.eventTitle || nameParts[0] || 'Event';
+                      const displayTicketName = request.ticketTypeName || nameParts.slice(1).join(' - ') || '';
                       return (
                         <div key={request.id} className="border rounded-lg p-4">
                           <div className="flex items-start justify-between">
                             <div>
-                              <h3 className="font-semibold">{request.eventTitle}</h3>
-                              <p className="text-sm text-muted-foreground">Ticket Type: {request.ticketTypeName}</p>
+                              <h3 className="font-semibold">{displayEventTitle}</h3>
+                              {displayTicketName && <p className="text-sm text-muted-foreground">Ticket Type: {displayTicketName}</p>}
                               <div className="flex items-center gap-4 mt-2">
                                 <div>
                                   <span className="text-sm text-muted-foreground">Current: </span>
                                   <span className="font-medium">
-                                    {currentPrice?.currencyCode} {currentPrice?.amount?.toFixed(2)}
+                                    {currentCurrency} {currentAmount.toFixed(2)}
                                   </span>
                                 </div>
                                 <span className="text-muted-foreground">→</span>
                                 <div>
                                   <span className="text-sm text-muted-foreground">New: </span>
                                   <span className="font-medium text-blue-600">
-                                    {newPrice?.currencyCode} {newPrice?.amount?.toFixed(2)}
+                                    {newCurrency} {newAmount.toFixed(2)}
                                   </span>
                                 </div>
                               </div>
@@ -1085,7 +1092,7 @@ export default function VendorRequests() {
             </Card>
           </TabsContent>
 
-          {/* Service Creation Requests Tab */}
+          {/* Services Tab */}
           <TabsContent value="services" className="space-y-4">
             <Card>
               <CardHeader>
@@ -1314,30 +1321,32 @@ export default function VendorRequests() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={priceUpdateForm.handleSubmit(onPriceUpdateSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className={isEthiopianVendor(vendorProfile) ? "" : "grid grid-cols-2 gap-4"}>
+              {!isEthiopianVendor(vendorProfile) && (
+                <div>
+                  <Label>Currency *</Label>
+                  <Controller
+                    name="currencyCode"
+                    control={priceUpdateForm.control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCurrencies.map((currency) => (
+                            <SelectItem key={currency.id} value={currency.code}>
+                              {currency.code} - {currency.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              )}
               <div>
-                <Label>Currency *</Label>
-                <Controller
-                  name="currencyCode"
-                  control={priceUpdateForm.control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {currencies.map((currency) => (
-                          <SelectItem key={currency.id} value={currency.code}>
-                            {currency.code} - {currency.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-              <div>
-                <Label>New Price *</Label>
+                <Label>{isEthiopianVendor(vendorProfile) ? "New Price (ETB) *" : "New Price *"}</Label>
                 <Controller
                   name="amount"
                   control={priceUpdateForm.control}
