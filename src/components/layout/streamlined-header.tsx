@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, Heart, ShoppingCart, User, Globe, LogOut, Menu, X, Package, Ticket, Shield, Store } from "lucide-react";
+import { Heart, ShoppingCart, User, Globe, LogOut, Menu, X, Package, Ticket, Shield, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,7 +29,7 @@ import GoGeramiLogo from "@/components/GoGeramiLogo";
 export default function StreamlinedHeader() {
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage, availableLanguages } = useLanguage();
-  const { user, isAuthenticated} = useAuth();
+  const { user, isAuthenticated, logout} = useAuth();
   const location = useLocation();
   const pathname = location.pathname;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -54,15 +54,12 @@ export default function StreamlinedHeader() {
   const cartCount = Array.isArray(cartItems) ? cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
   const wishlistCount = getWishlistCount();
 
-  const handleSearchClick = () => {
+  /* const handleSearchClick = () => {
     window.location.href = "/search";
-  };
+  }; */
 
   const handleSignOut = async () => {
-    localStorage.removeItem('returnTo');
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/signin';
+    await logout();
   };
 
   // Core navigation items - all primary business features
@@ -120,7 +117,7 @@ export default function StreamlinedHeader() {
             {/* Desktop Actions - Hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-1">
               {/* Search */}
-              <TooltipProvider>
+              {/* <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -135,7 +132,7 @@ export default function StreamlinedHeader() {
                   </TooltipTrigger>
                   <TooltipContent>Search products</TooltipContent>
                 </Tooltip>
-              </TooltipProvider>
+              </TooltipProvider> */}
 
               {/* Wishlist */}
               <TooltipProvider>
@@ -462,7 +459,7 @@ export default function StreamlinedHeader() {
               {/* Actions */}
               <div className="p-3 border-t space-y-2 bg-white flex-shrink-0 max-h-[45vh] overflow-y-auto">
                 {/* Search */}
-                <Button
+                {/* <Button
                   variant="outline"
                   size="sm"
                   className="w-full justify-start h-9"
@@ -470,7 +467,7 @@ export default function StreamlinedHeader() {
                 >
                   <Search className="mr-2 h-4 w-4" />
                   Search
-                </Button>
+                </Button> */}
 
                 {/* Wishlist */}
                 <Button

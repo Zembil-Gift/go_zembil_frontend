@@ -17,19 +17,10 @@ import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription} fro
 import {ScrollArea} from "@/components/ui/scroll-area";
 import {useToast} from "@/hooks/use-toast";
 import authService from "@/services/authService";
-import {apiService} from "@/services/apiService";
-import {Coins, Eye, EyeOff, Lock, Mail, User} from "lucide-react";
+import {Globe, Eye, EyeOff, Lock, Mail, User} from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
+import { SUPPORTED_COUNTRIES, getCurrencyForCountry } from "@/lib/countryConfig";
 import OAuth2Buttons from "@/components/auth/OAuth2Buttons";
-
-interface Currency {
-  id: number;
-  code: string;
-  name: string;
-  symbol: string;
-  isActive: boolean;
-  isDefault: boolean;
-}
 
 // Phone number validation using libphonenumber (E.164 format)
 const phoneValidation = z
@@ -69,7 +60,7 @@ const signupSchema = z
       .regex(/^(?=.*\d)/, "Password must contain at least one number")
       .regex(/^(?=.*[@$!%*?&#^()_+=\-\[\]{}|;:',.<>/~`])/, "Password must contain at least one special character"),
     confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
-    preferredCurrencyCode: z.string().optional(),
+    country: z.string().min(1, "Please select your country"),
     acceptedTerms: z.boolean().refine(val => val === true, {
       message: "You must accept the Terms and Conditions to continue",
     }),
@@ -88,18 +79,6 @@ export default function SignUp() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Fetch available currencies
-  const { data: currencies = [], isLoading: currenciesLoading } = useQuery({
-    queryKey: ['currencies'],
-    queryFn: async () => {
-      const response = await apiService.getRequest<Currency[]>('/api/currencies');
-      return response;
-    },
-  });
-
-  // Find default currency
-  const defaultCurrency = currencies.find(c => c.isDefault)?.code || 'USD';
-
   const form = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -110,13 +89,15 @@ export default function SignUp() {
       phoneNumber: "",
       password: "",
       confirmPassword: "",
-      preferredCurrencyCode: "",
+      country: "",
       acceptedTerms: false,
     },
   });
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
+        // Derive currency from country selection
+        const preferredCurrencyCode = getCurrencyForCountry(data.country);
         return await authService.register({
           firstName: data.firstName,
           lastName: data.lastName,
@@ -125,7 +106,8 @@ export default function SignUp() {
           phoneNumber: data.phoneNumber,
           password: data.password,
           role: 'CUSTOMER',
-          preferredCurrencyCode: data.preferredCurrencyCode || defaultCurrency,
+          country: data.country,
+          preferredCurrencyCode,
       });
     },
     onSuccess: (response, variables) => {
@@ -290,28 +272,26 @@ export default function SignUp() {
 
                 <FormField
                   control={form.control}
-                  name="preferredCurrencyCode"
+                  name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">Preferred Currency</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-700">Country</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Coins className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
+                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
                           <Select
-                            value={field.value || defaultCurrency}
+                            value={field.value}
                             onValueChange={field.onChange}
-                            disabled={currenciesLoading}
                           >
                             <SelectTrigger className="pl-10 h-11">
-                              <SelectValue placeholder={currenciesLoading ? "Loading currencies..." : "Select currency"} />
+                              <SelectValue placeholder="Select your country" />
                             </SelectTrigger>
                             <SelectContent className="bg-white">
-                              {currencies.map((currency) => (
-                                <SelectItem key={currency.code} value={currency.code}>
+                              {SUPPORTED_COUNTRIES.map((country) => (
+                                <SelectItem key={country.value} value={country.value}>
                                   <span className="flex items-center gap-2">
-                                    <span className="font-medium">{currency.symbol}</span>
-                                    <span>{currency.code}</span>
-                                    <span className="text-gray-500">- {currency.name}</span>
+                                    <span>{country.label}</span>
+                                    <span className="text-gray-500">({country.currencyCode})</span>
                                   </span>
                                 </SelectItem>
                               ))}
@@ -319,6 +299,7 @@ export default function SignUp() {
                           </Select>
                         </div>
                       </FormControl>
+                      <p className="text-xs text-gray-500 mt-1">Your currency will be set based on your country</p>
                       <FormMessage />
                     </FormItem>
                   )}
