@@ -7,14 +7,17 @@ import FadeIn from "@/components/animations/FadeIn";
 import SlideIn from "@/components/animations/SlideIn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Search, 
-  Grid, 
-  List, 
-  ChevronRight, 
+  ChevronRight,
   Sparkles, 
   X, 
   Filter,
@@ -29,6 +32,9 @@ import { categoryService } from "@/services/categoryService";
 import PageNavigator from "@/components/PageNavigator";
 import { reviewService } from "@/services/reviewService";
 import { CompactRating } from "@/components/reviews";
+import { DiscountBadge } from "@/components/DiscountBadge";
+import { PriceWithDiscount } from "@/components/PriceWithDiscount";
+import { useAuth } from "@/hooks/useAuth";
 
 // Service Card Component with hover image effect
 function ServiceCard({ service }: { service: ServiceResponse }) {
@@ -57,7 +63,6 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
   // Get price from default package if available, otherwise use base price
   // Prefer backend-calculated major units (basePrice) over minor units
   const displayPriceMajor = service.defaultPackage?.basePrice ?? service.basePrice;
-  const displayPriceMinor = service.defaultPackage?.basePriceMinor ?? service.basePriceMinor;
   const displayCurrency = service.defaultPackage?.currency ?? service.currency;
 
   // Fetch service rating summary
@@ -130,11 +135,35 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
               transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
             />
 
+            {/* Discount Badge */}
+            {service.activeDiscount && (
+              <div className="absolute top-3 left-3">
+                <DiscountBadge 
+                  discount={service.activeDiscount} 
+                  variant="compact" 
+                  size="small" 
+                  targetCurrency={displayCurrency}
+                />
+              </div>
+            )}
+
             {/* Price Badge */}
             <div className="absolute bottom-3 right-3">
-              <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
-                From {serviceService.formatPrice(displayPriceMinor, displayPriceMajor, displayCurrency)}
-              </Badge>
+              {service.activeDiscount ? (
+                <div className="bg-white/95 px-3 py-1.5 rounded-lg backdrop-blur-sm shadow-md">
+                  <PriceWithDiscount
+                    originalPrice={displayPriceMajor || 0}
+                    currency={displayCurrency}
+                    discount={service.activeDiscount}
+                    size="small"
+                    showSavings={false}
+                  />
+                </div>
+              ) : (
+                <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
+                  From {serviceService.formatPrice(displayPriceMajor ?? 0, displayCurrency)}
+                </Badge>
+              )}
             </div>
 
   
@@ -213,6 +242,7 @@ const CITY_OPTIONS = [
 export default function Services() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isInitialized } = useAuth();
 
   // Parse URL parameters
   const urlParams = new URLSearchParams(location.search);
@@ -220,7 +250,7 @@ export default function Services() {
   const cityParam = urlParams.get('city') || '';
   const searchParam = urlParams.get('search') || '';
 
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState(searchParam);
   const [debouncedSearch, setDebouncedSearch] = useState(searchParam);
   const [currentPage, setCurrentPage] = useState(0);
@@ -246,7 +276,7 @@ export default function Services() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch services with filters
+  // Fetch services with filters (wait for auth so currency is correct)
   const { data: servicesData, isLoading: servicesLoading, isFetching } = useQuery<PagedServiceResponse>({
     queryKey: ['services', {
       page: currentPage,
@@ -254,6 +284,7 @@ export default function Services() {
       query: debouncedSearch,
       city: selectedCity,
       categoryId: selectedCategoryId,
+      currency: user?.preferredCurrencyCode ?? 'default',
     }],
     queryFn: () => serviceService.getServices({
       page: currentPage,
@@ -262,6 +293,7 @@ export default function Services() {
       city: selectedCity === 'all' ? undefined : selectedCity || undefined,
       categoryId: selectedCategoryId,
     }),
+    enabled: isInitialized,
   });
 
   const services = servicesData?.content || [];
@@ -369,11 +401,11 @@ export default function Services() {
           <FadeIn delay={0.1}>
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="h-5 w-5 text-june-bud" />
-              <h1 className="text-2xl lg:text-3xl font-gotham-bold text-white">
+              <h1 className="text-2xl lg:text-3xl font-bold text-white">
                 Services & Experiences
               </h1>
             </div>
-            <p className="text-sm lg:text-base font-gotham-light text-white/80 max-w-2xl">
+            <p className="text-sm lg:text-base font-light text-white/80 max-w-2xl">
               Book services from photography to catering for any occasion
             </p>
           </FadeIn>
@@ -386,9 +418,9 @@ export default function Services() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-viridian-green" />
-              <span className="font-gotham-bold text-eagle-green">Browse by Category</span>
+              <span className="font-bold text-eagle-green">Browse by Category</span>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex overflow-x-auto scrollbar-hide gap-3 py-2 -mx-4 px-4 sm:mx-0 sm:px-2 sm:flex-wrap">
               {categories.map((category, index) => {
                 const isActive = selectedCategoryId === category.id;
 
@@ -411,7 +443,7 @@ export default function Services() {
                       `}
                       aria-pressed={isActive}
                     >
-                      <span className="font-gotham-bold">{category.name}</span>
+                      <span className="font-bold">{category.name}</span>
                     </Button>
                   </motion.div>
                 );
@@ -422,7 +454,7 @@ export default function Services() {
 
         {/* Search and Filters */}
         <SlideIn direction="up" delay={0.3}>
-          <div className="flex flex-col lg:flex-row gap-4 mb-8">
+          <div className="flex items-center gap-3 mb-8">
             {/* Search Bar */}
             <div className="flex-1 relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-eagle-green/20 to-viridian-green/20 rounded-md blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
@@ -432,61 +464,34 @@ export default function Services() {
                   placeholder="Search for services, experiences..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 pr-4 h-14 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 font-gotham-light text-eagle-green placeholder:text-eagle-green/40"
+                  className="pl-12 pr-4 h-14 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 font-light text-eagle-green placeholder:text-eagle-green/40 w-full"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3">
-              {/* City Filter */}
-              <Select value={selectedCity} onValueChange={(value) => { setSelectedCity(value); setCurrentPage(0); }}>
-                <SelectTrigger className="w-52 h-14 bg-white border border-eagle-green/10 rounded-xl shadow-lg shadow-eagle-green/5 font-gotham-medium text-eagle-green hover:border-viridian-green transition-colors">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-viridian-green" />
-                    <SelectValue placeholder="All Locations" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-eagle-green/10 shadow-xl rounded-xl">
-                  {CITY_OPTIONS.map((city) => (
-                    <SelectItem 
-                      key={city.value} 
-                      value={city.value} 
-                      className="font-gotham-light hover:bg-june-bud/10 rounded-lg"
-                    >
-                      {city.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* View Toggle */}
-              <div className="flex bg-white rounded-xl p-1.5 shadow-lg shadow-eagle-green/5 border border-eagle-green/10">
+            {/* City Filter - Icon Only */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className={`h-11 w-11 rounded-lg transition-all duration-300 ${viewMode === 'grid'
-                    ? 'bg-gradient-to-br from-eagle-green to-viridian-green text-white shadow-md'
-                    : 'text-eagle-green/50 hover:text-eagle-green hover:bg-eagle-green/5'
-                    }`}
-                  title="Grid view"
+                  variant="outline"
+                  className="h-14 w-14 rounded-xl bg-white border-eagle-green/10 shadow-lg shadow-eagle-green/5 hover:border-viridian-green hover:bg-viridian-green/5 transition-all duration-300 p-0 shrink-0"
                 >
-                  <Grid className="h-5 w-5" />
+                  <MapPin className="h-5 w-5 text-viridian-green" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className={`h-11 w-11 rounded-lg transition-all duration-300 ${viewMode === 'list'
-                    ? 'bg-gradient-to-br from-eagle-green to-viridian-green text-white shadow-md'
-                    : 'text-eagle-green/50 hover:text-eagle-green hover:bg-eagle-green/5'
-                    }`}
-                  title="List view"
-                >
-                  <List className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-white border border-eagle-green/10 shadow-xl rounded-xl p-1">
+                <div className="px-2 py-1.5 text-xs font-bold text-eagle-green/40 uppercase tracking-wider">Locations</div>
+                {CITY_OPTIONS.map((city) => (
+                  <DropdownMenuItem
+                    key={city.value}
+                    onClick={() => { setSelectedCity(city.value); setCurrentPage(0); }}
+                    className={`rounded-lg cursor-pointer ${selectedCity === city.value ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}
+                  >
+                    {city.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </SlideIn>
 
@@ -497,7 +502,7 @@ export default function Services() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-wrap items-center gap-3 mb-8 p-4 bg-gradient-to-r from-june-bud/10 to-viridian-green/5 rounded-md border border-june-bud/20"
           >
-            <span className="text-sm font-gotham-bold text-eagle-green flex items-center gap-2">
+            <span className="text-sm font-bold text-eagle-green flex items-center gap-2">
               <Filter className="h-4 w-4" />
               Active filters:
             </span>
@@ -507,7 +512,7 @@ export default function Services() {
                 variant="ghost"
                 size="sm"
                 onClick={handleClearFilters}
-                className="px-3 h-8 text-xs font-gotham-medium text-eagle-green/70 hover:text-viridian-green hover:bg-transparent"
+                className="px-3 h-8 text-xs font-medium text-eagle-green/70 hover:text-viridian-green hover:bg-transparent"
               >
                 All Services
               </Button>
@@ -515,7 +520,7 @@ export default function Services() {
               {currentCategory && (
                 <>
                   <ChevronRight className="h-3 w-3 text-eagle-green/30" />
-                  <Badge className="flex items-center gap-1.5 bg-gradient-to-r from-eagle-green to-viridian-green text-white border-0 px-3 py-1 rounded-full font-gotham-medium">
+                  <Badge className="flex items-center gap-1.5 bg-gradient-to-r from-eagle-green to-viridian-green text-white border-0 px-3 py-1 rounded-full font-medium">
                     {currentCategory.name}
                     <button
                       onClick={() => setSelectedCategoryId(undefined)}
@@ -530,7 +535,7 @@ export default function Services() {
               {selectedCity && selectedCity !== 'all' && (
                 <>
                   <ChevronRight className="h-3 w-3 text-eagle-green/30" />
-                  <Badge className="flex items-center gap-1.5 bg-viridian-green/20 text-viridian-green border border-viridian-green/30 px-3 py-1 rounded-full font-gotham-medium">
+                  <Badge className="flex items-center gap-1.5 bg-viridian-green/20 text-viridian-green border border-viridian-green/30 px-3 py-1 rounded-full font-medium">
                     <MapPin className="h-3 w-3" />
                     {selectedCity}
                     <button
@@ -546,7 +551,7 @@ export default function Services() {
               {debouncedSearch && (
                 <>
                   <ChevronRight className="h-3 w-3 text-eagle-green/30" />
-                  <Badge className="flex items-center gap-1.5 bg-june-bud/20 text-eagle-green border border-june-bud/30 px-3 py-1 rounded-full font-gotham-medium">
+                  <Badge className="flex items-center gap-1.5 bg-june-bud/20 text-eagle-green border border-june-bud/30 px-3 py-1 rounded-full font-medium">
                     "{debouncedSearch}"
                     <button
                       onClick={() => {
@@ -566,7 +571,7 @@ export default function Services() {
               variant="ghost"
               size="sm"
               onClick={handleClearFilters}
-              className="ml-auto text-eagle-green/70 hover:text-viridian-green hover:bg-viridian-green/10 font-gotham-medium rounded-full px-4"
+              className="ml-auto text-eagle-green/70 hover:text-viridian-green hover:bg-viridian-green/10 font-medium rounded-full px-4"
             >
               Clear all
             </Button>
@@ -576,14 +581,14 @@ export default function Services() {
         {/* Services Section */}
         <div className="mb-12">
           <div className="flex justify-between items-center mb-6">
-            <p className="font-gotham-light text-eagle-green/70">
+            <p className="font-light text-eagle-green/70">
               {isFetching ? (
                 <span className="flex items-center gap-2">
                   <span className="inline-block w-4 h-4 border-2 border-viridian-green/30 border-t-viridian-green rounded-full animate-spin"></span>
                   Loading...
                 </span>
               ) : (
-                <>Showing <span className="font-gotham-bold text-eagle-green">{services.length}</span> of <span className="font-gotham-bold text-eagle-green">{totalServices}</span> services</>
+                <>Showing <span className="font-bold text-eagle-green">{services.length}</span> of <span className="font-bold text-eagle-green">{totalServices}</span> services</>
               )}
             </p>
           </div>
@@ -598,8 +603,8 @@ export default function Services() {
                 <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-june-bud/20 to-viridian-green/10 rounded-3xl flex items-center justify-center">
                   <Calendar className="h-12 w-12 text-eagle-green/40" />
                 </div>
-                <h3 className="text-2xl font-gotham-bold text-eagle-green mb-3">No services found</h3>
-                <p className="font-gotham-light text-eagle-green/60 mb-8 leading-relaxed">
+                <h3 className="text-2xl font-bold text-eagle-green mb-3">No services found</h3>
+                <p className="font-light text-eagle-green/60 mb-8 leading-relaxed">
                   {hasFilters
                     ? "We couldn't find any services matching your criteria. Try adjusting your search or filters."
                     : "No services are available at the moment. Please check back soon!"}
@@ -607,7 +612,7 @@ export default function Services() {
                 {hasFilters && (
                   <Button
                     onClick={handleClearFilters}
-                    className="bg-gradient-to-r from-eagle-green to-viridian-green hover:from-viridian-green hover:to-eagle-green text-white font-gotham-bold px-8 py-3 rounded-full shadow-lg shadow-eagle-green/25 transition-all duration-300 hover:scale-105"
+                    className="bg-gradient-to-r from-eagle-green to-viridian-green hover:from-viridian-green hover:to-eagle-green text-white font-bold px-8 py-3 rounded-full shadow-lg shadow-eagle-green/25 transition-all duration-300 hover:scale-105"
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     Show all services

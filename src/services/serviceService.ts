@@ -1,4 +1,5 @@
 import { apiService } from './apiService';
+import type { DiscountInfo } from '@/types/discount';
 
 /**
  * Service types matching the backend ServiceResponse DTO
@@ -67,6 +68,7 @@ export interface ServiceResponse {
   packages?: ServicePackageResponse[];
   defaultPackage?: ServicePackageResponse;
   hasPackages?: boolean;
+  activeDiscount?: DiscountInfo;
 }
 
 export type ServicePackageStatus = 
@@ -221,7 +223,10 @@ class ServiceService {
    * Get featured services
    */
   async getFeaturedServices(page: number = 0, size: number = 10): Promise<PagedServiceResponse> {
-    const url = `/api/services/featured?page=${page}&size=${size}`;
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('size', size.toString());
+    const url = `/api/services/featured?${params.toString()}`;
     return await apiService.getRequest<PagedServiceResponse>(url);
   }
 
@@ -229,7 +234,9 @@ class ServiceService {
    * Get ad service packages
    */
   async getAdServicePackages(limit: number = 5): Promise<ServicePackageResponse[]> {
-    const url = `/api/packages/ads?limit=${limit}`;
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+    const url = `/api/packages/ads?${params.toString()}`;
     return await apiService.getRequest<ServicePackageResponse[]>(url);
   }
 
@@ -276,12 +283,15 @@ class ServiceService {
   /**
    * Get vendor's own services
    */
-  async getMyServices(status?: ServiceStatus, page: number = 0, size: number = 20): Promise<PagedServiceResponse> {
+  async getMyServices(status?: ServiceStatus, page: number = 0, size: number = 20, query?: string): Promise<PagedServiceResponse> {
     const queryParams = new URLSearchParams();
     queryParams.append('page', page.toString());
     queryParams.append('size', size.toString());
     if (status) {
       queryParams.append('status', status);
+    }
+    if (query?.trim()) {
+      queryParams.append('query', query.trim());
     }
     const url = `/api/services/vendor/me?${queryParams.toString()}`;
     return await apiService.getRequest<PagedServiceResponse>(url);
@@ -292,6 +302,13 @@ class ServiceService {
    */
   async getMyService(serviceId: number): Promise<ServiceResponse> {
     return await apiService.getRequest<ServiceResponse>(`/api/services/vendor/me/${serviceId}`);
+  }
+
+  /**
+   * Get service by ID
+   */
+  async getServiceById(serviceId: number): Promise<ServiceResponse> {
+    return await apiService.getRequest<ServiceResponse>(`/api/services/${serviceId}`);
   }
 
   /**
@@ -527,24 +544,14 @@ class ServiceService {
 
   /**
    * Format price for display using backend-provided major units.
-   * IMPORTANT: Backend provides 'amount' fields in major units - use those directly.
-   * 
-   * @deprecated Prefer using formatCurrency from lib/currency with backend-provided amount fields.
    */
-  formatPrice(priceMinor: number | undefined, priceMajorOrCurrency?: number | string, currency: string = 'ETB'): string {
-    let amount: number;
-    let curr: string = currency;
-    
-    // Handle backward compatibility: if second arg is string, it's currency (old signature)
-    if (typeof priceMajorOrCurrency === 'string') {
-      curr = priceMajorOrCurrency;
-      console.warn('formatPrice: Using deprecated minor units conversion. Backend should provide major units.');
-      amount = priceMinor ? priceMinor / 100 : 0;
-    } else {
-      // New signature: priceMajorOrCurrency is the major units - USE THIS
-      amount = priceMajorOrCurrency ?? 0;
+  formatPrice(amount: number, currency: string = 'ETB'): string {
+    // Handle null or invalid currency
+    let curr = currency;
+    if (!curr || curr === 'null' || curr.trim() === '') {
+      curr = 'USD';
     }
-    
+
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: curr,

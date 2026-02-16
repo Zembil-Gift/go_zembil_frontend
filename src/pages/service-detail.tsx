@@ -22,21 +22,24 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ServiceReviewsSection } from '@/components/reviews';
+import { DiscountBadge } from '@/components/DiscountBadge';
+import { PriceWithDiscount } from '@/components/PriceWithDiscount';
 
 import { serviceService, PoliciesConfig, AvailabilityConfig } from '@/services/serviceService';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ServiceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+  const { user, isInitialized } = useAuth();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
 
   const { data: service, isLoading, error } = useQuery({
-    queryKey: ['service', id],
+    queryKey: ['service', id, user?.preferredCurrencyCode ?? 'default'],
     queryFn: () => id ? serviceService.getService(parseInt(id)) : null,
-    enabled: !!id,
+    enabled: !!id && isInitialized,
   });
 
   // Get the currently selected package
@@ -298,7 +301,7 @@ export default function ServiceDetail() {
                       {/* Price Badge */}
                       <div className="absolute bottom-4 right-4">
                         <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
-                          From {serviceService.formatPrice(displayPriceMinor, displayPriceMajor, displayCurrency)}
+                          From {serviceService.formatPrice(displayPriceMajor ?? 0, displayCurrency)}
                         </Badge>
                       </div>
                     </div>
@@ -346,7 +349,7 @@ export default function ServiceDetail() {
                     {/* Price Badge */}
                     <div className="absolute bottom-4 right-4">
                       <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
-                        From {serviceService.formatPrice(displayPriceMinor, displayPriceMajor, displayCurrency)}
+                        From {serviceService.formatPrice(displayPriceMajor ?? 0, displayCurrency)}
                       </Badge>
                     </div>
                   </div>
@@ -412,7 +415,7 @@ export default function ServiceDetail() {
                           )}
                           <div className="flex items-center justify-between mt-2">
                             <span className="font-bold text-eagle-green">
-                              {serviceService.formatPrice(pkg.basePriceMinor, pkg.basePrice, pkg.currency)}
+                              {serviceService.formatPrice(pkg.basePrice ?? 0, pkg.currency)}
                             </span>
                             {pkg.durationMinutes != null && pkg.durationMinutes > 0 && (
                               <span className="text-sm font-light text-eagle-green/70 flex items-center gap-1">
@@ -635,12 +638,23 @@ export default function ServiceDetail() {
                       {selectedPackage && (
                         <p className="font-bold text-eagle-green text-sm mb-2">{selectedPackage.name}</p>
                       )}
+                      {service.activeDiscount && (
+                        <div className="mb-2 flex justify-center">
+                          <DiscountBadge discount={service.activeDiscount} variant="compact" size="small" />
+                        </div>
+                      )}
                       <p className="font-light text-eagle-green/70 text-sm mb-2">
                         {availablePackages.length > 1 ? 'Selected Package Price' : 'Starting from'}
                       </p>
-                      <p className="font-bold text-eagle-green text-2xl">
-                        {serviceService.formatPrice(displayPriceMinor, displayPriceMajor, displayCurrency)}
-                      </p>
+                      <div className="flex justify-center">
+                        <PriceWithDiscount
+                          originalPrice={displayPriceMajor || 0}
+                          currency={displayCurrency}
+                          discount={service.activeDiscount}
+                          size="medium"
+                          showSavings={false}
+                        />
+                      </div>
                       {selectedPackage?.durationMinutes != null && selectedPackage.durationMinutes > 0 && (
                         <p className="font-light text-eagle-green/70 text-xs mt-1">
                           Duration: {selectedPackage.durationMinutes} minutes

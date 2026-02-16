@@ -8,6 +8,8 @@ import { ServiceResponse, serviceService } from "@/services/serviceService";
 import { useQuery } from "@tanstack/react-query";
 import { reviewService } from "@/services/reviewService";
 import { CompactRating } from "@/components/reviews";
+import { DiscountBadge } from "@/components/DiscountBadge";
+import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 
 interface ServiceCardProps {
   service: ServiceResponse;
@@ -115,11 +117,35 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
               transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
             />
 
+            {/* Discount Badge */}
+            {service.activeDiscount && (
+              <div className="absolute top-3 left-3">
+                <DiscountBadge
+                  discount={service.activeDiscount}
+                  variant="compact"
+                  size="small"
+                  targetCurrency={displayCurrency}
+                />
+              </div>
+            )}
+
             {/* Price Badge */}
             <div className="absolute bottom-3 right-3">
-              <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
-                From {serviceService.formatPrice(displayPriceMinor, displayPriceMajor, displayCurrency)}
-              </Badge>
+              {service.activeDiscount ? (
+                <div className="bg-white/95 px-3 py-1.5 rounded-lg backdrop-blur-sm shadow-md">
+                  <PriceWithDiscount
+                    originalPrice={displayPriceMajor || 0}
+                    currency={displayCurrency}
+                    discount={service.activeDiscount}
+                    size="small"
+                    showSavings={false}
+                  />
+                </div>
+              ) : (
+                <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
+                  From {serviceService.formatPrice(displayPriceMajor ?? 0, displayCurrency)}
+                </Badge>
+              )}
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -17,7 +17,10 @@ import {
   Shield,
   AlertCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Tag,
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -29,9 +32,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { DiscountBadge } from '@/components/DiscountBadge';
+import { PriceWithDiscount } from '@/components/PriceWithDiscount';
+import PaymentMethodSelector, { PaymentMethodType } from '@/components/PaymentMethodSelector';
 
 import { serviceService, AvailabilityConfig } from '@/services/serviceService';
 import { serviceOrderService, CreateServiceOrderRequest } from '@/services/serviceOrderService';
+import { discountService, type DiscountValidationResult } from '@/services/discountService';
+import { formatPrice, toMinorUnits, getCurrencyDecimals, calculateDiscountedPrice, getDiscountAmountForDisplay } from '@/lib/currency';
 
 export default function ServiceCheckout() {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -48,6 +56,10 @@ export default function ServiceCheckout() {
   const [recipientEmail, setRecipientEmail] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
   const [giftMessage, setGiftMessage] = useState('');
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
+  const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
   const [paymentProvider, setPaymentProvider] = useState<'STRIPE' | 'CHAPA'>('STRIPE');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -107,6 +119,80 @@ export default function ServiceCheckout() {
   const displayCurrency = useMemo(() => {
     return service?.defaultPackage?.currency ?? service?.currency ?? 'ETB';
   }, [service]);
+
+  const appliedDiscountCode = useMemo(() => {
+    const manualCode = discountCode.trim();
+    if (manualCode) return manualCode;
+    return service?.activeDiscount?.code || '';
+  }, [discountCode, service?.activeDiscount?.code]);
+
+  // Calculate the manually-validated discount amount in display (major) units
+  const manualDiscountAmountDisplay = useMemo(() => {
+    return getDiscountAmountForDisplay(discountResult, displayCurrency);
+  }, [discountResult, displayCurrency]);
+
+  const finalAmount = useMemo(() => {
+    if (displayPriceMajor === undefined) return 0;
+    
+    // If we have a manual discount applied, use its amount (already converted in manualDiscountAmountDisplay)
+    if (discountResult?.applicable && manualDiscountAmountDisplay > 0) {
+      return Math.max(0, displayPriceMajor - manualDiscountAmountDisplay);
+    }
+    
+    // Fallback to service's active discount - use the centralized utility
+    if (service?.activeDiscount) {
+      return calculateDiscountedPrice(displayPriceMajor, displayCurrency, service.activeDiscount);
+    }
+    
+    return displayPriceMajor;
+  }, [displayPriceMajor, displayCurrency, discountResult, manualDiscountAmountDisplay, service?.activeDiscount]);
+
+  const handleApplyDiscount = useCallback(async () => {
+    const code = discountCode.trim();
+    if (!code) {
+      setDiscountError("Please enter a discount code");
+      return;
+    }
+    if (!displayCurrency || !displayPriceMinor) {
+      setDiscountError("Service price not available");
+      return;
+    }
+
+    setIsValidatingDiscount(true);
+    setDiscountError(null);
+    setDiscountResult(null);
+
+    try {
+      const result = await discountService.validateDiscountCode({
+        discountCode: code,
+        orderTotalMinor: displayPriceMinor,
+        serviceIds: [Number(serviceId)],
+      });
+
+      if (result.applicable) {
+        setDiscountResult(result);
+        setDiscountError(null);
+        toast({
+          title: "Discount Applied",
+          description: `Discount code "${code}" applied successfully!`,
+        });
+      } else {
+        setDiscountResult(null);
+        setDiscountError(result.reason || "Discount code is not valid for this service");
+      }
+    } catch (error: any) {
+      setDiscountResult(null);
+      setDiscountError(error?.message || "Failed to validate discount code");
+    } finally {
+      setIsValidatingDiscount(false);
+    }
+  }, [discountCode, displayCurrency, displayPriceMinor, serviceId, toast]);
+
+  const handleRemoveDiscount = useCallback(() => {
+    setDiscountResult(null);
+    setDiscountError(null);
+    setDiscountCode("");
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -356,6 +442,7 @@ export default function ServiceCheckout() {
         recipientEmail: recipientEmail || undefined,
         recipientPhone: recipientPhone || undefined,
         paymentProvider,
+        discountCode: appliedDiscountCode || undefined,
       };
 
       // Create order
@@ -451,7 +538,7 @@ export default function ServiceCheckout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-12 max-w-7xl">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -475,9 +562,9 @@ export default function ServiceCheckout() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Main Form */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-7 space-y-6">
             {/* Service Summary */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -841,6 +928,89 @@ export default function ServiceCheckout() {
               </Card>
             </motion.div>
 
+            {/* Discount Code */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
+                    <Tag className="h-5 w-5" />
+                    Discount Code
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {discountResult?.applicable ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          <div>
+                            <p className="text-sm font-medium text-green-800">
+                              Code "{discountCode}" applied
+                            </p>
+                            <p className="text-xs text-green-600">
+                              You save {formatPrice(manualDiscountAmountDisplay, displayCurrency)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleRemoveDiscount}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex space-x-2">
+                        <Input
+                          placeholder="Enter discount code"
+                          value={discountCode}
+                          onChange={(e) => {
+                            setDiscountCode(e.target.value);
+                            setDiscountError(null);
+                          }}
+                          onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()}
+                          className={`flex-1 ${discountError ? 'border-red-300' : ''}`}
+                          disabled={isValidatingDiscount}
+                        />
+                        <Button
+                          variant="outline"
+                          type="button"
+                          onClick={handleApplyDiscount}
+                          disabled={isValidatingDiscount || !discountCode.trim()}
+                          className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
+                        >
+                          {isValidatingDiscount ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Apply'
+                          )}
+                        </Button>
+                      </div>
+                      {discountError && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          {discountError}
+                        </p>
+                      )}
+                      {!discountError && !discountCode.trim() && service?.activeDiscount && (
+                        <p className="text-xs text-eagle-green/60 mt-1">
+                          A service discount will be applied automatically.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
             {/* Payment Method */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -855,44 +1025,25 @@ export default function ServiceCheckout() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <RadioGroup 
-                    value={paymentProvider} 
-                    onValueChange={(value) => setPaymentProvider(value as 'STRIPE' | 'CHAPA')}
-                  >
-                    <div className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
-                      paymentProvider === 'STRIPE' 
-                        ? 'border-eagle-green bg-june-bud/10' 
-                        : 'border-gray-200 hover:border-eagle-green/50'
-                    }`}>
-                      <RadioGroupItem value="STRIPE" id="stripe" />
-                      <Label htmlFor="stripe" className="flex-1 cursor-pointer">
-                        <span className="font-bold text-eagle-green">Card Payment (Stripe)</span>
-                        <p className="text-sm font-light text-eagle-green/70">
-                          Pay with Visa, Mastercard, or American Express
-                        </p>
-                      </Label>
-                    </div>
-                    <div className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
-                      paymentProvider === 'CHAPA' 
-                        ? 'border-eagle-green bg-june-bud/10' 
-                        : 'border-gray-200 hover:border-eagle-green/50'
-                    }`}>
-                      <RadioGroupItem value="CHAPA" id="chapa" />
-                      <Label htmlFor="chapa" className="flex-1 cursor-pointer">
-                        <span className="font-bold text-eagle-green">Chapa</span>
-                        <p className="text-sm font-light text-eagle-green/70">
-                          Pay with Telebirr, CBE Birr, Awash Bank, or other local options
-                        </p>
-                      </Label>
-                    </div>
-                  </RadioGroup>
+                  <PaymentMethodSelector
+                    amount={finalAmount}
+                    currency={displayCurrency}
+                    onPaymentMethodSelect={(method) => {
+                      if (method === 'stripe') {
+                        setPaymentProvider('STRIPE');
+                      } else {
+                        setPaymentProvider('CHAPA');
+                      }
+                    }}
+                    userLocation={user?.country || "Ethiopia"}
+                  />
                 </CardContent>
               </Card>
             </motion.div>
           </div>
 
           {/* Order Summary Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-5">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -948,12 +1099,32 @@ export default function ServiceCheckout() {
                   <Separator />
 
                   {/* Total */}
+                  {service.activeDiscount && (
+                    <div className="flex justify-center">
+                      <DiscountBadge 
+                        discount={service.activeDiscount} 
+                        variant="compact" 
+                        size="small" 
+                        targetCurrency={displayCurrency}
+                      />
+                    </div>
+                  )}
                   <div className="bg-june-bud/10 rounded-lg p-4">
                     <div className="flex justify-between items-center">
                       <span className="font-light text-eagle-green">Total</span>
-                      <span className="font-bold text-eagle-green text-2xl">
-                        {serviceService.formatPrice(displayPriceMinor, displayPriceMajor, displayCurrency)}
-                      </span>
+                      <div className="font-bold text-eagle-green text-2xl">
+                        {service.activeDiscount ? (
+                          <PriceWithDiscount
+                            originalPrice={displayPriceMajor || 0}
+                            currency={displayCurrency}
+                            discount={service.activeDiscount}
+                            size="small"
+                            showSavings={false}
+                          />
+                        ) : (
+                          serviceService.formatPrice(displayPriceMajor ?? 0, displayCurrency)
+                        )}
+                      </div>
                     </div>
                   </div>
 

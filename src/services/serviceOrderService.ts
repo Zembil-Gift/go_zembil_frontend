@@ -78,6 +78,10 @@ export interface ServiceOrderResponse {
   totalAmountMinor: number;
   currency: string;
   
+  // Vendor earnings (vendor-specific fields)
+  vendorAmountMinor?: number;      // Vendor's final payout amount
+  vendorSubtotalMinor?: number;    // Vendor's subtotal after discount
+  
   // Gift details
   giftMessage?: string;
   recipientName?: string;
@@ -285,14 +289,12 @@ class ServiceOrderService {
   // ==================== Utility Methods ====================
 
   /**
-   * @deprecated Use formatCurrency from lib/currency with backend-provided major units.
-   * Backend now provides prices in major units via 'amount' fields.
+   * Format price for display. Converts minor units to major units.
    */
-  formatPrice(priceMinor: number, currency: string | undefined | null): string {
-    console.warn('formatPrice with minor units is deprecated. Use formatCurrency with backend-provided amount instead.');
+  formatPrice(amountMinor: number, currency: string | undefined | null): string {
     const curr = currency || 'ETB';
     const decimals = getCurrencyDecimals(curr);
-    const amount = priceMinor / Math.pow(10, decimals);
+    const amount = amountMinor / Math.pow(10, decimals);
     return formatCurrency(amount, curr);
   }
 
