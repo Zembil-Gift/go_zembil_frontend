@@ -10,6 +10,7 @@ interface GiftRecipient {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   gradient: string;
   description: string;
+  subCategorySlug: string;
 }
 
 export default function GiftRecipientsSection() {
@@ -20,48 +21,54 @@ export default function GiftRecipientsSection() {
       id: "mom", 
       name: t('homepage.recipients.mom'), 
       icon: Heart, 
-      gradient: "from-yellow to-june-bud",
-      description: "Show your love and appreciation"
+      gradient: "from-ethiopian-gold to-june-bud",
+      description: "Show your love and appreciation",
+      subCategorySlug: "mothers-day"
     },
     { 
       id: "dad", 
       name: t('homepage.recipients.dad'), 
       icon: Award, 
       gradient: "from-viridian-green to-eagle-green",
-      description: "Celebrate his achievements"
+      description: "Celebrate his achievements",
+      subCategorySlug: "fathers-day"
     },
     { 
       id: "friends", 
       name: t('homepage.recipients.friends'), 
       icon: Users, 
       gradient: "from-june-bud to-viridian-green",
-      description: "Strengthen your friendship"
+      description: "Strengthen your friendship",
+      subCategorySlug: "family-reunion"
     },
     { 
       id: "kids", 
       name: t('homepage.recipients.kids'), 
       icon: Baby, 
-      gradient: "from-eagle-green to-yellow",
-      description: "Make them smile with joy"
+      gradient: "from-eagle-green to-ethiopian-gold",
+      description: "Make them smile with joy",
+      subCategorySlug: "new-baby"
     },
     { 
       id: "couples", 
       name: t('homepage.recipients.couples'), 
       icon: Heart, 
-      gradient: "from-yellow to-viridian-green",
-      description: "Express your deep affection"
+      gradient: "from-ethiopian-gold to-viridian-green",
+      description: "Express your deep affection",
+      subCategorySlug: "love-romance"
     },
     { 
       id: "colleagues", 
       name: t('homepage.recipients.colleagues'), 
       icon: User, 
       gradient: "from-june-bud to-eagle-green",
-      description: "Build professional relationships"
+      description: "Build professional relationships",
+      subCategorySlug: "promotion"
     }
   ];
 
   return (
-    <section className="py-16 bg-gradient-to-br from-yellow/5 to-viridian-green/5">
+    <section className="py-16 bg-gradient-to-br from-ethiopian-gold/5 to-viridian-green/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="font-extra-bold text-3xl sm:text-4xl text-eagle-green mb-4">
@@ -78,7 +85,7 @@ export default function GiftRecipientsSection() {
             return (
               <StaggerItem key={recipient.id}>
                 <Link
-                  to={`/gifts/${recipient.id}`}
+                  to={`/gifts?category=${recipient.subCategorySlug}`}
                   className="group block"
                 >
                   <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-lg transition-all duration-300 group-hover:scale-105 border border-viridian-green/20">

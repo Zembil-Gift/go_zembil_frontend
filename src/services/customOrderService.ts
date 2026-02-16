@@ -1,12 +1,11 @@
 import { apiService } from './apiService';
-import { formatCurrency, getCurrencyDecimals } from '@/lib/currency';
+import { formatCurrency } from '@/lib/currency';
 import type {
   CustomOrder,
   CreateCustomOrderRequest,
   ProposePriceRequest,
   PaymentInitResponse,
   PagedCustomOrderResponse,
-  CustomOrderFilters,
   CustomOrderStatus
 } from '../types/customOrders';
 
@@ -30,22 +29,17 @@ class CustomOrderService {
    * @param page - Page number (0-indexed)
    * @param size - Page size
    * @param status - Optional status filter
-   * @param currency - Optional preferred currency for price conversion (e.g., 'ETB', 'USD')
    */
   async getByCustomer(
     page: number = 0, 
     size: number = 20,
-    status?: CustomOrderStatus,
-    currency?: string
+    status?: CustomOrderStatus
   ): Promise<PagedCustomOrderResponse> {
     const queryParams = new URLSearchParams();
     queryParams.append('page', page.toString());
     queryParams.append('size', size.toString());
     if (status) {
       queryParams.append('status', status);
-    }
-    if (currency) {
-      queryParams.append('currency', currency);
     }
     
     const url = `/api/custom-orders/customer?${queryParams.toString()}`;
@@ -154,13 +148,9 @@ class CustomOrderService {
   /**
    * Get order by ID (accessible by customer, vendor, admin, delivery person)
    * @param orderId - The order ID
-   * @param currency - Optional preferred currency for price conversion (e.g., 'ETB', 'USD')
    */
-  async getById(orderId: number, currency?: string): Promise<CustomOrder> {
-    const url = currency 
-      ? `/api/custom-orders/${orderId}?currency=${currency}`
-      : `/api/custom-orders/${orderId}`;
-    return await apiService.getRequest<CustomOrder>(url);
+  async getById(orderId: number): Promise<CustomOrder> {
+    return await apiService.getRequest<CustomOrder>(`/api/custom-orders/${orderId}`);
   }
 
   /**
@@ -195,74 +185,23 @@ class CustomOrderService {
 
   /**
    * Format price for display using backend-provided major units.
-   * IMPORTANT: The backend now provides all prices in major units via the 'amount' fields.
-   * Use order.basePrice and order.finalPrice directly instead of this method when possible.
-   * 
-   * @deprecated Prefer using formatCurrency(order.basePrice, order.currencyCode) directly
    */
-  formatPrice(priceMinor: number, priceMajorOrCurrency?: number | string | null, currency?: string | null): string {
-    let amount: number;
-    let curr: string;
-    
-    // Handle backward compatibility: if second arg is string, it's currency (old signature)
-    if (typeof priceMajorOrCurrency === 'string' || priceMajorOrCurrency === null || priceMajorOrCurrency === undefined && currency === undefined) {
-      curr = (priceMajorOrCurrency as string) || 'ETB';
-      console.warn('formatPrice: Using deprecated minor units conversion. Backend should provide major units.');
-      const decimals = getCurrencyDecimals(curr);
-      amount = priceMinor / Math.pow(10, decimals);
-    } else {
-      // New signature: priceMajorOrCurrency is the major units - USE THIS
-      amount = priceMajorOrCurrency ?? 0;
-      curr = currency || 'ETB';
-    }
-    
-    return formatCurrency(amount, curr);
+  formatPrice(amount: number, currency: string = 'ETB'): string {
+    return formatCurrency(amount, currency);
   }
 
   /**
-   * Convert price from major units to minor units for API requests
-   * Use this ONLY when submitting prices to the backend.
-   */
-  toMinorUnits(amount: number, currency: string): number {
-    const decimals = getCurrencyDecimals(currency);
-    const multiplier = Math.pow(10, decimals);
-    return Math.round(amount * multiplier);
-  }
-
-  /**
-   * @deprecated Do not use this for display purposes.
-   * The backend now provides prices in major units via 'amount' fields.
-   */
-  toMajorUnits(amountMinor: number, currency: string): number {
-    console.warn('toMajorUnits is deprecated. Use backend-provided amount fields instead.');
-    const decimals = getCurrencyDecimals(currency);
-    const divisor = Math.pow(10, decimals);
-    return amountMinor / divisor;
-  }
-
-  /**
-   * Get order base price in major units from backend-provided field.
+   * Get order base price in major units.
    */
   getOrderBasePrice(order: CustomOrder): number {
-    // Backend provides basePrice in major units - use it directly
-    if (order.basePrice != null) return order.basePrice;
-    // DEPRECATED: Fallback for old data
-    console.warn('getOrderBasePrice: basePrice not provided by backend, falling back to conversion.');
-    return this.toMajorUnits(order.basePriceMinor, order.currencyCode);
+    return order.basePrice ?? 0;
   }
 
   /**
-   * Get order final price in major units from backend-provided field.
+   * Get order final price in major units.
    */
   getOrderFinalPrice(order: CustomOrder): number | undefined {
-    // Backend provides finalPrice in major units - use it directly
-    if (order.finalPrice != null) return order.finalPrice;
-    // DEPRECATED: Fallback for old data
-    if (order.finalPriceMinor != null) {
-      console.warn('getOrderFinalPrice: finalPrice not provided by backend, falling back to conversion.');
-      return this.toMajorUnits(order.finalPriceMinor, order.currencyCode);
-    }
-    return undefined;
+    return order.finalPrice ?? undefined;
   }
 
   /**

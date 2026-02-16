@@ -13,62 +13,10 @@ import { customOrderTemplateService } from "@/services/customOrderTemplateServic
 import type { CategoryWithTemplateCount } from "@/types/customOrders";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
+import { Search as SearchIcon, X } from "lucide-react";
+import { TemplateCard } from "./customer/CustomOrderTemplates";
+import { useAuth } from "@/hooks/useAuth";
 
-
-// const customOrderSchema = z.object({
-//   type: z.string().min(1, "Please select an order type"),
-//   title: z.string().min(3, "Title must be at least 3 characters").max(200, "Title must be less than 200 characters"),
-//   description: z.string().min(10, "Description must be at least 10 characters").max(2000, "Description must be less than 2000 characters"),
-//   budget: z.string().min(1, "Please enter your budget"),
-//   deadline: z.string().min(1, "Please select a deadline"),
-//   estimatedDelivery: z.string().optional(),
-//   recipientInfo: z.string().max(1000, "Recipient info must be less than 1000 characters").optional(),
-//   specialRequests: z.string().max(1000, "Special requests must be less than 1000 characters").optional(),
-//   referenceImages: z.array(z.any()).optional(),
-// });
-
-// type CustomOrderForm = z.infer<typeof customOrderSchema>;
-
-// Draft management functions
-// const DRAFT_KEY = 'custom-order-draft';
-
-// const saveDraft = (data: Partial<CustomOrderForm>) => {
-//   try {
-//     localStorage.setItem(DRAFT_KEY, JSON.stringify({
-//       ...data,
-//       savedAt: new Date().toISOString()
-//     }));
-//   } catch (error) {
-//     console.warn('Failed to save draft:', error);
-//   }
-// };
-
-// const loadDraft = (): Partial<CustomOrderForm> | null => {
-//   try {
-//     const stored = localStorage.getItem(DRAFT_KEY);
-//     if (stored) {
-//       const parsed = JSON.parse(stored);
-//       // Only load if saved within last 7 days
-//       const savedAt = new Date(parsed.savedAt);
-//       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-//       if (savedAt > weekAgo) {
-//         delete parsed.savedAt;
-//         return parsed;
-//       }
-//     }
-//   } catch (error) {
-//     console.warn('Failed to load draft:', error);
-//   }
-//   return null;
-// };
-//
-// const clearDraft = () => {
-//   try {
-//     localStorage.removeItem(DRAFT_KEY);
-//   } catch (error) {
-//     console.warn('Failed to clear draft:', error);
-//   }
-// };
 
 // Category icon mapping based on name
 const getCategoryIcon = (categoryName: string) => {
@@ -91,6 +39,8 @@ const getCategoryIcon = (categoryName: string) => {
 };
 
 function CustomOrdersContent() {
+  const { user, isInitialized } = useAuth();
+
   // State for "Why Choose" section visibility with localStorage persistence
   const [isFeaturesExpanded, setIsFeaturesExpanded] = useState(() => {
     const saved = localStorage.getItem('custom-orders-features-expanded');
@@ -111,10 +61,29 @@ function CustomOrdersContent() {
     localStorage.setItem('custom-orders-guide-expanded', isGuideExpanded.toString());
   }, [isGuideExpanded]);
 
-  // Fetch categories with template counts from API
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  // Handle debouncing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const { data: searchResults, isLoading: isSearching } = useQuery({
+    queryKey: ['custom-order-templates-search', debouncedSearchTerm, user?.preferredCurrencyCode ?? 'default'],
+    queryFn: () => customOrderTemplateService.searchTemplates(debouncedSearchTerm, undefined, 0, 20),
+    enabled: debouncedSearchTerm.length > 0 && isInitialized,
+  });
+
+  // Fetch categories with template counts from API (wait for auth so template prices have correct currency)
   const { data: categories, isLoading: isCategoriesLoading } = useQuery({
-    queryKey: ['custom-order-categories'],
+    queryKey: ['custom-order-categories', user?.preferredCurrencyCode ?? 'default'],
     queryFn: () => customOrderTemplateService.getCategoriesWithTemplates(),
+    enabled: isInitialized,
   });
 
   return (
@@ -147,6 +116,81 @@ function CustomOrdersContent() {
           </FadeIn>
         </div>
       </section>
+
+      {/* Search Bar Section */}
+      <div className="max-w-3xl mx-auto px-4 -mt-6 relative z-30">
+        <div className="bg-white rounded-2xl shadow-xl p-2 flex items-center gap-2 border border-eagle-green/10">
+          <div className="pl-4">
+            <SearchIcon className="h-5 w-5 text-eagle-green/40" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search custom order templates, artists, or categories..."
+            className="flex-1 py-3 px-2 outline-none text-eagle-green placeholder:text-eagle-green/30 font--light"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="p-2 hover:bg-light-cream rounded-xl transition-colors"
+            >
+              <X className="h-5 w-5 text-eagle-green/40" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Search Results */}
+      <AnimatePresence>
+        {debouncedSearchTerm && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font--bold text-eagle-green">
+                {isSearching ? 'Searching...' : `Found ${searchResults?.content?.length || 0} templates for "${debouncedSearchTerm}"`}
+              </h2>
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="text-eagle-green/60 hover:text-eagle-green text-sm flex items-center gap-1"
+              >
+                Clear search
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {isSearching ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl h-[400px] animate-pulse shadow-sm border border-eagle-green/5" />
+                ))}
+              </div>
+            ) : searchResults?.content && searchResults.content.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {searchResults.content.map((template) => (
+                  <TemplateCard key={template.id} template={template} />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-3xl p-12 text-center shadow-sm border border-eagle-green/10">
+                <div className="bg-light-cream w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <SearchIcon className="h-10 w-10 text-eagle-green/20" />
+                </div>
+                <h3 className="text-xl font--bold text-eagle-green mb-2">No templates found</h3>
+                <p className="text-eagle-green/60">Try adjusting your search terms or browse our categories below.</p>
+              </div>
+            )}
+            
+            <div className="mt-12 border-t border-eagle-green/10 pt-12">
+              <h3 className="text-xl font--bold text-eagle-green mb-6 text-center">Otherwise, browse by category</h3>
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
 
       {/* Features Section - Collapsible */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
@@ -363,7 +407,7 @@ function CustomOrdersContent() {
                 ))}
               </div>
             ) : categories && categories.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 py-2 px-2 mb-8">
                 {categories.map((category: CategoryWithTemplateCount, index: number) => {
                   const IconComponent = getCategoryIcon(category.categoryName);
                   return (

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Package,
@@ -10,13 +10,12 @@ import {
   Filter,
   ChevronRight,
   Store,
-  Calendar,
-  Loader2
+  Calendar
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
@@ -46,23 +45,19 @@ const STATUS_OPTIONS: { value: CustomOrderStatus | 'ALL'; label: string }[] = [
 
 function MyCustomOrdersContent() {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { user, isAuthenticated, isInitialized } = useAuth();
   const [statusFilter, setStatusFilter] = useState<CustomOrderStatus | 'ALL'>('ALL');
   const [page, setPage] = useState(0);
   
-  // Get user's preferred currency (fallback to USD)
-  const preferredCurrency = user?.preferredCurrencyCode || 'USD';
-
-  // Fetch customer's orders with preferred currency
+  // Fetch customer's orders (wait for auth so currency is correct)
   const { data: ordersData, isLoading, isError } = useQuery({
-    queryKey: ['my-custom-orders', page, statusFilter, preferredCurrency],
+    queryKey: ['my-custom-orders', page, statusFilter, user?.preferredCurrencyCode ?? 'default'],
     queryFn: () => customOrderService.getByCustomer(
       page, 
       20, 
-      statusFilter === 'ALL' ? undefined : statusFilter,
-      preferredCurrency
+      statusFilter === 'ALL' ? undefined : statusFilter
     ),
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && isInitialized,
   });
 
   const orders = ordersData?.content || [];
@@ -251,14 +246,13 @@ function MyCustomOrdersContent() {
                         <div className="text-right flex-shrink-0">
                           <p className="font-bold text-eagle-green text-lg">
                             {customOrderService.formatPrice(
-                              order.finalPriceMinor || order.basePriceMinor,
-                              order.finalPrice || order.basePrice,
-                              order.currency
+                              order.finalPrice != null ? order.finalPrice : order.basePrice ?? 0,
+                              order.currencyCode || order.currency
                             )}
                           </p>
-                          {order.finalPriceMinor && order.finalPriceMinor !== order.basePriceMinor && (
+                          {order.finalPriceMinor != null && order.finalPriceMinor !== order.basePriceMinor && (
                             <p className="text-xs text-eagle-green/50 line-through">
-                              {customOrderService.formatPrice(order.basePriceMinor, order.basePrice, order.currency)}
+                              {customOrderService.formatPrice(order.basePrice ?? 0, order.currencyCode || order.currency)}
                             </p>
                           )}
                           <ChevronRight className="h-5 w-5 text-eagle-green/30 ml-auto mt-2" />

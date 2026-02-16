@@ -1,4 +1,3 @@
-import React from "react";
 import { useTranslation } from "react-i18next";
 import { Video, PaintbrushVertical, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ export default function FeaturesSection() {
       title: t('homepage.features.videoMessages.title'),
       description: t('homepage.features.videoMessages.description'),
       learnMore: t('homepage.features.videoMessages.learnMore'),
-      gradient: "from-yellow to-june-bud"
+      gradient: "from-ethiopian-gold to-june-bud"
     },
     {
       icon: PaintbrushVertical,

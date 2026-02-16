@@ -10,8 +10,6 @@ import {
   Hash,
   Image as ImageIcon,
   Video,
-  ChevronRight,
-  Loader2
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +18,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import FadeIn from '@/components/animations/FadeIn';
 import { useAuth } from '@/hooks/useAuth';
+import { DiscountBadge } from '@/components/DiscountBadge';
+import { PriceWithDiscount } from '@/components/PriceWithDiscount';
 
 import { customOrderTemplateService } from '@/services/customOrderTemplateService';
 import type { CustomOrderTemplate, CustomOrderTemplateField } from '@/types/customOrders';
@@ -42,7 +42,7 @@ const getFieldTypeIcon = (fieldType: string) => {
 };
 
 // Template Card Component
-function TemplateCard({ template }: { template: CustomOrderTemplate }) {
+export function TemplateCard({ template }: { template: CustomOrderTemplate }) {
   const navigate = useNavigate();
   
   const sortedFields = useMemo(() => 
@@ -76,6 +76,17 @@ function TemplateCard({ template }: { template: CustomOrderTemplate }) {
               </div>
             )}
             
+            {/* Discount Badge */}
+            {template.activeDiscount && (
+              <div className="absolute top-3 left-3">
+                <DiscountBadge 
+                  discount={template.activeDiscount} 
+                  variant="compact" 
+                  targetCurrency={template.price?.currencyCode || template.currencyCode || 'ETB'}
+                />
+              </div>
+            )}
+            
             {/* Price Badge */}
             <div className="absolute bottom-3 right-3 flex gap-2">
               {template.negotiable === false && (
@@ -83,9 +94,21 @@ function TemplateCard({ template }: { template: CustomOrderTemplate }) {
                   Fixed Price
                 </Badge>
               )}
-              <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
-                {template.negotiable === false ? '' : 'From '}{customOrderTemplateService.formatTemplatePrice(template)}
-              </Badge>
+              {template.activeDiscount ? (
+                <div className="bg-gradient-to-r from-red-500 to-pink-500 px-3 py-1.5 rounded-lg backdrop-blur-sm shadow-md border border-red-500/70">
+                  <PriceWithDiscount
+                    originalPrice={template.price?.amount || 0}
+                    currency={template.price?.currencyCode || template.currencyCode || 'ETB'}
+                    discount={template.activeDiscount}
+                    size="small"
+                    theme="onRed"
+                  />
+                </div>
+              ) : (
+                <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
+                  {template.negotiable === false ? '' : 'From '}{customOrderTemplateService.formatTemplatePrice(template)}
+                </Badge>
+              )}
             </div>
           </div>
 
@@ -137,18 +160,15 @@ function TemplateCard({ template }: { template: CustomOrderTemplate }) {
 export default function CustomOrderTemplates() {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isInitialized } = useAuth();
   const [currentPage, setCurrentPage] = useState(0);
   const categoryIdNum = categoryId ? parseInt(categoryId) : 0;
-  
-  // Get user's preferred currency (fallback to USD)
-  const preferredCurrency = user?.preferredCurrencyCode || 'USD';
 
-  // Fetch templates for category with user's preferred currency
+  // Fetch templates for category - wait for auth so currency is correct
   const { data: templatesData, isLoading } = useQuery({
-    queryKey: ['custom-order-templates', categoryIdNum, currentPage, preferredCurrency],
-    queryFn: () => customOrderTemplateService.getByCategory(categoryIdNum, currentPage, 20, preferredCurrency),
-    enabled: categoryIdNum > 0,
+    queryKey: ['custom-order-templates', categoryIdNum, currentPage, user?.preferredCurrencyCode ?? 'default'],
+    queryFn: () => customOrderTemplateService.getByCategory(categoryIdNum, currentPage, 20),
+    enabled: categoryIdNum > 0 && isInitialized,
   });
 
   const templates = templatesData?.content || [];

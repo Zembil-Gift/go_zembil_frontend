@@ -252,8 +252,10 @@ export default function CreateProduct() {
                 console.error(`Failed to upload images for SKU ${sku.id}:`, skuImageError);
                 // Rollback: Delete the created product
                 try {
-                  await vendorService.deleteProduct(createdProduct.id);
-                  console.log(`Product ${createdProduct.id} rolled back due to image upload failure`);
+                  if (createdProduct?.id) {
+                    await vendorService.deleteProduct(createdProduct.id);
+                    console.log(`Product ${createdProduct.id} rolled back due to image upload failure`);
+                  }
                 } catch (deleteError) {
                   console.error("Failed to rollback product:", deleteError);
                 }
@@ -499,11 +501,24 @@ export default function CreateProduct() {
               </div>
 
               <div>
-                <Label htmlFor="occasion">Occasion</Label>
-                <Input
-                  id="occasion"
-                  placeholder="e.g., Birthday, Wedding, Christmas"
-                  {...form.register("occasion")}
+                <Label htmlFor="occasion">Occasion (Optional)</Label>
+                <Controller
+                  name="occasion"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="occasion">
+                        <SelectValue placeholder="Select occasion" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NEW_YEAR">New Year</SelectItem>
+                        <SelectItem value="BIRTHDAY">Birthday</SelectItem>
+                        <SelectItem value="TIMKET">Timket</SelectItem>
+                        <SelectItem value="EASTER">Easter</SelectItem>
+                        <SelectItem value="CHRISTMAS">Christmas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
               </div>
 

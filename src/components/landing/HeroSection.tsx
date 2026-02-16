@@ -1,4 +1,4 @@
-import { Search, Truck, Heart } from "lucide-react";
+import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,8 +21,8 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
           backgroundRepeat: 'repeat'
         }}></div>
       </div>
-      
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-48 sm:pb-56 lg:pb-64">
         <div className="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
           {/* Content */}
           <div className="mb-12 lg:mb-0">
@@ -37,13 +37,13 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
                 {t('homepage.hero.description')}
               </p>
             </FadeIn>
-            
+
             {/* Search Bar */}
             <FadeIn delay={0.6} duration={0.8}>
               <div className="bg-white rounded-xl p-2 flex items-center shadow-xl max-w-md">
-                <Input 
-                  type="text" 
-                  placeholder={t('homepage.hero.searchPlaceholder')} 
+                <Input
+                  type="text"
+                  placeholder={t('homepage.hero.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => onSearchChange(e.target.value)}
                   className="flex-1 px-4 py-3 text-charcoal placeholder-gray-500 bg-transparent border-none outline-none"
@@ -53,9 +53,9 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
                 </Button>
               </div>
             </FadeIn>
-            
+
             {/* Quick Stats */}
-            <div className="flex items-center space-x-8 mt-8 text-sm">
+            {/* <div className="flex items-center space-x-8 mt-8 text-sm">
               <div className="flex items-center space-x-2">
                 <Truck className="text-yellow" size={16} />
                 <span>{t('homepage.hero.freeDelivery')}</span>
@@ -64,20 +64,37 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
                 <Heart className="text-yellow" size={16} />
                 <span>{t('homepage.hero.happyRecipients')}</span>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Hero Image - Hidden on mobile */}
           <FadeIn delay={0.6} duration={0.8}>
             <div className="relative w-full h-full hidden lg:block">
-              <img 
-                src="/attached_assets/landing_page_img.png" 
-                alt="Ethiopian Gifts - Send Love Through Meaningful Gifts" 
+              <img
+                src="/attached_assets/landing_page_img.png"
+                alt="Ethiopian Gifts - Send Love Through Meaningful Gifts"
                 className="w-full h-full object-cover"
               />
             </div>
           </FadeIn>
         </div>
+      </div>
+
+      {/* Decorative Wave/Curve Transition — More wavy organic shape */}
+      <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] translate-y-px z-0 rotate-180">
+        <svg
+          className="relative block w-full h-[80px] sm:h-[120px] lg:h-[180px]"
+          data-name="Layer 1"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 1200 120"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5,73.84-4.36,147.54,16.88,218.2,35.26,69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113,3,1200,34.81V0Z"
+            className="fill-light-cream"
+            fillOpacity="1"
+          ></path>
+        </svg>
       </div>
     </section>
   );

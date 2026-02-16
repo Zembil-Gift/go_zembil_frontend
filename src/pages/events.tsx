@@ -3,14 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import FadeIn from '@/components/animations/FadeIn';
-import SlideIn from '@/components/animations/SlideIn';
-import { 
+import {
   Calendar, 
   MapPin, 
   Clock, 
   Search, 
   Filter, 
-  Globe, 
   ChevronDown,
   ChevronRight,
   Ticket,
@@ -23,8 +21,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { getEventImageUrl } from '@/utils/imageUtils';
-import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/lib/currency';
 import PageNavigator from '@/components/PageNavigator';
 import { reviewService } from '@/services/reviewService';
@@ -37,25 +42,14 @@ import {
   EVENT_CATEGORIES
 } from '@/types/events';
 import { eventOrderService, EventResponse } from '@/services/eventOrderService';
+import { useAuth } from '@/hooks/useAuth';
 
 // Helper function for badge colors
-const getBadgeColor = (badge: string) => {
-  switch (badge) {
-    case 'new': return 'bg-yellow/20 text-eagle-green border-yellow';
-    case 'limited': return 'bg-yellow/20 text-eagle-green border-yellow/50';
-    case 'popular': return 'bg-viridian-green/20 text-viridian-green border-viridian-green/50';
-    case 'refundable': return 'bg-june-bud/20 text-eagle-green border-june-bud';
-    default: return 'bg-gray-100 text-gray-700 border-gray-300';
-  }
-};
-
 export default function Events() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, isInitialized } = useAuth();
   
-  // Get user's preferred currency for API calls
-  const { user } = useAuth();
-  const preferredCurrency = user?.preferredCurrencyCode || 'ETB';
   
   // Parse URL parameters for filters
   const urlParams = new URLSearchParams(location.search);
@@ -78,19 +72,18 @@ export default function Events() {
   const [eventsPage, setEventsPage] = useState(0);
   const eventsPerPage = 12;
 
-  // Fetch real events from API with currency conversion
-  const { data: realEventsData, isLoading: realEventsLoading, error: eventsError, isFetching: eventsFetching } = useQuery({
-    queryKey: ['real-events', eventFilters, preferredCurrency, eventsPage],
+  // Fetch real events from API with currency conversion (wait for auth so currency is correct)
+  const { data: realEventsData, isLoading: realEventsLoading, isFetching: eventsFetching } = useQuery({
+    queryKey: ['real-events', eventFilters, eventsPage, user?.preferredCurrencyCode ?? 'default'],
     queryFn: async () => {
       try {
-        // Try real API first with user's preferred currency for price conversion
+        // Try real API first - backend resolves currency from user session
         const response = await eventOrderService.searchEvents(
           eventFilters.q,
           eventFilters.city,
           eventFilters.category ? parseInt(eventFilters.category) : undefined,
           eventsPage, // page from state
-          eventsPerPage, // size
-          preferredCurrency // Pass preferred currency for backend conversion
+          eventsPerPage // size
         );
         return response;
       } catch (error) {
@@ -99,6 +92,7 @@ export default function Events() {
       }
     },
     staleTime: 30000, // 30 seconds
+    enabled: isInitialized,
   });
 
   // Display events from API
@@ -130,11 +124,6 @@ export default function Events() {
     });
     setEventsPage(0);
   };
-
-  const getAvailableCities = (country?: Country) => {
-    if (!country) return [];
-    return CITIES[country];
-  };
   return (
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
       {/* Simplified Hero Section */}
@@ -143,11 +132,11 @@ export default function Events() {
           <FadeIn delay={0.1}>
             <div className="flex items-center gap-2 mb-2">
               <Ticket className="h-5 w-5 text-june-bud" />
-              <h1 className="text-2xl lg:text-3xl font-gotham-bold text-white">
+              <h1 className="text-2xl lg:text-3xl font-bold text-white">
                 Events & Experiences
               </h1>
             </div>
-            <p className="text-sm lg:text-base font-gotham-light text-white/80 max-w-2xl">
+            <p className="text-sm lg:text-base font-light text-white/80 max-w-2xl">
               Gift unforgettable moments from concerts to cultural celebrations
             </p>
           </FadeIn>
@@ -164,83 +153,92 @@ export default function Events() {
         >
           <div className="flex flex-col lg:flex-row gap-4 items-center">
             {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-eagle-green/60 h-5 w-5" />
+            <div className="flex-1 relative w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-eagle-green/60 h-4 w-4" />
               <Input
-                placeholder="Search events..."
+                placeholder="Search events, cities or categories..."
                 value={eventFilters.q}
                 onChange={(e) => updateEventFilters({ q: e.target.value })}
-                className="pl-10 h-12 bg-white border border-eagle-green/30 focus:border-viridian-green focus:ring-2 focus:ring-viridian-green/20 font-light"
+                className="pl-9 h-10 bg-light-cream/50 border-none focus:ring-1 focus:ring-viridian-green/20 rounded-xl text-sm font-light"
               />
             </div>
 
             {/* Quick filters */}
-            <div className="flex gap-3 flex-wrap">
-              {/* Country */}
-              <Select 
-                value={eventFilters.country || 'all'} 
-                onValueChange={(value) => {
-                  const country = value === 'all' ? undefined : (value as Country);
-                  updateEventFilters({ country, city: '' });
-                }}
-              >
-                <SelectTrigger className="w-32 h-12 bg-white border border-eagle-green/30 focus:border-viridian-green">
-                  <Globe className="h-4 w-4 text-eagle-green mr-1" />
-                  <SelectValue placeholder="Country" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Countries</SelectItem>
-                  <SelectItem value="ET">🇪🇹 Ethiopia</SelectItem>
-                  <SelectItem value="US">🇺🇸 United States</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* City */}
-              <Select 
-                value={eventFilters.city || 'all'} 
-                onValueChange={(value) => {
-                  const city = value === 'all' ? '' : value;
-                  updateEventFilters({ city });
-                }}
-                disabled={!eventFilters.country}
-              >
-                <SelectTrigger className="w-40 h-12 bg-white border border-eagle-green/30 focus:border-viridian-green">
-                  <MapPin className="h-4 w-4 text-eagle-green mr-1" />
-                  <SelectValue placeholder="City" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Cities</SelectItem>
-                  {getAvailableCities(eventFilters.country).map(city => (
-                    <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
+            <div className="flex gap-2 w-full lg:w-auto overflow-x-auto no-scrollbar pb-1 lg:pb-0">
+              {/* Location Select (combines country and city) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-10 px-3 bg-light-cream/50 text-eagle-green border-none rounded-xl gap-2 flex-shrink-0">
+                    <MapPin className="h-4 w-4" />
+                    <span className="text-xs font-semibold">
+                      {eventFilters.city ? 
+                        Object.values(CITIES).flat().find(c => c.id === eventFilters.city)?.name : 
+                        eventFilters.country === 'ET' ? 'Ethiopia' :
+                        eventFilters.country === 'US' ? 'United States' : 'All Locations'
+                      }
+                    </span>
+                    <ChevronDown className="h-3 w-3 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 rounded-xl border-eagle-green/10">
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-eagle-green/50">Location</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => updateEventFilters({ country: undefined, city: '' })} className="text-sm">
+                    All Locations
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-eagle-green/50">Ethiopia</DropdownMenuLabel>
+                  {CITIES.ET.map(city => (
+                    <DropdownMenuItem 
+                      key={city.id} 
+                      onClick={() => updateEventFilters({ country: 'ET', city: city.id })}
+                      className="text-sm"
+                    >
+                      {city.name}
+                    </DropdownMenuItem>
                   ))}
-                </SelectContent>
-              </Select>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-eagle-green/50">United States</DropdownMenuLabel>
+                  {CITIES.US.map(city => (
+                    <DropdownMenuItem 
+                      key={city.id} 
+                      onClick={() => updateEventFilters({ country: 'US', city: city.id })}
+                      className="text-sm"
+                    >
+                      {city.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-              {/* Sort */}
-              <Select 
-                value={eventFilters.sort || ''} 
-                onValueChange={(value) => updateEventFilters({ sort: value })}
-              >
-                <SelectTrigger className="w-36 h-12 bg-white border border-eagle-green/30 focus:border-viridian-green">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="popular">Most Popular</SelectItem>
-                  <SelectItem value="date">By Date</SelectItem>
-                  <SelectItem value="price-low">Price: Low to High</SelectItem>
-                  <SelectItem value="price-high">Price: High to Low</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Sort Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-10 px-3 bg-light-cream/50 text-eagle-green border-none rounded-xl gap-2 flex-shrink-0">
+                    <Filter className="h-4 w-4" />
+                    <span className="text-xs font-semibold">
+                      {eventFilters.sort === 'price-low' ? 'Price: Low' :
+                       eventFilters.sort === 'price-high' ? 'Price: High' :
+                       eventFilters.sort === 'date' ? 'By Date' : 'Popular'}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-xl border-eagle-green/10">
+                  <DropdownMenuItem onClick={() => updateEventFilters({ sort: 'popular' })} className="text-sm">Most Popular</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => updateEventFilters({ sort: 'date' })} className="text-sm">By Date</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => updateEventFilters({ sort: 'price-low' })} className="text-sm">Price: Low to High</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => updateEventFilters({ sort: 'price-high' })} className="text-sm">Price: High to Low</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {/* More Filters Toggle */}
               <Button
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowFilters(!showFilters)}
-                className="h-12 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
+                className={`h-10 px-3 rounded-xl gap-2 flex-shrink-0 ${showFilters ? 'bg-eagle-green text-white' : 'bg-light-cream/50 text-eagle-green'}`}
               >
-                <Filter className="h-4 w-4 mr-2" />
-                More Filters
-                <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                <Sparkles className="h-4 w-4" />
+                <span className="text-xs font-semibold whitespace-nowrap">More Filters</span>
               </Button>
             </div>
           </div>
