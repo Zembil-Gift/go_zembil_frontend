@@ -18,7 +18,7 @@ import Wishlist from "@/pages/Wishlist";
 import ProductDetail from "@/pages/product-detail";
 import VendorDetail from "@/pages/vendor-detail";
 import CustomOrders from "@/pages/custom-orders";
-import Search from "@/pages/Search";
+// import Search from "@/pages/Search";
 import Occasions from "@/pages/occasions";
 import OccasionCategory from "@/pages/occasion-category";
 import Collections from "@/pages/collections";
@@ -61,6 +61,8 @@ import AdminDelivery from "@/pages/admin/AdminDelivery";
 import AdminFeaturedAds from "@/pages/admin/AdminFeaturedAds";
 import AdminCustomTemplates from "@/pages/admin/AdminCustomTemplates";
 import AdminCustomOrders from "@/pages/admin/AdminCustomOrders";
+import AdminPaymentMethods from "@/pages/admin/AdminPaymentMethods";
+import AdminCampaigns from "@/pages/admin/AdminCampaigns";
 import AdminRoles from "@/pages/admin/AdminRoles";
 import AdminPermissions from "@/pages/admin/AdminPermissions";
 
@@ -92,6 +94,14 @@ import VendorCustomTemplateDetail from "@/pages/vendor/VendorCustomTemplateDetai
 import CreateCustomTemplate from "@/pages/vendor/CreateCustomTemplate";
 import VendorCustomOrders from "@/pages/vendor/VendorCustomOrders";
 import VendorCustomOrderDetail from "@/pages/vendor/VendorCustomOrderDetail";
+import VendorProductDetail from "@/pages/vendor/VendorProductDetail";
+import VendorEventDetail from "@/pages/vendor/VendorEventDetail";
+import VendorServiceDetail from "@/pages/vendor/VendorServiceDetail";
+import VendorDiscountsPage from "@/pages/vendor/VendorDiscountsPage";
+import CreateDiscount from "@/pages/vendor/CreateDiscount";
+import VendorDiscountDetail from "@/pages/vendor/VendorDiscountDetail";
+import EditDiscount from "@/pages/vendor/EditDiscount";
+import VendorDiscountUsages from "@/pages/vendor/VendorDiscountUsages";
 import MyCustomOrders from "@/pages/customer/MyCustomOrders";
 import CustomerCustomOrderDetail from "@/pages/customer/CustomerCustomOrderDetail";
 import CustomOrderCategories from "@/pages/customer/CustomOrderCategories";
@@ -264,28 +274,7 @@ function DeliveryRoute({ children }: { children: React.ReactNode }) {
 }
 
 function HomeRoute() {
-  const { isAuthenticated, isLoading, user } = useAuth();
-
-  if (isLoading || (isAuthenticated && !user)) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-ethiopian-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const userRole = user?.role?.toUpperCase();
-  if (isAuthenticated && (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN')) {
-    return <Navigate to="/admin" replace />;
-  }
-
-  if (isAuthenticated && user?.role?.toUpperCase() === 'DELIVERY_PERSON') {
-    return <Navigate to="/delivery" replace />;
-  }
-
+  // Allow all users to browse home page - no forced redirects
   return <Landing />;
 }
 
@@ -312,7 +301,7 @@ export default function Router() {
           <Route path="shop" element={<Shop />} />
           <Route path="shop/:categorySlug" element={<Shop />} />
           <Route path="shop/category/:subcategorySlug" element={<Shop />} />
-          <Route path="search" element={<Search />} />
+          {/* <Route path="search" element={<Search />} /> */}
           <Route path="gift-experiences" element={<Navigate to="/events" replace />} />
           <Route path="occasions" element={<Occasions />} />
           <Route path="occasions/:categorySlug" element={<OccasionCategory />} />
@@ -464,18 +453,26 @@ export default function Router() {
           <Route index element={<VendorOverview />} />
           <Route path="products" element={<VendorProductsPage />} />
           <Route path="products/new" element={<CreateProduct />} />
+          <Route path="products/:id" element={<VendorProductDetail />} />
           <Route path="products/:id/edit" element={<EditProduct />} />
           <Route path="products/:id/price" element={<ProductPriceUpdate />} />
           <Route path="events" element={<VendorEventsPage />} />
           <Route path="events/new" element={<CreateEvent />} />
+          <Route path="events/:id" element={<VendorEventDetail />} />
           <Route path="events/:id/edit" element={<EditEvent />} />
           <Route path="events/:id/price" element={<EventPriceUpdate />} />
           <Route path="services" element={<VendorServicesPage />} />
           <Route path="services/new" element={<CreateService />} />
+          <Route path="services/:id" element={<VendorServiceDetail />} />
           <Route path="services/:id/edit" element={<EditService />} />
           <Route path="service-orders" element={<VendorServiceOrders />} />
           <Route path="service-calendar" element={<VendorServiceCalendar />} />
           <Route path="product-orders" element={<VendorProductOrders />} />
+          <Route path="discounts" element={<VendorDiscountsPage />} />
+          <Route path="discounts/new" element={<CreateDiscount />} />
+          <Route path="discounts/:id" element={<VendorDiscountDetail />} />
+          <Route path="discounts/:id/edit" element={<EditDiscount />} />
+          <Route path="discounts/:id/usages" element={<VendorDiscountUsages />} />
           <Route path="custom-templates" element={<VendorCustomTemplates />} />
           <Route path="custom-templates/new" element={<CreateCustomTemplate />} />
           <Route path="custom-templates/:id" element={<VendorCustomTemplateDetail />} />
@@ -506,9 +503,11 @@ export default function Router() {
           {/* <Route path="delivery-personnel" element={<AdminDeliveryPersonnel />} />
           <Route path="order-assignments" element={<AdminOrderAssignments />} />
           <Route path="delivery-confirmations" element={<AdminDeliveryConfirmations />} /> */}
+          <Route path="campaigns" element={<AdminCampaigns />} />
           <Route path="featured-ads" element={<AdminFeaturedAds />} />
           <Route path="custom-templates" element={<AdminCustomTemplates />} />
           <Route path="custom-orders" element={<AdminCustomOrders />} />
+          <Route path="payment-methods" element={<AdminPaymentMethods />} />
           <Route path="roles" element={<AdminRoles />} />
           <Route path="permissions" element={<AdminPermissions />} />
         </Route>
