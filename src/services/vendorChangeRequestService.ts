@@ -226,26 +226,7 @@ class VendorChangeRequestService {
     const currency = priceDto.currencyCode || defaultCurrency;
     const decimals = currency === 'ETB' ? 0 : currency === 'USD' ? 2 : 2;
     const symbol = currency === 'ETB' ? 'ETB ' : currency === 'USD' ? '$' : `${currency} `;
-    
-    if (priceDto.amount != null) {
-      return `${symbol}${priceDto.amount.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
-    }
-    
-    console.warn('formatPrice: amount field missing, falling back to unitAmountMinor conversion.');
-    const divisor = Math.pow(10, decimals);
-    const amount = priceDto.unitAmountMinor ? priceDto.unitAmountMinor / divisor : 0;
-    return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
-  }
-
-  /**
-   * @deprecated Use formatPrice with PriceDto instead. Backend provides major units.
-   */
-  formatPriceMinor(amountMinor: number, currency: string = 'ETB'): string {
-    console.warn('formatPriceMinor is deprecated. Use formatPrice with PriceDto instead.');
-    const decimals = currency === 'ETB' ? 0 : currency === 'USD' ? 2 : 2;
-    const divisor = Math.pow(10, decimals);
-    const amount = amountMinor / divisor;
-    const symbol = currency === 'ETB' ? 'ETB ' : currency === 'USD' ? '$' : `${currency} `;
+    const amount = priceDto.amount ?? 0;
     return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
   }
 

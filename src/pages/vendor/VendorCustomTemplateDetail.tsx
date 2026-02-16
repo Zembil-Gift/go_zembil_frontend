@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +38,6 @@ import {
   Hash,
   Video,
   Clock,
-  User,
   Tag,
   AlertCircle,
   CheckCircle,
@@ -53,7 +51,7 @@ export default function VendorCustomTemplateDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isInitialized } = useAuth();
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editPriceDialogOpen, setEditPriceDialogOpen] = useState(false);
@@ -65,22 +63,22 @@ export default function VendorCustomTemplateDetail() {
   const { data: vendorProfile } = useQuery({
     queryKey: ['vendor', 'profile'],
     queryFn: () => vendorService.getMyProfile(),
-    enabled: isAuthenticated && isVendor,
+    enabled: isAuthenticated && isVendor && isInitialized,
   });
 
-  // Fetch template details
+  // Fetch template details (wait for auth so currency is correct)
   const { data: template, isLoading, error } = useQuery({
-    queryKey: ['custom-template', id],
+    queryKey: ['custom-template', id, user?.preferredCurrencyCode ?? 'default'],
     queryFn: () => customOrderTemplateService.getById(Number(id)),
-    enabled: !!id && isAuthenticated && isVendor,
+    enabled: !!id && isAuthenticated && isVendor && isInitialized,
   });
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: () => customOrderTemplateService.delete(Number(id)),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: "Success", description: "Template deleted successfully" });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-templates'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-templates'] });
       navigate('/vendor/custom-templates');
     },
     onError: (error: Error) => {
@@ -91,9 +89,9 @@ export default function VendorCustomTemplateDetail() {
   // Update price mutation
   const updatePriceMutation = useMutation({
     mutationFn: (price: number) => customOrderTemplateService.update(Number(id), { basePrice: price }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: "Success", description: "Price updated successfully" });
-      queryClient.invalidateQueries({ queryKey: ['custom-template', id] });
+      await queryClient.invalidateQueries({ queryKey: ['custom-template', id] });
       setEditPriceDialogOpen(false);
       setNewPrice("");
     },
@@ -135,7 +133,11 @@ export default function VendorCustomTemplateDetail() {
   const handleUpdatePrice = () => {
     const price = parseFloat(newPrice);
     if (isNaN(price) || price < 0) {
-      toast.error("Please enter a valid price");
+      toast({
+        title: "Error",
+        description: "Please enter a valid price",
+        variant: "destructive",
+      });
       return;
     }
     updatePriceMutation.mutate(price);
@@ -399,9 +401,12 @@ export default function VendorCustomTemplateDetail() {
               <CardContent>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-eagle-green">
-                    {customOrderTemplateService.formatTemplatePrice(template)}
+                    {customOrderTemplateService.formatVendorTemplatePrice(template)}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
+                    Your earnings per order
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
                     {template.negotiable === false ? 'Fixed price (no negotiation)' : 'Base price (negotiable)'}
                   </p>
                   
@@ -411,7 +416,7 @@ export default function VendorCustomTemplateDetail() {
                       size="sm"
                       className="mt-4"
                       onClick={() => {
-                        const priceInfo = customOrderTemplateService.getTemplatePrice(template);
+                        const priceInfo = customOrderTemplateService.getVendorTemplatePrice(template);
                         setNewPrice(priceInfo ? priceInfo.amount.toString() : "");
                         setEditPriceDialogOpen(true);
                       }}

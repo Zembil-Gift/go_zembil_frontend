@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -12,7 +12,6 @@ import {
   User,
   Filter,
   Search,
-  ArrowLeft,
   DollarSign,
   MessageSquare,
   Eye,
@@ -27,7 +26,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
 import { customOrderService } from '@/services/customOrderService';
@@ -35,8 +33,6 @@ import type { CustomOrder, CustomOrderStatus } from '@/types/customOrders';
 
 export default function VendorCustomOrders() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -186,13 +182,13 @@ export default function VendorCustomOrders() {
               <div className="text-right flex-shrink-0">
                 <p className="font-bold text-eagle-green">
                   {order.finalVendorPrice || order.finalVendorPriceMinor 
-                    ? customOrderService.formatPrice(order.finalVendorPriceMinor, order.finalVendorPrice, order.currencyCode)
-                    : customOrderService.formatPrice(order.baseVendorPriceMinor || order.basePriceMinor, order.baseVendorPrice || order.basePrice, order.currencyCode)
+                    ? customOrderService.formatPrice(order.finalVendorPrice ?? 0, order.currencyCode)
+                    : customOrderService.formatPrice(order.baseVendorPrice ?? order.basePrice ?? 0, order.currencyCode)
                   }
                 </p>
                 {order.finalVendorPriceMinor && order.baseVendorPriceMinor && order.finalVendorPriceMinor !== order.baseVendorPriceMinor && (
                   <p className="text-xs text-eagle-green/60 line-through">
-                    {customOrderService.formatPrice(order.baseVendorPriceMinor, order.baseVendorPrice, order.currencyCode)}
+                    {customOrderService.formatPrice(order.baseVendorPrice ?? 0, order.currencyCode)}
                   </p>
                 )}
                 <p className="text-xs text-eagle-green/60 mt-1">
@@ -297,18 +293,35 @@ export default function VendorCustomOrders() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Custom Orders</h2>
-        <Button
-          variant="outline"
-          onClick={() => refetch()}
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-6"
         >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-eagle-green mb-1">
+                Custom Orders
+              </h1>
+              <p className="font-light text-eagle-green/70">
+                Track and manage custom orders from customers
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+        </motion.div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <Card>
@@ -501,6 +514,7 @@ export default function VendorCustomOrders() {
             </TabsContent>
           </Tabs>
         )}
+      </div>
     </div>
   );
 }
