@@ -120,7 +120,7 @@ export const certificateService = {
     const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/vendor-certificates/vendor/${vendorId}/pdf`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${tokenManager.getAccessToken()}`,
       },
     });
     

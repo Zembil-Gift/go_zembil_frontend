@@ -9,14 +9,15 @@ interface CartItem {
   image: string;
   quantity: number;
   skuId?: number;
-  skuCode?: string;   // Internal code for vendor management
-  skuName?: string;   // Display name shown to customers
+  skuCode?: string;
+  skuName?: string;
   customization?: any;
 }
 
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
+  appliedDiscountCode: string | null;
   addItem: (item: Omit<CartItem, 'id'>) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
@@ -24,6 +25,7 @@ interface CartStore {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
+  setAppliedDiscountCode: (code: string | null) => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
 }
@@ -33,6 +35,7 @@ export const useCartStore = create<CartStore>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      appliedDiscountCode: null,
       addItem: (item) => {
         const items = get().items;
         const existingItem = items.find(i =>
@@ -70,7 +73,7 @@ export const useCartStore = create<CartStore>()(
         });
       },
       clearCart: () => {
-        set({ items: [] });
+        set({ items: [], appliedDiscountCode: null });
       },
       openCart: () => {
         set({ isOpen: true });
@@ -80,6 +83,9 @@ export const useCartStore = create<CartStore>()(
       },
       toggleCart: () => {
         set({ isOpen: !get().isOpen });
+      },
+      setAppliedDiscountCode: (code) => {
+        set({ appliedDiscountCode: code });
       },
       getTotalItems: () => {
         return get().items.reduce((total, item) => total + item.quantity, 0);
