@@ -12,11 +12,9 @@ export interface CurrencyDto {
 
 export interface PriceData {
   id?: number;
-  unitAmountMinor?: number;
-  amount?: number;        // Backend provides this in major units - USE THIS FOR DISPLAY
+  amount?: number;
   currencyCode?: string | null;
   currencyId?: number | null;
-  useExchangeRate?: boolean;
   active?: boolean;
 }
 
@@ -69,11 +67,6 @@ export function getCurrencySymbol(currencyCode: string | undefined | null): stri
   return DEFAULT_CURRENCIES[code]?.symbol ?? `${code} `;
 }
 
-/**
- * Format a price amount (in MAJOR units) for display.
- * IMPORTANT: The amount should already be in major units (e.g., 100.50 for $100.50).
- * DO NOT pass minor units to this function - the backend provides amounts in major units.
- */
 export function formatCurrency(amount: number | string, currency: string | undefined | null = 'USD'): string {
   const curr = currency || 'ETB';
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -94,55 +87,22 @@ export function formatCurrency(amount: number | string, currency: string | undef
   })}`;
 }
 
-/**
- * Format a price amount (in MAJOR units) for display.
- * Alias for formatCurrency.
- */
 export function formatPrice(amount: number | string, currency: string = 'USD'): string {
   return formatCurrency(amount, currency);
 }
 
-/**
- * Format a price from a PriceData DTO.
- * Uses the backend-provided 'amount' field (in major units) directly.
- * NO CONVERSION IS DONE - the backend has already converted to the preferred currency.
- */
 export function formatPriceFromDto(
   price: PriceData | null | undefined,
   fallbackCurrency: string = 'USD'
 ): string {
   if (!price) return formatCurrency(0, fallbackCurrency);
   const currencyCode = price.currencyCode || fallbackCurrency;
-  
-  // IMPORTANT: Backend provides 'amount' in major units - use it directly!
-  // Only fall back to unitAmountMinor conversion if amount is missing (legacy support)
-  if (price.amount != null) {
-    return formatCurrency(price.amount, currencyCode);
-  }
-  
-  // DEPRECATED: Legacy fallback for old data without 'amount' field
-  console.warn('formatPriceFromDto: amount field missing, falling back to unitAmountMinor conversion. This should not happen with updated backend.');
-  const amount = price.unitAmountMinor != null ? price.unitAmountMinor / Math.pow(10, getCurrencyDecimals(currencyCode)) : 0;
-  return formatCurrency(amount, currencyCode);
+  return formatCurrency(price.amount ?? 0, currencyCode);
 }
 
-/**
- * Get the numeric price amount from a PriceData DTO.
- * Uses the backend-provided 'amount' field (in major units) directly.
- * NO CONVERSION IS DONE - the backend has already converted to the preferred currency.
- */
-export function getPriceAmount(price: PriceData | null | undefined, fallbackCurrency: string = 'USD'): number {
-  if (!price) return 0;
-  
-  // IMPORTANT: Backend provides 'amount' in major units - use it directly!
-  if (price.amount != null) {
-    return price.amount;
-  }
-  
-  // DEPRECATED: Legacy fallback for old data without 'amount' field
-  console.warn('getPriceAmount: amount field missing, falling back to unitAmountMinor conversion. This should not happen with updated backend.');
-  const currencyCode = price.currencyCode || fallbackCurrency;
-  return price.unitAmountMinor != null ? price.unitAmountMinor / Math.pow(10, getCurrencyDecimals(currencyCode)) : 0;
+/** Get the numeric price amount from a PriceData DTO (in major units). */
+export function getPriceAmount(price: PriceData | null | undefined): number {
+  return price?.amount ?? 0;
 }
 
 export function getPriceCurrency(price: PriceData | null | undefined, fallback: string = 'USD'): string {
@@ -156,10 +116,7 @@ export interface PriceParts {
   formatted: string;
 }
 
-/**
- * Get individual parts of a formatted price for custom display.
- * Amount should be in MAJOR units (backend provides this).
- */
+/** Get individual parts of a formatted price for custom display. */
 export function getPriceParts(amount: number | string, currency: string = 'USD'): PriceParts {
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   const symbol = getCurrencySymbol(currency);
@@ -191,30 +148,79 @@ export function getPriceParts(amount: number | string, currency: string = 'USD')
   };
 }
 
+/** Get discount amount in major units from backend validation results. */
+export function getDiscountAmountForDisplay(
+  discountResult: {
+    applicable: boolean;
+    discountAmount?: number;
+    discountAmountMinor?: number;
+    currency?: string;
+  } | null | undefined,
+  targetCurrency: string
+): number {
+  if (!discountResult?.applicable) return 0;
+  if (discountResult.discountAmount != null) return discountResult.discountAmount;
+  if (discountResult.discountAmountMinor) {
+    const currency = discountResult.currency || targetCurrency;
+    return discountResult.discountAmountMinor / Math.pow(10, getCurrencyDecimals(currency));
+  }
+  return 0;
+}
+
+/** Calculate discounted price using backend-provided discount data (all values in major units). */
+export function calculateDiscountedPrice(
+  originalPrice: number,
+  _targetCurrency: string,
+  discount?: {
+    discountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
+    discountPercentage?: number;
+    fixedAmount?: number;
+    fixedAmountMinor?: number;
+    currency?: string;
+    maxDiscountAmount?: number;
+    maxDiscountAmountMinor?: number;
+  } | null
+): number {
+  if (!discount) return originalPrice;
+
+  if (discount.discountType === 'PERCENTAGE' && discount.discountPercentage) {
+    let discountedPrice = originalPrice * (1 - discount.discountPercentage / 100);
+
+    const maxDiscount = discount.maxDiscountAmount
+      ?? (discount.maxDiscountAmountMinor != null && discount.currency
+          ? discount.maxDiscountAmountMinor / Math.pow(10, getCurrencyDecimals(discount.currency))
+          : null);
+
+    if (maxDiscount != null) {
+      const actualDiscount = originalPrice - discountedPrice;
+      if (actualDiscount > maxDiscount) {
+        discountedPrice = originalPrice - maxDiscount;
+      }
+    }
+
+    return discountedPrice;
+  }
+
+  if (discount.discountType === 'FIXED_AMOUNT') {
+    const fixedDiscount = discount.fixedAmount
+      ?? (discount.fixedAmountMinor != null && discount.currency
+          ? discount.fixedAmountMinor / Math.pow(10, getCurrencyDecimals(discount.currency))
+          : 0);
+    return Math.max(0, originalPrice - fixedDiscount);
+  }
+
+  return originalPrice;
+}
+
 export async function initCurrencies(): Promise<void> {
   await fetchCurrencies();
 }
 
-/**
- * Convert major units to minor units for API requests.
- * Use this ONLY when submitting prices to the backend.
- */
+/** Convert major units to minor units for API requests. */
 export function toMinorUnits(amount: number, currencyCode: string): number {
   const decimals = getCurrencyDecimals(currencyCode);
   const multiplier = Math.pow(10, decimals);
   return Math.round(amount * multiplier);
-}
-
-/**
- * DEPRECATED: Do not use this for display purposes.
- * The backend now provides 'amount' field in major units directly.
- * This function should only be used for legacy data migration or debugging.
- */
-export function toMajorUnits(minorAmount: number, currencyCode: string): number {
-  console.warn('toMajorUnits is deprecated. Use the backend-provided amount field instead.');
-  const decimals = getCurrencyDecimals(currencyCode);
-  const divisor = Math.pow(10, decimals);
-  return minorAmount / divisor;
 }
 
 export { fetchCurrencies };
