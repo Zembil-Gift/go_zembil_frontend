@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   CheckCircle,
@@ -23,7 +23,6 @@ import {
   X,
   Clock,
   CreditCard,
-  Package,
   Truck
 } from 'lucide-react';
 
@@ -98,7 +97,7 @@ export default function VendorCustomOrderDetail() {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isInitialized } = useAuth();
   
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'details');
   const [priceDialogOpen, setPriceDialogOpen] = useState(false);
@@ -111,9 +110,6 @@ export default function VendorCustomOrderDetail() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to get the order currency (backend sends currencyCode)
-  const getOrderCurrency = (order: any): string => {
-    return order?.currencyCode || order?.currency || 'USD';
-  };
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
@@ -131,17 +127,17 @@ export default function VendorCustomOrderDetail() {
   const { data: vendorProfile } = useQuery({
     queryKey: ['vendor', 'profile'],
     queryFn: () => vendorService.getMyProfile(),
-    enabled: isAuthenticated && isVendor,
+    enabled: isAuthenticated && isVendor && isInitialized,
   });
 
   const vendorCurrency = getVendorCurrency(vendorProfile);
 
-  // Fetch order details using vendor-specific endpoint
+  // Fetch order details using vendor-specific endpoint (wait for auth so currency is correct)
   // The backend will automatically return prices in vendor's preferred currency
   const { data: order, isLoading: orderLoading } = useQuery({
-    queryKey: ['custom-order', 'vendor', orderIdNum],
+    queryKey: ['custom-order', 'vendor', orderIdNum, user?.preferredCurrencyCode ?? 'default'],
     queryFn: () => customOrderService.getByIdForVendor(orderIdNum),
-    enabled: isAuthenticated && isVendor && orderIdNum > 0,
+    enabled: isAuthenticated && isVendor && orderIdNum > 0 && isInitialized,
   });
 
   // Fetch chat messages
@@ -172,11 +168,11 @@ export default function VendorCustomOrderDetail() {
   const proposePriceMutation = useMutation({
     mutationFn: ({ price, currency }: { price: number; currency: string }) => 
       customOrderService.proposePrice(orderIdNum, price, currency),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: 'Price Proposed', description: 'Your price proposal has been sent to the customer.' });
-      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['custom-order', 'vendor', orderIdNum] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
       setPriceDialogOpen(false);
       setProposedPrice('');
     },
@@ -187,11 +183,11 @@ export default function VendorCustomOrderDetail() {
 
   const markInProgressMutation = useMutation({
     mutationFn: () => customOrderService.markInProgress(orderIdNum),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: 'Status Updated', description: 'Order marked as in progress.' });
-      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['custom-order', 'vendor', orderIdNum] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -200,11 +196,11 @@ export default function VendorCustomOrderDetail() {
 
   const markCompletedMutation = useMutation({
     mutationFn: () => customOrderService.markCompleted(orderIdNum),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: 'Order Completed', description: 'Order has been marked as completed.' });
-      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['custom-order', 'vendor', orderIdNum] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -213,11 +209,11 @@ export default function VendorCustomOrderDetail() {
 
   const cancelMutation = useMutation({
     mutationFn: (reason: string) => customOrderService.cancel(orderIdNum, reason),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: 'Order Cancelled', description: 'The order has been cancelled.' });
-      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['custom-order', 'vendor', orderIdNum] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
       setCancelDialogOpen(false);
       setCancelReason('');
     },
@@ -248,11 +244,11 @@ export default function VendorCustomOrderDetail() {
   const handleProposePrice = () => {
     const price = parseFloat(proposedPrice);
     if (price > 0) {
-      // Validate: warn if proposed price is more than 10x the base price
-      const basePrice = order.basePrice || (order.basePriceMinor / 100);
-      if (price > basePrice * 10) {
+      // Validate: warn if proposed price is more than 10x the final price (after discount)
+      const finalPrice = order?.finalPrice || order?.finalVendorPrice || order?.basePrice || 0;
+      if (price > finalPrice * 10) {
         const confirmed = window.confirm(
-          `Warning: The proposed price (${customOrderService.formatPrice(0, price, vendorCurrency)}) is significantly higher than the base price (${customOrderService.formatPrice(order.basePriceMinor, basePrice, vendorCurrency)}).\n\nAre you sure you want to proceed?`
+          `Warning: The proposed price (${customOrderService.formatPrice(price, vendorCurrency)}) is significantly higher than the current price (${customOrderService.formatPrice(finalPrice, vendorCurrency)}).\n\nAre you sure you want to proceed?`
         );
         if (!confirmed) return;
       }
@@ -413,20 +409,20 @@ export default function VendorCustomOrderDetail() {
   const currentStatusIndex = timeline.findIndex(s => s.status === order.status);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-eagle-green text-white">
-        <div className="container mx-auto px-4 py-6">
+      <div className="bg-white text-gray-900 py-6 border-b border-gray-200">
+        <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" asChild className="text-white hover:bg-white/10">
+              <Button variant="ghost" size="icon" asChild className="text-gray-700 hover:bg-gray-100">
                 <Link to="/vendor/custom-orders">
                   <ArrowLeft className="h-5 w-5" />
                 </Link>
               </Button>
               <div>
                 <h1 className="text-xl font-bold">Order #{order.orderNumber}</h1>
-                <p className="text-emerald-100 text-sm">{order.templateName}</p>
+                <p className="text-gray-500 text-sm">{order.templateName}</p>
               </div>
             </div>
             <Badge className={`${statusBadgeColor} border-none text-sm`}>
@@ -620,7 +616,7 @@ export default function VendorCustomOrderDetail() {
                           </div>
                         ) : (
                           orderChatService.sortMessagesBySentTime(messages).map((msg: OrderChatMessage) => {
-                            const isOwnMessage = msg.senderId === user?.id;
+                            const isOwnMessage = String(msg.senderId) === user?.id;
                             return (
                               <motion.div
                                 key={msg.id}
@@ -780,7 +776,7 @@ export default function VendorCustomOrderDetail() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-eagle-green">
-                                  {customOrderService.formatPrice(history.priceMinor, history.price, history.currencyCode || vendorCurrency)}
+                                  {customOrderService.formatPrice(history.price ?? 0, history.currencyCode || vendorCurrency)}
                                 </span>
                                 <span className="text-xs text-eagle-green/60">
                                   {new Date(history.createdAt).toLocaleString()}
@@ -849,34 +845,20 @@ export default function VendorCustomOrderDetail() {
                   </p>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-eagle-green/70">Base Price</span>
-                  <span className="text-eagle-green">
+                  <span className="text-eagle-green/70">Price (After Discount)</span>
+                  <span className="font-bold text-eagle-green">
                     {customOrderService.formatPrice(
-                      order.baseVendorPriceMinor || order.basePriceMinor, 
-                      order.baseVendorPrice || order.basePrice, 
+                      order.finalVendorPrice ?? order.baseVendorPrice ?? order.finalPrice ?? order.basePrice ?? 0,
                       vendorCurrency
                     )}
                   </span>
                 </div>
-                {(order.finalVendorPriceMinor || order.finalPriceMinor) && (
-                  <div className="flex justify-between">
-                    <span className="text-eagle-green/70">Final Price</span>
-                    <span className="font-bold text-eagle-green">
-                      {customOrderService.formatPrice(
-                        order.finalVendorPriceMinor || order.finalPriceMinor, 
-                        order.finalVendorPrice || order.finalPrice, 
-                        vendorCurrency
-                      )}
-                    </span>
-                  </div>
-                )}
                 <Separator />
                 <div className="flex justify-between">
                   <span className="font-medium text-eagle-green">Total</span>
                   <span className="font-bold text-eagle-green text-lg">
                     {customOrderService.formatPrice(
-                      order.finalVendorPriceMinor || order.baseVendorPriceMinor || order.finalPriceMinor || order.basePriceMinor,
-                      order.finalVendorPrice || order.baseVendorPrice || order.finalPrice || order.basePrice,
+                      order.finalVendorPrice ?? order.baseVendorPrice ?? order.finalPrice ?? order.basePrice ?? 0,
                       vendorCurrency
                     )}
                   </span>
@@ -989,11 +971,10 @@ export default function VendorCustomOrderDetail() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Base Price</Label>
+              <Label>Final Price (After Discount)</Label>
               <p className="text-lg font-medium text-eagle-green">
                 {customOrderService.formatPrice(
-                  order.baseVendorPriceMinor || order.basePriceMinor, 
-                  order.baseVendorPrice || order.basePrice, 
+                  order.finalVendorPrice ?? order.baseVendorPrice ?? order.finalPrice ?? order.basePrice ?? 0,
                   vendorCurrency
                 )}
               </p>
@@ -1011,7 +992,7 @@ export default function VendorCustomOrderDetail() {
               />
               {proposedPrice && parseFloat(proposedPrice) > 0 && (
                 <p className="text-sm font-medium text-eagle-green">
-                  Preview: {customOrderService.formatPrice(0, parseFloat(proposedPrice), vendorCurrency)}
+                  Preview: {customOrderService.formatPrice(parseFloat(proposedPrice), vendorCurrency)}
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
