@@ -1,23 +1,120 @@
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { formatPrice } from "@/lib/currency";
+import { 
+  formatPrice, 
+  toMinorUnits, 
+  getDiscountAmountForDisplay
+} from '@/lib/currency';
 import { getProductImageUrl } from "@/utils/imageUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { ShoppingBag, Plus, Minus, X, Truck, Heart, ArrowRight, LogIn } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ShoppingBag, Plus, Minus, X, Truck, Heart, ArrowRight, LogIn, Tag, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { cartService, CartItem } from "@/services/cartService";
 import { wishlistService } from "@/services/wishlistService";
+import { discountService, type DiscountValidationResult } from "@/services/discountService";
 
 export default function Cart() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { cartItems, cartCurrency, isLoading: cartLoading, getTotalItems, error: cartError, refetch } = useCart();
+  const { 
+    cartItems, 
+    cartCurrency, 
+    isLoading: cartLoading, 
+    getTotalItems, 
+    error: cartError, 
+    refetch,
+    appliedDiscountCode,
+    setAppliedDiscountCode
+  } = useCart();
+
+  const [discountCode, setDiscountCode] = useState(appliedDiscountCode || "");
+  const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
+  const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+
+  // Sync with persistent discount code
+  useEffect(() => {
+    if (appliedDiscountCode && !discountCode) {
+      setDiscountCode(appliedDiscountCode);
+    }
+  }, [appliedDiscountCode]);
+
+  useEffect(() => {
+    // Auto-validate discount if it exists in store but hasn't been validated in this session
+    if (appliedDiscountCode && cartItems.length > 0 && cartCurrency && !discountResult && !isValidatingDiscount && !discountError) {
+      handleApplyDiscount();
+    }
+  }, [appliedDiscountCode, cartItems.length, cartCurrency, discountResult, isValidatingDiscount, discountError]);
+
+  const cartProductIds = useMemo(() => {
+    if (!Array.isArray(cartItems)) return [];
+    return cartItems.map((item: CartItem) => item.productId).filter(Boolean);
+  }, [cartItems]);
+
+  const discountAmountDisplay = useMemo(() => {
+    return getDiscountAmountForDisplay(discountResult, cartCurrency);
+  }, [discountResult, cartCurrency]);
+
+  const handleApplyDiscount = useCallback(async () => {
+    const code = discountCode.trim();
+    if (!code) {
+      setDiscountError("Please enter a discount code");
+      return;
+    }
+    const subtotal = calculateSubtotal();
+    if (!cartCurrency || subtotal <= 0) {
+      setDiscountError("Cart is empty");
+      return;
+    }
+
+    setIsValidatingDiscount(true);
+    setDiscountError(null);
+    setDiscountResult(null);
+
+    try {
+      const result = await discountService.validateDiscountCode({
+        discountCode: code,
+        orderTotalMinor: toMinorUnits(subtotal, cartCurrency),
+        productIds: cartProductIds,
+      });
+
+      if (result.applicable) {
+        setDiscountResult(result);
+        setAppliedDiscountCode(code);
+        setDiscountError(null);
+        toast({
+          title: "Discount Applied",
+          description: `Discount code "${code}" is valid! Savings shown below.`,
+        });
+      } else {
+        setDiscountResult(null);
+        setAppliedDiscountCode(null);
+        setDiscountError(result.reason || "Discount code is not valid for this order");
+      }
+    } catch (error: any) {
+      setDiscountResult(null);
+      setAppliedDiscountCode(null);
+      setDiscountError(error?.message || "Failed to validate discount code");
+    } finally {
+      setIsValidatingDiscount(false);
+    }
+  }, [discountCode, cartCurrency, cartProductIds, toast, setAppliedDiscountCode]);
+
+  const handleRemoveDiscount = useCallback(() => {
+    setDiscountResult(null);
+    setDiscountError(null);
+    setDiscountCode("");
+    setAppliedDiscountCode(null);
+  }, [setAppliedDiscountCode]);
 
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ id, quantity }: { id: number; quantity: number }) => {
@@ -30,7 +127,7 @@ export default function Cart() {
         description: "Cart item quantity updated successfully",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update cart item",
@@ -50,7 +147,7 @@ export default function Cart() {
         description: "Item removed from cart",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to remove item from cart",
@@ -71,7 +168,7 @@ export default function Cart() {
         description: "Item moved to your wishlist",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to save item for later",
@@ -132,7 +229,7 @@ export default function Cart() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <LogIn size={64} className="text-gray-400 mx-auto mb-6" />
-            <h2 className="font-display text-2xl font-bold text-charcoal mb-4">
+            <h2 className="  text-2xl font-bold text-charcoal mb-4">
               Sign in to view your cart
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
@@ -153,7 +250,7 @@ export default function Cart() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <LogIn size={64} className="text-gray-400 mx-auto mb-6" />
-            <h2 className="font-display text-2xl font-bold text-charcoal mb-4">
+            <h2 className="  text-2xl font-bold text-charcoal mb-4">
               Sign in to view your cart
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
@@ -196,7 +293,7 @@ export default function Cart() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <ShoppingBag size={64} className="text-red-400 mx-auto mb-6" />
-            <h2 className="font-display text-2xl font-bold text-charcoal mb-4">
+            <h2 className="  text-2xl font-bold text-charcoal mb-4">
               Failed to load cart
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
@@ -218,7 +315,7 @@ export default function Cart() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold text-charcoal mb-2">
+          <h1 className="  text-3xl font-bold text-charcoal mb-2">
             Shopping Cart
           </h1>
           <p className="text-gray-600">
@@ -229,7 +326,7 @@ export default function Cart() {
         {cartItems.length === 0 ? (
           <div className="text-center py-16">
             <ShoppingBag size={64} className="text-gray-400 mx-auto mb-6" />
-            <h2 className="font-display text-2xl font-bold text-charcoal mb-4">
+            <h2 className="  text-2xl font-bold text-charcoal mb-4">
               Your cart is empty
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
@@ -384,20 +481,99 @@ export default function Cart() {
                       <span className="font-medium">{formatPrice(calculateSubtotal(), cartCurrency)}</span>
                     </div>
 
+                    {/* Discount Code Input */}
+                    <div className="space-y-2">
+                      {discountResult?.applicable ? (
+                        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs font-medium text-green-800">
+                                "{discountCode}" applied
+                              </p>
+                              <p className="text-xs text-green-600">
+                                Save {formatPrice(discountAmountDisplay, cartCurrency)}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRemoveDiscount}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Discount code"
+                              value={discountCode}
+                              onChange={(e) => {
+                                setDiscountCode(e.target.value);
+                                setDiscountError(null);
+                              }}
+                              onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()}
+                              className={`flex-1 h-9 text-sm ${discountError ? 'border-red-300' : ''}`}
+                              disabled={isValidatingDiscount}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleApplyDiscount}
+                              disabled={isValidatingDiscount || !discountCode.trim()}
+                              className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white h-9"
+                            >
+                              {isValidatingDiscount ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Tag className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                          </div>
+                          {discountError && (
+                            <p className="text-xs text-red-500 flex items-center gap-1">
+                              <XCircle className="h-3 w-3" />
+                              {discountError}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Discount Line Item */}
+                    {discountResult?.applicable && discountAmountDisplay > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Discount</span>
+                        <span>-{formatPrice(discountAmountDisplay, cartCurrency)}</span>
+                      </div>
+                    )}
+
                     <Separator />
 
                     {/* Total */}
                     <div className="flex justify-between text-lg font-bold">
-                      <span>Subtotal</span>
-                      <span className="text-ethiopian-gold">{formatPrice(calculateTotal(), cartCurrency)}</span>
+                      <span>Estimated Total</span>
+                      <span className="text-ethiopian-gold">
+                        {formatPrice(Math.max(0, calculateTotal() - discountAmountDisplay), cartCurrency)}
+                      </span>
                     </div>
 
+                    {discountResult?.applicable && (
+                      <p className="text-xs text-gray-500">
+                        Discount will be confirmed at checkout.
+                      </p>
+                    )}
+
                     {/* Checkout Button */}
-                    <Button asChild className="w-full bg-ethiopian-gold hover:bg-amber text-white h-12">
-                      <Link to="/checkout">
-                        Proceed to Checkout
-                        <ArrowRight size={16} className="ml-2" />
-                      </Link>
+                    <Button 
+                      className="w-full bg-ethiopian-gold hover:bg-amber text-white h-12"
+                      onClick={() => navigate("/checkout", { state: { appliedDiscountCode: discountResult?.applicable ? discountCode : undefined } })}
+                    >
+                      Proceed to Checkout
+                      <ArrowRight size={16} className="ml-2" />
                     </Button>
 
                     {/* Continue Shopping */}
