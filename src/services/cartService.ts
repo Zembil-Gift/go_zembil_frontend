@@ -17,7 +17,10 @@ export interface CartItem {
   product?: {
     id: number;
     name: string;
-    price: string;
+    price: {
+      amount?: number;
+      currencyCode?: string;
+    } | string;
     images?: Array<{
       id: number;
       url: string;
@@ -34,6 +37,10 @@ export interface CartItem {
     id: number;
     skuCode?: string;  // Internal code for vendor management
     skuName: string;   // Display name shown to customers
+    price?: {
+      amount?: number;
+      currencyCode?: string;
+    };
     images?: Array<{
       id: number;
       url: string;
@@ -52,7 +59,9 @@ export interface Cart {
   id: number;
   userId: number;
   sessionId?: string;
-  currency: string;
+  currencyCode?: string;
+  currency?: string;
+  currencySymbol?: string;
   status: 'ACTIVE' | 'EXPIRED' | 'CONVERTED_TO_ORDER' | 'ABANDONED';
   expiresAt?: string;
   totalPrice: number;
@@ -73,12 +82,14 @@ class CartService {
    * Get current user's cart with enriched product data
    * Returns both items and cart metadata including currency
    */
-  async getCart(currency: string = 'USD'): Promise<{ items: CartItem[]; currency: string; totalPrice: number }> {
+  async getCart(): Promise<{ items: CartItem[]; currency: string; totalPrice: number }> {
     try {
-      const response = await apiService.getRequest<Cart>(`/api/cart?currency=${currency}`);
+      const response = await apiService.getRequest<Cart>(`/api/cart`);
       
       const items = response.items || [];
-      const cartCurrency = response.currency || currency;
+      const itemCurrency = items.find(i => i?.productSku?.price?.currencyCode)?.productSku?.price?.currencyCode
+        || items.find(i => i?.product?.price?.currencyCode)?.product?.price?.currencyCode;
+      const cartCurrency = response.currencyCode || itemCurrency || response.currency || 'ETB';
       const totalPrice = response.totalPrice || 0;
       
       // Enrich cart items with product details if not already present
@@ -116,7 +127,7 @@ class CartService {
       // Return empty array if cart doesn't exist yet
       if (error.message?.includes('404')) {
         console.log('Cart not found (404), returning empty array');
-        return { items: [], currency: currency, totalPrice: 0 };
+        return { items: [], currency: 'ETB', totalPrice: 0 };
       }
       throw error;
     }
@@ -191,9 +202,9 @@ class CartService {
   /**
    * Check if product has valid pricing
    */
-  async checkPricing(productId: number, currency: string = 'USD'): Promise<boolean> {
+  async checkPricing(productId: number): Promise<boolean> {
     try {
-      const response = await apiService.getRequest<boolean>(`/api/cart/pricing/check/${productId}?currency=${currency}`);
+      const response = await apiService.getRequest<boolean>(`/api/cart/pricing/check/${productId}`);
       return response;
     } catch (error: any) {
       console.error('Failed to check pricing:', error);
