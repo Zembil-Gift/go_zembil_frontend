@@ -198,7 +198,7 @@ export default function AdminCustomOrders() {
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-4 w-4 text-gray-400" />
                           {customOrderService.formatPrice(
-                            order.finalPriceMinor || order.basePriceMinor,
+                            order.finalPrice ?? order.basePrice ?? 0,
                             order.currency
                           )}
                         </div>
@@ -294,7 +294,7 @@ export default function AdminCustomOrders() {
                   <Label className="text-sm text-gray-500">Final Price</Label>
                   <p className="font-medium text-lg text-green-600">
                     {customOrderService.formatPrice(
-                      selectedOrder.finalPriceMinor || selectedOrder.basePriceMinor,
+                      selectedOrder.finalPrice ?? selectedOrder.basePrice ?? 0,
                       selectedOrder.currency
                     )}
                   </p>
@@ -432,7 +432,7 @@ export default function AdminCustomOrders() {
                 </p>
                 <p className="text-sm text-green-600">
                   {customOrderService.formatPrice(
-                    selectedOrder.finalPriceMinor || selectedOrder.basePriceMinor,
+                    selectedOrder.finalPrice ?? selectedOrder.basePrice ?? 0,
                     selectedOrder.currency
                   )}
                 </p>

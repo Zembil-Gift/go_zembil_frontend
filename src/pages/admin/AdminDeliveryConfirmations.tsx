@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +38,7 @@ import {
   Eye,
   Loader2,
   Package,
+  Gift,
   Clock,
   Image as ImageIcon,
   MapPin,
@@ -59,18 +60,37 @@ export default function AdminDeliveryConfirmations() {
   const queryClient = useQueryClient();
   const { openImage } = useAuthenticatedImageViewer();
 
-  // Fetch orders pending delivery confirmation
-  const { data: ordersData, isLoading, refetch } = useQuery({
-    queryKey: ['admin', 'pending-delivery-confirmations', searchTerm],
+  // Fetch product orders pending delivery confirmation
+  const { data: ordersData, isLoading: loadingOrders, refetch: refetchOrders } = useQuery({
+    queryKey: ['admin', 'pending-delivery-confirmations'],
     queryFn: () => adminService.getOrdersPendingDeliveryConfirmation(0, 100),
   });
 
-  // Confirm delivery mutation
+  // Fetch custom orders pending delivery confirmation
+  const { data: customOrdersData, isLoading: loadingCustomOrders, refetch: refetchCustomOrders } = useQuery({
+    queryKey: ['admin', 'pending-custom-delivery-confirmations'],
+    queryFn: () => adminService.getCustomOrdersPendingDeliveryConfirmation(0, 100),
+  });
+
+  const isLoading = loadingOrders || loadingCustomOrders;
+
+  const refetch = () => {
+    refetchOrders();
+    refetchCustomOrders();
+  };
+
+  // Confirm delivery mutation for product orders
   const confirmMutation = useMutation({
-    mutationFn: (orderId: number) => adminService.confirmOrderDelivery(orderId),
+    mutationFn: (order: AdminOrderDto) => {
+      if (order.orderType === 'CUSTOM') {
+        return adminService.confirmCustomOrderDelivery(order.id);
+      }
+      return adminService.confirmOrderDelivery(order.id);
+    },
     onSuccess: () => {
       toast({ title: 'Success', description: 'Delivery confirmed successfully. Revenue has been recognized.' });
       queryClient.invalidateQueries({ queryKey: ['admin', 'pending-delivery-confirmations'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'pending-custom-delivery-confirmations'] });
       setShowConfirmDialog(false);
       setSelectedOrder(null);
     },
@@ -85,14 +105,19 @@ export default function AdminDeliveryConfirmations() {
 
   // Reject delivery confirmation mutation
   const rejectMutation = useMutation({
-    mutationFn: ({ orderId, reason }: { orderId: number; reason: string }) => 
-      adminService.rejectOrderDeliveryConfirmation(orderId, reason),
-    onSuccess: () => {
-      toast({ 
-        title: 'Delivery Confirmation Rejected', 
-        description: 'Order has been set back to SHIPPED status for re-delivery.' 
-      });
+    mutationFn: ({ order, reason }: { order: AdminOrderDto; reason: string }) => {
+      if (order.orderType === 'CUSTOM') {
+        return adminService.rejectCustomOrderDeliveryConfirmation(order.id, reason);
+      }
+      return adminService.rejectOrderDeliveryConfirmation(order.id, reason);
+    },
+    onSuccess: (_, variables) => {
+      const msg = variables.order.orderType === 'CUSTOM'
+        ? 'Custom order delivery confirmation rejected. Order status has been reverted.'
+        : 'Order has been set back to SHIPPED status for re-delivery.';
+      toast({ title: 'Delivery Confirmation Rejected', description: msg });
       queryClient.invalidateQueries({ queryKey: ['admin', 'pending-delivery-confirmations'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'pending-custom-delivery-confirmations'] });
       setShowRejectDialog(false);
       setSelectedOrder(null);
       setRejectReason('');
@@ -106,10 +131,13 @@ export default function AdminDeliveryConfirmations() {
     },
   });
 
-  const orders = ordersData?.content || [];
+  // Merge product orders and custom orders into a unified list
+  const productOrders: AdminOrderDto[] = (ordersData?.content || []).map((o: AdminOrderDto) => ({ ...o, orderType: o.orderType || 'REGULAR' }));
+  const customOrders: AdminOrderDto[] = (customOrdersData?.content || []).map((o: AdminOrderDto) => ({ ...o, orderType: 'CUSTOM' }));
+  const allOrders = useMemo(() => [...productOrders, ...customOrders], [productOrders, customOrders]);
   
   // Filter orders by search term
-  const filteredOrders = orders.filter((order: AdminOrderDto) => {
+  const filteredOrders = allOrders.filter((order: AdminOrderDto) => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return (
@@ -209,6 +237,7 @@ export default function AdminDeliveryConfirmations() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Order</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead>Recipient</TableHead>
                     <TableHead>Delivery Person</TableHead>
@@ -220,7 +249,7 @@ export default function AdminDeliveryConfirmations() {
                 </TableHeader>
                 <TableBody>
                   {filteredOrders.map((order: AdminOrderDto) => (
-                    <TableRow key={order.id}>
+                    <TableRow key={`${order.orderType}-${order.id}`}>
                       <TableCell>
                         <div>
                           <p className="font-medium">{order.orderNumber}</p>
@@ -228,6 +257,19 @@ export default function AdminDeliveryConfirmations() {
                             {new Date(order.createdAt).toLocaleDateString()}
                           </p>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {order.orderType === 'CUSTOM' ? (
+                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                            <Gift className="h-3 w-3 mr-1" />
+                            Custom
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            <Package className="h-3 w-3 mr-1" />
+                            Product
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <p className="text-sm">{order.userEmail}</p>
@@ -478,7 +520,7 @@ export default function AdminDeliveryConfirmations() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={confirmMutation.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => selectedOrder && confirmMutation.mutate(selectedOrder.id)}
+              onClick={() => selectedOrder && confirmMutation.mutate(selectedOrder)}
               disabled={confirmMutation.isPending}
               className="bg-green-600 hover:bg-green-700"
             >
@@ -529,7 +571,7 @@ export default function AdminDeliveryConfirmations() {
             <Button
               variant="destructive"
               onClick={() => selectedOrder && rejectMutation.mutate({ 
-                orderId: selectedOrder.id, 
+                order: selectedOrder, 
                 reason: rejectReason 
               })}
               disabled={!rejectReason.trim() || rejectMutation.isPending}

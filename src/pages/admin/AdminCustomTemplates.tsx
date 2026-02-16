@@ -41,31 +41,26 @@ import {
 } from 'lucide-react';
 import { customOrderTemplateService } from '@/services/customOrderTemplateService';
 import type { CustomOrderTemplate, CustomOrderTemplateStatus } from '@/types/customOrders';
-import { useAuth } from '@/hooks/useAuth';
 
 export default function AdminCustomTemplates() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAuth();
   const [selectedTemplate, setSelectedTemplate] = useState<CustomOrderTemplate | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
 
-  // Get admin's preferred currency
-  const adminCurrency = user?.preferredCurrency?.code || 'USD';
-
   // Fetch pending templates
   const { data: pendingData, isLoading } = useQuery({
-    queryKey: ['admin', 'pending-custom-templates', adminCurrency],
-    queryFn: () => customOrderTemplateService.getPending(0, 100, adminCurrency),
+    queryKey: ['admin', 'pending-custom-templates'],
+    queryFn: () => customOrderTemplateService.getPending(0, 100),
   });
 
   // Fetch all templates
   const { data: allData, isLoading: allLoading } = useQuery({
-    queryKey: ['admin', 'all-custom-templates', adminCurrency],
-    queryFn: () => customOrderTemplateService.getAll(0, 100, undefined, adminCurrency),
+    queryKey: ['admin', 'all-custom-templates'],
+    queryFn: () => customOrderTemplateService.getAll(0, 100),
   });
 
   const pendingTemplates = pendingData?.content || [];

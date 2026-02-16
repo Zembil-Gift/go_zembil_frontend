@@ -529,10 +529,24 @@ export default function AdminEvents() {
                   </TableHeader>
                   <TableBody>
                     {priceRequests.map((request: any) => {
-                      // Admin sees customer prices (what customers will pay)
-                      const currentCustomerPriceMinor = request.currentCustomerPriceMinor ?? request.currentPriceMinor;
-                      const newCustomerPriceMinor = request.newCustomerPriceMinor ?? request.newPriceMinor;
-                      const currencyCode = request.currentCurrencyCode || request.newCurrencyCode || 'ETB';
+                      // Admin sees customer prices (what customers will pay) - use unitAmountMinor
+                      const currentAmount = request.currentCustomerPrice?.amount ?? 
+                           (request.currentCustomerPrice?.unitAmountMinor != null ? request.currentCustomerPrice.unitAmountMinor / 100 : 
+                            (request.currentCustomerPriceMinor != null ? request.currentCustomerPriceMinor / 100 : 
+                             (request.currentPriceMinor != null ? request.currentPriceMinor / 100 : 0)));
+                             
+                      const newAmount = request.newCustomerPrice?.amount ?? 
+                           (request.newCustomerPrice?.unitAmountMinor != null ? request.newCustomerPrice.unitAmountMinor / 100 : 
+                            (request.newCustomerPriceMinor != null ? request.newCustomerPriceMinor / 100 : 
+                             (request.newPriceMinor != null ? request.newPriceMinor / 100 : 0)));
+
+                      const currencyCode = request.currentCustomerPrice?.currencyCode || 
+                                         request.newCustomerPrice?.currencyCode || 
+                                         request.currentCurrencyCode || 
+                                         request.newCurrencyCode || 'ETB';
+                      
+                      const formattedCurrent = `${currencyCode} ${currentAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      const formattedNew = `${currencyCode} ${newAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                       
                       return (
                         <TableRow key={request.id}>
@@ -543,10 +557,10 @@ export default function AdminEvents() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {formatCurrency(currentCustomerPriceMinor, currencyCode)}
+                            {formattedCurrent}
                           </TableCell>
                           <TableCell className="font-medium">
-                            {formatCurrency(newCustomerPriceMinor, currencyCode)}
+                            {formattedNew}
                           </TableCell>
                         <TableCell>
                           <p className="text-sm text-gray-600 max-w-xs truncate" title={request.reason}>

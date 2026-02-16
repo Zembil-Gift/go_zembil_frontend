@@ -23,6 +23,8 @@ import {
   Menu,
   X,
   Key,
+  CreditCard,
+  Megaphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -55,11 +57,13 @@ const navItems = [
   { href: '/admin/custom-templates', label: 'Custom Templates', icon: FileText },
   { href: '/admin/custom-orders', label: 'Custom Orders', icon: ShoppingBag },
   { href: '/admin/featured-ads', label: 'Featured & Ads', icon: Star },
+  { href: '/admin/campaigns', label: 'Campaigns', icon: Megaphone },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
   { href: '/admin/subcategories', label: 'Subcategories', icon: Layers },
   { href: '/admin/delivery', label: 'Delivery', icon: Truck },
   { href: '/admin/tax', label: 'Tax Management', icon: Receipt },
-  { href: '/admin/currency', label: 'Currency', icon: DollarSign }
+  { href: '/admin/currency', label: 'Currency', icon: DollarSign },
+  { href: '/admin/payment-methods', label: 'Payment Methods', icon: CreditCard },
 ];
 
 // Super admin only items

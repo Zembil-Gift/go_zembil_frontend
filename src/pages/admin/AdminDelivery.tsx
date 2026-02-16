@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Truck, Package, ClipboardCheck } from 'lucide-react';
+import { Truck, Package, ClipboardCheck, Gift } from 'lucide-react';
 
 import AdminDeliveryPersonnel from './AdminDeliveryPersonnel';
 import AdminOrderAssignments from './AdminOrderAssignments';
+import AdminCustomOrderAssignments from './AdminCustomOrderAssignments';
 import AdminDeliveryConfirmations from './AdminDeliveryConfirmations';
 
 export default function AdminDelivery() {
@@ -17,7 +18,7 @@ export default function AdminDelivery() {
     >
       <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+          <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
             <TabsTrigger value="personnel" className="flex items-center gap-2">
               <Truck className="h-4 w-4" />
               Delivery Personnel
@@ -25,6 +26,10 @@ export default function AdminDelivery() {
             <TabsTrigger value="assignments" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Order Assignments
+            </TabsTrigger>
+            <TabsTrigger value="custom-assignments" className="flex items-center gap-2">
+              <Gift className="h-4 w-4" />
+              Custom Order Assignments
             </TabsTrigger>
             <TabsTrigger value="confirmations" className="flex items-center gap-2">
               <ClipboardCheck className="h-4 w-4" />
@@ -38,6 +43,10 @@ export default function AdminDelivery() {
           
           <TabsContent value="assignments" className="mt-6">
             <AdminOrderAssignments />
+          </TabsContent>
+
+          <TabsContent value="custom-assignments" className="mt-6">
+            <AdminCustomOrderAssignments />
           </TabsContent>
           
           <TabsContent value="confirmations" className="mt-6">

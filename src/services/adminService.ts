@@ -1,6 +1,5 @@
 import { apiService } from './apiService';
 
-// Types - Dashboard Stats (matching backend AdminDashboardStatsDto)
 export interface RevenueStats {
   todayRevenue: number;
   weekRevenue: number;
@@ -176,11 +175,16 @@ export interface EventPriceUpdateRequest {
   ticketTypeId: number;
   ticketTypeName: string;
   // Vendor prices (what vendor submitted)
-  currentPriceMinor: number;
-  currentCurrencyCode: string;
-  newPriceMinor: number;
-  newCurrencyCode: string;
+  currentVendorPrice?: PriceDto;
+  newVendorPrice?: PriceDto;
   // Customer prices (what customers will pay - for admin review)
+  currentCustomerPrice?: PriceDto;
+  newCustomerPrice?: PriceDto;
+  // Legacy flat fields (for backward compatibility)
+  currentPriceMinor?: number;
+  currentCurrencyCode?: string;
+  newPriceMinor?: number;
+  newCurrencyCode?: string;
   currentCustomerPriceMinor?: number;
   newCustomerPriceMinor?: number;
   reason: string;
@@ -340,15 +344,12 @@ export interface ProductPriceUpdateRequestDto {
   id: number;
   productId: number;
   productName?: string;
-  productSkuId?: number;  // Backend uses productSkuId, not skuId
+  productSkuId?: number;
   skuCode?: string;
-  // Vendor prices (what vendor submitted)
   currentVendorPrice?: ProductPriceDto;
   newVendorPrice?: ProductPriceDto;
-  // Customer prices (what customers will pay - for admin review)
   currentCustomerPrice?: ProductPriceDto;
   newCustomerPrice?: ProductPriceDto;
-  // Legacy fields for backward compatibility
   currentPrice?: ProductPriceDto;
   newPrice?: ProductPriceDto;
   reason: string;
@@ -362,7 +363,6 @@ export interface ProductPriceUpdateRequestDto {
   reviewedByName?: string;
 }
 
-// ==================== SERVICE PRICE UPDATE TYPES ====================
 export interface ServicePriceDto {
   id?: number;
   currencyCode?: string;
@@ -376,13 +376,10 @@ export interface ServicePriceUpdateRequestDto {
   id: number;
   serviceId: number;
   serviceName?: string;
-  // Vendor prices (what vendor submitted)
   currentVendorPrice?: ServicePriceDto;
   newVendorPrice?: ServicePriceDto;
-  // Customer prices (what customers will pay - for admin review)
   currentCustomerPrice?: ServicePriceDto;
   newCustomerPrice?: ServicePriceDto;
-  // Legacy fields for backward compatibility
   currentPrice?: ServicePriceDto;
   newPrice?: ServicePriceDto;
   reason: string;
@@ -396,7 +393,6 @@ export interface ServicePriceUpdateRequestDto {
   reviewedByName?: string;
 }
 
-// ==================== SERVICE CATEGORY CHANGE REQUEST TYPES ====================
 export interface ServiceCategoryChangeRequestDto {
   id: number;
   serviceId: number;
@@ -420,7 +416,6 @@ export interface ServiceCategoryChangeRequestDto {
   updatedAt?: string;
 }
 
-// ==================== CATEGORY CHANGE REQUEST TYPES ====================
 export interface CategoryChangeRequestDto {
   id: number;
   productId: number;
@@ -452,7 +447,6 @@ export interface PaginatedResponse<T> {
   number: number;
 }
 
-// Admin Order DTOs (matching backend)
 export interface AdminOrderItemDto {
   orderItemId: number;
   productId: number;
@@ -469,7 +463,7 @@ export interface AdminAddressDto {
   addressId?: number;
   addressLine1?: string;
   addressLine2?: string;
-  street?: string; // keeping for backward compat if needed, but backend sends addressLine1
+  street?: string;
   city?: string;
   state?: string;
   country?: string;
@@ -500,24 +494,19 @@ export interface AdminOrderDto {
   shippingAddress?: AdminAddressDto;
   billingAddress?: AdminAddressDto;
   recipientName?: string;
-  recipientPhone?: string; // Backend doesn't seem to have recipientPhone explicitly on top level, but maybe it does or uses shipping address?
-  // Checking Java DTO: has recipientName, but not recipientPhone. But shippingAddress has phone? No, AddressSummary has no phone. 
-  // Wait, AddressSummary in Java: addressLine1, 2, city, state, postalCode, country. No phone.
-  // AdminOrderDto Java: contactPhone, contactEmail. 
-  
-  giftMessage?: string; // cardMessage in Java
+  recipientPhone?: string; 
+  giftMessage?: string;
   createdAt: string;
   updatedAt?: string;
-  // Delivery confirmation fields
   deliveryConfirmedAt?: string;
   deliveryConfirmedBy?: number;
   revenueEarned?: boolean;
   revenueEarnedAt?: string;
-  // Delivery proof images
   deliveryProofImageUrl?: string;
   pickupProofImageUrl?: string;
   deliveryPersonName?: string;
   deliveredAt?: string;
+  orderType?: string; // 'REGULAR' or 'CUSTOM'
 }
 
 // Admin Event Order DTOs
@@ -549,19 +538,15 @@ export interface AdminEventOrderDto {
 }
 
 class AdminService {
-  // ==================== DASHBOARD STATS ====================
   
-  // Get all dashboard statistics
   async getDashboardStats(): Promise<AdminDashboardStats> {
     return await apiService.getRequest<AdminDashboardStats>('/api/admin/dashboard/stats');
   }
 
-  // Get revenue trends for charting
   async getRevenueTrends(period: 'daily' | 'weekly' | 'monthly' = 'monthly'): Promise<RevenueTrendDto> {
     return await apiService.getRequest<RevenueTrendDto>(`/api/admin/dashboard/revenue/trends?period=${period}`);
   }
 
-  // Get individual stat sections
   async getRevenueStats(): Promise<RevenueStats> {
     return await apiService.getRequest<RevenueStats>('/api/admin/dashboard/stats/revenue');
   }
@@ -590,7 +575,6 @@ class AdminService {
     return await apiService.getRequest<PendingApprovals>('/api/admin/dashboard/stats/pending');
   }
 
-  // Legacy getStats method for backwards compatibility
   async getStats(): Promise<AdminStats> {
     try {
       const stats = await this.getDashboardStats();
@@ -646,23 +630,14 @@ class AdminService {
     return await apiService.putRequest<AdminUserDto>(`/api/admin/users/${userId}/status`, { isActive });
   }
 
-  /**
-   * Deactivate a user account (soft delete)
-   */
   async deactivateUser(userId: number): Promise<void> {
     return await apiService.postRequest<void>(`/api/users/${userId}/deactivate`, {});
   }
 
-  /**
-   * Reactivate a previously deactivated user account
-   */
   async reactivateUser(userId: number): Promise<void> {
     return await apiService.postRequest<void>(`/api/users/${userId}/reactivate`, {});
   }
 
-  /**
-   * @deprecated Use deactivateUser instead for soft delete
-   */
   async deleteUser(userId: number): Promise<void> {
     return await apiService.deleteRequest<void>(`/api/users/${userId}`);
   }
@@ -688,8 +663,6 @@ class AdminService {
     return await apiService.postRequest<void>(`/api/admin/vendors/${vendorId}/decline`, {});
   }
 
-  // ==================== PRODUCT ORDER MANAGEMENT ====================
-  
   async getOrders(page: number = 0, size: number = 20, status?: string, search?: string): Promise<PaginatedResponse<AdminOrderDto>> {
     let url = `/api/admin/orders?page=${page}&size=${size}`;
     if (status && status !== 'all') {
@@ -725,20 +698,13 @@ class AdminService {
     return await apiService.postRequest<AdminOrderDto>(url, {});
   }
 
-  // ==================== DELIVERY CONFIRMATION MANAGEMENT ====================
-  
-  /**
-   * Get orders pending delivery confirmation (DELIVERED but not confirmed by admin)
-   */
+
   async getOrdersPendingDeliveryConfirmation(page: number = 0, size: number = 20): Promise<PaginatedResponse<AdminOrderDto>> {
     return await apiService.getRequest<PaginatedResponse<AdminOrderDto>>(
       `/api/admin/orders/pending-delivery-confirmation?page=${page}&size=${size}`
     );
   }
 
-  /**
-   * Confirm delivery after reviewing proof images (recognizes revenue)
-   */
   async confirmOrderDelivery(orderId: number): Promise<AdminOrderDto> {
     return await apiService.postRequest<AdminOrderDto>(
       `/api/admin/orders/${orderId}/confirm-delivery`,
@@ -746,9 +712,6 @@ class AdminService {
     );
   }
 
-  /**
-   * Reject delivery confirmation with reason
-   */
   async rejectOrderDeliveryConfirmation(orderId: number, reason: string): Promise<AdminOrderDto> {
     return await apiService.postRequest<AdminOrderDto>(
       `/api/admin/orders/${orderId}/reject-delivery-confirmation?reason=${encodeURIComponent(reason)}`,
@@ -756,8 +719,27 @@ class AdminService {
     );
   }
 
-  // ==================== EVENT ORDER MANAGEMENT ====================
-  
+  // Custom Order Delivery Confirmation
+  async getCustomOrdersPendingDeliveryConfirmation(page: number = 0, size: number = 20): Promise<PaginatedResponse<AdminOrderDto>> {
+    return await apiService.getRequest<PaginatedResponse<AdminOrderDto>>(
+      `/api/admin/orders/custom-orders/pending-delivery-confirmation?page=${page}&size=${size}`
+    );
+  }
+
+  async confirmCustomOrderDelivery(customOrderId: number): Promise<AdminOrderDto> {
+    return await apiService.postRequest<AdminOrderDto>(
+      `/api/admin/orders/custom-orders/${customOrderId}/confirm-delivery`,
+      {}
+    );
+  }
+
+  async rejectCustomOrderDeliveryConfirmation(customOrderId: number, reason: string): Promise<AdminOrderDto> {
+    return await apiService.postRequest<AdminOrderDto>(
+      `/api/admin/orders/custom-orders/${customOrderId}/reject-delivery-confirmation?reason=${encodeURIComponent(reason)}`,
+      {}
+    );
+  }
+
   async getEventOrders(page: number = 0, size: number = 20, status?: string, search?: string): Promise<PaginatedResponse<AdminEventOrderDto>> {
     let url = `/api/admin/event-orders?page=${page}&size=${size}`;
     if (status && status !== 'all') {
@@ -822,12 +804,8 @@ class AdminService {
     return await apiService.postRequest<EventResponse>(`/api/admin/events/${eventId}/ad?isAd=${isAd}`, {});
   }
 
-  // ==================== EVENT PRICE UPDATE REQUESTS (UNIFIED SYSTEM) ====================
-  // Event price updates now use the unified VendorChangeRequest system
-  
   async getPriceUpdateRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<EventPriceUpdateRequest>> {
-    // Use the unified endpoint filtered by EVENT entity type
-    let url = `/api/admin/vendor-change-requests/entity-type/EVENT?page=${page}&size=${size}`;
+    let url = `/api/admin/vendor-change-requests/entity-type/EVENT?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<EventPriceUpdateRequest>>(url);
   }
 
@@ -839,7 +817,6 @@ class AdminService {
     return await apiService.postRequest<EventPriceUpdateRequest>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
   }
 
-  // ==================== PRODUCT MANAGEMENT ====================
   
   async getAllProducts(page: number = 0, size: number = 20, status?: string, search?: string): Promise<PaginatedResponse<any>> {
     const params = new URLSearchParams();
@@ -874,7 +851,6 @@ class AdminService {
     return await apiService.patchRequest<any>(`/api/admin/products/skus/${skuId}/ad?isAd=${isAd}`, {});
   }
 
-  // ==================== SERVICE PACKAGE FEATURED/AD ====================
 
   async setServicePackageFeatured(packageId: number, featured: boolean): Promise<any> {
     return await apiService.patchRequest<any>(`/api/admin/service-packages/${packageId}/featured?featured=${featured}`, {});
@@ -901,7 +877,6 @@ class AdminService {
     return await apiService.deleteRequest(`/api/categories/${categoryId}`);
   }
 
-  // ==================== SUBCATEGORY MANAGEMENT ====================
   
   async getSubCategories(categoryId: number): Promise<SubCategoryResponse[]> {
     return await apiService.getRequest<SubCategoryResponse[]>(`/api/categories/${categoryId}/sub-categories`);
@@ -919,8 +894,6 @@ class AdminService {
     return await apiService.deleteRequest(`/api/categories/sub-categories/${subCategoryId}`);
   }
 
-  // ==================== TAX ZONE MANAGEMENT ====================
-  
   async getTaxZones(country?: string, active?: boolean): Promise<TaxZoneDto[]> {
     let url = '/api/admin/tax/zones';
     const params = new URLSearchParams();
@@ -946,8 +919,6 @@ class AdminService {
     return await apiService.deleteRequest(`/api/admin/tax/zones/${id}`);
   }
 
-  // ==================== TAX CATEGORY MANAGEMENT ====================
-  
   async getTaxCategories(active?: boolean): Promise<TaxCategoryDto[]> {
     let url = '/api/admin/tax/categories';
     if (active !== undefined) url += `?active=${active}`;
@@ -998,8 +969,6 @@ class AdminService {
     return await apiService.deleteRequest(`/api/admin/tax/rates/${id}`);
   }
 
-  // ==================== CURRENCY MANAGEMENT ====================
-  
   async getAllCurrencies(): Promise<CurrencyDto[]> {
     return await apiService.getRequest<CurrencyDto[]>('/api/currencies/all');
   }
@@ -1032,12 +1001,8 @@ class AdminService {
     return await apiService.getRequest<CurrencyRateDto[]>('/api/currencies/rates');
   }
 
-  // ==================== PRODUCT PRICE UPDATE REQUESTS (UNIFIED SYSTEM) ====================
-  // Product price updates now use the unified VendorChangeRequest system
-  
   async getProductPriceUpdateRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<ProductPriceUpdateRequestDto>> {
-    // Use the unified endpoint filtered by PRODUCT entity type and PRICE_UPDATE request type
-    let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?page=${page}&size=${size}`;
+    let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<ProductPriceUpdateRequestDto>>(url);
   }
 
@@ -1053,12 +1018,8 @@ class AdminService {
     return await apiService.postRequest<ProductPriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
   }
 
-  // ==================== SERVICE PRICE UPDATE REQUESTS (UNIFIED SYSTEM) ====================
-  // Service price updates use the unified VendorChangeRequest system
-  
   async getServicePriceUpdateRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<ServicePriceUpdateRequestDto>> {
-    // Use the unified endpoint filtered by SERVICE entity type
-    let url = `/api/admin/vendor-change-requests/entity-type/SERVICE?page=${page}&size=${size}`;
+    let url = `/api/admin/vendor-change-requests/entity-type/SERVICE?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<ServicePriceUpdateRequestDto>>(url);
   }
 
@@ -1073,8 +1034,6 @@ class AdminService {
   async rejectServicePriceUpdate(requestId: number, reason: string): Promise<ServicePriceUpdateRequestDto> {
     return await apiService.postRequest<ServicePriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
   }
-
-  // ==================== SERVICE CATEGORY CHANGE REQUESTS ====================
 
   async getServiceCategoryChangeRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<ServiceCategoryChangeRequestDto>> {
     return await apiService.getRequest<PaginatedResponse<ServiceCategoryChangeRequestDto>>(`/api/admin/vendor-change-requests/entity-type/SERVICE?changeType=CATEGORY_CHANGE&page=${page}&size=${size}`);
@@ -1096,11 +1055,7 @@ class AdminService {
     return await apiService.postRequest<ServiceCategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
   }
 
-  // ==================== CATEGORY CHANGE REQUESTS (UNIFIED SYSTEM) ====================
-  // Category changes now use the unified VendorChangeRequest system
-  
   async getCategoryChangeRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<CategoryChangeRequestDto>> {
-    // Use the unified endpoint - filter by PRODUCT entity type for product category changes
     let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<CategoryChangeRequestDto>>(url);
   }
@@ -1121,10 +1076,7 @@ class AdminService {
     return await apiService.postRequest<CategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
   }
 
-  // ==================== UNIFIED VENDOR CHANGE REQUESTS ====================
-  // These endpoints use the new unified VendorChangeRequest system for all entity types
-  
-  async getUnifiedChangeRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
+    async getUnifiedChangeRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
     return await apiService.getRequest<PaginatedResponse<UnifiedChangeRequestDto>>(`/api/admin/vendor-change-requests?page=${page}&size=${size}`);
   }
 

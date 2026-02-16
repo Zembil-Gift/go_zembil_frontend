@@ -61,6 +61,7 @@ interface Product {
   vendorId: number;
   vendorName?: string;
   categoryName?: string;
+  subCategoryName?: string;
   subCategoryId?: number;
   price?: {
     id: number;
@@ -148,6 +149,36 @@ export default function AdminProducts() {
   const pendingPriceRequests = priceRequests.filter((r: any) => r.status === 'PENDING');
   const categoryChangeRequests = categoryChangeRequestsData || [];
   const pendingCategoryChangeRequests = categoryChangeRequests.filter((r: CategoryChangeRequestDto) => r.status === 'PENDING');
+
+  const { data: subCategoryNameMap = {} } = useQuery<Record<number, string>>({
+    queryKey: ['admin', 'sub-category-name-map'],
+    queryFn: async () => {
+      const categories = await adminService.getCategories();
+      const subCategoryGroups = await Promise.allSettled(
+        categories.map(async (cat: any) => {
+          const subs = await adminService.getSubCategories(cat.id);
+          return subs;
+        })
+      );
+
+      const flatSubs = subCategoryGroups
+        .filter((result): result is PromiseFulfilledResult<any[]> => result.status === 'fulfilled')
+        .flatMap((result) => result.value);
+
+      return flatSubs.reduce((acc: Record<number, string>, sub: any) => {
+        if (sub?.id) {
+          acc[sub.id] = sub.name;
+        }
+        return acc;
+      }, {});
+    },
+  });
+
+  const getSubCategoryName = (product: Product) => {
+    if (product.subCategoryName) return product.subCategoryName;
+    if (!product.subCategoryId) return 'N/A';
+    return subCategoryNameMap[product.subCategoryId] || `#${product.subCategoryId}`;
+  };
 
   // Approve product mutation
   const approveProductMutation = useMutation({
@@ -429,6 +460,7 @@ export default function AdminProducts() {
                               <div>
                                 <p className="font-medium">{product.name}</p>
                                 <p className="text-sm text-muted-foreground">{product.categoryName || 'Uncategorized'}</p>
+                                <p className="text-xs text-muted-foreground">Subcategory: {getSubCategoryName(product)}</p>
                               </div>
                             </div>
                           </TableCell>
@@ -519,8 +551,9 @@ export default function AdminProducts() {
                               </div>
                             )}
                             <div>
-                              <h3 className="font-gotham-bold text-eagle-green text-lg">{product.name}</h3>
+                              <h3 className="font-bold text-eagle-green text-lg">{product.name}</h3>
                               <p className="text-sm text-gray-600">{product.categoryName || 'Uncategorized'}</p>
+                              <p className="text-xs text-gray-500">Subcategory: {getSubCategoryName(product)}</p>
                             </div>
                           </div>
                           <p className="text-sm text-gray-700 line-clamp-2">{product.description}</p>
@@ -742,7 +775,7 @@ export default function AdminProducts() {
                             <div className="font-medium">{request.productName}</div>
                           </div>
                         </TableCell>
-                        <TableCell>{request.vendorBusinessName}</TableCell>
+                        <TableCell>{request.vendorName || '-'}</TableCell>
                         <TableCell>
                           <span className="text-muted-foreground">{request.currentSubCategoryName}</span>
                         </TableCell>
@@ -828,6 +861,7 @@ export default function AdminProducts() {
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold">{selectedProduct.name}</h3>
                   <p className="text-muted-foreground text-sm mb-2">{selectedProduct.categoryName}</p>
+                  <p className="text-muted-foreground text-xs mb-2">Subcategory: {getSubCategoryName(selectedProduct)}</p>
                   {getStatusBadge(selectedProduct.status)}
                 </div>
               </div>
