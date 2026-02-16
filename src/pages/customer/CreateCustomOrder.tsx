@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,7 +16,10 @@ import {
   AlertCircle,
   Store,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Tag,
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -28,12 +31,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import ProtectedRoute from '@/components/protected-route';
+import { DiscountBadge } from '@/components/DiscountBadge';
+import { PriceWithDiscount } from '@/components/PriceWithDiscount';
 
 import { customOrderTemplateService } from '@/services/customOrderTemplateService';
 import { customOrderService } from '@/services/customOrderService';
 import { imageService } from '@/services/imageService';
+import { discountService, type DiscountValidationResult } from '@/services/discountService';
+import { formatPrice, getCurrencyDecimals, getDiscountAmountForDisplay } from '@/lib/currency';
 import type { CustomOrderTemplateField, CreateCustomOrderRequest } from '@/types/customOrders';
 import { getAllTemplateImages } from '@/utils/imageUtils';
+import imageCompression from 'browser-image-compression';
 
 // Field type icon mapping
 const getFieldTypeIcon = (fieldType: string) => {
@@ -57,34 +65,40 @@ interface FieldValue {
   numberValue?: number;
   fileUrl?: string;
   originalFilename?: string;
+  previewUrl?: string; // Local preview URL before upload
 }
 
 function CreateCustomOrderContent() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isInitialized } = useAuth();
   const queryClient = useQueryClient();
   
   const templateIdNum = templateId ? parseInt(templateId) : 0;
   
-  // Get user's preferred currency (fallback to USD)
-  const preferredCurrency = user?.preferredCurrencyCode || 'USD';
+  // Get user's preferred currency
+  const fallbackCurrency = isAuthenticated ? 'ETB' : 'USD';
+  const preferredCurrency = user?.preferredCurrencyCode || fallbackCurrency;
   
   const [fieldValues, setFieldValues] = useState<{ [fieldId: number]: FieldValue }>({});
   const [additionalDescription, setAdditionalDescription] = useState('');
   const [uploadingFields, setUploadingFields] = useState<{ [fieldId: number]: boolean }>({});
   const [errors, setErrors] = useState<{ [fieldId: number]: string }>({});
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
+  const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
   
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  // Fetch template details with user's preferred currency
+  // Fetch template details (wait for auth so currency is correct)
   const { data: template, isLoading } = useQuery({
-    queryKey: ['custom-order-template', templateIdNum, preferredCurrency],
-    queryFn: () => customOrderTemplateService.getById(templateIdNum, preferredCurrency),
-    enabled: templateIdNum > 0,
+    queryKey: ['custom-order-template', templateIdNum, user?.preferredCurrencyCode ?? 'default'],
+    queryFn: () => customOrderTemplateService.getById(templateIdNum),
+    enabled: templateIdNum > 0 && isInitialized,
   });
 
   const templateImages = useMemo(() => 
@@ -111,6 +125,59 @@ function CreateCustomOrderContent() {
     template?.fields ? customOrderTemplateService.sortFieldsBySortOrder(template.fields) : [],
     [template?.fields]
   );
+
+  // Calculate the manually-validated discount amount in display (major) units
+  const manualDiscountAmountDisplay = useMemo(() => {
+    const targetCurrency = template?.price?.currencyCode || template?.currencyCode || preferredCurrency;
+    return getDiscountAmountForDisplay(discountResult, targetCurrency);
+  }, [discountResult, template?.price?.currencyCode, template?.currencyCode, preferredCurrency]);
+
+  const handleApplyDiscount = useCallback(async () => {
+    const code = discountCode.trim();
+    if (!code) {
+      setDiscountError("Please enter a discount code");
+      return;
+    }
+    if (!template?.basePriceMinor) {
+      setDiscountError("Template price not available");
+      return;
+    }
+
+    setIsValidatingDiscount(true);
+    setDiscountError(null);
+    setDiscountResult(null);
+
+    try {
+      const result = await discountService.validateDiscountCode({
+        discountCode: code,
+        orderTotalMinor: template.basePriceMinor,
+        customOrderTemplateIds: [templateIdNum],
+      });
+
+      if (result.applicable) {
+        setDiscountResult(result);
+        setDiscountError(null);
+        toast({
+          title: "Discount Applied",
+          description: `Discount code "${code}" applied successfully!`,
+        });
+      } else {
+        setDiscountResult(null);
+        setDiscountError(result.reason || "Discount code is not valid for this order");
+      }
+    } catch (error: any) {
+      setDiscountResult(null);
+      setDiscountError(error?.message || "Failed to validate discount code");
+    } finally {
+      setIsValidatingDiscount(false);
+    }
+  }, [discountCode, template, templateIdNum, toast]);
+
+  const handleRemoveDiscount = useCallback(() => {
+    setDiscountResult(null);
+    setDiscountError(null);
+    setDiscountCode("");
+  }, []);
 
   // Create order mutation
   const createOrderMutation = useMutation({
@@ -175,9 +242,35 @@ function CreateCustomOrderContent() {
     }
   };
 
+  // Compress image before upload
+  const compressImage = async (file: File): Promise<File> => {
+    // Only compress if it's an image and not a GIF (GIFs lose animation)
+    if (!file.type.startsWith('image/') || file.type.includes('gif')) {
+      return file;
+    }
+
+    const options = {
+      maxSizeMB: 1, // Compress to ~1MB
+      maxWidthOrHeight: 1920, // Max dimension 1920px (Full HD)
+      useWebWorker: true,
+      fileType: 'image/webp' as const, // Convert to efficient WebP format
+      initialQuality: 0.8,
+    };
+
+    try {
+      const compressedBlob = await imageCompression(file, options);
+      // Create a new file with the same name (but .webp extension)
+      const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+      return new File([compressedBlob], newName, { type: 'image/webp', lastModified: Date.now() });
+    } catch (error) {
+      console.error("Image compression failed:", error);
+      return file; // Return original if compression fails
+    }
+  };
+
   // Handle file upload
   const handleFileUpload = async (field: CustomOrderTemplateField, file: File) => {
-    // Validate file size
+    // Validate file size BEFORE compression
     const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024; // 50MB for video, 10MB for images
     if (file.size > maxSize) {
       const maxSizeMB = maxSize / (1024 * 1024);
@@ -214,15 +307,36 @@ function CreateCustomOrderContent() {
     setUploadingFields(prev => ({ ...prev, [field.id]: true }));
     
     try {
+      // Compress image if applicable
+      let fileToUpload = file;
+      if (isImage) {
+        fileToUpload = await compressImage(file);
+      }
+
       // Upload file to server using imageService
-      const response = await imageService.uploadCustomOrderFile(file);
+      const response = await imageService.uploadCustomOrderFile(fileToUpload);
+      
+      // The backend returns a path like "custom-orders/{userId}/{filename}"
+      // We need to construct the proper backend proxy URL: /api/images/custom-orders/files/{userId}/{filename}
+      // Parse the path to extract userId and filename
+      const pathMatch = response.fileUrl.match(/custom-orders\/(\d+)\/(.+)$/);
+      if (!pathMatch) {
+        throw new Error('Invalid file path returned from server');
+      }
+      const userId = pathMatch[1];
+      const filename = pathMatch[2];
+      
+      // Construct full URL using the API base URL
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const previewUrl = `${apiBaseUrl}/api/images/custom-orders/files/${userId}/${filename}`;
       
       setFieldValues(prev => ({
         ...prev,
         [field.id]: {
           fieldId: field.id,
-          fileUrl: response.fileUrl,
-          originalFilename: response.originalFilename || file.name
+          fileUrl: response.fileUrl, // Store relative path for backend
+          originalFilename: response.originalFilename || fileToUpload.name,
+          previewUrl: previewUrl // Use full backend proxy URL for preview
         }
       }));
       
@@ -318,8 +432,14 @@ function CreateCustomOrderContent() {
       v.textValue || v.numberValue !== undefined || v.fileUrl
     );
     
+    // Always send discount code when available (both negotiable and non-negotiable templates)
+    // For non-negotiable: discount sets the final payment price
+    // For negotiable: discount sets the initial discounted price as a starting point
+    const appliedDiscountCode = discountCode.trim() || template?.activeDiscount?.code;
+
     const request: CreateCustomOrderRequest = {
       templateId: templateIdNum,
+      discountCode: appliedDiscountCode || undefined,
       additionalDescription: additionalDescription.trim() || undefined,
       values
     };
@@ -371,9 +491,16 @@ function CreateCustomOrderContent() {
               <div className="relative inline-block">
                 {field.fieldType === 'IMAGE' ? (
                   <img 
-                    src={value.fileUrl} 
+                    src={value.previewUrl || value.fileUrl} 
                     alt={field.fieldName}
                     className="w-32 h-32 object-cover rounded-lg border"
+                    onError={(e) => {
+                      // Fallback if preview fails
+                      const target = e.target as HTMLImageElement;
+                      if (value.previewUrl && target.src === value.previewUrl) {
+                        target.src = value.fileUrl;
+                      }
+                    }}
                   />
                 ) : (
                   <div className="w-32 h-32 bg-gray-100 rounded-lg border flex items-center justify-center">
@@ -410,7 +537,12 @@ function CreateCustomOrderContent() {
                   disabled={isUploading}
                 />
                 {isUploading ? (
-                  <Loader2 className="h-8 w-8 text-eagle-green/50 animate-spin" />
+                  <div className="flex flex-col items-center">
+                    <Loader2 className="h-8 w-8 text-eagle-green/50 animate-spin mb-2" />
+                    <span className="text-xs text-eagle-green/60">
+                      {field.fieldType === 'IMAGE' ? 'Optimizing & uploading...' : 'Uploading...'}
+                    </span>
+                  </div>
                 ) : (
                   <>
                     <Upload className="h-8 w-8 text-eagle-green/50 mb-2" />
@@ -418,7 +550,7 @@ function CreateCustomOrderContent() {
                       Click to upload {field.fieldType.toLowerCase()}
                     </span>
                     <span className="text-xs text-eagle-green/40 mt-1">
-                      {field.fieldType === 'VIDEO' ? 'Max 50MB' : 'Max 10MB'}
+                      {field.fieldType === 'VIDEO' ? 'Max 50MB' : 'Max 10MB • Auto-optimized'}
                     </span>
                   </>
                 )}
@@ -590,23 +722,128 @@ function CreateCustomOrderContent() {
                       <span className="text-eagle-green font-medium">{template.vendorName}</span>
                     </div>
                     
+                    {/* Active Discount Badge */}
+                    {template.activeDiscount && (
+                      <div className="border-t border-gray-200 pt-4">
+                        <DiscountBadge 
+                          discount={template.activeDiscount} 
+                          variant="full" 
+                          targetCurrency={template.price?.currencyCode || template.currencyCode || preferredCurrency}
+                        />
+                      </div>
+                    )}
+                    
                     <div className="bg-june-bud/10 rounded-lg p-4">
                       <p className="text-sm text-eagle-green/70 mb-1">
                         {template.negotiable === false ? 'Price' : 'Base Price'}
                       </p>
-                      <p className="text-2xl font-bold text-eagle-green">
-                        {customOrderTemplateService.formatTemplatePrice(template)}
-                      </p>
-                      {template.negotiable === false ? (
-                        <p className="text-xs text-viridian-green mt-1 font-medium">
-                          ✓ Fixed price - pay directly without negotiation
-                        </p>
+                      {template.activeDiscount ? (
+                        <div className="space-y-2">
+                          <PriceWithDiscount
+                            originalPrice={template.price?.amount || 0}
+                            currency={template.price?.currencyCode || template.currencyCode || preferredCurrency}
+                            discount={template.activeDiscount}
+                            size="large"
+                          />
+                          {template.negotiable === false ? (
+                            <p className="text-xs text-viridian-green mt-1 font-medium">
+                              ✓ Fixed price with discount - pay directly
+                            </p>
+                          ) : (
+                            <p className="text-xs text-eagle-green/60 mt-1">
+                              Final price may vary based on customizations
+                            </p>
+                          )}
+                        </div>
                       ) : (
-                        <p className="text-xs text-eagle-green/60 mt-1">
-                          Final price may vary based on customizations
-                        </p>
+                        <>
+                          <p className="text-2xl font-bold text-eagle-green">
+                            {customOrderTemplateService.formatTemplatePrice(template)}
+                          </p>
+                          {template.negotiable === false ? (
+                            <p className="text-xs text-viridian-green mt-1 font-medium">
+                              ✓ Fixed price - pay directly without negotiation
+                            </p>
+                          ) : (
+                            <p className="text-xs text-eagle-green/60 mt-1">
+                              Final price may vary based on customizations
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
+
+                    {template.negotiable === false && (
+                      <div className="space-y-2">
+                        <Label className="text-eagle-green font-medium flex items-center gap-1">
+                          <Tag className="h-4 w-4" />
+                          Discount Code
+                        </Label>
+                        {discountResult?.applicable ? (
+                          <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="h-5 w-5 text-green-600" />
+                              <div>
+                                <p className="text-sm font-medium text-green-800">
+                                  Code "{discountCode}" applied
+                                </p>
+                                <p className="text-xs text-green-600">
+                                  You save {formatPrice(manualDiscountAmountDisplay, template?.price?.currencyCode || preferredCurrency)}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleRemoveDiscount}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="Enter discount code"
+                                value={discountCode}
+                                onChange={(e) => {
+                                  setDiscountCode(e.target.value);
+                                  setDiscountError(null);
+                                }}
+                                onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()}
+                                className={discountError ? 'border-red-300' : ''}
+                                disabled={isValidatingDiscount}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleApplyDiscount}
+                                disabled={isValidatingDiscount || !discountCode.trim()}
+                                className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
+                              >
+                                {isValidatingDiscount ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  'Apply'
+                                )}
+                              </Button>
+                            </div>
+                            {discountError && (
+                              <p className="text-xs text-red-500 flex items-center gap-1">
+                                <XCircle className="h-3 w-3" />
+                                {discountError}
+                              </p>
+                            )}
+                            {!discountError && !discountCode.trim() && template.activeDiscount && (
+                              <p className="text-xs text-eagle-green/60">
+                                A template discount will be applied automatically.
+                              </p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>

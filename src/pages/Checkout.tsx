@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,14 +18,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StateSelect, COUNTRIES } from "@/components/ui/state-select";
-import { useNavigate } from "react-router-dom";
-import { ShoppingCart, ArrowLeft, CreditCard, Smartphone, Loader2, Gift, Tag } from "lucide-react";
-import { useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ShoppingCart, ArrowLeft, CreditCard, Smartphone, Loader2, Gift, Tag, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { formatPrice } from "@/lib/currency";
+import { formatPrice, toMinorUnits, getCurrencyDecimals, getDiscountAmountForDisplay } from "@/lib/currency";
 import { apiService } from "@/services/apiService";
 import { orderService, type CreateOrderRequest } from "@/services/orderService";
+import { discountService, type DiscountValidationResult } from "@/services/discountService";
 import { type CartItem } from "@/services/cartService";
+import { getPaymentMethodsForCountry, getDefaultPaymentMethod, type PaymentMethod } from "@/lib/countryConfig";
+import { paymentMethodConfigService } from "@/services/paymentMethodConfigService";
+
+interface CurrencyConversionDto {
+  amount: number;
+  fromCurrency: string;
+  toCurrency: string;
+  convertedAmount: number;
+  rate: number;
+  rateTimestamp?: string;
+}
 
 interface AddressDto {
   id?: number;
@@ -42,8 +55,16 @@ interface AddressDto {
 
 export default function Checkout() {
   const { isAuthenticated, user } = useAuth();
-  const { cartItems, cartCurrency, getTotalPrice, getTotalItems } = useCart();
+  const { 
+    cartItems, 
+    cartCurrency, 
+    getTotalPrice, 
+    getTotalItems,
+    appliedDiscountCode,
+    setAppliedDiscountCode
+  } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
@@ -70,11 +91,171 @@ export default function Checkout() {
   const [contactEmail, setContactEmail] = useState("");
   const [giftWrap, setGiftWrap] = useState(false);
   const [cardMessage, setCardMessage] = useState("");
-  const [discountCode, setDiscountCode] = useState("");
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'stripe' | 'chapa' | 'telebirr'>('stripe');
+  const [discountCode, setDiscountCode] = useState(appliedDiscountCode || "");
+  const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
+  const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+  
+  // Determine available payment methods based on user's country AND backend config
+  const userCountry = user?.country || '';
+  const countryPaymentMethods = useMemo(() => getPaymentMethodsForCountry(userCountry), [userCountry]);
 
+  // Fetch backend-enabled payment methods
+  const { data: backendEnabledMethods } = useQuery({
+    queryKey: ['payment-method-configs'],
+    queryFn: () => paymentMethodConfigService.getAllConfigs(),
+    staleTime: 60_000, // Cache for 1 minute
+  });
+
+  // Cross-reference: only show methods that are both country-appropriate AND backend-enabled
+  const availablePaymentMethods = useMemo(() => {
+    if (!backendEnabledMethods) return countryPaymentMethods; // Fallback while loading
+    const enabledSet = new Set(
+      backendEnabledMethods
+        .filter((c) => c.enabled)
+        .map((c) => c.paymentMethod.toLowerCase())
+    );
+    return countryPaymentMethods.filter((m) => enabledSet.has(m));
+  }, [countryPaymentMethods, backendEnabledMethods]);
+
+  const defaultPaymentMethod = useMemo(() => {
+    if (availablePaymentMethods.length > 0) return availablePaymentMethods[0];
+    return getDefaultPaymentMethod(userCountry);
+  }, [availablePaymentMethods, userCountry]);
+  
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>(defaultPaymentMethod);
+  const [telebirrConversion, setTelebirrConversion] = useState<CurrencyConversionDto | null>(null);
+  const [isConvertingTelebirr, setIsConvertingTelebirr] = useState(false);
+  
   const totalPrice = getTotalPrice();
   const totalItems = getTotalItems();
+
+  // Extract product IDs from cart for discount validation
+  const cartProductIds = useMemo(() => {
+    if (!Array.isArray(cartItems)) return [];
+    return cartItems.map((item: CartItem) => item.productId).filter(Boolean);
+  }, [cartItems]);
+
+  const handleApplyDiscount = useCallback(async (codeOverride?: string) => {
+    const code = (codeOverride || discountCode).trim();
+    if (!code) {
+      setDiscountError("Please enter a discount code");
+      return;
+    }
+    if (!cartCurrency || totalPrice <= 0) {
+      setDiscountError("Cart is empty or currency not set");
+      return;
+    }
+
+    setIsValidatingDiscount(true);
+    setDiscountError(null);
+    setDiscountResult(null);
+
+    try {
+      const result = await discountService.validateDiscountCode({
+        discountCode: code,
+        orderTotalMinor: toMinorUnits(totalPrice, cartCurrency),
+        productIds: cartProductIds,
+      });
+
+      if (result.applicable) {
+        setDiscountResult(result);
+        setAppliedDiscountCode(code);
+        setDiscountError(null);
+        toast({
+          title: "Discount Applied",
+          description: `Discount code "${code}" applied successfully!`,
+        });
+      } else {
+        setDiscountResult(null);
+        setAppliedDiscountCode(null);
+        setDiscountError(result.reason || "Discount code is not valid for this order");
+      }
+    } catch (error: any) {
+      setDiscountResult(null);
+      setAppliedDiscountCode(null);
+      setDiscountError(error?.message || "Failed to validate discount code");
+    } finally {
+      setIsValidatingDiscount(false);
+    }
+  }, [discountCode, cartCurrency, totalPrice, cartProductIds, toast, setAppliedDiscountCode]);
+
+  const handleRemoveDiscount = useCallback(() => {
+    setDiscountResult(null);
+    setDiscountError(null);
+    setDiscountCode("");
+    setAppliedDiscountCode(null);
+  }, [setAppliedDiscountCode]);
+
+  // Handle automatic discount application from persistent state
+  useEffect(() => {
+    if (appliedDiscountCode && 
+        cartCurrency && 
+        totalPrice > 0 && 
+        !discountResult && 
+        !isValidatingDiscount && 
+        !discountError) {
+      handleApplyDiscount(appliedDiscountCode);
+    }
+  }, [appliedDiscountCode, cartCurrency, discountResult, isValidatingDiscount, discountError, handleApplyDiscount]);
+
+  // Update selected payment method when default changes (e.g., user data loads)
+  useEffect(() => {
+    if (!availablePaymentMethods.includes(selectedPaymentMethod)) {
+      setSelectedPaymentMethod(defaultPaymentMethod);
+    }
+  }, [availablePaymentMethods, selectedPaymentMethod, defaultPaymentMethod]);
+
+  // Calculate the discount amount in display (major) units
+  const discountAmountDisplay = useMemo(() => {
+    return getDiscountAmountForDisplay(discountResult, cartCurrency);
+  }, [discountResult, cartCurrency]);
+
+  // Final total after discount
+  const finalTotal = useMemo(() => {
+    return Math.max(0, totalPrice - discountAmountDisplay);
+  }, [totalPrice, discountAmountDisplay]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const shouldConvert = selectedPaymentMethod === 'telebirr'
+      && cartCurrency
+      && cartCurrency.toUpperCase() !== 'ETB'
+      && totalPrice > 0;
+
+    if (!shouldConvert) {
+      setTelebirrConversion(null);
+      setIsConvertingTelebirr(false);
+      return;
+    }
+
+    const fetchConversion = async () => {
+      try {
+        setIsConvertingTelebirr(true);
+        const result = await apiService.getRequest<CurrencyConversionDto>(
+          `/api/currencies/convert?amount=${encodeURIComponent(totalPrice)}&from=${encodeURIComponent(cartCurrency)}&to=ETB`
+        );
+        if (!cancelled) {
+          setTelebirrConversion(result);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setTelebirrConversion(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsConvertingTelebirr(false);
+        }
+      }
+    };
+
+    fetchConversion();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPaymentMethod, cartCurrency, totalPrice]);
 
   useEffect(() => {
     if (user) {
@@ -343,6 +524,7 @@ export default function Checkout() {
 
       // Reset idempotency key for next order
       setOrderIdempotencyKey(null);
+      setAppliedDiscountCode(null);
 
       // Navigate to order review page before payment
       navigate(`/order-review?orderId=${orderId}&paymentMethod=${selectedPaymentMethod}`);
@@ -644,24 +826,66 @@ export default function Checkout() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex space-x-2">
-                  <Input
-                    placeholder="Enter discount code"
-                    value={discountCode}
-                    onChange={(e) => setDiscountCode(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="outline"
-                    type="button"
-                    className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
-                  >
-                    Apply
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Discount will be applied when order is placed
-                </p>
+                {discountResult?.applicable ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium text-green-800">
+                            Code "{discountCode}" applied
+                          </p>
+                          <p className="text-xs text-green-600">
+                            You save {formatPrice(discountAmountDisplay, cartCurrency)}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemoveDiscount}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex space-x-2">
+                      <Input
+                        placeholder="Enter discount code"
+                        value={discountCode}
+                        onChange={(e) => {
+                          setDiscountCode(e.target.value);
+                          setDiscountError(null);
+                        }}
+                        onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()}
+                        className={`flex-1 ${discountError ? 'border-red-300' : ''}`}
+                        disabled={isValidatingDiscount}
+                      />
+                      <Button
+                        variant="outline"
+                        type="button"
+                        onClick={handleApplyDiscount}
+                        disabled={isValidatingDiscount || !discountCode.trim()}
+                        className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
+                      >
+                        {isValidatingDiscount ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Apply'
+                        )}
+                      </Button>
+                    </div>
+                    {discountError && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        <XCircle className="h-3 w-3" />
+                        {discountError}
+                      </p>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -674,106 +898,116 @@ export default function Checkout() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Stripe Option */}
-                <div 
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    selectedPaymentMethod === 'stripe' 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelectedPaymentMethod('stripe')}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      selectedPaymentMethod === 'stripe' ? 'border-blue-500' : 'border-gray-300'
-                    }`}>
-                      {selectedPaymentMethod === 'stripe' && (
-                        <div className="w-3 h-3 rounded-full bg-blue-500" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-5 w-5 text-blue-600" />
-                        <span className="font-medium">Stripe</span>
-                        <span className="text-xs text-gray-500">(International)</span>
+                {/* Stripe Option - Only show for non-Ethiopian users */}
+                {availablePaymentMethods.includes('stripe') && (
+                  <div 
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      selectedPaymentMethod === 'stripe' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedPaymentMethod('stripe')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        selectedPaymentMethod === 'stripe' ? 'border-blue-500' : 'border-gray-300'
+                      }`}>
+                        {selectedPaymentMethod === 'stripe' && (
+                          <div className="w-3 h-3 rounded-full bg-blue-500" />
+                        )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Credit/Debit Cards, Apple Pay, Google Pay, PayPal
-                      </p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-5 w-5 text-blue-600" />
+                          <span className="font-medium">Stripe</span>
+                          <span className="text-xs text-gray-500">(International)</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Credit/Debit Cards, Apple Pay, Google Pay, PayPal
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Chapa Option */}
-                <div 
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    selectedPaymentMethod === 'chapa' 
-                      ? 'border-green-500 bg-green-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelectedPaymentMethod('chapa')}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      selectedPaymentMethod === 'chapa' ? 'border-green-500' : 'border-gray-300'
-                    }`}>
-                      {selectedPaymentMethod === 'chapa' && (
-                        <div className="w-3 h-3 rounded-full bg-green-500" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Smartphone className="h-5 w-5 text-green-600" />
-                        <span className="font-medium">Chapa</span>
-                        <span className="text-xs text-gray-500">(Ethiopia)</span>
+                {/* Chapa Option - Only show for Ethiopian users */}
+                {availablePaymentMethods.includes('chapa') && (
+                  <div 
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      selectedPaymentMethod === 'chapa' 
+                        ? 'border-green-500 bg-green-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedPaymentMethod('chapa')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        selectedPaymentMethod === 'chapa' ? 'border-green-500' : 'border-gray-300'
+                      }`}>
+                        {selectedPaymentMethod === 'chapa' && (
+                          <div className="w-3 h-3 rounded-full bg-green-500" />
+                        )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        CBE Birr, M-Pesa, Awash Bank, Bank Transfer
-                      </p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="h-5 w-5 text-green-600" />
+                          <span className="font-medium">Chapa</span>
+                          <span className="text-xs text-gray-500">(Ethiopia)</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          CBE Birr, M-Pesa, Awash Bank, Bank Transfer
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* TeleBirr Option */}
-                <div 
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    selectedPaymentMethod === 'telebirr' 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelectedPaymentMethod('telebirr')}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      selectedPaymentMethod === 'telebirr' ? 'border-blue-500' : 'border-gray-300'
-                    }`}>
-                      {selectedPaymentMethod === 'telebirr' && (
-                        <div className="w-3 h-3 rounded-full bg-blue-500" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Smartphone className="h-5 w-5 text-blue-600" />
-                        <span className="font-medium">TeleBirr</span>
-                        <span className="text-xs text-gray-500">(Ethiopia)</span>
+                {/* TeleBirr Option - Only show for Ethiopian users */}
+                {availablePaymentMethods.includes('telebirr') && (
+                  <div 
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      selectedPaymentMethod === 'telebirr' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedPaymentMethod('telebirr')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        selectedPaymentMethod === 'telebirr' ? 'border-blue-500' : 'border-gray-300'
+                      }`}>
+                        {selectedPaymentMethod === 'telebirr' && (
+                          <div className="w-3 h-3 rounded-full bg-blue-500" />
+                        )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        TeleBirr Wallet, Bank Account, Cards
-                      </p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="h-5 w-5 text-blue-600" />
+                          <span className="font-medium">TeleBirr</span>
+                          <span className="text-xs text-gray-500">(Ethiopia)</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          TeleBirr Wallet, Bank Account, Cards
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    <strong>Secure Payment:</strong> You will be redirected to complete your payment securely.
-                  </p>
-                </div>
+                {/* No payment methods available */}
+                {availablePaymentMethods.length === 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      No payment methods are currently available. Please try again later or contact support.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+               
               </CardContent>
             </Card>
           </div>
-
-          {/* Order Summary */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -784,7 +1018,6 @@ export default function Checkout() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {cartItems.map((item: CartItem) => {
-                  // Get image URL - prioritize fullUrl from images array, then url, then cover/productImage
                   const images = item.product?.images as Array<{ id: number; url: string; fullUrl?: string; isPrimary: boolean; sortOrder: number }> | undefined;
                   const imageUrl = images?.[0]?.fullUrl || 
                                    images?.[0]?.url || 
@@ -842,15 +1075,52 @@ export default function Checkout() {
                 {/* Subtotal */}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal</span>
-                  <span>{formatPrice(totalPrice, cartCurrency)}</span>
+                  <span>
+                    {selectedPaymentMethod === 'telebirr' && telebirrConversion
+                      ? formatPrice(telebirrConversion.convertedAmount, 'ETB')
+                      : formatPrice(totalPrice, cartCurrency)}
+                  </span>
                 </div>
 
+                {/* Discount */}
+                {discountResult?.applicable && discountAmountDisplay > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span className="flex items-center gap-1">
+                      <Tag className="h-3 w-3" />
+                      Discount ({discountCode})
+                    </span>
+                    <span>-{formatPrice(discountAmountDisplay, cartCurrency)}</span>
+                  </div>
+                )}
             
                 {/* Estimated Total */}
                 <div className="flex justify-between font-semibold text-lg pt-2">
                   <span>Estimated Total</span>
-                  <span className="text-ethiopian-gold">{formatPrice(totalPrice, cartCurrency)}</span>
+                  <span className="text-ethiopian-gold">
+                    {selectedPaymentMethod === 'telebirr' && telebirrConversion
+                      ? formatPrice(
+                          Math.max(0, telebirrConversion.convertedAmount - (discountAmountDisplay * (telebirrConversion.rate || 1))),
+                          'ETB'
+                        )
+                      : formatPrice(finalTotal, cartCurrency)}
+                  </span>
                 </div>
+
+                {selectedPaymentMethod === 'telebirr' && cartCurrency?.toUpperCase() !== 'ETB' && (
+                  <div className="text-xs text-blue-700 bg-blue-50 rounded-md p-2">
+                    {isConvertingTelebirr && (
+                      <span>Converting total to ETB for TeleBirr...</span>
+                    )}
+                    {!isConvertingTelebirr && telebirrConversion && (
+                      <span>
+                        TeleBirr charges in ETB. Converted from {cartCurrency} at rate {telebirrConversion.rate}.
+                      </span>
+                    )}
+                    {!isConvertingTelebirr && !telebirrConversion && (
+                      <span>TeleBirr charges in ETB. Unable to fetch conversion rate right now.</span>
+                    )}
+                  </div>
+                )}
 
                 <Button
                   onClick={handleProceedToPayment}
