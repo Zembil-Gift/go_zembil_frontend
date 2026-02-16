@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import FadeIn from "@/components/animations/FadeIn";
@@ -8,10 +9,15 @@ import SlideIn from "@/components/animations/SlideIn";
 import { ProductGridStagger, ProductGridItem } from "@/components/animations/StaggerAnimations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Grid, List, ChevronRight, Package, Sparkles, Gift, X, Filter } from "lucide-react";
+import { Search, ChevronRight, Package, Sparkles, Gift, X, Filter, ChevronDown, ChevronUp } from "lucide-react";
 import GiftItemCard from "@/components/gift-card";
 import { productService, Product, PagedProductResponse } from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
@@ -27,6 +33,7 @@ export default function Shop() {
 function ShopContent() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isInitialized } = useAuth();
 
   // Parse URL parameters
   const urlParams = new URLSearchParams(location.search);
@@ -34,7 +41,7 @@ function ShopContent() {
   const subCategoryIdParam = urlParams.get('subCategoryId');
   const searchParam = urlParams.get('search') || '';
 
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('newest');
   const [searchTerm, setSearchTerm] = useState(searchParam);
   const [debouncedSearch, setDebouncedSearch] = useState(searchParam);
@@ -46,6 +53,12 @@ function ShopContent() {
   const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<number | undefined>(
     subCategoryIdParam ? parseInt(subCategoryIdParam) : undefined
   );
+  const [showAllSubCategories, setShowAllSubCategories] = useState(false);
+
+  // Reset showAllSubCategories when category changes
+  useEffect(() => {
+    setShowAllSubCategories(false);
+  }, [selectedCategoryId]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -81,7 +94,7 @@ function ShopContent() {
     [subCategories, selectedSubCategoryId]
   );
 
-  // Fetch products with filters
+  // Fetch products with filters (wait for auth so currency is correct)
   const { data: productsData, isLoading: productsLoading, isFetching } = useQuery<PagedProductResponse>({
     queryKey: ['products', 'filtered', {
       page: currentPage,
@@ -89,7 +102,8 @@ function ShopContent() {
       search: debouncedSearch,
       categoryId: selectedCategoryId,
       subCategoryId: selectedSubCategoryId,
-      sortBy
+      sortBy,
+      currency: user?.preferredCurrencyCode ?? 'default',
     }],
     queryFn: () => productService.getFilteredProducts({
       page: currentPage,
@@ -98,6 +112,7 @@ function ShopContent() {
       categoryId: selectedCategoryId,
       subCategoryId: selectedSubCategoryId,
     }),
+    enabled: isInitialized,
   });
 
   const products = productsData?.content || [];
@@ -216,11 +231,11 @@ function ShopContent() {
           <FadeIn delay={0.1}>
             <div className="flex items-center gap-2 mb-2">
               <Gift className="h-5 w-5 text-june-bud" />
-              <h1 className="text-2xl lg:text-3xl font-gotham-bold text-white">
+              <h1 className="text-2xl lg:text-3xl font-bold text-white">
                 Shop Gifts
               </h1>
             </div>
-            <p className="text-sm lg:text-base font-gotham-light text-white/80 max-w-2xl">
+            <p className="text-sm lg:text-base font-light text-white/80 max-w-2xl">
               Handcrafted gifts from talented Ethiopian artisans
             </p>
           </FadeIn>
@@ -232,10 +247,9 @@ function ShopContent() {
         <FadeIn delay={0.2}>
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="h-5 w-5 text-viridian-green" />
-              <span className="font-gotham-bold text-eagle-green">Browse by Category</span>
+              <span className="font-bold text-xl text-eagle-green">Browse by Category</span>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex overflow-x-auto scrollbar-hide gap-3 py-2 -mx-4 px-4 sm:mx-0 sm:px-2 sm:flex-wrap">
               {categories.map((category, index) => {
                 const Icon = getIconByName(category.iconName);
                 const isActive = selectedCategoryId === category.id;
@@ -260,7 +274,7 @@ function ShopContent() {
                       aria-pressed={isActive}
                     >
                       <Icon className={`h-5 w-5 transition-transform duration-300 ${isActive ? 'text-june-bud' : ''}`} />
-                      <span className="font-gotham-bold">{category.name}</span>
+                      <span className="font-bold">{category.name}</span>
                     </Button>
                   </motion.div>
                 );
@@ -278,7 +292,7 @@ function ShopContent() {
             className="mb-8 p-6 bg-white/80 backdrop-blur-xl rounded-3xl border border-june-bud/20 shadow-xl shadow-eagle-green/5"
           >
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-gotham-bold text-eagle-green flex items-center gap-3">
+              <h2 className="text-lg font-bold text-eagle-green flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-june-bud/20 to-viridian-green/10 rounded-xl">
                   {(() => {
                     const CategoryIcon = getIconByName(currentCategory.iconName);
@@ -292,7 +306,7 @@ function ShopContent() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setSelectedSubCategoryId(undefined)}
-                  className="text-eagle-green/70 hover:text-viridian-green hover:bg-viridian-green/10 font-gotham-medium rounded-full px-4"
+                  className="text-eagle-green/70 hover:text-viridian-green hover:bg-viridian-green/10 font-medium rounded-full px-4"
                 >
                   <X className="h-4 w-4 mr-1" />
                   Clear
@@ -307,40 +321,76 @@ function ShopContent() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {subCategories.map((subcategory, index) => {
-                  const Icon = getIconByName(subcategory.iconName);
-                  const isSelected = selectedSubCategoryId === subcategory.id;
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 py-2 px-2">
+                  {(showAllSubCategories ? subCategories : subCategories.slice(0, 5)).map((subcategory, index) => {
+                    const Icon = getIconByName(subcategory.iconName);
+                    const isSelected = selectedSubCategoryId === subcategory.id;
 
-                  return (
+                    return (
+                      <motion.div
+                        key={subcategory.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.03 }}
+                      >
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSubCategorySelect(subcategory.id)}
+                          className={`
+                            flex flex-col items-center gap-2 p-4 h-24 w-full rounded-2xl transition-all duration-300 border-2
+                            ${isSelected
+                              ? "bg-gradient-to-br from-viridian-green/10 to-june-bud/10 border-viridian-green text-eagle-green shadow-lg scale-105"
+                              : "bg-white/50 border-transparent text-eagle-green/70 hover:border-june-bud/30 hover:bg-june-bud/5 hover:scale-102"
+                            }
+                          `}
+                          aria-pressed={isSelected}
+                        >
+                          <div className={`p-2 rounded-xl transition-all duration-300 ${isSelected ? 'bg-viridian-green/20' : 'bg-eagle-green/5'}`}>
+                            <Icon className={`h-6 w-6 ${isSelected ? 'text-viridian-green' : 'text-eagle-green/60'}`} />
+                          </div>
+                          <span className={`text-xs font-bold text-center leading-tight ${isSelected ? 'text-eagle-green' : 'text-eagle-green/70'}`}>
+                            {subcategory.name}
+                          </span>
+                        </Button>
+                      </motion.div>
+                    );
+                  })}
+                  
+                  {!showAllSubCategories && subCategories.length > 5 && (
                     <motion.div
-                      key={subcategory.id}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.03 }}
                     >
                       <Button
                         variant="ghost"
-                        onClick={() => handleSubCategorySelect(subcategory.id)}
-                        className={`
-                          flex flex-col items-center gap-2 p-4 h-24 w-full rounded-2xl transition-all duration-300 border-2
-                          ${isSelected
-                            ? "bg-gradient-to-br from-viridian-green/10 to-june-bud/10 border-viridian-green text-eagle-green shadow-lg scale-105"
-                            : "bg-white/50 border-transparent text-eagle-green/70 hover:border-june-bud/30 hover:bg-june-bud/5 hover:scale-102"
-                          }
-                        `}
-                        aria-pressed={isSelected}
+                        onClick={() => setShowAllSubCategories(true)}
+                        className="flex flex-col items-center justify-center gap-2 p-4 h-24 w-full rounded-2xl transition-all duration-300 border-2 border-dashed border-viridian-green/30 bg-viridian-green/5 text-viridian-green hover:bg-viridian-green/10 hover:border-viridian-green"
                       >
-                        <div className={`p-2 rounded-xl transition-all duration-300 ${isSelected ? 'bg-viridian-green/20' : 'bg-eagle-green/5'}`}>
-                          <Icon className={`h-6 w-6 ${isSelected ? 'text-viridian-green' : 'text-eagle-green/60'}`} />
+                        <div className="p-2 rounded-xl bg-viridian-green/20">
+                          <ChevronDown className="h-6 w-6" />
                         </div>
-                        <span className={`text-xs font-gotham-bold text-center leading-tight ${isSelected ? 'text-eagle-green' : 'text-eagle-green/70'}`}>
-                          {subcategory.name}
+                        <span className="text-xs font-bold text-center leading-tight">
+                          Show {subCategories.length - 5} More
                         </span>
                       </Button>
                     </motion.div>
-                  );
-                })}
+                  )}
+                </div>
+
+                {showAllSubCategories && (
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAllSubCategories(false)}
+                      className="text-eagle-green/60 hover:text-viridian-green hover:bg-viridian-green/5 font-medium rounded-full px-6 flex items-center gap-2"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                      Show Less
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </motion.div>
@@ -348,7 +398,7 @@ function ShopContent() {
 
         {/* Search and Filters */}
         <SlideIn direction="up" delay={0.3}>
-          <div className="flex flex-col lg:flex-row gap-4 mb-8">
+          <div className="flex items-center gap-3 mb-8">
             {/* Search Bar */}
             <div className="flex-1 relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-eagle-green/20 to-viridian-green/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
@@ -358,57 +408,40 @@ function ShopContent() {
                   placeholder="Search for gifts, occasions, artisans..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 pr-4 h-14 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 font-gotham-light text-eagle-green placeholder:text-eagle-green/40"
+                  className="pl-12 pr-4 h-14 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 font-light text-eagle-green placeholder:text-eagle-green/40 w-full"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3">
-              {/* Sort Dropdown */}
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-52 h-14 bg-white border border-eagle-green/10 rounded-xl shadow-lg shadow-eagle-green/5 font-gotham-medium text-eagle-green hover:border-viridian-green transition-colors">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-viridian-green" />
-                    <SelectValue placeholder="Sort by" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-eagle-green/10 shadow-xl rounded-xl">
-                  <SelectItem value="newest" className="font-gotham-light hover:bg-june-bud/10 rounded-lg">Newest First</SelectItem>
-                  <SelectItem value="popular" className="font-gotham-light hover:bg-june-bud/10 rounded-lg">Most Popular</SelectItem>
-                  <SelectItem value="price-low" className="font-gotham-light hover:bg-june-bud/10 rounded-lg">Price: Low to High</SelectItem>
-                  <SelectItem value="price-high" className="font-gotham-light hover:bg-june-bud/10 rounded-lg">Price: High to Low</SelectItem>
-                  <SelectItem value="rating" className="font-gotham-light hover:bg-june-bud/10 rounded-lg">Highest Rated</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* View Toggle */}
-              <div className="flex bg-white rounded-xl p-1.5 shadow-lg shadow-eagle-green/5 border border-eagle-green/10">
+            {/* Sort Dropdown - Icon Only */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className={`h-11 w-11 rounded-lg transition-all duration-300 ${viewMode === 'grid'
-                    ? 'bg-gradient-to-br from-eagle-green to-viridian-green text-white shadow-md'
-                    : 'text-eagle-green/50 hover:text-eagle-green hover:bg-eagle-green/5'
-                    }`}
-                  title="Grid view"
+                  variant="outline"
+                  className="h-14 w-14 rounded-2xl bg-white border-eagle-green/10 shadow-lg shadow-eagle-green/5 hover:border-viridian-green hover:bg-viridian-green/5 transition-all duration-300 p-0 shrink-0"
                 >
-                  <Grid className="h-5 w-5" />
+                  <Filter className="h-5 w-5 text-viridian-green" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className={`h-11 w-11 rounded-lg transition-all duration-300 ${viewMode === 'list'
-                    ? 'bg-gradient-to-br from-eagle-green to-viridian-green text-white shadow-md'
-                    : 'text-eagle-green/50 hover:text-eagle-green hover:bg-eagle-green/5'
-                    }`}
-                  title="List view"
-                >
-                  <List className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-white border border-eagle-green/10 shadow-xl rounded-xl p-1">
+                <div className="px-2 py-1.5 text-xs font-bold text-eagle-green/40 uppercase tracking-wider">Sort by</div>
+                <DropdownMenuItem onClick={() => setSortBy('newest')} className={`rounded-lg cursor-pointer ${sortBy === 'newest' ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}>
+                  Newest First
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('popular')} className={`rounded-lg cursor-pointer ${sortBy === 'popular' ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}>
+                  Most Popular
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('price-low')} className={`rounded-lg cursor-pointer ${sortBy === 'price-low' ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}>
+                  Price: Low to High
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('price-high')} className={`rounded-lg cursor-pointer ${sortBy === 'price-high' ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}>
+                  Price: High to Low
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy('rating')} className={`rounded-lg cursor-pointer ${sortBy === 'rating' ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}>
+                  Highest Rated
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </SlideIn>
 
@@ -419,7 +452,7 @@ function ShopContent() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-wrap items-center gap-3 mb-8 p-4 bg-gradient-to-r from-june-bud/10 to-viridian-green/5 rounded-2xl border border-june-bud/20"
           >
-            <span className="text-sm font-gotham-bold text-eagle-green flex items-center gap-2">
+            <span className="text-sm font-bold text-eagle-green flex items-center gap-2">
               <Filter className="h-4 w-4" />
               Active filters:
             </span>
@@ -430,7 +463,7 @@ function ShopContent() {
                 variant="ghost"
                 size="sm"
                 onClick={handleClearFilters}
-                className="px-3 h-8 text-xs font-gotham-medium text-eagle-green/70 hover:text-viridian-green hover:bg-transparent"
+                className="px-3 h-8 text-xs font-medium text-eagle-green/70 hover:text-viridian-green hover:bg-transparent"
               >
                 All Products
               </Button>
@@ -438,7 +471,7 @@ function ShopContent() {
               {currentCategory && (
                 <>
                   <ChevronRight className="h-3 w-3 text-eagle-green/30" />
-                  <Badge className="flex items-center gap-1.5 bg-gradient-to-r from-eagle-green to-viridian-green text-white border-0 px-3 py-1 rounded-full font-gotham-medium">
+                  <Badge className="flex items-center gap-1.5 bg-gradient-to-r from-eagle-green to-viridian-green text-white border-0 px-3 py-1 rounded-full font-medium">
                     {currentCategory.name}
                     <button
                       onClick={() => {
@@ -456,7 +489,7 @@ function ShopContent() {
               {currentSubCategory && (
                 <>
                   <ChevronRight className="h-3 w-3 text-eagle-green/30" />
-                  <Badge className="flex items-center gap-1.5 bg-viridian-green/20 text-viridian-green border border-viridian-green/30 px-3 py-1 rounded-full font-gotham-medium">
+                  <Badge className="flex items-center gap-1.5 bg-viridian-green/20 text-viridian-green border border-viridian-green/30 px-3 py-1 rounded-full font-medium">
                     {currentSubCategory.name}
                     <button
                       onClick={() => setSelectedSubCategoryId(undefined)}
@@ -471,7 +504,7 @@ function ShopContent() {
               {debouncedSearch && (
                 <>
                   <ChevronRight className="h-3 w-3 text-eagle-green/30" />
-                  <Badge className="flex items-center gap-1.5 bg-june-bud/20 text-eagle-green border border-june-bud/30 px-3 py-1 rounded-full font-gotham-medium">
+                  <Badge className="flex items-center gap-1.5 bg-june-bud/20 text-eagle-green border border-june-bud/30 px-3 py-1 rounded-full font-medium">
                     "{debouncedSearch}"
                     <button
                       onClick={() => {
@@ -491,7 +524,7 @@ function ShopContent() {
               variant="ghost"
               size="sm"
               onClick={handleClearFilters}
-              className="ml-auto text-eagle-green/70 hover:text-viridian-green hover:bg-viridian-green/10 font-gotham-medium rounded-full px-4"
+              className="ml-auto text-eagle-green/70 hover:text-viridian-green hover:bg-viridian-green/10 font-medium rounded-full px-4"
             >
               Clear all
             </Button>
@@ -501,14 +534,14 @@ function ShopContent() {
         {/* Products Section */}
         <div className="mb-12">
           <div className="flex justify-between items-center mb-6">
-            <p className="font-gotham-light text-eagle-green/70">
+            <p className="font-light text-eagle-green/70">
               {isFetching ? (
                 <span className="flex items-center gap-2">
                   <span className="inline-block w-4 h-4 border-2 border-viridian-green/30 border-t-viridian-green rounded-full animate-spin"></span>
                   Loading...
                 </span>
               ) : (
-                <>Showing <span className="font-gotham-bold text-eagle-green">{displayProducts.length}</span> of <span className="font-gotham-bold text-eagle-green">{totalProducts}</span> products</>
+                <>Showing <span className="font-bold text-eagle-green">{displayProducts.length}</span> of <span className="font-bold text-eagle-green">{totalProducts}</span> products</>
               )}
             </p>
           </div>
@@ -523,8 +556,8 @@ function ShopContent() {
                 <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-june-bud/20 to-viridian-green/10 rounded-3xl flex items-center justify-center">
                   <Package className="h-12 w-12 text-eagle-green/40" />
                 </div>
-                <h3 className="text-2xl font-gotham-bold text-eagle-green mb-3">No products found</h3>
-                <p className="font-gotham-light text-eagle-green/60 mb-8 leading-relaxed">
+                <h3 className="text-2xl font-bold text-eagle-green mb-3">No products found</h3>
+                <p className="font-light text-eagle-green/60 mb-8 leading-relaxed">
                   {hasFilters
                     ? "We couldn't find any gifts matching your criteria. Try adjusting your search or filters."
                     : "No products are available at the moment. Please check back soon for new arrivals!"}
@@ -532,7 +565,7 @@ function ShopContent() {
                 {hasFilters && (
                   <Button
                     onClick={handleClearFilters}
-                    className="bg-gradient-to-r from-eagle-green to-viridian-green hover:from-viridian-green hover:to-eagle-green text-white font-gotham-bold px-8 py-3 rounded-full shadow-lg shadow-eagle-green/25 transition-all duration-300 hover:scale-105"
+                    className="bg-gradient-to-r from-eagle-green to-viridian-green hover:from-viridian-green hover:to-eagle-green text-white font-bold px-8 py-3 rounded-full shadow-lg shadow-eagle-green/25 transition-all duration-300 hover:scale-105"
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     Show all products

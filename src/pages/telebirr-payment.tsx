@@ -12,7 +12,6 @@ import {
   ArrowLeft, 
   ExternalLink, 
   Phone,
-  Shield,
   Wallet,
   Clock
 } from 'lucide-react';
@@ -33,6 +32,15 @@ export default function TelebirrPaymentPage() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string>('');
+  interface CurrencyConversionDto {
+    amount: number;
+    fromCurrency: string;
+    toCurrency: string;
+    convertedAmount: number;
+    rate: number;
+    rateTimestamp?: string;
+  }
+
   const [paymentData, setPaymentData] = useState<{
     amount: number;
     currency: string;
@@ -88,6 +96,21 @@ export default function TelebirrPaymentPage() {
         
       const orderCurrency = orderDetails?.currency || 'ETB';
 
+      let displayAmountMinor = orderAmountMinor;
+      let displayCurrency = orderCurrency;
+
+      if (orderCurrency.toUpperCase() !== 'ETB') {
+        try {
+          const conversion = await apiService.getRequest<CurrencyConversionDto>(
+            `/api/currencies/convert?amount=${encodeURIComponent(orderAmountMinor / 100)}&from=${encodeURIComponent(orderCurrency)}&to=ETB`
+          );
+          displayAmountMinor = Math.round(conversion.convertedAmount * 100);
+          displayCurrency = 'ETB';
+        } catch (conversionError) {
+          console.warn('Failed to convert to ETB for TeleBirr display:', conversionError);
+        }
+      }
+
       console.log('TeleBirr initialization response:', response);
 
       if (!response.checkoutUrl) {
@@ -96,8 +119,8 @@ export default function TelebirrPaymentPage() {
 
       setCheckoutUrl(response.checkoutUrl);
       setPaymentData({
-        amount: orderAmountMinor,
-        currency: orderCurrency,
+        amount: displayAmountMinor,
+        currency: displayCurrency,
         orderId: orderIdNum,
         merchOrderId: response.paymentId || ''
       });
