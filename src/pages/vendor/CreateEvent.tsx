@@ -57,9 +57,9 @@ const eventSchema = z.object({
     startDateTime: z.string().min(1, "Start date/time is required"),
     endDateTime: z.string().min(1, "End date/time is required"),
     timezone: z.string().optional(),
-    venue: z.string().min(1, "Venue is required"),
-    address: z.string().optional(),
-    city: z.string().optional(),
+    location: z.string().min(1, "Location is required"),
+    city: z.string().min(1, "City is required"),
+    organizerContact: z.string().optional(),
     imageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
     categoryId: z.string().optional(),
     currencyCode: z.string().min(1, "Currency is required"),
@@ -120,9 +120,9 @@ export default function CreateEvent() {
             startDateTime: "",
             endDateTime: "",
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            venue: "",
-            address: "",
+            location: "",
             city: "",
+            organizerContact: "",
             imageUrl: "",
             categoryId: "",
             currencyCode: "ETB", // Will be updated by useEffect when vendorProfile loads
@@ -156,13 +156,13 @@ export default function CreateEvent() {
                 title: data.title,
                 description: data.description,
                 summary: data.summary,
-                location: data.venue,
-                city: data.city || '',
+                location: data.location,
+                city: data.city,
                 eventDate: data.startDateTime,
                 eventEndDate: data.endDateTime,
                 eventTypeId: data.categoryId ? parseInt(data.categoryId) : undefined,
                 bannerImageUrl: data.imageUrl || undefined,
-                organizerContact: undefined,
+                organizerContact: data.organizerContact || undefined,
                 ticketTypes: data.ticketTypes.map((tt, index) => ({
                     name: tt.name,
                     description: tt.description,
@@ -412,32 +412,35 @@ export default function CreateEvent() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <Label htmlFor="venue">Venue Name *</Label>
+                                <Label htmlFor="location">Location *</Label>
                                 <Input
-                                    id="venue"
-                                    placeholder="Enter Venue Name"
-                                    {...form.register("venue")}
+                                    id="location"
+                                    placeholder="Enter event location (venue, address, etc.)"
+                                    {...form.register("location")}
                                 />
-                                {form.formState.errors.venue && (
-                                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.venue.message}</p>
+                                {form.formState.errors.location && (
+                                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.location.message}</p>
                                 )}
                             </div>
 
                             <div>
-                                <Label htmlFor="address">Address</Label>
-                                <Input
-                                    id="address"
-                                    placeholder="Street address"
-                                    {...form.register("address")}
-                                />
-                            </div>
-
-                            <div>
-                                <Label htmlFor="city">City</Label>
+                                <Label htmlFor="city">City *</Label>
                                 <Input
                                     id="city"
                                     placeholder="City"
                                     {...form.register("city")}
+                                />
+                                {form.formState.errors.city && (
+                                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.city.message}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <Label htmlFor="organizerContact">Organizer Contact</Label>
+                                <Input
+                                    id="organizerContact"
+                                    placeholder="Contact information for attendees"
+                                    {...form.register("organizerContact")}
                                 />
                             </div>
                         </CardContent>
