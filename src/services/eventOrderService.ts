@@ -176,24 +176,22 @@ class EventOrderService {
     return info?.decimalPlaces ?? 2;
   }
 
-  async getEvents(page = 0, size = 12, currency?: string): Promise<PaginatedResponse<EventResponse>> {
+  async getEvents(page = 0, size = 12): Promise<PaginatedResponse<EventResponse>> {
     await this.loadCurrencies();
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('size', size.toString());
-    if (currency) params.append('currency', currency);
     
     return apiService.getRequest<PaginatedResponse<EventResponse>>(
       `/api/events?${params.toString()}`
     );
   }
 
-  async getFeaturedEvents(page = 0, size = 6, currency?: string): Promise<PaginatedResponse<EventResponse>> {
+  async getFeaturedEvents(page = 0, size = 6): Promise<PaginatedResponse<EventResponse>> {
     await this.loadCurrencies();
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('size', size.toString());
-    if (currency) params.append('currency', currency);
     
     return apiService.getRequest<PaginatedResponse<EventResponse>>(
       `/api/events/featured?${params.toString()}`
@@ -201,8 +199,10 @@ class EventOrderService {
   }
 
   async getAdEvents(limit = 5): Promise<EventResponse[]> {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
     return apiService.getRequest<EventResponse[]>(
-      `/api/events/ads?limit=${limit}`
+      `/api/events/ads?${params.toString()}`
     );
   }
 
@@ -211,8 +211,7 @@ class EventOrderService {
     city?: string,
     categoryId?: number,
     page = 0,
-    size = 12,
-    currency?: string
+    size = 12
   ): Promise<PaginatedResponse<EventResponse>> {
     await this.loadCurrencies();
     const params = new URLSearchParams();
@@ -221,19 +220,15 @@ class EventOrderService {
     if (query) params.append('query', query);
     if (city) params.append('city', city);
     if (categoryId) params.append('categoryId', categoryId.toString());
-    if (currency) params.append('currency', currency);
     
     return apiService.getRequest<PaginatedResponse<EventResponse>>(
       `/api/events/search?${params.toString()}`
     );
   }
 
-  async getEvent(eventId: number, currency?: string): Promise<EventResponse> {
+  async getEvent(eventId: number): Promise<EventResponse> {
     await this.loadCurrencies();
-    const url = currency 
-      ? `/api/events/${eventId}?currency=${currency}`
-      : `/api/events/${eventId}`;
-    return apiService.getRequest<EventResponse>(url);
+    return apiService.getRequest<EventResponse>(`/api/events/${eventId}`);
   }
 
   async createOrder(request: CreateEventOrderRequest): Promise<EventOrderResponse> {

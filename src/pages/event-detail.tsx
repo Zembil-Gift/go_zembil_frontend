@@ -24,7 +24,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { getEventImageUrl } from '@/utils/imageUtils';
-import { useAuth } from '@/hooks/useAuth';
 import { VendorCard, EventReviewsSection } from '@/components/reviews';
 import { reviewService } from '@/services/reviewService';
 
@@ -40,13 +39,13 @@ import {
   TicketPurchaseItem,
   TicketType
 } from '@/services/eventOrderService';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function EventDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
-  const preferredCurrency = user?.preferredCurrencyCode || 'ETB';
+  const { user, isInitialized } = useAuth();
   
   // Ticket selection state - map of ticketTypeId to array of recipient info
   const [selectedTickets, setSelectedTickets] = useState<Map<number, TicketPurchaseItem[]>>(new Map());
@@ -58,11 +57,11 @@ export default function EventDetail() {
   // Determine if slug is numeric (API event) or string (mock event)
   const isNumericId = slug ? !isNaN(Number(slug)) : false;
 
-  // Fetch real event from API (by ID) with user's preferred currency
+  // Fetch real event from API (by ID) - wait for auth so currency is correct
   const { data: apiEvent, isLoading: apiLoading } = useQuery({
-    queryKey: ['api-event', slug, preferredCurrency],
-    queryFn: () => eventOrderService.getEvent(Number(slug!), preferredCurrency),
-    enabled: !!slug && isNumericId,
+    queryKey: ['api-event', slug, user?.preferredCurrencyCode ?? 'default'],
+    queryFn: () => eventOrderService.getEvent(Number(slug!)),
+    enabled: !!slug && isNumericId && isInitialized,
   });
 
   // Fetch mock event by slug (fallback)
@@ -347,7 +346,7 @@ export default function EventDetail() {
             >
               {/* Main Image */}
               <div 
-                className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-4 cursor-pointer group"
+                className="relative aspect-[3/2] rounded-2xl overflow-hidden mb-4 cursor-pointer group"
                 onClick={() => eventImages.length > 0 && openLightbox(selectedImageIndex)}
               >
                 {eventImages.length > 0 ? (

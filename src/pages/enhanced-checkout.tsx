@@ -511,30 +511,6 @@ export default function EnhancedCheckout() {
               onError={handlePaymentError}
             />
           )}
-
-          {/* Placeholder for PayPal - not yet integrated */}
-          {currentStep === 3 && selectedPaymentMethod === 'paypal' && (
-            <Card>
-              <CardContent className="pt-6">
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    PayPal integration is ready but requires API credentials. Please add PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET to enable this payment method.
-                  </AlertDescription>
-                </Alert>
-                
-                <div className="mt-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setCurrentStep(2)}
-                    className="w-full"
-                  >
-                    Choose Different Payment Method
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>

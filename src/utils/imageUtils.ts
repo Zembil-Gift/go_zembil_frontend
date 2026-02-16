@@ -4,8 +4,8 @@ import { ImageDto } from '@/services/imageService';
 export interface BaseImage {
   id: number;
   url: string;
-  fullUrl: string;
-  isPrimary: boolean;
+  fullUrl?: string;
+  isPrimary?: boolean;
   sortOrder: number;
 }
 
@@ -20,7 +20,7 @@ export function getProductImageUrl(
   if (images && images.length > 0) {
     const primaryImage = images.find(img => img.isPrimary);
     const image = primaryImage || images[0];
-    return image.fullUrl;
+    return image.fullUrl || image.url || placeholder || '';
   }
   return placeholder || '';
 }
@@ -29,7 +29,8 @@ export function getAllProductImages(images?: ImageLike[] | null): string[] {
   if (images && images.length > 0) {
     return images
       .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(img => img.fullUrl);
+      .map(img => img.fullUrl || img.url)
+      .filter((url): url is string => !!url);
   }
   return [];
 }

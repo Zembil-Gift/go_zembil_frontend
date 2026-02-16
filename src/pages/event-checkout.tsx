@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -13,7 +13,8 @@ import {
   CheckCircle,
   Ticket,
   CreditCard,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -25,8 +26,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { getEventImageUrl } from '@/utils/imageUtils';
+import { paymentMethodConfigService } from '@/services/paymentMethodConfigService';
 
 import { 
   eventOrderService, 
@@ -59,6 +62,27 @@ export default function EventCheckout() {
   const [giftMessage, setGiftMessage] = useState('');
   const [paymentProvider, setPaymentProvider] = useState<'stripe' | 'chapa' | 'telebirr'>('stripe');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Fetch backend-enabled payment methods
+  const { data: backendConfigs } = useQuery({
+    queryKey: ['payment-method-configs'],
+    queryFn: () => paymentMethodConfigService.getAllConfigs(),
+    staleTime: 60_000,
+  });
+
+  const enabledPaymentMethods = useMemo(() => {
+    if (!backendConfigs) return ['stripe', 'chapa', 'telebirr']; // Fallback while loading
+    return backendConfigs
+      .filter((c) => c.enabled)
+      .map((c) => c.paymentMethod.toLowerCase());
+  }, [backendConfigs]);
+
+  // Auto-select first enabled method if current selection is disabled
+  useEffect(() => {
+    if (enabledPaymentMethods.length > 0 && !enabledPaymentMethods.includes(paymentProvider)) {
+      setPaymentProvider(enabledPaymentMethods[0] as 'stripe' | 'chapa' | 'telebirr');
+    }
+  }, [enabledPaymentMethods, paymentProvider]);
 
   // Fetch event details
   const { data: event, isLoading } = useQuery({
@@ -494,7 +518,16 @@ export default function EventCheckout() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {enabledPaymentMethods.length === 0 ? (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        No payment methods are currently available. Please try again later or contact support.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
                   <RadioGroup value={paymentProvider} onValueChange={(value) => setPaymentProvider(value as 'stripe' | 'chapa' | 'telebirr')}>
+                    {enabledPaymentMethods.includes('stripe') && (
                     <div className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${paymentProvider === 'stripe' ? 'border-eagle-green bg-june-bud/10' : 'border-gray-200 hover:border-eagle-green/50'}`}>
                       <RadioGroupItem value="stripe" id="stripe" />
                       <Label htmlFor="stripe" className="flex-1 cursor-pointer">
@@ -505,6 +538,8 @@ export default function EventCheckout() {
                       </Label>
                       <img src="/stripe-logo.png" alt="Stripe" className="h-6 w-auto" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                     </div>
+                    )}
+                    {enabledPaymentMethods.includes('chapa') && (
                     <div className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${paymentProvider === 'chapa' ? 'border-eagle-green bg-june-bud/10' : 'border-gray-200 hover:border-eagle-green/50'}`}>
                       <RadioGroupItem value="chapa" id="chapa" />
                       <Label htmlFor="chapa" className="flex-1 cursor-pointer">
@@ -515,6 +550,8 @@ export default function EventCheckout() {
                       </Label>
                       <img src="/chapa-logo.png" alt="Chapa" className="h-8 w-auto" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                     </div>
+                    )}
+                    {enabledPaymentMethods.includes('telebirr') && (
                     <div className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${paymentProvider === 'telebirr' ? 'border-eagle-green bg-june-bud/10' : 'border-gray-200 hover:border-eagle-green/50'}`}>
                       <RadioGroupItem value="telebirr" id="telebirr" />
                       <Label htmlFor="telebirr" className="flex-1 cursor-pointer">
@@ -525,7 +562,9 @@ export default function EventCheckout() {
                       </Label>
                       <img src="/telebirr-logo.png" alt="TeleBirr" className="h-8 w-auto" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                     </div>
+                    )}
                   </RadioGroup>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>

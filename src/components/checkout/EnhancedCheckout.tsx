@@ -41,7 +41,6 @@ export function EnhancedCheckout({
   const [selectedCurrency, setSelectedCurrency] = useState(currency);
   const [paymentMethods] = useState([
     { id: 'card', name: 'Credit/Debit Card', icon: CreditCard },
-    { id: 'paypal', name: 'PayPal', icon: Wallet },
     { id: 'apple_pay', name: 'Apple Pay', icon: Smartphone },
     { id: 'google_pay', name: 'Google Pay', icon: Smartphone },
   ]);

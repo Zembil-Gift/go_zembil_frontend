@@ -4,6 +4,8 @@ import { ShoppingBag, Sparkles, Loader2, Check, Star } from 'lucide-react'
 import { extractPriceAmount } from '@/services/productService';
 import { formatPriceFromDto, formatPrice, getPriceParts, getPriceCurrency, PriceData } from '@/lib/currency';
 import { WishlistButton } from '@/components/WishlistButton';
+import { DiscountBadge } from '@/components/DiscountBadge';
+import { PriceWithDiscount } from '@/components/PriceWithDiscount';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -32,6 +34,14 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
         discountLabel,
     } = product
 
+    const normalizedImages = Array.isArray(images)
+        ? images
+            .map((img: any) => typeof img === 'string' ? img : (img?.fullUrl || img?.url))
+            .filter(Boolean)
+        : [];
+
+    const activeDiscount = product.activeDiscount;
+
     const displayPrice = typeof price === 'number' ? price : extractPriceAmount(price);
 
     const currencyCode = (typeof price === 'object' && price?.currencyCode)
@@ -39,9 +49,6 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
         || getPriceCurrency(price as PriceData)
         || 'USD';
 
-    typeof price === 'object' && price
-        ? formatPriceFromDto(price as PriceData)
-        : formatPrice(displayPrice, currencyCode);
     const priceParts = getPriceParts(displayPrice, currencyCode);
 
     const displayOriginalPrice = typeof originalPrice === 'number'
@@ -64,7 +71,8 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
         e.stopPropagation();
 
         if (!isAuthenticated) {
-            navigate('/signin?redirect=' + encodeURIComponent(window.location.pathname));
+            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            navigate(`/signin?returnUrl=${returnUrl}`);
             return;
         }
 
@@ -80,8 +88,8 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
         }
     };
 
-    const primaryImage = images?.[0] || '/placeholder-product.jpg';
-    const secondaryImage = images?.[1] || null;
+    const primaryImage = normalizedImages[0] || '/placeholder-product.jpg';
+    const secondaryImage = normalizedImages[1] || null;
     const hasSecondImage = !!secondaryImage && !secondImageError;
 
     return (
@@ -144,17 +152,28 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                 />
 
                 {/* Discount Badge - Positioned top-left */}
-                {hasDiscount && discountLabel && (
+                {activeDiscount ? (
                     <div className="absolute top-3 left-3 z-10">
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 
-                            bg-gradient-to-r from-warm-red to-sunset-orange
-                            text-white text-xs font-bold rounded-full
-                            shadow-lg shadow-warm-red/30 backdrop-blur-sm
-                            transform transition-transform duration-300 group-hover:scale-110">
-                            <Sparkles className="w-3 h-3" />
-                            <span>{discountLabel} OFF</span>
-                        </div>
+                        <DiscountBadge 
+                            discount={activeDiscount} 
+                            variant="compact" 
+                            size="small" 
+                            targetCurrency={currencyCode}
+                        />
                     </div>
+                ) : (
+                    hasDiscount && discountLabel && (
+                        <div className="absolute top-3 left-3 z-10">
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 
+                                bg-gradient-to-r from-warm-red to-sunset-orange
+                                text-white text-xs font-bold rounded-full
+                                shadow-lg shadow-warm-red/30 backdrop-blur-sm
+                                transform transition-transform duration-300 group-hover:scale-110">
+                                <Sparkles className="w-3 h-3" />
+                                <span>{discountLabel} OFF</span>
+                            </div>
+                        </div>
+                    )
                 )}
 
                 {/* Quick Action Buttons - Slide up on hover */}
@@ -200,6 +219,13 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
 
             {/* Content Container */}
             <div className="p-5">
+                {/* Subcategory */}
+                {product.subCategoryName && (
+                    <span className="text-xs font-medium text-viridian-green uppercase tracking-wide mb-1 block">
+                        {product.subCategoryName}
+                    </span>
+                )}
+
                 {/* Product Name */}
                 <h3 className="font-medium text-base text-eagle-green leading-snug 
                     line-clamp-2 min-h-[44px] mb-2
@@ -233,24 +259,36 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
              
                 <div className="flex items-end justify-between">
                     <div className="flex flex-col">
-                        {/* Original Price - shown when discounted */}
-                        {hasDiscount && formattedOriginalPrice && (
-                            <span className="text-sm font-light text-eagle-green/50 line-through mb-0.5">
-                                {formattedOriginalPrice}
-                            </span>
-                        )}
+                        {activeDiscount ? (
+                            <PriceWithDiscount
+                                originalPrice={displayPrice}
+                                currency={currencyCode}
+                                discount={activeDiscount}
+                                size="small"
+                                showSavings={false}
+                            />
+                        ) : (
+                            <>
+                                {/* Original Price - shown when discounted */}
+                                {hasDiscount && formattedOriginalPrice && (
+                                    <span className="text-sm font-light text-eagle-green/50 line-through mb-0.5">
+                                        {formattedOriginalPrice}
+                                    </span>
+                                )}
 
-                        {/* Current Price */}
-                        <div className="flex items-baseline gap-0.5">
-                            <span className="text-2xl font-bold text-eagle-green">
-                                {priceParts.symbol}{priceParts.whole}
-                            </span>
-                            {priceParts.decimal && (
-                                <span className="text-sm font-bold text-eagle-green/70">
-                                    .{priceParts.decimal}
-                                </span>
-                            )}
-                        </div>
+                                {/* Current Price */}
+                                <div className="flex items-baseline gap-0.5">
+                                    <span className="text-2xl font-bold text-eagle-green">
+                                        {priceParts.symbol}{priceParts.whole}
+                                    </span>
+                                    {priceParts.decimal && (
+                                        <span className="text-sm font-bold text-eagle-green/70">
+                                            .{priceParts.decimal}
+                                        </span>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {/* Subtle indicator for more */}

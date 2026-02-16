@@ -123,6 +123,7 @@ export default function EventPriceUpdate() {
       // Convert vendor amount to major units (what vendor receives)
       // Backend will calculate customer price with commission
       const request = {
+        eventId: Number(eventId),
         ticketTypeId: data.ticketTypeId,
         newPrice: data.vendorAmount, // Vendor's price in major units (e.g., 100.00)
         newCurrency: data.currencyCode,

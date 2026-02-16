@@ -250,16 +250,3 @@ export interface Quote {
   createdAt: string;
   updatedAt: string;
 }
-
-export interface CurrencyExchange {
-  from: Currency;
-  to: Currency;
-  rate: number;
-  lastUpdated: string;
-}
-
-export const EXCHANGE_RATES: CurrencyExchange[] = [
-  { from: 'ETB', to: 'USD', rate: 0.018, lastUpdated: '2024-01-20T10:00:00Z' },
-  { from: 'USD', to: 'ETB', rate: 55.5, lastUpdated: '2024-01-20T10:00:00Z' },
-];
-

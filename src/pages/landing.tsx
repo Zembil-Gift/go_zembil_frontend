@@ -6,6 +6,9 @@ import { parseUrlParams } from "@/shared/categories";
 import { getProductImageUrl, getAllProductImages, getEventImageUrl } from "@/utils/imageUtils";
 import { eventOrderService, EventResponse } from "@/services/eventOrderService";
 import { serviceService, ServicePackageResponse, ServiceResponse } from "@/services/serviceService";
+import { useAuth } from "@/contexts/AuthContext";
+import { DiscountBadge } from "@/components/DiscountBadge";
+import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 
 import HeroSection from "@/components/landing/HeroSection";
 import CategoryCarousel from "@/components/landing/CategoryCarousel";
@@ -16,11 +19,13 @@ import FeaturesSection from "@/components/landing/FeaturesSection";
 import EventCard from "@/components/EventCard";
 import ServiceCard from "@/components/ServiceCard";
 import SectionTransition from "@/components/landing/SectionTransition";
+import CampaignBanner from "@/components/landing/CampaignBanner";
 // import TestimonialsSection from "@/components/landing/TestimonialsSection";
 
 
 export default function Landing() {
   const location = useLocation();
+  const { user, isInitialized } = useAuth();
 
   // Parse URL parameters to set initial category
   const urlParams = new URLSearchParams(location.search);
@@ -30,9 +35,9 @@ export default function Landing() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBudget, setSelectedBudget] = useState("all");
 
-  // Fetch featured products
+  // Fetch featured products (wait for auth so currency is correct)
   const { data: featuredProducts, isLoading: isLoadingProducts, error: productsError } = useQuery({
-    queryKey: ["products", "featured"],
+    queryKey: ["products", "featured", user?.preferredCurrencyCode ?? "default"],
     queryFn: async () => {
       try {
         return await productService.getFeaturedProducts(10);
@@ -42,11 +47,12 @@ export default function Landing() {
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
+    enabled: isInitialized,
   });
 
-  // Fetch featured events
+  // Fetch featured events (wait for auth for consistent behaviour)
   const { data: featuredEventsResponse} = useQuery({
-    queryKey: ["events", "featured"],
+    queryKey: ["events", "featured", user?.preferredCurrencyCode ?? "default"],
     queryFn: async () => {
       try {
         return await eventOrderService.getFeaturedEvents(0, 6);
@@ -56,11 +62,12 @@ export default function Landing() {
     },
     staleTime: 5 * 60 * 1000,
     retry: 1,
+    enabled: isInitialized,
   });
 
-  // Fetch featured services
+  // Fetch featured services (wait for auth for consistent behaviour)
   const { data: featuredServicesResponse} = useQuery({
-    queryKey: ["services", "featured"],
+    queryKey: ["services", "featured", user?.preferredCurrencyCode ?? "default"],
     queryFn: async () => {
       try {
         return await serviceService.getFeaturedServices(0, 6);
@@ -70,11 +77,12 @@ export default function Landing() {
     },
     staleTime: 5 * 60 * 1000,
     retry: 1,
+    enabled: isInitialized,
   });
 
-  // Fetch ads (products, events, or services)
+  // Fetch ads (products, events, or services) — wait for auth so product currency is correct
   const { data: adProducts } = useQuery({
-    queryKey: ["products", "ads"],
+    queryKey: ["products", "ads", user?.preferredCurrencyCode ?? "default"],
     queryFn: async () => {
       try {
         return await productService.getAdProducts(3);
@@ -84,10 +92,11 @@ export default function Landing() {
     },
     staleTime: 5 * 60 * 1000,
     retry: 1,
+    enabled: isInitialized,
   });
 
   const { data: adEvents } = useQuery({
-    queryKey: ["events", "ads"],
+    queryKey: ["events", "ads", user?.preferredCurrencyCode ?? "default"],
     queryFn: async () => {
       try {
         return await eventOrderService.getAdEvents(2);
@@ -97,11 +106,12 @@ export default function Landing() {
     },
     staleTime: 5 * 60 * 1000,
     retry: 1,
+    enabled: isInitialized,
   });
 
 
   const { data: adServices } = useQuery({
-    queryKey: ["services", "ads"],
+    queryKey: ["services", "ads", user?.preferredCurrencyCode ?? "default"],
     queryFn: async () => {
       try {
         return await serviceService.getAdServicePackages(2);
@@ -111,6 +121,7 @@ export default function Landing() {
     },
     staleTime: 5 * 60 * 1000,
     retry: 1,
+    enabled: isInitialized,
   });
 
   const trendingGifts = React.useMemo(() => {
@@ -118,7 +129,7 @@ export default function Landing() {
 
     return featuredProducts.map((product: Product) => {
       const priceAmount = extractPriceAmount(product.price) || extractPriceAmount(product.productSku?.[0]?.price);
-      const currencyCode = product.price?.currencyCode ?? product.productSku?.[0]?.price?.currencyCode ?? 'USD';
+      const currencyCode = product.price?.currencyCode ?? product.productSku?.[0]?.price?.currencyCode ?? 'ETB';
 
       return {
         id: product.id,
@@ -127,6 +138,7 @@ export default function Landing() {
         price: priceAmount,
         originalPrice: undefined,
         currency: currencyCode,
+        activeDiscount: product.activeDiscount,
         image: getProductImageUrl(product.images, '/placeholder-product.jpg'),
         images: getAllProductImages(product.images),
         category: product.occasion || 'Gift',
@@ -187,10 +199,13 @@ export default function Landing() {
         onSearchChange={setSearchTerm}
       />
 
+      <CampaignBanner />
+
       <CategoryCarousel
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
       />
+
 
       {/* Ad Banner Section - Enhanced UI */}
       {allAds.length > 0 && (
@@ -219,20 +234,20 @@ export default function Landing() {
               Featured Highlights
             </h2>
 
-            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 sm:px-6 lg:px-8">
               {allAds.slice(0, 3).map((ad) => (
                 <div key={`${ad.type}-${ad.id}`} className="group relative h-full">
                   {/* Card Background & Border Effect - Very subtle border on hover */}
-                  <div className="absolute -inset-px bg-gray-100 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                  <div className="absolute -inset-px bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition duration-500"></div>
 
-                  <div className="relative h-full bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl flex flex-col">
+                  <div className="relative h-full bg-white rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl flex flex-col">
                     {ad.type === 'product' && (
                       <a href={`/product/${ad.data.id}`} className="flex flex-col h-full">
                         <div className="relative h-64 overflow-hidden">
-                          <div className="absolute top-4 left-4 z-20">
-                            <span className="px-3 py-1 text-[10px] font-bold tracking-widest text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
-                              Spotlight
-                            </span>
+                          <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+                            {ad.data.activeDiscount && (
+                              <DiscountBadge discount={ad.data.activeDiscount} />
+                            )}
                           </div>
                           <img
                             src={getProductImageUrl(ad.data.images, '/placeholder-product.jpg')}
@@ -244,10 +259,14 @@ export default function Landing() {
                         <div className="p-6 flex-1 flex flex-col relative">
                           <h3 className="font-bold text-xl mb-2 text-gray-900 leading-tight group-hover:text-ethiopian-gold transition-colors line-clamp-2">{ad.data.name}</h3>
                           <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-end">
-                            <p className="text-2xl font-bold text-ethiopian-gold">
-                              {extractPriceAmount(ad.data.price || ad.data.productSku?.[0]?.price) || 0}
-                              <span className="text-sm font-medium text-gray-500 ml-1 translate-y-[-5px] inline-block">{ad.data.price?.currencyCode || 'USD'}</span>
-                            </p>
+                            <div className="text-ethiopian-gold">
+                              <PriceWithDiscount 
+                                originalPrice={extractPriceAmount(ad.data.price || ad.data.productSku?.[0]?.price) || 0}
+                                currency={ad.data.price?.currencyCode || ad.data.productSku?.[0]?.price?.currencyCode || 'ETB'}
+                                discount={ad.data.activeDiscount}
+                                size="medium"
+                              />
+                            </div>
                             <span className="text-xs font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">View &rarr;</span>
                           </div>
                         </div>
@@ -282,10 +301,13 @@ export default function Landing() {
                     {ad.type === 'service' && (
                       <a href={`/service-detail/${ad.data.serviceId}`} className="flex flex-col h-full">
                         <div className="relative h-64 overflow-hidden">
-                          <div className="absolute top-4 left-4 z-20">
+                          <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
                             <span className="px-3 py-1 text-[10px] font-bold tracking-widest text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
                               Service
                             </span>
+                            {ad.data.activeDiscount && (
+                              <DiscountBadge discount={ad.data.activeDiscount} />
+                            )}
                           </div>
                           <img
                             src={ad.data.primaryImageUrl || '/placeholder-service.jpg'}
@@ -297,10 +319,14 @@ export default function Landing() {
                         <div className="p-6 flex-1 flex flex-col relative">
                           <h3 className="font-bold text-xl mb-2 text-gray-900 leading-tight group-hover:text-ethiopian-gold transition-colors line-clamp-2">{ad.data.name}</h3>
                           <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-end">
-                            <p className="text-2xl font-bold text-ethiopian-gold">
-                              {(ad.data.basePriceMinor || 0) / 100}
-                              <span className="text-sm font-medium text-gray-500 ml-1 translate-y-[-5px] inline-block">{ad.data.currency || 'USD'}</span>
-                            </p>
+                            <div className="text-ethiopian-gold">
+                              <PriceWithDiscount 
+                                originalPrice={serviceService.getPackagePrice(ad.data)}
+                                currency={ad.data.currency || 'ETB'}
+                                discount={ad.data.activeDiscount}
+                                size="medium"
+                              />
+                            </div>
                             <span className="text-xs font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">Book Now &rarr;</span>
                           </div>
                         </div>

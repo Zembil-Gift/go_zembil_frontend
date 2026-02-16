@@ -1,4 +1,5 @@
 import { apiService } from './apiService';
+import { formatCurrency } from '@/lib/currency';
 
 // Types for orders
 export interface OrderItem {
@@ -189,6 +190,7 @@ export interface VendorOrder {
   cardMessage?: string;
   trackingCode?: string;
   notes?: string;
+  deliveryConfirmedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -409,13 +411,12 @@ class OrderService {
   // ==================== Helper Methods ====================
 
   /**
-   * Format price from minor units
+   * Format price for display. Converts minor units to major units.
    */
   formatPrice(amountMinor: number | undefined, currency: string = 'USD'): string {
     if (amountMinor === undefined || amountMinor === null) return '-';
     const amount = amountMinor / 100;
-    const currencySymbol = currency === 'ETB' ? 'ETB ' : '$';
-    return `${currencySymbol}${amount.toFixed(2)}`;
+    return formatCurrency(amount, currency);
   }
 
   /**
