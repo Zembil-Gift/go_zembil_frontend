@@ -3,6 +3,37 @@ import { AxiosResponse } from 'axios';
 
 // Generic API service with reusable HTTP methods
 class ApiService {
+
+  private handleError(error: any, fallbackMessage: string): never {
+    const data = error.response?.data;
+    
+    if (data) {
+      // Handle structured validation errors
+      if (data.details && typeof data.details === 'object' && Object.keys(data.details).length > 0) {
+        const fieldErrors = Object.entries(data.details)
+          .map(([field, msg]) => {
+            // If the message already starts with the field name (case insensitive), don't repeat it
+            const fieldLabel = field.charAt(0).toUpperCase() + field.slice(1);
+            if (typeof msg === 'string' && msg.toLowerCase().startsWith(field.toLowerCase())) {
+              return msg;
+            }
+            return `${fieldLabel}: ${msg}`;
+          })
+          .join('. ');
+        
+        throw new Error(fieldErrors || data.message || fallbackMessage);
+      }
+      
+      // Handle standard message
+      if (data.message) {
+        throw new Error(data.message);
+      }
+    }
+    
+    // Fallback to axios error message or generic one
+    throw new Error(error.message || fallbackMessage);
+  }
+
   /**
    * Generic GET request
    */
@@ -11,11 +42,7 @@ class ApiService {
       const response: AxiosResponse<T> = await api.get(url);
       return response.data;
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'An error occurred while fetching data'
-      );
+      this.handleError(error, 'An error occurred while fetching data');
     }
   }
 
@@ -28,11 +55,7 @@ class ApiService {
       const response: AxiosResponse<T> = await api.post(url, data, config);
       return response.data;
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'An error occurred while posting data'
-      );
+      this.handleError(error, 'An error occurred while posting data');
     }
   }
 
@@ -48,11 +71,7 @@ class ApiService {
       });
       return response.data;
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'An error occurred while uploading file'
-      );
+      this.handleError(error, 'An error occurred while uploading file');
     }
   }
 
@@ -64,11 +83,7 @@ class ApiService {
       const response: AxiosResponse<T> = await api.put(url, data);
       return response.data;
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'An error occurred while updating data'
-      );
+      this.handleError(error, 'An error occurred while updating data');
     }
   }
 
@@ -81,11 +96,7 @@ class ApiService {
       const response: AxiosResponse<T> = await api.delete(url, config);
       return response.data;
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'An error occurred while deleting data'
-      );
+      this.handleError(error, 'An error occurred while deleting data');
     }
   }
 
@@ -97,11 +108,7 @@ class ApiService {
       const response: AxiosResponse<T> = await api.patch(url, data);
       return response.data;
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'An error occurred while patching data'
-      );
+      this.handleError(error, 'An error occurred while patching data');
     }
   }
 }

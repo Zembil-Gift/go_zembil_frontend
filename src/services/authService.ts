@@ -17,6 +17,7 @@ export interface RegisterRequest {
   role: 'CUSTOMER' | 'VENDOR' | 'ADMIN';
   birthDate?: string;
   preferredCurrencyCode?: string;
+  country?: string;
 }
 
 export interface AuthResponse {
@@ -29,6 +30,8 @@ export interface AuthResponse {
     lastName: string;
     profileImageUrl?: string;
     role: string;
+    preferredCurrencyCode?: string;
+    country?: string;
     emailVerified?: boolean;
     hasPassword?: boolean;
   };

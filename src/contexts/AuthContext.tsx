@@ -15,11 +15,14 @@ interface User {
   emailVerified?: boolean;
   permissions?: string[];
   hasPassword?: boolean;
+  preferredCurrencyCode?: string;
+  country?: string;
 }
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
+  isInitialized: boolean;
   isAuthenticated: boolean;
   logout: () => void;
   logoutAll: () => void;
@@ -158,6 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value: AuthContextValue = {
     user,
     isLoading,
+    isInitialized,
     isAuthenticated,
     logout,
     logoutAll,

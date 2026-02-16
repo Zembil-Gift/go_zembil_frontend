@@ -1,6 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { tokenManager } from './tokenManager';
 
+const CURRENCY_HEADER = 'X-Currency';
+
 let isRedirecting = false;
 
 let isRefreshing = false;
@@ -38,6 +40,12 @@ api.interceptors.request.use(
     const token = tokenManager.getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // Send preferred currency when available so backend can use it for price conversion
+    const user = tokenManager.getUser();
+    if (user?.preferredCurrencyCode) {
+      config.headers[CURRENCY_HEADER] = user.preferredCurrencyCode;
     }
 
     return config;
