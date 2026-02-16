@@ -6,7 +6,7 @@ export default function DiasporaSection() {
   const { t } = useTranslation();
 
   return (
-    <section className="py-12 sm:py-16 bg-gradient-to-br from-yellow/10 via-june-bud/10 to-viridian-green/10 relative overflow-hidden border-t border-viridian-green/20">
+    <section className="py-12 sm:py-16 bg-gradient-to-br from-ethiopian-gold/10 via-june-bud/10 to-viridian-green/10 relative overflow-hidden border-t border-viridian-green/20">
       <div className="absolute inset-0 bg-gradient-to-r from-eagle-green/8 via-viridian-green/6 to-june-bud/8"></div>
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div 
