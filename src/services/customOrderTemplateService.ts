@@ -10,26 +10,35 @@ import type {
 
 class CustomOrderTemplateService {
   
-  async getById(templateId: number, currency?: string): Promise<CustomOrderTemplate> {
-    const url = currency 
-      ? `/api/custom-order-templates/${templateId}?currency=${currency}`
-      : `/api/custom-order-templates/${templateId}`;
-    return await apiService.getRequest<CustomOrderTemplate>(url);
+  async getById(templateId: number): Promise<CustomOrderTemplate> {
+    return await apiService.getRequest<CustomOrderTemplate>(`/api/custom-order-templates/${templateId}`);
   }
 
   async getByCategory(
     categoryId: number, 
     page: number = 0, 
-    size: number = 20,
-    currency?: string
+    size: number = 20
   ): Promise<PagedCustomOrderTemplateResponse> {
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('size', size.toString());
-    if (currency) {
-      params.append('currency', currency);
-    }
     const url = `/api/custom-order-templates/category/${categoryId}?${params.toString()}`;
+    return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
+  }
+
+  async searchTemplates(
+    query?: string,
+    categoryId?: number,
+    page: number = 0,
+    size: number = 20
+  ): Promise<PagedCustomOrderTemplateResponse> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('size', size.toString());
+    if (query) params.append('query', query);
+    if (categoryId) params.append('categoryId', categoryId.toString());
+    
+    const url = `/api/custom-order-templates/search?${params.toString()}`;
     return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
   }
 
@@ -53,7 +62,8 @@ class CustomOrderTemplateService {
     vendorId: number, 
     page: number = 0, 
     size: number = 20,
-    status?: CustomOrderTemplateStatus
+    status?: CustomOrderTemplateStatus,
+    query?: string
   ): Promise<PagedCustomOrderTemplateResponse> {
     const queryParams = new URLSearchParams();
     queryParams.append('page', page.toString());
@@ -61,31 +71,28 @@ class CustomOrderTemplateService {
     if (status) {
       queryParams.append('status', status);
     }
+    if (query?.trim()) {
+      queryParams.append('query', query.trim());
+    }
     
     const url = `/api/custom-order-templates/vendor/${vendorId}?${queryParams.toString()}`;
     return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
   }
 
-  async getPending(page: number = 0, size: number = 20, currency?: string): Promise<PagedCustomOrderTemplateResponse> {
+  async getPending(page: number = 0, size: number = 20): Promise<PagedCustomOrderTemplateResponse> {
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('size', size.toString());
-    if (currency) {
-      params.append('currency', currency);
-    }
     const url = `/api/custom-order-templates/pending?${params.toString()}`;
     return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
   }
 
-  async getAll(page: number = 0, size: number = 20, status?: string, currency?: string): Promise<PagedCustomOrderTemplateResponse> {
+  async getAll(page: number = 0, size: number = 20, status?: string): Promise<PagedCustomOrderTemplateResponse> {
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('size', size.toString());
     if (status) {
       params.append('status', status);
-    }
-    if (currency) {
-      params.append('currency', currency);
     }
     const url = `/api/custom-order-templates/all?${params.toString()}`;
     return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
@@ -100,6 +107,7 @@ class CustomOrderTemplateService {
     return await apiService.postRequest<CustomOrderTemplate>(`/api/custom-order-templates/${templateId}/reject`, data);
   }
 
+  // Get customer-facing price (what customers pay)
   getTemplatePrice(template: CustomOrderTemplate): { amount: number; currency: string } | null {
     if (template.price?.amount != null) {
       return {
@@ -119,12 +127,49 @@ class CustomOrderTemplateService {
     return null;
   }
 
+  // Get vendor price (what vendor receives)
+  getVendorTemplatePrice(template: CustomOrderTemplate): { amount: number; currency: string } | null {
+    // Try to use the vendorAmount from the price object first (converted amount)
+    if (template.price?.vendorAmount != null) {
+      return {
+        amount: template.price.vendorAmount,
+        currency: template.price.currencyCode ?? template.currencyCode ?? 'ETB'
+      };
+    }
+    // Fallback to vendorPriceMinor field
+    if (template.vendorPriceMinor != null && template.vendorPriceMinor > 0) {
+      const currency = template.currencyCode ?? 'ETB';
+      const decimals = 2; // Backend uses 2 decimal places for all currencies including ETB
+      const divisor = Math.pow(10, decimals);
+      return {
+        amount: template.vendorPriceMinor / divisor,
+        currency: currency
+      };
+    }
+    // If no vendor price is set, return null
+    return null;
+  }
+
   hasPrice(template: CustomOrderTemplate): boolean {
     return this.getTemplatePrice(template) !== null;
   }
 
+  hasVendorPrice(template: CustomOrderTemplate): boolean {
+    return this.getVendorTemplatePrice(template) !== null;
+  }
+
+  // Format customer price (for customer-facing pages)
   formatTemplatePrice(template: CustomOrderTemplate): string {
     const priceInfo = this.getTemplatePrice(template);
+    if (priceInfo === null) {
+      return 'Price not set';
+    }
+    return this.formatAmount(priceInfo.amount, priceInfo.currency);
+  }
+
+  // Format vendor price (for vendor dashboard)
+  formatVendorTemplatePrice(template: CustomOrderTemplate): string {
+    const priceInfo = this.getVendorTemplatePrice(template);
     if (priceInfo === null) {
       return 'Price not set';
     }
@@ -137,18 +182,10 @@ class CustomOrderTemplateService {
     }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD',
+      currency: currency || 'ETB',
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(amount);
-  }
-
-  formatPrice(priceMinor: number, currency: string): string {
-    console.warn('formatPrice with minor units is deprecated. Use formatCurrency with backend-provided amount instead.');
-    const decimals = 2;
-    const divisor = Math.pow(10, decimals);
-    const amount = priceMinor / divisor;
-    return this.formatAmount(amount, currency);
   }
 
 

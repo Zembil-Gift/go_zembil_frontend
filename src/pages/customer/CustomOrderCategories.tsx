@@ -16,6 +16,7 @@ import FadeIn from '@/components/animations/FadeIn';
 
 import { customOrderTemplateService } from '@/services/customOrderTemplateService';
 import type { CategoryWithTemplateCount } from '@/types/customOrders';
+import { useAuth } from '@/hooks/useAuth';
 
 // Category icon mapping
 const getCategoryIcon = (categoryName: string) => {
@@ -32,11 +33,13 @@ const getCategoryIcon = (categoryName: string) => {
 
 export default function CustomOrderCategories() {
   const navigate = useNavigate();
+  const { user, isInitialized } = useAuth();
 
-  // Fetch categories with template counts
+  // Fetch categories with template counts (wait for auth so template prices have correct currency)
   const { data: categories, isLoading, error } = useQuery({
-    queryKey: ['custom-order-categories'],
+    queryKey: ['custom-order-categories', user?.preferredCurrencyCode ?? 'default'],
     queryFn: () => customOrderTemplateService.getCategoriesWithTemplates(),
+    enabled: isInitialized,
   });
 
   if (isLoading) {
@@ -86,11 +89,11 @@ export default function CustomOrderCategories() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <FadeIn delay={0.1}>
             <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl lg:text-3xl font-gotham-bold text-white">
+              <h1 className="text-2xl lg:text-3xl font-bold text-white">
                 Custom Order Categories
               </h1>
             </div>
-            <p className="text-sm lg:text-base font-gotham-light text-white/80 max-w-2xl">
+            <p className="text-sm lg:text-base font-light text-white/80 max-w-2xl">
               Browse categories and find talented vendors who can bring your custom ideas to life
             </p>
           </FadeIn>
@@ -102,7 +105,7 @@ export default function CustomOrderCategories() {
         <FadeIn delay={0.2}>
           <div className="flex items-center gap-2 mb-8">
             <Package className="h-5 w-5 text-viridian-green" />
-            <span className="font-gotham-bold text-eagle-green">Browse Categories</span>
+            <span className="font-bold text-eagle-green">Browse Categories</span>
           </div>
         </FadeIn>
 

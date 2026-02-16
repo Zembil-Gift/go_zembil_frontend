@@ -46,6 +46,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import ProtectedRoute from '@/components/protected-route';
+import { getPaymentMethodsForCountry } from '@/lib/countryConfig';
 
 import { customOrderService } from '@/services/customOrderService';
 import { orderChatService } from '@/services/orderChatService';
@@ -79,10 +80,14 @@ function CustomerCustomOrderDetailContent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isInitialized } = useAuth();
   
-  // Get user's preferred currency (fallback to USD)
-  const preferredCurrency = user?.preferredCurrencyCode || 'USD';
+  // Get user's preferred currency for display fallback
+  const fallbackCurrency = isAuthenticated ? 'ETB' : 'USD';
+  
+  // Get available payment methods based on user's country
+  const userCountry = user?.country || '';
+  const availablePaymentMethods = getPaymentMethodsForCountry(userCountry);
   
   const [activeTab, setActiveTab] = useState('details');
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -90,7 +95,7 @@ function CustomerCustomOrderDetailContent() {
   const [chatMessage, setChatMessage] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [processingPaymentMethod, setProcessingPaymentMethod] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -98,14 +103,14 @@ function CustomerCustomOrderDetailContent() {
 
   // Helper to get the order currency (backend sends currencyCode)
   const getOrderCurrency = (order: any): string => {
-    return order?.currencyCode || order?.currency || preferredCurrency;
+    return order?.currencyCode || order?.currency || fallbackCurrency;
   };
 
-  // Fetch order details with user's preferred currency
+  // Fetch order details - wait for auth so currency is correct
   const { data: order, isLoading: orderLoading } = useQuery({
-    queryKey: ['custom-order', orderIdNum, preferredCurrency],
-    queryFn: () => customOrderService.getById(orderIdNum, preferredCurrency),
-    enabled: isAuthenticated && orderIdNum > 0,
+    queryKey: ['custom-order', orderIdNum, user?.preferredCurrencyCode ?? 'default'],
+    queryFn: () => customOrderService.getById(orderIdNum),
+    enabled: isAuthenticated && orderIdNum > 0 && isInitialized,
   });
 
   // Fetch chat messages
@@ -119,11 +124,13 @@ function CustomerCustomOrderDetailContent() {
   const messages = messagesData?.content || [];
 
   // Scroll to bottom of chat when messages change
+  /* 
   useEffect(() => {
     if (activeTab === 'chat') {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, activeTab]);
+  */
 
   // Mark messages as read when viewing chat
   useEffect(() => {
@@ -137,7 +144,7 @@ function CustomerCustomOrderDetailContent() {
     mutationFn: () => customOrderService.acceptPrice(orderIdNum),
     onSuccess: () => {
       toast({ title: 'Price Accepted', description: 'You can now proceed to payment.' });
-      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum, preferredCurrency] });
+      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
       queryClient.invalidateQueries({ queryKey: ['my-custom-orders'] });
     },
     onError: (error: Error) => {
@@ -149,7 +156,7 @@ function CustomerCustomOrderDetailContent() {
     mutationFn: () => customOrderService.rejectPrice(orderIdNum),
     onSuccess: () => {
       toast({ title: 'Price Rejected', description: 'The vendor will be notified to propose a new price.' });
-      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum, preferredCurrency] });
+      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
       queryClient.invalidateQueries({ queryKey: ['my-custom-orders'] });
     },
     onError: (error: Error) => {
@@ -161,7 +168,7 @@ function CustomerCustomOrderDetailContent() {
     mutationFn: (reason: string) => customOrderService.cancel(orderIdNum, reason),
     onSuccess: () => {
       toast({ title: 'Order Cancelled', description: 'Your order has been cancelled.' });
-      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum, preferredCurrency] });
+      queryClient.invalidateQueries({ queryKey: ['custom-order', orderIdNum] });
       queryClient.invalidateQueries({ queryKey: ['my-custom-orders'] });
       setCancelDialogOpen(false);
       setCancelReason('');
@@ -235,7 +242,7 @@ function CustomerCustomOrderDetailContent() {
   };
 
   const handlePayment = async (provider: string) => {
-    setIsProcessingPayment(true);
+    setProcessingPaymentMethod(provider);
     try {
       const paymentInit = await customOrderService.initPayment(orderIdNum, provider);
       
@@ -252,7 +259,7 @@ function CustomerCustomOrderDetailContent() {
           state: {
             clientSecret: paymentInit.clientSecret,
             publishableKey: paymentInit.publishableKey,
-            amount: order?.finalPriceMinor || order?.basePriceMinor || 0,
+            amount: order?.finalPriceMinor != null ? order.finalPriceMinor : (order?.basePriceMinor || 0),
             currency: getOrderCurrency(order).toLowerCase(),
             orderId: orderIdNum,
             orderNumber: order?.orderNumber,
@@ -266,7 +273,7 @@ function CustomerCustomOrderDetailContent() {
         throw new Error('Payment initialization failed. No checkout URL or client secret returned.');
       }
     } catch (error: any) {
-      setIsProcessingPayment(false);
+      setProcessingPaymentMethod(null);
       toast({ 
         title: 'Payment Error', 
         description: error.message || 'Failed to initialize payment', 
@@ -502,34 +509,36 @@ function CustomerCustomOrderDetailContent() {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="bg-june-bud/10 p-1">
-                <TabsTrigger 
-                  value="details"
-                  className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
-                >
-                  Order Details
-                </TabsTrigger>
-                {!isNonNegotiable && (
-                <TabsTrigger 
-                  value="chat"
-                  className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Chat with Vendor
-                </TabsTrigger>
-                )}
-                <TabsTrigger 
-                  value="history"
-                  className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
-                >
-                  History
-                </TabsTrigger>
-              </TabsList>
+        {/* Tabs Navigation */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-june-bud/10 p-1 gap-1 justify-start">
+            <TabsTrigger 
+              value="details"
+              className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
+            >
+              Order Details
+            </TabsTrigger>
+            {!isNonNegotiable && (
+            <TabsTrigger 
+              value="chat"
+              className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Chat with Vendor
+            </TabsTrigger>
+            )}
+            <TabsTrigger 
+              value="history"
+              className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
+            >
+              History
+            </TabsTrigger>
+          </TabsList>
 
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Tab Content */}
+            <div className="lg:col-span-2">
               {/* Details Tab */}
               <TabsContent value="details" className="space-y-6">
                 {/* Your Customizations */}
@@ -569,6 +578,41 @@ function CustomerCustomOrderDetailContent() {
                     </CardContent>
                   </Card>
                 )}
+
+                {/* Order Info */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="text-eagle-green text-lg">Order Info</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="flex justify-between md:flex-col md:items-start border-b md:border-b-0 md:border-r border-gray-100 pb-2 md:pb-0 md:pr-4">
+                        <span className="text-eagle-green/70">Order Number</span>
+                        <span className="text-eagle-green font-mono font-medium">{order.orderNumber}</span>
+                      </div>
+                      <div className="flex justify-between md:flex-col md:items-start border-b md:border-b-0 md:border-r border-gray-100 pb-2 md:pb-0 md:pr-4">
+                        <span className="text-eagle-green/70">Created</span>
+                        <span className="text-eagle-green font-medium">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between md:flex-col md:items-start">
+                        <span className="text-eagle-green/70">Template</span>
+                        <span className="text-eagle-green font-medium">{order.templateName}</span>
+                      </div>
+                    </div>
+                    {order.deliveredAt && (
+                      <div className="pt-4 border-t border-gray-100">
+                        <div className="flex justify-between items-center">
+                          <span className="text-eagle-green/70">Delivered On</span>
+                          <span className="text-eagle-green font-medium">
+                            {new Date(order.deliveredAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               {/* Chat Tab - Only for negotiable orders */}
@@ -593,7 +637,7 @@ function CustomerCustomOrderDetailContent() {
                           </div>
                         ) : (
                           orderChatService.sortMessagesBySentTime(messages).map((msg: OrderChatMessage) => {
-                            const isOwnMessage = msg.senderId === user?.id;
+                            const isOwnMessage = String(msg.senderId) === user?.id;
                             return (
                               <motion.div
                                 key={msg.id}
@@ -753,7 +797,7 @@ function CustomerCustomOrderDetailContent() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-eagle-green">
-                                  {customOrderService.formatPrice(history.priceMinor, getOrderCurrency(order))}
+                                  {customOrderService.formatPrice(history.price ?? 0, getOrderCurrency(order))}
                                 </span>
                                 <span className="text-xs text-eagle-green/60">
                                   {new Date(history.createdAt).toLocaleString()}
@@ -777,227 +821,212 @@ function CustomerCustomOrderDetailContent() {
                   </CardContent>
                 </Card>
               </TabsContent>
-            </Tabs>
-          </div>
+            </div>
 
+            {/* Right Column - Sidebar */}
+            <div className="space-y-6">
+              {/* Vendor Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-eagle-green text-lg">Vendor</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Store className="h-4 w-4 text-eagle-green/50" />
+                    <span className="text-eagle-green font-medium">{order.vendorName}</span>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Vendor Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-eagle-green text-lg">Vendor</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Store className="h-4 w-4 text-eagle-green/50" />
-                  <span className="text-eagle-green font-medium">{order.vendorName}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pricing */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-eagle-green text-lg flex items-center justify-between">
-                  Pricing
+              {/* Pricing */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-eagle-green text-lg flex items-center justify-between">
+                    Pricing
                   {isNonNegotiable && (
                     <Badge className="bg-viridian-green/10 text-viridian-green border-viridian-green/30">
                       Fixed Price
                     </Badge>
                   )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {isNonNegotiable && (
-                  <p className="text-sm text-viridian-green bg-viridian-green/5 p-2 rounded-md">
-                    This order has a fixed price with no negotiation required.
-                  </p>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-eagle-green/70">Base Price</span>
-                  <span className="text-eagle-green">
-                    {customOrderService.formatPrice(order.basePriceMinor, order.basePrice, getOrderCurrency(order))}
-                  </span>
-                </div>
-                {order.finalPriceMinor && (
-                  <div className="flex justify-between">
-                    <span className="text-eagle-green/70">Final Price</span>
-                    <span className="font-bold text-eagle-green">
-                      {customOrderService.formatPrice(order.finalPriceMinor, order.finalPrice, getOrderCurrency(order))}
-                    </span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex justify-between">
-                  <span className="font-medium text-eagle-green">Total</span>
-                  <span className="font-bold text-eagle-green text-lg">
-                    {customOrderService.formatPrice(
-                      order.finalPriceMinor || order.basePriceMinor,
-                      order.finalPrice || order.basePrice,
-                      getOrderCurrency(order)
-                    )}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-eagle-green/70">Payment:</span>
-                  <Badge className={order.paymentStatus === 'PAID' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-gray-100 text-gray-800'
-                  }>
-                    {order.paymentStatus}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Price Response Actions */}
-            {canRespondToPrice && (
-              <Card className="border-amber-200 bg-amber-50">
-                <CardHeader>
-                  <CardTitle className="text-amber-800 text-lg flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    Price Proposal
                   </CardTitle>
-                  <CardDescription className="text-amber-700">
-                    The vendor has proposed a final price
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-center py-2">
-                    <p className="text-sm text-amber-700">Proposed Price</p>
-                    <p className="text-3xl font-bold text-amber-900">
-                      {customOrderService.formatPrice(order.finalPriceMinor || 0, order.finalPrice, getOrderCurrency(order))}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => acceptPriceMutation.mutate()}
-                      disabled={acceptPriceMutation.isPending || rejectPriceMutation.isPending}
-                    >
-                      {acceptPriceMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                      )}
-                      Accept
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
-                      onClick={() => rejectPriceMutation.mutate()}
-                      disabled={acceptPriceMutation.isPending || rejectPriceMutation.isPending}
-                    >
-                      {rejectPriceMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <XCircle className="h-4 w-4 mr-2" />
-                      )}
-                      Reject
-                    </Button>
-                  </div>
-                  <p className="text-xs text-amber-600 text-center">
-                    Rejecting will allow continued negotiation via chat
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Payment Actions */}
-            {canPay && (
-              <Card className="border-green-200 bg-green-50">
-                <CardHeader>
-                  <CardTitle className="text-green-800 text-lg flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Ready for Payment
-                  </CardTitle>
-                  <CardDescription className="text-green-700">
-                    Complete your payment to proceed
-                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="text-center py-2">
-                    <p className="text-sm text-green-700">Amount Due</p>
-                    <p className="text-3xl font-bold text-green-900">
-                      {customOrderService.formatPrice(order.finalPriceMinor || order.basePriceMinor, order.finalPrice || order.basePrice, getOrderCurrency(order))}
+                  {isNonNegotiable && (
+                    <p className="text-sm text-viridian-green bg-viridian-green/5 p-2 rounded-md">
+                      This order has a fixed price with no negotiation required.
                     </p>
-                  </div>
-                  <Button 
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => handlePayment('chapa')}
-                    disabled={isProcessingPayment}
-                  >
-                    {isProcessingPayment ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <CreditCard className="h-4 w-4 mr-2" />
-                    )}
-                    Pay with Chapa
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handlePayment('stripe')}
-                    disabled={isProcessingPayment}
-                  >
-                    {isProcessingPayment ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : null}
-                    Pay with Stripe
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Cancel Action */}
-            {canCancel && (
-              <Card>
-                <CardContent className="pt-6">
-                  <Button 
-                    variant="outline"
-                    className="w-full border-red-300 text-red-600 hover:bg-red-50"
-                    onClick={() => setCancelDialogOpen(true)}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Cancel Order
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Order Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-eagle-green text-lg">Order Info</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-eagle-green/70">Order Number</span>
-                  <span className="text-eagle-green font-mono">{order.orderNumber}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-eagle-green/70">Created</span>
-                  <span className="text-eagle-green">
-                    {new Date(order.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-eagle-green/70">Template</span>
-                  <span className="text-eagle-green">{order.templateName}</span>
-                </div>
-                {order.deliveredAt && (
+                  )}
                   <div className="flex justify-between">
-                    <span className="text-eagle-green/70">Delivered</span>
+                    <span className="text-eagle-green/70">Base Price</span>
                     <span className="text-eagle-green">
-                      {new Date(order.deliveredAt).toLocaleDateString()}
+                      {customOrderService.formatPrice(order.basePrice ?? 0, getOrderCurrency(order))}
+                  </span>
+                  </div>
+                  {order.finalPriceMinor && (
+                    <div className="flex justify-between">
+                      <span className="text-eagle-green/70">Final Price</span>
+                      <span className="font-bold text-eagle-green">
+                        {customOrderService.formatPrice(order.finalPrice ?? 0, getOrderCurrency(order))}
+                      </span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="font-medium text-eagle-green">Total</span>
+                    <span className="font-bold text-eagle-green text-lg">
+                      {customOrderService.formatPrice(
+                        order.finalPrice != null ? order.finalPrice : order.basePrice ?? 0,
+                        getOrderCurrency(order)
+                      )}
                     </span>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-eagle-green/70">Payment:</span>
+                    <Badge className={order.paymentStatus === 'PAID' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                    }>
+                      {order.paymentStatus}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Price Response Actions */}
+              {canRespondToPrice && (
+                <Card className="border-amber-200 bg-amber-50">
+                  <CardHeader>
+                    <CardTitle className="text-amber-800 text-lg flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Price Proposal
+                    </CardTitle>
+                    <CardDescription className="text-amber-700">
+                      The vendor has proposed a final price
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-center py-2">
+                      <p className="text-sm text-amber-700">Proposed Price</p>
+                      <p className="text-3xl font-bold text-amber-900">
+                        {customOrderService.formatPrice(order.finalPrice ?? 0, getOrderCurrency(order))}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => acceptPriceMutation.mutate()}
+                        disabled={acceptPriceMutation.isPending || rejectPriceMutation.isPending}
+                      >
+                        {acceptPriceMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                        )}
+                        Accept
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                        onClick={() => rejectPriceMutation.mutate()}
+                        disabled={acceptPriceMutation.isPending || rejectPriceMutation.isPending}
+                      >
+                        {rejectPriceMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <XCircle className="h-4 w-4 mr-2" />
+                        )}
+                        Reject
+                      </Button>
+                    </div>
+                    <p className="text-xs text-amber-600 text-center">
+                      Rejecting will allow continued negotiation via chat
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Payment Actions */}
+              {canPay && (
+                <Card className="border-green-200 bg-green-50">
+                  <CardHeader>
+                    <CardTitle className="text-green-800 text-lg flex items-center gap-2">
+                      <CreditCard className="h-5 w-5" />
+                      Ready for Payment
+                    </CardTitle>
+                    <CardDescription className="text-green-700">
+                      Complete your payment to proceed
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="text-center py-2">
+                      <p className="text-sm text-green-700">Amount Due</p>
+                      <p className="text-3xl font-bold text-green-900">
+                        {customOrderService.formatPrice(order.finalPrice != null ? order.finalPrice : order.basePrice ?? 0, getOrderCurrency(order))}
+                      </p>
+                    </div>
+                    {availablePaymentMethods.includes('chapa') && (
+                      <Button 
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => handlePayment('chapa')}
+                        disabled={processingPaymentMethod !== null}
+                      >
+                        {processingPaymentMethod === 'chapa' ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CreditCard className="h-4 w-4 mr-2" />
+                        )}
+                        Pay with Chapa
+                      </Button>
+                    )}
+                    {availablePaymentMethods.includes('telebirr') && (
+                      <Button 
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => handlePayment('telebirr')}
+                        disabled={processingPaymentMethod !== null}
+                      >
+                        {processingPaymentMethod === 'telebirr' ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CreditCard className="h-4 w-4 mr-2" />
+                        )}
+                        Pay with Telebirr
+                      </Button>
+                    )}
+                    {availablePaymentMethods.includes('stripe') && (
+                      <Button 
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handlePayment('stripe')}
+                        disabled={processingPaymentMethod !== null}
+                      >
+                        {processingPaymentMethod === 'stripe' ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : null}
+                        Pay with Stripe
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Cancel Action */}
+              {canCancel && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <Button 
+                      variant="outline"
+                      className="w-full border-red-300 text-red-600 hover:bg-red-50"
+                      onClick={() => setCancelDialogOpen(true)}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Cancel Order
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
-        </div>
+        </Tabs>
       </div>
 
       {/* Cancel Confirmation Dialog */}

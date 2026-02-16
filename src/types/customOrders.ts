@@ -1,3 +1,5 @@
+import type { DiscountInfo } from '@/types/discount';
+
 export type CustomizationFieldType = 'TEXT' | 'NUMBER' | 'IMAGE' | 'VIDEO';
 
 export type CustomOrderTemplateStatus = 
@@ -71,6 +73,7 @@ export interface CustomOrderTemplate {
   approvedAt?: string;
   fields: CustomOrderTemplateField[];
   images: CustomOrderTemplateImage[];
+  activeDiscount?: DiscountInfo;
   createdAt: string;
   updatedAt: string;
 }
@@ -143,7 +146,8 @@ export interface CustomOrder {
   finalPrice?: number;
   baseVendorPrice?: number;
   finalVendorPrice?: number;
-  currency: string;
+  /** @deprecated Use currencyCode instead - this field may not be populated */
+  currency?: string;
   currencyCode: string;
   originalCurrencyCode?: string;
   status: CustomOrderStatus;
@@ -212,6 +216,7 @@ export interface UpdateCustomOrderTemplateRequest {
 
 export interface CreateCustomOrderRequest {
   templateId: number;
+  discountCode?: string;
   additionalDescription?: string;
   values: {
     fieldId: number;
