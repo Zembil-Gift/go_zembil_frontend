@@ -5,13 +5,10 @@ import { useToast } from "@/hooks/use-toast";
 import { cartService, CartItem } from "@/services/cartService";
 
 export function useCart() {
-  const { isAuthenticated, user } = useAuth();
-  const { isOpen, openCart, closeCart, toggleCart } = useCartStore();
+  const { isAuthenticated } = useAuth();
+  const { isOpen, openCart, closeCart, toggleCart, appliedDiscountCode, setAppliedDiscountCode } = useCartStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Get user's preferred currency (fallback to USD)
-  const preferredCurrency = user?.preferredCurrencyCode || 'USD';
 
   const {
     data: cartData, 
@@ -20,10 +17,10 @@ export function useCart() {
     refetch,
     isFetching 
   } = useQuery({
-    queryKey: ["cart", "items", preferredCurrency],
+    queryKey: ["cart", "items"],
     queryFn: async () => {
       try {
-        const result = await cartService.getCart(preferredCurrency);
+        const result = await cartService.getCart();
         return result;
       } catch (error) {
         throw error;
@@ -38,7 +35,7 @@ export function useCart() {
 
   // Extract items and currency from cart data
   const cartItems = cartData?.items || [];
-  const cartCurrency = cartData?.currency || preferredCurrency;
+  const cartCurrency = cartData?.currency || 'ETB';
 
   console.log('Cart query state:', { 
     cartItems, 
@@ -187,6 +184,8 @@ export function useCart() {
     openCart,
     closeCart,
     toggleCart,
+    appliedDiscountCode,
+    setAppliedDiscountCode,
     
     // Cart mutations
     addToCart: addToCartMutation.mutate,

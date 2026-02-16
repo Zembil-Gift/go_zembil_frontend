@@ -49,7 +49,7 @@ export function useWishlist() {
 
   const addToWishlistMutation = useMutation({
     mutationFn: async (data: CreateWishListItemRequest) => {
-      // Force authentication for wishlist actions - check immediately
+      // Authentication should be checked before calling this
       if (!isAuthenticated) {
         throw new Error('Authentication required');
       }
@@ -61,18 +61,8 @@ export function useWishlist() {
       return await wishlistService.addToWishlist(data);
     },
     onMutate: async (newItem) => {
-      // Don't do optimistic updates for unauthenticated users
+      // Skip optimistic updates if not authenticated
       if (!isAuthenticated) {
-        // Show toast and redirect to login immediately
-        toast({
-          title: "Sign in required",
-          description: "Please sign in to add items to your wishlist",
-        });
-        // Small delay to show toast before redirect
-        setTimeout(() => {
-          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-          window.location.href = `/signin?returnUrl=${returnUrl}`;
-        }, 500);
         return;
       }
 

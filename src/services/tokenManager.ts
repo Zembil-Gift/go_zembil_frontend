@@ -39,6 +39,7 @@ interface TokenData {
     profileImageUrl?: string;
     role: string;
     permissions?: string[];
+    preferredCurrencyCode?: string;
   };
 }
 
@@ -54,6 +55,7 @@ interface RefreshResponse {
     profileImageUrl?: string;
     role: string;
     permissions?: string[];
+    preferredCurrencyCode?: string;
   };
 }
 
@@ -222,11 +224,39 @@ class TokenAuthManager {
 
   /**
    * Clear all token data and cancel scheduled refresh.
+   * Also clears user-specific local storage data.
    * Call this on logout.
    */
   clearTokenData(): void {
     this.tokenData = null;
-    localStorage.removeItem('user');
+    
+    // Clear sensitive or user-specific data from localStorage
+    const keysToRemove = [
+      'user',
+      'token',
+      'returnTo',
+      'voiceSearchHistory',
+      'goGerami_search_history',
+      'goGerami_currentOrderId',
+      'goGerami_currentOrderType',
+      'goGerami_paymentProvider',
+      'custom-orders-features-expanded',
+      'custom-orders-guide-expanded'
+    ];
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Clear any pattern-based keys (like vendor progress)
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('vendor_video_progress_') || key.startsWith('goGerami_'))) {
+            localStorage.removeItem(key);
+            i--; // Decrement index since we removed an item
+        }
+    }
+
+    // Also clear session storage for good measure
+    sessionStorage.clear();
     
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);
