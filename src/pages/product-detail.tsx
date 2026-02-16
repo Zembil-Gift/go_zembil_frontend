@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { useCartStore } from "@/stores/cart-store";
 import { 
   Heart, 
@@ -24,9 +25,11 @@ import { cartService } from "@/services/cartService";
 import { wishlistService } from "@/services/wishlistService";
 import { reviewService } from "@/services/reviewService";
 import { cn } from "@/lib/utils";
-import { formatPrice, getPriceParts, getPriceCurrency } from "@/lib/currency";
+import { formatPrice, getPriceCurrency } from "@/lib/currency";
 import { getProductImageUrl, getAllProductImages } from "@/utils/imageUtils";
 import { ProductReviewsSection, VendorCard, CompactRating } from "@/components/reviews";
+import { DiscountBadge } from "@/components/DiscountBadge";
+import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 
 // Image with skeleton loading
 function ProductImage({ 
@@ -80,13 +83,14 @@ export default function ProductDetail() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   
   const { toast } = useToast();
+  const { user, isInitialized } = useAuth();
   const { addItem, openCart } = useCartStore();
   const queryClient = useQueryClient();
 
   const { data: product, isLoading } = useQuery<Product>({
-    queryKey: ["products", "detail", productId],
+    queryKey: ["products", "detail", productId, user?.preferredCurrencyCode ?? "default"],
     queryFn: () => productService.getProductById(Number(productId)),
-    enabled: !!productId,
+    enabled: !!productId && isInitialized,
   });
 
   // Auto-select first available SKU when product loads
@@ -128,8 +132,6 @@ export default function ProductDetail() {
     if (product?.productSku?.[0]?.price?.currencyCode) return product.productSku[0].price.currencyCode;
     return getPriceCurrency(product?.price);
   }, [selectedSku, product]);
-
-  const priceParts = useMemo(() => getPriceParts(currentPrice, currencyCode), [currentPrice, currencyCode]);
 
   const stockQuantity = useMemo(() => {
     // For multi-SKU products, only show stock when a variant is selected
@@ -403,6 +405,17 @@ export default function ProductDetail() {
           <Link to="/" className="hover:text-viridian-green">Home</Link>
           <span>/</span>
           <Link to="/gifts" className="hover:text-viridian-green">Gifts</Link>
+          {product.subCategoryName && (
+            <>
+              <span>/</span>
+              <Link 
+                to={`/gifts?category=${product.subCategorySlug || product.subCategoryId}`} 
+                className="hover:text-viridian-green"
+              >
+                {product.subCategoryName}
+              </Link>
+            </>
+          )}
           <span>/</span>
           <span className="text-charcoal font-medium">{product.name}</span>
         </nav>
@@ -491,7 +504,12 @@ export default function ProductDetail() {
           <div className="space-y-6">
             {/* Title and Rating */}
             <div>
-              <h1 className="font-display text-3xl font-bold text-charcoal mb-4">
+              {product.subCategoryName && (
+                <div className="text-sm font-medium text-viridian-green uppercase tracking-wider mb-2">
+                  {product.subCategoryName}
+                </div>
+              )}
+              <h1 className="text-3xl font-bold text-charcoal mb-4">
                 {product.name}
               </h1>
               
@@ -541,10 +559,22 @@ export default function ProductDetail() {
 
             {/* Price */}
             <div className="space-y-2">
-              <div className="text-3xl text-viridian-green">
-                <span className="font-bold">{priceParts.symbol}{priceParts.whole}</span>
-                {priceParts.decimal && <span className="font-normal">.{priceParts.decimal}</span>}
-              </div>
+              {product.activeDiscount && (
+                <div>
+                  <DiscountBadge 
+                    discount={product.activeDiscount} 
+                    variant="compact" 
+                    size="small" 
+                    targetCurrency={currencyCode}
+                  />
+                </div>
+              )}
+              <PriceWithDiscount
+                originalPrice={currentPrice}
+                currency={currencyCode}
+                discount={product.activeDiscount}
+                size="large"
+              />
               {stockQuantity === null ? (
                 <div className="text-sm text-gray-500">
                   Select a variant to see availability
@@ -787,12 +817,6 @@ export default function ProductDetail() {
                       <span className="ml-2 text-gray-600">{selectedSku.skuName}</span>
                     </div>
                   )}
-                  <div>
-                    <span className="font-medium">Customizable:</span>
-                    <span className="ml-2 text-gray-600">
-                      {product.isCustomizable ? "Yes" : "No"}
-                    </span>
-                  </div>
                 </div>
               </div>
             </TabsContent>

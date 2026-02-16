@@ -1,4 +1,5 @@
-import {apiService} from './apiService';
+import { apiService } from './apiService';
+import type { DiscountInfo } from '@/types/discount';
 
 // Types for products
 export interface ProductAttribute {
@@ -22,19 +23,10 @@ export interface Price {
 /**
  * Extract the display price from a Price object.
  * Uses backend-provided 'amount' field (in major units) directly.
- * NO CONVERSION IS DONE - the backend has already converted to the preferred currency.
  */
 export function extractPriceAmount(price?: Price): number {
   if (!price) return 0;
-  
-  // Backend provides 'amount' in major units - use it directly!
   if (price.amount != null && price.amount > 0) return price.amount;
-  
-  // DEPRECATED: Legacy fallback for old data without 'amount' field
-  if (price.unitAmountMinor != null && price.unitAmountMinor > 0) {
-    console.warn('extractPriceAmount: amount field missing, falling back to unitAmountMinor conversion. This should not happen with updated backend.');
-    return price.unitAmountMinor / 100;
-  }
   return 0;
 }
 
@@ -62,6 +54,8 @@ export interface Product {
   cover?: string;
   price?: Price;
   subCategoryId?: number;
+  subCategoryName?: string;
+  subCategorySlug?: string;
   isFeatured?: boolean;
   isCustomizable?: boolean;
   tags?: string[];
@@ -94,6 +88,7 @@ export interface Product {
   category?: string;
   vendorId?: number;
   vendorName?: string;
+  activeDiscount?: DiscountInfo;
 }
 
 export interface Tag {
@@ -223,7 +218,7 @@ class ProductService {
   async getFeaturedProducts(limit: number = 10): Promise<Product[]> {
     try {
       const url = `/api/v1/products/featured?limit=${limit}`;
-        return await apiService.getRequest<Product[]>(url);
+      return await apiService.getRequest<Product[]>(url);
     } catch (error) {
       throw error;
     }

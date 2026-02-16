@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Heart, ShoppingCart, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { getPrimaryBadge } from "@/utils/productHelpers";
 import { extractPriceAmount, Price } from "@/services/productService";
 import { formatPriceFromDto, formatPrice, getPriceAmount, getPriceCurrency, PriceData } from "@/lib/currency";
 import { getProductImageUrl } from "@/utils/imageUtils";
+import { DiscountBadge } from "@/components/DiscountBadge";
+import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 
 interface ProductCardProps {
   product: any;
@@ -73,8 +75,6 @@ export default function ProductCard({ product, className }: ProductCardProps) {
   
   const priceObject = getProductPriceObject();
   const price = getProductPrice();
-  const originalPrice = product.originalPrice ? parseFloat(product.originalPrice) : null;
-  const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
   const inStock = isInStock();
   
   // Format price using currency from price data
@@ -95,6 +95,12 @@ export default function ProductCard({ product, className }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      navigate(`/signin?returnUrl=${returnUrl}`);
+      return;
+    }
     
     addToCart({ productId: product.id, quantity: 1 });
   };
@@ -169,6 +175,13 @@ export default function ProductCard({ product, className }: ProductCardProps) {
 
         {/* Product Information */}
         <div className="p-4 space-y-3">
+          {/* Subcategory */}
+          {product.subCategoryName && (
+            <span className="text-xs font-medium text-viridian-green uppercase tracking-wide">
+              {product.subCategoryName}
+            </span>
+          )}
+
           {/* Product name with fixed height to prevent misalignment */}
           <h3 className="text-sm font-medium text-gray-900 line-clamp-2 leading-5 min-h-[2.5rem] hover:text-ethiopian-gold transition-colors">
             {product.name}
@@ -176,23 +189,23 @@ export default function ProductCard({ product, className }: ProductCardProps) {
           
           {/* Price section */}
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-gray-900">
-                {formattedPrice}
-              </span>
-              {originalPrice && (
-                <>
-                  <span className="text-sm text-gray-400 line-through">
-                    {formatPrice(originalPrice, currencyCode)}
-                  </span>
-                  {discount > 0 && (
-                    <span className="text-xs text-red-500 font-medium">
-                      -{discount}%
-                    </span>
-                  )}
-                </>
-              )}
-            </div>
+            {product.activeDiscount && (
+              <div className="mb-1">
+                <DiscountBadge 
+                  discount={product.activeDiscount} 
+                  size="small" 
+                  variant="compact" 
+                  targetCurrency={currencyCode}
+                />
+              </div>
+            )}
+            <PriceWithDiscount
+              originalPrice={price}
+              currency={currencyCode}
+              discount={product.activeDiscount}
+              size="small"
+              showSavings={false}
+            />
           </div>
 
           {/* SKU variants info */}
