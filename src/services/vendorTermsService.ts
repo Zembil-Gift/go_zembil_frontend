@@ -1,4 +1,5 @@
 import { apiService } from './apiService';
+import { tokenManager } from './tokenManager';
 
 export interface TermItem {
   id: number;
@@ -68,7 +69,7 @@ export const vendorTermsService = {
     const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/vendor-terms/pdf/${vendorId}/${filename}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${tokenManager.getAccessToken()}`,
       },
     });
     

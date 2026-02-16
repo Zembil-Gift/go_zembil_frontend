@@ -19,17 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/apiService";
 import { vendorTermsService, VendorTermsResponse } from "@/services/vendorTermsService";
 import { vendorCategoryService } from "@/services/vendorCategoryService";
+import { SUPPORTED_COUNTRIES, getCurrencyForCountry, isEthiopianCountry } from "@/lib/countryConfig";
 import { User, Mail, Lock, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Play, Pause, Download, ExternalLink, Shield, DollarSign, Package, MessageCircle, Scale, FileCheck } from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
-
-interface Currency {
-  id: number;
-  code: string;
-  name: string;
-  symbol: string;
-  isActive: boolean;
-  isDefault: boolean;
-}
 
 interface CertificateResponse {
   certificateCode: string;
@@ -41,16 +33,6 @@ interface CertificateResponse {
   isUsed: boolean;
   isValid: boolean;
 }
-
-const COUNTRIES = [
-  { value: "United States", label: "United States" },
-  { value: "Ethiopia", label: "Ethiopia" },
-  { value: "Canada", label: "Canada" },
-  { value: "United Kingdom", label: "United Kingdom" },
-  { value: "Europe", label: "Europe" },
-  { value: "Australia", label: "Australia" },
-  { value: "Middle East", label: "Middle East" },
-];
 
 const VENDOR_TYPES = [
   { value: "PRODUCT", label: "Product Vendor", description: "I sell physical goods that require delivery" },
@@ -130,7 +112,6 @@ const vendorSignupSchema = z
       if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
       return age >= 18;
     }, "You must be at least 18 years old to sign up as a vendor"),
-    preferredCurrencyCode: z.string().optional(),
     businessName: z.string()
       .min(2, "Business name must be at least 2 characters")
       .max(200, "Business name is too long")
@@ -181,19 +162,10 @@ export default function VendorSignup() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: currencies = [] } = useQuery({
-    queryKey: ['currencies'],
-    queryFn: async () => {
-      return await apiService.getRequest<Currency[]>('/api/currencies');
-    },
-  });
-
   const { data: vendorCategories = [] } = useQuery({
     queryKey: ['vendor-categories'],
     queryFn: () => vendorCategoryService.getAllActiveCategories(),
   });
-
-  const defaultCurrency = currencies.find(c => c.isDefault)?.code || 'USD';
 
   const form = useForm<VendorSignupForm>({
     resolver: zodResolver(vendorSignupSchema),
@@ -201,7 +173,7 @@ export default function VendorSignup() {
     reValidateMode: "onChange",
     defaultValues: {
       firstName: "", lastName: "", username: "", email: "", phoneNumber: "",
-      password: "", confirmPassword: "", birthDate: "", preferredCurrencyCode: "",
+      password: "", confirmPassword: "", birthDate: "",
       businessName: "", description: "", businessEmail: "", businessPhone: "",
       city: "", country: "", vendorCategoryId: "", vendorType: "", vatStatus: "",
     },
@@ -455,6 +427,15 @@ export default function VendorSignup() {
     mutationFn: async (data: VendorSignupForm) => {
       const acceptedTermIds = termsData ? termsData.terms.filter(t => acceptedTerms[t.id]).map(t => t.id) : [];
       
+      // Derive currency from country selection
+      const preferredCurrencyCode = getCurrencyForCountry(data.country);
+      const isEthiopian = isEthiopianCountry(data.country);
+      
+      // Set supported payment providers based on country
+      const supportedPaymentProviders = isEthiopian 
+        ? ["CHAPA", "TELEBIRR"] 
+        : ["STRIPE"];
+      
       const payload = {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -463,7 +444,7 @@ export default function VendorSignup() {
         phoneNumber: data.phoneNumber,
         password: data.password,
         birthDate: data.birthDate,
-        preferredCurrencyCode: data.preferredCurrencyCode || defaultCurrency,
+        preferredCurrencyCode,
         businessName: data.businessName,
         description: data.description || undefined,
         businessEmail: data.businessEmail,
@@ -472,8 +453,8 @@ export default function VendorSignup() {
         country: data.country,
         vendorCategoryId: parseInt(data.vendorCategoryId),
         vendorType: data.vendorType,
-        vatStatus: data.country === "Ethiopia" && data.vatStatus ? data.vatStatus : undefined,
-        supportedPaymentProviders: ["STRIPE", "CHAPA"],
+        vatStatus: isEthiopian && data.vatStatus ? data.vatStatus : undefined,
+        supportedPaymentProviders,
         certificateCode: generatedCertificate?.certificateCode || "",
         termsVersion: termsData?.version || 1,
         acceptedTermIds,
@@ -795,31 +776,19 @@ export default function VendorSignup() {
                     value={form.watch("country")}
                     onValueChange={(value) => {
                       form.setValue("country", value);
-                      if (value === "Ethiopia") form.setValue("preferredCurrencyCode", "ETB");
                     }}
                   >
                     <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
                     <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country.value} value={country.value}>{country.label}</SelectItem>
+                      {SUPPORTED_COUNTRIES.map((country) => (
+                        <SelectItem key={country.value} value={country.value}>
+                          {country.label} ({country.currencyCode})
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-gray-500 mt-1">Your currency will be set based on your country</p>
                   {form.formState.errors.country && <p className="text-sm text-red-600 mt-1">{form.formState.errors.country.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor="preferredCurrencyCode">Preferred Currency</Label>
-                  <Select 
-                    onValueChange={(value) => form.setValue("preferredCurrencyCode", value)}
-                    value={form.watch("preferredCurrencyCode") || (form.watch("country") === "Ethiopia" ? "ETB" : defaultCurrency)}
-                  >
-                    <SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger>
-                    <SelectContent>
-                      {(form.watch("country") === "Ethiopia" ? currencies.filter(c => c.code === "ETB") : currencies).map((currency) => (
-                        <SelectItem key={currency.id} value={currency.code}>{currency.name} ({currency.symbol})</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
             </CardContent>

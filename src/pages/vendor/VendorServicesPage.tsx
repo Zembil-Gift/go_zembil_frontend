@@ -6,15 +6,20 @@ import { vendorService, VendorProfile } from "@/services/vendorService";
 import { serviceService, ServiceResponse } from "@/services/serviceService";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Plus,
   Briefcase,
+  Search,
 } from "lucide-react";
+import { useState } from "react";
 
 export default function VendorServicesPage() {
   const { user, isAuthenticated } = useAuth();
   
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch vendor profile
   const { data: vendorProfile } = useQuery<VendorProfile>({
@@ -31,6 +36,12 @@ export default function VendorServicesPage() {
   });
 
   const services: ServiceResponse[] = servicesData?.content || [];
+
+  const filteredServices = services.filter((service) =>
+    service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (service.categoryName && service.categoryName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (service.description && service.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status?.toUpperCase()) {
@@ -67,47 +78,67 @@ export default function VendorServicesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">My Services</h2>
-        {vendorProfile?.isApproved ? (
-          <Button asChild>
-            <Link to="/vendor/services/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Service
-            </Link>
-          </Button>
-        ) : (
-          <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
-            <Plus className="h-4 w-4 mr-2 text-gray-400" />
-            <span className="text-gray-400">Add Service</span>
-          </Button>
-        )}
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+        <div>
+          <h2 className="text-xl font-semibold">My Services</h2>
+          <p className="text-sm text-muted-foreground">Manage your service catalog</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search services..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          {vendorProfile?.isApproved ? (
+            <Button asChild>
+              <Link to="/vendor/services/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Service
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+              <Plus className="h-4 w-4 mr-2 text-gray-400" />
+              <span className="text-gray-400">Add Service</span>
+            </Button>
+          )}
+        </div>
       </div>
 
-      {services.length === 0 ? (
+      {filteredServices.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Briefcase className="h-16 w-16 text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">No services yet</h3>
-            <p className="text-muted-foreground mb-4">Start by creating your first service</p>
-            {vendorProfile?.isApproved ? (
-              <Button asChild>
-                <Link to="/vendor/services/new">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Service
-                </Link>
-              </Button>
-            ) : (
-              <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
-                <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                <span className="text-gray-400">Create Service</span>
-              </Button>
+            <h3 className="text-lg font-medium text-gray-900">
+              {searchQuery ? "No services match your search" : "No services yet"}
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              {searchQuery ? "Try a different search term" : "Start by creating your first service"}
+            </p>
+            {!searchQuery && (
+              vendorProfile?.isApproved ? (
+                <Button asChild>
+                  <Link to="/vendor/services/new">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Service
+                  </Link>
+                </Button>
+              ) : (
+                <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+                  <Plus className="h-4 w-4 mr-2 text-gray-400" />
+                  <span className="text-gray-400">Create Service</span>
+                </Button>
+              )
             )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {services.map((service: ServiceResponse) => (
+          {filteredServices.map((service: ServiceResponse) => (
             <Card key={service.id}>
               <CardContent className="flex items-center justify-between p-4">
                 <div className="flex items-center space-x-4">
@@ -130,13 +161,16 @@ export default function VendorServicesPage() {
                 <div className="flex items-center space-x-2">
                   {getStatusBadge(service.status)}
                   <span className="font-medium">
-                    {serviceService.formatPrice(service.defaultPackage?.basePriceMinor ?? service.basePriceMinor, service.defaultPackage?.basePrice ?? service.basePrice, service.defaultPackage?.currency ?? service.currency)}
+                    {serviceService.formatPrice(service.defaultPackage?.basePrice ?? service.basePrice ?? 0, service.defaultPackage?.currency ?? service.currency)}
                   </span>
                   {service.hasPackages && (
                     <Badge variant="outline" className="text-xs">
                       {service.packages?.length || 0} packages
                     </Badge>
                   )}
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/vendor/services/${service.id}`}>View Details</Link>
+                  </Button>
                   <Button asChild variant="outline" size="sm">
                     <Link to={`/vendor/services/${service.id}/edit`}>Edit</Link>
                   </Button>

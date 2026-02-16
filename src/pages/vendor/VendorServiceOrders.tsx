@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { 
   Calendar, 
   Clock,
@@ -95,10 +96,11 @@ export default function VendorServiceOrders() {
   // Mutations
   const confirmMutation = useMutation({
     mutationFn: (orderId: number) => serviceOrderService.confirmOrder(orderId),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: 'Order Confirmed', description: 'The booking has been confirmed.' });
-      queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setDetailDialogOpen(false);
+      setSelectedOrder(null);
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -107,10 +109,11 @@ export default function VendorServiceOrders() {
 
   const inProgressMutation = useMutation({
     mutationFn: (orderId: number) => serviceOrderService.markInProgress(orderId),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: 'Status Updated', description: 'Service marked as in progress.' });
-      queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setDetailDialogOpen(false);
+      setSelectedOrder(null);
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -119,10 +122,11 @@ export default function VendorServiceOrders() {
 
   const completeMutation = useMutation({
     mutationFn: (orderId: number) => serviceOrderService.completeOrder(orderId),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: 'Service Completed', description: 'The service has been marked as completed.' });
-      queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setDetailDialogOpen(false);
+      setSelectedOrder(null);
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -131,10 +135,11 @@ export default function VendorServiceOrders() {
 
   const noShowMutation = useMutation({
     mutationFn: (orderId: number) => serviceOrderService.markNoShow(orderId),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: 'No-Show Recorded', description: 'Customer has been marked as no-show.' });
-      queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setDetailDialogOpen(false);
+      setSelectedOrder(null);
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -144,12 +149,13 @@ export default function VendorServiceOrders() {
   const cancelMutation = useMutation({
     mutationFn: ({ orderId, reason, validReason }: { orderId: number; reason: string; validReason: boolean }) =>
       serviceOrderService.vendorCancelOrder(orderId, reason, validReason),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: 'Order Cancelled', description: 'The booking has been cancelled.' });
-      queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setCancelDialogOpen(false);
       setCancelReason('');
       setValidReason(false);
+      setSelectedOrder(null);
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -159,12 +165,13 @@ export default function VendorServiceOrders() {
   const rescheduleMutation = useMutation({
     mutationFn: ({ orderId, newDateTime }: { orderId: number; newDateTime: string }) =>
       serviceOrderService.vendorRescheduleOrder(orderId, newDateTime),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: 'Reschedule Requested', description: 'Waiting for customer approval.' });
-      queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setRescheduleDialogOpen(false);
       setNewScheduledDate('');
       setNewScheduledTime('');
+      setSelectedOrder(null);
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -280,10 +287,10 @@ export default function VendorServiceOrders() {
               
               <div className="text-right flex-shrink-0">
                 <p className="font-bold text-eagle-green">
-                  {serviceOrderService.formatPrice(order.totalAmountMinor, order.currency)}
+                  {serviceOrderService.formatPrice(order.vendorAmountMinor || order.totalAmountMinor, order.currency)}
                 </p>
                 <p className="text-xs text-eagle-green/60 mt-1">
-                  {order.customerName || 'Customer'}
+                  Your Earnings
                 </p>
               </div>
             </div>
@@ -364,14 +371,25 @@ export default function VendorServiceOrders() {
                 Manage your service bookings
               </p>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Link to="/vendor/service-calendar">
+                <Button
+                  variant="outline"
+                  className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
+                >
+                  <CalendarClock className="h-4 w-4 mr-2" />
+                  Service Calendar
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                onClick={() => refetch()}
+                className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
           </div>
         </motion.div>
 
@@ -653,32 +671,40 @@ export default function VendorServiceOrders() {
                     <h4 className="font-bold text-eagle-green mb-3">Payment Summary</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-eagle-green/70">Subtotal</span>
+                        <span className="text-eagle-green/70">Customer Paid</span>
                         <span className="text-eagle-green">
-                          {serviceOrderService.formatPrice(selectedOrder.subtotalMinor, selectedOrder.currency)}
+                          {serviceOrderService.formatPrice(selectedOrder.totalAmountMinor, selectedOrder.currency)}
                         </span>
                       </div>
                       {selectedOrder.discountMinor && selectedOrder.discountMinor > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-eagle-green/70">Discount</span>
-                          <span className="text-green-600">
+                          <span className="text-eagle-green/70">Discount Applied</span>
+                          <span className="text-eagle-green/70">
                             -{serviceOrderService.formatPrice(selectedOrder.discountMinor, selectedOrder.currency)}
+                          </span>
+                        </div>
+                      )}
+                      {selectedOrder.vatAmountMinor && selectedOrder.vatAmountMinor > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-eagle-green/70">VAT</span>
+                          <span className="text-red-600">
+                            -{serviceOrderService.formatPrice(selectedOrder.vatAmountMinor, selectedOrder.currency)}
                           </span>
                         </div>
                       )}
                       {selectedOrder.platformFeeMinor && selectedOrder.platformFeeMinor > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="text-eagle-green/70">Platform Fee</span>
-                          <span className="text-eagle-green/70">
+                          <span className="text-red-600">
                             -{serviceOrderService.formatPrice(selectedOrder.platformFeeMinor, selectedOrder.currency)}
                           </span>
                         </div>
                       )}
                       <Separator />
                       <div className="flex justify-between">
-                        <span className="font-bold text-eagle-green">Total</span>
-                        <span className="font-bold text-eagle-green text-lg">
-                          {serviceOrderService.formatPrice(selectedOrder.totalAmountMinor, selectedOrder.currency)}
+                        <span className="font-bold text-eagle-green">Your Earnings</span>
+                        <span className="font-bold text-green-600 text-lg">
+                          {serviceOrderService.formatPrice(selectedOrder.vendorAmountMinor || selectedOrder.totalAmountMinor, selectedOrder.currency)}
                         </span>
                       </div>
                     </div>

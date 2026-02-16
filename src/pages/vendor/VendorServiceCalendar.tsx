@@ -6,24 +6,16 @@ import {
   RefreshCw,
   Phone,
   User,
-  Plus,
-  Trash2,
-  Settings,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, isToday, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, isToday } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 
 import { 
   serviceOrderService, 
@@ -34,14 +26,10 @@ import { serviceService, ServiceResponse } from '@/services/serviceService';
 
 export default function VendorServiceCalendar() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-  
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedService, setSelectedService] = useState<string>('all');
-  const [blackoutDialogOpen, setBlackoutDialogOpen] = useState(false);
-  const [newBloutDate, setNewBlackoutDate] = useState('');
-  const [selectedServiceForBlackout, setSelectedServiceForBlackout] = useState<number | null>(null);
 
   // Fetch vendor's services
   const { data: servicesData, isLoading: servicesLoading } = useQuery({
@@ -72,25 +60,6 @@ export default function VendorServiceCalendar() {
       const orderDate = new Date(order.scheduledDateTime);
       return isSameDay(orderDate, date);
     });
-  };
-
-  // Get all blackout dates from services
-  const allBlackoutDates = useMemo(() => {
-    const dates: Date[] = [];
-    services.forEach((service: ServiceResponse) => {
-      const config = service.availabilityConfig;
-      if (config?.blackoutDates) {
-        config.blackoutDates.forEach((dateStr: string) => {
-          dates.push(parseISO(dateStr));
-        });
-      }
-    });
-    return dates;
-  }, [services]);
-
-  // Check if a date is a blackout date
-  const isBlackoutDate = (date: Date) => {
-    return allBlackoutDates.some(blackoutDate => isSameDay(blackoutDate, date));
   };
 
   // Calendar navigation
@@ -134,16 +103,13 @@ export default function VendorServiceCalendar() {
     const dayOrders = getOrdersForDate(date);
     const isSelected = selectedDate && isSameDay(date, selectedDate);
     const isCurrentMonth = isSameMonth(date, currentMonth);
-    const isBlackout = isBlackoutDate(date);
     const isTodayDate = isToday(date);
 
     return (
       <div
         className={`h-24 border border-gray-100 p-1 cursor-pointer transition-all hover:bg-june-bud/10 ${
           isSelected ? 'ring-2 ring-eagle-green bg-june-bud/20' : ''
-        } ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : ''} ${
-          isBlackout ? 'bg-red-50' : ''
-        }`}
+        } ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : ''}`}
         onClick={() => setSelectedDate(date)}
       >
         <div className="flex items-center justify-between mb-1">
@@ -152,11 +118,6 @@ export default function VendorServiceCalendar() {
           }`}>
             {format(date, 'd')}
           </span>
-          {isBlackout && (
-            <Badge variant="outline" className="text-xs px-1 py-0 text-red-600 border-red-300">
-              Blocked
-            </Badge>
-          )}
         </div>
         
         <div className="space-y-0.5 overflow-hidden">
@@ -202,24 +163,14 @@ export default function VendorServiceCalendar() {
                 View and manage your service bookings
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setBlackoutDialogOpen(true)}
-                className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Manage Availability
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] })}
-                className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] })}
+              className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
           </div>
         </motion.div>
 
@@ -306,10 +257,6 @@ export default function VendorServiceCalendar() {
                         <div className="w-3 h-3 rounded bg-red-500" />
                         <span className="text-eagle-green/70">Cancelled</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded border-2 border-red-300 bg-red-50" />
-                        <span className="text-eagle-green/70">Blocked</span>
-                      </div>
                     </div>
                   </>
                 )}
@@ -371,7 +318,7 @@ export default function VendorServiceCalendar() {
                             </div>
                           )}
                           <div className="mt-2 text-xs font-medium text-eagle-green">
-                            {serviceOrderService.formatPrice(order.totalAmountMinor, order.currency)}
+                            {serviceOrderService.formatPrice(order.vendorAmountMinor || order.totalAmountMinor, order.currency)}
                           </div>
                         </div>
                       );
@@ -383,153 +330,6 @@ export default function VendorServiceCalendar() {
           </div>
         </div>
 
-
-        {/* Blackout Date Management Dialog */}
-        <Dialog open={blackoutDialogOpen} onOpenChange={setBlackoutDialogOpen}>
-          <DialogContent className="max-w-lg bg-white">
-            <DialogHeader>
-              <DialogTitle className="text-eagle-green">Manage Availability</DialogTitle>
-              <DialogDescription>
-                Add or remove blackout dates for your services. Customers won't be able to book on these dates.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              {/* Service Selection */}
-              <div>
-                <Label>Select Service</Label>
-                <Select 
-                  value={selectedServiceForBlackout?.toString() || ''} 
-                  onValueChange={(val) => setSelectedServiceForBlackout(parseInt(val))}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Choose a service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services.map((service: ServiceResponse) => (
-                      <SelectItem key={service.id} value={service.id.toString()}>
-                        {service.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {selectedServiceForBlackout && (
-                <>
-                  {/* Add New Blackout Date */}
-                  <div>
-                    <Label>Add Blackout Date</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Input
-                        type="date"
-                        value={newBloutDate}
-                        onChange={(e) => setNewBlackoutDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="flex-1"
-                      />
-                      <Button
-                        onClick={() => {
-                          if (newBloutDate) {
-                            toast({
-                              title: 'Feature Coming Soon',
-                              description: 'Blackout date management will be available in a future update.',
-                            });
-                            setNewBlackoutDate('');
-                          }
-                        }}
-                        disabled={!newBloutDate}
-                        className="bg-eagle-green hover:bg-viridian-green text-white"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Current Blackout Dates */}
-                  <div>
-                    <Label>Current Blackout Dates</Label>
-                    <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
-                      {(() => {
-                        const service = services.find((s: ServiceResponse) => s.id === selectedServiceForBlackout);
-                        const blackoutDates = service?.availabilityConfig?.blackoutDates || [];
-                        
-                        if (blackoutDates.length === 0) {
-                          return (
-                            <p className="text-sm text-eagle-green/60 py-4 text-center">
-                              No blackout dates set
-                            </p>
-                          );
-                        }
-                        
-                        return blackoutDates.map((dateStr: string) => (
-                          <div
-                            key={dateStr}
-                            className="flex items-center justify-between p-2 bg-red-50 rounded-lg"
-                          >
-                            <span className="text-sm text-red-700">
-                              {format(parseISO(dateStr), 'EEEE, MMMM d, yyyy')}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-100"
-                              onClick={() => {
-                                toast({
-                                  title: 'Feature Coming Soon',
-                                  description: 'Blackout date removal will be available in a future update.',
-                                });
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ));
-                      })()}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Working Days Info */}
-                  <div>
-                    <Label>Working Days</Label>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {(() => {
-                        const service = services.find((s: ServiceResponse) => s.id === selectedServiceForBlackout);
-                        const workingDays = service?.availabilityConfig?.workingDays || [0, 1, 2, 3, 4, 5, 6];
-                        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                        
-                        return dayNames.map((day, index) => (
-                          <Badge
-                            key={day}
-                            variant={workingDays.includes(index) ? 'default' : 'outline'}
-                            className={workingDays.includes(index) 
-                              ? 'bg-eagle-green text-white' 
-                              : 'text-eagle-green/50'
-                            }
-                          >
-                            {day}
-                          </Badge>
-                        ));
-                      })()}
-                    </div>
-                    <p className="text-xs text-eagle-green/60 mt-2">
-                      To change working days, please update your service settings.
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setBlackoutDialogOpen(false)}>
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

@@ -68,6 +68,7 @@ export interface ProductPrice {
 export interface ProductSku {
   id?: number;
   skuCode: string;
+  skuName?: string;
   price?: {
     id?: number;
     currencyCode?: string;
@@ -97,6 +98,7 @@ export interface Product {
   vendorId?: number;
   vendorName?: string;
   categoryName?: string;
+  subCategoryName?: string;
   cover?: string;
   images?: ImageDto[];
   useExchangeRate?: boolean;
@@ -277,13 +279,11 @@ export interface CreateEventRequest {
 export interface UpdateEventRequest {
   title?: string;
   description?: string;
-  shortDescription?: string;
+  summary?: string;
   startDateTime?: string;
   endDateTime?: string;
-  venue?: string;
-  address?: string;
+  location?: string;
   city?: string;
-  country?: string;
   imageUrl?: string;
   ticketTypeUpdates?: TicketTypeUpdate[];
 }
@@ -302,6 +302,7 @@ export interface EventResponse {
   id: number;
   title: string;
   description?: string;
+  summary?: string;
   location?: string;
   city?: string;
   eventDate: string;
@@ -356,6 +357,7 @@ export interface TicketType {
 }
 
 export interface EventPriceUpdateRequest {
+  eventId: number;
   ticketTypeId: number;
   newPrice: number;  // Vendor's price in major units (e.g., 100.00)
   newCurrency: string;
@@ -364,19 +366,30 @@ export interface EventPriceUpdateRequest {
 
 export interface EventPriceUpdateResponse {
   id: number;
-  ticketTypeId: number;
-  ticketTypeName: string;
-  eventId: number;
-  eventTitle: string;
+  // Unified VendorChangeRequestDto fields (actual API response)
+  entityType?: string;
+  requestType?: string;
+  entityId?: number;         // ticketTypeId for event price updates
+  entityName?: string;       // "EventTitle - TicketTypeName"
+  entityImageUrl?: string;
   vendorId: number;
   vendorName?: string;
-  currentPriceMinor: number;
-  currentCurrencyCode: string;
-  newPriceMinor: number;
-  newCurrencyCode: string;
+  currentVendorPrice?: PriceDto;
+  newVendorPrice?: PriceDto;
+  currentCustomerPrice?: PriceDto;
+  newCustomerPrice?: PriceDto;
+  // Legacy fields (may still be populated by some endpoints)
+  ticketTypeId?: number;
+  ticketTypeName?: string;
+  eventId?: number;
+  eventTitle?: string;
+  currentPriceMinor?: number;
+  currentCurrencyCode?: string;
+  newPriceMinor?: number;
+  newCurrencyCode?: string;
   reason?: string;
   status: string;
-  reviewedById?: number;
+  reviewedBy?: number;
   reviewedByName?: string;
   reviewedAt?: string;
   rejectionReason?: string;
@@ -519,11 +532,25 @@ export const vendorService = {
   getVendorProducts: (vendorId: number, page = 0, size = 20) =>
     apiService.getRequest<PageResponse<Product>>(`/api/v1/products/filter?vendorId=${vendorId}&page=${page}&size=${size}`),
 
+  searchMyProducts: (vendorUserId: number, searchTerm: string, page = 0, size = 20) => {
+    const params = new URLSearchParams();
+    params.append('vendorId', vendorUserId.toString());
+    params.append('page', page.toString());
+    params.append('size', size.toString());
+    if (searchTerm?.trim()) {
+      params.append('searchTerm', searchTerm.trim());
+    }
+    return apiService.getRequest<PageResponse<Product>>(`/api/v1/products/filter?${params.toString()}`);
+  },
+
   getMyProducts: (page = 0, size = 20) =>
     apiService.getRequest<PageResponse<Product>>(`/api/v1/products/vendor/me?page=${page}&size=${size}`),
 
   getMyPendingRejectedProducts: (page = 0, size = 20) =>
     apiService.getRequest<PageResponse<Product>>(`/api/v1/products/vendor/me/pending-rejected?page=${page}&size=${size}`),
+
+  getProductById: (productId: number) =>
+    apiService.getRequest<Product>(`/api/v1/products/${productId}`),
 
   createProductPriceUpdateRequest: (productId: number, request: PriceUpdateRequest) =>
     apiService.postRequest<PriceUpdateRequest>(`/api/vendor/change-requests/products/${productId}/price`, {
@@ -576,6 +603,9 @@ export const vendorService = {
   getMyEvent: (eventId: number) =>
     apiService.getRequest<EventResponse>(`/api/vendor/events/${eventId}`),
 
+  getEventById: (eventId: number) =>
+    apiService.getRequest<EventResponse>(`/api/vendor/events/${eventId}`),
+
   updateEvent: (eventId: number, event: UpdateEventRequest) =>
     apiService.putRequest<EventResponse>(`/api/vendor/events/${eventId}`, event),
 
@@ -612,7 +642,7 @@ export const vendorService = {
   },
 
   requestEventPriceUpdate: (request: EventPriceUpdateRequest) =>
-    apiService.postRequest<EventPriceUpdateResponse>(`/api/vendor/change-requests/events/${request.ticketTypeId}/ticket-types/${request.ticketTypeId}/price`, {
+    apiService.postRequest<EventPriceUpdateResponse>(`/api/vendor/change-requests/events/${request.eventId}/ticket-types/${request.ticketTypeId}/price`, {
       newPrice: {
         amount: request.newPrice,
         currencyCode: request.newCurrency,
