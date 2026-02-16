@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { useWishlist } from "@/hooks/useWishlist";
 import { Heart, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 interface WishlistButtonProps {
   productId: number;
@@ -25,6 +27,8 @@ export function WishlistButton({
     isAddingToWishlist, 
     isRemovingFromWishlist 
   } = useWishlist();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const inWishlist = isInWishlist(productId);
   const isLoading = isAddingToWishlist || isRemovingFromWishlist;
@@ -34,7 +38,13 @@ export function WishlistButton({
     e.stopPropagation();
     onClick?.(e);
 
-    // Allow guest users to use local wishlist
+    // Require authentication for wishlist
+    if (!isAuthenticated) {
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      navigate(`/signin?returnUrl=${returnUrl}`);
+      return;
+    }
+
     try {
       if (inWishlist) {
         removeFromWishlist(productId);
