@@ -41,8 +41,7 @@ import {
   Trash2,
   Loader2,
   Star,
-  Check,
-  X
+  Check
 } from 'lucide-react';
 import { adminService, CurrencyDto } from '@/services/adminService';
 

@@ -175,7 +175,9 @@ export default function AdminDashboard() {
       if (status === 'approved') {
         return await adminService.approveVendor(vendorId);
       } else {
-        await adminService.declineVendor(vendorId);
+        await adminService.declineVendor(vendorId, {
+          rejectionReason: 'Vendor application declined by admin. Please contact support for details.',
+        });
         return { success: true };
       }
     },

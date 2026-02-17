@@ -118,21 +118,27 @@ export type UserResponse = AdminUserDto;
 
 export interface VendorResponse {
   id: number;
+  userId: number;
   businessName: string;
-  businessDescription?: string;
-  email: string;
-  phone?: string;
+  description?: string;
+  businessEmail?: string;
+  businessPhone?: string;
+  vendorCategoryName?: string;
   city?: string;
-  country: String;
-  businessType?: string;
-  rating?: number;
-  totalOrders?: number;
-  totalProducts?: number;
+  country?: string;
+  isApproved?: boolean;
+  isActive?: boolean;
+  rejectionReason?: string;
+  rejectedAt?: string;
   payoutEnabled: boolean;
   stripeConnectedAccountId?: string;
   chapaSubaccountId?: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface DeclineVendorRequest {
+  rejectionReason: string;
 }
 
 export interface OrderResponse {
@@ -659,8 +665,8 @@ class AdminService {
     return await apiService.postRequest<VendorResponse>(`/api/admin/vendors/${vendorId}/approve`, {});
   }
 
-  async declineVendor(vendorId: number): Promise<void> {
-    return await apiService.postRequest<void>(`/api/admin/vendors/${vendorId}/decline`, {});
+  async declineVendor(vendorId: number, request: DeclineVendorRequest): Promise<void> {
+    return await apiService.postRequest<void>(`/api/admin/vendors/${vendorId}/decline`, request);
   }
 
   async getOrders(page: number = 0, size: number = 20, status?: string, search?: string): Promise<PaginatedResponse<AdminOrderDto>> {

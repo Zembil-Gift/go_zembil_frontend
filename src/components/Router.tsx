@@ -74,6 +74,7 @@ import VendorServicesPage from "@/pages/vendor/VendorServicesPage";
 import VendorPaymentsPage from "@/pages/vendor/VendorPaymentsPage";
 import VendorCheckInPage from "@/pages/vendor/VendorCheckInPage";
 import VendorSettingsPage from "@/pages/vendor/VendorSettingsPage";
+import VendorResubmitPage from "@/pages/vendor/VendorResubmitPage";
 import VendorRequests from "@/pages/vendor/VendorRequests";
 import VendorServiceOrders from "@/pages/vendor/VendorServiceOrders";
 import VendorServiceCalendar from "@/pages/vendor/VendorServiceCalendar";
@@ -485,6 +486,7 @@ export default function Router() {
           <Route path="onboarding/refresh" element={<StripeOnboardingRefresh />} />
           <Route path="requests" element={<VendorRequests />} />
           <Route path="settings" element={<VendorSettingsPage />} />
+          <Route path="resubmit" element={<VendorResubmitPage />} />
         </Route>
 
         {/* Admin Routes - Outside main Layout to avoid navbar/footer */}

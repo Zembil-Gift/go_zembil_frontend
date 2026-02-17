@@ -33,6 +33,8 @@ import {
   Menu,
   ChevronRight,
   Percent,
+  XCircle,
+  Edit,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -152,6 +154,16 @@ export default function VendorDashboardLayout() {
 
   const activeTab = getActiveTab();
   const isCustomOrderDetailPage = location.pathname.startsWith('/vendor/custom-orders/');
+  const normalizedVendorStatus = (vendorProfile?.status || '').trim().toUpperCase();
+  const vendorApplicationStatus = normalizedVendorStatus || (
+    vendorProfile?.isApproved
+      ? 'APPROVED'
+      : vendorProfile?.rejectionReason
+        ? 'REJECTED'
+        : 'PENDING'
+  );
+  const isVendorApproved = vendorApplicationStatus === 'APPROVED';
+  const isVendorRejected = vendorApplicationStatus === 'REJECTED';
 
   return (
     <div className={cn('min-h-screen', isCustomOrderDetailPage ? 'bg-white' : 'bg-gray-50')}>
@@ -164,8 +176,10 @@ export default function VendorDashboardLayout() {
               <span className="text-sm font-bold text-white truncate max-w-[150px]">
                 {vendorProfile?.businessName || 'Vendor'}
               </span>
-              {vendorProfile?.isApproved ? (
+              {isVendorApproved ? (
                 <Badge className="bg-green-500 text-white text-[10px] h-4 px-1 w-fit">Approved</Badge>
+              ) : isVendorRejected ? (
+                <Badge className="bg-red-500 text-white text-[10px] h-4 px-1 w-fit">Rejected</Badge>
               ) : (
                 <Badge className="bg-amber-500 text-white text-[10px] h-4 px-1 w-fit">Pending</Badge>
               )}
@@ -235,8 +249,10 @@ export default function VendorDashboardLayout() {
               </div>
             </div>
             <div className="mt-2">
-              {vendorProfile?.isApproved ? (
+              {isVendorApproved ? (
                 <Badge className="bg-green-600 text-white text-xs font-light">Approved</Badge>
+              ) : isVendorRejected ? (
+                <Badge className="bg-red-500 text-white text-xs">Rejected</Badge>
               ) : (
                 <Badge className="bg-amber-500 text-white text-xs">Pending Approval</Badge>
               )}
@@ -309,41 +325,74 @@ export default function VendorDashboardLayout() {
       <div className="pt-16 lg:pt-0 lg:pl-64 min-h-screen">
         <main className={cn(isCustomOrderDetailPage ? 'p-0' : 'p-4 sm:p-6 lg:p-8')}>
           {/* Vendor Approval Status Banner */}
-          {vendorProfile && !vendorProfile.isApproved && (
-            <div className="mb-6 rounded-lg border-2 border-amber-300 bg-amber-50 p-4 sm:p-6">
+          {vendorProfile && !isVendorApproved && (
+            <div className={cn(
+              "mb-6 rounded-lg border-2 p-4 sm:p-6",
+              isVendorRejected ? "border-red-300 bg-red-50" : "border-amber-300 bg-amber-50"
+            )}>
               <div className="flex items-start gap-4">
-                <div className="rounded-full bg-amber-100 p-3">
-                  <Clock className="h-6 w-6 text-amber-600" />
+                <div className={cn(
+                  "rounded-full p-3",
+                  isVendorRejected ? "bg-red-100" : "bg-amber-100"
+                )}>
+                  {isVendorRejected ? (
+                    <XCircle className="h-6 w-6 text-red-600" />
+                  ) : (
+                    <Clock className="h-6 w-6 text-amber-600" />
+                  )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-amber-800">
-                    Your Vendor Account is Pending Approval
+                  <h3 className={cn(
+                    "text-lg font-semibold",
+                    isVendorRejected ? "text-red-800" : "text-amber-800"
+                  )}>
+                    {isVendorRejected ? "Your Vendor Application Was Rejected" : "Your Vendor Account is Pending Approval"}
                   </h3>
-                  <p className="mt-1 text-sm text-amber-700">
-                    Thank you for registering as a vendor! Your account is currently being reviewed by our team. 
-                    Once approved, you'll be able to create products, events, services, and custom order templates.
-                  </p>
-                  <p className="mt-2 text-sm text-amber-600">
-                    You'll receive an email notification once your account has been approved.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Badge className="bg-amber-200 text-amber-800 border-amber-300">
-                      <Clock className="h-3 w-3 mr-1" />
-                      Review in Progress
-                    </Badge>
-                    <Badge variant="outline" className="border-amber-300 text-amber-700">
-                      Products: Disabled
-                    </Badge>
-                    <Badge variant="outline" className="border-amber-300 text-amber-700">
-                      Events: Disabled
-                    </Badge>
-                    <Badge variant="outline" className="border-amber-300 text-amber-700">
-                      Services: Disabled
-                    </Badge>
-                    <Badge variant="outline" className="border-amber-300 text-amber-700">
-                      Custom Orders: Disabled
-                    </Badge>
-                  </div>
+                  {isVendorRejected ? (
+                    <>
+                      <p className="mt-1 text-sm text-red-700">
+                        Please update your business details and resubmit your application from Settings.
+                      </p>
+                      <div className="mt-3 rounded-md border border-red-200 bg-white p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-red-700">Rejection message</p>
+                        <p className="mt-1 text-sm text-red-800">{vendorProfile.rejectionReason || 'No rejection reason provided.'}</p>
+                        {vendorProfile.rejectedAt && (
+                          <p className="mt-1 text-xs text-red-600">
+                            Rejected on {new Date(vendorProfile.rejectedAt).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Badge className="bg-red-200 text-red-800 border-red-300">Action Required</Badge>
+                        <Button size="sm" asChild>
+                          <Link to="/vendor/resubmit">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit & Resubmit
+                          </Link>
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="mt-1 text-sm text-amber-700">
+                        Thank you for registering as a vendor! Your account is currently being reviewed by our team.
+                        Once approved, you'll be able to create products, events, services, and custom order templates.
+                      </p>
+                      <p className="mt-2 text-sm text-amber-600">
+                        You'll receive an email notification once your account has been approved.
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Badge className="bg-amber-200 text-amber-800 border-amber-300">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Review in Progress
+                        </Badge>
+                        <Badge variant="outline" className="border-amber-300 text-amber-700">Products: Disabled</Badge>
+                        <Badge variant="outline" className="border-amber-300 text-amber-700">Events: Disabled</Badge>
+                        <Badge variant="outline" className="border-amber-300 text-amber-700">Services: Disabled</Badge>
+                        <Badge variant="outline" className="border-amber-300 text-amber-700">Custom Orders: Disabled</Badge>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

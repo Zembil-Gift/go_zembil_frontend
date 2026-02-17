@@ -21,8 +21,36 @@ export interface VendorProfile {
   payoutEnabled: boolean;
   vendorCategoryId?: number;
   vendorCategoryName?: string;
+  supportedPaymentProviders?: string[];
   vatStatus?: 'VAT_REGISTERED' | 'NOT_VAT_REGISTERED' | 'VAT_EXEMPT';
   vendorType?: string;
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
+  rejectionReason?: string;
+  rejectedAt?: string;
+}
+
+export interface UpdateVendorProfileRequest {
+  businessName?: string;
+  description?: string;
+  businessEmail?: string;
+  businessPhone?: string;
+  city?: string;
+  country?: string;
+  countryCode?: string;
+}
+
+export interface VendorResubmissionRequest {
+  businessName: string;
+  description?: string;
+  businessEmail: string;
+  businessPhone: string;
+  city: string;
+  country: string;
+  vendorCategoryId: number;
+  vendorType: 'PRODUCT' | 'SERVICE' | 'HYBRID';
+  vatStatus?: 'VAT_REGISTERED' | 'NOT_VAT_REGISTERED' | 'VAT_EXEMPT';
+  supportedPaymentProviders?: string[];
+  paymentConfigJson?: string;
 }
 
 export interface VendorOnboardingStatus {
@@ -485,6 +513,12 @@ export interface PageResponse<T> {
 export const vendorService = {
   getMyProfile: () =>
     apiService.getRequest<VendorProfile>('/api/vendors/me'),
+
+  updateMyProfile: (request: UpdateVendorProfileRequest) =>
+    apiService.putRequest<VendorProfile>('/api/vendors/me', request),
+
+  resubmitMyApplication: (request: VendorResubmissionRequest) =>
+    apiService.putRequest<VendorProfile>('/api/vendors/me/resubmit', request),
 
   getOnboardingStatus: () =>
     apiService.getRequest<VendorOnboardingStatus>('/api/vendors/onboarding/status'),

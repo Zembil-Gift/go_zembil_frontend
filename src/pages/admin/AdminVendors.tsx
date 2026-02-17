@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -59,6 +60,7 @@ export default function AdminVendors() {
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [actionVendor, setActionVendor] = useState<any>(null);
+  const [declineReason, setDeclineReason] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -98,15 +100,17 @@ export default function AdminVendors() {
   });
 
   const declineMutation = useMutation({
-    mutationFn: (vendorId: number) => adminService.declineVendor(vendorId),
+    mutationFn: ({ vendorId, rejectionReason }: { vendorId: number; rejectionReason: string }) =>
+      adminService.declineVendor(vendorId, { rejectionReason }),
     onSuccess: () => {
       toast({
         title: 'Vendor Declined',
-        description: 'The vendor has been declined and removed from the system.',
+        description: 'The vendor has been declined and the reason has been sent.',
       });
       queryClient.invalidateQueries({ queryKey: ['admin', 'vendors'] });
       setShowDeclineDialog(false);
       setActionVendor(null);
+      setDeclineReason('');
     },
     onError: (error: any) => {
       toast({
@@ -304,6 +308,11 @@ export default function AdminVendors() {
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Approved
                         </Badge>
+                      ) : vendor.isActive === false ? (
+                        <Badge className="bg-red-100 text-red-800" title={vendor.rejectionReason || 'Vendor rejected'}>
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Rejected
+                        </Badge>
                       ) : (
                         <Badge className="bg-amber-100 text-amber-800">
                           <Clock className="h-3 w-3 mr-1" />
@@ -343,59 +352,75 @@ export default function AdminVendors() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleViewVendor(vendor)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {!vendor.isApproved && (
-                          <>
-                            <Button 
-                              size="sm" 
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                              onClick={() => {
-                                setActionVendor(vendor);
-                                setShowApproveDialog(true);
-                              }}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => {
-                                setActionVendor(vendor);
-                                setShowDeclineDialog(true);
-                              }}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                        {/* Show deactivate/reactivate for approved vendors */}
-                        {vendor.isApproved && (
-                          vendor.isActive !== false ? (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                              onClick={() => {
-                                setActionVendor(vendor);
-                                setShowDeactivateDialog(true);
-                              }}
-                            >
-                              <UserX className="h-4 w-4" />
-                            </Button>
-                          ) : (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                              onClick={() => reactivateMutation.mutate(vendor.userId)}
-                              disabled={reactivateMutation.isPending}
-                            >
-                              <UserCheck className="h-4 w-4" />
-                            </Button>
-                          )
-                        )}
+                        {(() => {
+                          const isInactive = vendor.isActive === false;
+                          const canApprove = !vendor.isApproved && !isInactive;
+                          const canDecline = !vendor.isApproved && !isInactive;
+
+                          return (
+                            <>
+                              <Button size="sm" variant="outline" onClick={() => handleViewVendor(vendor)}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              {!vendor.isApproved && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                    onClick={() => {
+                                      setActionVendor(vendor);
+                                      setShowApproveDialog(true);
+                                    }}
+                                    disabled={!canApprove}
+                                    title={!canApprove ? 'Vendor is inactive' : 'Approve vendor'}
+                                  >
+                                    <CheckCircle className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => {
+                                      setActionVendor(vendor);
+                                      setShowDeclineDialog(true);
+                                    }}
+                                    disabled={!canDecline}
+                                    title={!canDecline ? 'Vendor is already inactive' : 'Decline vendor'}
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                              {vendor.isApproved && (
+                                vendor.isActive !== false ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                    onClick={() => {
+                                      setActionVendor(vendor);
+                                      setShowDeactivateDialog(true);
+                                    }}
+                                  >
+                                    <UserX className="h-4 w-4" />
+                                  </Button>
+                                ) : null
+                              )}
+
+                              {isInactive && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  onClick={() => reactivateMutation.mutate(vendor.userId)}
+                                  disabled={reactivateMutation.isPending}
+                                  title="Reactivate vendor"
+                                >
+                                  <UserCheck className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -529,6 +554,18 @@ export default function AdminVendors() {
                     </div>
                   </div>
                 </div>
+
+                {vendorDetail.rejectionReason && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-xs text-red-700 uppercase font-medium">Rejection Reason</p>
+                    <p className="text-sm text-red-800 mt-1">{vendorDetail.rejectionReason}</p>
+                    {vendorDetail.rejectedAt && (
+                      <p className="text-xs text-red-700 mt-2">
+                        Rejected on {new Date(vendorDetail.rejectedAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
               </TabsContent>
 
               {/* Terms Tab */}
@@ -835,21 +872,40 @@ export default function AdminVendors() {
       </Dialog>
 
       {/* Decline Confirmation Dialog */}
-      <Dialog open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
+      <Dialog open={showDeclineDialog} onOpenChange={(open) => {
+        setShowDeclineDialog(open);
+        if (!open) {
+          setDeclineReason('');
+          setActionVendor(null);
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Decline Vendor</DialogTitle>
             <DialogDescription>
               Are you sure you want to decline <strong>{actionVendor?.businessName}</strong>? 
-              This will permanently delete the vendor account and all associated data. This action cannot be undone.
+              Add a clear reason. This message will be sent to the vendor by email and shown in the app.
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Rejection reason</label>
+            <Textarea
+              value={declineReason}
+              onChange={(e) => setDeclineReason(e.target.value)}
+              placeholder="Explain why this vendor application was declined..."
+              rows={4}
+              maxLength={1000}
+              disabled={declineMutation.isPending}
+            />
+            <p className="text-xs text-gray-500">{declineReason.length}/1000</p>
+          </div>
           <DialogFooter>
             <Button 
               variant="outline" 
               onClick={() => {
                 setShowDeclineDialog(false);
                 setActionVendor(null);
+                setDeclineReason('');
               }}
               disabled={declineMutation.isPending}
             >
@@ -857,8 +913,11 @@ export default function AdminVendors() {
             </Button>
             <Button 
               variant="destructive"
-              onClick={() => actionVendor && declineMutation.mutate(actionVendor.id)}
-              disabled={declineMutation.isPending}
+              onClick={() => {
+                if (!actionVendor || !declineReason.trim()) return;
+                declineMutation.mutate({ vendorId: actionVendor.id, rejectionReason: declineReason.trim() });
+              }}
+              disabled={declineMutation.isPending || actionVendor?.isActive === false || !declineReason.trim()}
             >
               {declineMutation.isPending ? (
                 <>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient, QueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
@@ -393,6 +393,17 @@ export default function VendorDashboardNew() {
     { value: 'settings', label: 'Settings', icon: Settings, show: true },
   ].filter(item => item.show);
 
+  const normalizedVendorStatus = (vendorProfile?.status || '').trim().toUpperCase();
+  const vendorApplicationStatus = normalizedVendorStatus || (
+    vendorProfile?.isApproved
+      ? 'APPROVED'
+      : vendorProfile?.rejectionReason
+        ? 'REJECTED'
+        : 'PENDING'
+  );
+  const isVendorApproved = vendorApplicationStatus === 'APPROVED';
+  const isApplicationRejected = vendorApplicationStatus === 'REJECTED';
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Header */}
@@ -403,8 +414,10 @@ export default function VendorDashboardNew() {
               <span className="text-sm font-bold text-white truncate max-w-[150px]">
                 {vendorProfile?.businessName || 'Vendor'}
               </span>
-              {vendorProfile?.isApproved ? (
+              {isVendorApproved ? (
                 <Badge className="bg-green-500 text-white text-[10px] font-light h-4 px-1 w-fit">Approved</Badge>
+              ) : isApplicationRejected ? (
+                <Badge className="bg-red-500 text-white text-[10px] font-light h-4 px-1 w-fit">Rejected</Badge>
               ) : (
                 <Badge className="bg-amber-500 text-white text-[10px] font-light h-4 px-1 w-fit">Pending</Badge>
               )}
@@ -474,8 +487,10 @@ export default function VendorDashboardNew() {
               </div>
             </div>
             <div className="mt-2">
-              {vendorProfile?.isApproved ? (
+              {isVendorApproved ? (
                 <Badge className="bg-green-500 text-white text-xs">Approved</Badge>
+              ) : isApplicationRejected ? (
+                <Badge className="bg-red-500 text-white text-xs">Rejected</Badge>
               ) : (
                 <Badge className="bg-amber-500 text-white text-xs">Pending Approval</Badge>
               )}
@@ -551,41 +566,74 @@ export default function VendorDashboardNew() {
         <main className="p-4 sm:p-6 lg:p-8">
         
         {/* Vendor Approval Status Banner */}
-        {vendorProfile && !vendorProfile.isApproved && (
-          <div className="mb-6 rounded-lg border-2 border-amber-300 bg-amber-50 p-4 sm:p-6">
+        {vendorProfile && !isVendorApproved && (
+          <div className={cn(
+            "mb-6 rounded-lg border-2 p-4 sm:p-6",
+            isApplicationRejected ? "border-red-300 bg-red-50" : "border-amber-300 bg-amber-50"
+          )}>
             <div className="flex items-start gap-4">
-              <div className="rounded-full bg-amber-100 p-3">
-                <Clock className="h-6 w-6 text-amber-600" />
+              <div className={cn(
+                "rounded-full p-3",
+                isApplicationRejected ? "bg-red-100" : "bg-amber-100"
+              )}>
+                {isApplicationRejected ? (
+                  <XCircle className="h-6 w-6 text-red-600" />
+                ) : (
+                  <Clock className="h-6 w-6 text-amber-600" />
+                )}
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-amber-800">
-                  Your Vendor Account is Pending Approval
+                <h3 className={cn(
+                  "text-lg font-semibold",
+                  isApplicationRejected ? "text-red-800" : "text-amber-800"
+                )}>
+                  {isApplicationRejected
+                    ? "Your Vendor Application Was Rejected"
+                    : "Your Vendor Account is Pending Approval"}
                 </h3>
-                <p className="mt-1 text-sm text-amber-700">
-                  Thank you for registering as a vendor! Your account is currently being reviewed by our team. 
-                  Once approved, you'll be able to create products, events, services, and custom order templates.
-                </p>
-                <p className="mt-2 text-sm text-amber-600">
-                  You'll receive an email notification once your account has been approved.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Badge className="bg-amber-200 text-amber-800 border-amber-300">
-                    <Clock className="h-3 w-3 mr-1" />
-                    Review in Progress
-                  </Badge>
-                  <Badge variant="outline" className="border-amber-300 text-amber-700">
-                    Products: Disabled
-                  </Badge>
-                  <Badge variant="outline" className="border-amber-300 text-amber-700">
-                    Events: Disabled
-                  </Badge>
-                  <Badge variant="outline" className="border-amber-300 text-amber-700">
-                    Services: Disabled
-                  </Badge>
-                  <Badge variant="outline" className="border-amber-300 text-amber-700">
-                    Custom Orders: Disabled
-                  </Badge>
-                </div>
+                {isApplicationRejected ? (
+                  <>
+                    <p className="mt-1 text-sm text-red-700">
+                      Please update your business details and resubmit your application from the Settings tab.
+                    </p>
+                    <div className="mt-3 rounded-md border border-red-200 bg-white p-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-red-700">Rejection message</p>
+                      <p className="mt-1 text-sm text-red-800">{vendorProfile.rejectionReason}</p>
+                      {vendorProfile.rejectedAt && (
+                        <p className="mt-1 text-xs text-red-600">
+                          Rejected on {new Date(vendorProfile.rejectedAt).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Badge className="bg-red-200 text-red-800 border-red-300">Action Required</Badge>
+                      <Button size="sm" onClick={() => setActiveTab('settings')}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit & Resubmit
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-1 text-sm text-amber-700">
+                      Thank you for registering as a vendor! Your account is currently being reviewed by our team.
+                      Once approved, you'll be able to create products, events, services, and custom order templates.
+                    </p>
+                    <p className="mt-2 text-sm text-amber-600">
+                      You'll receive an email notification once your account has been approved.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Badge className="bg-amber-200 text-amber-800 border-amber-300">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Review in Progress
+                      </Badge>
+                      <Badge variant="outline" className="border-amber-300 text-amber-700">Products: Disabled</Badge>
+                      <Badge variant="outline" className="border-amber-300 text-amber-700">Events: Disabled</Badge>
+                      <Badge variant="outline" className="border-amber-300 text-amber-700">Services: Disabled</Badge>
+                      <Badge variant="outline" className="border-amber-300 text-amber-700">Custom Orders: Disabled</Badge>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -4448,6 +4496,33 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
   const [pendingLogo, setPendingLogo] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const normalizedVendorStatus = (vendorProfile?.status || '').trim().toUpperCase();
+  const isApplicationRejected =
+    normalizedVendorStatus === 'REJECTED' ||
+    (Boolean(vendorProfile?.rejectionReason) && !vendorProfile?.isApproved);
+
+  const settingsSchema = z.object({
+    businessName: z.string().min(2, "Business name is required"),
+    businessEmail: z.string().email("Enter a valid business email"),
+    businessPhone: z.string().optional(),
+    city: z.string().optional(),
+    country: z.string().optional(),
+    description: z.string().max(1000, "Description must be less than 1000 characters").optional(),
+  });
+
+  type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+  const settingsForm = useForm<SettingsFormValues>({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: {
+      businessName: vendorProfile?.businessName || "",
+      businessEmail: vendorProfile?.businessEmail || "",
+      businessPhone: vendorProfile?.businessPhone || "",
+      city: vendorProfile?.city || "",
+      country: vendorProfile?.country || "",
+      description: vendorProfile?.description || "",
+    },
+  });
 
   // Upload logo mutation
   const uploadLogoMutation = useMutation({
@@ -4488,6 +4563,47 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
       });
     },
   });
+
+  const updateVendorProfileMutation = useMutation({
+    mutationFn: (values: SettingsFormValues) =>
+      vendorService.updateMyProfile({
+        businessName: values.businessName,
+        businessEmail: values.businessEmail,
+        businessPhone: values.businessPhone || undefined,
+        city: values.city || undefined,
+        country: values.country || undefined,
+        description: values.description || undefined,
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Profile updated",
+        description: isApplicationRejected
+          ? "Your application has been resubmitted for review."
+          : "Your business profile has been updated.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'profile'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'summary'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update business profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (!vendorProfile) return;
+    settingsForm.reset({
+      businessName: vendorProfile.businessName || "",
+      businessEmail: vendorProfile.businessEmail || "",
+      businessPhone: vendorProfile.businessPhone || "",
+      city: vendorProfile.city || "",
+      country: vendorProfile.country || "",
+      description: vendorProfile.description || "",
+    });
+  }, [vendorProfile, settingsForm]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -4531,6 +4647,10 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
   };
 
   const currentLogoUrl = vendorProfile?.logoUrl;
+
+  const onSubmitSettings = (values: SettingsFormValues) => {
+    updateVendorProfileMutation.mutate(values);
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -4656,7 +4776,7 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
         </CardContent>
       </Card>
 
-      {/* Business Information (Read-only for now) */}
+      {/* Business Information */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -4664,38 +4784,81 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
             Business Information
           </CardTitle>
           <CardDescription>
-            Your business details.
+            {isApplicationRejected
+              ? "Update your business details and resubmit your application."
+              : "Keep your business details up to date."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="break-words">
-              <Label className="text-muted-foreground">Business Name</Label>
-              <p className="font-medium break-words">{vendorProfile?.businessName || '-'}</p>
-            </div>
-            <div className="break-words">
-              <Label className="text-muted-foreground">Business Email</Label>
-              <p className="font-medium break-all">{vendorProfile?.businessEmail || '-'}</p>
-            </div>
-            <div className="break-words">
-              <Label className="text-muted-foreground">Business Phone</Label>
-              <p className="font-medium break-words">{vendorProfile?.businessPhone || '-'}</p>
-            </div>
-            <div className="break-words">
-              <Label className="text-muted-foreground">City</Label>
-              <p className="font-medium break-words">{vendorProfile?.city || '-'}</p>
-            </div>
-            <div className="break-words">
-              <Label className="text-muted-foreground">Country</Label>
-              <p className="font-medium break-words">{vendorProfile?.country || '-'}</p>
-            </div>
-          </div>
-          {vendorProfile?.description && (
-            <div className="mt-4">
-              <Label className="text-muted-foreground">Description</Label>
-              <p className="text-sm mt-1 break-words">{vendorProfile.description}</p>
+          {isApplicationRejected && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+              <p className="text-sm font-medium text-red-800">Application rejected</p>
+              <p className="mt-1 text-sm text-red-700">{vendorProfile?.rejectionReason}</p>
+              {vendorProfile?.rejectedAt && (
+                <p className="mt-1 text-xs text-red-600">
+                  Rejected on {new Date(vendorProfile.rejectedAt).toLocaleString()}
+                </p>
+              )}
             </div>
           )}
+
+          <form onSubmit={settingsForm.handleSubmit(onSubmitSettings)} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="settings-business-name">Business Name *</Label>
+                <Input id="settings-business-name" {...settingsForm.register("businessName")} />
+                {settingsForm.formState.errors.businessName && (
+                  <p className="text-sm text-red-600 mt-1">{settingsForm.formState.errors.businessName.message}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="settings-business-email">Business Email *</Label>
+                <Input id="settings-business-email" type="email" {...settingsForm.register("businessEmail")} />
+                {settingsForm.formState.errors.businessEmail && (
+                  <p className="text-sm text-red-600 mt-1">{settingsForm.formState.errors.businessEmail.message}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="settings-business-phone">Business Phone</Label>
+                <Input id="settings-business-phone" {...settingsForm.register("businessPhone")} />
+              </div>
+              <div>
+                <Label htmlFor="settings-city">City</Label>
+                <Input id="settings-city" {...settingsForm.register("city")} />
+              </div>
+              <div>
+                <Label htmlFor="settings-country">Country</Label>
+                <Input id="settings-country" {...settingsForm.register("country")} />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="settings-description">Description</Label>
+              <Textarea
+                id="settings-description"
+                className="min-h-[120px]"
+                {...settingsForm.register("description")}
+              />
+              {settingsForm.formState.errors.description && (
+                <p className="text-sm text-red-600 mt-1">{settingsForm.formState.errors.description.message}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end">
+              <Button type="submit" disabled={updateVendorProfileMutation.isPending}>
+                {updateVendorProfileMutation.isPending ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : isApplicationRejected ? (
+                  'Save & Resubmit'
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
 

@@ -31,7 +31,6 @@ import {
   X,
   Clock,
   FileText,
-  DollarSign,
   Tag,
   Store,
   Type,
