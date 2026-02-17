@@ -27,10 +27,10 @@ import {useToast} from "@/hooks/use-toast";
 import {useAuth} from "@/hooks/useAuth";
 import {useIncompleteProfile} from "@/hooks/useIncompleteProfile";
 import {apiService} from "@/services/apiService";
+import { SUPPORTED_COUNTRIES } from "@/lib/countryConfig";
 import {
   AlertCircle,
   Calendar,
-  Coins,
   Edit2,
   Eye,
   EyeOff,
@@ -48,13 +48,28 @@ import {
 
 // Profile form schema
 const profileSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
+  firstName: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().min(2, "First name must be at least 2 characters").optional()
+  ),
+  lastName: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().min(2, "Last name must be at least 2 characters").optional()
+  ),
+  email: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().email("Please enter a valid email address").optional()
+  ),
   phoneNumber: z.string().optional(),
-  username: z.string().min(3, "Username must be at least 3 characters").optional(),
+  username: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().min(3, "Username must be at least 3 characters").optional()
+  ),
   birthDate: z.string().optional(),
-  preferredCurrencyCode: z.string().optional(),
+  country: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().optional()
+  ),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -98,6 +113,7 @@ interface UserProfile {
   phoneNumber?: string;
   role: string;
   birthDate?: string;
+  country?: string;
   preferredCurrencyCode?: string;
   hasPassword?: boolean;
 }
@@ -138,7 +154,7 @@ export default function Profile() {
       phoneNumber: "",
       username: "",
       birthDate: "",
-      preferredCurrencyCode: "",
+      country: "",
     },
   });
 
@@ -152,7 +168,7 @@ export default function Profile() {
         phoneNumber: profile.phoneNumber || "",
         username: profile.username || "",
         birthDate: profile.birthDate || "",
-        preferredCurrencyCode: profile.preferredCurrencyCode || "USD",
+        country: profile.country || "",
       });
     }
   }, [profile, form]);
@@ -289,7 +305,24 @@ export default function Profile() {
   });
 
   const onSubmit = (data: ProfileFormData) => {
-    updateProfileMutation.mutate(data);
+    const dirtyFields = form.formState.dirtyFields as Partial<Record<keyof ProfileFormData, boolean>>;
+    const patch: Partial<ProfileFormData> = {};
+
+    (Object.keys(dirtyFields) as Array<keyof ProfileFormData>).forEach((key) => {
+      if (dirtyFields[key]) {
+        const value = data[key];
+        if (value !== "" && value !== undefined) {
+          patch[key] = value;
+        }
+      }
+    });
+
+    if (Object.keys(patch).length === 0) {
+      toast({ title: "No changes", description: "Update at least one field to save." });
+      return;
+    }
+
+    updateProfileMutation.mutate(patch as ProfileFormData);
   };
 
   const handleCancel = () => {
@@ -301,7 +334,7 @@ export default function Profile() {
         phoneNumber: profile.phoneNumber || "",
         username: profile.username || "",
         birthDate: profile.birthDate || "",
-        preferredCurrencyCode: profile.preferredCurrencyCode || "USD",
+        country: profile.country || "",
       });
     }
     setIsEditing(false);
@@ -809,36 +842,30 @@ export default function Profile() {
                       )}
                     </div>
 
-                    {/* Preferred Currency */}
+                    {/* Country */}
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
-                        <Coins className="w-4 h-4 text-gray-500" />
-                        Preferred Currency
+                        <User className="w-4 h-4 text-gray-500" />
+                        Country
                       </Label>
                       {isEditing ? (
                         <Select
-                          value={form.watch("preferredCurrencyCode")}
-                          onValueChange={(value) => form.setValue("preferredCurrencyCode", value)}
+                          value={form.watch("country") || ""}
+                          onValueChange={(value) => form.setValue("country", value, { shouldDirty: true })}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select currency" />
+                            <SelectValue placeholder="Select country" />
                           </SelectTrigger>
                           <SelectContent>
-                            {currencies
-                              .filter(c => c.isActive)
-                              .map((currency) => (
-                                <SelectItem key={currency.code} value={currency.code}>
-                                  {currency.code} - {currency.name} ({currency.symbol})
-                                </SelectItem>
-                              ))}
+                            {SUPPORTED_COUNTRIES.map((country) => (
+                              <SelectItem key={country.value} value={country.value}>
+                                {country.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       ) : (
-                        <p className="text-gray-900 py-2">
-                          {currencies.find(c => c.code === profile?.preferredCurrencyCode)?.name || profile?.preferredCurrencyCode || 'USD'}
-                          {' '}
-                          ({currencies.find(c => c.code === profile?.preferredCurrencyCode)?.symbol || '$'})
-                        </p>
+                        <p className="text-gray-900 py-2">{profile?.country || '-'}</p>
                       )}
                     </div>
 

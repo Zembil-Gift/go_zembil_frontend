@@ -448,6 +448,32 @@ export default function ServiceCheckout() {
       // Create order
       const order = await serviceOrderService.createOrder(orderRequest);
 
+      // Check if discount code was provided but not applied
+      if (order.discountValidationError && order.discountCode) {
+        // Format error message to be more user-friendly
+        let errorMessage = order.discountValidationError;
+        if (errorMessage.includes('minimum requirement')) {
+          errorMessage = 'Your order total does not meet the minimum amount required for this discount.';
+        } else if (errorMessage.includes('usage limit')) {
+          errorMessage = 'This discount code has reached its usage limit.';
+        } else if (errorMessage.includes('not valid')) {
+          errorMessage = 'This discount code is not valid for this service.';
+        } else if (errorMessage.includes('expired')) {
+          errorMessage = 'This discount code has expired.';
+        }
+        
+        toast({
+          title: 'Discount Not Applied',
+          description: `The discount code "${order.discountCode}" could not be applied: ${errorMessage} Your order will proceed without the discount.`,
+          variant: 'destructive',
+          duration: 6000, // Show for 6 seconds since it's important info
+        });
+        // Clear the discount code from UI state since it wasn't applied
+        setDiscountCode('');
+        setDiscountResult(null);
+        setDiscountError(errorMessage);
+      }
+
       // Initialize payment
       const paymentInit = await serviceOrderService.initializePayment(order.id, paymentProvider);
 

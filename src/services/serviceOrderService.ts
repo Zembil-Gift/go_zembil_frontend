@@ -112,6 +112,10 @@ export interface ServiceOrderResponse {
   
   // Checkout URL (for payment initialization)
   checkoutUrl?: string;
+  
+  // Discount validation info (if discount code was provided but not applied)
+  discountCode?: string;
+  discountValidationError?: string;
 }
 
 export interface CreateServiceOrderRequest {
