@@ -83,7 +83,7 @@ export default function ProductDetail() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   
   const { toast } = useToast();
-  const { user, isInitialized } = useAuth();
+  const { user, isInitialized, isAuthenticated } = useAuth();
   const { addItem, openCart } = useCartStore();
   const queryClient = useQueryClient();
 
@@ -227,6 +227,10 @@ export default function ProductDetail() {
 
   const addToCartMutation = useMutation({
     mutationFn: async () => {
+      if (!isAuthenticated) {
+        throw new Error('Authentication required');
+      }
+
       // Require variant selection for products with multiple SKUs
       if (product?.productSku && product.productSku.length > 1 && !selectedSkuId) {
         throw new Error('Please select a variant');
@@ -258,6 +262,12 @@ export default function ProductDetail() {
       openCart();
     },
     onError: (error: any) => {
+      if (error?.message === 'Authentication required') {
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        navigate(`/signin?returnUrl=${returnUrl}`);
+        return;
+      }
+
       toast({
         title: "Error",
         description: error?.message || "Failed to add item to cart",
@@ -715,7 +725,15 @@ export default function ProductDetail() {
                         : "Add to Cart"}
                 </Button>
                 <Button
-                  onClick={() => wishlistMutation.mutate()}
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                      navigate(`/signin?returnUrl=${returnUrl}`);
+                      return;
+                    }
+
+                    wishlistMutation.mutate();
+                  }}
                   disabled={wishlistMutation.isPending}
                   variant="outline"
                   className="h-12 px-6 border-viridian-green text-viridian-green hover:bg-viridian-green hover:text-white"

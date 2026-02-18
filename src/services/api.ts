@@ -60,11 +60,14 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const requestHadAuthHeader = Boolean((originalRequest?.headers as any)?.Authorization);
+    const hasActiveAuth = tokenManager.isAuthenticated();
+    const shouldHandleAuthFailure = requestHadAuthHeader || hasActiveAuth;
     
     // Skip retry for auth endpoints
     const isAuthEndpoint = originalRequest?.url?.includes('/auth/');
     
-    if (error.response?.status === 401 && !originalRequest?._retry && !isAuthEndpoint) {
+    if (error.response?.status === 401 && !originalRequest?._retry && !isAuthEndpoint && shouldHandleAuthFailure) {
       // Token expired, try to refresh
       
       if (isRefreshing) {
@@ -115,7 +118,7 @@ api.interceptors.response.use(
     }
 
     // For other 401s on auth pages or non-retryable requests
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && shouldHandleAuthFailure) {
       handleAuthFailure();
     }
 

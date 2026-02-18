@@ -4,7 +4,6 @@ import {
   Shirt, Wrench, Music, Package, Users, Zap, ChevronDown, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import ProtectedRoute from "@/components/protected-route";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import FadeIn from "@/components/animations/FadeIn";
@@ -471,9 +470,5 @@ function CustomOrdersContent() {
 }
 
 export default function CustomOrders() {
-  return (
-    <ProtectedRoute>
-      <CustomOrdersContent />
-    </ProtectedRoute>
-  );
+  return <CustomOrdersContent />;
 }

@@ -343,23 +343,11 @@ export default function Router() {
             </ProtectedRoute>
           } />
           
-          <Route path="custom-orders" element={
-            <ProtectedRoute>
-              <CustomOrders />
-            </ProtectedRoute>
-          } />
+          <Route path="custom-orders" element={<CustomOrders />} />
           
-          <Route path="custom-orders/categories" element={
-            <ProtectedRoute>
-              <CustomOrderCategories />
-            </ProtectedRoute>
-          } />
+          <Route path="custom-orders/categories" element={<CustomOrderCategories />} />
           
-          <Route path="custom-orders/category/:categoryId" element={
-            <ProtectedRoute>
-              <CustomOrderTemplates />
-            </ProtectedRoute>
-          } />
+          <Route path="custom-orders/category/:categoryId" element={<CustomOrderTemplates />} />
           
           <Route path="custom-orders/template/:templateId" element={
             <ProtectedRoute>
