@@ -3,15 +3,17 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import {useLogin} from "../hooks/useLogin";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import OAuth2Buttons from "@/components/auth/OAuth2Buttons";
+import authService from "@/services/authService";
 
 const signinSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -20,8 +22,12 @@ const signinSchema = z.object({
 
 type SigninForm = z.infer<typeof signinSchema>;
 
+const NON_ADMIN_LOGIN_ROLES = new Set(['CUSTOMER', 'VENDOR', 'DELIVERY_PERSON']);
+
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -83,12 +89,15 @@ export default function SignIn() {
       const userRole = result.user?.role?.toUpperCase();
       localStorage.removeItem("returnTo");
       
-      if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
-        console.log('Admin user detected, navigating to admin dashboard');
-        navigate('/admin');
-      } else if (userRole === 'VENDOR') {
+      if (userRole === 'VENDOR') {
         console.log('Vendor user detected, navigating to vendor dashboard');
         navigate('/vendor');
+      } else if (userRole === 'DELIVERY_PERSON') {
+        console.log('Delivery person detected, navigating to delivery dashboard');
+        navigate('/delivery');
+      } else if (!NON_ADMIN_LOGIN_ROLES.has(userRole ?? '')) {
+        console.log('Non-customer/vendor/delivery role detected, navigating to admin dashboard');
+        navigate('/admin');
       } else {
         const returnUrl = getReturnUrl();
         console.log('Navigating to:', returnUrl);
@@ -98,28 +107,15 @@ export default function SignIn() {
       console.error('Login error:', err);
       
       // Check if error is due to email not verified
-      const errorResponse = err?.response?.data || err;
-      const isEmailNotVerified = 
-        errorResponse?.error === 'EMAIL_NOT_VERIFIED' || 
-        err?.message?.toLowerCase().includes('verify your email') ||
-        errorResponse?.details?.requiresVerification;
-      
+      const responseData = err?.response?.data;
+      const isEmailNotVerified =
+        responseData?.error === 'EMAIL_NOT_VERIFIED' ||
+        responseData?.details?.requiresVerification === true ||
+        err?.message?.toLowerCase().includes('verify your email');
+
       if (isEmailNotVerified) {
-        // Extract email from error response if available
-        const email = errorResponse?.details?.email || data.email;
-        
-        toast({
-          title: "Email verification required",
-          description: "A verification code has been sent to your email.",
-        });
-        
-        // Redirect immediately to email verification page
-        navigate('/verify-email', { 
-          state: { 
-            email: email,
-            returnUrl: getReturnUrl()
-          }
-        });
+        const email = responseData?.details?.email || data.email;
+        setUnverifiedEmail(email);
       } else {
         toast({
           title: "Sign in failed",
@@ -127,6 +123,28 @@ export default function SignIn() {
           variant: "destructive",
         });
       }
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    if (!unverifiedEmail) return;
+    setIsSendingOtp(true);
+    try {
+      await authService.sendVerificationOtp(unverifiedEmail);
+      navigate('/verify-email', {
+        state: {
+          email: unverifiedEmail,
+          returnUrl: getReturnUrl(),
+        },
+      });
+    } catch (err: any) {
+      toast({
+        title: "Failed to send verification code",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingOtp(false);
     }
   };
   return (
@@ -213,7 +231,38 @@ export default function SignIn() {
               </form>
             </Form>
 
-            <OAuth2Buttons 
+            {unverifiedEmail && (
+              <Alert className="mt-4 border-amber-300 bg-amber-50">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  <p className="font-medium mb-1">Email not verified</p>
+                  <p className="text-sm mb-3">
+                    Your account (<span className="font-medium">{unverifiedEmail}</span>) hasn't been verified yet.
+                    Click below to receive a verification code.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={handleVerifyEmail}
+                    disabled={isSendingOtp}
+                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    {isSendingOtp ? (
+                      <>
+                        <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                        Sending code...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-3 h-3 mr-2" />
+                        Send verification code
+                      </>
+                    )}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <OAuth2Buttons
               disabled={signinMutation.isPending}
               onSuccess={() => {
                 const userRole = localStorage.getItem('user') 
@@ -221,10 +270,12 @@ export default function SignIn() {
                   : null;
                 localStorage.removeItem("returnTo");
                 
-                if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
-                  navigate('/admin');
-                } else if (userRole === 'VENDOR') {
+                if (userRole === 'VENDOR') {
                   navigate('/vendor');
+                } else if (userRole === 'DELIVERY_PERSON') {
+                  navigate('/delivery');
+                } else if (!NON_ADMIN_LOGIN_ROLES.has(userRole ?? '')) {
+                  navigate('/admin');
                 } else {
                   const returnUrl = getReturnUrl();
                   navigate(returnUrl);

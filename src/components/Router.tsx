@@ -42,6 +42,8 @@ import Checkout from "@/pages/Checkout";
 import OrderReview from "@/pages/OrderReview";
 import NotFound from "@/pages/not-found";
 import VendorSignup from "@/pages/VendorSignup";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import Profile from "@/pages/Profile";
 
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -63,6 +65,7 @@ import AdminCustomTemplates from "@/pages/admin/AdminCustomTemplates";
 import AdminCustomOrders from "@/pages/admin/AdminCustomOrders";
 import AdminPaymentMethods from "@/pages/admin/AdminPaymentMethods";
 import AdminCampaigns from "@/pages/admin/AdminCampaigns";
+import AdminCommission from "@/pages/admin/AdminCommission";
 import AdminRoles from "@/pages/admin/AdminRoles";
 import AdminPermissions from "@/pages/admin/AdminPermissions";
 
@@ -295,6 +298,8 @@ export default function Router() {
           <Route path="signup" element={<SignUp />} />
           <Route path="verify-email" element={<VerifyEmail />} />
           <Route path="vendor-signup" element={<VendorSignup />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="reset-password" element={<ResetPassword />} />
           
           {/* Main Pages */}
           <Route path="gifts" element={<Gifts />} />
@@ -498,6 +503,7 @@ export default function Router() {
           <Route path="custom-templates" element={<AdminCustomTemplates />} />
           <Route path="custom-orders" element={<AdminCustomOrders />} />
           <Route path="payment-methods" element={<AdminPaymentMethods />} />
+          <Route path="commission" element={<AdminCommission />} />
           <Route path="roles" element={<AdminRoles />} />
           <Route path="permissions" element={<AdminPermissions />} />
         </Route>

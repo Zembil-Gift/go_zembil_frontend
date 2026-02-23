@@ -105,7 +105,7 @@ export default function SignUp() {
           email: data.email,
           phoneNumber: data.phoneNumber,
           password: data.password,
-          role: 'CUSTOMER',
+          roleCode: 'CUSTOMER',
           country: data.country,
           preferredCurrencyCode,
       });
