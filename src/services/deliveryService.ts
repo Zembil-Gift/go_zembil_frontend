@@ -71,6 +71,13 @@ export interface DeliveryAssignmentDto {
   customerPhone?: string;
   shippingAddress?: string;
   shippingCity?: string;
+  // Delivery fee the delivery person earns
+  deliveryFee?: number;
+  deliveryFeeCurrency?: string;
+  distanceMeters?: number;
+  estimatedDurationSeconds?: number;
+  // Payment status
+  deliveryPaymentStatus?: 'UNPAID' | 'PAID';
   createdAt: string;
   updatedAt: string;
 }
@@ -105,6 +112,17 @@ export interface AdminDeliveryAssignmentDto {
   shippingCity?: string;
   totalAmountMinor: number;
   currencyCode: string;
+  // Delivery fee information
+  deliveryFee?: number;
+  deliveryFeeCurrency?: string;
+  distanceMeters?: number;
+  estimatedDurationSeconds?: number;
+  trafficDurationSeconds?: number;
+  // Delivery payment tracking
+  deliveryPaymentStatus?: 'UNPAID' | 'PAID';
+  deliveryPaymentApprovedAt?: string;
+  deliveryPaymentApprovedByName?: string;
+  deliveryPaymentNotes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -168,10 +186,21 @@ export interface OrderReadyForDeliveryDto {
   customerPhone?: string;
   shippingAddress?: string;
   shippingCity?: string;
+  // Precise location
+  shippingLatitude?: number;
+  shippingLongitude?: number;
+  shippingFormattedAddress?: string;
   totalAmountMinor: number;
   currencyCode: string;
   itemCount: number;
   createdAt: string;
+  // Estimated delivery fee the delivery person will earn
+  estimatedDeliveryFee?: number;
+  deliveryFeeCurrency?: string;
+  estimatedDistanceMeters?: number;
+  estimatedDistanceText?: string;
+  estimatedDurationSeconds?: number;
+  estimatedDurationText?: string;
 }
 
 export interface PagedResponse<T> {
@@ -283,6 +312,23 @@ export const adminDeliveryService = {
     if (params?.size !== undefined) queryParams.append('size', String(params.size));
     const url = `/api/admin/delivery/custom-orders/ready-for-delivery${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return apiService.getRequest<PagedResponse<OrderReadyForDeliveryDto>>(url);
+  },
+
+  // Delivery Payment Management
+  approveDeliveryPayment: (assignmentId: number, notes?: string) => {
+    const queryParams = new URLSearchParams();
+    if (notes) queryParams.append('notes', notes);
+    const url = `/api/admin/delivery/assignments/${assignmentId}/approve-payment${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiService.postRequest<AdminDeliveryAssignmentDto>(url, {});
+  },
+
+  getAssignmentsByPaymentStatus: (paymentStatus: 'UNPAID' | 'PAID', params?: { page?: number; size?: number }) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('paymentStatus', paymentStatus);
+    if (params?.page !== undefined) queryParams.append('page', String(params.page));
+    if (params?.size !== undefined) queryParams.append('size', String(params.size));
+    const url = `/api/admin/delivery/assignments/by-payment-status?${queryParams.toString()}`;
+    return apiService.getRequest<PagedResponse<AdminDeliveryAssignmentDto>>(url);
   },
 };
 

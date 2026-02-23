@@ -9,6 +9,21 @@ import type {
 } from '../types/customOrders';
 
 class CustomOrderTemplateService {
+  private readonly MAX_REJECTION_REASON_LENGTH = 500;
+
+  private normalizeRejectionReason(reason: string): string {
+    const trimmedReason = reason?.trim();
+
+    if (!trimmedReason) {
+      throw new Error('Rejection reason is required');
+    }
+
+    if (trimmedReason.length > this.MAX_REJECTION_REASON_LENGTH) {
+      throw new Error(`Rejection reason must be ${this.MAX_REJECTION_REASON_LENGTH} characters or fewer`);
+    }
+
+    return trimmedReason;
+  }
   
   async getById(templateId: number): Promise<CustomOrderTemplate> {
     return await apiService.getRequest<CustomOrderTemplate>(`/api/custom-order-templates/${templateId}`);
@@ -103,7 +118,7 @@ class CustomOrderTemplateService {
   }
 
   async reject(templateId: number, reason: string): Promise<CustomOrderTemplate> {
-    const data = { reason };
+    const data = { reason: this.normalizeRejectionReason(reason) };
     return await apiService.postRequest<CustomOrderTemplate>(`/api/custom-order-templates/${templateId}/reject`, data);
   }
 
