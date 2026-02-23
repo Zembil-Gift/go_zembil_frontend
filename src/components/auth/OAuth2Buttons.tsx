@@ -11,6 +11,8 @@ interface OAuth2ButtonsProps {
   disabled?: boolean;
 }
 
+const NON_ADMIN_LOGIN_ROLES = new Set(['CUSTOMER', 'VENDOR', 'DELIVERY_PERSON']);
+
 export function OAuth2Buttons({ onSuccess}: OAuth2ButtonsProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -89,12 +91,12 @@ export function OAuth2Buttons({ onSuccess}: OAuth2ButtonsProps) {
       console.log('OAuth2 post-login navigation - User role:', userRole, 'Full user data:', userData);
       localStorage.removeItem("returnTo");
       
-      if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
-        console.log('Navigating to admin dashboard');
-        navigate('/admin');
-      } else if (userRole === 'VENDOR') {
+      if (userRole === 'VENDOR') {
         console.log('Navigating to vendor dashboard');
         navigate('/vendor');
+      } else if (!NON_ADMIN_LOGIN_ROLES.has(userRole ?? '')) {
+        console.log('Navigating to admin dashboard for non-customer/vendor/delivery role');
+        navigate('/admin');
       } else {
         const returnUrl = localStorage.getItem('returnTo') || '/';
         console.log('Navigating to return URL:', returnUrl);

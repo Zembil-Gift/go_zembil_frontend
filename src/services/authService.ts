@@ -14,7 +14,7 @@ export interface RegisterRequest {
   phoneNumber: string;
   password: string;
   username: string;
-  role: 'CUSTOMER' | 'VENDOR' | 'ADMIN';
+  roleCode: 'CUSTOMER' | 'VENDOR' | 'ADMIN';
   birthDate?: string;
   preferredCurrencyCode?: string;
   country?: string;

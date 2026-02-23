@@ -6,10 +6,24 @@ class ApiService {
 
   private handleError(error: any, fallbackMessage: string): never {
     const data = error.response?.data;
+
+    const enrich = (err: Error): never => {
+      // Attach original response so callers can inspect status / error codes
+      (err as any).response = error.response;
+      throw err;
+    };
     
     if (data) {
-      // Handle structured validation errors
-      if (data.details && typeof data.details === 'object' && Object.keys(data.details).length > 0) {
+      // Handle structured validation errors — but only for actual field-validation
+      // responses (400). Non-validation errors like EMAIL_NOT_VERIFIED carry a
+      // `details` object that must NOT be flattened into a string.
+      const isFieldValidation =
+        data.details &&
+        typeof data.details === 'object' &&
+        Object.keys(data.details).length > 0 &&
+        !data.error; // structured backend errors set an `error` code; skip them
+
+      if (isFieldValidation) {
         const fieldErrors = Object.entries(data.details)
           .map(([field, msg]) => {
             // If the message already starts with the field name (case insensitive), don't repeat it
@@ -21,17 +35,17 @@ class ApiService {
           })
           .join('. ');
         
-        throw new Error(fieldErrors || data.message || fallbackMessage);
+        return enrich(new Error(fieldErrors || data.message || fallbackMessage));
       }
       
       // Handle standard message
       if (data.message) {
-        throw new Error(data.message);
+        return enrich(new Error(data.message));
       }
     }
     
     // Fallback to axios error message or generic one
-    throw new Error(error.message || fallbackMessage);
+    return enrich(new Error(error.message || fallbackMessage));
   }
 
   /**
