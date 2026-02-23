@@ -174,6 +174,15 @@ export interface EventResponse {
   createdAt: string;
 }
 
+export interface PriceDto {
+  id?: number;
+  currencyCode?: string;
+  unitAmountMinor?: number;
+  vendorAmountMinor?: number;
+  amount?: number;
+  vendorAmount?: number;
+}
+
 export interface EventPriceUpdateRequest {
   id: number;
   eventId: number;
@@ -182,13 +191,10 @@ export interface EventPriceUpdateRequest {
   ticketTypeName: string;
   entityName?: string;
   entityId?: number;
-  // Vendor prices (what vendor submitted)
   currentVendorPrice?: PriceDto;
   newVendorPrice?: PriceDto;
-  // Customer prices (what customers will pay - for admin review)
   currentCustomerPrice?: PriceDto;
   newCustomerPrice?: PriceDto;
-  // Legacy flat fields (for backward compatibility)
   currentPriceMinor?: number;
   currentCurrencyCode?: string;
   newPriceMinor?: number;
@@ -837,7 +843,7 @@ class AdminService {
     return await apiService.postRequest<EventResponse>(`/api/admin/events/${eventId}/ad?isAd=${isAd}`, {});
   }
 
-  async getPriceUpdateRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<EventPriceUpdateRequest>> {
+  async getPriceUpdateRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<EventPriceUpdateRequest>> {
     let url = `/api/admin/vendor-change-requests/entity-type/EVENT?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<EventPriceUpdateRequest>>(url);
   }
@@ -1044,7 +1050,7 @@ class AdminService {
     return await apiService.deleteRequest(`/api/currencies/rates/${from}/${to}`);
   }
 
-  async getProductPriceUpdateRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<ProductPriceUpdateRequestDto>> {
+  async getProductPriceUpdateRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<ProductPriceUpdateRequestDto>> {
     let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<ProductPriceUpdateRequestDto>>(url);
   }
@@ -1062,7 +1068,7 @@ class AdminService {
     return await apiService.postRequest<ProductPriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
   }
 
-  async getServicePriceUpdateRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<ServicePriceUpdateRequestDto>> {
+  async getServicePriceUpdateRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<ServicePriceUpdateRequestDto>> {
     let url = `/api/admin/vendor-change-requests/entity-type/SERVICE_PACKAGE?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<ServicePriceUpdateRequestDto>>(url);
   }
@@ -1101,7 +1107,7 @@ class AdminService {
     return await apiService.postRequest<ServiceCategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
   }
 
-  async getCategoryChangeRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<CategoryChangeRequestDto>> {
+  async getCategoryChangeRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<CategoryChangeRequestDto>> {
     let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?requestType=CATEGORY_CHANGE&page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<CategoryChangeRequestDto>>(url);
   }
