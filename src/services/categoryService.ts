@@ -18,6 +18,7 @@ export interface CategoryResponse {
 export interface SubCategoryResponse {
   id: number;
   categoryId: number;
+  categoryName?: string;
   name: string;
   slug: string;
   description: string;
@@ -78,6 +79,26 @@ class CategoryService {
       return response.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     } catch (error) {
       console.error(`Failed to fetch subcategories for category ${categoryId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search subcategories by name/description across all categories
+   */
+  async searchSubCategories(query?: string): Promise<SubCategoryResponse[]> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (query?.trim()) {
+        queryParams.append('query', query.trim());
+      }
+      const suffix = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      const response = await apiService.getRequest<SubCategoryResponse[]>(
+        `/api/categories/sub-categories/search${suffix}`
+      );
+      return response.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    } catch (error) {
+      console.error('Failed to search subcategories:', error);
       throw error;
     }
   }
