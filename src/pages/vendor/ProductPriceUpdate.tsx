@@ -263,17 +263,17 @@ export default function ProductPriceUpdate() {
   const skus = product.productSku || [];
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
+    <div className="container mx-auto py-4 sm:py-8 px-4 max-w-4xl">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
         <Button variant="ghost" size="icon" asChild>
           <Link to="/vendor">
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Update Product Prices</h1>
-          <p className="text-muted-foreground">{product.name}</p>
+          <h1 className="text-xl sm:text-2xl font-bold">Update Product Prices</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">{product.name}</p>
         </div>
       </div>
 
@@ -298,7 +298,7 @@ export default function ProductPriceUpdate() {
             Select a variant to request a price update
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           {skus.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No variants found for this product.
@@ -308,16 +308,16 @@ export default function ProductPriceUpdate() {
               {skus.map((sku: ProductSku, index: number) => (
                 <div
                   key={sku.id || index}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-gray-50 gap-4"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 bg-gray-100 rounded flex items-center justify-center">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="h-12 w-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
                       <Package className="h-6 w-6 text-gray-400" />
                     </div>
-                    <div>
-                      <p className="font-medium">{sku.skuCode}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{sku.skuCode}</p>
                       {sku.attributes && sku.attributes.length > 0 && (
-                        <div className="flex gap-2 mt-1">
+                        <div className="flex flex-wrap gap-2 mt-1">
                           {sku.attributes.map((attr, attrIndex) => (
                             <Badge key={attrIndex} variant="secondary" className="text-xs">
                               {attr.name}: {attr.value}
@@ -330,8 +330,8 @@ export default function ProductPriceUpdate() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                    <div className="text-left sm:text-right">
                       <p className="text-sm text-muted-foreground">Your Price</p>
                       <p className="font-semibold text-green-600">{getSkuVendorPrice(sku)}</p>
                       <p className="text-xs text-muted-foreground">Customer: {getSkuCurrentPrice(sku)}</p>
@@ -340,6 +340,7 @@ export default function ProductPriceUpdate() {
                       variant="outline"
                       size="sm"
                       onClick={() => openPriceDialog(sku)}
+                      className="self-start sm:self-auto"
                     >
                       <DollarSign className="h-4 w-4 mr-1" />
                       Update Price
@@ -354,7 +355,7 @@ export default function ProductPriceUpdate() {
 
       {/* Price Update Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Request Price Update</DialogTitle>
             <DialogDescription>
@@ -363,7 +364,7 @@ export default function ProductPriceUpdate() {
           </DialogHeader>
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Current Vendor Price</Label>
                 <p className="text-lg font-semibold text-green-600">
@@ -378,7 +379,7 @@ export default function ProductPriceUpdate() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="currencyCode">Currency</Label>
                 <Select
@@ -430,15 +431,16 @@ export default function ProductPriceUpdate() {
               />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={priceUpdateMutation.isPending}>
+              <Button type="submit" disabled={priceUpdateMutation.isPending} className="w-full sm:w-auto">
                 {priceUpdateMutation.isPending ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />

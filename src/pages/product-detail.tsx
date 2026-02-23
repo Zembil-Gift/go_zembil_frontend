@@ -141,6 +141,14 @@ export default function ProductDetail() {
     if (selectedSku?.stockQuantity !== undefined) return selectedSku.stockQuantity;
     return product?.stockQuantity || 0;
   }, [selectedSku, selectedSkuId, product]);
+
+  // Ensure quantity does not exceed stock
+  useEffect(() => {
+    if (stockQuantity !== null && stockQuantity > 0 && quantity > stockQuantity) {
+      setQuantity(stockQuantity);
+    }
+  }, [stockQuantity, quantity]);
+
   useMemo(() => {
     if (!product?.productSku) return {};
 
@@ -250,6 +258,7 @@ export default function ProductDetail() {
         price: currentPrice,
         image: getProductImageUrl(product?.images, product?.cover),
         quantity,
+        stockQuantity: stockQuantity || undefined,
         skuId: selectedSku?.id,
         skuCode: selectedSku?.skuCode,
         skuName: selectedSku?.skuName,
@@ -700,6 +709,7 @@ export default function ProductDetail() {
                     size="sm"
                     variant="outline"
                     onClick={() => setQuantity(quantity + 1)}
+                    disabled={stockQuantity !== null && quantity >= stockQuantity}
                     className="h-10 w-10 p-0"
                   >
                     <Plus size={16} />
@@ -839,7 +849,7 @@ export default function ProductDetail() {
               </div>
             </TabsContent>
             
-            <TabsContent value="shipping" className="space-y-6">
+            {/* <TabsContent value="shipping" className="space-y-6">
               <div className="bg-white rounded-lg p-6">
                 <h3 className="font-semibold text-lg mb-4">Shipping & Returns</h3>
                 <div className="space-y-4">
@@ -859,7 +869,7 @@ export default function ProductDetail() {
                   </div>
                 </div>
               </div>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
         </div>
       </div>
