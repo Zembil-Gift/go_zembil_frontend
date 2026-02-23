@@ -33,6 +33,11 @@ export function CartSidebar() {
     if (newQuantity <= 0) {
       removeItem(cartItem.id);
     } else {
+      // Prevent increasing beyond available stock
+      const stockAvailable = cartItem.productSku?.stockQuantity ?? cartItem.product?.stockQuantity;
+      if (stockAvailable !== undefined && newQuantity > stockAvailable) {
+        return;
+      }
       updateQuantity({ id: cartItem.id, quantity: newQuantity });
     }
   };
@@ -175,7 +180,11 @@ export function CartSidebar() {
                           size="icon"
                           className="h-7 w-7"
                           onClick={() => handleUpdateQuantity(item, item.quantity + 1)}
-                          disabled={isUpdatingQuantity}
+                          disabled={
+                            isUpdatingQuantity || 
+                            (item.productSku?.stockQuantity !== undefined && item.quantity >= item.productSku.stockQuantity) ||
+                            (!item.productSku && item.product?.stockQuantity !== undefined && item.quantity >= item.product.stockQuantity)
+                          }
                         >
                           <Plus className="h-3 w-3" />
                         </Button>

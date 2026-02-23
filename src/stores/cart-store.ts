@@ -8,6 +8,7 @@ interface CartItem {
   price: number | string;
   image: string;
   quantity: number;
+  stockQuantity?: number;
   skuId?: number;
   skuCode?: string;
   skuName?: string;
@@ -44,11 +45,17 @@ export const useCartStore = create<CartStore>()(
         );
         
         if (existingItem) {
+          const newQuantity = existingItem.quantity + item.quantity;
+          // Respect stock limit if available
+          const finalQuantity = item.stockQuantity !== undefined 
+            ? Math.min(newQuantity, item.stockQuantity) 
+            : newQuantity;
+
           set({
             items: items.map(i =>
               i.productId === item.productId && 
               (i.skuId === item.skuId || (!i.skuId && !item.skuId))
-                ? { ...i, quantity: i.quantity + item.quantity }
+                ? { ...i, quantity: finalQuantity }
                 : i
             )
           });

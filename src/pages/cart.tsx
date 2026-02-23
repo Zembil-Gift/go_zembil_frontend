@@ -6,14 +6,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { 
   formatPrice, 
   toMinorUnits, 
-  getDiscountAmountForDisplay
+  getDiscountAmountForDisplay,
+  calculateDiscountedPrice
 } from '@/lib/currency';
 import { getProductImageUrl } from "@/utils/imageUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { ShoppingBag, Plus, Minus, X, Truck, Heart, ArrowRight, LogIn, Tag, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { ShoppingBag, Plus, Minus, X, Truck, Heart, ArrowRight, LogIn, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { cartService, CartItem } from "@/services/cartService";
 import { wishlistService } from "@/services/wishlistService";
@@ -180,7 +181,12 @@ export default function Cart() {
   const calculateSubtotal = () => {
     if (!Array.isArray(cartItems)) return 0;
     return cartItems.reduce((total: number, item: CartItem) => {
-      const itemTotal = Number(item.totalPrice) || (Number(item.unitPrice || 0) * item.quantity);
+      const baseUnitPrice = Number(item.unitPrice || 0);
+      const discount = item.product?.activeDiscount;
+      const discountedUnitPrice = discount
+        ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
+        : baseUnitPrice;
+      const itemTotal = discountedUnitPrice * item.quantity;
       return total + itemTotal;
     }, 0);
   };
@@ -378,12 +384,23 @@ export default function Cart() {
                           </h3>
                         </Link>
                         {(() => {
-                          // Use unitPrice from API instead of product.price
+                          const baseUnitPrice = Number(item.unitPrice || 0);
+                          const discount = item.product?.activeDiscount;
+                          const discountedUnitPrice = discount
+                            ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
+                            : baseUnitPrice;
+                          const hasDiscount = discountedUnitPrice < baseUnitPrice;
+
                           return (
                             <div className="mt-1">
                               <p className="text-ethiopian-gold font-bold text-lg">
-                                {formatPrice(item.unitPrice || 0, cartCurrency)}
+                                {formatPrice(discountedUnitPrice, cartCurrency)}
                               </p>
+                              {hasDiscount && (
+                                <p className="text-xs text-gray-500 line-through">
+                                  {formatPrice(baseUnitPrice, cartCurrency)}
+                                </p>
+                              )}
                             </div>
                           );
                         })()}
@@ -450,12 +467,25 @@ export default function Cart() {
                       {/* Item Total */}
                       <div className="text-right">
                         {(() => {
-                          const itemTotal = Number(item.totalPrice) || (Number(item.unitPrice || 0) * item.quantity);
+                          const baseUnitPrice = Number(item.unitPrice || 0);
+                          const discount = item.product?.activeDiscount;
+                          const discountedUnitPrice = discount
+                            ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
+                            : baseUnitPrice;
+                          const itemTotal = discountedUnitPrice * item.quantity;
+                          const originalLineTotal = baseUnitPrice * item.quantity;
+                          const hasDiscount = itemTotal < originalLineTotal;
+
                           return (
                             <div>
                               <p className="font-bold text-lg text-charcoal">
                                 {formatPrice(itemTotal, cartCurrency)}
                               </p>
+                              {hasDiscount && (
+                                <p className="text-xs text-gray-500 line-through">
+                                  {formatPrice(originalLineTotal, cartCurrency)}
+                                </p>
+                              )}
                             </div>
                           );
                         })()}
@@ -520,16 +550,15 @@ export default function Cart() {
                               disabled={isValidatingDiscount}
                             />
                             <Button
-                              variant="outline"
-                              size="sm"
+                              type="button"
                               onClick={handleApplyDiscount}
                               disabled={isValidatingDiscount || !discountCode.trim()}
-                              className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white h-9"
+                              className="bg-eagle-green hover:bg-eagle-green/90 text-white h-9 px-4 shrink-0 transition-all font-medium"
                             >
                               {isValidatingDiscount ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
-                                <Tag className="h-3.5 w-3.5" />
+                                "Apply"
                               )}
                             </Button>
                           </div>

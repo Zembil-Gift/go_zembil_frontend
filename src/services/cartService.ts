@@ -1,5 +1,6 @@
 import { apiService } from './apiService';
 import { productService } from './productService';
+import type { DiscountInfo } from '@/types/discount';
 
 // Types for cart matching backend schema
 export interface CartItem {
@@ -31,12 +32,15 @@ export interface CartItem {
     cover?: string;
     imageUrl?: string;
     deliveryDays?: number;
+    stockQuantity?: number;
+    activeDiscount?: DiscountInfo;
   };
   // Optional nested SKU details
   productSku?: {
     id: number;
     skuCode?: string;  // Internal code for vendor management
     skuName: string;   // Display name shown to customers
+    stockQuantity?: number;
     price?: {
       amount?: number;
       currencyCode?: string;
@@ -87,8 +91,15 @@ class CartService {
       const response = await apiService.getRequest<Cart>(`/api/cart`);
       
       const items = response.items || [];
+      const getProductPriceCurrencyCode = (item?: CartItem): string | undefined => {
+        const productPrice = item?.product?.price;
+        if (productPrice && typeof productPrice !== 'string') {
+          return productPrice.currencyCode;
+        }
+        return undefined;
+      };
       const itemCurrency = items.find(i => i?.productSku?.price?.currencyCode)?.productSku?.price?.currencyCode
-        || items.find(i => i?.product?.price?.currencyCode)?.product?.price?.currencyCode;
+        || getProductPriceCurrencyCode(items.find(i => !!getProductPriceCurrencyCode(i)));
       const cartCurrency = response.currencyCode || itemCurrency || response.currency || 'ETB';
       const totalPrice = response.totalPrice || 0;
       
