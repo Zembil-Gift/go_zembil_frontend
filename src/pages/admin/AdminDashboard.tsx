@@ -159,10 +159,6 @@ export default function AdminDashboard() {
     return num.toString();
   };
 
-  const formatOrderCurrency = (amountMinor: number, _currency: string = 'USD') => {
-    const amount = amountMinor / 100;
-    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
 
   return (
     <AdminLayout hideHeader>
@@ -445,8 +441,7 @@ export default function AdminDashboard() {
               const remaining = Math.max(0, total - pending - completed - cancelled);
               const processing = Math.floor(remaining / 3);
               const shipped = Math.floor(remaining / 3);
-              const delivered = remaining - processing - shipped;
-              
+
               const productOrderData = [
                 { name: 'Pending', value: pending, fill: '#FDCB2D' },
                 { name: 'Processing', value: processing, fill: '#3B82F6' },
@@ -896,7 +891,7 @@ export default function AdminDashboard() {
                         className="h-12 w-12 rounded-lg object-cover"
                         onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
                       />
-                      <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center hidden">
+                      <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center">
                         <Package className="h-6 w-6 text-blue-500" />
                       </div>
                       <div>

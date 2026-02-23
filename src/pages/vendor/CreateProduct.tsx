@@ -22,20 +22,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
 import { TagInput } from "@/components/TagInput";
+import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
 import { ArrowLeft, Package, AlertCircle, Plus, Trash2, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-}
-
-interface SubCategory {
-  id: number;
-  name: string;
-  slug: string;
-}
 
 interface Currency {
   id: number;
@@ -63,7 +52,6 @@ const productSchema = z.object({
   summary: z.string().min(1, "Summary is required").max(500),
   cover: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   subCategoryId: z.string().min(1, "Sub-Category is required"),
-  isFeatured: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
   occasion: z.string().optional(),
   currencyCode: z.string().min(1, "Currency is required"),
@@ -91,23 +79,6 @@ export default function CreateProduct() {
   const [pendingSkuImages, setPendingSkuImages] = useState<Record<number, File[]>>({});
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiService.getRequest<Category[]>('/api/categories'),
-  });
-
-  const { data: allSubCategories = [], isLoading: isLoadingSubCategories } = useQuery({
-    queryKey: ['all-subcategories', categories],
-    queryFn: async () => {
-      const subCategoriesPromises = categories.map((category) =>
-        apiService.getRequest<SubCategory[]>(`/api/categories/${category.id}/sub-categories`)
-      );
-      const results = await Promise.all(subCategoriesPromises);
-      return results.flat();
-    },
-    enabled: categories.length > 0,
-  });
-
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies'],
     queryFn: () => apiService.getRequest<Currency[]>('/api/currencies'),
@@ -131,7 +102,6 @@ export default function CreateProduct() {
       summary: "",
       cover: "",
       subCategoryId: "",
-      isFeatured: false,
       tags: [],
       occasion: "",
       currencyCode: "ETB", // Will be updated by useEffect when vendorProfile loads
@@ -196,7 +166,6 @@ export default function CreateProduct() {
         description: data.description || undefined,
         summary: data.summary || undefined,
         subCategoryId: parseInt(data.subCategoryId),
-        isFeatured: false,
         tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
         occasion: data.occasion || undefined,
       };
@@ -471,28 +440,11 @@ export default function CreateProduct() {
                   name="subCategoryId"
                   control={form.control}
                   render={({ field }) => (
-                    <Select 
+                    <SubcategorySearchCombobox
                       value={field.value}
                       onValueChange={field.onChange}
-                      disabled={isLoadingSubCategories || allSubCategories.length === 0}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={
-                          isLoadingSubCategories 
-                            ? "Loading categories..." 
-                            : allSubCategories.length === 0 
-                            ? "No categories available" 
-                            : "Select a sub-category"
-                        } />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allSubCategories.map((subCategory) => (
-                          <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
-                            {subCategory.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Search and select a sub-category"
+                    />
                   )}
                 />
                 {form.formState.errors.subCategoryId && (

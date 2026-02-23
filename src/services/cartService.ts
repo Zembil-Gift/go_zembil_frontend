@@ -1,6 +1,6 @@
-import { apiService } from './apiService';
-import { productService } from './productService';
-import type { DiscountInfo } from '@/types/discount';
+import {apiService} from './apiService';
+import {productService} from './productService';
+import type {DiscountInfo} from '@/types/discount';
 
 // Types for cart matching backend schema
 export interface CartItem {
@@ -149,8 +149,7 @@ class CartService {
    */
   async addToCart(data: AddToCartRequest): Promise<Cart> {
     try {
-      const response = await apiService.postRequest<Cart>('/api/cart/items', data);
-      return response;
+      return await apiService.postRequest<Cart>('/api/cart/items', data);
     } catch (error: any) {
       console.error('Failed to add to cart:', error);
       throw new Error(
@@ -166,8 +165,7 @@ class CartService {
    */
   async updateCartItem(itemId: number, quantity: number): Promise<Cart> {
     try {
-      const response = await apiService.putRequest<Cart>(`/api/cart/items/${itemId}?qty=${quantity}`);
-      return response;
+      return await apiService.putRequest<Cart>(`/api/cart/items/${itemId}?qty=${quantity}`);
     } catch (error: any) {
       console.error('Failed to update cart item:', error);
       throw new Error(
@@ -215,8 +213,7 @@ class CartService {
    */
   async checkPricing(productId: number): Promise<boolean> {
     try {
-      const response = await apiService.getRequest<boolean>(`/api/cart/pricing/check/${productId}`);
-      return response;
+      return await apiService.getRequest<boolean>(`/api/cart/pricing/check/${productId}`);
     } catch (error: any) {
       console.error('Failed to check pricing:', error);
       return false;

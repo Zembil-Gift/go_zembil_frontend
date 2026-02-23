@@ -1,4 +1,4 @@
-import { apiService } from './apiService';
+import {apiService} from './apiService';
 
 // Types matching backend DTOs
 export interface CategoryResponse {
@@ -109,18 +109,16 @@ class CategoryService {
   async getCategoriesWithSubcategories(): Promise<CategoryWithSubcategories[]> {
     try {
       const categories = await this.getCategories();
-      
-      const categoriesWithSubs = await Promise.all(
-        categories.map(async (category) => {
-          const subcategories = await this.getSubCategories(category.id);
-          return {
-            ...category,
-            subcategories,
-          };
-        })
+
+      return await Promise.all(
+          categories.map(async (category) => {
+            const subcategories = await this.getSubCategories(category.id);
+            return {
+              ...category,
+              subcategories,
+            };
+          })
       );
-      
-      return categoriesWithSubs;
     } catch (error) {
       console.error('Failed to fetch categories with subcategories:', error);
       throw error;

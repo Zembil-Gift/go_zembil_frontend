@@ -1,19 +1,12 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {useState} from 'react';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {Badge} from '@/components/ui/badge';
+import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -22,22 +15,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Search, 
-  Loader2,
-  Package,
-  Eye,
-  AlertTriangle,
-  Check,
-  X,
-  DollarSign,
-  Clock,
-  FolderTree
-} from 'lucide-react';
-import { adminService, CategoryChangeRequestDto } from '@/services/adminService';
-import { useToast } from '@/hooks/use-toast';
-import { getProductImageUrl } from '@/utils/imageUtils';
+import {Textarea} from '@/components/ui/textarea';
+import {AlertTriangle, Check, Clock, DollarSign, Eye, FolderTree, Loader2, Package, Search, X} from 'lucide-react';
+import {adminService, CategoryChangeRequestDto} from '@/services/adminService';
+import {useToast} from '@/hooks/use-toast';
+import {getProductImageUrl} from '@/utils/imageUtils';
 
 interface Product {
   id: number;
@@ -178,8 +160,7 @@ export default function AdminProducts() {
       const categories = await adminService.getCategories();
       const subCategoryGroups = await Promise.allSettled(
         categories.map(async (cat: any) => {
-          const subs = await adminService.getSubCategories(cat.id);
-          return subs;
+          return await adminService.getSubCategories(cat.id);
         })
       );
 

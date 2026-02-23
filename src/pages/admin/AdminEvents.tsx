@@ -4,7 +4,6 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getEventImageUrl } from '@/utils/imageUtils';
@@ -27,7 +26,6 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { 
   Calendar, 
-  Search,
   Loader2,
   MapPin,
   Check,
@@ -42,7 +40,6 @@ import {
 import { adminService } from '@/services/adminService';
 
 export default function AdminEvents() {
-  const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [rejectDialog, setRejectDialog] = useState<{ open: boolean; eventId?: number; type: 'event' | 'price' }>({ 
     open: false, 

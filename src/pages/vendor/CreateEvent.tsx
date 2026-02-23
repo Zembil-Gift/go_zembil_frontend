@@ -9,6 +9,7 @@ import {useToast} from "@/hooks/use-toast";
 import {vendorService, VendorProfile, CreateEventRequest} from "@/services/vendorService";
 import {apiService} from "@/services/apiService";
 import {imageService} from "@/services/imageService";
+import {SubcategorySearchCombobox} from "@/components/SubcategorySearchCombobox";
 
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
     if (!vendorProfile) return false;
@@ -78,23 +79,6 @@ export default function CreateEvent() {
 
     const [pendingImages, setPendingImages] = useState<File[]>([]);
     const [isUploadingImages, setIsUploadingImages] = useState(false);
-
-    const {data: categories = []} = useQuery({
-        queryKey: ['categories'],
-        queryFn: () => apiService.getRequest<Category[]>('/api/categories'),
-    });
-
-    const {data: allSubCategories = [], isLoading: isLoadingSubCategories} = useQuery({
-        queryKey: ['all-subcategories', categories],
-        queryFn: async () => {
-            const subCategoriesPromises = categories.map((category) =>
-                apiService.getRequest<SubCategory[]>(`/api/categories/${category.id}/sub-categories`)
-            );
-            const results = await Promise.all(subCategoriesPromises);
-            return results.flat();
-        },
-        enabled: categories.length > 0,
-    });
 
     const {data: currencies = []} = useQuery({
         queryKey: ['currencies'],
@@ -353,18 +337,11 @@ export default function CreateEvent() {
 
                             <div>
                                 <Label>Category</Label>
-                                <Select onValueChange={(value) => form.setValue("categoryId", value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder={isLoadingSubCategories ? "Loading categories..." : "Select a category (optional)"}/>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {allSubCategories.map((subCategory) => (
-                                            <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
-                                                {subCategory.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <SubcategorySearchCombobox
+                                    value={form.watch("categoryId")}
+                                    onValueChange={(value) => form.setValue("categoryId", value)}
+                                    placeholder="Search and select a category (optional)"
+                                />
                             </div>
                         </CardContent>
                     </Card>

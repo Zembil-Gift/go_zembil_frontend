@@ -22,7 +22,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ShoppingCart, ArrowLeft, CreditCard, Smartphone, Loader2, Gift, Tag, CheckCircle2, XCircle, AlertCircle, MapPin } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { formatPrice, toMinorUnits, getCurrencyDecimals, getDiscountAmountForDisplay, calculateDiscountedPrice } from "@/lib/currency";
+import { formatPrice, toMinorUnits, getDiscountAmountForDisplay, calculateDiscountedPrice } from "@/lib/currency";
 import { apiService } from "@/services/apiService";
 import { orderService, type CreateOrderRequest } from "@/services/orderService";
 import { discountService, type DiscountValidationResult } from "@/services/discountService";
@@ -68,7 +68,6 @@ export default function Checkout() {
     setAppliedDiscountCode
   } = useCart();
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
 
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);

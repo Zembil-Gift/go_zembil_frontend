@@ -35,7 +35,6 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  Receipt, 
   MapPin,
   Tag,
   Percent,
