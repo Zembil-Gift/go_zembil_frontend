@@ -9,13 +9,13 @@ import {
 } from "@/components/ui/select";
 
 export const COUNTRIES = [
-  { value: "United States", label: "United States" },
-  { value: "Ethiopia", label: "Ethiopia" },
-  { value: "Canada", label: "Canada" },
-  { value: "United Kingdom", label: "United Kingdom" },
-  { value: "Europe", label: "Europe" },
-  { value: "Australia", label: "Australia" },
-  { value: "Middle East", label: "Middle East" },
+  { value: "US", label: "United States" },
+  { value: "ET", label: "Ethiopia" },
+  { value: "CA", label: "Canada" },
+  { value: "GB", label: "United Kingdom" },
+  { value: "EU", label: "Europe" },
+  { value: "AU", label: "Australia" },
+  { value: "ME", label: "Middle East" },
 ];
 
 export const US_STATES = [
