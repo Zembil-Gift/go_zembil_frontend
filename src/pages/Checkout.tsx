@@ -19,16 +19,17 @@ import {
 } from "@/components/ui/select";
 import { StateSelect, COUNTRIES } from "@/components/ui/state-select";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, ArrowLeft, CreditCard, Smartphone, Loader2, Gift, Tag, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { ShoppingCart, ArrowLeft, CreditCard, Smartphone, Loader2, Gift, Tag, CheckCircle2, XCircle, AlertCircle, MapPin } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { formatPrice, toMinorUnits, getCurrencyDecimals, getDiscountAmountForDisplay } from "@/lib/currency";
+import { formatPrice, toMinorUnits, getCurrencyDecimals, getDiscountAmountForDisplay, calculateDiscountedPrice } from "@/lib/currency";
 import { apiService } from "@/services/apiService";
 import { orderService, type CreateOrderRequest } from "@/services/orderService";
 import { discountService, type DiscountValidationResult } from "@/services/discountService";
 import { type CartItem } from "@/services/cartService";
 import { getPaymentMethodsForCountry, getDefaultPaymentMethod, type PaymentMethod } from "@/lib/countryConfig";
 import { paymentMethodConfigService } from "@/services/paymentMethodConfigService";
+import { LocationPicker, type LocationData } from "@/components/maps";
 
 interface CurrencyConversionDto {
   amount: number;
@@ -51,6 +52,10 @@ interface AddressDto {
   additionalDetails?: string;
   type?: 'BILLING' | 'SHIPPING';
   isDefault?: boolean;
+  latitude?: number;
+  longitude?: number;
+  placeId?: string;
+  formattedAddress?: string;
 }
 
 export default function Checkout() {
@@ -58,7 +63,6 @@ export default function Checkout() {
   const { 
     cartItems, 
     cartCurrency, 
-    getTotalPrice, 
     getTotalItems,
     appliedDiscountCode,
     setAppliedDiscountCode
@@ -95,6 +99,46 @@ export default function Checkout() {
   const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   const [discountError, setDiscountError] = useState<string | null>(null);
+
+  // Shipping address geolocation
+  const [shippingCoords, setShippingCoords] = useState<{
+    latitude?: number;
+    longitude?: number;
+    placeId?: string;
+    formattedAddress?: string;
+  }>({});
+
+  // Delivery estimate from backend (distance-based fee + radius check)
+  interface DeliveryEstimate {
+    distanceMeters?: number;
+    distanceText?: string;
+    deliveryFee?: number;
+    currencyCode?: string;
+    withinDeliveryRadius?: boolean;
+    vendorDeliveryRadiusKm?: number;
+    distanceKm?: number;
+    vendorLocationAvailable?: boolean;
+  }
+  const [deliveryEstimate, setDeliveryEstimate] = useState<DeliveryEstimate | null>(null);
+  const [isEstimatingDelivery, setIsEstimatingDelivery] = useState(false);
+
+  const fetchDeliveryEstimate = async (lat: number, lng: number) => {
+    setIsEstimatingDelivery(true);
+    setDeliveryEstimate(null);
+    try {
+      const result = await apiService.postRequest<DeliveryEstimate>(
+        '/api/delivery/estimate/cart',
+        { destinationLatitude: lat, destinationLongitude: lng }
+      );
+      setDeliveryEstimate(result);
+    } catch (err: any) {
+      console.warn('Delivery estimate failed:', err?.message);
+      setDeliveryEstimate(null);
+    } finally {
+      setIsEstimatingDelivery(false);
+    }
+  };
+
   
   // Determine available payment methods based on user's country AND backend config
   const userCountry = user?.country || '';
@@ -127,7 +171,6 @@ export default function Checkout() {
   const [telebirrConversion, setTelebirrConversion] = useState<CurrencyConversionDto | null>(null);
   const [isConvertingTelebirr, setIsConvertingTelebirr] = useState(false);
   
-  const totalPrice = getTotalPrice();
   const totalItems = getTotalItems();
 
   // Extract product IDs from cart for discount validation
@@ -136,13 +179,27 @@ export default function Checkout() {
     return cartItems.map((item: CartItem) => item.productId).filter(Boolean);
   }, [cartItems]);
 
+  const getDiscountedItemTotal = useCallback((item: CartItem) => {
+    const baseUnitPrice = Number(item.unitPrice || 0);
+    const discount = item.product?.activeDiscount;
+    const discountedUnitPrice = discount
+      ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
+      : baseUnitPrice;
+    return discountedUnitPrice * item.quantity;
+  }, [cartCurrency]);
+
+  const effectiveSubtotal = useMemo(() => {
+    if (!Array.isArray(cartItems)) return 0;
+    return cartItems.reduce((total, item) => total + getDiscountedItemTotal(item), 0);
+  }, [cartItems, getDiscountedItemTotal]);
+
   const handleApplyDiscount = useCallback(async (codeOverride?: string) => {
     const code = (codeOverride || discountCode).trim();
     if (!code) {
       setDiscountError("Please enter a discount code");
       return;
     }
-    if (!cartCurrency || totalPrice <= 0) {
+    if (!cartCurrency || effectiveSubtotal <= 0) {
       setDiscountError("Cart is empty or currency not set");
       return;
     }
@@ -154,7 +211,7 @@ export default function Checkout() {
     try {
       const result = await discountService.validateDiscountCode({
         discountCode: code,
-        orderTotalMinor: toMinorUnits(totalPrice, cartCurrency),
+        orderTotalMinor: toMinorUnits(effectiveSubtotal, cartCurrency),
         productIds: cartProductIds,
       });
 
@@ -178,7 +235,7 @@ export default function Checkout() {
     } finally {
       setIsValidatingDiscount(false);
     }
-  }, [discountCode, cartCurrency, totalPrice, cartProductIds, toast, setAppliedDiscountCode]);
+  }, [discountCode, cartCurrency, effectiveSubtotal, cartProductIds, toast, setAppliedDiscountCode]);
 
   const handleRemoveDiscount = useCallback(() => {
     setDiscountResult(null);
@@ -191,13 +248,13 @@ export default function Checkout() {
   useEffect(() => {
     if (appliedDiscountCode && 
         cartCurrency && 
-        totalPrice > 0 && 
+        effectiveSubtotal > 0 && 
         !discountResult && 
         !isValidatingDiscount && 
         !discountError) {
       handleApplyDiscount(appliedDiscountCode);
     }
-  }, [appliedDiscountCode, cartCurrency, discountResult, isValidatingDiscount, discountError, handleApplyDiscount]);
+  }, [appliedDiscountCode, cartCurrency, effectiveSubtotal, discountResult, isValidatingDiscount, discountError, handleApplyDiscount]);
 
   // Update selected payment method when default changes (e.g., user data loads)
   useEffect(() => {
@@ -213,8 +270,8 @@ export default function Checkout() {
 
   // Final total after discount
   const finalTotal = useMemo(() => {
-    return Math.max(0, totalPrice - discountAmountDisplay);
-  }, [totalPrice, discountAmountDisplay]);
+    return Math.max(0, effectiveSubtotal - discountAmountDisplay);
+  }, [effectiveSubtotal, discountAmountDisplay]);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,7 +279,7 @@ export default function Checkout() {
     const shouldConvert = selectedPaymentMethod === 'telebirr'
       && cartCurrency
       && cartCurrency.toUpperCase() !== 'ETB'
-      && totalPrice > 0;
+      && effectiveSubtotal > 0;
 
     if (!shouldConvert) {
       setTelebirrConversion(null);
@@ -234,7 +291,7 @@ export default function Checkout() {
       try {
         setIsConvertingTelebirr(true);
         const result = await apiService.getRequest<CurrencyConversionDto>(
-          `/api/currencies/convert?amount=${encodeURIComponent(totalPrice)}&from=${encodeURIComponent(cartCurrency)}&to=ETB`
+          `/api/currencies/convert?amount=${encodeURIComponent(effectiveSubtotal)}&from=${encodeURIComponent(cartCurrency)}&to=ETB`
         );
         if (!cancelled) {
           setTelebirrConversion(result);
@@ -255,7 +312,7 @@ export default function Checkout() {
     return () => {
       cancelled = true;
     };
-  }, [selectedPaymentMethod, cartCurrency, totalPrice]);
+  }, [selectedPaymentMethod, cartCurrency, effectiveSubtotal]);
 
   useEffect(() => {
     if (user) {
@@ -287,6 +344,15 @@ export default function Checkout() {
             postalCode: shippingAddress.postalCode || "0000",
             country: shippingAddress.country || "",
           });
+
+          if (shippingAddress.latitude && shippingAddress.longitude) {
+            setShippingCoords({
+              latitude: shippingAddress.latitude,
+              longitude: shippingAddress.longitude,
+              placeId: shippingAddress.placeId,
+              formattedAddress: shippingAddress.formattedAddress,
+            });
+          }
 
           // Only set phone from address if user profile doesn't have one
           if (!user?.phoneNumber && shippingAddress.contactPhone) {
@@ -334,13 +400,6 @@ export default function Checkout() {
     }
   }, [isAuthenticated, cartItems.length, navigate]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setShippingInfo({
-      ...shippingInfo,
-      [e.target.name]: e.target.value,
-    });
-  };
-
   const handleBillingInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBillingInfo({
       ...billingInfo,
@@ -350,10 +409,22 @@ export default function Checkout() {
 
   const handleProceedToPayment = async () => {
     // Validate required fields
-    if (!contactPhone || !shippingInfo.street || !shippingInfo.city) {
+    const hasValidLocation = shippingCoords.latitude != null || (!!shippingInfo.street && !!shippingInfo.city);
+    const isOutsideRadius = deliveryEstimate?.withinDeliveryRadius === false;
+    if (!contactPhone || !hasValidLocation) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required shipping information.",
+        description: !contactPhone
+          ? "Please enter your phone number."
+          : "Please pin your delivery location on the map.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (isOutsideRadius) {
+      toast({
+        title: "Outside Delivery Area",
+        description: `Your delivery address is ${deliveryEstimate?.distanceKm?.toFixed(1)} km from the vendor, which exceeds their ${deliveryEstimate?.vendorDeliveryRadiusKm?.toFixed(0)} km delivery radius. Please choose a closer address.`,
         variant: "destructive",
       });
       return;
@@ -377,15 +448,17 @@ export default function Checkout() {
       let shippingAddressId: number;
 
       const addressPayload: AddressDto = {
-        street: shippingInfo.street,
-        city: shippingInfo.city,
-        state: shippingInfo.state || shippingInfo.city,
+        street: shippingInfo.street || shippingCoords.formattedAddress || '',
+        city: shippingInfo.city || shippingInfo.state || 'N/A',
+        state: shippingInfo.state || shippingInfo.city || 'N/A',
         postalCode: shippingInfo.postalCode || '',
-        country: shippingInfo.country,
-        contactName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '',
-        contactPhone: contactPhone,
+        country: shippingInfo.country || '',
         type: 'SHIPPING',
         isDefault: true,
+        latitude: shippingCoords.latitude,
+        longitude: shippingCoords.longitude,
+        placeId: shippingCoords.placeId,
+        formattedAddress: shippingCoords.formattedAddress,
       };
 
       if (existingAddressId) {
@@ -423,8 +496,6 @@ export default function Checkout() {
           state: shippingInfo.state || shippingInfo.city,
           postalCode: shippingInfo.postalCode || '',
           country: shippingInfo.country,
-          contactName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '',
-          contactPhone: contactPhone,
           type: 'BILLING',
           isDefault: false,
         };
@@ -466,8 +537,6 @@ export default function Checkout() {
           state: billingInfo.state || billingInfo.city,
           postalCode: billingInfo.postalCode || '',
           country: billingInfo.country,
-          contactName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '',
-          contactPhone: contactPhone,
           type: 'BILLING',
           isDefault: false,
         };
@@ -588,99 +657,72 @@ export default function Checkout() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label htmlFor="contactEmail">Contact Email</Label>
-                    <Input
-                      id="contactEmail"
-                      name="contactEmail"
-                      type="email"
-                      value={contactEmail}
-                      onChange={(e) => setContactEmail(e.target.value)}
-                      placeholder="email@example.com"
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="contactEmail">Contact Email</Label>
+                  <Input
+                    id="contactEmail"
+                    name="contactEmail"
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="email@example.com"
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      value={contactPhone}
-                      onChange={(e) => setContactPhone(e.target.value)}
-                      placeholder="+251 9XX XXX XXX"
-                      required
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    placeholder="+251 9XX XXX XXX"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="street">Street Address *</Label>
-                    <Input
-                      id="street"
-                      name="street"
-                      value={shippingInfo.street}
-                      onChange={handleInputChange}
-                      placeholder="Street address"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="city">City *</Label>
-                      <Input
-                        id="city"
-                        name="city"
-                        value={shippingInfo.city}
-                        onChange={handleInputChange}
-                        placeholder="City"
-                        required
-                      />
-                    </div>
-                    {shippingInfo.country === "United States" && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-emerald-600" />
+                    Delivery Location *
+                  </Label>
+                  <p className="text-xs text-gray-500">
+                    Click on the map or use search to pin your exact delivery location
+                  </p>
+                  <LocationPicker
+                    latitude={shippingCoords.latitude}
+                    longitude={shippingCoords.longitude}
+                    onLocationSelect={(loc: LocationData) => {
+                      setShippingInfo({
+                        street: loc.streetAddress || loc.formattedAddress,
+                        city: loc.city || loc.state,
+                        state: loc.state,
+                        postalCode: loc.postalCode,
+                        country: loc.country,
+                      });
+                      setShippingCoords({
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                        placeId: loc.placeId,
+                        formattedAddress: loc.formattedAddress,
+                      });
+                      // Fetch delivery fee estimate for the selected location
+                      if (loc.latitude && loc.longitude) {
+                        fetchDeliveryEstimate(loc.latitude, loc.longitude);
+                      }
+                    }}
+                    height="320px"
+                    placeholder="Search your delivery address..."
+                  />
+                  {shippingCoords.formattedAddress && (
+                    <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <Label htmlFor="state">State *</Label>
-                        <StateSelect
-                          id="state"
-                          value={shippingInfo.state}
-                          onValueChange={(value) => setShippingInfo({ ...shippingInfo, state: value })}
-                        />
+                        <p className="text-sm font-medium text-emerald-800">Delivery location confirmed</p>
+                        <p className="text-sm text-emerald-700 mt-0.5">{shippingCoords.formattedAddress}</p>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="postalCode">Postal Code</Label>
-                      <Input
-                        id="postalCode"
-                        name="postalCode"
-                        value={shippingInfo.postalCode}
-                        onChange={handleInputChange}
-                        placeholder="Postal code"
-                      />
                     </div>
-                    <div>
-                      <Label htmlFor="country">Country *</Label>
-                      <Select
-                        value={shippingInfo.country}
-                        onValueChange={(value) => {
-                          setShippingInfo({ ...shippingInfo, country: value, state: "" });
-                        }}
-                      >
-                        <SelectTrigger id="country">
-                          <SelectValue placeholder="Select a country" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {COUNTRIES.map((country) => (
-                            <SelectItem key={country.value} value={country.value}>
-                              {country.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -865,16 +907,15 @@ export default function Checkout() {
                         disabled={isValidatingDiscount}
                       />
                       <Button
-                        variant="outline"
                         type="button"
                         onClick={handleApplyDiscount}
                         disabled={isValidatingDiscount || !discountCode.trim()}
-                        className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
+                        className="bg-eagle-green hover:bg-eagle-green/90 text-white min-w-[90px] font-medium transition-all"
                       >
                         {isValidatingDiscount ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          'Apply'
+                          'Apply Code'
                         )}
                       </Button>
                     </div>
@@ -1060,9 +1101,24 @@ export default function Checkout() {
                           Qty: {item.quantity}
                         </span>
                         <div className="text-right">
-                          <p className="font-semibold">
-                            {formatPrice(item.totalPrice || item.unitPrice || 0, cartCurrency)}
-                          </p>
+                          {(() => {
+                            const lineTotal = getDiscountedItemTotal(item);
+                            const originalLineTotal = Number(item.unitPrice || 0) * item.quantity;
+                            const hasDiscount = lineTotal < originalLineTotal;
+
+                            return (
+                              <>
+                                <p className="font-semibold">
+                                  {formatPrice(lineTotal, cartCurrency)}
+                                </p>
+                                {hasDiscount && (
+                                  <p className="text-xs text-gray-500 line-through">
+                                    {formatPrice(originalLineTotal, cartCurrency)}
+                                  </p>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -1078,9 +1134,46 @@ export default function Checkout() {
                   <span>
                     {selectedPaymentMethod === 'telebirr' && telebirrConversion
                       ? formatPrice(telebirrConversion.convertedAmount, 'ETB')
-                      : formatPrice(totalPrice, cartCurrency)}
+                      : formatPrice(effectiveSubtotal, cartCurrency)}
                   </span>
                 </div>
+
+                {/* Delivery Fee */}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    Delivery Fee
+                  </span>
+                  <span className="font-medium">
+                    {isEstimatingDelivery ? (
+                      <span className="flex items-center gap-1 text-gray-400">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Calculating...
+                      </span>
+                    ) : deliveryEstimate?.deliveryFee != null ? (
+                      <span className={deliveryEstimate.withinDeliveryRadius === false ? 'text-red-500' : 'text-gray-900'}>
+                        {formatPrice(deliveryEstimate.deliveryFee, deliveryEstimate.currencyCode || cartCurrency)}
+                        {deliveryEstimate.distanceText && (
+                          <span className="text-xs text-gray-400 ml-1">({deliveryEstimate.distanceText})</span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-xs">Select location</span>
+                    )}
+                  </span>
+                </div>
+
+                {/* Outside radius warning */}
+                {deliveryEstimate?.withinDeliveryRadius === false && (
+                  <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                    <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium text-red-700">Outside delivery area</p>
+                      <p className="text-xs text-red-600">
+                        Your address is {deliveryEstimate.distanceKm?.toFixed(1)} km away. This vendor only delivers within {deliveryEstimate.vendorDeliveryRadiusKm?.toFixed(0)} km.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Discount */}
                 {discountResult?.applicable && discountAmountDisplay > 0 && (
@@ -1124,8 +1217,12 @@ export default function Checkout() {
 
                 <Button
                   onClick={handleProceedToPayment}
-                  disabled={isCreatingOrder}
-                  className="w-full h-12 text-lg mt-4"
+                  disabled={isCreatingOrder || deliveryEstimate?.withinDeliveryRadius === false}
+                  className={`w-full h-12 text-lg mt-4 ${
+                    deliveryEstimate?.withinDeliveryRadius === false
+                      ? 'opacity-50 cursor-not-allowed'
+                      : ''
+                  }`}
                 >
                   {isCreatingOrder ? (
                     <>
