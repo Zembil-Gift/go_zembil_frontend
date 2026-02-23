@@ -10,6 +10,7 @@ import { customOrderTemplateService } from "@/services/customOrderTemplateServic
 import { vendorService } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService } from "@/services/imageService";
+import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,25 +93,6 @@ export default function CreateCustomTemplate() {
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
-
-  // Fetch categories
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiService.getRequest<Category[]>('/api/categories'),
-  });
-
-  // Fetch all subcategories
-  const { data: allSubCategories = [], isLoading: isLoadingSubCategories } = useQuery({
-    queryKey: ['all-subcategories', categories],
-    queryFn: async () => {
-      const subCategoriesPromises = categories.map((category) =>
-        apiService.getRequest<SubCategory[]>(`/api/categories/${category.id}/sub-categories`)
-      );
-      const results = await Promise.all(subCategoriesPromises);
-      return results.flat();
-    },
-    enabled: categories.length > 0,
-  });
 
   // Fetch currencies
   const { data: currencies = [] } = useQuery({
@@ -415,21 +397,11 @@ export default function CreateCustomTemplate() {
                   name="categoryId"
                   control={form.control}
                   render={({ field }) => (
-                    <Select 
-                      value={field.value?.toString()} 
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={isLoadingSubCategories ? "Loading categories..." : "Select a category"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allSubCategories.map((subCategory) => (
-                          <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
-                            {subCategory.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SubcategorySearchCombobox
+                      value={field.value}
+                      onValueChange={(val) => field.onChange(val ? parseInt(val) : undefined)}
+                      placeholder="Search and select a category"
+                    />
                   )}
                 />
               </div>
