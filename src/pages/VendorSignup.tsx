@@ -20,8 +20,9 @@ import { apiService } from "@/services/apiService";
 import { vendorTermsService, VendorTermsResponse } from "@/services/vendorTermsService";
 import { vendorCategoryService } from "@/services/vendorCategoryService";
 import { SUPPORTED_COUNTRIES, getCurrencyForCountry, isEthiopianCountry } from "@/lib/countryConfig";
-import { User, Mail, Lock, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Play, Pause, Download, ExternalLink, Shield, DollarSign, Package, MessageCircle, Scale, FileCheck } from "lucide-react";
+import { User, Mail, Lock, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Play, Pause, Download, ExternalLink, Shield, DollarSign, Package, MessageCircle, Scale, FileCheck, MapPin } from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
+import { LocationPicker, type LocationData } from "@/components/maps";
 
 interface CertificateResponse {
   certificateCode: string;
@@ -124,6 +125,13 @@ const vendorSignupSchema = z
     vendorCategoryId: z.string().min(1, "Please select a business category"),
     vendorType: z.string().min(1, "Please select a vendor type"),
     vatStatus: z.string().optional(),
+    // Geolocation fields (auto-populated from map picker)
+    latitude: z.number().optional(),
+    longitude: z.number().optional(),
+    placeId: z.string().optional(),
+    formattedAddress: z.string().optional(),
+    streetAddress: z.string().optional(),
+    deliveryRadiusKm: z.number().min(1).max(100).optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ["confirmPassword"],
@@ -176,6 +184,7 @@ export default function VendorSignup() {
       password: "", confirmPassword: "", birthDate: "",
       businessName: "", description: "", businessEmail: "", businessPhone: "",
       city: "", country: "", vendorCategoryId: "", vendorType: "", vatStatus: "",
+      latitude: undefined, longitude: undefined, placeId: "", formattedAddress: "", streetAddress: "", deliveryRadiusKm: 25,
     },
   });
 
@@ -455,6 +464,13 @@ export default function VendorSignup() {
         vendorType: data.vendorType,
         vatStatus: isEthiopian && data.vatStatus ? data.vatStatus : undefined,
         supportedPaymentProviders,
+        // Geolocation fields from map picker
+        latitude: data.latitude || undefined,
+        longitude: data.longitude || undefined,
+        placeId: data.placeId || undefined,
+        formattedAddress: data.formattedAddress || undefined,
+        streetAddress: data.streetAddress || undefined,
+        deliveryRadiusKm: data.deliveryRadiusKm || undefined,
         certificateCode: generatedCertificate?.certificateCode || "",
         termsVersion: termsData?.version || 1,
         acceptedTermIds,
@@ -894,6 +910,52 @@ export default function VendorSignup() {
                 <Label htmlFor="city">City *</Label>
                 <Input id="city" placeholder="Enter City" {...form.register("city")} />
                 {form.formState.errors.city && <p className="text-sm text-red-600 mt-1">{form.formState.errors.city.message}</p>}
+              </div>
+
+              {/* Business Location Map Picker */}
+              <div className="space-y-2 pt-2">
+                <Label className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
+                  Business Location
+                </Label>
+                <p className="text-xs text-gray-500">
+                  Pin your business location on the map. This helps with delivery pricing and connects you with nearby customers. Your country and city will be auto-detected.
+                </p>
+                <LocationPicker
+                  latitude={form.watch("latitude")}
+                  longitude={form.watch("longitude")}
+                  onLocationSelect={(location: LocationData) => {
+                    form.setValue("latitude", location.latitude, { shouldValidate: true });
+                    form.setValue("longitude", location.longitude, { shouldValidate: true });
+                    form.setValue("placeId", location.placeId);
+                    form.setValue("formattedAddress", location.formattedAddress);
+                    form.setValue("streetAddress", location.streetAddress);
+
+                    // Auto-populate city from map if empty or different
+                    if (location.city) {
+                      form.setValue("city", location.city, { shouldValidate: true });
+                    }
+
+                    // Auto-match country from map to supported countries
+                    if (location.country) {
+                      const matchedCountry = SUPPORTED_COUNTRIES.find(
+                        (c) =>
+                          c.value.toLowerCase() === location.country.toLowerCase() ||
+                          c.label.toLowerCase() === location.country.toLowerCase()
+                      );
+                      if (matchedCountry) {
+                        form.setValue("country", matchedCountry.value, { shouldValidate: true });
+                      }
+                    }
+                  }}
+                  height="300px"
+                  placeholder="Search for your business location..."
+                />
+                {form.watch("formattedAddress") && (
+                  <p className="text-xs text-emerald-700 bg-emerald-50 rounded-md px-3 py-2 mt-1">
+                    📍 {form.watch("formattedAddress")}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>

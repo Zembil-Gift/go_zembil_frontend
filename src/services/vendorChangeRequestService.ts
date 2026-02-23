@@ -1,7 +1,7 @@
 import { apiService } from './apiService';
 
 // Types for the unified VendorChangeRequest system
-export type EntityType = 'PRODUCT' | 'EVENT' | 'SERVICE';
+export type EntityType = 'PRODUCT' | 'EVENT' | 'SERVICE' | 'SERVICE_PACKAGE';
 export type RequestType = 'PRICE_UPDATE' | 'CATEGORY_CHANGE';
 export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -78,6 +78,22 @@ export interface PageResponse<T> {
 }
 
 class VendorChangeRequestService {
+  private readonly MAX_REJECTION_REASON_LENGTH = 500;
+
+  private normalizeRejectionReason(reason: string): string {
+    const trimmedReason = reason?.trim();
+
+    if (!trimmedReason) {
+      throw new Error('Rejection reason is required');
+    }
+
+    if (trimmedReason.length > this.MAX_REJECTION_REASON_LENGTH) {
+      throw new Error(`Rejection reason must be ${this.MAX_REJECTION_REASON_LENGTH} characters or fewer`);
+    }
+
+    return trimmedReason;
+  }
+
   // ==================== VENDOR ENDPOINTS ====================
 
   // Product change requests
@@ -206,8 +222,9 @@ class VendorChangeRequestService {
   }
 
   async rejectChangeRequest(requestId: number, reason: string): Promise<VendorChangeRequestDto> {
+    const normalizedReason = this.normalizeRejectionReason(reason);
     return apiService.postRequest<VendorChangeRequestDto>(
-      `/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`,
+      `/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`,
       {}
     );
   }

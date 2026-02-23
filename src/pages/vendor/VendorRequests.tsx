@@ -6,15 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { vendorService, Product, PriceUpdateRequest, EventResponse, EventPriceUpdateResponse, VendorProfile, CategoryChangeRequest, PriceDto } from "@/services/vendorService";
-import serviceService, { ServiceResponse, UpdateServiceRequest } from "@/services/serviceService";
-
-const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
-  if (!vendorProfile) return false;
-  return vendorProfile.countryCode === 'ET';
-};
+import vendorChangeRequestService, {
+  VendorChangeRequestDto,
+  EditChangeRequest,
+} from "@/services/vendorChangeRequestService";
+import { vendorService, VendorProfile } from "@/services/vendorService";
+import { customOrderService } from "@/services/customOrderService";
+import type { CustomOrder } from "@/types/customOrders";
 import { apiService } from "@/services/apiService";
-import { getProductImageUrl, getEventImageUrl } from "@/utils/imageUtils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,19 +46,9 @@ import {
   FolderTree,
   Trash2,
   Wrench,
+  ShoppingBag,
+  Eye,
 } from "lucide-react";
-
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-}
-
-interface SubCategory {
-  id: number;
-  name: string;
-  slug: string;
-}
 
 interface Currency {
   id: number;
@@ -68,517 +57,513 @@ interface Currency {
   symbol: string;
 }
 
-const productEditSchema = z.object({
-  name: z.string().min(1, "Product name is required"),
-  description: z.string().optional(),
-  summary: z.string().optional(),
-  cover: z.string().optional(),
-  subCategoryId: z.string().optional(),
+interface SubCategory {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+const priceEditSchema = z.object({
   currencyCode: z.string().min(1, "Currency is required"),
   amount: z.number().min(0.01, "Price must be greater than 0"),
   reason: z.string().optional(),
 });
 
-const priceUpdateEditSchema = z.object({
-  currencyCode: z.string().min(1, "Currency is required"),
-  amount: z.number().min(0.01, "Price must be greater than 0"),
-  reason: z.string().optional(),
-});
-
-const eventEditSchema = z.object({
-  title: z.string().min(1, "Event title is required"),
-  description: z.string().optional(),
-  shortDescription: z.string().optional(),
-  venue: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  country: z.string().optional(),
-  imageUrl: z.string().optional(),
-});
-
-const eventPriceUpdateEditSchema = z.object({
-  currencyCode: z.string().min(1, "Currency is required"),
-  amount: z.number().min(0.01, "Price must be greater than 0"),
-  reason: z.string().optional(),
-});
-
-const categoryChangeEditSchema = z.object({
+const categoryEditSchema = z.object({
   newSubCategoryId: z.string().min(1, "New category is required"),
-  reason: z.string().min(1, "Reason is required"),
+  reason: z.string().optional(),
 });
 
-const serviceEditSchema = z.object({
-  title: z.string().min(1, "Service title is required"),
-  description: z.string().optional(),
-  location: z.string().optional(),
-  city: z.string().optional(),
-  categoryId: z.string().optional(),
-});
-
-type ProductEditForm = z.infer<typeof productEditSchema>;
-type PriceUpdateEditForm = z.infer<typeof priceUpdateEditSchema>;
-type EventEditForm = z.infer<typeof eventEditSchema>;
-type EventPriceUpdateEditForm = z.infer<typeof eventPriceUpdateEditSchema>;
-type CategoryChangeEditForm = z.infer<typeof categoryChangeEditSchema>;
-type ServiceEditForm = z.infer<typeof serviceEditSchema>;
+type PriceEditForm = z.infer<typeof priceEditSchema>;
+type CategoryEditForm = z.infer<typeof categoryEditSchema>;
 
 export default function VendorRequests() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const isVendor = user?.role?.toUpperCase() === 'VENDOR';
+  const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
-  const { data: vendorProfile } = useQuery({
-    queryKey: ['vendor', 'profile'],
+  const [activeTab, setActiveTab] = useState("products");
+  const [editPriceOpen, setEditPriceOpen] = useState(false);
+  const [editCategoryOpen, setEditCategoryOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<VendorChangeRequestDto | null>(null);
+
+  // Fetch vendor profile to determine vendor type
+  const { data: vendorProfile } = useQuery<VendorProfile>({
+    queryKey: ["vendor", "profile"],
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
   });
 
-  // Set initial active tab based on vendor type
-  const [activeTab, setActiveTab] = useState("products");
+  const vendorType = vendorProfile?.vendorType; // 'PRODUCT' | 'SERVICE' | 'HYBRID'
+  const isProductVendor = !vendorType || vendorType === "PRODUCT" || vendorType === "HYBRID";
+  const isServiceVendor = !vendorType || vendorType === "SERVICE" || vendorType === "HYBRID";
+  const showProducts = isProductVendor;
+  const showCustomOrders = isProductVendor;
+  const showServices = isServiceVendor;
+  const showEvents = isServiceVendor;
 
-  // Update active tab when vendor profile loads
+  // Set default tab based on vendor type once profile loads
   useEffect(() => {
-    if (vendorProfile) {
-      const initialTab = vendorProfile.vendorType === 'SERVICE' ? 'events' : 
-                        vendorProfile.vendorType === 'PRODUCT' ? 'products' :
-                        'products'; // Default for HYBRID
-      setActiveTab(initialTab);
-    }
-  }, [vendorProfile]);
+    if (!vendorType) return;
+    if (vendorType === "SERVICE") setActiveTab("services");
+    else setActiveTab("products");
+  }, [vendorType]);
 
-  const [editProductOpen, setEditProductOpen] = useState(false);
-  const [editPriceUpdateOpen, setEditPriceUpdateOpen] = useState(false);
-  const [editEventOpen, setEditEventOpen] = useState(false);
-  const [editEventPriceOpen, setEditEventPriceOpen] = useState(false);
-  const [editCategoryChangeOpen, setEditCategoryChangeOpen] = useState(false);
-  const [editServiceOpen, setEditServiceOpen] = useState(false);
-
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedPriceUpdate, setSelectedPriceUpdate] = useState<PriceUpdateRequest | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<EventResponse | null>(null);
-  const [selectedEventPriceUpdate, setSelectedEventPriceUpdate] = useState<EventPriceUpdateResponse | null>(null);
-  const [selectedCategoryChange, setSelectedCategoryChange] = useState<CategoryChangeRequest | null>(null);
-  const [selectedService, setSelectedService] = useState<ServiceResponse | null>(null);
-
+  // Currencies & sub-categories for edit dialogs
   const { data: currencies = [] } = useQuery({
-    queryKey: ['currencies'],
-    queryFn: () => apiService.getRequest<Currency[]>('/api/currencies'),
+    queryKey: ["currencies"],
+    queryFn: () => apiService.getRequest<Currency[]>("/api/currencies"),
   });
 
-  const availableCurrencies = isEthiopianVendor(vendorProfile)
-    ? currencies.filter(c => c.code === 'ETB')
-    : currencies;
-
   const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiService.getRequest<Category[]>('/api/categories'),
+    queryKey: ["categories"],
+    queryFn: () => apiService.getRequest<Category[]>("/api/categories"),
   });
 
   const { data: allSubCategories = [] } = useQuery({
-    queryKey: ['all-subcategories', categories],
+    queryKey: ["all-subcategories", categories.map((c) => c.id)],
     queryFn: async () => {
-      const subCategoriesPromises = categories.map((category) =>
-        apiService.getRequest<SubCategory[]>(`/api/categories/${category.id}/sub-categories`)
+      const results = await Promise.all(
+        categories.map((cat) =>
+          apiService.getRequest<SubCategory[]>(`/api/categories/${cat.id}/sub-categories`)
+        )
       );
-      const results = await Promise.all(subCategoriesPromises);
       return results.flat();
     },
     enabled: categories.length > 0,
   });
 
-  const { data: productsData, isLoading: productsLoading } = useQuery({
-    queryKey: ['vendor', 'pending-products', vendorProfile?.id],
-    queryFn: () => vendorService.getVendorProducts(vendorProfile!.id, 0, 100),
-    enabled: isAuthenticated && isVendor && !!vendorProfile?.id,
-  });
-
-  const { data: priceRequestsData, isLoading: priceRequestsLoading } = useQuery({
-    queryKey: ['vendor', 'price-requests', vendorProfile?.id],
-    queryFn: () => vendorService.getVendorPriceUpdateRequests(vendorProfile!.id, 0, 100),
-    enabled: isAuthenticated && isVendor && !!vendorProfile?.id,
-  });
-
-  const { data: eventsData, isLoading: eventsLoading } = useQuery({
-    queryKey: ['vendor', 'events'],
-    queryFn: () => vendorService.getMyEvents(undefined, 0, 100),
+  // Fetch change requests by entity type
+  const { data: productData, isLoading: productLoading } = useQuery({
+    queryKey: ["vendor", "change-requests", "PRODUCT"],
+    queryFn: () => vendorChangeRequestService.getMyChangeRequestsByEntityType("PRODUCT", 0, 100),
     enabled: isAuthenticated && isVendor,
   });
 
-  const { data: eventPriceRequestsData, isLoading: eventPriceLoading } = useQuery({
-    queryKey: ['vendor', 'event-price-requests'],
-    queryFn: () => vendorService.getMyEventPriceUpdateRequests(0, 100),
+  const { data: serviceData, isLoading: serviceLoading } = useQuery({
+    queryKey: ["vendor", "change-requests", "SERVICE"],
+    queryFn: () => vendorChangeRequestService.getMyChangeRequestsByEntityType("SERVICE", 0, 100),
     enabled: isAuthenticated && isVendor,
   });
 
-  const { data: categoryChangeRequestsData, isLoading: categoryChangeLoading } = useQuery({
-    queryKey: ['vendor', 'category-change-requests'],
-    queryFn: () => vendorService.getMyPendingRejectedCategoryChangeRequests(),
+  const { data: servicePackageData, isLoading: servicePackageLoading } = useQuery({
+    queryKey: ["vendor", "change-requests", "SERVICE_PACKAGE"],
+    queryFn: () =>
+      vendorChangeRequestService.getMyChangeRequestsByEntityType("SERVICE_PACKAGE", 0, 100),
     enabled: isAuthenticated && isVendor,
   });
 
-  const { data: servicesData, isLoading: servicesLoading } = useQuery({
-    queryKey: ['vendor', 'pending-services'],
-    queryFn: () => serviceService.getMyPendingRejectedServices(0, 100),
+  const { data: eventData, isLoading: eventLoading } = useQuery({
+    queryKey: ["vendor", "change-requests", "EVENT"],
+    queryFn: () => vendorChangeRequestService.getMyChangeRequestsByEntityType("EVENT", 0, 100),
     enabled: isAuthenticated && isVendor,
   });
 
-  const pendingProducts = (productsData?.content || []).filter(
-    (p) => p.status === 'PENDING' || p.status === 'REJECTED'
+  // Fetch custom orders for product/hybrid vendors
+  const { data: customOrdersData, isLoading: customOrdersLoading } = useQuery({
+    queryKey: ["vendor", "custom-orders", "all"],
+    queryFn: () => customOrderService.getByVendor(0, 100),
+    enabled: isAuthenticated && isVendor && isProductVendor,
+  });
+
+  // Fetch products for price fallback (used when a request returns an invalid/unchanged current price)
+  const { data: myProductsData = [] } = useQuery({
+    queryKey: ["vendor", "my-products", "for-request-price-fallback"],
+    queryFn: async () => {
+      const response = await vendorService.getMyProducts(0, 100);
+      return response.content || [];
+    },
+    enabled: isAuthenticated && isVendor && isProductVendor,
+  });
+
+  // Split by change type
+  const productPriceRequests = (productData?.content ?? []).filter(
+    (r) => r.requestType === "PRICE_UPDATE"
   );
-  const pendingPriceRequests = (priceRequestsData?.content || []).filter(
-    (r) => r.status === 'PENDING' || r.status === 'REJECTED'
-  );
-  const pendingEvents = (eventsData?.content || []).filter(
-    (e) => e.status === 'PENDING_APPROVAL' || e.status === 'REJECTED'
-  );
-  const pendingEventPriceRequests = (eventPriceRequestsData?.content || []).filter(
-    (r) => r.status === 'PENDING' || r.status === 'REJECTED'
-  );
-  const pendingServices = (servicesData?.content || []).filter(
-    (s) => s.status === 'PENDING_APPROVAL' || s.status === 'REJECTED'
-  );
-  const pendingCategoryChangeRequests = (Array.isArray(categoryChangeRequestsData) ? categoryChangeRequestsData : categoryChangeRequestsData?.content || []).filter(
-    (r: CategoryChangeRequest) => r.status === 'PENDING' || r.status === 'REJECTED'
+  const productCategoryRequests = (productData?.content ?? []).filter(
+    (r) => r.requestType === "CATEGORY_CHANGE"
   );
 
-  const editProductMutation = useMutation({
-    mutationFn: (data: { productId: number; product: Partial<Product> }) =>
-      vendorService.editPendingProduct(data.productId, data.product as Product),
+  // Service: category at SERVICE level; price at SERVICE_PACKAGE level
+  const serviceCategoryRequests = (serviceData?.content ?? []).filter(
+    (r) => r.requestType === "CATEGORY_CHANGE"
+  );
+  const servicePackagePriceRequests = (servicePackageData?.content ?? []).filter(
+    (r) => r.requestType === "PRICE_UPDATE"
+  );
+
+  const eventPriceRequests = (eventData?.content ?? []).filter(
+    (r) => r.requestType === "PRICE_UPDATE"
+  );
+  const eventCategoryRequests = (eventData?.content ?? []).filter(
+    (r) => r.requestType === "CATEGORY_CHANGE"
+  );
+
+  // Totals for tab badges
+  const productTotal = (productData?.content ?? []).length;
+  const serviceTotal =
+    (serviceData?.content ?? []).length + (servicePackageData?.content ?? []).length;
+  const eventTotal = (eventData?.content ?? []).length;
+  const customOrdersTotal = (customOrdersData?.content ?? []).filter(
+    (o) => !["DELIVERED", "CANCELLED"].includes(o.status)
+  ).length;
+  const grandTotal = productTotal + serviceTotal + eventTotal + customOrdersTotal;
+
+  // Mutations
+  const editMutation = useMutation({
+    mutationFn: ({ requestId, request }: { requestId: number; request: EditChangeRequest }) =>
+      vendorChangeRequestService.editChangeRequest(requestId, request),
     onSuccess: () => {
-      toast({ title: "Success", description: "Product updated and resubmitted for review." });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-products'] });
-      setEditProductOpen(false);
-      setSelectedProduct(null);
+      toast({ title: "Success", description: "Request updated and resubmitted for review." });
+      queryClient.invalidateQueries({ queryKey: ["vendor", "change-requests"] });
+      setEditPriceOpen(false);
+      setEditCategoryOpen(false);
+      setSelectedRequest(null);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to update product", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update request",
+        variant: "destructive",
+      });
     },
   });
 
-  const editPriceUpdateMutation = useMutation({
-    mutationFn: (data: { requestId: number; request: PriceUpdateRequest }) =>
-      vendorService.editPriceUpdateRequest(data.requestId, data.request),
+  const deleteMutation = useMutation({
+    mutationFn: (requestId: number) => vendorChangeRequestService.deleteChangeRequest(requestId),
     onSuccess: () => {
-      toast({ title: "Success", description: "Price update request resubmitted for review." });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'price-requests'] });
-      setEditPriceUpdateOpen(false);
-      setSelectedPriceUpdate(null);
+      toast({ title: "Success", description: "Request cancelled." });
+      queryClient.invalidateQueries({ queryKey: ["vendor", "change-requests"] });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to update request", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel request",
+        variant: "destructive",
+      });
     },
   });
 
-  const editEventMutation = useMutation({
-    mutationFn: (data: { eventId: number; event: any }) =>
-      vendorService.editPendingOrRejectedEvent(data.eventId, data.event),
-    onSuccess: () => {
-      toast({ title: "Success", description: "Event updated and resubmitted for review." });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'events'] });
-      setEditEventOpen(false);
-      setSelectedEvent(null);
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to update event", variant: "destructive" });
-    },
+  // Forms
+  const priceForm = useForm<PriceEditForm>({
+    resolver: zodResolver(priceEditSchema),
+    defaultValues: { currencyCode: "", amount: 0, reason: "" },
   });
 
-  const editEventPriceMutation = useMutation({
-    mutationFn: (data: { requestId: number; request: any }) =>
-      vendorService.editEventPriceUpdateRequest(data.requestId, data.request),
-    onSuccess: () => {
-      toast({ title: "Success", description: "Event price update request resubmitted for review." });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'event-price-requests'] });
-      setEditEventPriceOpen(false);
-      setSelectedEventPriceUpdate(null);
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to update request", variant: "destructive" });
-    },
+  const categoryForm = useForm<CategoryEditForm>({
+    resolver: zodResolver(categoryEditSchema),
+    defaultValues: { newSubCategoryId: "", reason: "" },
   });
 
-  const editCategoryChangeMutation = useMutation({
-    mutationFn: (data: { requestId: number; newSubCategoryId: number; reason: string }) =>
-      vendorService.editCategoryChangeRequest(data.requestId, { newSubCategoryId: data.newSubCategoryId, reason: data.reason }),
-    onSuccess: () => {
-      toast({ title: "Success", description: "Category change request updated and resubmitted for review." });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'category-change-requests'] });
-      setEditCategoryChangeOpen(false);
-      setSelectedCategoryChange(null);
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to update request", variant: "destructive" });
-    },
-  });
-
-  const deleteCategoryChangeMutation = useMutation({
-    mutationFn: (requestId: number) => vendorService.deleteCategoryChangeRequest(requestId),
-    onSuccess: () => {
-      toast({ title: "Success", description: "Category change request cancelled." });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'category-change-requests'] });
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to cancel request", variant: "destructive" });
-    },
-  });
-
-  const editServiceMutation = useMutation({
-    mutationFn: (data: { serviceId: number; service: UpdateServiceRequest }) =>
-      serviceService.editPendingService(data.serviceId, data.service),
-    onSuccess: () => {
-      toast({ title: "Success", description: "Service updated and resubmitted for review." });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-services'] });
-      setEditServiceOpen(false);
-      setSelectedService(null);
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to update service", variant: "destructive" });
-    },
-  });
-
-  const productForm = useForm<ProductEditForm>({
-    resolver: zodResolver(productEditSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      summary: "",
-      cover: "",
-      subCategoryId: "",
-      currencyCode: "",
-      amount: 0,
-    },
-  });
-
-  const priceUpdateForm = useForm<PriceUpdateEditForm>({
-    resolver: zodResolver(priceUpdateEditSchema),
-    defaultValues: {
-      currencyCode: "",
-      amount: 0,
-      reason: "",
-    },
-  });
-
-  const eventForm = useForm<EventEditForm>({
-    resolver: zodResolver(eventEditSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      shortDescription: "",
-      venue: "",
-      address: "",
-      city: "",
-      country: "",
-      imageUrl: "",
-    },
-  });
-
-  const eventPriceForm = useForm<EventPriceUpdateEditForm>({
-    resolver: zodResolver(eventPriceUpdateEditSchema),
-    defaultValues: {
-      currencyCode: "",
-      amount: 0,
-      reason: "",
-    },
-  });
-
-  const categoryChangeForm = useForm<CategoryChangeEditForm>({
-    resolver: zodResolver(categoryChangeEditSchema),
-    defaultValues: {
-      newSubCategoryId: "",
-      reason: "",
-    },
-  });
-
-  const serviceForm = useForm<ServiceEditForm>({
-    resolver: zodResolver(serviceEditSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      location: "",
-      city: "",
-      categoryId: "",
-    },
-  });
-
-  const openProductEdit = (product: Product) => {
-    setSelectedProduct(product);
-    const currencyCode = product.price?.currencyCode || product.price?.prices?.[0]?.currencyCode || currencies[0]?.code || "";
-    const amount = product.price?.vendorAmount || product.price?.amount || product.price?.prices?.[0]?.amount || 0;
-    productForm.reset({
-      name: product.name,
-      description: product.description || "",
-      summary: product.summary || "",
-      cover: product.cover || "",
-      subCategoryId: product.subCategoryId?.toString() || "",
-      currencyCode,
-      amount,
-    });
-    setEditProductOpen(true);
-  };
-
-  const openPriceUpdateEdit = (request: PriceUpdateRequest) => {
-    setSelectedPriceUpdate(request);
-    const newPrice = request.newPrice;
-    priceUpdateForm.reset({
-      currencyCode: newPrice?.currencyCode || currencies[0]?.code || "",
-      amount: newPrice?.amount || 0,
+  const openPriceEdit = (request: VendorChangeRequestDto) => {
+    setSelectedRequest(request);
+    const vp = request.newVendorPrice;
+    priceForm.reset({
+      currencyCode: vp?.currencyCode || currencies[0]?.code || "ETB",
+      amount:
+        vp?.amount ??
+        vp?.vendorAmount ??
+        (vp?.vendorAmountMinor != null ? vp.vendorAmountMinor / 100 : 0),
       reason: request.reason || "",
     });
-    setEditPriceUpdateOpen(true);
+    setEditPriceOpen(true);
   };
 
-  const openEventEdit = (event: EventResponse) => {
-    setSelectedEvent(event);
-    eventForm.reset({
-      title: event.title,
-      description: event.description || "",
-      shortDescription: event.description || "",
-      venue: event.location || "",
-      address: event.location || "",
-      city: event.city || "",
-      country: "",
-      imageUrl: event.bannerImageUrl || "",
-    });
-    setEditEventOpen(true);
-  };
-
-  const openEventPriceEdit = (request: EventPriceUpdateResponse) => {
-    setSelectedEventPriceUpdate(request);
-    const newVP = request.newVendorPrice;
-    const prefillAmount = newVP?.vendorAmount ?? (newVP?.vendorAmountMinor != null ? newVP.vendorAmountMinor / 100 : 0);
-    const prefillCurrency = newVP?.currencyCode || request.newCurrencyCode || currencies[0]?.code || "";
-    eventPriceForm.reset({
-      currencyCode: prefillCurrency,
-      amount: prefillAmount,
-      reason: request.reason || "",
-    });
-    setEditEventPriceOpen(true);
-  };
-
-  const openCategoryChangeEdit = (request: CategoryChangeRequest) => {
-    setSelectedCategoryChange(request);
-    categoryChangeForm.reset({
+  const openCategoryEdit = (request: VendorChangeRequestDto) => {
+    setSelectedRequest(request);
+    categoryForm.reset({
       newSubCategoryId: request.newSubCategoryId?.toString() || "",
       reason: request.reason || "",
     });
-    setEditCategoryChangeOpen(true);
+    setEditCategoryOpen(true);
   };
 
-  const openServiceEdit = (service: ServiceResponse) => {
-    setSelectedService(service);
-    serviceForm.reset({
-      title: service.title,
-      description: service.description || "",
-      location: service.location || "",
-      city: service.city || "",
-      categoryId: service.categoryId?.toString() || "",
-    });
-    setEditServiceOpen(true);
-  };
-
-  const onProductSubmit = (data: ProductEditForm) => {
-    if (!selectedProduct?.id) return;
-    editProductMutation.mutate({
-      productId: selectedProduct.id,
-      product: {
-        name: data.name,
-        description: data.description,
-        summary: data.summary,
-        cover: data.cover,
-        subCategoryId: data.subCategoryId ? parseInt(data.subCategoryId) : undefined,
-        price: {
-          currencyCode: data.currencyCode,
-          amount: data.amount,
-        },
-      },
-    });
-  };
-
-  const onPriceUpdateSubmit = (data: PriceUpdateEditForm) => {
-    if (!selectedPriceUpdate?.id) return;
-    editPriceUpdateMutation.mutate({
-      requestId: selectedPriceUpdate.id,
+  const onPriceSubmit = (data: PriceEditForm) => {
+    if (!selectedRequest?.id) return;
+    editMutation.mutate({
+      requestId: selectedRequest.id,
       request: {
-        ...selectedPriceUpdate,
-        newPrice: {
-          currencyCode: isEthiopianVendor(vendorProfile) ? 'ETB' : data.currencyCode,
-          amount: data.amount,
-        } as PriceDto,
+        newPrice: { currencyCode: data.currencyCode, amount: data.amount },
         reason: data.reason,
       },
     });
   };
 
-  const onEventSubmit = (data: EventEditForm) => {
-    if (!selectedEvent?.id) return;
-    editEventMutation.mutate({
-      eventId: selectedEvent.id,
-      event: data,
-    });
-  };
-
-  const onEventPriceSubmit = (data: EventPriceUpdateEditForm) => {
-    if (!selectedEventPriceUpdate?.id) return;
-    editEventPriceMutation.mutate({
-      requestId: selectedEventPriceUpdate.id,
+  const onCategorySubmit = (data: CategoryEditForm) => {
+    if (!selectedRequest?.id) return;
+    editMutation.mutate({
+      requestId: selectedRequest.id,
       request: {
-        ticketTypeId: selectedEventPriceUpdate.entityId || selectedEventPriceUpdate.ticketTypeId || 0,
-        newPrice: data.amount,
-        newCurrency: data.currencyCode,
+        newSubCategoryId: parseInt(data.newSubCategoryId),
         reason: data.reason,
       },
     });
   };
 
-  const onCategoryChangeSubmit = (data: CategoryChangeEditForm) => {
-    if (!selectedCategoryChange?.id) return;
-    editCategoryChangeMutation.mutate({
-      requestId: selectedCategoryChange.id,
-      newSubCategoryId: parseInt(data.newSubCategoryId),
-      reason: data.reason,
-    });
-  };
-
-  const onServiceSubmit = (data: ServiceEditForm) => {
-    if (!selectedService?.id) return;
-    editServiceMutation.mutate({
-      serviceId: selectedService.id,
-      service: {
-        title: data.title,
-        description: data.description,
-        location: data.location,
-        city: data.city,
-        categoryId: data.categoryId ? parseInt(data.categoryId) : undefined,
-      },
-    });
-  };
-
+  // Helpers
   const getStatusBadge = (status: string) => {
-    const upperStatus = status?.toUpperCase();
-    switch (upperStatus) {
-      case 'ACTIVE':
-      case 'APPROVED':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
-      case 'PENDING':
-      case 'PENDING_APPROVAL':
-        return <Badge className="bg-amber-100 text-amber-800"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
-      case 'REJECTED':
-        return <Badge className="bg-red-100 text-red-800"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
+    switch (status?.toUpperCase()) {
+      case "APPROVED":
+        return (
+          <Badge className="bg-green-100 text-green-800">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Approved
+          </Badge>
+        );
+      case "PENDING":
+        return (
+          <Badge className="bg-amber-100 text-amber-800">
+            <Clock className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
+      case "REJECTED":
+        return (
+          <Badge className="bg-red-100 text-red-800">
+            <XCircle className="h-3 w-3 mr-1" />
+            Rejected
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const getRequestCount = () => {
-    return pendingProducts.length + pendingPriceRequests.length + pendingEvents.length + pendingEventPriceRequests.length + pendingCategoryChangeRequests.length + pendingServices.length;
+  const formatPrice = (
+    price:
+      | { currencyCode?: string; amount?: number; vendorAmount?: number; vendorAmountMinor?: number }
+      | undefined
+  ) => {
+    if (!price) return "N/A";
+    const amount =
+      price.amount ??
+      price.vendorAmount ??
+      (price.vendorAmountMinor != null ? price.vendorAmountMinor / 100 : 0);
+    return `${price.currencyCode || "ETB"} ${amount.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
+
+  const getPriceAmount = (
+    price:
+      | { amount?: number; vendorAmount?: number; vendorAmountMinor?: number; unitAmountMinor?: number }
+      | undefined
+  ) => {
+    if (!price) return null;
+    return (
+      price.vendorAmount ??
+      price.amount ??
+      (price.vendorAmountMinor != null ? price.vendorAmountMinor / 100 : null) ??
+      (price.unitAmountMinor != null ? price.unitAmountMinor / 100 : null)
+    );
+  };
+
+  const pricesAreSame = (
+    a:
+      | { currencyCode?: string; amount?: number; vendorAmount?: number; vendorAmountMinor?: number; unitAmountMinor?: number }
+      | undefined,
+    b:
+      | { currencyCode?: string; amount?: number; vendorAmount?: number; vendorAmountMinor?: number; unitAmountMinor?: number }
+      | undefined
+  ) => {
+    const aAmount = getPriceAmount(a);
+    const bAmount = getPriceAmount(b);
+    if (aAmount == null || bAmount == null) return false;
+    const aCurrency = a?.currencyCode || "ETB";
+    const bCurrency = b?.currencyCode || "ETB";
+    return aCurrency === bCurrency && Math.abs(aAmount - bAmount) < 0.000001;
+  };
+
+  const getLiveProductVendorPriceByEntityId = (entityId: number): { currencyCode?: string; vendorAmount?: number; vendorAmountMinor?: number; amount?: number } | undefined => {
+    for (const product of myProductsData as any[]) {
+      let rawPrice: any = null;
+
+      // Product-level request
+      if (product?.id === entityId) {
+        const defaultSku = product?.productSku?.find((s: any) => s?.isDefault) || product?.productSku?.[0];
+        rawPrice = defaultSku?.price || product?.price;
+      }
+
+      // SKU-level request
+      if (!rawPrice) {
+        const skuMatch = product?.productSku?.find((s: any) => s?.id === entityId);
+        if (skuMatch?.price) rawPrice = skuMatch.price;
+      }
+
+      if (rawPrice) {
+        // Convert raw Price entity to vendor-price PriceDto format
+        // The raw price object has vendorAmountMinor (vendor price) and unitAmountMinor (customer price)
+        // We must use vendorAmountMinor for the vendor view, NOT unitAmountMinor
+        const vendorMinor = rawPrice.vendorAmountMinor ?? rawPrice.vendorAmount;
+        const vendorAmount = rawPrice.vendorAmount ?? (rawPrice.vendorAmountMinor != null ? rawPrice.vendorAmountMinor / 100 : null);
+        return {
+          currencyCode: rawPrice.currencyCode || rawPrice.currency?.code || "ETB",
+          vendorAmount: vendorAmount ?? rawPrice.amount ?? (rawPrice.unitAmountMinor != null ? rawPrice.unitAmountMinor / 100 : 0),
+          vendorAmountMinor: vendorMinor ?? rawPrice.unitAmountMinor,
+        };
+      }
+    }
+    return undefined;
+  };
+
+  const resolveCurrentVendorPrice = (request: VendorChangeRequestDto) => {
+    if (request.requestType !== "PRICE_UPDATE") return request.currentVendorPrice;
+
+    const current = request.currentVendorPrice;
+    const next = request.newVendorPrice;
+
+    // If current is missing or equals requested price, fallback to live product/SKU price.
+    if (request.entityType === "PRODUCT" && (!current || pricesAreSame(current, next))) {
+      const livePrice = getLiveProductVendorPriceByEntityId(request.entityId);
+      return livePrice || current;
+    }
+
+    return current;
+  };
+
+  // Request card
+  const renderRequestCard = (request: VendorChangeRequestDto) => {
+    const isPriceUpdate = request.requestType === "PRICE_UPDATE";
+    const canEdit = request.status === "PENDING" || request.status === "REJECTED";
+    const currentPriceForDisplay = resolveCurrentVendorPrice(request);
+
+    return (
+      <div key={request.id} className="border rounded-lg p-4 bg-white">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            {request.entityImageUrl && (
+              <img
+                src={request.entityImageUrl}
+                alt={request.entityName || ""}
+                className="h-12 w-12 rounded object-cover flex-shrink-0"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                }}
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold truncate">{request.entityName || "—"}</h3>
+
+              {isPriceUpdate ? (
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {formatPrice(currentPriceForDisplay)}{" "}
+                  <span className="mx-1 text-gray-400">→</span>
+                  <span className="font-medium text-primary-blue">
+                    {formatPrice(request.newVendorPrice)}
+                  </span>
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {request.currentSubCategoryName || request.currentCategoryName || "—"}{" "}
+                  <span className="mx-1 text-gray-400">→</span>
+                  <span className="font-medium text-primary-blue">
+                    {request.newSubCategoryName || request.newCategoryName || "—"}
+                  </span>
+                </p>
+              )}
+
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                {getStatusBadge(request.status)}
+                <span className="text-xs text-muted-foreground">
+                  {new Date(request.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+
+              {request.reason && (
+                <p className="text-xs text-muted-foreground mt-1 italic">
+                  Reason: {request.reason}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {canEdit && (
+            <div className="flex gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => (isPriceUpdate ? openPriceEdit(request) : openCategoryEdit(request))}
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
+              {request.status === "PENDING" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => deleteMutation.mutate(request.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Cancel
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {request.rejectionReason && (
+          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                <p className="text-sm text-red-700">{request.rejectionReason}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Change-type section
+  const renderChangeTypeSection = (
+    title: string,
+    icon: React.ReactNode,
+    requests: VendorChangeRequestDto[],
+    isLoading: boolean,
+    emptyMessage: string
+  ) => (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 pb-2 border-b">
+        {icon}
+        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+          {title}
+        </h3>
+        <Badge variant="secondary" className="ml-auto">
+          {requests.length}
+        </Badge>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : requests.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-400" />
+          <p className="text-sm">{emptyMessage}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">{requests.map(renderRequestCard)}</div>
+      )}
+    </div>
+  );
 
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600" />
       </div>
     );
   }
@@ -598,1142 +583,389 @@ export default function VendorRequests() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container max-w-6xl mx-auto px-4">
-        {/* Header */}
+      <div className="container max-w-5xl mx-auto px-4">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="icon" asChild>
             <Link to="/vendor">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">My Requests</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Change Requests</h1>
             <p className="text-muted-foreground">
-              Manage your pending and rejected requests ({getRequestCount()} items need attention)
+              Price and category change requests awaiting review ({grandTotal} total)
             </p>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full ${
-            // Dynamically calculate grid columns based on vendor type
-            vendorProfile?.vendorType === 'PRODUCT' ? 'grid-cols-3' :
-            vendorProfile?.vendorType === 'SERVICE' ? 'grid-cols-4' :
-            'grid-cols-6'
-          } lg:w-auto lg:inline-grid`}>
-            {/* Product-related tabs - Only for PRODUCT and HYBRID vendors */}
-            {(vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID') && (
-              <>
-                <TabsTrigger value="products" className="flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  <span className="hidden sm:inline">Products</span>
-                  {pendingProducts.length > 0 && (
-                    <Badge variant="secondary" className="ml-1">{pendingProducts.length}</Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="product-prices" className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  <span className="hidden sm:inline">Product Prices</span>
-                  {pendingPriceRequests.length > 0 && (
-                    <Badge variant="secondary" className="ml-1">{pendingPriceRequests.length}</Badge>
-                  )}
-                </TabsTrigger>
-              </>
+          <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+            {showProducts && (
+              <TabsTrigger value="products" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                <span>Products</span>
+                {productTotal > 0 && (
+                  <Badge variant="secondary" className="ml-1">{productTotal}</Badge>
+                )}
+              </TabsTrigger>
             )}
-            <TabsTrigger value="category-changes" className="flex items-center gap-2">
-              <FolderTree className="h-4 w-4" />
-              <span className="hidden sm:inline">Categories</span>
-              {pendingCategoryChangeRequests.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{pendingCategoryChangeRequests.length}</Badge>
-              )}
-            </TabsTrigger>
-            {/* Event/Service-related tabs - Only for SERVICE and HYBRID vendors */}
-            {(vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID') && (
-              <>
-                <TabsTrigger value="events" className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span className="hidden sm:inline">Events</span>
-                  {pendingEvents.length > 0 && (
-                    <Badge variant="secondary" className="ml-1">{pendingEvents.length}</Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="event-prices" className="flex items-center gap-2">
-                  <Ticket className="h-4 w-4" />
-                  <span className="hidden sm:inline">Event Prices</span>
-                  {pendingEventPriceRequests.length > 0 && (
-                    <Badge variant="secondary" className="ml-1">{pendingEventPriceRequests.length}</Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="services" className="flex items-center gap-2">
-                  <Wrench className="h-4 w-4" />
-                  <span className="hidden sm:inline">Services</span>
-                  {pendingServices.length > 0 && (
-                    <Badge variant="secondary" className="ml-1">{pendingServices.length}</Badge>
-                  )}
-                </TabsTrigger>
-              </>
+            {showCustomOrders && (
+              <TabsTrigger value="custom-orders" className="flex items-center gap-2">
+                <ShoppingBag className="h-4 w-4" />
+                <span>Custom Orders</span>
+                {customOrdersTotal > 0 && (
+                  <Badge variant="secondary" className="ml-1">{customOrdersTotal}</Badge>
+                )}
+              </TabsTrigger>
+            )}
+            {showServices && (
+              <TabsTrigger value="services" className="flex items-center gap-2">
+                <Wrench className="h-4 w-4" />
+                <span>Services</span>
+                {serviceTotal > 0 && (
+                  <Badge variant="secondary" className="ml-1">{serviceTotal}</Badge>
+                )}
+              </TabsTrigger>
+            )}
+            {showEvents && (
+              <TabsTrigger value="events" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span>Events</span>
+                {eventTotal > 0 && (
+                  <Badge variant="secondary" className="ml-1">{eventTotal}</Badge>
+                )}
+              </TabsTrigger>
             )}
           </TabsList>
 
-          {/* Product Creation Requests Tab */}
-          <TabsContent value="products" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Product Creation Requests
-                </CardTitle>
-                <CardDescription>
-                  Products pending approval or rejected by admin. Edit and resubmit rejected products.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {productsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : pendingProducts.length === 0 ? (
-                  <div className="text-center py-12">
-                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                    <p className="text-muted-foreground">No pending or rejected products</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {pendingProducts.map((product) => (
-                      <div key={product.id} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-4">
-                            <img 
-                              src={getProductImageUrl(product.images, product.cover)} 
-                              alt={product.name} 
-                              className="h-16 w-16 rounded object-cover"
-                              onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
-                            />
-                            <div className="h-16 w-16 rounded bg-gray-200 flex items-center justify-center">
-                              <Package className="h-8 w-8 text-gray-400" />
-                            </div>
-                            <div>
-                              <h3 className="font-semibold">{product.name}</h3>
-                              <p className="text-sm text-muted-foreground">{product.categoryName}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                {getStatusBadge(product.status || '')}
-                                <span className="text-sm text-muted-foreground">
-                                  Created: {new Date(product.createdAt || '').toLocaleDateString()}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <Button variant="outline" size="sm" onClick={() => openProductEdit(product)}>
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                        </div>
-                        {product.rejectionReason && (
-                          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="flex items-start gap-2">
-                              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                                <p className="text-sm text-red-700">{product.rejectionReason}</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {showProducts && (
+            <TabsContent value="products">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Product Change Requests
+                  </CardTitle>
+                  <CardDescription>Price and category change requests for your products</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  {renderChangeTypeSection(
+                    "Price Changes",
+                    <DollarSign className="h-4 w-4 text-blue-500" />,
+                    productPriceRequests,
+                    productLoading,
+                    "No pending price change requests for products"
+                  )}
+                  {renderChangeTypeSection(
+                    "Category Changes",
+                    <FolderTree className="h-4 w-4 text-purple-500" />,
+                    productCategoryRequests,
+                    productLoading,
+                    "No pending category change requests for products"
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
-          {/* Product Price Update Requests Tab */}
-          <TabsContent value="product-prices" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Product Price Update Requests
-                </CardTitle>
-                <CardDescription>
-                  Price change requests pending approval or rejected by admin.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {priceRequestsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : pendingPriceRequests.length === 0 ? (
-                  <div className="text-center py-12">
-                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                    <p className="text-muted-foreground">No pending or rejected price update requests</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {pendingPriceRequests.map((request) => {
-                      // Use vendor prices for display to vendors
-                      const currentPrice = request.currentVendorPrice || request.currentPrice;
-                      const newPrice = request.newVendorPrice || request.newPrice;
-                      return (
-                        <div key={request.id} className="border rounded-lg p-4">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="font-semibold">{request.productName}</h3>
-                              {request.skuCode && (
-                                <p className="text-sm text-muted-foreground">SKU: {request.skuCode}</p>
-                              )}
-                              <div className="flex items-center gap-4 mt-2">
-                                <div>
-                                  <span className="text-sm text-muted-foreground">Current: </span>
-                                  <span className="font-medium">
-                                    {currentPrice?.currencyCode} {(currentPrice?.vendorAmount ?? currentPrice?.amount)?.toFixed(2)}
+          {showCustomOrders && (
+            <TabsContent value="custom-orders">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShoppingBag className="h-5 w-5" />
+                    Custom Order Requests
+                  </CardTitle>
+                  <CardDescription>
+                    Customer custom order requests awaiting your action
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {customOrdersLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (customOrdersData?.content ?? []).length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <ShoppingBag className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+                      <p className="font-medium">No custom orders yet</p>
+                      <p className="text-sm mt-1">Customer custom orders will appear here</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {(customOrdersData?.content ?? []).map((order: CustomOrder) => {
+                        const isActive = !["DELIVERED", "CANCELLED"].includes(order.status);
+                        const statusColor: Record<string, string> = {
+                          SUBMITTED: "bg-blue-100 text-blue-800",
+                          PRICE_PROPOSED: "bg-yellow-100 text-yellow-800",
+                          CONFIRMED: "bg-purple-100 text-purple-800",
+                          PAID: "bg-green-100 text-green-800",
+                          IN_PROGRESS: "bg-indigo-100 text-indigo-800",
+                          COMPLETED: "bg-teal-100 text-teal-800",
+                          OUT_FOR_DELIVERY: "bg-orange-100 text-orange-800",
+                          DELIVERED: "bg-gray-100 text-gray-600",
+                          CANCELLED: "bg-red-100 text-red-800",
+                        };
+                        return (
+                          <div
+                            key={order.id}
+                            className={`border rounded-lg p-4 bg-white ${
+                              isActive ? "border-l-4 border-l-primary-blue" : "opacity-70"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-semibold text-sm">
+                                    #{order.orderNumber}
                                   </span>
+                                  <Badge
+                                    className={`text-xs ${
+                                      statusColor[order.status] ?? "bg-gray-100 text-gray-700"
+                                    }`}
+                                  >
+                                    {order.status.replace(/_/g, " ")}
+                                  </Badge>
                                 </div>
-                                <span className="text-muted-foreground">→</span>
-                                <div>
-                                  <span className="text-sm text-muted-foreground">New: </span>
-                                  <span className="font-medium text-blue-600">
-                                    {newPrice?.currencyCode} {(newPrice?.vendorAmount ?? newPrice?.amount)?.toFixed(2)}
-                                  </span>
-                                </div>
+                                <p className="text-sm font-medium mt-1 truncate">
+                                  {order.templateName}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  Customer: {order.customerName}
+                                </p>
+                                {order.finalPrice != null ? (
+                                  <p className="text-xs text-muted-foreground">
+                                    Price: {order.currencyCode}{" "}
+                                    {order.finalPrice.toLocaleString("en-US", {
+                                      minimumFractionDigits: 2,
+                                    })}
+                                  </p>
+                                ) : order.basePrice != null ? (
+                                  <p className="text-xs text-muted-foreground">
+                                    Base price: {order.currencyCode}{" "}
+                                    {order.basePrice.toLocaleString("en-US", {
+                                      minimumFractionDigits: 2,
+                                    })}
+                                  </p>
+                                ) : null}
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {new Date(order.createdAt).toLocaleDateString()}
+                                </p>
                               </div>
-                              <div className="flex items-center gap-2 mt-2">
-                                {getStatusBadge(request.status || '')}
-                                <span className="text-sm text-muted-foreground">
-                                  Submitted: {new Date(request.createdAt || '').toLocaleDateString()}
-                                </span>
-                              </div>
-                              {request.reason && (
-                                <p className="text-sm text-muted-foreground mt-1">Reason: {request.reason}</p>
-                              )}
+                              <Button variant="outline" size="sm" asChild className="flex-shrink-0">
+                                <Link to={`/vendor/custom-orders/${order.id}`}>
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  View
+                                </Link>
+                              </Button>
                             </div>
-                            <Button variant="outline" size="sm" onClick={() => openPriceUpdateEdit(request)}>
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
-                            </Button>
                           </div>
-                          {request.rejectionReason && (
-                            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                              <div className="flex items-start gap-2">
-                                <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                                <div>
-                                  <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                                  <p className="text-sm text-red-700">{request.rejectionReason}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
-          {/* Category Change Requests Tab */}
-          <TabsContent value="category-changes" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FolderTree className="h-5 w-5" />
-                  Category Change Requests
-                </CardTitle>
-                <CardDescription>
-                  Requests to change product categories pending approval or rejected by admin.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {categoryChangeLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : pendingCategoryChangeRequests.length === 0 ? (
-                  <div className="text-center py-12">
-                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                    <p className="text-muted-foreground">No pending or rejected category change requests</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {pendingCategoryChangeRequests.map((request) => (
-                      <div key={request.id} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-4">
-                            {request.productCover && (
-                              <img 
-                                src={request.productCover} 
-                                alt={request.productName} 
-                                className="h-16 w-16 rounded object-cover"
-                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                              />
-                            )}
-                            <div>
-                              <h3 className="font-semibold">{request.productName}</h3>
-                              <div className="flex items-center gap-4 mt-2">
-                                <div>
-                                  <span className="text-sm text-muted-foreground">Current: </span>
-                                  <span className="font-medium">{request.currentSubCategoryName}</span>
-                                </div>
-                                <span className="text-muted-foreground">→</span>
-                                <div>
-                                  <span className="text-sm text-muted-foreground">New: </span>
-                                  <span className="font-medium text-blue-600">{request.newSubCategoryName}</span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 mt-2">
-                                {getStatusBadge(request.status)}
-                                <span className="text-sm text-muted-foreground">
-                                  Submitted: {new Date(request.createdAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                              {request.reason && (
-                                <p className="text-sm text-muted-foreground mt-1">Reason: {request.reason}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openCategoryChangeEdit(request)}>
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => deleteCategoryChangeMutation.mutate(request.id)}
-                              disabled={deleteCategoryChangeMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                        {request.rejectionReason && (
-                          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="flex items-start gap-2">
-                              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                                <p className="text-sm text-red-700">{request.rejectionReason}</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {showServices && (
+            <TabsContent value="services">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Wrench className="h-5 w-5" />
+                    Service Change Requests
+                  </CardTitle>
+                  <CardDescription>Price and category change requests for your services and packages</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  {renderChangeTypeSection(
+                    "Package Price Changes",
+                    <DollarSign className="h-4 w-4 text-blue-500" />,
+                    servicePackagePriceRequests,
+                    servicePackageLoading,
+                    "No pending price change requests for service packages"
+                  )}
+                  {renderChangeTypeSection(
+                    "Category Changes",
+                    <FolderTree className="h-4 w-4 text-purple-500" />,
+                    serviceCategoryRequests,
+                    serviceLoading,
+                    "No pending category change requests for services"
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
-          {/* Event Creation Requests Tab */}
-          <TabsContent value="events" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Event Creation Requests
-                </CardTitle>
-                <CardDescription>
-                  Events pending approval or rejected by admin. Edit and resubmit rejected events.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {eventsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : pendingEvents.length === 0 ? (
-                  <div className="text-center py-12">
-                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                    <p className="text-muted-foreground">No pending or rejected events</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {pendingEvents.map((event) => (
-                      <div key={event.id} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-4">
-                            <img 
-                              src={getEventImageUrl(event.images, event.bannerImageUrl)} 
-                              alt={event.title} 
-                              className="h-16 w-24 rounded object-cover"
-                              onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
-                            />
-                            <div className="h-16 w-24 rounded bg-gray-200 flex items-center justify-center hidden">
-                              <Calendar className="h-8 w-8 text-gray-400" />
-                            </div>
-                            <div>
-                              <h3 className="font-semibold">{event.title}</h3>
-                              <p className="text-sm text-muted-foreground">{event.location}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(event.eventDate).toLocaleDateString()}{event.eventEndDate ? ` - ${new Date(event.eventEndDate).toLocaleDateString()}` : ''}
-                              </p>
-                              <div className="flex items-center gap-2 mt-2">
-                                {getStatusBadge(event.status)}
-                              </div>
-                            </div>
-                          </div>
-                          <Button variant="outline" size="sm" onClick={() => openEventEdit(event)}>
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                        </div>
-                        {(event as any).rejectionReason && (
-                          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="flex items-start gap-2">
-                              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                                <p className="text-sm text-red-700">{(event as any).rejectionReason}</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Event Price Update Requests Tab */}
-          <TabsContent value="event-prices" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Ticket className="h-5 w-5" />
-                  Event Price Update Requests
-                </CardTitle>
-                <CardDescription>
-                  Ticket price change requests pending approval or rejected by admin.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {eventPriceLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : pendingEventPriceRequests.length === 0 ? (
-                  <div className="text-center py-12">
-                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                    <p className="text-muted-foreground">No pending or rejected event price update requests</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {pendingEventPriceRequests.map((request) => {
-                      // Use vendor prices from unified VendorChangeRequestDto
-                      const currentVP = request.currentVendorPrice;
-                      const newVP = request.newVendorPrice;
-                      const currentAmount = currentVP?.vendorAmount ?? (currentVP?.vendorAmountMinor != null ? currentVP.vendorAmountMinor / 100 : 0);
-                      const newAmount = newVP?.vendorAmount ?? (newVP?.vendorAmountMinor != null ? newVP.vendorAmountMinor / 100 : 0);
-                      const currentCurrency = currentVP?.currencyCode || 'ETB';
-                      const newCurrency = newVP?.currencyCode || 'ETB';
-                      // entityName is "EventTitle - TicketTypeName"
-                      const nameParts = (request.entityName || '').split(' - ');
-                      const displayEventTitle = request.eventTitle || nameParts[0] || 'Event';
-                      const displayTicketName = request.ticketTypeName || nameParts.slice(1).join(' - ') || '';
-                      return (
-                        <div key={request.id} className="border rounded-lg p-4">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="font-semibold">{displayEventTitle}</h3>
-                              {displayTicketName && <p className="text-sm text-muted-foreground">Ticket Type: {displayTicketName}</p>}
-                              <div className="flex items-center gap-4 mt-2">
-                                <div>
-                                  <span className="text-sm text-muted-foreground">Current: </span>
-                                  <span className="font-medium">
-                                    {currentCurrency} {currentAmount.toFixed(2)}
-                                  </span>
-                                </div>
-                                <span className="text-muted-foreground">→</span>
-                                <div>
-                                  <span className="text-sm text-muted-foreground">New: </span>
-                                  <span className="font-medium text-blue-600">
-                                    {newCurrency} {newAmount.toFixed(2)}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 mt-2">
-                                {getStatusBadge(request.status)}
-                                <span className="text-sm text-muted-foreground">
-                                  Submitted: {new Date(request.createdAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                              {request.reason && (
-                                <p className="text-sm text-muted-foreground mt-1">Reason: {request.reason}</p>
-                              )}
-                            </div>
-                            <Button variant="outline" size="sm" onClick={() => openEventPriceEdit(request)}>
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
-                            </Button>
-                          </div>
-                          {request.rejectionReason && (
-                            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                              <div className="flex items-start gap-2">
-                                <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                                <div>
-                                  <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                                  <p className="text-sm text-red-700">{request.rejectionReason}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Services Tab */}
-          <TabsContent value="services" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Wrench className="h-5 w-5" />
-                  Service Creation Requests
-                </CardTitle>
-                <CardDescription>
-                  Services pending approval or rejected by admin. Edit and resubmit rejected services.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {servicesLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : pendingServices.length === 0 ? (
-                  <div className="text-center py-12">
-                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                    <p className="text-muted-foreground">No pending or rejected services</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {pendingServices.map((service) => (
-                      <div key={service.id} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-4">
-                            {service.primaryImageUrl ? (
-                              <img 
-                                src={service.primaryImageUrl} 
-                                alt={service.title} 
-                                className="h-16 w-16 rounded object-cover"
-                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                              />
-                            ) : (
-                              <div className="h-16 w-16 rounded bg-gray-200 flex items-center justify-center">
-                                <Wrench className="h-8 w-8 text-gray-400" />
-                              </div>
-                            )}
-                            <div>
-                              <h3 className="font-semibold">{service.title}</h3>
-                              <p className="text-sm text-muted-foreground">{service.categoryName}</p>
-                              {service.location && (
-                                <p className="text-sm text-muted-foreground">{service.location}, {service.city}</p>
-                              )}
-                              <div className="flex items-center gap-2 mt-2">
-                                {getStatusBadge(service.status)}
-                                <span className="text-sm text-muted-foreground">
-                                  Created: {new Date(service.createdAt || '').toLocaleDateString()}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <Button variant="outline" size="sm" onClick={() => openServiceEdit(service)}>
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                        </div>
-                        {service.rejectionReason && (
-                          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="flex items-start gap-2">
-                              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                                <p className="text-sm text-red-700">{service.rejectionReason}</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {showEvents && (
+            <TabsContent value="events">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Event Change Requests
+                  </CardTitle>
+                  <CardDescription>Ticket price and category change requests for your events</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  {renderChangeTypeSection(
+                    "Ticket Price Changes",
+                    <Ticket className="h-4 w-4 text-blue-500" />,
+                    eventPriceRequests,
+                    eventLoading,
+                    "No pending ticket price change requests"
+                  )}
+                  {renderChangeTypeSection(
+                    "Category Changes",
+                    <FolderTree className="h-4 w-4 text-purple-500" />,
+                    eventCategoryRequests,
+                    eventLoading,
+                    "No pending category change requests for events"
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
-      {/* Edit Product Dialog */}
-      <Dialog open={editProductOpen} onOpenChange={setEditProductOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      {/* Edit Price Dialog */}
+      <Dialog open={editPriceOpen} onOpenChange={setEditPriceOpen}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
+            <DialogTitle>Edit Price Change Request</DialogTitle>
             <DialogDescription>
-              Update your product details and resubmit for review.
-              {selectedProduct?.status === 'REJECTED' && (
-                <span className="block mt-2 text-amber-600">
-                  This product was rejected. Editing will resubmit it for approval.
+              Update your price change request for <strong>{selectedRequest?.entityName}</strong>.
+              {selectedRequest?.status === "REJECTED" && (
+                <span className="block mt-1 text-amber-600">
+                  This request was rejected. Editing will resubmit it for review.
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
-            <div>
-              <Label htmlFor="name">Product Name *</Label>
-              <Input id="name" {...productForm.register("name")} />
-              {productForm.formState.errors.name && (
-                <p className="text-sm text-red-600 mt-1">{productForm.formState.errors.name.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="summary">Summary</Label>
-              <Input id="summary" {...productForm.register("summary")} />
-            </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" {...productForm.register("description")} className="min-h-[100px]" />
-            </div>
-
-            <div>
-              <Label htmlFor="cover">Cover Image URL</Label>
-              <Input id="cover" {...productForm.register("cover")} placeholder="https://..." />
-            </div>
-
-            <div>
-              <Label>Sub-Category</Label>
-              <Controller
-                name="subCategoryId"
-                control={productForm.control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a sub-category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allSubCategories.map((subCategory) => (
-                        <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
-                          {subCategory.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-
+          <form onSubmit={priceForm.handleSubmit(onPriceSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Currency *</Label>
                 <Controller
                   name="currencyCode"
-                  control={productForm.control}
+                  control={priceForm.control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select currency" />
                       </SelectTrigger>
                       <SelectContent>
-                        {currencies.map((currency) => (
-                          <SelectItem key={currency.id} value={currency.code}>
-                            {currency.code} - {currency.name}
+                        {currencies.map((c) => (
+                          <SelectItem key={c.id} value={c.code}>
+                            {c.code} - {c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   )}
                 />
-              </div>
-              <div>
-                <Label>Your Price *</Label>
-                <Controller
-                  name="amount"
-                  control={productForm.control}
-                  render={({ field }) => (
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      placeholder="0.00"
-                      value={field.value || ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          field.onChange(0);
-                        } else {
-                          const numValue = parseFloat(value);
-                          field.onChange(Math.round(numValue * 100) / 100);
-                        }
-                      }}
-                    />
-                  )}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  This is what you'll receive. Platform fee will be added for customers.
-                </p>
-                {productForm.formState.errors.amount && (
-                  <p className="text-sm text-red-600 mt-1">{productForm.formState.errors.amount.message}</p>
-                )}
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditProductOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={editProductMutation.isPending}>
-                {editProductMutation.isPending ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Save & Resubmit'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Price Update Request Dialog */}
-      <Dialog open={editPriceUpdateOpen} onOpenChange={setEditPriceUpdateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Price Update Request</DialogTitle>
-            <DialogDescription>
-              Update the price change request for {selectedPriceUpdate?.productName}.
-              {selectedPriceUpdate?.status === 'REJECTED' && (
-                <span className="block mt-2 text-amber-600">
-                  This request was rejected. Editing will resubmit it for approval.
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={priceUpdateForm.handleSubmit(onPriceUpdateSubmit)} className="space-y-4">
-            <div className={isEthiopianVendor(vendorProfile) ? "" : "grid grid-cols-2 gap-4"}>
-              {!isEthiopianVendor(vendorProfile) && (
-                <div>
-                  <Label>Currency *</Label>
-                  <Controller
-                    name="currencyCode"
-                    control={priceUpdateForm.control}
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select currency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableCurrencies.map((currency) => (
-                            <SelectItem key={currency.id} value={currency.code}>
-                              {currency.code} - {currency.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-              )}
-              <div>
-                <Label>{isEthiopianVendor(vendorProfile) ? "New Price (ETB) *" : "New Price *"}</Label>
-                <Controller
-                  name="amount"
-                  control={priceUpdateForm.control}
-                  render={({ field }) => (
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      placeholder="0.00"
-                      value={field.value || ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          field.onChange(0);
-                        } else {
-                          const numValue = parseFloat(value);
-                          field.onChange(Math.round(numValue * 100) / 100);
-                        }
-                      }}
-                    />
-                  )}
-                />
-                {priceUpdateForm.formState.errors.amount && (
-                  <p className="text-sm text-red-600 mt-1">{priceUpdateForm.formState.errors.amount.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="reason">Reason for Price Change</Label>
-              <Textarea id="reason" {...priceUpdateForm.register("reason")} placeholder="Explain why you need to change the price..." />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditPriceUpdateOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={editPriceUpdateMutation.isPending}>
-                {editPriceUpdateMutation.isPending ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Save & Resubmit'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Event Dialog */}
-      <Dialog open={editEventOpen} onOpenChange={setEditEventOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Event</DialogTitle>
-            <DialogDescription>
-              Update your event details and resubmit for review.
-              {selectedEvent?.status === 'REJECTED' && (
-                <span className="block mt-2 text-amber-600">
-                  This event was rejected. Editing will resubmit it for approval.
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={eventForm.handleSubmit(onEventSubmit)} className="space-y-4">
-            <div>
-              <Label htmlFor="title">Event Title *</Label>
-              <Input id="title" {...eventForm.register("title")} />
-              {eventForm.formState.errors.title && (
-                <p className="text-sm text-red-600 mt-1">{eventForm.formState.errors.title.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="shortDescription">Short Description</Label>
-              <Input id="shortDescription" {...eventForm.register("shortDescription")} />
-            </div>
-
-            <div>
-              <Label htmlFor="description">Full Description</Label>
-              <Textarea id="description" {...eventForm.register("description")} className="min-h-[100px]" />
-            </div>
-
-            <div>
-              <Label htmlFor="venue">Venue</Label>
-              <Input id="venue" {...eventForm.register("venue")} />
-            </div>
-
-            <div>
-              <Label htmlFor="address">Address</Label>
-              <Input id="address" {...eventForm.register("address")} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="city">City</Label>
-                <Input id="city" {...eventForm.register("city")} />
-              </div>
-              <div>
-                <Label htmlFor="country">Country</Label>
-                <Input id="country" {...eventForm.register("country")} />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="imageUrl">Event Image URL</Label>
-              <Input id="imageUrl" {...eventForm.register("imageUrl")} placeholder="https://..." />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditEventOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={editEventMutation.isPending}>
-                {editEventMutation.isPending ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Save & Resubmit'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Event Price Update Dialog */}
-      <Dialog open={editEventPriceOpen} onOpenChange={setEditEventPriceOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Event Price Update Request</DialogTitle>
-            <DialogDescription>
-              Update the ticket price change request for {selectedEventPriceUpdate?.ticketTypeName}.
-              {selectedEventPriceUpdate?.status === 'REJECTED' && (
-                <span className="block mt-2 text-amber-600">
-                  This request was rejected. Editing will resubmit it for approval.
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={eventPriceForm.handleSubmit(onEventPriceSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Currency *</Label>
-                <Controller
-                  name="currencyCode"
-                  control={eventPriceForm.control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableCurrencies.map((currency) => (
-                          <SelectItem key={currency.id} value={currency.code}>
-                            {currency.code} - {currency.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {isEthiopianVendor(vendorProfile) && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Ethiopian vendors can only use ETB currency
-                  </p>
+                {priceForm.formState.errors.currencyCode && (
+                  <p className="text-sm text-red-600 mt-1">{priceForm.formState.errors.currencyCode.message}</p>
                 )}
               </div>
               <div>
                 <Label>New Price *</Label>
                 <Controller
                   name="amount"
-                  control={eventPriceForm.control}
+                  control={priceForm.control}
                   render={({ field }) => (
                     <Input
                       type="number"
                       step="0.01"
                       min="0.01"
                       placeholder="0.00"
-                      value={field.value || ''}
+                      value={field.value || ""}
                       onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          field.onChange(0);
-                        } else {
-                          const numValue = parseFloat(value);
-                          field.onChange(Math.round(numValue * 100) / 100);
-                        }
+                        const val = e.target.value;
+                        field.onChange(val === "" ? 0 : Math.round(parseFloat(val) * 100) / 100);
                       }}
                     />
                   )}
                 />
-                {eventPriceForm.formState.errors.amount && (
-                  <p className="text-sm text-red-600 mt-1">{eventPriceForm.formState.errors.amount.message}</p>
+                {priceForm.formState.errors.amount && (
+                  <p className="text-sm text-red-600 mt-1">{priceForm.formState.errors.amount.message}</p>
                 )}
               </div>
             </div>
-
             <div>
-              <Label htmlFor="reason">Reason for Price Change</Label>
-              <Textarea id="reason" {...eventPriceForm.register("reason")} placeholder="Explain why you need to change the ticket price..." />
+              <Label>Reason for Change</Label>
+              <Textarea {...priceForm.register("reason")} placeholder="Explain why you need to change the price..." />
             </div>
-
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditEventPriceOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={editEventPriceMutation.isPending}>
-                {editEventPriceMutation.isPending ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Save & Resubmit'
-                )}
+              <Button type="button" variant="outline" onClick={() => setEditPriceOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={editMutation.isPending}>
+                {editMutation.isPending ? (
+                  <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Submitting...</>
+                ) : "Save & Resubmit"}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Category Change Dialog */}
-      <Dialog open={editCategoryChangeOpen} onOpenChange={setEditCategoryChangeOpen}>
-        <DialogContent className="max-w-md">
+      {/* Edit Category Dialog */}
+      <Dialog open={editCategoryOpen} onOpenChange={setEditCategoryOpen}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Category Change Request</DialogTitle>
             <DialogDescription>
-              Update your category change request and resubmit for review.
-              {selectedCategoryChange?.status === 'REJECTED' && (
-                <span className="block mt-2 text-amber-600">
-                  This request was rejected. Editing will resubmit it for approval.
+              Update your category change request for <strong>{selectedRequest?.entityName}</strong>.
+              {selectedRequest?.status === "REJECTED" && (
+                <span className="block mt-1 text-amber-600">
+                  This request was rejected. Editing will resubmit it for review.
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={categoryChangeForm.handleSubmit(onCategoryChangeSubmit)} className="space-y-4">
-            {selectedCategoryChange && (
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">
-                  <span className="font-medium">Product:</span> {selectedCategoryChange.productName}
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Current Category:</span> {selectedCategoryChange.currentSubCategoryName}
-                </p>
-              </div>
-            )}
-
+          {selectedRequest && (
+            <div className="p-3 bg-muted rounded-lg text-sm">
+              <span className="font-medium">Current category: </span>
+              {selectedRequest.currentSubCategoryName || selectedRequest.currentCategoryName || "N/A"}
+            </div>
+          )}
+          <form onSubmit={categoryForm.handleSubmit(onCategorySubmit)} className="space-y-4">
             <div>
               <Label>New Category *</Label>
               <Controller
                 name="newSubCategoryId"
-                control={categoryChangeForm.control}
+                control={categoryForm.control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {allSubCategories.map((subCategory) => (
-                        <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
-                          {subCategory.name}
+                      {allSubCategories.map((sc) => (
+                        <SelectItem key={sc.id} value={sc.id.toString()}>
+                          {sc.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 )}
               />
-              {categoryChangeForm.formState.errors.newSubCategoryId && (
-                <p className="text-sm text-red-600 mt-1">{categoryChangeForm.formState.errors.newSubCategoryId.message}</p>
+              {categoryForm.formState.errors.newSubCategoryId && (
+                <p className="text-sm text-red-600 mt-1">{categoryForm.formState.errors.newSubCategoryId.message}</p>
               )}
             </div>
-
             <div>
-              <Label htmlFor="categoryChangeReason">Reason for Category Change *</Label>
-              <Textarea 
-                id="categoryChangeReason" 
-                {...categoryChangeForm.register("reason")} 
-                placeholder="Explain why this product should be in the new category..." 
-                rows={4}
-              />
-              {categoryChangeForm.formState.errors.reason && (
-                <p className="text-sm text-red-600 mt-1">{categoryChangeForm.formState.errors.reason.message}</p>
-              )}
+              <Label>Reason for Change</Label>
+              <Textarea {...categoryForm.register("reason")} placeholder="Explain why this item should be recategorized..." />
             </div>
-
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditCategoryChangeOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={editCategoryChangeMutation.isPending}>
-                {editCategoryChangeMutation.isPending ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Save & Resubmit'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Service Dialog */}
-      <Dialog open={editServiceOpen} onOpenChange={setEditServiceOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Service</DialogTitle>
-            <DialogDescription>
-              Update your service details and resubmit for review.
-              {selectedService?.status === 'REJECTED' && (
-                <span className="block mt-2 text-amber-600">
-                  This service was rejected. Editing will resubmit it for approval.
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={serviceForm.handleSubmit(onServiceSubmit)} className="space-y-4">
-            <div>
-              <Label htmlFor="serviceTitle">Service Title *</Label>
-              <Input id="serviceTitle" {...serviceForm.register("title")} />
-              {serviceForm.formState.errors.title && (
-                <p className="text-sm text-red-600 mt-1">{serviceForm.formState.errors.title.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="serviceDescription">Description</Label>
-              <Textarea 
-                id="serviceDescription" 
-                {...serviceForm.register("description")} 
-                rows={4}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="serviceLocation">Location</Label>
-                <Input id="serviceLocation" {...serviceForm.register("location")} placeholder="e.g., Main Street 123" />
-              </div>
-              <div>
-                <Label htmlFor="serviceCity">City</Label>
-                <Input id="serviceCity" {...serviceForm.register("city")} placeholder="e.g., Addis Ababa" />
-              </div>
-            </div>
-
-            <div>
-              <Label>Category</Label>
-              <Controller
-                name="categoryId"
-                control={serviceForm.control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allSubCategories.map((subCategory) => (
-                        <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
-                          {subCategory.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditServiceOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={editServiceMutation.isPending}>
-                {editServiceMutation.isPending ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Save & Resubmit'
-                )}
+              <Button type="button" variant="outline" onClick={() => setEditCategoryOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={editMutation.isPending}>
+                {editMutation.isPending ? (
+                  <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Submitting...</>
+                ) : "Save & Resubmit"}
               </Button>
             </DialogFooter>
           </form>

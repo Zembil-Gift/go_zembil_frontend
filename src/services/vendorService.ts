@@ -13,6 +13,12 @@ export interface VendorProfile {
   city?: string;
   country?: string;
   countryCode?: string;
+  latitude?: number;
+  longitude?: number;
+  placeId?: string;
+  formattedAddress?: string;
+  streetAddress?: string;
+  deliveryRadiusKm?: number;
   isApproved: boolean;
   stripeAccountId?: string;
   stripeAccountStatus: string;
@@ -37,6 +43,12 @@ export interface UpdateVendorProfileRequest {
   city?: string;
   country?: string;
   countryCode?: string;
+  latitude?: number;
+  longitude?: number;
+  placeId?: string;
+  formattedAddress?: string;
+  streetAddress?: string;
+  deliveryRadiusKm?: number;
 }
 
 export interface VendorResubmissionRequest {

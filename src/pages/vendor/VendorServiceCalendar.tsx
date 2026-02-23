@@ -40,7 +40,7 @@ export default function VendorServiceCalendar() {
   // Fetch vendor's service orders
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
     queryKey: ['vendor-service-orders'],
-    queryFn: () => serviceOrderService.getVendorOrders(0, 200),
+    queryFn: () => serviceOrderService.getVendorOrders(0, 100),
   });
 
   const services = servicesData?.content || [];
