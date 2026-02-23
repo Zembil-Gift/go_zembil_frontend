@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { vendorService, VendorProfile, UpdateEventRequest } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService, ImageDto } from "@/services/imageService";
+import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -110,12 +111,6 @@ export default function EditEvent() {
     queryKey: ['vendor', 'profile'],
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
-  });
-
-  // Fetch categories
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiService.getRequest<Category[]>('/api/categories'),
   });
 
   // Fetch currencies
@@ -555,18 +550,11 @@ export default function EditEvent() {
                   name="categoryId"
                   control={form.control}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id.toString()}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SubcategorySearchCombobox
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Search and select a category (optional)"
+                    />
                   )}
                 />
               </div>

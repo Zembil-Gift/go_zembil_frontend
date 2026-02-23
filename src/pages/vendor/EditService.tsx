@@ -17,6 +17,7 @@ import {
 import { vendorService, VendorProfile, PriceDto } from "@/services/vendorService";
 import { imageService } from "@/services/imageService";
 import { apiService } from "@/services/apiService";
+import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -143,23 +144,6 @@ export default function EditService() {
     queryKey: ['vendor', 'service-packages', serviceId],
     queryFn: () => serviceService.getVendorServicePackages(serviceId),
     enabled: isAuthenticated && isVendor && serviceId > 0,
-  });
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiService.getRequest<Category[]>('/api/categories'),
-  });
-
-  const { data: allSubCategories = [] } = useQuery({
-    queryKey: ['all-subcategories', categories],
-    queryFn: async () => {
-      const subCategoriesPromises = categories.map((category) =>
-        apiService.getRequest<SubCategory[]>(`/api/categories/${category.id}/sub-categories`)
-      );
-      const results = await Promise.all(subCategoriesPromises);
-      return results.flat();
-    },
-    enabled: categories.length > 0,
   });
 
   const { data: currencies = [] } = useQuery({
@@ -696,18 +680,11 @@ export default function EditService() {
                       name="categoryId"
                       control={metadataForm.control}
                       render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {allSubCategories.map((subCategory) => (
-                              <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
-                                {subCategory.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <SubcategorySearchCombobox
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Search and select a category"
+                        />
                       )}
                     />
                   </div>

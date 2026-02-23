@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/ImageUpload";
 import { TagInput } from "@/components/TagInput";
+import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
 import { 
   ArrowLeft, 
   Package, 
@@ -753,28 +754,11 @@ export default function EditProduct() {
                   name="subCategoryId"
                   control={form.control}
                   render={({ field }) => (
-                    <Select
+                    <SubcategorySearchCombobox
                       value={field.value}
                       onValueChange={field.onChange}
-                      disabled={isLoadingSubCategories || allSubCategories.length === 0}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={
-                          isLoadingSubCategories
-                            ? "Loading categories..."
-                            : allSubCategories.length === 0
-                            ? "No categories available"
-                            : "Select a sub-category"
-                        } />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allSubCategories.map((subCategory) => (
-                          <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
-                            {subCategory.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Search and select a sub-category"
+                    />
                   )}
                 />
                 {form.formState.errors.subCategoryId && (
