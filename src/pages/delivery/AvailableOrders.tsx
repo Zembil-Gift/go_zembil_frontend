@@ -23,6 +23,9 @@ import {
   RefreshCw,
   CheckCircle,
   ShoppingBag,
+  DollarSign,
+  Navigation,
+  Timer,
 } from "lucide-react";
 import { deliveryService, OrderReadyForDeliveryDto } from "@/services/deliveryService";
 
@@ -146,6 +149,36 @@ export default function AvailableOrders() {
                       </Badge>
                     </div>
 
+                    {/* Delivery Fee Highlight */}
+                    {order.estimatedDeliveryFee && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-5 w-5 text-green-600" />
+                            <span className="text-sm font-medium text-green-800">Your Delivery Earnings</span>
+                          </div>
+                          <span className="text-lg font-bold text-green-700">
+                            {order.deliveryFeeCurrency === 'ETB' ? 'ETB ' : '$'}
+                            {Number(order.estimatedDeliveryFee).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex gap-4 mt-2 text-xs text-green-600">
+                          {order.estimatedDistanceText && (
+                            <span className="flex items-center gap-1">
+                              <Navigation className="h-3 w-3" />
+                              {order.estimatedDistanceText}
+                            </span>
+                          )}
+                          {order.estimatedDurationText && (
+                            <span className="flex items-center gap-1">
+                              <Timer className="h-3 w-3" />
+                              ~{order.estimatedDurationText}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                       <div className="flex items-center gap-2 text-gray-600">
                         <User className="h-4 w-4 text-gray-400" />
@@ -231,6 +264,19 @@ export default function AvailableOrders() {
                   <p>
                     <strong>Delivery to:</strong> {selectedOrder.shippingCity || "Unknown"}
                   </p>
+                  {selectedOrder.estimatedDeliveryFee && (
+                    <div className="mt-3 p-3 bg-green-50 rounded-lg">
+                      <p className="text-green-800 font-semibold">
+                        Delivery Earnings: {selectedOrder.deliveryFeeCurrency === 'ETB' ? 'ETB ' : '$'}
+                        {Number(selectedOrder.estimatedDeliveryFee).toFixed(2)}
+                      </p>
+                      {selectedOrder.estimatedDistanceText && (
+                        <p className="text-sm text-green-600">
+                          Distance: {selectedOrder.estimatedDistanceText} • Est. {selectedOrder.estimatedDurationText}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               <p className="mt-4 text-amber-600">
