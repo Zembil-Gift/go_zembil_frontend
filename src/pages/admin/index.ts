@@ -14,5 +14,6 @@ export { default as AdminFeaturedAds } from './AdminFeaturedAds';
 export { default as AdminServices } from './AdminServices';
 export { default as AdminCustomTemplates } from './AdminCustomTemplates';
 export { default as AdminCustomOrders } from './AdminCustomOrders';
+export { default as AdminCommission } from './AdminCommission';
 export { default as AdminRoles } from './AdminRoles';
 export { default as AdminPermissions } from './AdminPermissions';
