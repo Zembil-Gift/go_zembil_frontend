@@ -655,7 +655,7 @@ export default function AdminServices() {
                         <TableRow key={request.id}>
                           <TableCell>
                             <div>
-                              <p className="font-medium">{request.serviceName || `Service #${request.serviceId}`}</p>
+                              <p className="font-medium">{request.serviceName || request.entityName || `Service #${request.serviceId || request.entityId}`}</p>
                               <p className="text-sm text-muted-foreground">
                                 {request.vendorName || `Vendor #${request.vendorId}`}
                               </p>

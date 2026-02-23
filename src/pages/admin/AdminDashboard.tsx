@@ -49,6 +49,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
+  const MAX_REJECTION_REASON_LENGTH = 500;
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -56,6 +57,21 @@ export default function AdminDashboard() {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionReasonError, setRejectionReasonError] = useState('');
+
+  const extractErrorMessage = (error: any, fallback: string) => {
+    const responseData = error?.response?.data;
+    const details = responseData?.details;
+
+    if (details && typeof details === 'object') {
+      const detailMessage = Object.values(details).find((value) => typeof value === 'string') as string | undefined;
+      if (detailMessage) {
+        return detailMessage;
+      }
+    }
+
+    return error?.message || responseData?.message || fallback;
+  };
   
   // Fetch comprehensive dashboard stats
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -118,9 +134,14 @@ export default function AdminDashboard() {
       setShowRejectDialog(false);
       setSelectedProduct(null);
       setRejectionReason('');
+      setRejectionReasonError('');
     },
     onError: (error: any) => {
-      toast({ title: 'Error', description: error.message || 'Failed to reject product', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: extractErrorMessage(error, 'Failed to reject product'),
+        variant: 'destructive',
+      });
     },
   });
 
@@ -957,23 +978,65 @@ export default function AdminDashboard() {
           <Textarea
             placeholder="Enter rejection reason..."
             value={rejectionReason}
-            onChange={(e) => setRejectionReason(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setRejectionReason(value);
+
+              if (value.trim().length > MAX_REJECTION_REASON_LENGTH) {
+                setRejectionReasonError(`Rejection reason must be ${MAX_REJECTION_REASON_LENGTH} characters or fewer.`);
+              } else {
+                setRejectionReasonError('');
+              }
+            }}
             className="min-h-[100px]"
+            maxLength={MAX_REJECTION_REASON_LENGTH}
           />
+          <div className="flex items-center justify-between text-xs">
+            <p className={rejectionReasonError ? 'text-red-600' : 'text-muted-foreground'}>
+              {rejectionReasonError || 'Reason must be clear and concise.'}
+            </p>
+            <p className={rejectionReason.trim().length > MAX_REJECTION_REASON_LENGTH ? 'text-red-600' : 'text-muted-foreground'}>
+              {rejectionReason.trim().length}/{MAX_REJECTION_REASON_LENGTH}
+            </p>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowRejectDialog(false);
               setRejectionReason('');
+              setRejectionReasonError('');
             }}>
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={() => selectedProduct && rejectProductMutation.mutate({
-                productId: selectedProduct.id,
-                reason: rejectionReason
-              })}
-              disabled={!rejectionReason.trim() || rejectProductMutation.isPending}
+              onClick={() => {
+                const trimmedReason = rejectionReason.trim();
+                if (!trimmedReason || !selectedProduct) {
+                  return;
+                }
+
+                if (trimmedReason.length > MAX_REJECTION_REASON_LENGTH) {
+                  const message = `Rejection reason must be ${MAX_REJECTION_REASON_LENGTH} characters or fewer.`;
+                  setRejectionReasonError(message);
+                  toast({
+                    title: 'Reason Too Long',
+                    description: message,
+                    variant: 'destructive',
+                  });
+                  return;
+                }
+
+                setRejectionReasonError('');
+                rejectProductMutation.mutate({
+                  productId: selectedProduct.id,
+                  reason: trimmedReason
+                });
+              }}
+              disabled={
+                !rejectionReason.trim() ||
+                rejectionReason.trim().length > MAX_REJECTION_REASON_LENGTH ||
+                rejectProductMutation.isPending
+              }
             >
               {rejectProductMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Reject

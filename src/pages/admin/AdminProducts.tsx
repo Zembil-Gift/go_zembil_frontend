@@ -70,6 +70,8 @@ interface Product {
     unitAmountMinor?: number;
     vendorAmountMinor?: number;
     currencyCode: string;
+    originalCurrencyCode?: string;
+    originalVendorAmountMinor?: number;
   };
   productSku?: Array<{
     id: number;
@@ -88,12 +90,15 @@ interface Product {
       unitAmountMinor?: number;
       vendorAmountMinor?: number;
       currencyCode: string;
+      originalCurrencyCode?: string;
+      originalVendorAmountMinor?: number;
     };
   }>;
   createdAt: string;
 }
 
 export default function AdminProducts() {
+  const MAX_REJECTION_REASON_LENGTH = 500;
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -105,7 +110,22 @@ export default function AdminProducts() {
     type: 'product' 
   });
   const [rejectReason, setRejectReason] = useState('');
+  const [rejectReasonError, setRejectReasonError] = useState('');
   const [approvingProductId, setApprovingProductId] = useState<number | null>(null);
+
+  const extractErrorMessage = (error: any, fallback: string) => {
+    const responseData = error?.response?.data;
+    const details = responseData?.details;
+
+    if (details && typeof details === 'object') {
+      const detailMessage = Object.values(details).find((value) => typeof value === 'string') as string | undefined;
+      if (detailMessage) {
+        return detailMessage;
+      }
+    }
+
+    return error?.message || responseData?.message || fallback;
+  };
 
   // Fetch all products
   const { data: allProductsData, isLoading: allProductsLoading } = useQuery({
@@ -147,7 +167,9 @@ export default function AdminProducts() {
   const pendingProducts = pendingProductsData || [];
   const priceRequests = priceRequestsData || [];
   const pendingPriceRequests = priceRequests.filter((r: any) => r.status === 'PENDING');
-  const categoryChangeRequests = categoryChangeRequestsData || [];
+  const categoryChangeRequests = (categoryChangeRequestsData || []).filter(
+    (r: CategoryChangeRequestDto) => !r.requestType || r.requestType === 'CATEGORY_CHANGE'
+  );
   const pendingCategoryChangeRequests = categoryChangeRequests.filter((r: CategoryChangeRequestDto) => r.status === 'PENDING');
 
   const { data: subCategoryNameMap = {} } = useQuery<Record<number, string>>({
@@ -209,10 +231,15 @@ export default function AdminProducts() {
       toast({ title: 'Success', description: 'Product rejected' });
       setRejectDialog({ open: false, type: 'product' });
       setRejectReason('');
+      setRejectReasonError('');
       setSelectedProduct(null);
     },
     onError: (error: any) => {
-      toast({ title: 'Error', description: error.message || 'Failed to reject product', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: extractErrorMessage(error, 'Failed to reject product'),
+        variant: 'destructive',
+      });
     },
   });
 
@@ -247,6 +274,7 @@ export default function AdminProducts() {
       });
       setRejectDialog({ open: false, type: 'price' });
       setRejectReason('');
+      setRejectReasonError('');
     },
     onError: (error: any) => {
       toast({
@@ -289,6 +317,7 @@ export default function AdminProducts() {
       });
       setRejectDialog({ open: false, type: 'category-change' });
       setRejectReason('');
+      setRejectReasonError('');
     },
     onError: (error: any) => {
       toast({
@@ -300,7 +329,9 @@ export default function AdminProducts() {
   });
 
   const handleReject = () => {
-    if (!rejectReason.trim()) {
+    const trimmedReason = rejectReason.trim();
+
+    if (!trimmedReason) {
       toast({
         title: 'Reason Required',
         description: 'Please provide a reason for rejection.',
@@ -309,12 +340,25 @@ export default function AdminProducts() {
       return;
     }
 
+    if (trimmedReason.length > MAX_REJECTION_REASON_LENGTH) {
+      const message = `Rejection reason must be ${MAX_REJECTION_REASON_LENGTH} characters or fewer.`;
+      setRejectReasonError(message);
+      toast({
+        title: 'Reason Too Long',
+        description: message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setRejectReasonError('');
+
     if (rejectDialog.type === 'product' && rejectDialog.productId) {
-      rejectProductMutation.mutate({ productId: rejectDialog.productId, reason: rejectReason });
+      rejectProductMutation.mutate({ productId: rejectDialog.productId, reason: trimmedReason });
     } else if (rejectDialog.type === 'price' && rejectDialog.productId) {
-      rejectProductPriceUpdateMutation.mutate({ requestId: rejectDialog.productId, reason: rejectReason });
+      rejectProductPriceUpdateMutation.mutate({ requestId: rejectDialog.productId, reason: trimmedReason });
     } else if (rejectDialog.type === 'category-change' && rejectDialog.productId) {
-      rejectCategoryChangeMutation.mutate({ requestId: rejectDialog.productId, reason: rejectReason });
+      rejectCategoryChangeMutation.mutate({ requestId: rejectDialog.productId, reason: trimmedReason });
     }
   };
 
@@ -327,6 +371,23 @@ export default function AdminProducts() {
       return `${product.productSku[0].price.amount.toLocaleString()} ${product.productSku[0].price.currencyCode}`;
     }
     return 'N/A';
+  };
+
+  const formatVendorPrice = (product: Product) => {
+    const price = product.price || (product.productSku?.[0]?.price);
+    if (!price) return 'N/A';
+
+    // originalCurrencyCode + originalVendorAmountMinor are always populated with
+    // the currency the vendor stored the price in (regardless of admin display currency)
+    if (price.originalCurrencyCode && price.originalVendorAmountMinor != null) {
+      const major = price.originalVendorAmountMinor / 100;
+      return `${major.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${price.originalCurrencyCode}`;
+    }
+
+    // Fallback for older API responses without original fields
+    const vendorAmt = price.vendorAmount ?? (price.vendorAmountMinor != null ? price.vendorAmountMinor / 100 : null);
+    if (vendorAmt == null) return 'N/A';
+    return `${vendorAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${price.currencyCode}`;
   };
 
   const formatCurrency = (amountMinor: number, currency: string = 'ETB') => {
@@ -435,7 +496,8 @@ export default function AdminProducts() {
                       <TableRow>
                         <TableHead>Product</TableHead>
                         <TableHead>Vendor</TableHead>
-                        <TableHead>Price</TableHead>
+                        <TableHead>Customer Price</TableHead>
+                        <TableHead>Vendor Price</TableHead>
                         <TableHead>Stock</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -466,6 +528,7 @@ export default function AdminProducts() {
                           </TableCell>
                           <TableCell className="text-sm">{product.vendorName || `Vendor #${product.vendorId}`}</TableCell>
                           <TableCell className="text-sm">{formatPrice(product)}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{formatVendorPrice(product)}</TableCell>
                           <TableCell className="text-sm">{getStock(product)}</TableCell>
                           <TableCell>{getStatusBadge(product.status)}</TableCell>
                           <TableCell className="text-right">
@@ -558,7 +621,8 @@ export default function AdminProducts() {
                           </div>
                           <p className="text-sm text-gray-700 line-clamp-2">{product.description}</p>
                           <div className="flex gap-4 mt-2 text-sm text-gray-600">
-                            <span>Price: {formatPrice(product)}</span>
+                            <span>Customer Price: {formatPrice(product)}</span>
+                            <span className="text-muted-foreground">Vendor Price: {formatVendorPrice(product)}</span>
                             <span>Stock: {getStock(product)}</span>
                             <span>Vendor: {product.vendorName || `#${product.vendorId}`}</span>
                           </div>
@@ -655,7 +719,7 @@ export default function AdminProducts() {
                         <TableRow key={request.id}>
                           <TableCell>
                             <div>
-                              <div className="font-medium">{request.productName}</div>
+                              <div className="font-medium">{request.entityName || request.productName}</div>
                               {request.skuCode && (
                                 <div className="text-sm text-gray-500 font-mono">SKU: {request.skuCode}</div>
                               )}
@@ -761,10 +825,10 @@ export default function AdminProducts() {
                       <TableRow key={request.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            {request.productCover ? (
+                            {(request.entityImageUrl || request.productCover) ? (
                               <img 
-                                src={request.productCover} 
-                                alt={request.productName} 
+                                src={request.entityImageUrl || request.productCover} 
+                                alt={request.entityName || request.productName} 
                                 className="h-10 w-10 rounded object-cover"
                               />
                             ) : (
@@ -772,7 +836,7 @@ export default function AdminProducts() {
                                 <Package className="h-5 w-5 text-gray-400" />
                               </div>
                             )}
-                            <div className="font-medium">{request.productName}</div>
+                            <div className="font-medium">{request.entityName || request.productName}</div>
                           </div>
                         </TableCell>
                         <TableCell>{request.vendorName || '-'}</TableCell>
@@ -1011,17 +1075,44 @@ export default function AdminProducts() {
           <Textarea
             placeholder="Enter rejection reason..."
             value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setRejectReason(value);
+
+              if (value.trim().length > MAX_REJECTION_REASON_LENGTH) {
+                setRejectReasonError(`Rejection reason must be ${MAX_REJECTION_REASON_LENGTH} characters or fewer.`);
+              } else {
+                setRejectReasonError('');
+              }
+            }}
             rows={4}
+            maxLength={MAX_REJECTION_REASON_LENGTH}
           />
+          <div className="flex items-center justify-between text-xs">
+            <p className={rejectReasonError ? 'text-red-600' : 'text-muted-foreground'}>
+              {rejectReasonError || 'Reason must be clear and concise.'}
+            </p>
+            <p className={rejectReason.trim().length > MAX_REJECTION_REASON_LENGTH ? 'text-red-600' : 'text-muted-foreground'}>
+              {rejectReason.trim().length}/{MAX_REJECTION_REASON_LENGTH}
+            </p>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectDialog({ open: false, type: 'product' })}>
+            <Button variant="outline" onClick={() => {
+              setRejectDialog({ open: false, type: 'product' });
+              setRejectReasonError('');
+            }}>
               Cancel
             </Button>
             <Button 
               variant="destructive" 
               onClick={handleReject}
-              disabled={rejectProductMutation.isPending || rejectProductPriceUpdateMutation.isPending || rejectCategoryChangeMutation.isPending}
+              disabled={
+                rejectProductMutation.isPending ||
+                rejectProductPriceUpdateMutation.isPending ||
+                rejectCategoryChangeMutation.isPending ||
+                !rejectReason.trim() ||
+                rejectReason.trim().length > MAX_REJECTION_REASON_LENGTH
+              }
             >
               {(rejectProductMutation.isPending || rejectProductPriceUpdateMutation.isPending || rejectCategoryChangeMutation.isPending) && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

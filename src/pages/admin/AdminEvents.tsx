@@ -552,8 +552,8 @@ export default function AdminEvents() {
                         <TableRow key={request.id}>
                           <TableCell>
                             <div>
-                              <div className="font-medium">{request.eventTitle}</div>
-                              <div className="text-sm text-gray-500">{request.ticketTypeName}</div>
+                              <div className="font-medium">{request.eventTitle || request.entityName}</div>
+                              <div className="text-sm text-gray-500">{request.ticketTypeName || ''}</div>
                             </div>
                           </TableCell>
                           <TableCell>

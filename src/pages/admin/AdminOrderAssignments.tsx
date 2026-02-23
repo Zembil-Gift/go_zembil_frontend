@@ -40,7 +40,9 @@ import {
   User,
   Calendar,
   ImageIcon,
-  AlertCircle
+  AlertCircle,
+  DollarSign,
+  Wallet
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -53,6 +55,7 @@ import {
   AdminDeliveryAssignmentDto,
   OrderReadyForDeliveryDto,
 } from '@/services/deliveryService';
+import { orderService } from '@/services/orderService';
 
 export default function AdminOrderAssignments() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -228,6 +231,7 @@ export default function AdminOrderAssignments() {
                     <TableHead>Delivery Person</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead>Address</TableHead>
+                    <TableHead>Delivery Fee</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Assigned At</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -239,7 +243,7 @@ export default function AdminOrderAssignments() {
                       <TableCell>
                         <p className="font-medium">#{assignment.orderNumber}</p>
                         <p className="text-sm text-gray-500">
-                          {((assignment.totalAmount || 0)).toFixed(2)} {assignment.currencyCode}
+                          {orderService.formatPrice(assignment.totalAmountMinor, assignment.currencyCode)}
                         </p>
                       </TableCell>
                       <TableCell>{assignment.deliveryPersonName}</TableCell>
@@ -254,6 +258,25 @@ export default function AdminOrderAssignments() {
                           <p>{assignment.shippingAddress}</p>
                           <p className="text-gray-500">{assignment.shippingCity}</p>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {assignment.deliveryFee ? (
+                          <div>
+                            <span className="font-semibold text-green-700">
+                              {assignment.deliveryFeeCurrency === 'ETB' ? 'ETB ' : '$'}
+                              {Number(assignment.deliveryFee).toFixed(2)}
+                            </span>
+                            {assignment.deliveryPaymentStatus && (
+                              <div className="mt-1">
+                                <Badge className={assignment.deliveryPaymentStatus === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}>
+                                  {assignment.deliveryPaymentStatus === 'PAID' ? 'Paid' : 'Unpaid'}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
                       </TableCell>
                       <TableCell>{getStatusBadge(assignment.status)}</TableCell>
                       <TableCell>
@@ -293,7 +316,7 @@ export default function AdminOrderAssignments() {
                   ))}
                   {assignments.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                         No assignments found
                       </TableCell>
                     </TableRow>
@@ -327,7 +350,7 @@ export default function AdminOrderAssignments() {
                   {unassignedOrders.map((order) => (
                     <SelectItem key={order.id} value={order.id.toString()}>
                        #{order.orderNumber} - {order.customerName} - {order.shippingCity} 
-                       ({order.totalAmount ? order.totalAmount.toFixed(2) : 0} {order.currency || 'ETB'})
+                       ({orderService.formatPrice(order.totalAmountMinor, order.currencyCode)})
                     </SelectItem>
                   ))}
                   {unassignedOrders.length === 0 && (
@@ -486,15 +509,51 @@ export default function AdminOrderAssignments() {
                 </div>
               </div>
 
-              {/* Order Total */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              {/* Order Total & Delivery Fee */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500">Order Total</span>
                   <span className="text-xl font-bold">
-                    {((selectedAssignment.totalAmount || 0)).toFixed(2)} {selectedAssignment.currencyCode}
+                    {orderService.formatPrice(selectedAssignment.totalAmountMinor, selectedAssignment.currencyCode)}
                   </span>
                 </div>
+                {selectedAssignment.deliveryFee && (
+                  <div className="flex justify-between items-center border-t pt-2">
+                    <span className="text-gray-500 flex items-center gap-1">
+                      <DollarSign className="h-4 w-4" />
+                      Delivery Person Fee
+                    </span>
+                    <span className="text-lg font-bold text-green-700">
+                      {selectedAssignment.deliveryFeeCurrency === 'ETB' ? 'ETB ' : '$'}
+                      {Number(selectedAssignment.deliveryFee).toFixed(2)}
+                    </span>
+                  </div>
+                )}
               </div>
+
+              {/* Delivery Payment Status */}
+              {selectedAssignment.deliveryFee && (
+                <div className={`rounded-lg p-4 ${selectedAssignment.deliveryPaymentStatus === 'PAID' ? 'bg-green-50' : 'bg-amber-50'}`}>
+                  <h4 className="font-medium flex items-center gap-2 mb-2">
+                    <Wallet className="h-4 w-4" />
+                    Delivery Payment
+                  </h4>
+                  <Badge className={selectedAssignment.deliveryPaymentStatus === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}>
+                    {selectedAssignment.deliveryPaymentStatus === 'PAID' ? 'Paid' : 'Unpaid'}
+                  </Badge>
+                  {selectedAssignment.deliveryPaymentStatus === 'PAID' && selectedAssignment.deliveryPaymentApprovedAt && (
+                    <div className="text-sm mt-2 space-y-1">
+                      <p><span className="text-gray-500">Approved:</span> {new Date(selectedAssignment.deliveryPaymentApprovedAt).toLocaleString()}</p>
+                      {selectedAssignment.deliveryPaymentApprovedByName && (
+                        <p><span className="text-gray-500">By:</span> {selectedAssignment.deliveryPaymentApprovedByName}</p>
+                      )}
+                      {selectedAssignment.deliveryPaymentNotes && (
+                        <p><span className="text-gray-500">Notes:</span> {selectedAssignment.deliveryPaymentNotes}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Recipient Info (if delivered) */}
               {selectedAssignment.recipientName && (

@@ -52,6 +52,7 @@ import {
   AdminDeliveryAssignmentDto,
   OrderReadyForDeliveryDto,
 } from '@/services/deliveryService';
+import { orderService } from '@/services/orderService';
 
 export default function AdminCustomOrderAssignments() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -534,6 +535,16 @@ export default function AdminCustomOrderAssignments() {
                   )}
                 </div>
               )}
+
+              {/* Order Total */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Order Total</span>
+                  <span className="text-xl font-bold">
+                    {orderService.formatPrice(selectedAssignment.totalAmountMinor, selectedAssignment.currencyCode)}
+                  </span>
+                </div>
+              </div>
 
               {/* No Images Message */}
               {!selectedAssignment.pickupImageUrl && !selectedAssignment.proofImageUrl && (

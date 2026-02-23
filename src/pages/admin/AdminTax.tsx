@@ -608,7 +608,7 @@ export default function AdminTax() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Code</Label>
-                <Input value={zoneForm.code} onChange={(e) => setZoneForm({ ...zoneForm, code: e.target.value })} placeholder="e.g., US-CA or ET" />
+                <Input value={zoneForm.code} onChange={(e) => setZoneForm({ ...zoneForm, code: e.target.value.toUpperCase() })} placeholder="e.g., US-CA or ET" />
               </div>
               <div>
                 <Label>Name</Label>

@@ -25,6 +25,7 @@ import {
   Key,
   CreditCard,
   Megaphone,
+  Percent,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -64,6 +65,7 @@ const navItems = [
   { href: '/admin/tax', label: 'Tax Management', icon: Receipt },
   { href: '/admin/currency', label: 'Currency', icon: DollarSign },
   { href: '/admin/payment-methods', label: 'Payment Methods', icon: CreditCard },
+  { href: '/admin/commission', label: 'Commission', icon: Percent },
 ];
 
 // Super admin only items

@@ -45,6 +45,7 @@ import {
   Search,
   UserPlus,
   Eye,
+  EyeOff,
   Loader2,
   Phone,
   Mail,
@@ -71,6 +72,7 @@ export default function AdminDeliveryPersonnel() {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<DeliveryPersonDto | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   
   const [formData, setFormData] = useState<CreateDeliveryPersonRequest>({
     firstName: '',
@@ -392,11 +394,26 @@ export default function AdminDeliveryPersonnel() {
             </div>
             <div>
               <Label>Password</Label>
-              <Input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
             <div>
               <Label>Phone Number</Label>

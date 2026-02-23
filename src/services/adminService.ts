@@ -180,6 +180,8 @@ export interface EventPriceUpdateRequest {
   eventTitle: string;
   ticketTypeId: number;
   ticketTypeName: string;
+  entityName?: string;
+  entityId?: number;
   // Vendor prices (what vendor submitted)
   currentVendorPrice?: PriceDto;
   newVendorPrice?: PriceDto;
@@ -318,6 +320,7 @@ export interface TaxRateRequest {
 
 // ==================== CURRENCY TYPES ====================
 export interface CurrencyDto {
+  id?: number;
   code: string;
   name: string;
   symbol: string;
@@ -329,10 +332,12 @@ export interface CurrencyDto {
 }
 
 export interface CurrencyRateDto {
-  sourceCurrency: string;
-  targetCurrency: string;
+  baseCurrencyCode: string;
+  targetCurrencyCode: string;
   rate: number;
-  updatedAt: string;
+  timestamp: string;
+  fetchedAt?: string;
+  provider?: string;
 }
 
 // ==================== PRODUCT PRICE UPDATE TYPES ====================
@@ -349,6 +354,7 @@ export interface ProductPriceDto {
 export interface ProductPriceUpdateRequestDto {
   id: number;
   productId: number;
+  entityName?: string;  // unified DTO field name used by backend
   productName?: string;
   productSkuId?: number;
   skuCode?: string;
@@ -382,6 +388,8 @@ export interface ServicePriceUpdateRequestDto {
   id: number;
   serviceId: number;
   serviceName?: string;
+  entityId?: number;
+  entityName?: string;
   currentVendorPrice?: ServicePriceDto;
   newVendorPrice?: ServicePriceDto;
   currentCustomerPrice?: ServicePriceDto;
@@ -424,7 +432,10 @@ export interface ServiceCategoryChangeRequestDto {
 
 export interface CategoryChangeRequestDto {
   id: number;
+  requestType?: 'PRICE_UPDATE' | 'CATEGORY_CHANGE';
   productId: number;
+  entityName?: string;      // unified DTO field name used by backend
+  entityImageUrl?: string;  // unified DTO field name used by backend
   productName?: string;
   productCover?: string;
   vendorId: number;
@@ -544,6 +555,21 @@ export interface AdminEventOrderDto {
 }
 
 class AdminService {
+  private readonly MAX_REJECTION_REASON_LENGTH = 500;
+
+  private normalizeRejectionReason(reason: string): string {
+    const trimmedReason = reason?.trim();
+
+    if (!trimmedReason) {
+      throw new Error('Rejection reason is required');
+    }
+
+    if (trimmedReason.length > this.MAX_REJECTION_REASON_LENGTH) {
+      throw new Error(`Rejection reason must be ${this.MAX_REJECTION_REASON_LENGTH} characters or fewer`);
+    }
+
+    return trimmedReason;
+  }
   
   async getDashboardStats(): Promise<AdminDashboardStats> {
     return await apiService.getRequest<AdminDashboardStats>('/api/admin/dashboard/stats');
@@ -799,7 +825,8 @@ class AdminService {
   }
 
   async rejectEvent(eventId: number, reason: string): Promise<EventResponse> {
-    return await apiService.postRequest<EventResponse>(`/api/admin/events/${eventId}/reject?reason=${encodeURIComponent(reason)}`, {});
+    const normalizedReason = this.normalizeRejectionReason(reason);
+    return await apiService.postRequest<EventResponse>(`/api/admin/events/${eventId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
   }
 
   async setEventFeatured(eventId: number, featured: boolean): Promise<EventResponse> {
@@ -820,7 +847,8 @@ class AdminService {
   }
 
   async rejectPriceUpdate(requestId: number, reason: string): Promise<EventPriceUpdateRequest> {
-    return await apiService.postRequest<EventPriceUpdateRequest>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+    const normalizedReason = this.normalizeRejectionReason(reason);
+    return await apiService.postRequest<EventPriceUpdateRequest>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
   }
 
   
@@ -846,7 +874,8 @@ class AdminService {
   }
 
   async rejectProduct(productId: number, reason: string): Promise<any> {
-    return await apiService.putRequest<any>(`/api/v1/products/${productId}/reject?reason=${encodeURIComponent(reason)}`, {});
+    const normalizedReason = this.normalizeRejectionReason(reason);
+    return await apiService.putRequest<any>(`/api/v1/products/${productId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
   }
 
   async setSkuFeatured(skuId: number, featured: boolean): Promise<any> {
@@ -1007,6 +1036,14 @@ class AdminService {
     return await apiService.getRequest<CurrencyRateDto[]>('/api/currencies/rates');
   }
 
+  async saveExchangeRate(data: { baseCurrencyCode: string; targetCurrencyCode: string; rate: number }): Promise<CurrencyRateDto> {
+    return await apiService.postRequest<CurrencyRateDto>('/api/currencies/rates', data);
+  }
+
+  async deleteExchangeRate(from: string, to: string): Promise<void> {
+    return await apiService.deleteRequest(`/api/currencies/rates/${from}/${to}`);
+  }
+
   async getProductPriceUpdateRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<ProductPriceUpdateRequestDto>> {
     let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<ProductPriceUpdateRequestDto>>(url);
@@ -1021,11 +1058,12 @@ class AdminService {
   }
 
   async rejectProductPriceUpdate(requestId: number, reason: string): Promise<ProductPriceUpdateRequestDto> {
-    return await apiService.postRequest<ProductPriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+    const normalizedReason = this.normalizeRejectionReason(reason);
+    return await apiService.postRequest<ProductPriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
   }
 
   async getServicePriceUpdateRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<ServicePriceUpdateRequestDto>> {
-    let url = `/api/admin/vendor-change-requests/entity-type/SERVICE?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
+    let url = `/api/admin/vendor-change-requests/entity-type/SERVICE_PACKAGE?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<ServicePriceUpdateRequestDto>>(url);
   }
 
@@ -1038,15 +1076,16 @@ class AdminService {
   }
 
   async rejectServicePriceUpdate(requestId: number, reason: string): Promise<ServicePriceUpdateRequestDto> {
-    return await apiService.postRequest<ServicePriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+    const normalizedReason = this.normalizeRejectionReason(reason);
+    return await apiService.postRequest<ServicePriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
   }
 
   async getServiceCategoryChangeRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<ServiceCategoryChangeRequestDto>> {
-    return await apiService.getRequest<PaginatedResponse<ServiceCategoryChangeRequestDto>>(`/api/admin/vendor-change-requests/entity-type/SERVICE?changeType=CATEGORY_CHANGE&page=${page}&size=${size}`);
+    return await apiService.getRequest<PaginatedResponse<ServiceCategoryChangeRequestDto>>(`/api/admin/vendor-change-requests/entity-type/SERVICE?requestType=CATEGORY_CHANGE&page=${page}&size=${size}`);
   }
 
   async getServiceCategoryChangeRequestsByStatus(status: string, page: number = 0, size: number = 20): Promise<PaginatedResponse<ServiceCategoryChangeRequestDto>> {
-    return await apiService.getRequest<PaginatedResponse<ServiceCategoryChangeRequestDto>>(`/api/admin/vendor-change-requests/status/${status}?changeType=CATEGORY_CHANGE&page=${page}&size=${size}`);
+    return await apiService.getRequest<PaginatedResponse<ServiceCategoryChangeRequestDto>>(`/api/admin/vendor-change-requests/status/${status}?requestType=CATEGORY_CHANGE&page=${page}&size=${size}`);
   }
 
   async getServiceCategoryChangeRequestById(requestId: number): Promise<ServiceCategoryChangeRequestDto> {
@@ -1058,11 +1097,12 @@ class AdminService {
   }
 
   async rejectServiceCategoryChange(requestId: number, reason: string): Promise<ServiceCategoryChangeRequestDto> {
-    return await apiService.postRequest<ServiceCategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+    const normalizedReason = this.normalizeRejectionReason(reason);
+    return await apiService.postRequest<ServiceCategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
   }
 
   async getCategoryChangeRequests(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<CategoryChangeRequestDto>> {
-    let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?page=${page}&size=${size}`;
+    let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?requestType=CATEGORY_CHANGE&page=${page}&size=${size}`;
     return await apiService.getRequest<PaginatedResponse<CategoryChangeRequestDto>>(url);
   }
 
@@ -1079,7 +1119,8 @@ class AdminService {
   }
 
   async rejectCategoryChange(requestId: number, reason: string): Promise<CategoryChangeRequestDto> {
-    return await apiService.postRequest<CategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+    const normalizedReason = this.normalizeRejectionReason(reason);
+    return await apiService.postRequest<CategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
   }
 
     async getUnifiedChangeRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
@@ -1099,7 +1140,22 @@ class AdminService {
   }
 
   async rejectUnifiedChangeRequest(requestId: number, reason: string): Promise<UnifiedChangeRequestDto> {
-    return await apiService.postRequest<UnifiedChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(reason)}`, {});
+    const normalizedReason = this.normalizeRejectionReason(reason);
+    return await apiService.postRequest<UnifiedChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
+  }
+
+  // ===== Commission Rate Management =====
+
+  async getCommissionRates(): Promise<PlatformCommissionRateDto[]> {
+    return await apiService.getRequest<PlatformCommissionRateDto[]>('/api/admin/commission-rates');
+  }
+
+  async getCommissionRate(vendorType: string): Promise<PlatformCommissionRateDto> {
+    return await apiService.getRequest<PlatformCommissionRateDto>(`/api/admin/commission-rates/${vendorType}`);
+  }
+
+  async updateCommissionRate(vendorType: string, data: UpdateCommissionRateRequest): Promise<PlatformCommissionRateDto> {
+    return await apiService.putRequest<PlatformCommissionRateDto>(`/api/admin/commission-rates/${vendorType}`, data);
   }
 }
 
@@ -1144,3 +1200,22 @@ export interface UnifiedChangeRequestDto {
 
 export const adminService = new AdminService();
 export default adminService;
+
+// ===== Commission Rate Types =====
+
+export interface PlatformCommissionRateDto {
+  id: number;
+  vendorType: 'PRODUCT' | 'SERVICE' | 'HYBRID';
+  commissionRate: number;       // decimal (e.g., 0.10)
+  commissionPercentage: number; // percentage (e.g., 10.0)
+  description: string | null;
+  active: boolean;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateCommissionRateRequest {
+  commissionPercentage: number; // percentage (e.g., 10.0 for 10%)
+  description?: string;
+}

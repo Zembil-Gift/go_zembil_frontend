@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -33,6 +34,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Coins, 
@@ -41,9 +49,11 @@ import {
   Trash2,
   Loader2,
   Star,
-  Check
+  Check,
+  ArrowRightLeft,
+  RefreshCw
 } from 'lucide-react';
-import { adminService, CurrencyDto } from '@/services/adminService';
+import { adminService, CurrencyDto, CurrencyRateDto } from '@/services/adminService';
 
 export default function AdminCurrency() {
   const { toast } = useToast();
@@ -56,12 +66,23 @@ export default function AdminCurrency() {
   const [deletingCurrency, setDeletingCurrency] = useState<CurrencyDto | null>(null);
   const [changingDefaultCurrency, setChangingDefaultCurrency] = useState<CurrencyDto | null>(null);
   const [currencyForm, setCurrencyForm] = useState({
+    id: undefined as number | undefined,
     code: '',
     name: '',
     symbol: '',
     decimalPlaces: 2,
     isDefault: false,
     isActive: true
+  });
+
+  // Exchange rate state
+  const [isRateDialogOpen, setIsRateDialogOpen] = useState(false);
+  const [isDeleteRateDialogOpen, setIsDeleteRateDialogOpen] = useState(false);
+  const [deletingRate, setDeletingRate] = useState<CurrencyRateDto | null>(null);
+  const [rateForm, setRateForm] = useState({
+    baseCurrencyCode: '',
+    targetCurrencyCode: '',
+    rate: '',
   });
 
   // Query
@@ -122,13 +143,14 @@ export default function AdminCurrency() {
   });
 
   const resetForm = () => {
-    setCurrencyForm({ code: '', name: '', symbol: '', decimalPlaces: 2, isDefault: false, isActive: true });
+    setCurrencyForm({ id: undefined, code: '', name: '', symbol: '', decimalPlaces: 2, isDefault: false, isActive: true });
     setEditingCurrency(null);
   };
 
   const handleEdit = (currency: CurrencyDto) => {
     setEditingCurrency(currency);
     setCurrencyForm({
+      id: currency.id,
       code: currency.code,
       name: currency.name,
       symbol: currency.symbol,
@@ -153,6 +175,76 @@ export default function AdminCurrency() {
     saveCurrencyMutation.mutate(currencyForm);
   };
 
+  // ==================== EXCHANGE RATE QUERIES & MUTATIONS ====================
+  const { data: exchangeRates = [], isLoading: ratesLoading } = useQuery({
+    queryKey: ['admin', 'exchange-rates'],
+    queryFn: () => adminService.getExchangeRates(),
+  });
+
+  const saveRateMutation = useMutation({
+    mutationFn: (data: { baseCurrencyCode: string; targetCurrencyCode: string; rate: number }) =>
+      adminService.saveExchangeRate(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'exchange-rates'] });
+      toast({ title: 'Success', description: 'Exchange rate saved successfully' });
+      setIsRateDialogOpen(false);
+      resetRateForm();
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to save exchange rate', variant: 'destructive' });
+    },
+  });
+
+  const deleteRateMutation = useMutation({
+    mutationFn: ({ from, to }: { from: string; to: string }) => adminService.deleteExchangeRate(from, to),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'exchange-rates'] });
+      toast({ title: 'Success', description: 'Exchange rate deleted successfully' });
+      setIsDeleteRateDialogOpen(false);
+      setDeletingRate(null);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to delete exchange rate', variant: 'destructive' });
+    },
+  });
+
+  const resetRateForm = () => {
+    setRateForm({ baseCurrencyCode: '', targetCurrencyCode: '', rate: '' });
+  };
+
+  const handleEditRate = (rate: CurrencyRateDto) => {
+    setRateForm({
+      baseCurrencyCode: rate.baseCurrencyCode,
+      targetCurrencyCode: rate.targetCurrencyCode,
+      rate: String(rate.rate),
+    });
+    setIsRateDialogOpen(true);
+  };
+
+  const handleDeleteRate = (rate: CurrencyRateDto) => {
+    setDeletingRate(rate);
+    setIsDeleteRateDialogOpen(true);
+  };
+
+  const handleSubmitRate = () => {
+    const rateValue = parseFloat(rateForm.rate);
+    if (!rateForm.baseCurrencyCode || !rateForm.targetCurrencyCode || isNaN(rateValue) || rateValue <= 0) {
+      toast({ title: 'Validation Error', description: 'Please fill all fields with valid values', variant: 'destructive' });
+      return;
+    }
+    if (rateForm.baseCurrencyCode === rateForm.targetCurrencyCode) {
+      toast({ title: 'Validation Error', description: 'Base and target currencies must be different', variant: 'destructive' });
+      return;
+    }
+    saveRateMutation.mutate({
+      baseCurrencyCode: rateForm.baseCurrencyCode,
+      targetCurrencyCode: rateForm.targetCurrencyCode,
+      rate: rateValue,
+    });
+  };
+
+  const activeCurrencyCodes = currencies.filter(c => c.isActive).map(c => c.code);
+
   const activeCurrencies = currencies.filter(c => c.isActive);
   const defaultCurrency = currencies.find(c => c.isDefault);
 
@@ -162,7 +254,7 @@ export default function AdminCurrency() {
       description="Manage supported currencies and exchange rates"
     >
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
@@ -202,8 +294,34 @@ export default function AdminCurrency() {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-lg bg-purple-500/10">
+                <ArrowRightLeft className="h-6 w-6 text-purple-500" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-purple-600">{exchangeRates.length}</div>
+                <p className="text-sm text-gray-500">Exchange Rates</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
+      <Tabs defaultValue="currencies" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="currencies">Currencies</TabsTrigger>
+          <TabsTrigger value="exchange-rates" className="relative">
+            Exchange Rates
+            {exchangeRates.length > 0 && (
+              <Badge className="ml-2 bg-purple-500 text-white">{exchangeRates.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Currencies Tab */}
+        <TabsContent value="currencies">
       {/* Currencies Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -298,6 +416,213 @@ export default function AdminCurrency() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {/* Exchange Rates Tab */}
+        <TabsContent value="exchange-rates">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <ArrowRightLeft className="h-5 w-5 text-purple-500" />
+                  Exchange Rates
+                </CardTitle>
+                <CardDescription>Manage currency exchange rates</CardDescription>
+              </div>
+              <Button onClick={() => { resetRateForm(); setIsRateDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Exchange Rate
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              {ratesLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-eagle-green" />
+                </div>
+              ) : exchangeRates.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ArrowRightLeft className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>No exchange rates configured</p>
+                  <p className="text-sm mt-1">Add rates to enable currency conversion</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Base Currency</TableHead>
+                      <TableHead>Target Currency</TableHead>
+                      <TableHead className="text-right">Rate</TableHead>
+                      <TableHead>Example</TableHead>
+                      <TableHead>Provider</TableHead>
+                      <TableHead>Last Updated</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {exchangeRates.map((rate, idx) => {
+                      const baseCurr = currencies.find(c => c.code === rate.baseCurrencyCode);
+                      const targetCurr = currencies.find(c => c.code === rate.targetCurrencyCode);
+                      return (
+                        <TableRow key={`${rate.baseCurrencyCode}-${rate.targetCurrencyCode}-${idx}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="font-mono">
+                                {rate.baseCurrencyCode}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">{baseCurr?.name || ''}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="font-mono">
+                                {rate.targetCurrencyCode}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">{targetCurr?.name || ''}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-mono font-semibold text-lg">{Number(rate.rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              1 {rate.baseCurrencyCode} = {Number(rate.rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {rate.targetCurrencyCode}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="text-xs">
+                              {rate.provider || 'N/A'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {rate.timestamp ? new Date(rate.timestamp).toLocaleString() : 'N/A'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => handleEditRate(rate)} title="Update rate">
+                                <RefreshCw className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-red-600" onClick={() => handleDeleteRate(rate)} title="Delete rate">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Exchange Rate Dialog */}
+      <Dialog open={isRateDialogOpen} onOpenChange={(open) => { setIsRateDialogOpen(open); if (!open) resetRateForm(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="h-5 w-5 text-purple-500" />
+              {rateForm.baseCurrencyCode && rateForm.targetCurrencyCode ? 'Update Exchange Rate' : 'Add Exchange Rate'}
+            </DialogTitle>
+            <DialogDescription>Set the conversion rate between two currencies</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Base Currency</Label>
+                <Select
+                  value={rateForm.baseCurrencyCode}
+                  onValueChange={(value) => setRateForm({ ...rateForm, baseCurrencyCode: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select base currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeCurrencyCodes.map(code => (
+                      <SelectItem key={code} value={code} disabled={code === rateForm.targetCurrencyCode}>
+                        {code} — {currencies.find(c => c.code === code)?.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Target Currency</Label>
+                <Select
+                  value={rateForm.targetCurrencyCode}
+                  onValueChange={(value) => setRateForm({ ...rateForm, targetCurrencyCode: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select target currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeCurrencyCodes.map(code => (
+                      <SelectItem key={code} value={code} disabled={code === rateForm.baseCurrencyCode}>
+                        {code} — {currencies.find(c => c.code === code)?.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>Exchange Rate</Label>
+              <Input
+                type="number"
+                step="any"
+                min="0"
+                value={rateForm.rate}
+                onChange={(e) => setRateForm({ ...rateForm, rate: e.target.value })}
+                placeholder="e.g., 80.00"
+              />
+              {rateForm.baseCurrencyCode && rateForm.targetCurrencyCode && rateForm.rate && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  1 {rateForm.baseCurrencyCode} = {parseFloat(rateForm.rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} {rateForm.targetCurrencyCode}
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRateDialogOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleSubmitRate}
+              disabled={saveRateMutation.isPending || !rateForm.baseCurrencyCode || !rateForm.targetCurrencyCode || !rateForm.rate}
+            >
+              {saveRateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Rate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Rate Confirmation Dialog */}
+      <AlertDialog open={isDeleteRateDialogOpen} onOpenChange={setIsDeleteRateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Exchange Rate</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the exchange rate from{' '}
+              <strong>{deletingRate?.baseCurrencyCode}</strong> to{' '}
+              <strong>{deletingRate?.targetCurrencyCode}</strong>?
+              This will remove the conversion rate between these currencies.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingRate(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => deletingRate && deleteRateMutation.mutate({
+                from: deletingRate.baseCurrencyCode,
+                to: deletingRate.targetCurrencyCode,
+              })}
+            >
+              {deleteRateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Currency Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>

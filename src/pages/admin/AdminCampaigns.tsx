@@ -255,8 +255,8 @@ export default function AdminCampaigns() {
     const payload: EventCampaignRequest = {
       name: values.name,
       description: values.description || '',
-      startDateTime: new Date(values.startDateTime).toISOString().replace('Z', ''),
-      endDateTime: new Date(values.endDateTime).toISOString().replace('Z', ''),
+      startDateTime: new Date(values.startDateTime).toISOString(),
+      endDateTime: new Date(values.endDateTime).toISOString(),
       subCategoryId: Number(values.subCategoryId),
       active: values.active,
     };
