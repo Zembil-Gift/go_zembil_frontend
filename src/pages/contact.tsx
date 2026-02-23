@@ -39,7 +39,7 @@ export default function Contact() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="font-display text-4xl sm:text-5xl font-bold mb-4">
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4">
               Contact Us
             </h1>
             <p className="text-xl opacity-90 max-w-2xl mx-auto">
@@ -152,7 +152,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-charcoal mb-1">Email</h3>
-                  <p className="text-gray-600">info@afrodebab.com</p>
+                  <p className="text-gray-600">info@gogerami.com</p>
                   <p className="text-sm text-gray-500 mt-1">We'll respond within 24 hours</p>
                 </div>
               </div>
@@ -163,11 +163,13 @@ export default function Contact() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-charcoal mb-1">Phone</h3>
-                  <p className="text-gray-600">+251 11 123 4567</p>
+                  <p className="text-gray-600">+1 945 399 3809</p>
+                  <p className="text-gray-600">+251 91 791 4528</p>
+
                   <p className="text-sm text-gray-500 mt-1">Monday - Friday, 9 AM - 6 PM EAT</p>
                 </div>
               </div>
-
+{/* 
               <div className="flex items-start space-x-4">
                 <div className="w-12 h-12 bg-ethiopian-gold/10 rounded-lg flex items-center justify-center flex-shrink-0">
                   <MessageCircle className="text-ethiopian-gold" size={24} />
@@ -177,7 +179,7 @@ export default function Contact() {
                   <p className="text-gray-600">Available on our website</p>
                   <p className="text-sm text-gray-500 mt-1">Instant support during business hours</p>
                 </div>
-              </div>
+              </div> */}
 
               <div className="flex items-start space-x-4">
                 <div className="w-12 h-12 bg-ethiopian-gold/10 rounded-lg flex items-center justify-center flex-shrink-0">
