@@ -48,7 +48,7 @@ export default function Footer() {
               <li><Link to="/gifts?category=occasions" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.occasions')}</Link></li>
               <li><Link to="/gifts?category=cultural" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.culturalReligious')}</Link></li>
               <li><Link to="/custom-orders" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.customOrders')}</Link></li>
-              <li><Link to="/gift-cards" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.giftCards')}</Link></li>
+              {/* <li><Link to="/gift-cards" className="text-gray-300 hover:text-white transition-colors duration-200">{t('footer.giftCards')}</Link></li> */}
             </ul>
           </div>
 
