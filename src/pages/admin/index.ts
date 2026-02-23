@@ -1,14 +1,11 @@
 export { default as AdminDashboard } from './AdminDashboard';
 export { default as AdminUsers } from './AdminUsers';
 export { default as AdminVendors } from './AdminVendors';
-export { default as AdminOrders } from './AdminOrders';
-export { default as AdminEventOrders } from './AdminEventOrders';
 export { default as AdminEvents } from './AdminEvents';
 export { default as AdminCategories } from './AdminCategories';
 export { default as AdminProducts } from './AdminProducts';
 export { default as AdminTax } from './AdminTax';
 export { default as AdminCurrency } from './AdminCurrency';
-export { default as AdminPriceUpdates } from './AdminPriceUpdates';
 export { default as AdminDelivery } from './AdminDelivery';
 export { default as AdminFeaturedAds } from './AdminFeaturedAds';
 export { default as AdminServices } from './AdminServices';
