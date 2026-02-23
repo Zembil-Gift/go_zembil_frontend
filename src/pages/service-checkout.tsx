@@ -1007,16 +1007,15 @@ export default function ServiceCheckout() {
                           disabled={isValidatingDiscount}
                         />
                         <Button
-                          variant="outline"
                           type="button"
                           onClick={handleApplyDiscount}
                           disabled={isValidatingDiscount || !discountCode.trim()}
-                          className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
+                          className="bg-eagle-green hover:bg-eagle-green/90 text-white font-medium min-w-[90px] transition-all"
                         >
                           {isValidatingDiscount ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            'Apply'
+                            'Apply Code'
                           )}
                         </Button>
                       </div>
