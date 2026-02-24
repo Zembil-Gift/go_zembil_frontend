@@ -1,9 +1,9 @@
 import { useParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Package, Truck, Clock, MapPin, Phone, Mail, ArrowLeft, Loader2 } from 'lucide-react';
+import { CheckCircle, Package, Truck, Clock, MapPin, Phone, Mail, ArrowLeft} from 'lucide-react';
 import { isUnauthorizedError } from '@/lib/authUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';

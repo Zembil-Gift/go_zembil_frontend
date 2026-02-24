@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Star, Upload, MapPin, Clock, Camera, Globe, Phone, Mail, FileText, Image, CheckCircle } from "lucide-react";
+import { Star, Upload, MapPin, Clock, Camera, Globe, FileText, Image, CheckCircle } from "lucide-react";
 
 const celebrityRegistrationSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters").max(200, "Full name is too long"),

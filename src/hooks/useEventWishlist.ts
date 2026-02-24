@@ -79,7 +79,7 @@ export function useEventWishlist() {
         description: "Your wishlist notes have been updated.",
       });
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update wishlist notes",
@@ -109,14 +109,4 @@ export function useEventWishlist() {
     isRemovingFromWishlist: removeFromEventWishlistMutation.isPending,
     isUpdatingNotes: updateEventWishlistNotesMutation.isPending,
   };
-}
-
-export function useEventWishlistCheck(eventId: number) {
-  const { isAuthenticated } = useAuth();
-
-  return useQuery({
-    queryKey: ["/api/event-wishlist/check", eventId],
-    enabled: isAuthenticated && !!eventId,
-    retry: false,
-  });
 }

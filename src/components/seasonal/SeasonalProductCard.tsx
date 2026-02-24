@@ -172,7 +172,7 @@ export function SeasonalProductCard({
               >
                 {typeof product.price === 'object' && product.price 
                   ? formatPriceFromDto(product.price as unknown as PriceData)
-                  : formatPrice(typeof product.price === 'number' ? product.price : extractPriceAmount(product.price as any), (product as any).currency || 'USD')}
+                  : formatPrice(extractPriceAmount(product.price as any), (product as any).currency || 'USD')}
               </span>
               {showWishlistDate && wishlistItem?.createdAt && (
                 <span 
@@ -192,7 +192,7 @@ export function SeasonalProductCard({
             <div className="flex gap-2 pt-2">
               <CartButton 
                 productId={product.id}
-                price={typeof product.price === 'number' ? product.price : extractPriceAmount(product.price as any)}
+                price={extractPriceAmount(product.price as any)}
                 className="flex-1"
               />
             </div>

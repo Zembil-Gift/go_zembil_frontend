@@ -34,7 +34,7 @@ export function useVoiceSearch({
   const [isTranslating, setIsTranslating] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [translatedText, setTranslatedText] = useState('');
-  const [detectedLanguage, setDetectedLanguage] = useState<string>('');
+  const [detectedLanguage] = useState<string>('');
   const [error, setError] = useState<string>('');
 
   const recognitionRef = useRef<any>(null);

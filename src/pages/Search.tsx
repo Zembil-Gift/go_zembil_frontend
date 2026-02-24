@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import MultilingualSearch from '@/components/search/MultilingualSearch';
@@ -48,12 +48,12 @@ export default function Search() {
     queryKey: ['/api/products/search', searchQuery],
     queryFn: async () => {
       if (!searchQuery) return [];
-      
+
       const params = new URLSearchParams({
         q: searchQuery,
         ...(translatedQuery && { translated: translatedQuery })
       });
-      
+
       const response = await fetch(`/api/products/search?${params.toString()}`, {
         credentials: 'include',
       });
@@ -70,7 +70,7 @@ export default function Search() {
     setSearchQuery(query);
     setTranslatedQuery(translated || '');
     setHasSearched(true);
-    
+
     // Update URL
     const params = new URLSearchParams({ q: query });
     if (translated) params.set('translated', translated);
@@ -253,7 +253,7 @@ export default function Search() {
                     <GiftItemCard key={product.id} product={product} />
                   ))}
                 </div>
-                
+
                 {/* Add pagination for search results if needed */}
                 {searchResults?.length > 20 && (
                   <ProductPagination
@@ -266,7 +266,7 @@ export default function Search() {
                     className="mt-12"
                   />
                 )}
-                
+
                 <div className="mt-8 text-center">
                   <p className="text-gray-600">
                     Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"

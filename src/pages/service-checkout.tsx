@@ -347,7 +347,7 @@ export default function ServiceCheckout() {
       if (availableSlots && availableSlots.length > 0) {
         // If API returns full datetime strings, extract just the time portion (HH:MM)
         return availableSlots.map(slot => {
-          if (true && slot.includes('T')) {
+          if (slot.includes('T')) {
             // Extract time from datetime string like "2025-12-31T09:00:00"
             const timePart = slot.split('T')[1];
             return timePart ? timePart.substring(0, 5) : slot; // Get HH:MM
