@@ -18,9 +18,15 @@ import { getEventImageUrl } from "@/utils/imageUtils";
 type Event = {
   id: number;
   name: string;
+  title?: string;
   description: string;
   eventDate: string;
   endDate: string;
+  imageUrl?: string;
+  images?: Array<{ url?: string; fullUrl?: string }>;
+  category?: string;
+  price?: number;
+  maxCapacity?: number;
   location: { id: number; name: string; country: string };
   type: string;
   ticketPrice: string;
@@ -39,8 +45,11 @@ type Event = {
 type Service = {
   id: number;
   name: string;
+  title?: string;
   description: string;
   category: string;
+  imageUrl?: string;
+  price?: number;
   basePrice: number;
   duration: string;
   location: { id: number; name: string; country: string };
@@ -112,18 +121,33 @@ export default function EnhancedEvents() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Data fetching
-  const { data: events = [], isLoading: eventsLoading } = useQuery({
+  const { data: events = [], isLoading: eventsLoading } = useQuery<Event[]>({
     queryKey: ['/api/events'],
+    queryFn: async () => {
+      const response = await fetch('/api/events', { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to load events');
+      return response.json();
+    },
     enabled: true,
   });
 
-  const { data: services = [], isLoading: servicesLoading } = useQuery({
+  const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
     queryKey: ['/api/services'],
+    queryFn: async () => {
+      const response = await fetch('/api/services', { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to load services');
+      return response.json();
+    },
     enabled: true,
   });
 
-  const { data: locations = [], isLoading: locationsLoading } = useQuery({
+  const { data: locations = [], isLoading: locationsLoading } = useQuery<Location[]>({
     queryKey: ['/api/locations'],
+    queryFn: async () => {
+      const response = await fetch('/api/locations', { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to load locations');
+      return response.json();
+    },
     enabled: true,
   });
 
@@ -413,17 +437,17 @@ export default function EnhancedEvents() {
                   <Card key={event.id} className="group bg-white/90 border-amber-200 backdrop-blur-sm hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden">
                     <div className="relative h-48 overflow-hidden">
                       <img 
-                        src={getEventImageUrl(event.images, event.imageUrl)} 
+                        src={getEventImageUrl(event.images as any, event.imageUrl)}
                         alt={event.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                       <div className="absolute top-4 right-4 z-10">
-                        <EventWishlistButton eventId={event.id} />
+                        <EventWishlistButton eventId={event.id} eventName={event.name || event.title || 'Event'} />
                       </div>
                       <div className="absolute bottom-4 left-4 z-10">
-                        <Badge className={`${getServiceTypeColor(event.category)} text-white border-none shadow-lg`}>
-                          {getCategoryIcon(event.category)}
-                          <span className="ml-2">{event.category}</span>
+                        <Badge className={`${getServiceTypeColor(event.category || 'General')} text-white border-none shadow-lg`}>
+                          {getCategoryIcon(event.category || 'General')}
+                          <span className="ml-2">{event.category || 'General'}</span>
                         </Badge>
                       </div>
                     </div>

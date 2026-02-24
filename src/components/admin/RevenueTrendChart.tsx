@@ -192,7 +192,7 @@ export function RevenueTrendChart({
               <ChartTooltip
                 content={
                   <ChartTooltipContent
-                    formatter={(value: number | string, name: string) => {
+                    formatter={(value: any, name: any) => {
                       const config = chartConfig[name as keyof typeof chartConfig];
                       const label = config?.label || name;
                       

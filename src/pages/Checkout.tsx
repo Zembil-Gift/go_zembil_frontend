@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StateSelect, COUNTRIES } from "@/components/ui/state-select";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ShoppingCart, ArrowLeft, CreditCard, Smartphone, Loader2, Gift, Tag, CheckCircle2, XCircle, AlertCircle, MapPin } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -907,7 +907,7 @@ export default function Checkout() {
                       />
                       <Button
                         type="button"
-                        onClick={handleApplyDiscount}
+                        onClick={() => void handleApplyDiscount()}
                         disabled={isValidatingDiscount || !discountCode.trim()}
                         className="bg-eagle-green hover:bg-eagle-green/90 text-white min-w-[90px] font-medium transition-all"
                       >

@@ -635,7 +635,7 @@ export default function AdminTax() {
               <div>
                 <Label>State *</Label>
                 <StateSelect
-                  value={zoneForm.state}
+                  value={zoneForm.state || ''}
                   onValueChange={(v) => setZoneForm({ ...zoneForm, state: v })}
                 />
                 <p className="text-xs text-muted-foreground mt-1">US taxes are applied based on state</p>

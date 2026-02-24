@@ -30,18 +30,18 @@ export default function VoiceSearch({ onSearch, isOpen, onClose }: VoiceSearchPr
   const [error, setError] = useState('');
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = selectedLanguage;
 
-      recognitionRef.current.onresult = (event) => {
+      recognitionRef.current.onresult = (event: any) => {
         const current = event.resultIndex;
         const transcript = event.results[current][0].transcript;
         setTranscript(transcript);
@@ -55,7 +55,7 @@ export default function VoiceSearch({ onSearch, isOpen, onClose }: VoiceSearchPr
         setIsListening(false);
       };
 
-      recognitionRef.current.onerror = (event) => {
+      recognitionRef.current.onerror = (event: any) => {
         setError(`Voice recognition error: ${event.error}`);
         setIsListening(false);
       };

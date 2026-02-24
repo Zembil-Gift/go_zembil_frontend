@@ -29,17 +29,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { DiscountBadge } from '@/components/DiscountBadge';
 import { PriceWithDiscount } from '@/components/PriceWithDiscount';
-import PaymentMethodSelector, { PaymentMethodType } from '@/components/PaymentMethodSelector';
+import PaymentMethodSelector from '@/components/PaymentMethodSelector';
 
 import { serviceService, AvailabilityConfig } from '@/services/serviceService';
 import { serviceOrderService, CreateServiceOrderRequest } from '@/services/serviceOrderService';
 import { discountService, type DiscountValidationResult } from '@/services/discountService';
-import { formatPrice, toMinorUnits, getCurrencyDecimals, calculateDiscountedPrice, getDiscountAmountForDisplay } from '@/lib/currency';
+import { formatPrice, calculateDiscountedPrice, getDiscountAmountForDisplay } from '@/lib/currency';
 
 export default function ServiceCheckout() {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -348,7 +347,7 @@ export default function ServiceCheckout() {
       if (availableSlots && availableSlots.length > 0) {
         // If API returns full datetime strings, extract just the time portion (HH:MM)
         return availableSlots.map(slot => {
-          if (typeof slot === 'string' && slot.includes('T')) {
+          if (true && slot.includes('T')) {
             // Extract time from datetime string like "2025-12-31T09:00:00"
             const timePart = slot.split('T')[1];
             return timePart ? timePart.substring(0, 5) : slot; // Get HH:MM

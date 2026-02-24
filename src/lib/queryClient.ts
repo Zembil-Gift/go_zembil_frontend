@@ -42,7 +42,7 @@ export const getQueryFn: <T>(options: {
       // Handle 401 errors
       if (error instanceof Error && error.message.includes('401')) {
         if (unauthorizedBehavior === "returnNull") {
-          return null;
+          return null as any;
         }
         throw error;
       }

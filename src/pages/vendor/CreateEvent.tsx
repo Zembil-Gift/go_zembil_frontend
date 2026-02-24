@@ -11,10 +11,6 @@ import {apiService} from "@/services/apiService";
 import {imageService} from "@/services/imageService";
 import {SubcategorySearchCombobox} from "@/components/SubcategorySearchCombobox";
 
-const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
-    if (!vendorProfile) return false;
-    return vendorProfile.countryCode === 'ET';
-};
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -25,17 +21,11 @@ import {ImageUpload} from "@/components/ImageUpload";
 import {ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, AlertCircle, ImageIcon, Info} from "lucide-react";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
-interface Category {
-    id: number;
-    name: string;
-    slug: string;
-}
+const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
+    if (!vendorProfile) return false;
+    return vendorProfile.countryCode === 'ET';
+};
 
-interface SubCategory {
-    id: number;
-    name: string;
-    slug: string;
-}
 
 interface Currency {
     id: number;

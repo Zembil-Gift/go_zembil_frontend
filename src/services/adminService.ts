@@ -242,13 +242,18 @@ export interface SubCategoryResponse {
   slug: string;
   description?: string;
   iconName?: string;
+  displayOrder?: number;
+  isFeatured?: boolean;
   createdAt: string;
 }
 
 export interface CreateSubCategoryRequest {
   name: string;
+  slug?: string;
   description?: string;
   iconName?: string;
+  displayOrder?: number;
+  isFeatured?: boolean;
 }
 
 // ==================== TAX TYPES ====================
@@ -278,6 +283,7 @@ export interface TaxCategoryDto {
 
 export interface TaxRateDto {
   id: number;
+  name?: string;
   taxZoneId: number;
   taxZoneName?: string;
   taxZoneCode?: string;

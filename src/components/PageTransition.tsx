@@ -11,7 +11,7 @@ const fadeVariants = {
   initial: { opacity: 0 },
   in: { opacity: 1 },
   out: { opacity: 0 },
-};
+} as any;
 
 const slideVariants = {
   slideInFromRight: {
@@ -34,13 +34,13 @@ const slideVariants = {
     in: { y: 0, opacity: 1 },
     out: { y: "100%", opacity: 0 },
   },
-};
+} as any;
 
 const scaleVariants = {
   initial: { scale: 0.8, opacity: 0 },
   in: { scale: 1, opacity: 1 },
   out: { scale: 1.1, opacity: 0 },
-};
+} as any;
 
 // Enhanced page transition with router integration
 export default function PageTransition({ children }: PageTransitionProps) {

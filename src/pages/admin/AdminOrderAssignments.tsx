@@ -367,7 +367,7 @@ export default function AdminOrderAssignments() {
                       return order ? (
                          <>
                             <p><strong>Customer:</strong> {order.customerName}</p>
-                            <p><strong>Address:</strong> {order.shippingAddress?.street}, {order.shippingCity}</p>
+                           <p><strong>Address:</strong> {order.shippingAddress || 'N/A'}, {order.shippingCity}</p>
                          </>
                       ) : null;
                    })()}

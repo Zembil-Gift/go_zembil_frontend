@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { deliveryPricingService, type DeliveryEstimateResponse } from '../../services/geocodingService';
+import { deliveryPricingService, type DeliveryEstimateResponse } from '@/services/geocodingService.ts';
 import { Truck, Clock, MapPin, AlertTriangle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface DeliveryEstimateProps {

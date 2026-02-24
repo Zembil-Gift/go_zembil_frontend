@@ -58,12 +58,13 @@ export function EnhancedCheckout({
           customerEmail,
           paymentMethods: ['card', 'paypal', 'apple_pay', 'google_pay', 'link']
         });
+        const payload = await response.json();
 
-        if (response.success) {
-          setClientSecret(response.clientSecret);
-          setCurrencyConversions(response.currencyConversions);
+        if (payload.success) {
+          setClientSecret(payload.clientSecret);
+          setCurrencyConversions(payload.currencyConversions);
         } else {
-          throw new Error(response.message || 'Failed to create payment intent');
+          throw new Error(payload.message || 'Failed to create payment intent');
         }
       } catch (error) {
         console.error('Payment intent error:', error);

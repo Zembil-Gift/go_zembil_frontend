@@ -138,8 +138,8 @@ const vendorSignupSchema = z
     message: "Passwords must match",
   })
   .refine((data) => {
-    if (data.country === "Ethiopia" && !data.vatStatus) return false;
-    return true;
+    return !(data.country === "Ethiopia" && !data.vatStatus);
+
   }, {
     path: ["vatStatus"],
     message: "VAT status is required for Ethiopian vendors",

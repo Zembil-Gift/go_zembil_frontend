@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 import { cn } from "@/lib/utils";
@@ -24,6 +25,8 @@ interface ProductCardProps {
 export default function ProductCard({ product, className }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   
@@ -119,7 +122,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         {/* Image Container with consistent aspect ratio */}
         <div className="relative aspect-square bg-gray-50 overflow-hidden">
           <img
-            src={getProductImageUrl(product.images, product.cover, '/api/placeholder/400/400')}
+            src={getProductImageUrl(product.images, product.cover)}
             alt={product.name}
             className={cn(
               "w-full h-full object-cover transition-transform duration-300 group-hover:scale-105",

@@ -38,7 +38,7 @@ import { customOrderTemplateService } from '@/services/customOrderTemplateServic
 import { customOrderService } from '@/services/customOrderService';
 import { imageService } from '@/services/imageService';
 import { discountService, type DiscountValidationResult } from '@/services/discountService';
-import { formatPrice, getCurrencyDecimals, getDiscountAmountForDisplay } from '@/lib/currency';
+import { formatPrice, getDiscountAmountForDisplay } from '@/lib/currency';
 import type { CustomOrderTemplateField, CreateCustomOrderRequest } from '@/types/customOrders';
 import { getAllTemplateImages } from '@/utils/imageUtils';
 import imageCompression from 'browser-image-compression';
@@ -498,7 +498,7 @@ function CreateCustomOrderContent() {
                       // Fallback if preview fails
                       const target = e.target as HTMLImageElement;
                       if (value.previewUrl && target.src === value.previewUrl) {
-                        target.src = value.fileUrl;
+                        target.src = value.fileUrl || '';
                       }
                     }}
                   />

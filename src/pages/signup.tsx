@@ -3,7 +3,7 @@ import {Link, useNavigate} from "react-router-dom";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {useMutation, useQuery} from "@tanstack/react-query";
+import {useMutation} from "@tanstack/react-query";
 import {isValidPhoneNumber, parsePhoneNumberFromString} from "libphonenumber-js";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
@@ -61,7 +61,7 @@ const signupSchema = z
       .regex(/^(?=.*[@$!%*?&#^()_+=\-\[\]{}|;:',.<>/~`])/, "Password must contain at least one special character"),
     confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
     country: z.string().min(1, "Please select your country"),
-    acceptedTerms: z.boolean().refine(val => val === true, {
+    acceptedTerms: z.boolean().refine(val => val, {
       message: "You must accept the Terms and Conditions to continue",
     }),
   })

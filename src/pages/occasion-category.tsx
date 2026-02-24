@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { ChevronRight, Filter, Grid3X3, List, Heart } from "lucide-react";
 import GiftItemCard from "@/components/gift-card";
 import ProtectedRoute from "@/components/protected-route";
@@ -31,8 +31,7 @@ interface Category {
 }
 
 function OccasionCategoryContent() {
-  const [location] = useLocation();
-  const categorySlug = location.split('/')[2]; // Extract slug from /occasions/{slug}
+  const { categorySlug = '' } = useParams<{ categorySlug: string }>();
   
   const [sortBy, setSortBy] = useState('popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -41,12 +40,12 @@ function OccasionCategoryContent() {
   const itemsPerPage = 12;
 
   // Fetch categories to get category info
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
   });
 
   // Fetch products for this category
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["/api/products", categorySlug, sortBy, priceFilter, currentPage],
     queryFn: async () => {
       const category = categories.find((cat: Category) => cat.slug === categorySlug);
@@ -103,7 +102,7 @@ function OccasionCategoryContent() {
           <div className="text-center">
             <h1 className="text-3xl font-bold text-charcoal mb-4">Category Not Found</h1>
             <p className="text-gray-600 mb-8">The occasion category you're looking for doesn't exist.</p>
-            <Link href="/occasions">
+            <Link to="/occasions">
               <Button className="bg-ethiopian-gold hover:bg-amber">
                 Browse All Occasions
               </Button>
@@ -123,11 +122,11 @@ function OccasionCategoryContent() {
       <nav className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center space-x-2 text-sm">
-            <Link href="/" className="text-gray-500 hover:text-ethiopian-gold transition-colors">
+            <Link to="/" className="text-gray-500 hover:text-ethiopian-gold transition-colors">
               Home
             </Link>
             <ChevronRight size={16} className="text-gray-400" />
-            <Link href="/occasions" className="text-gray-500 hover:text-ethiopian-gold transition-colors">
+            <Link to="/occasions" className="text-gray-500 hover:text-ethiopian-gold transition-colors">
               Occasions
             </Link>
             <ChevronRight size={16} className="text-gray-400" />

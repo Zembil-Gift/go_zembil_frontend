@@ -71,7 +71,7 @@ export function AddressAutocomplete({
     const lng = place.geometry.location.lng();
 
     // Parse address components
-    let street = '';
+    let street: string;
     let city = '';
     let state = '';
     let postalCode = '';

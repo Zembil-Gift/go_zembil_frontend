@@ -241,12 +241,12 @@ export default function TrackOrder() {
               </div>
               <div>
                 <p className="font-medium text-gray-900">Delivery Address</p>
-                <p className="text-gray-600">{order.shippingAddress?.street || order.shippingAddress?.addressLine1}</p>
+                <p className="text-gray-600">{order.shippingAddress?.addressLine1}</p>
                 {order.shippingAddress?.addressLine2 && (
                   <p className="text-gray-600 text-sm">{order.shippingAddress.addressLine2}</p>
                 )}
                 <p className="text-gray-600 text-sm">{order.shippingAddress?.city}, {order.shippingAddress?.state}</p>
-                <p className="text-gray-600 text-sm">{order.shippingAddress?.country} {order.shippingAddress?.zipcode}</p>
+                <p className="text-gray-600 text-sm">{order.shippingAddress?.country} {order.shippingAddress?.postalCode}</p>
               </div>
               <div>
                 <p className="font-medium text-gray-900">Contact</p>

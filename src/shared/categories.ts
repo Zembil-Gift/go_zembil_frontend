@@ -1,17 +1,14 @@
 import { 
-  Calendar, Heart, Cross, Coffee,
-  CakeSlice, GraduationCap, Baby, PartyPopper, Home, Users, Award, 
-  Sparkles, Star, Gift, Waves, Egg, Sun, Moon, Mountain, TreePine, 
-  Flower2, Crown, HelpingHand, Smile, ThumbsUp, UtensilsCrossed, 
-  Wheat, ChefHat, Leaf
+  Calendar, Heart, Cross, Coffee
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 export interface SubCategory {
   id: string;
   name: string;
   slug: string;
   description: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
 }
 
 export interface MainCategory {
@@ -19,7 +16,7 @@ export interface MainCategory {
   name: string;
   slug: string;
   description: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   subcategories: SubCategory[];
   color: string; // For styling consistency
 }
@@ -42,6 +39,7 @@ export const CATEGORIES: MainCategory[] = [
     description: "Cultural and religious celebrations",
     icon: Cross,
     color: "from-blue-500 to-purple-500",
+    subcategories: []
   },
   {
     id: "emotions",

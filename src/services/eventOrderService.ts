@@ -86,7 +86,7 @@ export interface CreateEventOrderRequest {
   contactPhone: string;
   giftMessage?: string;
   discountCode?: string;
-  paymentProvider: 'STRIPE' | 'CHAPA';
+  paymentProvider: 'STRIPE' | 'CHAPA' | 'TELEBIRR';
 }
 
 export interface TicketResponse {

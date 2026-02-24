@@ -2,12 +2,13 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Heart, Award, Users, Baby, User } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/animations/StaggerAnimations";
 
 interface GiftRecipient {
   id: string;
   name: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   gradient: string;
   description: string;
   subCategorySlug: string;

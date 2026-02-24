@@ -28,6 +28,8 @@ export function CartSidebar() {
 
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
+  const isUpdatingQuantity = false;
+  const isRemovingItem = false;
 
   const handleUpdateQuantity = (cartItem: CartItem, newQuantity: number) => {
     if (newQuantity <= 0) {

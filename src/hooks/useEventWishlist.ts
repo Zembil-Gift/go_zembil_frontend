@@ -21,7 +21,7 @@ export function useEventWishlist() {
     data: eventWishlistItems = [],
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<EventWishlistItem[]>({
     queryKey: ["/api/event-wishlist"],
     enabled: isAuthenticated,
     retry: false,

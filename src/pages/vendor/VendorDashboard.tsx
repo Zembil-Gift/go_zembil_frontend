@@ -1514,7 +1514,7 @@ export default function VendorDashboardNew() {
                           <div className="text-right">
                             <p className="font-semibold">
                               {customOrderService.formatPrice(
-                                order.finalVendorPrice || order.baseVendorPrice || order.finalPrice || order.basePrice ?? 0,
+                                (order.finalVendorPrice || order.baseVendorPrice || order.finalPrice || order.basePrice) ?? 0,
                                 order.currencyCode || 'ETB'
                               )}
                             </p>
@@ -2299,7 +2299,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
   const openEventPriceEdit = (request: EventPriceUpdateResponse) => {
     setSelectedEventPriceUpdate(request);
     // Convert from minor units (cents/santim) to decimal for form
-    const amountDecimal = request.newPriceMinor / 100;
+    const amountDecimal = (request.newPriceMinor ?? 0) / 100;
     eventPriceForm.reset({
       currencyCode: request.newCurrencyCode || currencies[0]?.code || "",
       amount: amountDecimal,
@@ -3031,8 +3031,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                 <div className="space-y-4">
                   {pendingEventPriceRequests.map((request) => {
                     // Backend returns prices in minor units (cents/santim)
-                    const currentPriceDisplay = (request.currentPriceMinor / 100).toFixed(2);
-                    const newPriceDisplay = (request.newPriceMinor / 100).toFixed(2);
+                    const currentPriceDisplay = ((request.currentPriceMinor ?? 0) / 100).toFixed(2);
+                    const newPriceDisplay = ((request.newPriceMinor ?? 0) / 100).toFixed(2);
                     return (
                       <div key={request.id} className="border rounded-lg p-4">
                         <div className="flex items-start justify-between">

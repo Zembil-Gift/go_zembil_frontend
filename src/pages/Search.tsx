@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import MultilingualSearch from '@/components/search/MultilingualSearch';
 import GiftItemCard from '@/components/gift-card';
+import ProductPagination from '@/components/ProductPagination';
 import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
 import { ArrowLeft, Search as SearchIcon, Mic, Languages } from 'lucide-react';
 
 interface Product {
@@ -44,7 +44,7 @@ export default function Search() {
   }, []);
 
   // Search products
-  const { data: searchResults, isLoading, error } = useQuery({
+  const { data: searchResults = [], isLoading, error } = useQuery<Product[]>({
     queryKey: ['/api/products/search', searchQuery],
     queryFn: async () => {
       if (!searchQuery) return [];
@@ -54,7 +54,13 @@ export default function Search() {
         ...(translatedQuery && { translated: translatedQuery })
       });
       
-      return await apiRequest(`/api/products/search?${params}`);
+      const response = await fetch(`/api/products/search?${params.toString()}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to search products');
+      }
+      return response.json();
     },
     enabled: !!searchQuery && hasSearched,
   });

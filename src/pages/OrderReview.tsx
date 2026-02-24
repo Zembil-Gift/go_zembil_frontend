@@ -115,7 +115,7 @@ export default function OrderReview() {
       const orderData = await orderService.getOrderDetails(Number(orderId));
       
       const mappedOrder: OrderDetails = {
-        orderId: (orderData as any).orderId || orderData.id,
+        orderId: (orderData as any).orderId || orderData.orderNumber,
         orderNumber: (orderData as any).orderNumber || orderData.orderNumber,
         status: (orderData as any).status || orderData.status,
         currency: (orderData as any).currency || orderData.currency || 'USD',

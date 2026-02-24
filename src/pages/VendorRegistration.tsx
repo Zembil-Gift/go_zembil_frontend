@@ -217,7 +217,7 @@ export default function VendorRegistration() {
 
       const submissionData = {
         ...data,
-        vendorCategoryId: data.vendorCategoryId ? parseInt(data.vendorCategoryId) : undefined,
+        vendorCategoryId: data.vendorCategoryId,
         city: data.businessAddress.city,
         country: data.businessAddress.country,
         socialMediaLinks: cleanedSocialMedia,

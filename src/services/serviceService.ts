@@ -41,7 +41,10 @@ export interface PoliciesConfig {
 export interface ServiceResponse {
   id: number;
   title: string;
+  name?: string;
   description?: string;
+  summary?: string;
+  tags?: string[];
   location?: string;
   city?: string;
   categoryId?: number;
@@ -93,6 +96,8 @@ export interface ServicePackageResponse {
   name: string;
   description?: string;
   durationMinutes?: number;
+  sessionDuration?: number;
+  features?: string[];
   isDefault: boolean;
   isFeatured?: boolean;
   isAd?: boolean;

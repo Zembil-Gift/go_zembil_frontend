@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { GoogleMap, Marker } from '@react-google-maps/api';
 import { useGoogleMaps } from './GoogleMapsProvider';
-import { geocodingService, type GeocodeResponse } from '../../services/geocodingService';
+import { geocodingService, type GeocodeResponse } from '@/services/geocodingService.ts';
 import { MapPin, Loader2, Search, LocateFixed } from 'lucide-react';
 
 interface LocationPickerProps {

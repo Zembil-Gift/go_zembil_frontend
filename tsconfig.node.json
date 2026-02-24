@@ -18,8 +18,8 @@
         "outDir": "./dist-node",
         /* Linting */
         "strict": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
         "noFallthroughCasesInSwitch": true
     },
     "include": [

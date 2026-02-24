@@ -39,17 +39,6 @@ const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean =>
   return vendorProfile.countryCode === 'ET';
 };
 
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-}
-
-interface SubCategory {
-  id: number;
-  name: string;
-  slug: string;
-}
 
 interface Currency {
   id: number;

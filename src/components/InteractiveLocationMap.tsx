@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Sparkles, Users, Gift, Clock } from 'lucide-react';
-import { GiftExperienceModal } from './GiftExperienceModal';
+import GiftExperienceModal from './GiftExperienceModal';
 
 // Fix for default markers in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;

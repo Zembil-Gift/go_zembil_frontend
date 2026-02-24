@@ -192,18 +192,8 @@ export function SeasonalProductCard({
             <div className="flex gap-2 pt-2">
               <CartButton 
                 productId={product.id}
+                price={typeof product.price === 'number' ? product.price : extractPriceAmount(product.price as any)}
                 className="flex-1"
-                style={{
-                  backgroundColor: isSeasonalMode && currentTheme.id !== 'default' 
-                    ? currentTheme.colors.primary 
-                    : undefined,
-                  borderColor: isSeasonalMode && currentTheme.id !== 'default' 
-                    ? currentTheme.colors.primary 
-                    : undefined,
-                  color: isSeasonalMode && currentTheme.id !== 'default' 
-                    ? currentTheme.colors.background 
-                    : undefined
-                }}
               />
             </div>
           </div>

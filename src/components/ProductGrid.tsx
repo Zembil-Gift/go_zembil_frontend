@@ -4,7 +4,7 @@ import { ChevronUp } from "lucide-react";
 import GiftItemCard from "./gift-card";
 import ProductPagination from "./ProductPagination";
 import { cn } from "@/lib/utils";
-import { Product } from "@shared/schema";
+import type { Product } from "@/services/productService";
 
 interface ProductGridProps {
   products: Product[];
@@ -54,6 +54,10 @@ export function ProductGrid({
   };
 
   const actualHasNextPage = hasNextPage || (displayProducts.length < displayTotalItems);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className={cn("space-y-8", className)}>

@@ -1,45 +1,40 @@
-import { useState, useEffect } from "react";
-import { useForm, Controller, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, Link, useParams } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { vendorService, VendorProfile, Product, CategoryChangeRequest } from "@/services/vendorService";
-import { apiService } from "@/services/apiService";
-import { imageService, ImageDto } from "@/services/imageService";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { ImageUpload } from "@/components/ImageUpload";
-import { TagInput } from "@/components/TagInput";
-import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
-import { 
-  ArrowLeft, 
-  Package, 
-  AlertCircle, 
-  Plus, 
-  Trash2, 
-  RefreshCw, 
-  Layers,
-  DollarSign,
+import {useEffect, useState} from "react";
+import {Controller, useFieldArray, useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {z} from "zod";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {Link, useNavigate, useParams} from "react-router-dom";
+import {useAuth} from "@/hooks/useAuth";
+import {useToast} from "@/hooks/use-toast";
+import {CategoryChangeRequest, Product, VendorProfile, vendorService} from "@/services/vendorService";
+import {apiService} from "@/services/apiService";
+import {ImageDto, imageService} from "@/services/imageService";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {Badge} from "@/components/ui/badge";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
+import {Label} from "@/components/ui/label";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {ImageUpload} from "@/components/ImageUpload";
+import {TagInput} from "@/components/TagInput";
+import {SubcategorySearchCombobox} from "@/components/SubcategorySearchCombobox";
+import {
+  AlertCircle,
   AlertTriangle,
+  ArrowLeft,
+  Clock,
+  DollarSign,
+  FolderTree,
   ImageIcon,
   Info,
-  FolderTree,
-  Clock
+  Layers,
+  Package,
+  Plus,
+  RefreshCw,
+  Trash2
 } from "lucide-react";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert";
+import {Alert, AlertDescription, AlertTitle,} from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -136,8 +131,7 @@ export default function EditProduct() {
   const { data: product, isLoading: productLoading, error: productError } = useQuery({
     queryKey: ['product', productId],
     queryFn: async () => {
-      const response = await apiService.getRequest<Product>(`/api/v1/products/${productId}`);
-      return response;
+      return await apiService.getRequest<Product>(`/api/v1/products/${productId}`);
     },
     enabled: !!productId && isAuthenticated && isVendor,
   });
@@ -156,7 +150,7 @@ export default function EditProduct() {
   });
 
   // Fetch all subcategories
-  const { data: allSubCategories = [], isLoading: isLoadingSubCategories } = useQuery({
+  const { data: allSubCategories = [] } = useQuery({
     queryKey: ['all-subcategories', categories],
     queryFn: async () => {
       const subCategoriesPromises = categories.map((category) =>
@@ -179,8 +173,7 @@ export default function EditProduct() {
     queryKey: ['pending-category-change', productId],
     queryFn: async () => {
       try {
-        const response = await vendorService.getPendingCategoryChangeRequestForProduct(productId!);
-        return response;
+        return await vendorService.getPendingCategoryChangeRequestForProduct(productId!);
       } catch {
         return null;
       }

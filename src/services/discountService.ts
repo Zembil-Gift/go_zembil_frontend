@@ -31,10 +31,14 @@ export interface DiscountResponse {
   description?: string;
   discountType: DiscountType;
   discountPercentage?: number;
+  fixedAmount?: number;
   fixedAmountMinor?: number;
+  displayCurrencyCode?: string;
   currencyCode?: string;
   appliesTo: AppliesTo;
+  minOrderAmount?: number;
   minOrderAmountMinor?: number;
+  maxDiscountAmount?: number;
   maxDiscountAmountMinor?: number;
   usageLimit?: number;
   usageCount: number;
@@ -87,7 +91,9 @@ export interface DiscountUsageResponse {
   userName?: string;
   userEmail?: string;
   orderId?: number;
+  discountAmount?: number;
   discountAmountMinor: number;
+  displayCurrencyCode?: string;
   currencyCode: string;
   usedAt: string;
 }

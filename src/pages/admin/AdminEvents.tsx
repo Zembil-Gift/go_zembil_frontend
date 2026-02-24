@@ -306,7 +306,7 @@ export default function AdminEvents() {
                               className="h-12 w-12 rounded object-cover"
                               onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
                             />
-                            <div className="h-12 w-12 rounded bg-gray-100 flex items-center justify-center hidden">
+                            <div className="h-12 w-12 rounded bg-gray-100 flex items-center justify-center">
                               <Calendar className="h-6 w-6 text-gray-400" />
                             </div>
                             <div>
@@ -428,7 +428,7 @@ export default function AdminEvents() {
                             className="h-20 w-20 rounded-lg object-cover flex-shrink-0"
                             onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
                           />
-                          <div className="h-20 w-20 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 hidden">
+                          <div className="h-20 w-20 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
                             <Calendar className="h-10 w-10 text-gray-400" />
                           </div>
                           <div className="flex-1">
@@ -632,7 +632,7 @@ export default function AdminEvents() {
                   className="h-32 w-32 rounded-lg object-cover flex-shrink-0"
                   onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
                 />
-                <div className="h-32 w-32 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 hidden">
+                <div className="h-32 w-32 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
                   <Calendar className="h-16 w-16 text-gray-400" />
                 </div>
                 <div className="flex-1">
