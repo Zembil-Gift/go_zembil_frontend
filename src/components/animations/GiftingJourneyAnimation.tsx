@@ -91,7 +91,7 @@ export default function GiftingJourneyAnimation({
           <ellipse cx="58" cy="210" rx="6" ry="25" fill="#654321" />
         </motion.g>
 
-        {/* Traditional Zembil Basket */}
+        {/* Traditional Gerami Basket */}
         <motion.g
           initial={{ x: -80, y: 0, scale: 0.8, opacity: 0 }}
           animate={isPlaying ? { x: 140, y: 0, scale: 1, opacity: 1 } : { x: -80, y: 0, scale: 0.8, opacity: 0 }}
@@ -275,8 +275,9 @@ export default function GiftingJourneyAnimation({
             }}
           >
             <tspan fill="#1C3A2D">go</tspan>
-            <tspan fill="#654321">Zembil</tspan>
+            <tspan fill="#654321">Gerami</tspan>
           </text>
+          
           
           <motion.text
             x="200"

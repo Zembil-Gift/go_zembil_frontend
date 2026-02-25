@@ -1,202 +1,297 @@
 import { apiService } from './apiService';
+import type { DiscountInfo } from '@/types/discount';
 
 // Types for products
+export interface ProductAttribute {
+  id?: number;
+  name: string;
+  value: string;
+}
+
+export interface Price {
+  id?: number;
+  productId?: number;
+  variantId?: number;
+  currencyCode?: string;
+  currencyId?: number;
+  unitAmountMinor?: number;
+  amount?: number;  // Backend provides this in major units - USE THIS FOR DISPLAY
+  useExchangeRate?: boolean;
+  active?: boolean;
+}
+
+/**
+ * Extract the display price from a Price object.
+ * Uses backend-provided 'amount' field (in major units) directly.
+ */
+export function extractPriceAmount(price?: Price): number {
+  if (!price) return 0;
+  if (price.amount != null && price.amount > 0) return price.amount;
+  return 0;
+}
+
+export interface ProductSku {
+  id?: number;
+  skuCode?: string; // Internal code for vendor/admin management
+  skuName: string;  // Display name shown to customers (required)
+  price?: Price;
+  stockQuantity?: number;
+  attributes?: ProductAttribute[];
+  images?: Array<{
+    id: number;
+    url: string;
+    fullUrl: string;
+    isPrimary: boolean;
+    sortOrder: number;
+  }>;
+}
+
 export interface Product {
-  id: number;
+  id: number; 
   name: string;
-  description: string;
-  price: number;
-  priceUSD: number;
-  imageUrl: string;
-  categoryId: number;
-  vendorId: number;
-  tags: string[];
-  stockQuantity: number;
-  deliveryTime: string;
-  rating: number;
-  reviewCount: number;
-  isActive: boolean;
-  isFeatured: boolean;
-  isTrending: boolean;
-  isNew: boolean;
-  discountPercentage?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateProductRequest {
-  name: string;
-  description: string;
-  price: number;
-  categoryId: number;
+  description?: string;
+  summary?: string;
+  cover?: string;
+  price?: Price;
+  subCategoryId?: number;
+  subCategoryName?: string;
+  subCategorySlug?: string;
+  isFeatured?: boolean;
+  isCustomizable?: boolean;
+  tags?: string[];
+  occasion?: string;
+  productSku?: ProductSku[];
+  createdAt?: string;
+  updatedAt?: string;
   imageUrl?: string;
-  tags?: string[];
-  stockQuantity: number;
-  deliveryTime: string;
-}
-
-export interface UpdateProductRequest extends Partial<CreateProductRequest> {
-  isActive?: boolean;
-  isFeatured?: boolean;
+  images?: Array<{
+    id: number;
+    url: string;
+    fullUrl: string;
+    originalFilename?: string;
+    altText?: string;
+    sortOrder: number;
+    isPrimary: boolean;
+    fileSize?: number;
+    contentType?: string;
+    createdAt?: string;
+  }>;
+  rating?: number;
+  reviewCount?: number;
+  averageRating?: number;
+  totalReviews?: number;
   isTrending?: boolean;
   isNew?: boolean;
-  discountPercentage?: number;
-}
-
-export interface ProductsResponse {
-  products: Product[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
-
-export interface ProductSearchParams {
-  query?: string;
+  stockQuantity?: number;
+  categoryId?: number;
+  categorySlug?: string;
   category?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  tags?: string[];
-  isFeatured?: boolean;
-  isTrending?: boolean;
-  isNew?: boolean;
-  page?: number;
-  limit?: number;
-  sortBy?: 'name' | 'price' | 'rating' | 'createdAt';
-  sortOrder?: 'asc' | 'desc';
+  vendorId?: number;
+  vendorName?: string;
+  activeDiscount?: DiscountInfo;
 }
 
-// Product service
+export interface Tag {
+  id?: number;
+  name: string;
+  slug: string;
+  description?: string;
+}
+
+export interface PagedProductResponse {
+  content: Product[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
+export interface ProductFilterParams {
+  page?: number;
+  size?: number;
+  search?: string;
+  categoryId?: number;
+  subCategoryId?: number;
+  minPriceMinor?: number;
+  maxPriceMinor?: number;
+  tags?: string[];
+  isFeatured?: boolean;
+  vendorId?: number;
+  sortBy?: string;
+}
+
 class ProductService {
   /**
-   * Get all products with pagination and filters
+   * Get all products with pagination
    */
-  async getAllProducts(params?: ProductSearchParams): Promise<ProductsResponse> {
-    const queryParams = new URLSearchParams();
-    
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (Array.isArray(value)) {
-            queryParams.append(key, value.join(','));
-          } else {
-            queryParams.append(key, value.toString());
-          }
-        }
-      });
+  async getAllProducts(page: number = 0, size: number = 20): Promise<PagedProductResponse> {
+    try {
+      const url = `/api/v1/products?page=${page}&size=${size}`;
+      const response = await apiService.getRequest<PagedProductResponse>(url);
+      return response;
+    } catch (error) {
+      throw error;
     }
-    
-    const url = `/products${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return await apiService.getRequest<ProductsResponse>(url);
+  }
+
+
+  async getFilteredProducts(params: ProductFilterParams = {}): Promise<PagedProductResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      queryParams.append('page', (params.page ?? 0).toString());
+      queryParams.append('size', (params.size ?? 20).toString());
+      
+      // Search term
+      if (params.search) {
+        queryParams.append('searchTerm', params.search);
+      }
+      
+      // Category filters
+      if (params.categoryId) {
+        queryParams.append('categoryId', params.categoryId.toString());
+      }
+      if (params.subCategoryId) {
+        queryParams.append('subCategoryId', params.subCategoryId.toString());
+      }
+      
+      // Price filters
+      if (params.minPriceMinor) {
+        queryParams.append('minPriceMinor', params.minPriceMinor.toString());
+      }
+      if (params.maxPriceMinor) {
+        queryParams.append('maxPriceMinor', params.maxPriceMinor.toString());
+      }
+      
+      // Tags
+      if (params.tags && params.tags.length > 0) {
+        queryParams.append('tags', params.tags.join(','));
+      }
+      
+      // Featured
+      if (params.isFeatured !== undefined) {
+        queryParams.append('isFeatured', params.isFeatured.toString());
+      }
+      
+      // Vendor
+      if (params.vendorId) {
+        queryParams.append('vendorId', params.vendorId.toString());
+      }
+
+      const url = `/api/v1/products/filter?${queryParams.toString()}`;
+      const response = await apiService.getRequest<PagedProductResponse>(url);
+      return response;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
    * Get product by ID
    */
   async getProductById(id: number): Promise<Product> {
-    return await apiService.getRequest<Product>(`/products/${id}`);
+    return await apiService.getRequest<Product>(`/api/v1/products/${id}`);
   }
 
   /**
-   * Get products by category
+   * Get products by sub-category
    */
-  async getProductsByCategory(category: string, params?: Omit<ProductSearchParams, 'category'>): Promise<ProductsResponse> {
-    const searchParams: ProductSearchParams = { ...params, category };
-    return await this.getAllProducts(searchParams);
+  async getProductsBySubCategory(subCategoryId: number, page: number = 0, size: number = 20): Promise<PagedProductResponse> {
+    const url = `/api/v1/products/sub-category/${subCategoryId}?page=${page}&size=${size}`;
+    return await apiService.getRequest<PagedProductResponse>(url);
   }
 
   /**
    * Search products
    */
-  async searchProducts(query: string, params?: Omit<ProductSearchParams, 'query'>): Promise<ProductsResponse> {
-    const searchParams: ProductSearchParams = { ...params, query };
-    return await this.getAllProducts(searchParams);
+  async searchProducts(query: string, page: number = 0, size: number = 20): Promise<PagedProductResponse> {
+    const url = `/api/v1/products/search?q=${encodeURIComponent(query)}&page=${page}&size=${size}`;
+    return await apiService.getRequest<PagedProductResponse>(url);
   }
 
   /**
    * Get featured products
    */
-  async getFeaturedProducts(limit?: number): Promise<Product[]> {
+  async getFeaturedProducts(limit: number = 10): Promise<Product[]> {
+    try {
+      const url = `/api/v1/products/featured?limit=${limit}`;
+      return await apiService.getRequest<Product[]>(url);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get ad products
+   */
+  async getAdProducts(limit: number = 5): Promise<Product[]> {
+    try {
+      const url = `/api/v1/products/ads?limit=${limit}`;
+      return await apiService.getRequest<Product[]>(url);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Filter products
+   */
+  async filterProducts(filter: {
+    categoryId?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    tags?: string[];
+    occasion?: string;
+    isFeatured?: boolean;
+    isCustomizable?: boolean;
+  }, page: number = 0, size: number = 20): Promise<PagedProductResponse> {
     const queryParams = new URLSearchParams();
-    if (limit) queryParams.append('limit', limit.toString());
+    queryParams.append('page', page.toString());
+    queryParams.append('size', size.toString());
     
-    const url = `/products/featured${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return await apiService.getRequest<Product[]>(url);
-  }
-
-  /**
-   * Get trending products
-   */
-  async getTrendingProducts(limit?: number): Promise<ProductsResponse> {
-    const params: ProductSearchParams = { isTrending: true };
-    if (limit) params.limit = limit;
+    Object.entries(filter).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          queryParams.append(`filter.${key}`, value.join(','));
+        } else {
+          queryParams.append(`filter.${key}`, value.toString());
+        }
+      }
+    });
     
-    return await this.getAllProducts(params);
-  }
-
-  /**
-   * Get new products
-   */
-  async getNewProducts(limit?: number): Promise<ProductsResponse> {
-    const params: ProductSearchParams = { isNew: true };
-    if (limit) params.limit = limit;
-    
-    return await this.getAllProducts(params);
+    const url = `/api/v1/products/filter?${queryParams.toString()}`;
+    return await apiService.getRequest<PagedProductResponse>(url);
   }
 
   /**
    * Create new product (admin/vendor only)
    */
-  async createProduct(data: CreateProductRequest): Promise<Product> {
-    return await apiService.postRequest<Product>('/products', data);
+  async createProduct(data: Product): Promise<Product> {
+    return await apiService.postRequest<Product>('/api/v1/products', data);
   }
 
   /**
    * Update product (admin/vendor only)
    */
-  async updateProduct(id: number, data: UpdateProductRequest): Promise<Product> {
-    return await apiService.putRequest<Product>(`/products/${id}`, data);
+  async updateProduct(id: number, data: Partial<Product>): Promise<Product> {
+    return await apiService.putRequest<Product>(`/api/v1/products/${id}`, data);
   }
 
   /**
    * Delete product (admin/vendor only)
    */
-  async deleteProduct(id: number): Promise<{ message: string }> {
-    return await apiService.deleteRequest(`/products/${id}`);
+  async deleteProduct(id: number): Promise<void> {
+    return await apiService.deleteRequest(`/api/v1/products/${id}`);
   }
 
   /**
-   * Get product recommendations
+   * Check if product exists
    */
-  async getRecommendations(productId?: number, limit: number = 8): Promise<Product[]> {
-    const queryParams = new URLSearchParams();
-    if (productId) queryParams.append('productId', productId.toString());
-    queryParams.append('limit', limit.toString());
-    
-    const url = `/products/recommendations${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return await apiService.getRequest<Product[]>(url);
-  }
-
-  /**
-   * Get products by vendor
-   */
-  async getProductsByVendor(vendorId: number, params?: ProductSearchParams): Promise<ProductsResponse> {
-    const queryParams = new URLSearchParams();
-    queryParams.append('vendorId', vendorId.toString());
-    
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (Array.isArray(value)) {
-            queryParams.append(key, value.join(','));
-          } else {
-            queryParams.append(key, value.toString());
-          }
-        }
-      });
-    }
-    
-    const url = `/products/vendor/${vendorId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return await apiService.getRequest<ProductsResponse>(url);
+  async productExists(id: number): Promise<boolean> {
+    return await apiService.getRequest<boolean>(`/api/v1/products/${id}/exists`);
   }
 }
 

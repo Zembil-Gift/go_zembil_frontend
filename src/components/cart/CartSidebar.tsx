@@ -1,30 +1,20 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { ShoppingCart, Plus, Minus, Trash2, CreditCard, X } from "lucide-react";
-import { useNavigate } from "wouter";
-import { cn } from "@/lib/utils";
-
-interface CartItem {
-  id: number;
-  productId: number;
-  quantity: number;
-  product?: {
-    id: number;
-    name: string;
-    price: string;
-    images: string[];
-  };
-}
+import { useNavigate } from "react-router-dom";
+import { formatPrice } from "@/lib/currency";
+import { CartItem } from "@/services/cartService";
 
 export function CartSidebar() {
   const { isAuthenticated } = useAuth();
-  const [, navigate] = useNavigate();
+  const navigate = useNavigate();
   const {
     cartItems,
+    cartCurrency,
     isLoading,
     getTotalItems,
     getTotalPrice,
@@ -33,19 +23,23 @@ export function CartSidebar() {
     clearCart,
     isOpen,
     closeCart,
-    isUpdatingCart,
-    isRemovingFromCart,
     isClearingCart
   } = useCart();
 
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
-  const totalETB = totalPrice * 120.5; // Convert to ETB
+  const isUpdatingQuantity = false;
+  const isRemovingItem = false;
 
   const handleUpdateQuantity = (cartItem: CartItem, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeItem(cartItem.id);
     } else {
+      // Prevent increasing beyond available stock
+      const stockAvailable = cartItem.productSku?.stockQuantity ?? cartItem.product?.stockQuantity;
+      if (stockAvailable !== undefined && newQuantity > stockAvailable) {
+        return;
+      }
       updateQuantity({ id: cartItem.id, quantity: newQuantity });
     }
   };
@@ -106,7 +100,7 @@ export function CartSidebar() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={clearCart}
+                onClick={() => clearCart()}
                 disabled={isClearingCart}
                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
               >
@@ -142,7 +136,7 @@ export function CartSidebar() {
                   {/* Product Image */}
                   <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
                     <img
-                      src={item.product?.images?.[0] || "/api/placeholder/100/100"}
+                      src={item.product?.images?.[0]?.url || item.product?.imageUrl || "/api/placeholder/100/100"}
                       alt={item.product?.name || "Product"}
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -156,14 +150,14 @@ export function CartSidebar() {
                     <h4 className="font-medium text-sm line-clamp-2">
                       {item.product?.name || "Unknown Product"}
                     </h4>
+                    {item.productSku?.skuName && (
+                      <p className="text-xs text-gray-500">{item.productSku.skuName}</p>
+                    )}
                     
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <p className="font-semibold text-primary">
-                          ${parseFloat(item.product?.price || "0").toFixed(2)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          ≈ {(parseFloat(item.product?.price || "0") * 120.5).toFixed(0)} ETB
+                          {formatPrice(item.unitPrice || 0, cartCurrency)}
                         </p>
                       </div>
 
@@ -174,7 +168,7 @@ export function CartSidebar() {
                           size="icon"
                           className="h-7 w-7"
                           onClick={() => handleUpdateQuantity(item, item.quantity - 1)}
-                          disabled={isUpdatingCart || isRemovingFromCart}
+                          disabled={isUpdatingQuantity || isRemovingItem}
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
@@ -188,7 +182,11 @@ export function CartSidebar() {
                           size="icon"
                           className="h-7 w-7"
                           onClick={() => handleUpdateQuantity(item, item.quantity + 1)}
-                          disabled={isUpdatingCart}
+                          disabled={
+                            isUpdatingQuantity || 
+                            (item.productSku?.stockQuantity !== undefined && item.quantity >= item.productSku.stockQuantity) ||
+                            (!item.productSku && item.product?.stockQuantity !== undefined && item.quantity >= item.product.stockQuantity)
+                          }
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
@@ -198,7 +196,7 @@ export function CartSidebar() {
                     {/* Subtotal */}
                     <div className="text-right">
                       <p className="text-sm font-medium">
-                        ${(parseFloat(item.product?.price || "0") * item.quantity).toFixed(2)}
+                        {formatPrice(Number(item.totalPrice) || (Number(item.unitPrice || 0) * Number(item.quantity || 0)), cartCurrency)}
                       </p>
                     </div>
                   </div>
@@ -209,7 +207,7 @@ export function CartSidebar() {
                     size="icon"
                     className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                     onClick={() => removeItem(item.id)}
-                    disabled={isRemovingFromCart}
+                    disabled={isRemovingItem}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -224,11 +222,7 @@ export function CartSidebar() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal ({totalItems} items)</span>
-                  <span>${totalPrice.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>In Ethiopian Birr</span>
-                  <span>≈ {totalETB.toFixed(0)} ETB</span>
+                  <span>{formatPrice(totalPrice, cartCurrency)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Shipping</span>
@@ -237,7 +231,7 @@ export function CartSidebar() {
                 <Separator />
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
-                  <span className="text-primary">${totalPrice.toFixed(2)}</span>
+                  <span className="text-primary">{formatPrice(totalPrice, cartCurrency)}</span>
                 </div>
               </div>
 
@@ -265,5 +259,3 @@ export function CartSidebar() {
     </Sheet>
   );
 }
-
-export default CartSidebar;

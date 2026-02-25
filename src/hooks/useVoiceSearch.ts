@@ -34,15 +34,15 @@ export function useVoiceSearch({
   const [isTranslating, setIsTranslating] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [translatedText, setTranslatedText] = useState('');
-  const [detectedLanguage, setDetectedLanguage] = useState<string>('');
+  const [detectedLanguage] = useState<string>('');
   const [error, setError] = useState<string>('');
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
 
   // Initialize speech recognition
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
     if (SpeechRecognition) {
       setIsSupported(true);
@@ -59,7 +59,7 @@ export function useVoiceSearch({
         onStart?.();
       };
 
-      recognition.onresult = async (event) => {
+      recognition.onresult = async (event: any) => {
         const lastResult = event.results[event.results.length - 1];
         const newTranscript = lastResult[0].transcript;
         
@@ -88,7 +88,7 @@ export function useVoiceSearch({
         onResult?.(result);
       };
 
-      recognition.onerror = (event) => {
+      recognition.onerror = (event: any) => {
         const errorMessage = `Speech recognition error: ${event.error}`;
         setError(errorMessage);
         onError?.(errorMessage);

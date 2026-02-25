@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, Heart, ShoppingCart, User, Globe, LogOut, Menu, X } from "lucide-react";
+import { Heart, ShoppingCart, User, Globe, LogOut, Menu, X, Package, Ticket, Shield, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,19 +17,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { useIncompleteProfile } from "@/hooks/useIncompleteProfile";
+import { useWishlist } from "@/hooks/useWishlist";
 import { useQuery } from "@tanstack/react-query";
 import CategoryDropdown from "@/components/category-dropdown";
-import { MockApiService } from "@/services/mockApiService";
+import { cartService } from "@/services/cartService";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
-
-// Using refined goZembil logo with transparent background
-const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
+import GoGeramiLogo from "@/components/GoGeramiLogo";
 
 export default function StreamlinedHeader() {
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage, availableLanguages } = useLanguage();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, logout} = useAuth();
   const location = useLocation();
   const pathname = location.pathname;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -39,66 +39,61 @@ export default function StreamlinedHeader() {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // Get cart and wishlist counts using mock data
-  const { data: cartItems = [] } = useQuery({
-    queryKey: ['/api/cart'],
-    queryFn: () => MockApiService.getCart(),
+  // Get cart and wishlist counts using real API
+  const { data: cartData } = useQuery({
+    queryKey: ['cart', 'items'],
+    queryFn: () => cartService.getCart(),
     enabled: !!isAuthenticated,
   });
   
-  const { data: wishlistItems = [] } = useQuery({
-    queryKey: ['/api/wishlist'],
-    queryFn: () => MockApiService.getWishlist(),
-    enabled: !!isAuthenticated,
-  });
+  // Use the wishlist hook for count
+  const { getWishlistCount } = useWishlist();
+  const { isIncomplete } = useIncompleteProfile();
 
-  const cartCount = Array.isArray(cartItems) ? cartItems.length : 0;
-  const wishlistCount = Array.isArray(wishlistItems) ? wishlistItems.length : 0;
+  const cartItems = cartData?.items || [];
+  const cartCount = Array.isArray(cartItems) ? cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
+  const wishlistCount = getWishlistCount();
 
-  const handleSearchClick = () => {
+  /* const handleSearchClick = () => {
     window.location.href = "/search";
-  };
+  }; */
 
   const handleSignOut = async () => {
-    localStorage.removeItem('returnTo');
-    try {
-      await MockApiService.logout();
-    } finally {
-      window.location.href = '/signin';
-    }
+    await logout();
   };
 
   // Core navigation items - all primary business features
   const navigation = [
     { name: t('navigation.home'), href: "/" },
     { name: t('navigation.shop'), href: "/shop" },
-    { name: t('navigation.custom'), href: "/custom-orders" },
+    { name: t('navigation.services'), href: "/services" },
     { name: t('navigation.events'), href: "/events" },
+    { name: t('navigation.custom'), href: "/custom-orders" },
   ];
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <header className="sticky top-0 z-40 w-full border-b bg-white/95 justify-center backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container flex h-16 lg:h-20 items-center px-4 lg:px-6 max-w-full">
           {/* Logo */}
           <div className="flex-shrink-0 mr-4 lg:mr-8">
-            <Link to="/" className="flex items-center space-x-2">
-              <img 
-                src={logoImagePath}
-                alt="goZembil Logo"
-                className="h-8 w-8 lg:h-12 lg:w-12 object-contain"
+            <Link to="/" className="flex items-center space-x-0">
+              <GoGeramiLogo 
+                size="md"
+                variant="icon"
+                className="h-8 w-8 lg:h-14 lg:w-14"
               />
               <div className="hidden sm:flex flex-col">
                 <div className="flex items-center">
-                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">go</span>
-                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">Zembil</span>
+                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">Go</span>
+                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">Gerami</span>
                 </div>
               </div>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1 mr-4">
+          <nav className="hidden lg:flex items-center justify-center w-full space-x-1">
             {navigation.map((item) => (
               <Link
                 key={item.name}
@@ -122,7 +117,7 @@ export default function StreamlinedHeader() {
             {/* Desktop Actions - Hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-1">
               {/* Search */}
-              <TooltipProvider>
+              {/* <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -137,7 +132,7 @@ export default function StreamlinedHeader() {
                   </TooltipTrigger>
                   <TooltipContent>Search products</TooltipContent>
                 </Tooltip>
-              </TooltipProvider>
+              </TooltipProvider> */}
 
               {/* Wishlist */}
               <TooltipProvider>
@@ -234,30 +229,98 @@ export default function StreamlinedHeader() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-eagle-green hover:text-viridian-green p-2"
+                      className="text-eagle-green hover:text-viridian-green p-2 relative"
                     >
                       <User className="h-5 w-5" />
+                      {isIncomplete && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                        </span>
+                      )}
                       <span className="sr-only">Profile</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52 bg-white">
-                    <DropdownMenuItem>
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
+                    {/* Profile Incomplete Notice */}
+                    {isIncomplete && (
+                      <>
+                        <div className="px-2 py-2 text-sm">
+                          <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
+                            <span className="text-amber-600 mt-0.5">⚠️</span>
+                            <div>
+                              <p className="font-medium text-amber-900 text-xs">Complete your profile</p>
+                              <p className="text-amber-700 text-xs mt-0.5">Add missing details</p>
+                              <Link to="/profile?tab=personal" className="text-amber-800 hover:text-amber-900 text-xs font-medium underline mt-1 inline-block">
+                                Complete now →
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    {user?.role?.toUpperCase() === 'ADMIN' && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="flex items-center text-eagle-green font-medium">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    {user?.role?.toUpperCase() === 'VENDOR' && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to="/vendor" className="flex items-center text-emerald-600 font-medium">
+                            <Store className="mr-2 h-4 w-4" />
+                            <span>Vendor Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>My Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/my-orders" className="flex items-center">
+                        <Package className="mr-2 h-4 w-4" />
+                        <span>My Orders</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/my-tickets" className="flex items-center">
+                        <Ticket className="mr-2 h-4 w-4" />
+                        <span>My Tickets</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/my-custom-orders" className="flex items-center">
+                        <Package className="mr-2 h-4 w-4" />
+                        <span>My Custom Orders</span>
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
+                    {/* <DropdownMenuItem asChild>
                       <Link to="/register-celebrity" className="flex items-center">
                         <span className="mr-2">🌟</span>
                         <span>Join as Celebrity</span>
                       </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/register-vendor" className="flex items-center">
-                        <span className="mr-2">🏪</span>
-                        <span>Join as Vendor</span>
-                      </Link>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
+                    {user?.role?.toUpperCase() !== 'VENDOR' && user?.role?.toUpperCase() !== 'ADMIN' && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/vendor-signup" className="flex items-center">
+                          <Store className="mr-2 h-4 w-4" />
+                          <span>Join as Vendor</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="mr-2 h-4 w-4" />
@@ -279,15 +342,15 @@ export default function StreamlinedHeader() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48 bg-white">
-                      <DropdownMenuItem asChild>
+                      {/* <DropdownMenuItem asChild>
                         <Link to="/register-celebrity" className="flex items-center">
                           <span className="mr-2">🌟</span>
                           <span>Join as Celebrity</span>
                         </Link>
-                      </DropdownMenuItem>
+                      </DropdownMenuItem> */}
                       <DropdownMenuItem asChild>
-                        <Link to="/register-vendor" className="flex items-center">
-                          <span className="mr-2">🏪</span>
+                        <Link to="/vendor-signup" className="flex items-center">
+                          <Store className="mr-2 h-4 w-4" />
                           <span>Join as Vendor</span>
                         </Link>
                       </DropdownMenuItem>
@@ -356,7 +419,7 @@ export default function StreamlinedHeader() {
           />
           
           {/* Mobile Menu */}
-          <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
+          <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col overflow-hidden">
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b">
@@ -372,12 +435,12 @@ export default function StreamlinedHeader() {
               </div>
 
               {/* Navigation */}
-              <nav className="flex-1 p-4 space-y-2">
+              <nav className="flex-1 p-4 space-y-2 overflow-y-auto min-h-0">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`block px-4 py-3 text-base font-medium rounded-lg transition-colors ${
+                    className={`block px-3 py-2 text-base font-medium rounded-lg transition-colors ${
                       pathname === item.href
                         ? "text-viridian-green bg-viridian-green/20"
                         : "text-eagle-green hover:text-viridian-green hover:bg-gray-50"
@@ -388,28 +451,30 @@ export default function StreamlinedHeader() {
                 ))}
                 
                 {/* Categories */}
-                <div className="px-4 py-3">
+                <div className="px-2 py-2">
                   <CategoryDropdown isMobile={true} />
                 </div>
               </nav>
 
               {/* Actions */}
-              <div className="p-4 border-t space-y-3">
+              <div className="p-3 border-t space-y-2 bg-white flex-shrink-0 max-h-[45vh] overflow-y-auto">
                 {/* Search */}
-                <Button
+                {/* <Button
                   variant="outline"
-                  className="w-full justify-start"
+                  size="sm"
+                  className="w-full justify-start h-9"
                   onClick={handleSearchClick}
                 >
                   <Search className="mr-2 h-4 w-4" />
-                  Search Products
-                </Button>
+                  Search
+                </Button> */}
 
                 {/* Wishlist */}
                 <Button
                   variant="outline"
+                  size="sm"
                   asChild
-                  className="w-full justify-start relative"
+                  className="w-full justify-start relative h-9"
                 >
                   <Link to="/wishlist">
                     <Heart className="mr-2 h-4 w-4" />
@@ -428,9 +493,9 @@ export default function StreamlinedHeader() {
                 {/* Language Switcher */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start">
+                    <Button variant="outline" size="sm" className="w-full justify-start h-9">
                       <Globe className="mr-2 h-4 w-4" />
-                      Language
+                      {currentLanguage === 'en-US' ? 'EN' : currentLanguage === 'am' ? 'አማ' : currentLanguage}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 bg-white">
@@ -456,28 +521,68 @@ export default function StreamlinedHeader() {
                 {/* User Actions */}
                 {isAuthenticated ? (
                   <div className="space-y-2">
-                    <Button variant="outline" asChild className="w-full justify-start">
+                    {/* Admin Dashboard Link - Only for admin users */}
+                    {user?.role?.toUpperCase() === 'ADMIN' && (
+                      <Button variant="outline" size="sm" asChild className="w-full justify-start h-9 bg-eagle-green/10 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white">
+                        <Link to="/admin">
+                          <Shield className="mr-2 h-4 w-4" />
+                          Admin Dashboard
+                        </Link>
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/profile">
                         <User className="mr-2 h-4 w-4" />
                         Profile
                       </Link>
                     </Button>
-                    <Button variant="outline" asChild className="w-full justify-start">
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
+                      <Link to="/my-orders">
+                        <Package className="mr-2 h-4 w-4" />
+                        Orders
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
+                      <Link to="/my-tickets">
+                        <Ticket className="mr-2 h-4 w-4" />
+                        Tickets
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
+                      <Link to="/my-custom-orders">
+                        <Package className="mr-2 h-4 w-4" />
+                        Custom Orders
+                      </Link>
+                    </Button>
+                    {/* <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/register-celebrity">
                         <span className="mr-2">🌟</span>
-                        Join as Celebrity
+                        Celebrity
                       </Link>
-                    </Button>
-                    <Button variant="outline" asChild className="w-full justify-start">
-                      <Link to="/register-vendor">
-                        <span className="mr-2">🏪</span>
-                        Join as Vendor
-                      </Link>
-                    </Button>
+                    </Button> */}
+                    {/* Only show Join as Vendor if user is not a vendor */}
+                    {user?.role?.toUpperCase() !== 'VENDOR' && user?.role?.toUpperCase() !== 'ADMIN' && (
+                      <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
+                        <Link to="/vendor-signup">
+                          <Store className="mr-2 h-4 w-4" />
+                          Join Vendor
+                        </Link>
+                      </Button>
+                    )}
+                    {/* Show Vendor Dashboard for vendors */}
+                    {user?.role?.toUpperCase() === 'VENDOR' && (
+                      <Button variant="outline" size="sm" asChild className="w-full justify-start h-9 bg-emerald-50 border-emerald-500 text-emerald-700 hover:bg-emerald-100">
+                        <Link to="/vendor">
+                          <Store className="mr-2 h-4 w-4" />
+                          Vendor
+                        </Link>
+                      </Button>
+                    )}
                     <Button 
-                      variant="destructive" 
+                      variant="destructive"
+                      size="sm"
                       onClick={handleSignOut}
-                      className="w-full justify-start"
+                      className="w-full justify-start h-9"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       Sign Out
@@ -485,19 +590,19 @@ export default function StreamlinedHeader() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Button variant="outline" asChild className="w-full justify-start">
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/register-celebrity">
                         <span className="mr-2">🌟</span>
-                        Join as Celebrity
+                        Celebrity
                       </Link>
                     </Button>
-                    <Button variant="outline" asChild className="w-full justify-start">
-                      <Link to="/register-vendor">
-                        <span className="mr-2">🏪</span>
-                        Join as Vendor
+                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
+                      <Link to="/vendor-signup">
+                        <Store className="mr-2 h-4 w-4" />
+                        Join Vendor
                       </Link>
                     </Button>
-                    <Button asChild className="w-full">
+                    <Button size="sm" asChild className="w-full h-9">
                       <Link to="/signin">Sign In</Link>
                     </Button>
                   </div>

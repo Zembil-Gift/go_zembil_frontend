@@ -1,12 +1,19 @@
-/* Import Gotham font family with all weights */
-@import url('https://fonts.cdnfonts.com/css/gotham');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+}
 
 
 
@@ -23,6 +30,50 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+}
+
+.scrollbar-track-gray-100::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.grid-cols-14 {
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+}
+
+.grid-cols-16 {
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+}
+
+.grid-cols-18 {
+  grid-template-columns: repeat(18, minmax(0, 1fr));
 }
 
 :root {
@@ -42,33 +93,33 @@
   --color-charcoal: #222222;
   --color-amber: #FFD700; /* Assuming amber is a golden color */
   --color-sky-blue: #4EA8DE; /* Assuming sky-blue is a blue-green color */
-  --color-zembil-brown: #331A00; /* Assuming zembil-brown is a dark brown */
-  --color-zembil-beige: #F5DEB3; /* Assuming zembil-beige is a light beige */
-  --color-zembil-indigo: #4B0082; /* Assuming zembil-indigo is a deep purple */
+  --color-Gerami-brown: #331A00; /* Assuming Gerami-brown is a dark brown */
+  --color-Gerami-beige: #F5DEB3; /* Assuming Gerami-beige is a light beige */
+  --color-Gerami-indigo: #4B0082; /* Assuming Gerami-indigo is a deep purple */
   --color-go-green: #4CAF50; /* Assuming go-green is a green */
   --color-go-brown: #8B4513; /* Assuming go-brown is a brown */
   --color-sunset-orange: #FFA07A; /* Assuming sunset-orange is a warm orange */
 
-  /* Ethiopian warm theme */
-  --background: hsl(60, 33%, 97%);  /* Light cream #F8F8F8 */
-  --foreground: hsl(0, 0%, 13%);    /* Soft gray #222222 */
-  --muted: hsl(48, 44%, 93%);       /* Very light gold */
-  --muted-foreground: hsl(0, 0%, 40%);
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(0, 0%, 13%);
-  --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(0, 0%, 13%);
-  --border: hsl(48, 15%, 85%);
-  --input: hsl(48, 15%, 90%);
-  --primary: hsl(48, 96%, 59%);     /* Ethiopian gold #FDCB2D */
-  --primary-foreground: hsl(151, 65%, 15%); /* Deep forest on gold */
-  --secondary: hsl(60, 33%, 97%);   /* Light cream */
-  --secondary-foreground: hsl(0, 0%, 13%);
-  --accent: hsl(151, 65%, 15%);     /* Deep forest #1C3A2D */
-  --accent-foreground: hsl(0, 0%, 100%);
-  --destructive: hsl(11, 83%, 51%); /* Warm red #E94E1B */
-  --destructive-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(151, 65%, 15%);
+  /* Ethiopian warm theme - raw HSL values for Tailwind opacity support */
+  --background: 60 33% 97%;  /* Light cream #F8F8F8 */
+  --foreground: 0 0% 13%;    /* Soft gray #222222 */
+  --muted: 48 44% 93%;       /* Very light gold */
+  --muted-foreground: 0 0% 40%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 13%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 13%;
+  --border: 48 15% 85%;
+  --input: 48 15% 90%;
+  --primary: 48 96% 59%;     /* Ethiopian gold #FDCB2D */
+  --primary-foreground: 151 65% 15%; /* Deep forest on gold */
+  --secondary: 60 33% 97%;   /* Light cream */
+  --secondary-foreground: 0 0% 13%;
+  --accent: 151 65% 15%;     /* Deep forest #1C3A2D */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 11 83% 51%; /* Warm red #E94E1B */
+  --destructive-foreground: 0 0% 100%;
+  --ring: 151 65% 15%;
   --radius: 0.5rem;
   
   /* Ethiopian color scheme */
@@ -80,39 +131,17 @@
   --amber: hsl(45, 100%, 51%);
   --sky-blue: hsl(196, 73%, 73%);
   
-  /* goZembil Brand Colors */
+  /* goGerami Brand Colors */
   --go-green: hsl(120, 34%, 48%);        /* Soft green for "go" */
   --go-brown: hsl(25, 62%, 31%);         /* Earthy brown alternative */
-  --zembil-brown: hsl(15, 36%, 25%);     /* Dark woven brown for "Zembil" */
-  --zembil-beige: hsl(43, 74%, 49%);     /* Golden beige */
-  --zembil-indigo: hsl(231, 48%, 48%);   /* Rich indigo */
+  --Gerami-brown: hsl(15, 36%, 25%);     /* Dark woven brown for "Gerami" */
+  --Gerami-beige: hsl(43, 74%, 49%);     /* Golden beige */
+  --Gerami-indigo: hsl(231, 48%, 48%);   /* Rich indigo */
   
   /* Additional Ethiopian palette */
   --warm-gold: hsl(30, 59%, 55%);        /* #CD853F */
 }
 
-.dark {
-  --background: hsl(240, 10%, 3.9%);
-  --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(240, 3.7%, 15.9%);
-  --muted-foreground: hsl(240, 5%, 64.9%);
-  --popover: hsl(240, 10%, 3.9%);
-  --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(240, 10%, 3.9%);
-  --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(240, 3.7%, 15.9%);
-  --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(48, 96%, 53%);
-  --primary-foreground: hsl(0, 0%, 0%);
-  --secondary: hsl(240, 3.7%, 15.9%);
-  --secondary-foreground: hsl(0, 0%, 98%);
-  --accent: hsl(240, 3.7%, 15.9%);
-  --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 62.8%, 30.6%);
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(240, 4.9%, 83.9%);
-  --radius: 0.5rem;
-}
 
 @layer base {
   * {
@@ -133,17 +162,17 @@
   }
 
   /* Gotham font utilities */
-  .font-gotham { font-family: 'Gotham', sans-serif; }
-  .font-gotham-light { font-family: 'Gotham-Light', sans-serif; }
-  .font-gotham-book { font-family: 'Gotham-Book', sans-serif; }
-  .font-gotham-medium { font-family: 'Gotham-Medium', sans-serif; }
-  .font-gotham-bold { font-family: 'Gotham-Bold', sans-serif; }
-  .font-gotham-black { font-family: 'Gotham-Black', sans-serif; }
-  .font-gotham-ultra { font-family: 'Gotham-Ultra', sans-serif; }
-  .font-gotham-thin { font-family: 'Gotham-Thin', sans-serif; }
-  .font-gotham-xlight { font-family: 'Gotham-XLight', sans-serif; }
-  .font-gotham-extra-light { font-family: 'Gotham-ExtraLight', sans-serif; }
-  .font-gotham-extra-bold { font-family: 'Gotham-ExtraBold', sans-serif; }
+  .font-gotham { font-family: 'Gotham', sans-serif; font-weight: 400; }
+  .font-gotham-light { font-family: 'Gotham', sans-serif; font-weight: 300; }
+  .font-gotham-book { font-family: 'Gotham', sans-serif; font-weight: 400; }
+  .font-gotham-medium { font-family: 'Gotham', sans-serif; font-weight: 500; }
+  .font-gotham-bold { font-family: 'Gotham', sans-serif; font-weight: 700; }
+  .font-gotham-black { font-family: 'Gotham', sans-serif; font-weight: 900; }
+  .font-gotham-ultra { font-family: 'Gotham', sans-serif; font-weight: 950; }
+  .font-gotham-thin { font-family: 'Gotham', sans-serif; font-weight: 100; }
+  .font-gotham-xlight { font-family: 'Gotham', sans-serif; font-weight: 200; }
+  .font-gotham-extra-light { font-family: 'Gotham', sans-serif; font-weight: 200; }
+  .font-gotham-extra-bold { font-family: 'Gotham', sans-serif; font-weight: 800; }
   
   /* Default font classes */
   .font-default { font-family: 'Gotham', 'Inter', sans-serif; }
@@ -245,29 +274,29 @@
     color: var(--charcoal);
   }
   
-  .text-zembil-brown {
-    color: var(--zembil-brown);
+  .text-Gerami-brown {
+    color: var(--Gerami-brown);
   }
   
-  .bg-zembil-brown {
-    background-color: var(--zembil-brown);
+  .bg-Gerami-brown {
+    background-color: var(--Gerami-brown);
   }
   
-  .fill-zembil-brown {
-    fill: var(--zembil-brown);
+  .fill-Gerami-brown {
+    fill: var(--Gerami-brown);
   }
   
   .fill-deep-forest {
     fill: var(--deep-forest);
   }
   
-  /* goZembil Brand Typography and Colors */
+  /* goGerami Brand Typography and Colors */
   .font-go {
     font-family: 'Nunito', sans-serif;
     font-weight: 500;
   }
 
-  .font-zembil {
+  .font-Gerami {
     font-family: 'Playfair Display', serif;
     font-weight: 600;
   }
@@ -283,14 +312,14 @@
     text-transform: lowercase;
   }
 
-  .brand-zembil {
-    color: var(--zembil-brown);
+  .brand-Gerami {
+    color: var(--Gerami-brown);
     font-family: 'Playfair Display', serif;
     font-weight: 600;
   }
 
-  .brand-zembil {
-    color: var(--zembil-brown);
+  .brand-Gerami {
+    color: var(--Gerami-brown);
     font-family: 'Playfair Display', serif;
     font-weight: 600;
   }
@@ -303,24 +332,24 @@
     color: var(--go-brown);
   }
   
-  .text-zembil-brown {
-    color: var(--zembil-brown);
+  .text-Gerami-brown {
+    color: var(--Gerami-brown);
   }
   
-  .text-zembil-beige {
-    color: var(--zembil-beige);
+  .text-Gerami-beige {
+    color: var(--Gerami-beige);
   }
   
-  .text-zembil-indigo {
-    color: var(--zembil-indigo);
+  .text-Gerami-indigo {
+    color: var(--Gerami-indigo);
   }
   
   .bg-go-green {
     background-color: var(--go-green);
   }
   
-  .bg-zembil-brown {
-    background-color: var(--zembil-brown);
+  .bg-Gerami-brown {
+    background-color: var(--Gerami-brown);
   }
   
   .bg-charcoal {

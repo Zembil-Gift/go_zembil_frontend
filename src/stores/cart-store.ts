@@ -5,15 +5,20 @@ interface CartItem {
   id: number;
   productId: number;
   name: string;
-  price: string;
+  price: number | string;
   image: string;
   quantity: number;
+  stockQuantity?: number;
+  skuId?: number;
+  skuCode?: string;
+  skuName?: string;
   customization?: any;
 }
 
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
+  appliedDiscountCode: string | null;
   addItem: (item: Omit<CartItem, 'id'>) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
@@ -21,6 +26,7 @@ interface CartStore {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
+  setAppliedDiscountCode: (code: string | null) => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
 }
@@ -30,15 +36,26 @@ export const useCartStore = create<CartStore>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      appliedDiscountCode: null,
       addItem: (item) => {
         const items = get().items;
-        const existingItem = items.find(i => i.productId === item.productId);
+        const existingItem = items.find(i =>
+          i.productId === item.productId && 
+          (i.skuId === item.skuId || (!i.skuId && !item.skuId))
+        );
         
         if (existingItem) {
+          const newQuantity = existingItem.quantity + item.quantity;
+          // Respect stock limit if available
+          const finalQuantity = item.stockQuantity !== undefined 
+            ? Math.min(newQuantity, item.stockQuantity) 
+            : newQuantity;
+
           set({
             items: items.map(i =>
-              i.productId === item.productId
-                ? { ...i, quantity: i.quantity + item.quantity }
+              i.productId === item.productId && 
+              (i.skuId === item.skuId || (!i.skuId && !item.skuId))
+                ? { ...i, quantity: finalQuantity }
                 : i
             )
           });
@@ -63,7 +80,7 @@ export const useCartStore = create<CartStore>()(
         });
       },
       clearCart: () => {
-        set({ items: [] });
+        set({ items: [], appliedDiscountCode: null });
       },
       openCart: () => {
         set({ isOpen: true });
@@ -74,15 +91,18 @@ export const useCartStore = create<CartStore>()(
       toggleCart: () => {
         set({ isOpen: !get().isOpen });
       },
+      setAppliedDiscountCode: (code) => {
+        set({ appliedDiscountCode: code });
+      },
       getTotalItems: () => {
         return get().items.reduce((total, item) => total + item.quantity, 0);
       },
       getTotalPrice: () => {
-        return get().items.reduce((total, item) => total + (parseFloat(item.price) * item.quantity), 0);
+        return get().items.reduce((total, item) => total + (parseFloat(item.price as string) * item.quantity), 0);
       },
     }),
     {
-      name: 'gozembil-cart',
+      name: 'goGerami-cart',
     }
   )
 );

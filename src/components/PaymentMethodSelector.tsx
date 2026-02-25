@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CreditCard, Smartphone, Globe, Shield, CheckCircle, AlertCircle } from 'lucide-react';
-import { formatDualCurrency, isEthiopianUser, detectUserCurrency } from '@/lib/currency';
+import { formatPrice } from '@/lib/currency';
+import { paymentMethodConfigService } from '@/services/paymentMethodConfigService';
 
 export interface PaymentMethodSelectorProps {
   amount: number;
@@ -18,7 +20,7 @@ export interface PaymentMethodSelectorProps {
   error?: string;
 }
 
-export type PaymentMethodType = 'stripe' | 'paypal' | 'chapa' | 'telebirr';
+export type PaymentMethodType = 'stripe' | 'chapa' | 'telebirr';
 
 interface PaymentMethodOption {
   id: PaymentMethodType;
@@ -41,12 +43,12 @@ export default function PaymentMethodSelector({
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType>('stripe');
   const [telebirrPhone, setTelebirrPhone] = useState('');
   
-  const { etb, usd } = formatDualCurrency(amount);
+  const formattedAmount = formatPrice(amount, currency);
+  
+  // Detect Ethiopian context from location OR currency
   const isEthiopian = userLocation ? 
     (userLocation.toLowerCase() === 'ethiopia' || userLocation.toLowerCase() === 'et') : 
-    isEthiopianUser();
-  
-  const detectedCurrency = detectUserCurrency();
+    (currency === 'ETB'); // Default to Ethiopian if currency is ETB
 
   const paymentMethods: PaymentMethodOption[] = [
     {
@@ -59,15 +61,6 @@ export default function PaymentMethodSelector({
       badges: ['Secure', 'Instant']
     },
     {
-      id: 'paypal',
-      title: 'PayPal',
-      description: 'Pay with your PayPal account or linked cards',
-      icon: <Globe className="w-6 h-6" />,
-      availability: 'international',
-      status: 'placeholder',
-      badges: ['Buyer Protection']
-    },
-    {
       id: 'chapa',
       title: 'Chapa',
       description: 'Ethiopian payment gateway - Cards, Mobile Money, Bank Transfer',
@@ -78,24 +71,42 @@ export default function PaymentMethodSelector({
     },
     {
       id: 'telebirr',
-      title: 'Telebirr',
-      description: 'Ethiopian mobile money service',
+      title: 'TeleBirr',
+      description: 'Ethio Telecom Mobile Money - TeleBirr Wallet, Bank & Cards',
       icon: <Smartphone className="w-6 h-6" />,
       availability: 'ethiopia',
-      status: 'placeholder',
-      badges: ['Mobile Money', 'ETB']
+      status: 'active',
+      badges: ['Mobile Money', 'ETB', 'Bank', 'Cards']
     }
   ];
 
+  // Fetch backend-enabled payment methods
+  const { data: backendConfigs } = useQuery({
+    queryKey: ['payment-method-configs'],
+    queryFn: () => paymentMethodConfigService.getAllConfigs(),
+    staleTime: 60_000,
+  });
+
   const getVisibleMethods = () => {
+    // First filter by location
+    let methods: PaymentMethodOption[];
     if (isEthiopian) {
-      // Ethiopian users see both Ethiopian and international options
-      return paymentMethods;
+      methods = paymentMethods;
+    } else {
+      methods = paymentMethods.filter(method => 
+        method.availability === 'international' || method.availability === 'global'
+      );
     }
-    // International users see only international options
-    return paymentMethods.filter(method => 
-      method.availability === 'international' || method.availability === 'global'
-    );
+    // Then filter by backend-enabled config
+    if (backendConfigs) {
+      const enabledSet = new Set(
+        backendConfigs
+          .filter((c) => c.enabled)
+          .map((c) => c.paymentMethod.toLowerCase())
+      );
+      methods = methods.filter((m) => enabledSet.has(m.id));
+    }
+    return methods;
   };
 
   const handleMethodSelect = (methodId: PaymentMethodType) => {
@@ -129,10 +140,7 @@ export default function PaymentMethodSelector({
         <CardContent className="pt-6">
           <div className="text-center">
             <div className="text-3xl font-bold text-amber-600 mb-2">
-              {currency === 'ETB' ? etb : usd}
-            </div>
-            <div className="text-sm text-gray-600">
-              {currency === 'ETB' ? `≈ ${usd} USD` : `≈ ${etb} ETB`}
+              {formattedAmount}
             </div>
           </div>
         </CardContent>
@@ -150,6 +158,14 @@ export default function PaymentMethodSelector({
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Choose Payment Method</h3>
         
+        {getVisibleMethods().length === 0 ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              No payment methods are currently available. Please try again later or contact support.
+            </AlertDescription>
+          </Alert>
+        ) : (
         <RadioGroup value={selectedMethod} onValueChange={handleMethodSelect}>
           {getVisibleMethods().map((method) => (
             <Card key={method.id} className={`cursor-pointer transition-all duration-200 ${
@@ -213,12 +229,6 @@ export default function PaymentMethodSelector({
                     <div className="flex items-start space-x-2">
                       <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5" />
                       <div className="text-sm text-blue-700">
-                        {method.id === 'paypal' && (
-                          <>
-                            <strong>PayPal Integration Ready:</strong> Add your PayPal credentials
-                            (PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET) to enable this payment method.
-                          </>
-                        )}
                         {method.id === 'chapa' && (
                           <>
                             <strong>Chapa Integration Ready:</strong> Add your Chapa API key
@@ -239,6 +249,7 @@ export default function PaymentMethodSelector({
             </Card>
           ))}
         </RadioGroup>
+        )}
       </div>
 
       {/* Security Notice */}
@@ -287,7 +298,7 @@ export default function PaymentMethodSelector({
             }
           </span>
           <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-            {detectedCurrency}
+            {currency}
           </span>
         </div>
       </div>

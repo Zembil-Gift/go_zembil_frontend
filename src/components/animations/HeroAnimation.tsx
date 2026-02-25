@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import GiftingHeartAnimation from "./GiftingHeartAnimation";
-import GoZembilLogo from "@/components/GoZembilLogo";
+import GoGeramiLogo from "@/components/GoGeramiLogo";
 
 interface HeroAnimationProps {
   className?: string;
@@ -34,7 +34,7 @@ export default function HeroAnimation({ className = "" }: HeroAnimationProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5, duration: 0.8 }}
             >
-              <GoZembilLogo className="w-16 h-16" />
+              <GoGeramiLogo className="w-16 h-16" />
             </motion.div>
 
             {/* Brand name */}
@@ -45,7 +45,7 @@ export default function HeroAnimation({ className = "" }: HeroAnimationProps) {
               transition={{ delay: 0.8, duration: 1 }}
             >
               <span className="text-deep-forest">go</span>
-              <span className="text-zembil-brown">Zembil</span>
+              <span className="text-Gerami-brown">Gerami</span>
             </motion.h1>
 
             {/* Tagline */}

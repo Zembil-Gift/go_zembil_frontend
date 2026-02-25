@@ -1,4 +1,4 @@
-# Font Guide - goZembil (Gotham)
+# Font Guide - goGerami (Gotham)
 
 ## Primary Font: Gotham
 
@@ -93,7 +93,7 @@ const fontWeights = fonts.weights; // All available weights
 ```jsx
 // Main headings
 <h1 className="font-gotham-extra-bold text-4xl text-primary-blue">
-  Welcome to goZembil
+  Welcome to goGerami
 </h1>
 
 // Section headings
@@ -129,7 +129,7 @@ const fontWeights = fonts.weights; // All available weights
 
 // Logo text
 <span className="font-gotham-bold text-xl text-primary-blue">
-  goZembil
+  goGerami
 </span>
 ```
 
@@ -231,4 +231,4 @@ Gotham provides excellent readability:
 4. **Be consistent**: Use the same font weights for similar elements
 5. **Test on different devices**: Ensure Gotham renders well across platforms
 
-Your goZembil website now has a consistent, professional typography system built around the beautiful Gotham font family! 
+Your goGerami website now has a consistent, professional typography system built around the beautiful Gotham font family! 

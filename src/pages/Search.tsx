@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import MultilingualSearch from '@/components/search/MultilingualSearch';
 import GiftItemCard from '@/components/gift-card';
+import ProductPagination from '@/components/ProductPagination';
 import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
 import { ArrowLeft, Search as SearchIcon, Mic, Languages } from 'lucide-react';
 
 interface Product {
@@ -44,17 +44,23 @@ export default function Search() {
   }, []);
 
   // Search products
-  const { data: searchResults, isLoading, error } = useQuery({
+  const { data: searchResults = [], isLoading, error } = useQuery<Product[]>({
     queryKey: ['/api/products/search', searchQuery],
     queryFn: async () => {
       if (!searchQuery) return [];
-      
+
       const params = new URLSearchParams({
         q: searchQuery,
         ...(translatedQuery && { translated: translatedQuery })
       });
-      
-      return await apiRequest(`/api/products/search?${params}`);
+
+      const response = await fetch(`/api/products/search?${params.toString()}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to search products');
+      }
+      return response.json();
     },
     enabled: !!searchQuery && hasSearched,
   });
@@ -64,7 +70,7 @@ export default function Search() {
     setSearchQuery(query);
     setTranslatedQuery(translated || '');
     setHasSearched(true);
-    
+
     // Update URL
     const params = new URLSearchParams({ q: query });
     if (translated) params.set('translated', translated);
@@ -95,7 +101,7 @@ export default function Search() {
               Back to Shop
             </Button>
             <div className="h-6 w-px bg-gray-300" />
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="md:text-2xl text-lg font-bold text-gray-900 flex items-center gap-2">
               <SearchIcon className="h-6 w-6" />
               Multilingual Search
             </h1>
@@ -247,7 +253,7 @@ export default function Search() {
                     <GiftItemCard key={product.id} product={product} />
                   ))}
                 </div>
-                
+
                 {/* Add pagination for search results if needed */}
                 {searchResults?.length > 20 && (
                   <ProductPagination
@@ -260,7 +266,7 @@ export default function Search() {
                     className="mt-12"
                   />
                 )}
-                
+
                 <div className="mt-8 text-center">
                   <p className="text-gray-600">
                     Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"

@@ -1,28 +1,17 @@
 import { useCart } from "@/hooks/useCart";
-import { formatDualCurrency } from "@/lib/currency";
+import { formatPrice } from "@/lib/currency";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { X, Plus, Minus, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
-
-interface CartItem {
-  id: number;
-  productId: number;
-  quantity: number;
-  customization?: any;
-  product?: {
-    id: number;
-    name: string;
-    price: string;
-    images: string[];
-  };
-}
+import { CartItem } from "@/services/cartService";
+import { getSkuImageUrl } from "@/utils/imageUtils";
 
 export default function CartSidebar() {
   const {
     cartItems,
+    cartCurrency,
     isLoading,
     isOpen,
     closeCart,
@@ -34,10 +23,6 @@ export default function CartSidebar() {
     isRemovingItem,
     isAuthenticated,
   } = useCart();
-
-  const calculateTotal = () => {
-    return getTotalPrice().toFixed(2);
-  };
 
   const handleQuantityChange = (item: CartItem, newQuantity: number) => {
     if (newQuantity < 1) {
@@ -87,26 +72,41 @@ export default function CartSidebar() {
           <>
             <ScrollArea className="flex-1 my-4">
               <div className="space-y-4">
-                {cartItems.map((item: CartItem) => (
+                {cartItems.map((item: CartItem) => {
+                  const imageUrl = getSkuImageUrl(
+                    item.product?.images
+                  );
+                  
+
+                  return (
                   <div key={item.id} className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg">
                     <div className="relative w-16 h-16 flex-shrink-0">
                       <img
-                        src={item.product?.images?.[0] || "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"}
+                        src={imageUrl}
                         alt={item.product?.name || "Product"}
                         className="w-full h-full object-cover rounded-md"
+                        onError={(e) => {
+                          console.error('Image failed to load:', imageUrl);
+                          (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100";
+                        }}
                       />
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-charcoal line-clamp-2">
-                        {item.product?.name || "Product"}
+                        {item.product?.name || `Product #${item.productId}`}
                       </h4>
+                      {item.productSku?.attributes && item.productSku.attributes.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {item.productSku.attributes.map(attr => `${attr.name}: ${attr.value}`).join(', ')}
+                        </p>
+                      )}
                       {(() => {
-                        const currency = formatDualCurrency(item.product?.price || "0");
                         return (
                           <div className="flex flex-col">
-                            <span className="text-ethiopian-gold font-semibold text-sm">{currency.etb}</span>
-                            <span className="text-gray-500 text-xs">{currency.usd}</span>
+                            <span className="text-ethiopian-gold font-semibold text-sm">
+                              {formatPrice(item.unitPrice || 0, cartCurrency)}
+                            </span>
                           </div>
                         );
                       })()}
@@ -144,22 +144,15 @@ export default function CartSidebar() {
                       <X size={16} />
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
 
             <div className="border-t pt-4 space-y-4">
               <div className="flex items-center justify-between text-lg font-semibold">
                 <span>Total:</span>
-                {(() => {
-                  const currency = formatDualCurrency(calculateTotal());
-                  return (
-                    <div className="text-right">
-                      <div className="text-ethiopian-gold">{currency.etb}</div>
-                      <div className="text-gray-500 text-sm font-medium">{currency.usd}</div>
-                    </div>
-                  );
-                })()}
+                <span className="text-ethiopian-gold">{formatPrice(getTotalPrice(), cartCurrency)}</span>
               </div>
               
               <div className="space-y-2">

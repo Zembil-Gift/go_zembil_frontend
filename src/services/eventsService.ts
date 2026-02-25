@@ -6,16 +6,12 @@ import {
   Order, 
   Quote, 
   Country,
-  CITIES,
-  EXCHANGE_RATES,
-  CurrencyExchange
+  CITIES
 } from '../types/events';
 import { EVENT_HERO, SERVICE_HERO } from '../constants/eventHeroes';
 
 export class EventsService {
-  private baseUrl = '/api';
-
-  // Events API
+// Events API
   async getEvents(filters: EventFilters = {}): Promise<{ events: Event[]; total: number }> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
@@ -78,15 +74,6 @@ export class EventsService {
   // Utility methods
   getCitiesByCountry(country: Country) {
     return CITIES[country];
-  }
-
-  getExchangeRate(from: string, to: string): CurrencyExchange | null {
-    return EXCHANGE_RATES.find(rate => rate.from === from && rate.to === to) || null;
-  }
-
-  convertCurrency(amount: number, from: string, to: string): number {
-    const rate = this.getExchangeRate(from, to);
-    return rate ? amount * rate.rate : amount;
   }
 
   formatCurrency(amount: number, currency: string, locale?: string): string {
@@ -682,15 +669,14 @@ export class EventsService {
           contact: 'sara@shegerdecor.com'
         },
         availability: {
-          workingDays: [5, 6, 0],
-          blackoutDates: ['2024-02-22'] // Book release event date
+          workingDays: [1, 2, 3, 4, 5, 6, 0],
+          blackoutDates: []
         },
-        createdAt: '2023-10-05T09:00:00Z',
-        updatedAt: '2024-01-08T13:15:00Z'
+        createdAt: '2023-12-01T10:00:00Z',
+        updatedAt: '2024-01-15T14:30:00Z'
       }
     ];
   }
 }
 
 export const eventsService = new EventsService();
-

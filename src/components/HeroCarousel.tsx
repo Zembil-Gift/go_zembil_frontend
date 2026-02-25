@@ -29,7 +29,7 @@ const slides: CarouselSlide[] = [
   {
     id: 3,
     image: "/attached_assets/goZem2_1752988521788.png",
-    alt: "Happy Ethiopian family receiving goZembil gift delivery",
+    alt: "Happy Ethiopian family receiving goGerami gift delivery",
     title: "Gifting with Heart",
     description: "Bringing smiles and connection to families everywhere"
   }

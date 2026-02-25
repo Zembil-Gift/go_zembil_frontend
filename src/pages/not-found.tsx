@@ -54,7 +54,7 @@ export default function NotFound() {
                 <Link to="/" className="block">
                   <Button className="w-full bg-ethiopian-gold hover:bg-amber text-white">
                     <Home size={18} className="mr-2" />
-                    Back to goZembil
+                    Back to goGerami
                   </Button>
                 </Link>
                 

@@ -140,7 +140,7 @@ export default function Occasions() {
         <div className="mt-16 bg-white rounded-3xl shadow-lg p-8 lg:p-12">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-charcoal mb-4">
-              Why Choose goZembil for Occasions?
+              Why Choose goGerami for Occasions?
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
               We understand that every occasion is unique and deserves a special touch 

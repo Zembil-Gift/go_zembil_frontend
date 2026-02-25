@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { useWishlist } from "@/hooks/useWishlist";
-import { useAuth } from "@/hooks/useAuth";
 import { Heart, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 interface WishlistButtonProps {
   productId: number;
@@ -20,7 +20,6 @@ export function WishlistButton({
   className,
   onClick,
 }: WishlistButtonProps) {
-  const { isAuthenticated } = useAuth();
   const { 
     isInWishlist,
     addToWishlist, 
@@ -28,6 +27,7 @@ export function WishlistButton({
     isAddingToWishlist, 
     isRemovingFromWishlist 
   } = useWishlist();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const inWishlist = isInWishlist(productId);
@@ -38,12 +38,18 @@ export function WishlistButton({
     e.stopPropagation();
     onClick?.(e);
 
-    // Allow guest users to use local wishlist
+    // Require authentication for wishlist
+    if (!isAuthenticated) {
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      navigate(`/signin?returnUrl=${returnUrl}`);
+      return;
+    }
+
     try {
       if (inWishlist) {
         removeFromWishlist(productId);
       } else {
-        addToWishlist({ productId });
+        addToWishlist(productId);
       }
     } catch (error) {
       console.error('Failed to update wishlist:', error);

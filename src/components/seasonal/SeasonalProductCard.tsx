@@ -6,6 +6,8 @@ import { WishlistButton } from '@/components/WishlistButton';
 import { CartButton } from '@/components/CartButton';
 import { useSeasonalTheme } from './SeasonalThemeProvider';
 import { SeasonalProductBadge } from './SeasonalDecorations';
+import { extractPriceAmount } from '@/services/productService';
+import { formatPriceFromDto, formatPrice, PriceData } from '@/lib/currency';
 
 interface Product {
   id: number;
@@ -168,7 +170,9 @@ export function SeasonalProductCard({
                     : undefined
                 }}
               >
-                ${product.price}
+                {typeof product.price === 'object' && product.price 
+                  ? formatPriceFromDto(product.price as unknown as PriceData)
+                  : formatPrice(extractPriceAmount(product.price as any), (product as any).currency || 'USD')}
               </span>
               {showWishlistDate && wishlistItem?.createdAt && (
                 <span 
@@ -188,18 +192,8 @@ export function SeasonalProductCard({
             <div className="flex gap-2 pt-2">
               <CartButton 
                 productId={product.id}
+                price={extractPriceAmount(product.price as any)}
                 className="flex-1"
-                style={{
-                  backgroundColor: isSeasonalMode && currentTheme.id !== 'default' 
-                    ? currentTheme.colors.primary 
-                    : undefined,
-                  borderColor: isSeasonalMode && currentTheme.id !== 'default' 
-                    ? currentTheme.colors.primary 
-                    : undefined,
-                  color: isSeasonalMode && currentTheme.id !== 'default' 
-                    ? currentTheme.colors.background 
-                    : undefined
-                }}
               />
             </div>
           </div>

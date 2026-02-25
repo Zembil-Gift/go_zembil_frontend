@@ -2,22 +2,18 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { FaFacebook } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
-import GiftingHeartAnimation from "@/components/animations/GiftingHeartAnimation";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Eye, EyeOff, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { MockApiService } from "@/services/mockApiService";
 import {useLogin} from "../hooks/useLogin";
-
-const logoImagePath = "/attached_assets/go_zembil_loogo-02.png";
+import GoGeramiLogo from "@/components/GoGeramiLogo";
+import OAuth2Buttons from "@/components/auth/OAuth2Buttons";
+import authService from "@/services/authService";
 
 const signinSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -26,22 +22,42 @@ const signinSchema = z.object({
 
 type SigninForm = z.infer<typeof signinSchema>;
 
+const NON_ADMIN_LOGIN_ROLES = new Set(['CUSTOMER', 'VENDOR', 'DELIVERY_PERSON']);
+
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Get return URL from query params or localStorage
+  const getReturnUrl = (): string => {
+    // First check query params (from 401 redirect)
+    const returnUrl = searchParams.get('returnUrl');
+    if (returnUrl) {
+      return decodeURIComponent(returnUrl);
+    }
+    // Fallback to localStorage (from protected route)
+    const returnTo = localStorage.getItem('returnTo');
+    if (returnTo && returnTo !== '/') {
+      return returnTo;
+    }
+    return '/';
+  };
   
   // Show a message if user was redirected from a protected route
   useEffect(() => {
-    const returnTo = localStorage.getItem('returnTo');
-    if (returnTo && returnTo !== '/') {
+    const returnUrl = getReturnUrl();
+    if (returnUrl && returnUrl !== '/') {
       toast({
         title: "Sign in required",
-        description: `Please sign in to access ${returnTo}`,
+        description: "Please sign in to continue",
         variant: "default",
       });
     }
-  }, [toast]);
+  }, [toast, searchParams]);
 
   const form = useForm<SigninForm>({
     resolver: zodResolver(signinSchema),
@@ -53,37 +69,84 @@ export default function SignIn() {
 
   const signinMutation = useLogin();
 
-  const onSubmit = (data: SigninForm) => {
-    signinMutation.mutate(data, {
-      onSuccess: () => {
-        toast({
-          title: "Sign in successful",
-          description: "Welcome to goZembil!",
-        });
+  const onSubmit = async (data: SigninForm) => {
+    console.log('Form submitted with data:', data);
+    
+    try {
+      console.log('Attempting login...');
+      const result = await signinMutation.mutateAsync({
+        email: data.email,
+        password: data.password
+      });
+      
+      console.log('Login successful:', result);
+      
+      toast({
+        title: "Sign in successful",
+        description: "Welcome to goGerami!",
+      });
 
-        const returnTo = localStorage.getItem("returnTo") || "/";
-        localStorage.removeItem("returnTo");
-        navigate(returnTo);
-      },
-      onError: (err: any) => {
+      const userRole = result.user?.role?.toUpperCase();
+      localStorage.removeItem("returnTo");
+      
+      if (userRole === 'VENDOR') {
+        console.log('Vendor user detected, navigating to vendor dashboard');
+        navigate('/vendor');
+      } else if (userRole === 'DELIVERY_PERSON') {
+        console.log('Delivery person detected, navigating to delivery dashboard');
+        navigate('/delivery');
+      } else if (!NON_ADMIN_LOGIN_ROLES.has(userRole ?? '')) {
+        console.log('Non-customer/vendor/delivery role detected, navigating to admin dashboard');
+        navigate('/admin');
+      } else {
+        const returnUrl = getReturnUrl();
+        console.log('Navigating to:', returnUrl);
+        navigate(returnUrl);
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      
+      // Check if error is due to email not verified
+      const responseData = err?.response?.data;
+      const isEmailNotVerified =
+        responseData?.error === 'EMAIL_NOT_VERIFIED' ||
+        responseData?.details?.requiresVerification === true ||
+        err?.message?.toLowerCase().includes('verify your email');
+
+      if (isEmailNotVerified) {
+        const email = responseData?.details?.email || data.email;
+        setUnverifiedEmail(email);
+      } else {
         toast({
           title: "Sign in failed",
-          description: err?.message || "Invalid email or password",
+          description: err?.message || "Invalid email or password. Please try again.",
           variant: "destructive",
         });
-      },
-    });
+      }
+    }
   };
 
-
-  const handleDemoLogin = () => {
-    // Quick demo login without form validation
-    signinMutation.mutate({
-      email: "demo@example.com",
-      password: "demo123"
-    });
+  const handleVerifyEmail = async () => {
+    if (!unverifiedEmail) return;
+    setIsSendingOtp(true);
+    try {
+      await authService.sendVerificationOtp(unverifiedEmail);
+      navigate('/verify-email', {
+        state: {
+          email: unverifiedEmail,
+          returnUrl: getReturnUrl(),
+        },
+      });
+    } catch (err: any) {
+      toast({
+        title: "Failed to send verification code",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingOtp(false);
+    }
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-light-cream via-white to-gray-50 flex items-center justify-center p-4 relative overflow-hidden">
       
@@ -91,13 +154,15 @@ export default function SignIn() {
       <div className="w-full max-w-md relative z-10">
         {/* Header - Further reduced spacing */}
           <div className="text-center mb-5">
-          <img 
-            src={logoImagePath}
-            alt="goZembil Logo"
-            className="h-8 w-8 lg:h-12 lg:w-12 object-contain block mx-auto"
-          />
+          <div className="flex justify-center mb-2">
+            <GoGeramiLogo 
+              size="md"
+              variant="icon"
+              className="h-8 w-8 lg:h-12 lg:w-12"
+            />
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
-          <p className="text-gray-600">Sign in to your goZembil account</p>
+          <p className="text-gray-600">Sign in to your goGerami account</p>
         </div>
 
         <Card className="shadow-lg border-0">
@@ -166,40 +231,66 @@ export default function SignIn() {
               </form>
             </Form>
 
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">Or continue with</span>
-                </div>
-              </div>
+            {unverifiedEmail && (
+              <Alert className="mt-4 border-amber-300 bg-amber-50">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  <p className="font-medium mb-1">Email not verified</p>
+                  <p className="text-sm mb-3">
+                    Your account (<span className="font-medium">{unverifiedEmail}</span>) hasn't been verified yet.
+                    Click below to receive a verification code.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={handleVerifyEmail}
+                    disabled={isSendingOtp}
+                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    {isSendingOtp ? (
+                      <>
+                        <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                        Sending code...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-3 h-3 mr-2" />
+                        Send verification code
+                      </>
+                    )}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="w-full h-11 justify-center"
-                  disabled
-                  aria-label="Continue with Facebook"
-                >
-                  <FaFacebook className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-11 justify-center"
-                  disabled
-                  aria-label="Continue with Google"
-                >
-                  <FcGoogle className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
+            <OAuth2Buttons
+              disabled={signinMutation.isPending}
+              onSuccess={() => {
+                const userRole = localStorage.getItem('user') 
+                  ? JSON.parse(localStorage.getItem('user')!).role?.toUpperCase() 
+                  : null;
+                localStorage.removeItem("returnTo");
+                
+                if (userRole === 'VENDOR') {
+                  navigate('/vendor');
+                } else if (userRole === 'DELIVERY_PERSON') {
+                  navigate('/delivery');
+                } else if (!NON_ADMIN_LOGIN_ROLES.has(userRole ?? '')) {
+                  navigate('/admin');
+                } else {
+                  const returnUrl = getReturnUrl();
+                  navigate(returnUrl);
+                }
+              }}
+            />
 
             <div className="mt-6 text-center text-sm">
               <span className="text-gray-600">Don't have an account? </span>
               <Link to="/signup" className="text-viridian-green hover:text-viridian-green/80 font-medium">
                 Sign up
+              </Link>
+              <span className="text-gray-600"> or </span>
+              <Link to="/vendor-signup" className="text-emerald-600 hover:text-emerald-700 font-medium">
+                Sign up as Vendor
               </Link>
             </div>
 

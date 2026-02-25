@@ -1,13 +1,11 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Sparkles, Users, Gift, Clock } from 'lucide-react';
-import { GiftExperienceModal } from './GiftExperienceModal';
 
-// Fix for default markers in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -15,7 +13,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Custom animated marker icons
 const createCustomIcon = (type: 'event' | 'service', count: number) => {
   const size = Math.min(40 + count * 2, 60); // Size based on count
   const color = type === 'event' ? '#F59E0B' : '#10B981'; // Amber for events, green for services
@@ -44,7 +41,7 @@ const createCustomIcon = (type: 'event' | 'service', count: number) => {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: ${size + 20}px;
+          width: ${size + 20} px;
           height: ${size + 20}px;
           border: 2px solid ${color};
           border-radius: 50%;

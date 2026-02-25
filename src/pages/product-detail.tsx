@@ -1,56 +1,218 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { useCartStore } from "@/stores/cart-store";
 import { 
   Heart, 
-  Star, 
-  Truck, 
-  Shield, 
-  ChevronLeft, 
+  ChevronLeft,
   ChevronRight, 
   Plus, 
   Minus,
   Share2,
-  MessageCircle
+  Check,
+  X,
+  ZoomIn
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { MockApiService } from "@/services/mockApiService";
+import { productService, Product, extractPriceAmount } from "@/services/productService";
+import { cartService } from "@/services/cartService";
+import { wishlistService } from "@/services/wishlistService";
+import { reviewService } from "@/services/reviewService";
+import { cn } from "@/lib/utils";
+import { formatPrice, getPriceCurrency } from "@/lib/currency";
+import { getProductImageUrl, getAllProductImages } from "@/utils/imageUtils";
+import { ProductReviewsSection, VendorCard, CompactRating } from "@/components/reviews";
+import { DiscountBadge } from "@/components/DiscountBadge";
+import { PriceWithDiscount } from "@/components/PriceWithDiscount";
+
+// Image with skeleton loading
+function ProductImage({ 
+  src, 
+  alt, 
+  className,
+  onClick 
+}: { 
+  src: string; 
+  alt: string; 
+  className?: string;
+  onClick?: () => void;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  return (
+    <div className="relative w-full h-full" onClick={onClick}>
+      {!loaded && !error && (
+        <div 
+          className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer"
+          style={{ backgroundSize: '200% 100%' }}
+        />
+      )}
+      <img
+        src={error ? '/placeholder-product.jpg' : src}
+        alt={alt}
+        className={cn(
+          'transition-opacity duration-300',
+          loaded ? 'opacity-100' : 'opacity-0',
+          className
+        )}
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          setError(true);
+          setLoaded(true);
+        }}
+      />
+    </div>
+  );
+}
 
 export default function ProductDetail() {
   const params = useParams();
+  const navigate = useNavigate();
   const productId = params.id;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [selectedSkuId, setSelectedSkuId] = useState<number | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   
   const { toast } = useToast();
+  const { user, isInitialized, isAuthenticated } = useAuth();
   const { addItem, openCart } = useCartStore();
   const queryClient = useQueryClient();
 
-  const { data: product, isLoading } = useQuery({
-    queryKey: ["/api/products", productId],
-    queryFn: () => MockApiService.getProductById(Number(productId)),
+  const { data: product, isLoading } = useQuery<Product>({
+    queryKey: ["products", "detail", productId, user?.preferredCurrencyCode ?? "default"],
+    queryFn: () => productService.getProductById(Number(productId)),
+    enabled: !!productId && isInitialized,
+  });
+
+  // Auto-select first available SKU when product loads
+  useEffect(() => {
+    if (product?.productSku && product.productSku.length > 0 && selectedSkuId === null) {
+      // Find first SKU with stock, or just the first SKU if none have stock
+      const firstAvailableSku = product.productSku.find(sku => (sku.stockQuantity || 0) > 0);
+      const skuToSelect = firstAvailableSku || product.productSku[0];
+      if (skuToSelect?.id) {
+        setSelectedSkuId(skuToSelect.id);
+      }
+    }
+  }, [product, selectedSkuId]);
+
+  const selectedSku = useMemo(() => {
+    if (!product?.productSku || product.productSku.length === 0) return null;
+    
+    if (selectedSkuId) {
+      return product.productSku.find(sku => sku.id === selectedSkuId) || null;
+    }
+    
+    // Auto-select if there's only ONE SKU (it's the base product, not a variant choice)
+    if (product.productSku.length === 1) {
+      return product.productSku[0];
+    }
+    
+    // For multiple SKUs, don't auto-select - let user choose
+    return null;
+  }, [product, selectedSkuId]);
+
+  const currentPrice = useMemo(() => {
+    if (selectedSku?.price) return extractPriceAmount(selectedSku.price);
+    if (product?.productSku?.[0]?.price) return extractPriceAmount(product.productSku[0].price);
+    return extractPriceAmount(product?.price);
+  }, [selectedSku, product]);
+
+  const currencyCode = useMemo(() => {
+    if (selectedSku?.price?.currencyCode) return selectedSku.price.currencyCode;
+    if (product?.productSku?.[0]?.price?.currencyCode) return product.productSku[0].price.currencyCode;
+    return getPriceCurrency(product?.price);
+  }, [selectedSku, product]);
+
+  const stockQuantity = useMemo(() => {
+    // For multi-SKU products, only show stock when a variant is selected
+    const isMultiSku = product?.productSku && product.productSku.length > 1;
+    if (isMultiSku && !selectedSkuId) return null;
+    
+    if (selectedSku?.stockQuantity !== undefined) return selectedSku.stockQuantity;
+    return product?.stockQuantity || 0;
+  }, [selectedSku, selectedSkuId, product]);
+
+  // Ensure quantity does not exceed stock
+  useEffect(() => {
+    if (stockQuantity !== null && stockQuantity > 0 && quantity > stockQuantity) {
+      setQuantity(stockQuantity);
+    }
+  }, [stockQuantity, quantity]);
+
+  useMemo(() => {
+    if (!product?.productSku) return {};
+
+    const attributes: Record<string, Set<string>> = {};
+
+    product.productSku.forEach(sku => {
+      sku.attributes?.forEach(attr => {
+        if (!attributes[attr.name]) {
+          attributes[attr.name] = new Set();
+        }
+        attributes[attr.name].add(attr.value);
+      });
+    });
+
+    const result: Record<string, string[]> = {};
+    Object.entries(attributes).forEach(([name, values]) => {
+      result[name] = Array.from(values);
+    });
+
+    return result;
+  }, [product]);
+// Show product images by default.
+  // Only show SKU images when user explicitly selects a variant (for multi-SKU products).
+  // For single-SKU products, show SKU images if available (since the SKU IS the product).
+  const images = useMemo(() => {
+    const isMultiSku = product?.productSku && product.productSku.length > 1;
+    const userSelectedVariant = selectedSkuId !== null;
+    
+    // Show SKU images if: single SKU product OR user explicitly selected a variant
+    if ((!isMultiSku || userSelectedVariant) && selectedSku?.images && selectedSku.images.length > 0) {
+      return selectedSku.images
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map(img => img.fullUrl);
+    }
+    
+    return getAllProductImages(product?.images);
+  }, [selectedSkuId, selectedSku, product?.productSku, product?.images]);
+  
+  // Use images if available, otherwise empty array (no fallback)
+  const displayImages = useMemo(() => {
+    return images.length > 0 ? images : [];
+  }, [images]);
+
+  const { data: ratingSummary } = useQuery({
+    queryKey: ["product-rating-summary", productId],
+    queryFn: () => reviewService.getProductRatingSummary(Number(productId)),
     enabled: !!productId,
   });
 
-  const { data: reviews = [] } = useQuery({
-    queryKey: ["/api/products", productId, "reviews"],
-    queryFn: () => MockApiService.getProductReviews(Number(productId)),
-    enabled: !!productId,
+  const { data: vendorProfile } = useQuery({
+    queryKey: ["vendor-profile-by-user", product?.vendorId],
+    queryFn: () => {
+      if (!product?.vendorId) return null;
+      return reviewService.getVendorPublicProfileByUserId(product.vendorId);
+    },
+    enabled: !!product?.vendorId,
   });
 
   const wishlistMutation = useMutation({
     mutationFn: async () => {
       if (isWishlisted) {
-        return await MockApiService.removeFromWishlist(Number(productId));
+        return await wishlistService.removeProductFromWishlist(Number(productId));
       } else {
-        return await MockApiService.addToWishlist(Number(productId));
+        return await wishlistService.addToWishlist({ productId: Number(productId) });
       }
     },
     onSuccess: () => {
@@ -62,7 +224,7 @@ export default function ProductDetail() {
           : "Item added to your wishlist",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update wishlist",
@@ -73,27 +235,51 @@ export default function ProductDetail() {
 
   const addToCartMutation = useMutation({
     mutationFn: async () => {
-      return await MockApiService.addToCart(Number(productId), quantity);
+      if (!isAuthenticated) {
+        throw new Error('Authentication required');
+      }
+
+      // Require variant selection for products with multiple SKUs
+      if (product?.productSku && product.productSku.length > 1 && !selectedSkuId) {
+        throw new Error('Please select a variant');
+      }
+      
+      return await cartService.addToCart({
+        productId: Number(productId),
+        productSkuId: selectedSku?.id,
+        quantity,
+      });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart', 'items'] });
       addItem({
         productId: Number(productId),
-        name: product.name,
-        price: product.price,
-        image: product.images[0] || "",
+        name: product?.name || "",
+        price: currentPrice,
+        image: getProductImageUrl(product?.images, product?.cover),
         quantity,
+        stockQuantity: stockQuantity || undefined,
+        skuId: selectedSku?.id,
+        skuCode: selectedSku?.skuCode,
+        skuName: selectedSku?.skuName,
       });
       
       toast({
         title: "Added to cart",
-        description: `${product.name} added to your cart`,
+        description: `${product?.name} added to your cart`,
       });
       openCart();
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      if (error?.message === 'Authentication required') {
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        navigate(`/signin?returnUrl=${returnUrl}`);
+        return;
+      }
+
       toast({
         title: "Error",
-        description: "Failed to add item to cart",
+        description: error?.message || "Failed to add item to cart",
         variant: "destructive",
       });
     },
@@ -140,16 +326,20 @@ export default function ProductDetail() {
     );
   }
 
-  const images = product.images && product.images.length > 0 
-    ? product.images 
-    : ["https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"];
 
   const nextImage = () => {
-    setSelectedImageIndex((prev) => (prev + 1) % images.length);
+    if (displayImages.length === 0) return;
+    setSelectedImageIndex((prev) => (prev + 1) % displayImages.length);
   };
 
   const prevImage = () => {
-    setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    if (displayImages.length === 0) return;
+    setSelectedImageIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
+  };
+
+  const openLightbox = (index: number) => {
+    setSelectedImageIndex(index);
+    setLightboxOpen(true);
   };
 
   const handleShare = async () => {
@@ -174,7 +364,59 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      
+      {/* Lightbox Modal */}
+      <AnimatePresence>
+        {lightboxOpen && displayImages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <button
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50"
+            >
+              <X className="h-8 w-8" />
+            </button>
+            
+            {displayImages.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                  className="absolute left-4 text-white hover:text-gray-300 z-50 p-2 bg-black/50 rounded-full"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                  className="absolute right-4 text-white hover:text-gray-300 z-50 p-2 bg-black/50 rounded-full"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+            
+            <motion.img
+              key={selectedImageIndex}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              src={displayImages[selectedImageIndex]}
+              alt={`${product.name} - Image ${selectedImageIndex + 1}`}
+              className="max-h-[90vh] max-w-[90vw] object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            {displayImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-light">
+                {selectedImageIndex + 1} / {displayImages.length}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
@@ -182,6 +424,17 @@ export default function ProductDetail() {
           <Link to="/" className="hover:text-viridian-green">Home</Link>
           <span>/</span>
           <Link to="/gifts" className="hover:text-viridian-green">Gifts</Link>
+          {product.subCategoryName && (
+            <>
+              <span>/</span>
+              <Link 
+                to={`/gifts?category=${product.subCategorySlug || product.subCategoryId}`} 
+                className="hover:text-viridian-green"
+              >
+                {product.subCategoryName}
+              </Link>
+            </>
+          )}
           <span>/</span>
           <span className="text-charcoal font-medium">{product.name}</span>
         </nav>
@@ -189,51 +442,79 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images */}
           <div className="space-y-4">
-            {/* Main Image */}
-            <div className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-lg">
-              <img
-                src={images[selectedImageIndex]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-              {images.length > 1 && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-colors"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-colors"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </>
-              )}
-            </div>
+            {displayImages.length > 0 ? (
+              <>
+                {/* Main Image */}
+                <div 
+                  className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-lg cursor-pointer group"
+                  onClick={() => openLightbox(selectedImageIndex)}
+                >
+                  <ProductImage
+                    src={displayImages[selectedImageIndex]}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
+                    <ZoomIn className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  
+                  {/* Navigation arrows */}
+                  {displayImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        <ChevronLeft className="h-5 w-5 text-charcoal" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        <ChevronRight className="h-5 w-5 text-charcoal" />
+                      </button>
+                    </>
+                  )}
+                  
+                  {/* Image counter */}
+                  {displayImages.length > 1 && (
+                    <div className="absolute bottom-4 left-4">
+                      <Badge className="bg-black/60 text-white border-none font-light">
+                        {selectedImageIndex + 1} / {displayImages.length}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
 
-            {/* Thumbnail Images */}
-            {images.length > 1 && (
-              <div className="flex space-x-2 overflow-x-auto">
-                {images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImageIndex(index)}
-                     className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedImageIndex === index
-                        ? "border-viridian-green"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`${product.name} ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
+                {/* Thumbnail Images */}
+                {displayImages.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {displayImages.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedImageIndex(index)}
+                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                          index === selectedImageIndex
+                            ? "border-viridian-green ring-2 ring-viridian-green/30"
+                            : "border-transparent hover:border-gray-300"
+                        }`}
+                      >
+                        <ProductImage
+                          src={image}
+                          alt={`${product.name} thumbnail ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              /* No Image Available */
+              <div className="aspect-square bg-gray-100 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="text-center text-gray-400">
+                  <p className="text-sm">No image available</p>
+                </div>
               </div>
             )}
           </div>
@@ -242,49 +523,165 @@ export default function ProductDetail() {
           <div className="space-y-6">
             {/* Title and Rating */}
             <div>
-              <h1 className="font-display text-3xl font-bold text-charcoal mb-4">
+              {product.subCategoryName && (
+                <div className="text-sm font-medium text-viridian-green uppercase tracking-wider mb-2">
+                  {product.subCategoryName}
+                </div>
+              )}
+              <h1 className="text-3xl font-bold text-charcoal mb-4">
                 {product.name}
               </h1>
               
-              {product.rating && product.reviewCount && (
+              {/* Rating from API */}
+              {ratingSummary && ratingSummary.totalReviews > 0 ? (
                 <div className="flex items-center space-x-2 mb-4">
-                  <div className="flex items-center">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        size={16}
-                        className={`${
-                          i < Math.floor(parseFloat(product.rating))
-                            ? "text-viridian-green fill-viridian-green"
-                            : "text-gray-300"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {parseFloat(product.rating).toFixed(1)} ({product.reviewCount} reviews)
-                  </span>
+                  <CompactRating 
+                    rating={ratingSummary.averageRating} 
+                    reviewCount={ratingSummary.totalReviews}
+                    size="md"
+                  />
                 </div>
+              ) : (
+                <p className="text-sm text-gray-500 mb-4">No reviews yet</p>
               )}
 
               {/* Badges */}
               <div className="flex flex-wrap gap-2 mb-4">
-                {product.salesCount && product.salesCount > 50 && (
-                  <Badge className="bg-viridian-green text-white">Bestseller</Badge>
+                {product.isFeatured && (
+                  <Badge className="bg-viridian-green text-white">Featured</Badge>
                 )}
-                {product.tags?.includes("handmade") && (
-                  <Badge className="bg-warm-red text-white">Handmade</Badge>
+                {product.isTrending && (
+                  <Badge className="bg-sunset-orange text-white">Trending</Badge>
                 )}
-                {product.tags?.includes("authentic") && (
-                  <Badge className="bg-sunset-orange text-white">Authentic</Badge>
+                {stockQuantity !== null && stockQuantity > 0 && stockQuantity <= 5 && (
+                  <Badge variant="outline" className="border-orange-500 text-orange-500">
+                    Only {stockQuantity} left
+                  </Badge>
                 )}
               </div>
+
+              {/* Product Tags */}
+              {product.tags && product.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {product.tags.map((tag: string, index: number) => (
+                    <Badge 
+                      key={index} 
+                      variant="secondary" 
+                      className="text-xs font-normal"
+                    >
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Price */}
-            <div className="text-3xl font-bold text-viridian-green">
-              {product.price} ETB
+            <div className="space-y-2">
+              {product.activeDiscount && (
+                <div>
+                  <DiscountBadge 
+                    discount={product.activeDiscount} 
+                    variant="compact" 
+                    size="small" 
+                    targetCurrency={currencyCode}
+                  />
+                </div>
+              )}
+              <PriceWithDiscount
+                originalPrice={currentPrice}
+                currency={currencyCode}
+                discount={product.activeDiscount}
+                size="large"
+              />
+              {stockQuantity === null ? (
+                <div className="text-sm text-gray-500">
+                  Select a variant to see availability
+                </div>
+              ) : stockQuantity > 0 ? (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <Check className="h-4 w-4" />
+                  <span>In Stock ({stockQuantity} available)</span>
+                </div>
+              ) : (
+                <div className="text-sm text-red-500">Out of Stock</div>
+              )}
             </div>
+
+            {product.productSku && product.productSku.length > 1 && (
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <h3 className="font-semibold text-charcoal">
+                  Select Variant <span className="text-red-500">*</span>
+                </h3>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  {product.productSku.map((sku) => (
+                    <button
+                      key={sku.id}
+                      onClick={() => setSelectedSkuId(sku.id || null)}
+                      disabled={(sku.stockQuantity || 0) === 0}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border-2 transition-all text-left",
+                        selectedSku?.id === sku.id
+                          ? "border-viridian-green bg-viridian-green/5"
+                          : "border-gray-200 hover:border-gray-300",
+                        (sku.stockQuantity || 0) === 0 && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                          selectedSku?.id === sku.id
+                            ? "border-viridian-green"
+                            : "border-gray-300"
+                        )}>
+                          {selectedSku?.id === sku.id && (
+                            <div className="w-3 h-3 rounded-full bg-viridian-green" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">{sku.skuName}</div>
+                          {sku.attributes && sku.attributes.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {sku.attributes.map((attr, idx) => (
+                                <span key={idx} className="text-xs text-gray-500">
+                                  {attr.name}: <span className="font-medium">{attr.value}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-viridian-green">
+                          {formatPrice(extractPriceAmount(sku.price), sku.price?.currencyCode || currencyCode)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {(sku.stockQuantity || 0) > 0 
+                            ? `${sku.stockQuantity} in stock` 
+                            : "Out of stock"}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Single SKU Info */}
+            {product.productSku && product.productSku.length === 1 && selectedSku?.attributes && selectedSku.attributes.length > 0 && (
+              <div className="space-y-2 pt-4 border-t border-gray-200">
+                <h3 className="font-semibold text-charcoal">Product Details</h3>
+                <div className="flex flex-wrap gap-4">
+                  {selectedSku.attributes.map((attr, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">{attr.name}:</span>
+                      <Badge variant="outline">{attr.value}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Description */}
             {product.description && (
@@ -312,6 +709,7 @@ export default function ProductDetail() {
                     size="sm"
                     variant="outline"
                     onClick={() => setQuantity(quantity + 1)}
+                    disabled={stockQuantity !== null && quantity >= stockQuantity}
                     className="h-10 w-10 p-0"
                   >
                     <Plus size={16} />
@@ -325,13 +723,27 @@ export default function ProductDetail() {
               <div className="flex space-x-4">
                 <Button
                   onClick={() => addToCartMutation.mutate()}
-                  disabled={addToCartMutation.isPending}
+                  disabled={addToCartMutation.isPending || stockQuantity === 0 || stockQuantity === null}
                   className="flex-1 bg-viridian-green hover:bg-viridian-green/90 text-white h-12"
                 >
-                  {addToCartMutation.isPending ? "Adding..." : "Add to Cart"}
+                  {addToCartMutation.isPending 
+                    ? "Adding..." 
+                    : stockQuantity === 0 
+                      ? "Out of Stock"
+                      : product?.productSku && product.productSku.length > 1 && !selectedSkuId
+                        ? "Select a Variant First"
+                        : "Add to Cart"}
                 </Button>
                 <Button
-                  onClick={() => wishlistMutation.mutate()}
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                      navigate(`/signin?returnUrl=${returnUrl}`);
+                      return;
+                    }
+
+                    wishlistMutation.mutate();
+                  }}
                   disabled={wishlistMutation.isPending}
                   variant="outline"
                   className="h-12 px-6 border-viridian-green text-viridian-green hover:bg-viridian-green hover:text-white"
@@ -348,28 +760,43 @@ export default function ProductDetail() {
               </div>
 
               <Button
-                onClick={() => {
-                  addToCartMutation.mutate();
-                  // Navigate to checkout after adding to cart
-                  setTimeout(() => {
-                    window.location.href = "/checkout";
-                  }, 1000);
+                onClick={async () => {
+                  // Check variant selection first for multi-SKU products
+                  if (product?.productSku && product.productSku.length > 1 && !selectedSkuId) {
+                    toast({
+                      title: "Please select a variant",
+                      description: "Choose a product variant before proceeding",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  if (stockQuantity === 0 || stockQuantity === null) {
+                    toast({
+                      title: "Out of stock",
+                      description: "This item is currently unavailable",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  try {
+                    await addToCartMutation.mutateAsync();
+                    navigate("/checkout");
+                  } catch (error) {
+                    console.error('Failed to add to cart:', error);
+                  }
                 }}
+                disabled={addToCartMutation.isPending || stockQuantity === 0 || stockQuantity === null}
                 variant="outline"
                 className="w-full h-12 border-deep-forest text-deep-forest hover:bg-deep-forest hover:text-white"
               >
-                Buy Now
+                {addToCartMutation.isPending ? "Processing..." : "Buy Now"}
               </Button>
             </div>
 
             {/* Delivery Info */}
-            <div className="space-y-3 pt-6 border-t border-gray-200">
-              <div className="flex items-center space-x-3">
-                <Truck className="text-viridian-green" size={20} />
-                <span className="text-gray-600">
-                  {product.deliveryDays || 3} days delivery in Addis Ababa
-                </span>
-              </div>
+            {/* <div className="space-y-3 pt-6 border-t border-gray-200">
               <div className="flex items-center space-x-3">
                 <Shield className="text-viridian-green" size={20} />
                 <span className="text-gray-600">Quality guarantee & authentic products</span>
@@ -378,82 +805,51 @@ export default function ProductDetail() {
                 <MessageCircle className="text-viridian-green" size={20} />
                 <span className="text-gray-600">Add personal video message (+50 ETB)</span>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
+
+        {/* Vendor Section */}
+        {vendorProfile && (
+          <div className="mt-8">
+            <h3 className="font-semibold text-lg text-charcoal mb-4">Sold by</h3>
+            <VendorCard vendor={vendorProfile} />
+          </div>
+        )}
 
         {/* Product Details Tabs */}
         <div className="mt-16">
           <Tabs defaultValue="reviews" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
+              <TabsTrigger value="reviews">
+                Reviews
+                {ratingSummary && ratingSummary.totalReviews > 0 && (
+                  <span className="ml-1 text-xs">({ratingSummary.totalReviews})</span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="details">Product Details</TabsTrigger>
               <TabsTrigger value="shipping">Shipping & Returns</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="reviews" className="space-y-6">
-              <div className="bg-white rounded-lg p-6">
-                <h3 className="font-semibold text-lg mb-4">Customer Reviews</h3>
-                {reviews.length > 0 ? (
-                  <div className="space-y-4">
-                    {reviews.map((review: any) => (
-                      <div key={review.id} className="border-b border-gray-200 pb-4 last:border-b-0">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <div className="flex">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                size={14}
-                                className={`${
-                                  i < review.rating
-                                    ? "text-viridian-green fill-viridian-green"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="font-medium">{review.title}</span>
-                        </div>
-                        <p className="text-gray-600">{review.content}</p>
-                        <p className="text-sm text-gray-500 mt-2">
-                          {new Date(review.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500">No reviews yet. Be the first to review this product!</p>
-                )}
-              </div>
+            <TabsContent value="reviews" className="space-y-6 mt-6">
+              <ProductReviewsSection productId={Number(productId)} />
             </TabsContent>
             
             <TabsContent value="details" className="space-y-6">
               <div className="bg-white rounded-lg p-6">
                 <h3 className="font-semibold text-lg mb-4">Product Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="font-medium">SKU:</span>
-                    <span className="ml-2 text-gray-600">{product.sku || "N/A"}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Weight:</span>
-                    <span className="ml-2 text-gray-600">{product.weight || "N/A"} kg</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Delivery Time:</span>
-                    <span className="ml-2 text-gray-600">{product.deliveryDays || 3} days</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Customizable:</span>
-                    <span className="ml-2 text-gray-600">
-                      {product.isCustomizable ? "Yes" : "No"}
-                    </span>
-                  </div>
+                  {selectedSku?.skuName && (
+                    <div>
+                      <span className="font-medium">Variant:</span>
+                      <span className="ml-2 text-gray-600">{selectedSku.skuName}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </TabsContent>
             
-            <TabsContent value="shipping" className="space-y-6">
+            {/* <TabsContent value="shipping" className="space-y-6">
               <div className="bg-white rounded-lg p-6">
                 <h3 className="font-semibold text-lg mb-4">Shipping & Returns</h3>
                 <div className="space-y-4">
@@ -473,7 +869,7 @@ export default function ProductDetail() {
                   </div>
                 </div>
               </div>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
         </div>
       </div>

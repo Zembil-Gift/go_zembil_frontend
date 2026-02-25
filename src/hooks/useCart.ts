@@ -2,40 +2,49 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCartStore } from "@/stores/cart-store";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { MockApiService } from "@/services/mockApiService";
-
-interface CartItem {
-  id: number;
-  productId: number;
-  quantity: number;
-  customization?: any;
-  product?: {
-    id: number;
-    name: string;
-    price: string;
-    images: string[];
-  };
-}
+import { cartService, CartItem } from "@/services/cartService";
 
 export function useCart() {
   const { isAuthenticated } = useAuth();
-  const { isOpen, openCart, closeCart, toggleCart } = useCartStore();
+  const { isOpen, openCart, closeCart, toggleCart, appliedDiscountCode, setAppliedDiscountCode } = useCartStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch cart items from mock API
-  const { 
-    data: cartItems = [], 
+  const {
+    data: cartData, 
     isLoading, 
     error,
-    refetch 
+    refetch,
+    isFetching 
   } = useQuery({
-    queryKey: ["/api/cart"],
-    queryFn: () => MockApiService.getCart(),
+    queryKey: ["cart", "items"],
+    queryFn: async () => {
+      try {
+        const result = await cartService.getCart();
+        return result;
+      } catch (error) {
+        throw error;
+      }
+    },
     retry: false,
     enabled: isAuthenticated, // Only fetch when authenticated
-    staleTime: 30000, // Consider data fresh for 30 seconds
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: 'always', // Always refetch on mount
     refetchOnWindowFocus: true,
+  });
+
+  // Extract items and currency from cart data
+  const cartItems = cartData?.items || [];
+  const cartCurrency = cartData?.currency || 'ETB';
+
+  console.log('Cart query state:', { 
+    cartItems, 
+    cartCurrency,
+    isLoading, 
+    error, 
+    isFetching,
+    itemCount: cartItems?.length,
+    queryEnabled: isAuthenticated 
   });
 
   // Calculate total items with error handling
@@ -61,9 +70,9 @@ export function useCart() {
         return 0;
       }
       return cartItems.reduce((total: number, item: CartItem) => {
-        const price = parseFloat(item.product?.price || '0') || 0;
-        const quantity = Number(item.quantity) || 0;
-        return total + (price * quantity);
+        // Use totalPrice from API if available, otherwise calculate from unitPrice
+        const itemTotal = Number(item.totalPrice) || (Number(item.unitPrice || 0) * Number(item.quantity || 0));
+        return total + itemTotal;
       }, 0);
     } catch (error) {
       console.warn('Error calculating cart total price:', error);
@@ -73,21 +82,21 @@ export function useCart() {
 
   // Add item to cart mutation
   const addToCartMutation = useMutation({
-    mutationFn: async ({ productId, quantity = 1, customization }: { 
+    mutationFn: async ({ productId, quantity = 1, productSkuId }: { 
       productId: number; 
       quantity?: number; 
-      customization?: any 
+      productSkuId?: number;
     }) => {
-      return await MockApiService.addToCart(productId, quantity);
+      return await cartService.addToCart({ productId, quantity, productSkuId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
       toast({
         title: "Added to cart",
         description: "Item has been added to your cart",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to add item to cart. Please try again.",
@@ -100,15 +109,14 @@ export function useCart() {
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ id, quantity }: { id: number; quantity: number }) => {
       if (quantity <= 0) {
-        return await MockApiService.removeFromCart(id);
+        return await cartService.removeFromCart(id);
       }
-      // Mock update quantity
-      return Promise.resolve({ success: true });
+      return await cartService.updateCartItem(id, quantity);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update cart item",
@@ -120,16 +128,16 @@ export function useCart() {
   // Remove item mutation
   const removeItemMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await MockApiService.removeFromCart(id);
+      return await cartService.removeFromCart(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
       toast({
         title: "Item removed",
         description: "Item removed from cart",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to remove item from cart",
@@ -141,17 +149,16 @@ export function useCart() {
   // Clear cart mutation
   const clearCartMutation = useMutation({
     mutationFn: async () => {
-      // Mock clear cart
-      return Promise.resolve({ success: true });
+      return await cartService.clearCart();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
       toast({
         title: "Cart cleared",
         description: "All items removed from cart",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to clear cart",
@@ -163,6 +170,7 @@ export function useCart() {
   return {
     // Cart data
     cartItems,
+    cartCurrency,
     isLoading,
     error,
     refetch,
@@ -176,6 +184,8 @@ export function useCart() {
     openCart,
     closeCart,
     toggleCart,
+    appliedDiscountCode,
+    setAppliedDiscountCode,
     
     // Cart mutations
     addToCart: addToCartMutation.mutate,

@@ -1,30 +1,32 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useEffect } from "react";
-import { useLocation, useParams } from "wouter";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 
 import GiftItemCard from "@/components/gift-card";
 import ProductPagination from "@/components/ProductPagination";
-import ZembilSignatureSets from "@/components/ZembilSignatureSets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, SlidersHorizontal, ChevronUp, Star } from "lucide-react";
-import { Product, Category } from "@shared/schema";
+import { Search, SlidersHorizontal } from "lucide-react";
+import { Product, productService, extractPriceAmount } from "@/services/productService";
+import { categoryService } from "@/services/categoryService";
+import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
 
 export default function Gifts() {
-  // Get URL search params
-  const urlParams = new URLSearchParams(window.location.search);
-  const searchParam = urlParams.get('search') || '';
-  const sortParam = urlParams.get('sort') || 'popularity';
-  const priceParam = urlParams.get('price') || 'all';
-  const recipientParam = urlParams.get('recipient') || '';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user, isInitialized } = useAuth();
   
   // Get path parameters
-  const params = useParams();
+  const params = useParams<{ categorySlug?: string }>();
+
+  // Use URL params directly as the source of truth
+  const searchParam = searchParams.get('search') || '';
+  const sortParam = searchParams.get('sort') || 'popularity';
+  const priceParam = searchParams.get('price') || 'all';
+  const recipientParam = searchParams.get('recipient') || '';
   
   // Check if the path parameter is a recipient type
   const knownRecipients = [
@@ -32,75 +34,179 @@ export default function Gifts() {
     'anniversary', 'birthday', 'wedding', 'graduation', 'housewarming',
     'christmas', 'holiday', 'valentine'
   ];
-  const categorySlug = params.categorySlug && !knownRecipients.includes(params.categorySlug) ? params.categorySlug : urlParams.get('category');
+  
+  const categorySlug = params.categorySlug && !knownRecipients.includes(params.categorySlug)
+    ? params.categorySlug
+    : searchParams.get('category');
+    
   const pathRecipient = params.categorySlug && knownRecipients.includes(params.categorySlug) ? params.categorySlug : null;
   const finalRecipientParam = recipientParam || pathRecipient;
 
-  const [searchTerm, setSearchTerm] = useState(searchParam);
-  const [sortBy, setSortBy] = useState(sortParam);
-  const [priceRange, setPriceRange] = useState(priceParam);
+  // Local state for interactive elements that haven't been committed to URL yet (like typing in search)
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchParam);
+  
+  // Update local search term when URL search param changes (e.g. browser back)
+  useEffect(() => {
+    setLocalSearchTerm(searchParam);
+  }, [searchParam]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
   const [loadedProducts, setLoadedProducts] = useState<Product[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Build query parameters
-  const buildQueryParams = () => {
-    const params = new URLSearchParams();
-    if (searchTerm) params.append('search', searchTerm);
-    if (sortBy !== 'popularity') params.append('sort', sortBy);
-    if (priceRange !== 'all') params.append('price', priceRange);
-    if (categorySlug) params.append('category', categorySlug);
-    if (finalRecipientParam) params.append('recipient', finalRecipientParam);
-    return params.toString();
-  };
-
-  // Fetch products with pagination
-  const queryParams = buildQueryParams();
-  const apiUrl = `/api/products?${queryParams}&page=1&limit=${itemsPerPage}`;
-
-  const { data: initialData, isLoading } = useQuery<{products: Product[], total: number} | Product[]>({
-    queryKey: ['/api/products', queryParams],
-    queryFn: () => fetch(apiUrl).then(res => res.json()),
+  const { data: categoriesWithSubcategories = [] } = useQuery({
+    queryKey: ['categories', 'with-subcategories'],
+    queryFn: () => categoryService.getCategoriesWithSubcategories(),
   });
 
-  // Handle both old and new API response formats
-  const isNewFormat = initialData && 'products' in initialData;
-  const products = isNewFormat ? initialData.products : (initialData as Product[] || []);
-  const totalProducts = isNewFormat ? initialData.total : (products?.length || 0);
+  const currentSubCategory = useMemo(() => {
+    if (!categorySlug) return null;
+    for (const category of categoriesWithSubcategories) {
+      const sub = category.subcategories?.find((item) => item.slug === categorySlug);
+      if (sub) return sub;
+    }
+    return null;
+  }, [categorySlug, categoriesWithSubcategories]);
+
+  const currentCategory = useMemo(() => {
+    if (!categorySlug) return null;
+    if (currentSubCategory) {
+      return categoriesWithSubcategories.find((cat) => cat.id === currentSubCategory.categoryId) || null;
+    }
+    return categoriesWithSubcategories.find((cat) => cat.slug === categorySlug) || null;
+  }, [categorySlug, categoriesWithSubcategories, currentSubCategory]);
+
+  const baseFilterParams = useMemo(() => ({
+    page: 0,
+    size: itemsPerPage,
+    search: searchParam || undefined,
+    subCategoryId: currentSubCategory?.id,
+    categoryId: currentSubCategory ? undefined : currentCategory?.id,
+  }), [itemsPerPage, searchParam, currentSubCategory, currentCategory]);
+
+  // Fetch products from backend filter endpoint (wait for auth so currency is correct)
+  const { data: initialData, isLoading, isFetching } = useQuery({
+    queryKey: ['gifts', 'products', baseFilterParams, finalRecipientParam, sortParam, priceParam, user?.preferredCurrencyCode ?? 'default'],
+    queryFn: () => productService.getFilteredProducts(baseFilterParams),
+    enabled: isInitialized && ((!categorySlug || !!currentCategory || !!currentSubCategory) && !!categoriesWithSubcategories.length),
+  });
+
+  const products = initialData?.content || [];
+
+  const getProductPrice = (product: Product) => {
+    if (product.productSku && product.productSku.length > 0) {
+      const prices = product.productSku
+        .map((sku) => extractPriceAmount(sku.price))
+        .filter((price) => price > 0);
+      if (prices.length > 0) return Math.min(...prices);
+    }
+    return extractPriceAmount(product.price);
+  };
 
   // Filter products by recipient if specified
-  const filteredProducts = finalRecipientParam 
-    ? products.filter(product => 
-        product.recipient && 
-        Array.isArray(product.recipient) && 
-        product.recipient.includes(finalRecipientParam)
-      )
-    : products;
+  const filteredProducts = useMemo(() => {
+    return products
+      .filter((product) => {
+        if (!finalRecipientParam) return true;
+        const recipients = (product as any).recipient;
+        return Array.isArray(recipients) && recipients.includes(finalRecipientParam);
+      })
+      .filter((product) => {
+        if (priceParam === 'all') return true;
+        const price = getProductPrice(product);
+        switch (priceParam) {
+          case '0-500':
+            return price < 500;
+          case '500-1000':
+            return price >= 500 && price <= 1000;
+          case '1000-2000':
+            return price >= 1000 && price <= 2000;
+          case '2000-5000':
+            return price >= 2000 && price <= 5000;
+          case '5000+':
+            return price > 5000;
+          default:
+            return true;
+        }
+      })
+      .sort((a, b) => {
+        if (sortParam === 'price-low') return getProductPrice(a) - getProductPrice(b);
+        if (sortParam === 'price-high') return getProductPrice(b) - getProductPrice(a);
+        if (sortParam === 'newest') {
+          return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
+        }
+        if (sortParam === 'rating') {
+          return (b.averageRating || 0) - (a.averageRating || 0);
+        }
+        return 0;
+      });
+  }, [products, finalRecipientParam, priceParam, sortParam]);
 
-  // Update loaded products when initial data changes
+  const totalProducts = initialData?.totalElements || filteredProducts.length;
+
+  // Reset loaded products when filters change (queryKey changes)
   useEffect(() => {
-    if (filteredProducts.length > 0) {
-      setLoadedProducts(filteredProducts);
-      setCurrentPage(1);
-    }
+    setLoadedProducts(filteredProducts);
+    setCurrentPage(1);
   }, [filteredProducts]);
 
-  // Load more products function
+  const displayProducts = loadedProducts.length > 0 ? loadedProducts : filteredProducts;
+  const hasNextPage = totalProducts > loadedProducts.length;
+
   const loadMoreProducts = async () => {
-    if (isLoadingMore) return;
-    
+    if (isLoadingMore || !hasNextPage) return;
+
     setIsLoadingMore(true);
     try {
       const nextPage = currentPage + 1;
-      const nextPageUrl = `/api/products?${queryParams}&page=${nextPage}&limit=${itemsPerPage}`;
+      const data = await productService.getFilteredProducts({
+        ...baseFilterParams,
+        page: nextPage - 1,
+      });
 
-      const response = await fetch(nextPageUrl);
-      const data = await response.json();
-      
-      const nextProducts = data?.products || data || [];
+      const nextProducts = data?.content || [];
       if (nextProducts.length > 0) {
-        setLoadedProducts(prev => [...prev, ...nextProducts]);
+        const merged = [...loadedProducts, ...nextProducts];
+
+        // Keep client-side recipient/price/sort behavior consistent for appended data
+        const filteredMerged = merged
+          .filter((product) => {
+            if (!finalRecipientParam) return true;
+            const recipients = (product as any).recipient;
+            return Array.isArray(recipients) && recipients.includes(finalRecipientParam);
+          })
+          .filter((product) => {
+            if (priceParam === 'all') return true;
+            const price = getProductPrice(product);
+            switch (priceParam) {
+              case '0-500':
+                return price < 500;
+              case '500-1000':
+                return price >= 500 && price <= 1000;
+              case '1000-2000':
+                return price >= 1000 && price <= 2000;
+              case '2000-5000':
+                return price >= 2000 && price <= 5000;
+              case '5000+':
+                return price > 5000;
+              default:
+                return true;
+            }
+          })
+          .sort((a, b) => {
+            if (sortParam === 'price-low') return getProductPrice(a) - getProductPrice(b);
+            if (sortParam === 'price-high') return getProductPrice(b) - getProductPrice(a);
+            if (sortParam === 'newest') {
+              return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
+            }
+            if (sortParam === 'rating') {
+              return (b.averageRating || 0) - (a.averageRating || 0);
+            }
+            return 0;
+          });
+
+        setLoadedProducts(filteredMerged);
         setCurrentPage(nextPage);
       }
     } catch (error) {
@@ -110,18 +216,10 @@ export default function Gifts() {
     }
   };
 
-  const hasNextPage = totalProducts > loadedProducts.length;
-  const displayProducts = loadedProducts.length > 0 ? loadedProducts : filteredProducts;
-
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ['/api/categories'],
-  });
-
-  // Get recipient display name
   const getRecipientDisplayName = (recipient: string) => {
     const recipientNames: { [key: string]: string } = {
       'mom': 'For Mom',
-      'dad': 'For Dad', 
+      'dad': 'For Dad',
       'friends': 'For Friends',
       'kids': 'For Kids',
       'couples': 'For Couples',
@@ -138,38 +236,38 @@ export default function Gifts() {
     return recipientNames[recipient] || recipient;
   };
 
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    // Update URL without page reload
-    const newParams = new URLSearchParams(window.location.search);
+  const handleSearchCommit = (value: string) => {
+    const newParams = new URLSearchParams(searchParams);
     if (value) {
       newParams.set('search', value);
     } else {
       newParams.delete('search');
     }
-    window.history.replaceState(null, '', `${window.location.pathname}?${newParams.toString()}`);
+    newParams.delete('category'); // Clear category when searching
+    setSearchParams(newParams);
   };
 
   const handleSortChange = (value: string) => {
-    setSortBy(value);
-    const newParams = new URLSearchParams(window.location.search);
+    const newParams = new URLSearchParams(searchParams);
     newParams.set('sort', value);
-    window.history.replaceState(null, '', `${window.location.pathname}?${newParams.toString()}`);
+    setSearchParams(newParams);
   };
 
   const handlePriceChange = (value: string) => {
-    setPriceRange(value);
-    const newParams = new URLSearchParams(window.location.search);
+    const newParams = new URLSearchParams(searchParams);
     if (value === 'all') {
       newParams.delete('price');
     } else {
       newParams.set('price', value);
     }
-    window.history.replaceState(null, '', `${window.location.pathname}?${newParams.toString()}`);
+    setSearchParams(newParams);
   };
 
-  const currentCategory = categorySlug ? 
-    categories.find((cat: any) => cat.slug === categorySlug) : null;
+  const handleClearFilters = () => {
+    setSearchParams({});
+    setLocalSearchTerm('');
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -187,6 +285,12 @@ export default function Gifts() {
                 <span className="text-ethiopian-gold">{currentCategory.name}</span>
               </>
             )}
+            {currentSubCategory && (
+              <>
+                <span>›</span>
+                <span className="text-ethiopian-gold">{currentSubCategory.name}</span>
+              </>
+            )}
             {finalRecipientParam && (
               <>
                 <span>›</span>
@@ -198,7 +302,9 @@ export default function Gifts() {
           <h1 className="text-3xl sm:text-4xl font-bold text-charcoal mb-4">
             {finalRecipientParam 
               ? `${getRecipientDisplayName(finalRecipientParam)}` 
-              : currentCategory 
+              : currentSubCategory
+                ? currentSubCategory.name
+                : currentCategory 
                 ? currentCategory.name 
                 : 'All Gifts'
             }
@@ -223,9 +329,9 @@ export default function Gifts() {
             </p>
           )}
           
-          {currentCategory?.description && !finalRecipientParam && (
+          {(currentSubCategory?.description || currentCategory?.description) && !finalRecipientParam && (
             <p className="text-gray-600 text-lg max-w-3xl">
-              {currentCategory.description}
+              {currentSubCategory?.description || currentCategory?.description}
             </p>
           )}
         </div>
@@ -238,14 +344,20 @@ export default function Gifts() {
               <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <Input
                 placeholder="Search gifts..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
+                value={localSearchTerm}
+                onChange={(e) => setLocalSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearchCommit(localSearchTerm);
+                  }
+                }}
+                onBlur={() => handleSearchCommit(localSearchTerm)}
                 className="pl-10"
               />
             </div>
 
             {/* Sort */}
-            <Select value={sortBy} onValueChange={handleSortChange}>
+            <Select value={sortParam} onValueChange={handleSortChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -259,7 +371,7 @@ export default function Gifts() {
             </Select>
 
             {/* Price Range */}
-            <Select value={priceRange} onValueChange={handlePriceChange}>
+            <Select value={priceParam} onValueChange={handlePriceChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Price range" />
               </SelectTrigger>
@@ -281,23 +393,36 @@ export default function Gifts() {
           </div>
 
           {/* Active Filters */}
-          {(searchTerm || priceRange !== 'all' || currentCategory || finalRecipientParam) && (
+          {(searchParam || priceParam !== 'all' || currentCategory || currentSubCategory || finalRecipientParam) && (
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
               <span className="text-sm text-gray-600">Active filters:</span>
-              {searchTerm && (
+              {searchParam && (
                 <Badge variant="secondary" className="bg-ethiopian-gold/10 text-ethiopian-gold">
-                  Search: {searchTerm}
+                  Search: {searchParam}
                   <button 
-                    onClick={() => handleSearch('')}
+                    onClick={() => {
+                      setLocalSearchTerm('');
+                      handleSearchCommit('');
+                    }}
                     className="ml-2 hover:text-warm-red"
                   >
                     ×
                   </button>
                 </Badge>
               )}
-              {currentCategory && (
+              {(currentSubCategory || currentCategory) && (
                 <Badge variant="secondary" className="bg-ethiopian-gold/10 text-ethiopian-gold">
-                  Category: {currentCategory.name}
+                  {currentSubCategory ? 'Subcategory' : 'Category'}: {currentSubCategory?.name || currentCategory?.name}
+                  <button 
+                    onClick={() => {
+                      const newParams = new URLSearchParams(searchParams);
+                      newParams.delete('category');
+                      setSearchParams(newParams);
+                    }}
+                    className="ml-2 hover:text-warm-red"
+                  >
+                    ×
+                  </button>
                 </Badge>
               )}
               {finalRecipientParam && (
@@ -305,13 +430,13 @@ export default function Gifts() {
                   Recipient: {getRecipientDisplayName(finalRecipientParam)}
                   <button 
                     onClick={() => {
-                      const newParams = new URLSearchParams(window.location.search);
+                      const newParams = new URLSearchParams(searchParams);
                       newParams.delete('recipient');
                       // If we're on a path-based recipient URL, redirect to /gifts
                       if (pathRecipient) {
-                        window.location.href = '/gifts';
+                        setSearchParams({});
                       } else {
-                        window.history.replaceState(null, '', `${window.location.pathname}?${newParams.toString()}`);
+                        setSearchParams(newParams);
                       }
                     }}
                     className="ml-2 hover:text-warm-red"
@@ -320,12 +445,12 @@ export default function Gifts() {
                   </button>
                 </Badge>
               )}
-              {priceRange !== 'all' && (
+              {priceParam !== 'all' && (
                 <Badge variant="secondary" className="bg-ethiopian-gold/10 text-ethiopian-gold">
-                  Price: {priceRange === '0-500' ? 'Under 500 ETB' : 
-                          priceRange === '500-1000' ? '500-1,000 ETB' :
-                          priceRange === '1000-2000' ? '1,000-2,000 ETB' :
-                          priceRange === '2000-5000' ? '2,000-5,000 ETB' : 
+                  Price: {priceParam === '0-500' ? 'Under 500 ETB' : 
+                          priceParam === '500-1000' ? '500-1,000 ETB' :
+                          priceParam === '1000-2000' ? '1,000-2,000 ETB' :
+                          priceParam === '2000-5000' ? '2,000-5,000 ETB' : 
                           'Over 5,000 ETB'}
                   <button 
                     onClick={() => handlePriceChange('all')}
@@ -340,7 +465,7 @@ export default function Gifts() {
         </div>
 
         {/* Products Grid */}
-        {isLoading ? (
+        {(isLoading || (isFetching && !initialData)) ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 animate-pulse">
@@ -386,8 +511,8 @@ export default function Gifts() {
               className="mt-12"
             />
             
-            {/* ZembilSignatureSets Component - show after sufficient products */}
-            {totalProducts >= 20 && <ZembilSignatureSets />}
+            {/* GeramiSignatureSets Component - show after sufficient products */}
+            {totalProducts >= 20 && <GeramiSignatureSets />}
           </>
         ) : (
           <motion.div
@@ -402,8 +527,8 @@ export default function Gifts() {
             <h3 className="text-2xl font-semibold text-charcoal mb-4">No gifts found</h3>
             <div className="max-w-md mx-auto mb-8">
               <p className="text-gray-600 leading-relaxed">
-                {searchTerm 
-                  ? `We couldn't find any gifts matching "${searchTerm}". Try adjusting your search terms or filters.`
+                {searchParam 
+                  ? `We couldn't find any gifts matching "${searchParam}". Try adjusting your search terms or filters.`
                   : currentCategory 
                     ? `The ${currentCategory.name} category is currently being updated with new products. Check back soon for exciting new additions!`
                     : "Try adjusting your search criteria or browse our featured collections below."
@@ -412,41 +537,12 @@ export default function Gifts() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button 
-                onClick={() => {
-                  setSearchTerm('');
-                  setPriceRange('all');
-                  setSortBy('popularity');
-                }}
+                onClick={handleClearFilters}
                 variant="outline"
                 className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
               >
                 Clear All Filters
               </Button>
-            </div>
-            
-            {/* Suggested Actions */}
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto">
-              <div className="text-center p-4">
-                <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-                </div>
-                <h4 className="font-medium text-charcoal mb-1">Trending Now</h4>
-                <p className="text-sm text-gray-500">Popular Ethiopian gifts</p>
-              </div>
-              <div className="text-center p-4">
-                <div className="w-12 h-12 bg-yellow-50 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-                </div>
-                <h4 className="font-medium text-charcoal mb-1">Best Sellers</h4>
-                <p className="text-sm text-gray-500">Most loved products</p>
-              </div>
-              <div className="text-center p-4">
-                <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                </div>
-                <h4 className="font-medium text-charcoal mb-1">New Arrivals</h4>
-                <p className="text-sm text-gray-500">Latest additions</p>
-              </div>
             </div>
           </motion.div>
         )}

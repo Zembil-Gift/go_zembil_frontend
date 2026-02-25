@@ -1,97 +1,115 @@
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import GoZembilLogo from "@/components/GoZembilLogo";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Gift, Heart, Users, Truck, Star, ArrowRight } from "lucide-react";
-import FadeIn from "@/components/animations/FadeIn";
-import { StaggerContainer, StaggerItem } from "@/components/animations/StaggerAnimations";
+// import { Link } from "react-router-dom";
+// import { motion } from "framer-motion";
+import GoGeramiLogo from "@/components/GoGeramiLogo";
+// import { Card, CardContent } from "@/components/ui/card";
+// import { Badge } from "@/components/ui/badge";
+// import { Gift, Heart, Users, Truck, Star, ArrowRight } from "lucide-react";
+// import FadeIn from "@/components/animations/FadeIn";
+// import { StaggerContainer, StaggerItem } from "@/components/animations/StaggerAnimations";
 
 export default function About() {
-  const founders = [
-    {
-      name: "Rekik",
-      location: "USA",
-      description: "Tech enthusiast"
-    },
-    {
-      name: "Amanuel", 
-      location: "USA",
-      description: "Tech enthusiast"
-    },
-    {
-      name: "Abel",
-      location: "Addis Ababa",
-      description: "Co-founder"
-    }
-  ];
+  // const founders = [
+  //   {
+  //     name: "Rekik",
+  //     location: "USA",
+  //     description: "Tech enthusiast"
+  //   },
+  //   {
+  //     name: "Amanuel", 
+  //     location: "USA",
+  //     description: "Tech enthusiast"
+  //   },
+  //   {
+  //     name: "Abel",
+  //     location: "Addis Ababa",
+  //     description: "Co-founder"
+  //   }
+  // ];
 
-  const values = [
-    {
-      icon: Heart,
-      title: "Cultural Authenticity",
-      description: "Every product reflects genuine Ethiopian traditions, crafted by local artisans who understand the cultural significance behind each piece."
-    },
-    {
-      icon: Users,
-      title: "Community Connection",
-      description: "We bridge distances by strengthening bonds between Ethiopian diaspora communities and their loved ones back home."
-    },
-    {
-      icon: Truck,
-      title: "Reliable Delivery",
-      description: "Our trusted network ensures your heartfelt gifts arrive safely and on time, carrying your love across any distance."
-    },
-    {
-      icon: Star,
-      title: "Quality Assurance",
-      description: "Each item is carefully selected and quality-checked to ensure it meets our high standards for cultural significance and craftsmanship."
-    }
-  ];
+  // const values = [
+  //   {
+  //     icon: Heart,
+  //     title: "Cultural Authenticity",
+  //     description: "Every product reflects genuine Ethiopian traditions, crafted by local artisans who understand the cultural significance behind each piece."
+  //   },
+  //   {
+  //     icon: Users,
+  //     title: "Community Connection",
+  //     description: "We bridge distances by strengthening bonds between Ethiopian diaspora communities and their loved ones back home."
+  //   },
+  //   {
+  //     icon: Truck,
+  //     title: "Reliable Delivery",
+  //     description: "Our trusted network ensures your heartfelt gifts arrive safely and on time, carrying your love across any distance."
+  //   },
+  //   {
+  //     icon: Star,
+  //     title: "Quality Assurance",
+  //     description: "Each item is carefully selected and quality-checked to ensure it meets our high standards for cultural significance and craftsmanship."
+  //   }
+  // ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4">
+      <div className="text-center max-w-2xl">
+        <div className="flex justify-center mb-8">
+          <GoGeramiLogo size="xl" />
+        </div>
+        
+        <h1 className="text-5xl md:text-6xl font-bold text-charcoal mb-4">
+          Coming Soon
+        </h1>
+ 
+        
+        <div className="inline-block">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-ethiopian-gold rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-3 h-3 bg-ethiopian-gold rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-3 h-3 bg-ethiopian-gold rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
+        </div>
+      </div>
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"> */}
         {/* Hero Section */}
-        <FadeIn duration={0.8} className="text-center mb-16">
+        {/* <FadeIn duration={0.8} className="text-center mb-16">
           <div className="flex flex-col items-center mb-6">
-            <GoZembilLogo size="xl" className="mb-4" />
+            <GoGeramiLogo size="xl" className="mb-4" />
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Connecting hearts across distances through meaningful Ethiopian gifts, 
-            one zembil at a time.
+            one Gerami at a time.
           </p>
-        </FadeIn>
+        </FadeIn> */}
 
-        {/* What is a Zembil Section */}
-        <FadeIn delay={0.2} duration={0.8} className="mb-16">
+        {/* What is a Gerami Section */}
+        {/* <FadeIn delay={0.2} duration={0.8} className="mb-16">
           <Card className="bg-gradient-to-r from-ethiopian-gold/10 to-deep-forest/10 border-0 shadow-lg">
             <CardContent className="p-8 lg:p-12">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                 <div>
                   <Badge className="bg-ethiopian-gold text-white mb-4">Cultural Heritage</Badge>
                   <h2 className="text-3xl font-bold text-charcoal mb-6">
-                    What is a Zembil?
+                    What is a Gerami?
                   </h2>
                   <div className="space-y-4 text-gray-600 leading-relaxed">
                     <p>
-                      A <strong className="text-charcoal">zembil</strong> (ዘንቢል) is a traditional Ethiopian woven basket, 
+                      A <strong className="text-charcoal">Gerami</strong> (ዘንቢል) is a traditional Ethiopian woven basket, 
                       handcrafted from natural materials like grass and palm leaves. For centuries, 
                       these beautiful baskets have been an integral part of Ethiopian culture.
                     </p>
                     <p>
-                      More than just a container, the zembil represents <strong className="text-charcoal">sustainability</strong>, 
+                      More than just a container, the Gerami represents <strong className="text-charcoal">sustainability</strong>, 
                       <strong className="text-charcoal"> community</strong>, and <strong className="text-charcoal">cultural heritage</strong>. 
-                      Ethiopian families use zembils for everything from storing precious grains to carrying gifts to neighbors, 
+                      Ethiopian families use Geramis for everything from storing precious grains to carrying gifts to neighbors, 
                       symbolizing the interconnectedness of community life.
                     </p>
                     <p>
-                      At <span className="text-deep-forest font-bold">go</span><span className="text-zembil-brown font-bold">Zembil</span>, we've chosen this name to honor the tradition of sharing and caring that 
-                      the zembil represents. Just as these baskets carry life's essentials, we carry your 
+                      At <span className="text-deep-forest font-bold">go</span><span className="text-Gerami-brown font-bold">Gerami</span>, we've chosen this name to honor the tradition of sharing and caring that 
+                      the Gerami represents. Just as these baskets carry life's essentials, we carry your 
                       love and thoughtfulness to your family and friends in Ethiopia.
                     </p>
-                    <div className="mt-6 p-4 bg-gradient-to-r from-go-green/10 to-zembil-beige/10 rounded-lg">
+                    <div className="mt-6 p-4 bg-gradient-to-r from-go-green/10 to-Gerami-beige/10 rounded-lg">
                       <p className="text-center font-medium italic" style={{ color: '#CD853F' }}>
                         "Gifting with Heart"
                       </p>
@@ -105,7 +123,6 @@ export default function About() {
                       className="w-full h-full text-white"
                       fill="currentColor"
                     >
-                      {/* Stylized zembil basket SVG */}
                       <path d="M100 20C80 20 60 30 50 50L50 150C50 170 70 180 100 180C130 180 150 170 150 150L150 50C140 30 120 20 100 20Z" 
                             opacity="0.3"/>
                       <path d="M60 60L140 60M60 80L140 80M60 100L140 100M60 120L140 120M60 140L140 140" 
@@ -118,10 +135,10 @@ export default function About() {
               </div>
             </CardContent>
           </Card>
-        </FadeIn>
+        </FadeIn> */}
 
         {/* Our Story Section */}
-        <FadeIn delay={0.4} duration={0.8} className="mb-16">
+        {/* <FadeIn delay={0.4} duration={0.8} className="mb-16">
           <div className="bg-white rounded-2xl shadow-lg p-8 lg:p-12">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-charcoal mb-6">Our Story</h2>
@@ -165,10 +182,10 @@ export default function About() {
               </div>
             </div>
           </div>
-        </FadeIn>
+        </FadeIn> */}
 
         {/* Our Values Section */}
-        <FadeIn delay={0.6} duration={0.8} className="mb-16">
+        {/* <FadeIn delay={0.6} duration={0.8} className="mb-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-charcoal mb-6">Our Values</h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -195,10 +212,10 @@ export default function About() {
               </StaggerItem>
             ))}
           </StaggerContainer>
-        </FadeIn>
+        </FadeIn> */}
 
         {/* Team Section */}
-        <FadeIn delay={0.8} duration={0.8} className="mb-16">
+        {/* <FadeIn delay={0.8} duration={0.8} className="mb-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-charcoal mb-6">Meet Our Team</h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -214,12 +231,10 @@ export default function About() {
             >
               <Card className="text-center hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-gray-50 border-0 shadow-lg">
                 <CardContent className="p-8 lg:p-12">
-                  {/* Team Icon */}
                   <div className="w-20 h-20 bg-gradient-to-br from-ethiopian-gold/20 to-deep-forest/20 rounded-full flex items-center justify-center mx-auto mb-8">
                     <Users size={32} className="text-deep-forest" />
                   </div>
                   
-                  {/* Founders */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                     {founders.map((founder, index) => (
                       <motion.div
@@ -239,7 +254,6 @@ export default function About() {
                     ))}
                   </div>
                   
-                  {/* Team Description */}
                   <div className="bg-gradient-to-r from-ethiopian-gold/5 to-deep-forest/5 rounded-2xl p-6 border border-ethiopian-gold/10">
                     <p className="text-lg text-gray-700 leading-relaxed max-w-3xl mx-auto">
                       We are three passionate friends and first-time startup founders, building a platform that connects diaspora communities with home. More innovative ideas coming soon!
@@ -249,15 +263,15 @@ export default function About() {
               </Card>
             </motion.div>
           </div>
-        </FadeIn>
+        </FadeIn> */}
 
         {/* CTA Section */}
-        <FadeIn delay={1.0} duration={0.8} className="text-center">
+        {/* <FadeIn delay={1.0} duration={0.8} className="text-center">
           <Card className="bg-gradient-to-r from-ethiopian-gold to-deep-forest text-white border-0">
             <CardContent className="p-8 lg:p-12">
               <h2 className="text-3xl font-bold mb-6">Ready to Send Love?</h2>
               <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-                Join thousands of families who trust <span className="text-white font-bold">go</span><span className="text-white font-bold">Zembil</span> to deliver their most heartfelt gifts 
+                Join thousands of families who trust <span className="text-white font-bold">go</span><span className="text-white font-bold">Gerami</span> to deliver their most heartfelt gifts 
                 and maintain their cultural connections.
               </p>
               <Link 
@@ -269,8 +283,8 @@ export default function About() {
               </Link>
             </CardContent>
           </Card>
-        </FadeIn>
-      </main>
+        </FadeIn> */}
+      {/* </main> */}
     </div>
   );
 }

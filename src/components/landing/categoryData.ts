@@ -4,10 +4,11 @@ import {
   TreePine, Flower2, Crown, Mountain, HelpingHand, Smile, ThumbsUp,
   UtensilsCrossed, Wheat, ChefHat
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { CATEGORIES } from "@/shared/categories";
 
 export interface CategoryItem {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   name: string;
   description: string;
   gradient: string;
@@ -15,7 +16,7 @@ export interface CategoryItem {
 }
 
 // Updated icon mappings for the new categories
-const subcategoryIcons: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+const subcategoryIcons: Record<string, LucideIcon> = {
   // Occasions
   "birthday": CakeSlice,
   "graduation": GraduationCap,

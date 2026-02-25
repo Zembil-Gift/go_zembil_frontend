@@ -1,150 +1,180 @@
-import { apiService } from './apiService';
+import {apiService} from './apiService';
 
-// Types for categories
-export interface Category {
+// Types matching backend DTOs
+export interface CategoryResponse {
   id: number;
   name: string;
   slug: string;
-  description?: string;
-  parentId?: number;
-  level: number;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
+  description: string;
+  iconName: string;
+  imageUrl?: string;
+  isFeatured?: boolean;
+  displayOrder?: number;
+  color?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface CategoryWithProducts extends Category {
-  productCount: number;
-}
-
-export interface CategoryTree extends Category {
-  subcategories: CategoryTree[];
-}
-
-export interface CreateCategoryRequest {
+export interface SubCategoryResponse {
+  id: number;
+  categoryId: number;
+  categoryName?: string;
   name: string;
   slug: string;
-  description?: string;
-  parentId?: number;
-  sortOrder?: number;
+  description: string;
+  iconName: string;
+  imageUrl?: string;
+  isFeatured?: boolean;
+  displayOrder?: number;
+  gradient?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface UpdateCategoryRequest extends Partial<CreateCategoryRequest> {
-  isActive?: boolean;
+// Extended types with subcategories included
+export interface CategoryWithSubcategories extends CategoryResponse {
+  subcategories: SubCategoryResponse[];
 }
 
-// Category service
 class CategoryService {
   /**
-   * Get all categories (flat list)
+   * Get all categories
    */
-  async getAllCategories(): Promise<Category[]> {
-    return await apiService.getRequest<Category[]>('/categories');
-  }
-
-  /**
-   * Get categories with product counts
-   */
-  async getCategoriesWithProductCounts(): Promise<CategoryWithProducts[]> {
-    return await apiService.getRequest<CategoryWithProducts[]>('/categories/with-counts');
-  }
-
-  /**
-   * Get category hierarchy (tree structure)
-   */
-  async getCategoryTree(): Promise<CategoryTree[]> {
-    return await apiService.getRequest<CategoryTree[]>('/categories/tree');
-  }
-
-  /**
-   * Get category by ID
-   */
-  async getCategoryById(id: number): Promise<Category> {
-    return await apiService.getRequest<Category>(`/categories/${id}`);
-  }
-
-  /**
-   * Get category by slug
-   */
-  async getCategoryBySlug(slug: string): Promise<Category> {
-    return await apiService.getRequest<Category>(`/categories/slug/${slug}`);
-  }
-
-  /**
-   * Get subcategories by parent category ID
-   */
-  async getSubcategoriesByCategory(categoryId: number): Promise<Category[]> {
-    return await apiService.getRequest<Category[]>(`/categories/${categoryId}/subcategories`);
-  }
-
-  /**
-   * Get main categories (top-level only)
-   */
-  async getMainCategories(): Promise<Category[]> {
-    return await apiService.getRequest<Category[]>('/categories/main');
-  }
-
-  /**
-   * Get category path (breadcrumb)
-   */
-  async getCategoryPath(categoryId: number): Promise<Category[]> {
-    return await apiService.getRequest<Category[]>(`/categories/${categoryId}/path`);
+  async getCategories(): Promise<CategoryResponse[]> {
+    try {
+      const response = await apiService.getRequest<CategoryResponse[]>('/api/categories');
+      return response.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+      throw error;
+    }
   }
 
   /**
    * Search categories
    */
-  async searchCategories(query: string): Promise<Category[]> {
-    const queryParams = new URLSearchParams();
-    queryParams.append('q', query);
-    
-    return await apiService.getRequest<Category[]>(`/categories/search?${queryParams.toString()}`);
+  async searchCategories(query?: string): Promise<CategoryResponse[]> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (query?.trim()) {
+        queryParams.append('query', query.trim());
+      }
+      const suffix = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      const response = await apiService.getRequest<CategoryResponse[]>(`/api/categories/search${suffix}`);
+      return response.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    } catch (error) {
+      console.error('Failed to search categories:', error);
+      throw error;
+    }
   }
 
   /**
-   * Create new category (admin only)
+   * Get subcategories for a specific category
    */
-  async createCategory(data: CreateCategoryRequest): Promise<Category> {
-    return await apiService.postRequest<Category>('/categories', data);
+  async getSubCategories(categoryId: number): Promise<SubCategoryResponse[]> {
+    try {
+      const response = await apiService.getRequest<SubCategoryResponse[]>(
+        `/api/categories/${categoryId}/sub-categories`
+      );
+      return response.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    } catch (error) {
+      console.error(`Failed to fetch subcategories for category ${categoryId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Update category (admin only)
+   * Search subcategories by name/description across all categories
    */
-  async updateCategory(id: number, data: UpdateCategoryRequest): Promise<Category> {
-    return await apiService.putRequest<Category>(`/categories/${id}`, data);
+  async searchSubCategories(query?: string): Promise<SubCategoryResponse[]> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (query?.trim()) {
+        queryParams.append('query', query.trim());
+      }
+      const suffix = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      const response = await apiService.getRequest<SubCategoryResponse[]>(
+        `/api/categories/sub-categories/search${suffix}`
+      );
+      return response.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    } catch (error) {
+      console.error('Failed to search subcategories:', error);
+      throw error;
+    }
   }
 
   /**
-   * Delete category (admin only)
+   * Get all categories with their subcategories
    */
-  async deleteCategory(id: number): Promise<{ message: string }> {
-    return await apiService.deleteRequest(`/categories/${id}`);
+  async getCategoriesWithSubcategories(): Promise<CategoryWithSubcategories[]> {
+    try {
+      const categories = await this.getCategories();
+
+      return await Promise.all(
+          categories.map(async (category) => {
+            const subcategories = await this.getSubCategories(category.id);
+            return {
+              ...category,
+              subcategories,
+            };
+          })
+      );
+    } catch (error) {
+      console.error('Failed to fetch categories with subcategories:', error);
+      throw error;
+    }
   }
 
   /**
-   * Reorder categories (admin only)
+   * Get featured categories only
    */
-  async reorderCategories(categoryOrders: { id: number; sortOrder: number }[]): Promise<{ message: string }> {
-    return await apiService.putRequest('/categories/reorder', { categories: categoryOrders });
+  async getFeaturedCategories(): Promise<CategoryResponse[]> {
+    try {
+      const categories = await this.getCategories();
+      return categories.filter(cat => cat.isFeatured);
+    } catch (error) {
+      console.error('Failed to fetch featured categories:', error);
+      throw error;
+    }
   }
 
   /**
-   * Get popular categories (based on product views/orders)
+   * Get featured subcategories for a category
    */
-  async getPopularCategories(limit: number = 10): Promise<CategoryWithProducts[]> {
-    const queryParams = new URLSearchParams();
-    queryParams.append('limit', limit.toString());
-    
-    return await apiService.getRequest<CategoryWithProducts[]>(`/categories/popular?${queryParams.toString()}`);
+  async getFeaturedSubCategories(categoryId: number): Promise<SubCategoryResponse[]> {
+    try {
+      const subcategories = await this.getSubCategories(categoryId);
+      return subcategories.filter(sub => sub.isFeatured);
+    } catch (error) {
+      console.error(`Failed to fetch featured subcategories for category ${categoryId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Get categories for navigation menu
+   * Find category by slug
    */
-  async getNavigationCategories(): Promise<CategoryTree[]> {
-    return await apiService.getRequest<CategoryTree[]>('/categories/navigation');
+  async getCategoryBySlug(slug: string): Promise<CategoryResponse | undefined> {
+    try {
+      const categories = await this.getCategories();
+      return categories.find(cat => cat.slug === slug);
+    } catch (error) {
+      console.error(`Failed to find category by slug ${slug}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Find subcategory by slug within a category
+   */
+  async getSubCategoryBySlug(categoryId: number, slug: string): Promise<SubCategoryResponse | undefined> {
+    try {
+      const subcategories = await this.getSubCategories(categoryId);
+      return subcategories.find(sub => sub.slug === slug);
+    } catch (error) {
+      console.error(`Failed to find subcategory by slug ${slug}:`, error);
+      throw error;
+    }
   }
 }
 

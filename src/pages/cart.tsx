@@ -1,53 +1,134 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { formatDualCurrency } from "@/lib/currency";
+import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
+import { 
+  formatPrice, 
+  toMinorUnits, 
+  getDiscountAmountForDisplay,
+  calculateDiscountedPrice
+} from '@/lib/currency';
+import { getProductImageUrl } from "@/utils/imageUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { ShoppingBag, Plus, Minus, X, Truck, Heart, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useState } from "react";
-import { MockApiService } from "@/services/mockApiService";
-
-interface CartItem {
-  id: number;
-  productId: number;
-  quantity: number;
-  customization?: any;
-  product?: {
-    id: number;
-    name: string;
-    price: string;
-    images: string[];
-    deliveryDays?: number;
-  };
-}
+import { Separator } from "@/components/ui/separator";
+import { ShoppingBag, Plus, Minus, X, Truck, Heart, ArrowRight, LogIn, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { cartService, CartItem } from "@/services/cartService";
+import { wishlistService } from "@/services/wishlistService";
+import { discountService, type DiscountValidationResult } from "@/services/discountService";
 
 export default function Cart() {
-  const [promoCode, setPromoCode] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { 
+    cartItems, 
+    cartCurrency, 
+    isLoading: cartLoading, 
+    getTotalItems, 
+    error: cartError, 
+    refetch,
+    appliedDiscountCode,
+    setAppliedDiscountCode
+  } = useCart();
 
-  const { data: cartItems = [], isLoading } = useQuery<CartItem[]>({
-    queryKey: ["/api/cart"],
-    queryFn: () => MockApiService.getCart(),
-    retry: false,
-  });
+  const [discountCode, setDiscountCode] = useState(appliedDiscountCode || "");
+  const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
+  const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+
+  // Sync with persistent discount code
+  useEffect(() => {
+    if (appliedDiscountCode && !discountCode) {
+      setDiscountCode(appliedDiscountCode);
+    }
+  }, [appliedDiscountCode]);
+
+  useEffect(() => {
+    // Auto-validate discount if it exists in store but hasn't been validated in this session
+    if (appliedDiscountCode && cartItems.length > 0 && cartCurrency && !discountResult && !isValidatingDiscount && !discountError) {
+      handleApplyDiscount();
+    }
+  }, [appliedDiscountCode, cartItems.length, cartCurrency, discountResult, isValidatingDiscount, discountError]);
+
+  const cartProductIds = useMemo(() => {
+    if (!Array.isArray(cartItems)) return [];
+    return cartItems.map((item: CartItem) => item.productId).filter(Boolean);
+  }, [cartItems]);
+
+  const discountAmountDisplay = useMemo(() => {
+    return getDiscountAmountForDisplay(discountResult, cartCurrency);
+  }, [discountResult, cartCurrency]);
+
+  const handleApplyDiscount = useCallback(async () => {
+    const code = discountCode.trim();
+    if (!code) {
+      setDiscountError("Please enter a discount code");
+      return;
+    }
+    const subtotal = calculateSubtotal();
+    if (!cartCurrency || subtotal <= 0) {
+      setDiscountError("Cart is empty");
+      return;
+    }
+
+    setIsValidatingDiscount(true);
+    setDiscountError(null);
+    setDiscountResult(null);
+
+    try {
+      const result = await discountService.validateDiscountCode({
+        discountCode: code,
+        orderTotalMinor: toMinorUnits(subtotal, cartCurrency),
+        productIds: cartProductIds,
+      });
+
+      if (result.applicable) {
+        setDiscountResult(result);
+        setAppliedDiscountCode(code);
+        setDiscountError(null);
+        toast({
+          title: "Discount Applied",
+          description: `Discount code "${code}" is valid! Savings shown below.`,
+        });
+      } else {
+        setDiscountResult(null);
+        setAppliedDiscountCode(null);
+        setDiscountError(result.reason || "Discount code is not valid for this order");
+      }
+    } catch (error: any) {
+      setDiscountResult(null);
+      setAppliedDiscountCode(null);
+      setDiscountError(error?.message || "Failed to validate discount code");
+    } finally {
+      setIsValidatingDiscount(false);
+    }
+  }, [discountCode, cartCurrency, cartProductIds, toast, setAppliedDiscountCode]);
+
+  const handleRemoveDiscount = useCallback(() => {
+    setDiscountResult(null);
+    setDiscountError(null);
+    setDiscountCode("");
+    setAppliedDiscountCode(null);
+  }, [setAppliedDiscountCode]);
 
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ id, quantity }: { id: number; quantity: number }) => {
-      // Mock update quantity
-      return Promise.resolve({ success: true });
+      return await cartService.updateCartItem(id, quantity);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
       toast({
         title: "Quantity updated",
         description: "Cart item quantity updated successfully",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update cart item",
@@ -58,16 +139,16 @@ export default function Cart() {
 
   const removeItemMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await MockApiService.removeFromCart(id);
+      return await cartService.removeFromCart(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
       toast({
         title: "Item removed",
         description: "Item removed from cart",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to remove item from cart",
@@ -77,44 +158,42 @@ export default function Cart() {
   });
 
   const moveToWishlistMutation = useMutation({
-    mutationFn: async (productId: number) => {
-      return await MockApiService.addToWishlist(productId);
+    mutationFn: async (cartItemId: number) => {
+      return await wishlistService.saveForLater({ cartItemId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wish-list"] });
+      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
       toast({
-        title: "Moved to wishlist",
+        title: "Saved for later",
         description: "Item moved to your wishlist",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
-        description: "Failed to move item to wishlist",
+        description: "Failed to save item for later",
         variant: "destructive",
       });
     },
   });
 
   const calculateSubtotal = () => {
+    if (!Array.isArray(cartItems)) return 0;
     return cartItems.reduce((total: number, item: CartItem) => {
-      const price = parseFloat(item.product?.price || "0");
-      return total + (price * item.quantity);
+      const baseUnitPrice = Number(item.unitPrice || 0);
+      const discount = item.product?.activeDiscount;
+      const discountedUnitPrice = discount
+        ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
+        : baseUnitPrice;
+      const itemTotal = discountedUnitPrice * item.quantity;
+      return total + itemTotal;
     }, 0);
   };
 
-  const calculateShipping = () => {
-    // Free shipping over 1000 ETB
-    const subtotal = calculateSubtotal();
-    return subtotal >= 1000 ? 0 : 50;
-  };
-
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateShipping();
-  };
-
-  const getTotalItems = () => {
-    return cartItems.reduce((total: number, item: CartItem) => total + item.quantity, 0);
+    // Total is just subtotal on cart page - shipping is calculated at checkout
+    return calculateSubtotal();
   };
 
   const handleQuantityChange = (item: CartItem, newQuantity: number) => {
@@ -127,14 +206,72 @@ export default function Cart() {
 
   const handleMoveToWishlist = async (item: CartItem) => {
     try {
-      await moveToWishlistMutation.mutateAsync(item.productId);
-      removeItemMutation.mutate(item.id);
+      // Use the backend's save-for-later endpoint which handles both
+      // adding to wishlist and removing from cart atomically
+      await moveToWishlistMutation.mutateAsync(item.id);
     } catch (error) {
       // Error already handled by mutation
     }
   };
+  
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="text-center py-8">
+              <div className="text-gray-600">Checking authentication...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <LogIn size={64} className="text-gray-400 mx-auto mb-6" />
+            <h2 className="  text-2xl font-bold text-charcoal mb-4">
+              Sign in to view your cart
+            </h2>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              Please sign in to your account to view and manage your shopping cart.
+            </p>
+            <Button asChild className="bg-ethiopian-gold hover:bg-amber text-white">
+              <Link to="/signin">Sign In</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  if (isLoading) {
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <LogIn size={64} className="text-gray-400 mx-auto mb-6" />
+            <h2 className="  text-2xl font-bold text-charcoal mb-4">
+              Sign in to view your cart
+            </h2>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              Please sign in to your account to view and manage your shopping cart.
+            </p>
+            <Button asChild className="bg-ethiopian-gold hover:bg-amber text-white">
+              <Link to="/signin">Sign In</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (cartLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         
@@ -156,6 +293,27 @@ export default function Cart() {
     );
   }
 
+  if (cartError) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <ShoppingBag size={64} className="text-red-400 mx-auto mb-6" />
+            <h2 className="  text-2xl font-bold text-charcoal mb-4">
+              Failed to load cart
+            </h2>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              There was an error loading your cart. Please try again.
+            </p>
+            <Button onClick={() => refetch()} className="bg-ethiopian-gold hover:bg-amber text-white">
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       
@@ -163,7 +321,7 @@ export default function Cart() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold text-charcoal mb-2">
+          <h1 className="  text-3xl font-bold text-charcoal mb-2">
             Shopping Cart
           </h1>
           <p className="text-gray-600">
@@ -174,7 +332,7 @@ export default function Cart() {
         {cartItems.length === 0 ? (
           <div className="text-center py-16">
             <ShoppingBag size={64} className="text-gray-400 mx-auto mb-6" />
-            <h2 className="font-display text-2xl font-bold text-charcoal mb-4">
+            <h2 className="  text-2xl font-bold text-charcoal mb-4">
               Your cart is empty
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
@@ -200,26 +358,49 @@ export default function Cart() {
                     <div className="flex items-center space-x-4">
                       {/* Product Image */}
                       <div className="relative w-24 h-24 flex-shrink-0">
-                        <img
-                          src={item.product?.images?.[0] || "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200"}
-                          alt={item.product?.name || "Product"}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
+                        {getProductImageUrl(item.product?.images, item.product?.cover || item.productImage) ? (
+                          <img
+                            src={getProductImageUrl(
+                              item.product?.images,
+                              item.product?.cover || item.productImage
+                            )}
+                            alt={item.productName || item.product?.name || "Product"}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                            <div className="text-center text-gray-400">
+                              <p className="text-xs">No image</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Product Details */}
                       <div className="flex-1 min-w-0">
                         <Link to={`/product/${item.productId}`}>
                           <h3 className="font-semibold text-lg text-charcoal hover:text-ethiopian-gold transition-colors line-clamp-2">
-                            {item.product?.name || "Product"}
+                            {item.product?.name || `Product #${item.productId}`}
                           </h3>
                         </Link>
                         {(() => {
-                          const currency = formatDualCurrency(item.product?.price || "0");
+                          const baseUnitPrice = Number(item.unitPrice || 0);
+                          const discount = item.product?.activeDiscount;
+                          const discountedUnitPrice = discount
+                            ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
+                            : baseUnitPrice;
+                          const hasDiscount = discountedUnitPrice < baseUnitPrice;
+
                           return (
                             <div className="mt-1">
-                              <p className="text-ethiopian-gold font-bold text-lg">{currency.etb}</p>
-                              <p className="text-gray-500 font-medium text-sm">{currency.usd}</p>
+                              <p className="text-ethiopian-gold font-bold text-lg">
+                                {formatPrice(discountedUnitPrice, cartCurrency)}
+                              </p>
+                              {hasDiscount && (
+                                <p className="text-xs text-gray-500 line-through">
+                                  {formatPrice(baseUnitPrice, cartCurrency)}
+                                </p>
+                              )}
                             </div>
                           );
                         })()}
@@ -286,12 +467,25 @@ export default function Cart() {
                       {/* Item Total */}
                       <div className="text-right">
                         {(() => {
-                          const itemTotal = parseFloat(item.product?.price || "0") * item.quantity;
-                          const currency = formatDualCurrency(itemTotal);
+                          const baseUnitPrice = Number(item.unitPrice || 0);
+                          const discount = item.product?.activeDiscount;
+                          const discountedUnitPrice = discount
+                            ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
+                            : baseUnitPrice;
+                          const itemTotal = discountedUnitPrice * item.quantity;
+                          const originalLineTotal = baseUnitPrice * item.quantity;
+                          const hasDiscount = itemTotal < originalLineTotal;
+
                           return (
                             <div>
-                              <p className="font-bold text-lg text-charcoal">{currency.etb}</p>
-                              <p className="text-gray-500 font-medium text-sm">{currency.usd}</p>
+                              <p className="font-bold text-lg text-charcoal">
+                                {formatPrice(itemTotal, cartCurrency)}
+                              </p>
+                              {hasDiscount && (
+                                <p className="text-xs text-gray-500 line-through">
+                                  {formatPrice(originalLineTotal, cartCurrency)}
+                                </p>
+                              )}
                             </div>
                           );
                         })()}
@@ -314,103 +508,107 @@ export default function Cart() {
                     {/* Subtotal */}
                     <div className="flex justify-between">
                       <span className="text-gray-600">Subtotal ({getTotalItems()} items)</span>
-                      {(() => {
-                        const currency = formatDualCurrency(calculateSubtotal());
-                        return (
-                          <div className="text-right">
-                            <span className="font-medium">{currency.etb}</span>
-                            <div className="text-xs text-gray-500">{currency.usd}</div>
-                          </div>
-                        );
-                      })()}
+                      <span className="font-medium">{formatPrice(calculateSubtotal(), cartCurrency)}</span>
                     </div>
 
-                    {/* Shipping */}
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Shipping</span>
-                      {calculateShipping() === 0 ? (
-                        <span className="font-medium text-green-600">Free</span>
-                      ) : (
-                        (() => {
-                          const currency = formatDualCurrency(calculateShipping());
-                          return (
-                            <div className="text-right">
-                              <span className="font-medium">{currency.etb}</span>
-                              <div className="text-xs text-gray-500">{currency.usd}</div>
+                    {/* Discount Code Input */}
+                    <div className="space-y-2">
+                      {discountResult?.applicable ? (
+                        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs font-medium text-green-800">
+                                "{discountCode}" applied
+                              </p>
+                              <p className="text-xs text-green-600">
+                                Save {formatPrice(discountAmountDisplay, cartCurrency)}
+                              </p>
                             </div>
-                          );
-                        })()
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRemoveDiscount}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Discount code"
+                              value={discountCode}
+                              onChange={(e) => {
+                                setDiscountCode(e.target.value);
+                                setDiscountError(null);
+                              }}
+                              onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()}
+                              className={`flex-1 h-9 text-sm ${discountError ? 'border-red-300' : ''}`}
+                              disabled={isValidatingDiscount}
+                            />
+                            <Button
+                              type="button"
+                              onClick={handleApplyDiscount}
+                              disabled={isValidatingDiscount || !discountCode.trim()}
+                              className="bg-eagle-green hover:bg-eagle-green/90 text-white h-9 px-4 shrink-0 transition-all font-medium"
+                            >
+                              {isValidatingDiscount ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                "Apply"
+                              )}
+                            </Button>
+                          </div>
+                          {discountError && (
+                            <p className="text-xs text-red-500 flex items-center gap-1">
+                              <XCircle className="h-3 w-3" />
+                              {discountError}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
 
-                    {/* Free Shipping Message */}
-                    {calculateSubtotal() < 1000 && (
-                      <div className="text-sm text-gray-600 bg-amber/10 p-3 rounded-lg">
-                        {(() => {
-                          const currency = formatDualCurrency(1000 - calculateSubtotal());
-                          return `Add ${currency.etb} (${currency.usd}) more for free shipping!`;
-                        })()}
+                    {/* Discount Line Item */}
+                    {discountResult?.applicable && discountAmountDisplay > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Discount</span>
+                        <span>-{formatPrice(discountAmountDisplay, cartCurrency)}</span>
                       </div>
                     )}
-
-                    {/* Promo Code */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">
-                        Promo Code
-                      </label>
-                      <div className="flex space-x-2">
-                        <Input
-                          placeholder="Enter code"
-                          value={promoCode}
-                          onChange={(e) => setPromoCode(e.target.value)}
-                          className="flex-1"
-                        />
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
-                        >
-                          Apply
-                        </Button>
-                      </div>
-                    </div>
 
                     <Separator />
 
                     {/* Total */}
                     <div className="flex justify-between text-lg font-bold">
-                      <span>Total</span>
-                      {(() => {
-                        const currency = formatDualCurrency(calculateTotal());
-                        return (
-                          <div className="text-right">
-                            <div className="text-ethiopian-gold">{currency.etb}</div>
-                            <div className="text-sm font-medium text-gray-500">{currency.usd}</div>
-                          </div>
-                        );
-                      })()}
+                      <span>Estimated Total</span>
+                      <span className="text-ethiopian-gold">
+                        {formatPrice(Math.max(0, calculateTotal() - discountAmountDisplay), cartCurrency)}
+                      </span>
                     </div>
 
+                    {discountResult?.applicable && (
+                      <p className="text-xs text-gray-500">
+                        Discount will be confirmed at checkout.
+                      </p>
+                    )}
+
                     {/* Checkout Button */}
-                    <Button asChild className="w-full bg-ethiopian-gold hover:bg-amber text-white h-12">
-                      <Link to="/checkout">
-                        Proceed to Checkout
-                        <ArrowRight size={16} className="ml-2" />
-                      </Link>
+                    <Button 
+                      className="w-full bg-ethiopian-gold hover:bg-amber text-white h-12"
+                      onClick={() => navigate("/checkout", { state: { appliedDiscountCode: discountResult?.applicable ? discountCode : undefined } })}
+                    >
+                      Proceed to Checkout
+                      <ArrowRight size={16} className="ml-2" />
                     </Button>
 
                     {/* Continue Shopping */}
                     <Button asChild variant="outline" className="w-full border-gray-300">
                       <Link to="/gifts">Continue Shopping</Link>
                     </Button>
-                  </div>
-
-                  {/* Security Info */}
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <div className="text-xs text-gray-500 text-center">
-                      <p>🔒 Secure checkout guaranteed</p>
-                      <p className="mt-1">🚚 Free delivery on orders over 1,000 ETB</p>
-                    </div>
                   </div>
                 </CardContent>
               </Card>

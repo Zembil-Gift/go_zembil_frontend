@@ -1,6 +1,5 @@
-import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { Navigate, useLocation } from "react-router-dom";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,27 +8,7 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children, redirectPath = "/signin" }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading } = useAuth();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      // Store the current path as return URL and redirect to login with returnTo parameter
-      const currentPath = window.location.pathname + window.location.search;
-      
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to access this page.",
-        variant: "destructive",
-      });
-      
-      // Small delay to show the toast before redirecting
-      setTimeout(() => {
-        // Store return URL in localStorage for the custom sign-in page
-        localStorage.setItem('returnTo', currentPath);
-        window.location.href = '/signin';
-      }, 500);
-    }
-  }, [isAuthenticated, isLoading, redirectPath, toast]);
+  const location = useLocation();
 
   // Show loading while checking auth
   if (isLoading) {
@@ -43,9 +22,12 @@ export default function ProtectedRoute({ children, redirectPath = "/signin" }: P
     );
   }
 
-  // If not authenticated, show nothing (redirect will happen in useEffect)
+  // If not authenticated, redirect to signin
   if (!isAuthenticated) {
-    return null;
+    // Store the current path for redirect after login
+    const currentPath = location.pathname + location.search;
+    localStorage.setItem('returnTo', currentPath);
+    return <Navigate to={redirectPath} replace />;
   }
 
   // If authenticated, render the protected content

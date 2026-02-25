@@ -1,22 +1,53 @@
-import axios from 'axios';
-import { mockApi } from './mockApi';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { tokenManager } from './tokenManager';
+
+const CURRENCY_HEADER = 'X-Currency';
+
+let isRedirecting = false;
+
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string | null) => void;
+  reject: (error: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
 // Create axios instance with base configuration
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
-  withCredentials: true,
+  withCredentials: true, // Important: sends cookies with requests
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to add auth token
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
+  async (config: InternalAxiosRequestConfig) => {
+    if (config.url?.includes('/auth/refresh')) {
+      return config;
+    }
+
+    const token = tokenManager.getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Send preferred currency when available so backend can use it for price conversion
+    const user = tokenManager.getUser();
+    if (user?.preferredCurrencyCode) {
+      config.headers[CURRENCY_HEADER] = user.preferredCurrencyCode;
+    }
+
     return config;
   },
   (error) => {
@@ -24,104 +55,93 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor for automatic token refresh and error handling
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('token');
-      window.location.href = '/signin';
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const requestHadAuthHeader = Boolean((originalRequest?.headers as any)?.Authorization);
+    const hasActiveAuth = tokenManager.isAuthenticated();
+    const shouldHandleAuthFailure = requestHadAuthHeader || hasActiveAuth;
+    
+    // Skip retry for auth endpoints
+    const isAuthEndpoint = originalRequest?.url?.includes('/auth/');
+    
+    if (error.response?.status === 401 && !originalRequest?._retry && !isAuthEndpoint && shouldHandleAuthFailure) {
+      // Token expired, try to refresh
+      
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          if (token && originalRequest) {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          }
+          return Promise.reject(error);
+        }).catch((err) => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Attempt to refresh the token
+        const success = await tokenManager.refreshAccessToken();
+        
+        if (success) {
+          const newToken = tokenManager.getAccessToken();
+          processQueue(null, newToken);
+          
+          // Retry original request with new token
+          if (newToken && originalRequest) {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return api(originalRequest);
+          }
+        }
+        
+        // Refresh failed, redirect to login
+        processQueue(error, null);
+        handleAuthFailure();
+        return Promise.reject(error);
+        
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        handleAuthFailure();
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
+    // For other 401s on auth pages or non-retryable requests
+    if (error.response?.status === 401 && shouldHandleAuthFailure) {
+      handleAuthFailure();
+    }
+
     return Promise.reject(error);
   }
 );
 
-// Enhanced API service with fallback to mock data
-export const apiService = {
-  // Products
-  getProducts: async (params?: any) => {
-    try {
-      const response = await api.get('/api/products', { params });
-      return response.data;
-    } catch (error) {
-      console.log('Backend not available, using mock data');
-      return await mockApi.getProducts(params);
-    }
-  },
+function handleAuthFailure() {
+  const currentPath = window.location.pathname;
+  const authPages = ['/signin', '/signup', '/forgot-password', '/reset-password', '/vendor-signup', '/verify-email'];
+  
+  const isOnAuthPage = authPages.some(page => currentPath.startsWith(page));
 
-  getProduct: async (id: number) => {
-    try {
-      const response = await api.get(`/api/products/${id}`);
-      return response.data;
-    } catch (error) {
-      console.log('Backend not available, using mock data');
-      return await mockApi.getProduct(id);
-    }
-  },
-
-  // Categories
-  getCategories: async () => {
-    try {
-      const response = await api.get('/api/categories');
-      return response.data;
-    } catch (error) {
-      console.log('Backend not available, using mock data');
-      return await mockApi.getCategories();
-    }
-  },
-
-  // Cart
-  getCart: async () => {
-    try {
-      const response = await api.get('/api/cart');
-      return response.data;
-    } catch (error) {
-      console.log('Backend not available, using local storage');
-      return await mockApi.getCart();
-    }
-  },
-
-  addToCart: async (productId: number, quantity: number = 1) => {
-    try {
-      const response = await api.post('/api/cart', { productId, quantity });
-      return response.data;
-    } catch (error) {
-      console.log('Backend not available, using local storage');
-      return await mockApi.addToCart(productId, quantity);
-    }
-  },
-
-  // Wishlist
-  getWishlist: async () => {
-    try {
-      const response = await api.get('/api/wishlist');
-      return response.data;
-    } catch (error) {
-      console.log('Backend not available, using local storage');
-      return await mockApi.getWishlist();
-    }
-  },
-
-  addToWishlist: async (productId: number) => {
-    try {
-      const response = await api.post('/api/wishlist', { productId });
-      return response.data;
-    } catch (error) {
-      console.log('Backend not available, using local storage');
-      return await mockApi.addToWishlist(productId);
-    }
-  },
-
-  removeFromWishlist: async (productId: number) => {
-    try {
-      const response = await api.delete(`/api/wishlist/${productId}`);
-      return response.data;
-    } catch (error) {
-      console.log('Backend not available, using local storage');
-      return await mockApi.removeFromWishlist(productId);
-    }
+  // Clear token data
+  tokenManager.clearTokenData();
+  
+  // If not on auth page and not already redirecting, redirect to signin
+  if (!isOnAuthPage && !isRedirecting) {
+    isRedirecting = true;
+    // Store the current URL to redirect back after login
+    const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `/signin?returnUrl=${returnUrl}`;
   }
-};
+}
 
 export default api;

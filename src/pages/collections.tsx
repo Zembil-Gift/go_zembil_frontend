@@ -16,8 +16,8 @@ import {
   Package,
   ArrowRight
 } from "lucide-react";
-import { formatDualCurrency } from "@/lib/currency";
-import type { Product } from "@shared/schema";
+import { formatPrice } from "@/lib/currency";
+import type { Product } from "@/services/productService";
 
 interface Collection {
   id: string;
@@ -199,7 +199,7 @@ export default function Collections() {
                           <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                             {product.images && product.images.length > 0 ? (
                               <img 
-                                src={product.images[0]} 
+                                src={product.images[0]?.fullUrl || product.images[0]?.url} 
                                 alt={product.name}
                                 className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"
                               />
@@ -220,7 +220,7 @@ export default function Collections() {
                         <div className="font-medium truncate">{collection.products[0].name}</div>
                         <div className="flex items-center justify-between">
                           <span className="text-ethiopian-gold font-semibold">
-                            {formatDualCurrency(collection.products[0].price).etb}
+                            {formatPrice(collection.products[0].price?.amount ?? 0, 'ETB')}
                           </span>
                           <div className="flex items-center">
                             <Star className="h-3 w-3 text-yellow-500 fill-current mr-1" />

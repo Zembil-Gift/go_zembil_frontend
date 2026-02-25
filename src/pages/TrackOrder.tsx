@@ -3,44 +3,29 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Package, Truck, Clock, MapPin, Phone, Mail, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Package, Truck, Clock, MapPin, Phone, Mail, ArrowLeft} from 'lucide-react';
 import { isUnauthorizedError } from '@/lib/authUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
-
-interface OrderItem {
-  id: number;
-  productId: number;
-  quantity: number;
-  price: string;
-  product?: {
-    name: string;
-    images: string[];
-  };
-}
-
-interface Order {
-  id: string;
-  recipientName: string;
-  recipientPhone: string;
-  recipientCity: string;
-  recipientAddress: string;
-  total: string;
-  status: string;
-  paymentStatus: string;
-  paymentMethod: string;
-  trackingNumber: string;
-  createdAt: string;
-  deliveryDate?: string;
-  items?: OrderItem[];
-}
+import orderService, { Order } from '@/services/orderService';
 
 export default function TrackOrder() {
   const { orderId } = useParams<{ orderId: string }>();
   const { toast } = useToast();
 
   const { data: order, isLoading, error } = useQuery<Order>({
-    queryKey: ['/api/orders', orderId],
+    queryKey: ['order', orderId],
+    queryFn: async () => {
+      if (!orderId || orderId === 'undefined') {
+        throw new Error('Invalid order ID');
+      }
+      const result = await orderService.getOrderByNumber(orderId);
+      console.log('Order data received:', JSON.stringify(result, null, 2));
+      console.log('Order keys:', Object.keys(result));
+      console.log('Order totals:', result.totals);
+      console.log('Order items:', result.items);
+      return result;
+    },
     enabled: !!orderId && orderId !== 'undefined',
     retry: false,
   });
@@ -104,7 +89,7 @@ export default function TrackOrder() {
     );
   }
 
-  if (!order) {
+  if (error || !order) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -153,18 +138,13 @@ export default function TrackOrder() {
                 Track Your Order
               </h1>
               <p className="text-gray-600">
-                Order #{order.id.slice(0, 8).toUpperCase()}
+                Order #{order.orderNumber || orderId}
               </p>
             </div>
             <div className="text-right">
               <Badge className={getStatusColor(order.status)} variant="secondary">
                 {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
               </Badge>
-              {order.trackingNumber && (
-                <p className="text-sm text-gray-600 mt-2 font-mono">
-                  Tracking: {order.trackingNumber}
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -221,7 +201,7 @@ export default function TrackOrder() {
                 <div>
                   <p className="font-medium text-gray-900">Order Date</p>
                   <p className="text-gray-600">
-                    {new Date(order.createdAt).toLocaleDateString('en-US', {
+                    {new Date(order.createdAt || Date.now()).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric'
@@ -234,12 +214,12 @@ export default function TrackOrder() {
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Total Amount</p>
-                  <p className="text-gray-900 font-bold">ETB {parseFloat(order.total).toFixed(2)}</p>
+                  <p className="text-gray-900 font-bold">{order.currency} {((order.totals?.totalMinor || 0) / 100).toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Payment Status</p>
                   <Badge className={order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                    {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
+                    {order.paymentStatus ? order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1) : 'Pending'}
                   </Badge>
                 </div>
               </div>
@@ -257,27 +237,39 @@ export default function TrackOrder() {
             <CardContent className="space-y-4">
               <div>
                 <p className="font-medium text-gray-900">Recipient</p>
-                <p className="text-gray-600">{order.recipientName}</p>
+                <p className="text-gray-600">{order.shippingAddress?.fullName || 'Customer'}</p>
               </div>
               <div>
                 <p className="font-medium text-gray-900">Delivery Address</p>
-                <p className="text-gray-600">{order.recipientCity}</p>
-                {order.recipientAddress && (
-                  <p className="text-gray-600 text-sm">{order.recipientAddress}</p>
+                <p className="text-gray-600">{order.shippingAddress?.addressLine1}</p>
+                {order.shippingAddress?.addressLine2 && (
+                  <p className="text-gray-600 text-sm">{order.shippingAddress.addressLine2}</p>
                 )}
+                <p className="text-gray-600 text-sm">{order.shippingAddress?.city}, {order.shippingAddress?.state}</p>
+                <p className="text-gray-600 text-sm">{order.shippingAddress?.country} {order.shippingAddress?.postalCode}</p>
               </div>
               <div>
                 <p className="font-medium text-gray-900">Contact</p>
-                <div className="flex items-center space-x-2 text-gray-600">
-                  <Phone size={14} />
-                  <span>{order.recipientPhone}</span>
-                </div>
+                {order.shippingAddress?.phone ? (
+                  <div className="flex items-center space-x-2 text-gray-600">
+                    <Phone size={14} />
+                    <span>{order.shippingAddress.phone}</span>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No contact information</p>
+                )}
+                {order.shippingAddress?.email && (
+                  <div className="flex items-center space-x-2 text-gray-600">
+                    <Mail size={14} />
+                    <span>{order.shippingAddress.email}</span>
+                  </div>
+                )}
               </div>
-              {order.deliveryDate && (
+              {order.estimatedDeliveryDate && (
                 <div>
                   <p className="font-medium text-gray-900">Estimated Delivery</p>
                   <p className="text-gray-600">
-                    {new Date(order.deliveryDate).toLocaleDateString('en-US', {
+                    {new Date(order.estimatedDeliveryDate).toLocaleDateString('en-US', {
                       weekday: 'long',
                       year: 'numeric',
                       month: 'long',
@@ -297,24 +289,27 @@ export default function TrackOrder() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {order.items?.map((item) => (
-                <div key={item.id} className="flex items-center space-x-4 py-2 border-b last:border-b-0">
+              {(order.lines || order.items)?.map((item: any) => (
+                <div key={item.id || item.productId} className="flex items-center space-x-4 py-2 border-b last:border-b-0">
                   <div className="w-16 h-16 flex-shrink-0">
                     <img
-                      src={item.product?.images?.[0] || "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"}
-                      alt={item.product?.name || "Product"}
+                      src={item.productImage || "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"}
+                      alt={item.productName || "Product"}
                       className="w-full h-full object-cover rounded"
                     />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">
-                      {item.product?.name || "Product"}
+                      {item.productName || "Product"}
                     </h4>
                     <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                    {item.skuCode && (
+                      <p className="text-sm text-gray-400">SKU: {item.skuCode}</p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="font-medium text-gray-900">
-                      ETB {(parseFloat(item.price) * item.quantity).toFixed(2)}
+                      {order.currency} {((item.unitAmountMinor || item.totalPrice || 0) * item.quantity / 100).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -323,30 +318,49 @@ export default function TrackOrder() {
           </CardContent>
         </Card>
 
-        {/* Help Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Need Help?</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-3">
-                <Phone className="text-ethiopian-gold" size={20} />
+        {/* Delivery Status Messages */}
+        {order.status?.toLowerCase() === 'delivered' && !order.deliveryConfirmedAt && (
+          <Card className="mb-8 border-amber-200 bg-amber-50">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-amber-600" />
+                </div>
                 <div>
-                  <p className="font-medium">Call Support</p>
-                  <p className="text-sm text-gray-600">+251 11 123 4567</p>
+                  <h3 className="font-semibold text-amber-800">Delivery Pending Verification</h3>
+                  <p className="text-sm text-amber-700">
+                    Your order has been delivered and is pending verification by our team.
+                    You will receive an email confirmation once verified.
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <Mail className="text-ethiopian-gold" size={20} />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Already confirmed message */}
+        {order.status?.toLowerCase() === 'delivered' && order.deliveryConfirmedAt && (
+          <Card className="mb-8 border-green-200 bg-green-50">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
                 <div>
-                  <p className="font-medium">Email Support</p>
-                  <p className="text-sm text-gray-600">support@gozembil.com</p>
+                  <h3 className="font-semibold text-green-800">Delivery Confirmed</h3>
+                  <p className="text-sm text-green-600">
+                    Your order was verified and confirmed on{' '}
+                    {new Date(order.deliveryConfirmedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

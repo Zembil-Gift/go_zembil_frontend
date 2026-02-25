@@ -51,7 +51,6 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
         title: "Payment Successful",
         description: "Your payment has been processed successfully.",
       });
-      console.log('✅ Stripe redirect payment confirmed, calling onSuccess with:', paymentIntentId);
       onSuccess({ paymentIntentId, status: 'succeeded' });
     }
   }, [stripe, onSuccess, toast]);
@@ -118,7 +117,7 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
             console.log('🚨 Failsafe redirect activated - checking if still on checkout page');
             if (window.location.pathname.includes('/checkout')) {
               console.log('🚨 Still on checkout, forcing redirect...');
-              const orderId = localStorage.getItem('goZembil_currentOrderId');
+              const orderId = localStorage.getItem('goGerami_currentOrderId');
               if (orderId) {
                 window.location.href = `/order-success?orderId=${orderId}&paymentMethod=stripe`;
               }
