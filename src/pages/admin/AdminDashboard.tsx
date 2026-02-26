@@ -49,7 +49,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
-  const MAX_REJECTION_REASON_LENGTH = 500;
+  const MAX_REJECTION_REASON_LENGTH = 1000;
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

@@ -567,7 +567,7 @@ export interface AdminEventOrderDto {
 }
 
 class AdminService {
-  private readonly MAX_REJECTION_REASON_LENGTH = 500;
+  private readonly MAX_REJECTION_REASON_LENGTH = 1000;
 
   private normalizeRejectionReason(reason: string): string {
     const trimmedReason = reason?.trim();

@@ -84,7 +84,7 @@ interface Product {
 }
 
 export default function AdminProducts() {
-  const MAX_REJECTION_REASON_LENGTH = 500;
+  const MAX_REJECTION_REASON_LENGTH = 1000;
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');

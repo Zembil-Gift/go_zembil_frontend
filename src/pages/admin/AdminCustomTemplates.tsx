@@ -523,7 +523,11 @@ export default function AdminCustomTemplates() {
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 rows={4}
+                maxLength={1000}
               />
+              <p className="text-xs text-right text-muted-foreground mt-1">
+                {rejectReason.trim().length}/1000
+              </p>
             </div>
           </div>
 
