@@ -26,6 +26,7 @@ import { orderService } from "@/services/orderService";
 
 interface OrderTotals {
   subtotalMinor: number;
+  giftWrapMinor?: number;
   netSubtotalMinor?: number;
   vatAmountMinor?: number;
   salesTaxMinor?: number;
@@ -48,6 +49,8 @@ interface OrderLine {
   quantity: number;
   currency: string;
   unitAmountMinor: number;
+  giftWrapping?: boolean;
+  giftMessage?: string;
 }
 
 interface AddressInfo {
@@ -259,12 +262,21 @@ export default function OrderReview() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {order.lines.map((line, index) => (
-                  <div key={index} className="flex justify-between items-center py-3 border-b last:border-0">
+                  <div key={index} className="flex justify-between items-start py-3 border-b last:border-0">
                     <div className="flex-1">
                       <h4 className="font-medium">{line.productName}</h4>
                       <p className="text-sm text-gray-500">
                         Qty: {line.quantity} × {formatPrice(fromMinor(line.unitAmountMinor), currency)}
                       </p>
+                      {line.giftWrapping && (
+                        <div className="mt-1 flex items-center gap-1 text-xs text-green-600 font-medium">
+                          <Gift className="h-3 w-3" />
+                          <span>Gift wrapped</span>
+                        </div>
+                      )}
+                      {line.giftMessage && (
+                        <p className="mt-1 text-xs text-gray-500 italic">"{line.giftMessage}"</p>
+                      )}
                     </div>
                     <p className="font-semibold">
                       {formatPrice(fromMinor(line.unitAmountMinor * line.quantity), currency)}
@@ -351,7 +363,7 @@ export default function OrderReview() {
             )}
 
             {/* Gift Options */}
-            {order.giftWrap && (
+            {(order.giftWrap || order.lines.some(l => l.giftWrapping)) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -360,12 +372,21 @@ export default function OrderReview() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Gift wrapping included</span>
-                  </div>
+                  {order.lines.some(l => l.giftWrapping) && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span>Gift wrapping selected for {order.lines.filter(l => l.giftWrapping).length} item(s)</span>
+                    </div>
+                  )}
+                  {order.giftWrap && !order.lines.some(l => l.giftWrapping) && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span>Gift wrapping included</span>
+                    </div>
+                  )}
                   {order.cardMessage && (
                     <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-500 mb-1 font-medium">Gift Message:</p>
                       <p className="text-sm text-gray-600 italic">"{order.cardMessage}"</p>
                     </div>
                   )}
@@ -386,6 +407,17 @@ export default function OrderReview() {
                   <span className="text-gray-600">Subtotal</span>
                   <span>{formatPrice(fromMinor(order.totals.subtotalMinor), currency)}</span>
                 </div>
+
+                {/* Gift Wrap Fee */}
+                {order.totals.giftWrapMinor != null && order.totals.giftWrapMinor > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 flex items-center gap-1">
+                      <Gift className="h-4 w-4" />
+                      Gift Wrapping
+                    </span>
+                    <span>{formatPrice(fromMinor(order.totals.giftWrapMinor), currency)}</span>
+                  </div>
+                )}
 
                 {/* US Sales Tax - For US domestic orders */}
                 {order.totals.salesTaxApplied && order.totals.salesTaxMinor && order.totals.salesTaxMinor > 0 && (

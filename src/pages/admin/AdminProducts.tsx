@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {Textarea} from '@/components/ui/textarea';
-import {AlertTriangle, Check, Clock, DollarSign, Eye, FolderTree, Loader2, Package, Search, X} from 'lucide-react';
+import {AlertTriangle, Check, Clock, DollarSign, Eye, FolderTree, Gift, Loader2, Package, Search, X} from 'lucide-react';
 import {adminService, CategoryChangeRequestDto} from '@/services/adminService';
 import {useToast} from '@/hooks/use-toast';
 import {getProductImageUrl} from '@/utils/imageUtils';
@@ -77,6 +77,10 @@ interface Product {
     };
   }>;
   createdAt: string;
+  giftWrappable?: boolean;
+  giftWrapPrice?: number;
+  giftWrapCustomerPrice?: number;
+  giftWrapCurrencyCode?: string;
 }
 
 export default function AdminProducts() {
@@ -504,6 +508,17 @@ export default function AdminProducts() {
                                 <p className="font-medium">{product.name}</p>
                                 <p className="text-sm text-muted-foreground">{product.categoryName || 'Uncategorized'}</p>
                                 <p className="text-xs text-muted-foreground">Subcategory: {getSubCategoryName(product)}</p>
+                                {product.giftWrappable && (
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    <Gift className="h-3 w-3 text-green-600" />
+                                    <span className="text-xs text-green-600">
+                                      Gift wrappable
+                                      {product.giftWrapCustomerPrice != null && product.giftWrapCustomerPrice > 0 && (
+                                        <> ({product.giftWrapCustomerPrice} {product.giftWrapCurrencyCode || ''})</>
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </TableCell>
@@ -936,6 +951,35 @@ export default function AdminProducts() {
                   <p className="text-sm mt-1">{selectedProduct.description}</p>
                 </div>
               )}
+
+              {/* Gift Wrapping Section */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Gift Wrappable</p>
+                  <p className="font-medium flex items-center gap-1">
+                    {selectedProduct.giftWrappable ? (
+                      <>
+                        <Gift className="h-4 w-4 text-green-600" />
+                        <span className="text-green-600">Yes</span>
+                      </>
+                    ) : (
+                      <span className="text-gray-400">No</span>
+                    )}
+                  </p>
+                </div>
+                {selectedProduct.giftWrappable && selectedProduct.giftWrapPrice != null && selectedProduct.giftWrapPrice > 0 && (
+                  <div>
+                    <p className="text-muted-foreground">Gift Wrap Vendor Price</p>
+                    <p className="font-medium">{selectedProduct.giftWrapPrice} {selectedProduct.giftWrapCurrencyCode || ''}</p>
+                  </div>
+                )}
+                {selectedProduct.giftWrappable && selectedProduct.giftWrapCustomerPrice != null && selectedProduct.giftWrapCustomerPrice > 0 && (
+                  <div>
+                    <p className="text-muted-foreground">Gift Wrap Customer Price</p>
+                    <p className="font-medium">{selectedProduct.giftWrapCustomerPrice} {selectedProduct.giftWrapCurrencyCode || ''}</p>
+                  </div>
+                )}
+              </div>
 
               {/* SKU Prices Section */}
               {selectedProduct.productSku && selectedProduct.productSku.length > 0 && (

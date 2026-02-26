@@ -264,21 +264,13 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                                 originalPrice={displayPrice}
                                 currency={currencyCode}
                                 discount={activeDiscount}
-                                size="small"
+                                size="medium"
                                 showSavings={false}
                             />
                         ) : (
-                            <>
-                                {/* Original Price - shown when discounted */}
-                                {hasDiscount && formattedOriginalPrice && (
-                                    <span className="text-sm font-light text-eagle-green/50 line-through mb-0.5">
-                                        {formattedOriginalPrice}
-                                    </span>
-                                )}
-
-                                {/* Current Price */}
+                            <div className="flex items-baseline gap-1.5">
                                 <div className="flex items-baseline gap-0.5">
-                                    <span className="text-2xl font-bold text-eagle-green">
+                                    <span className="text-xl font-bold text-eagle-green">
                                         {priceParts.symbol}{priceParts.whole}
                                     </span>
                                     {priceParts.decimal && (
@@ -287,7 +279,12 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                                         </span>
                                     )}
                                 </div>
-                            </>
+                                {hasDiscount && formattedOriginalPrice && (
+                                    <span className="text-sm font-light text-eagle-green/50 line-through">
+                                        {formattedOriginalPrice}
+                                    </span>
+                                )}
+                            </div>
                         )}
                     </div>
 

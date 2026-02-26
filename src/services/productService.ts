@@ -89,6 +89,10 @@ export interface Product {
   vendorId?: number;
   vendorName?: string;
   activeDiscount?: DiscountInfo;
+  giftWrappable?: boolean;
+  giftWrapPrice?: number;
+  giftWrapCustomerPrice?: number;
+  giftWrapCurrencyCode?: string;
 }
 
 export interface Tag {

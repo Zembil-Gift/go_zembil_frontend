@@ -73,7 +73,15 @@ export interface CreateOrderRequest {
     giftWrap?: boolean;
     cardMessage?: string;
   };
+  itemGiftOptions?: ItemGiftOption[];
   discountCode?: string;
+}
+
+export interface ItemGiftOption {
+  productId: number;
+  productSkuId?: number;
+  giftWrapping: boolean;
+  giftMessage?: string;
 }
 
 export interface OrdersResponse {

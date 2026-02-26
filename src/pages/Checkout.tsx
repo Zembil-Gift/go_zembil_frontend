@@ -30,6 +30,7 @@ import { type CartItem } from "@/services/cartService";
 import { getPaymentMethodsForCountry, getDefaultPaymentMethod, type PaymentMethod } from "@/lib/countryConfig";
 import { paymentMethodConfigService } from "@/services/paymentMethodConfigService";
 import { LocationPicker, type LocationData } from "@/components/maps";
+import { useCheckoutStore } from "@/stores/checkout-store";
 
 interface CurrencyConversionDto {
   amount: number;
@@ -70,42 +71,41 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Persisted checkout draft (survives back-navigation from Order Review)
+  const {
+    shippingInfo,
+    billingInfo,
+    sameAsShipping,
+    contactPhone,
+    contactEmail,
+    itemGiftSelections,
+    discountCode,
+    selectedPaymentMethod: storedPaymentMethod,
+    shippingCoords: storedShippingCoords,
+    setShippingInfo,
+    setBillingInfo,
+    setSameAsShipping,
+    setContactPhone,
+    setContactEmail,
+    setItemGiftSelections,
+    setDiscountCode,
+    setSelectedPaymentMethod: storeSetSelectedPaymentMethod,
+    setShippingCoords: storeSetShippingCoords,
+    clearCheckout,
+  } = useCheckoutStore();
+
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
   const [existingAddressId, setExistingAddressId] = useState<number | null>(null);
   const [existingBillingAddressId, setExistingBillingAddressId] = useState<number | null>(null);
   const [orderIdempotencyKey, setOrderIdempotencyKey] = useState<string | null>(null);
-  const [shippingInfo, setShippingInfo] = useState({
-    street: "",
-    city: "",
-    state: "",
-    postalCode: "",
-    country: "",
-  });
-  const [billingInfo, setBillingInfo] = useState({
-    street: "",
-    city: "",
-    state: "",
-    postalCode: "",
-    country: "",
-  });
-  const [sameAsShipping, setSameAsShipping] = useState(true);
-  const [contactPhone, setContactPhone] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [giftWrap, setGiftWrap] = useState(false);
-  const [cardMessage, setCardMessage] = useState("");
-  const [discountCode, setDiscountCode] = useState(appliedDiscountCode || "");
   const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   const [discountError, setDiscountError] = useState<string | null>(null);
 
-  // Shipping address geolocation
-  const [shippingCoords, setShippingCoords] = useState<{
-    latitude?: number;
-    longitude?: number;
-    placeId?: string;
-    formattedAddress?: string;
-  }>({});
+  // Shipping address geolocation - backed by checkout store
+  const shippingCoords = storedShippingCoords;
+  const setShippingCoords = storeSetShippingCoords;
 
   // Delivery estimate from backend (distance-based fee + radius check)
   interface DeliveryEstimate {
@@ -166,7 +166,10 @@ export default function Checkout() {
     return getDefaultPaymentMethod(userCountry);
   }, [availablePaymentMethods, userCountry]);
   
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>(defaultPaymentMethod);
+  // selectedPaymentMethod is backed by the checkout store so it survives navigation
+  const selectedPaymentMethod: PaymentMethod =
+    (storedPaymentMethod as PaymentMethod) || defaultPaymentMethod;
+  const setSelectedPaymentMethod = (method: PaymentMethod) => storeSetSelectedPaymentMethod(method);
   const [telebirrConversion, setTelebirrConversion] = useState<CurrencyConversionDto | null>(null);
   const [isConvertingTelebirr, setIsConvertingTelebirr] = useState(false);
   
@@ -189,8 +192,16 @@ export default function Checkout() {
 
   const effectiveSubtotal = useMemo(() => {
     if (!Array.isArray(cartItems)) return 0;
-    return cartItems.reduce((total, item) => total + getDiscountedItemTotal(item), 0);
-  }, [cartItems, getDiscountedItemTotal]);
+    return cartItems.reduce((total, item) => {
+      const itemTotal = getDiscountedItemTotal(item);
+      // Gift wrapping cost from checkout-level selections
+      const itemKey = `${item.productId}-${item.productSkuId || 'default'}`;
+      const giftSel = itemGiftSelections[itemKey];
+      const giftCost = giftSel?.giftWrapping && item.product?.giftWrapCustomerPrice
+        ? item.product.giftWrapCustomerPrice * item.quantity : 0;
+      return total + itemTotal + giftCost;
+    }, 0);
+  }, [cartItems, getDiscountedItemTotal, itemGiftSelections]);
 
   const handleApplyDiscount = useCallback(async (codeOverride?: string) => {
     const code = (codeOverride || discountCode).trim();
@@ -267,10 +278,14 @@ export default function Checkout() {
     return getDiscountAmountForDisplay(discountResult, cartCurrency);
   }, [discountResult, cartCurrency]);
 
-  // Final total after discount
+  // Final total after discount + delivery fee
   const finalTotal = useMemo(() => {
-    return Math.max(0, effectiveSubtotal - discountAmountDisplay);
-  }, [effectiveSubtotal, discountAmountDisplay]);
+    const delivery =
+      deliveryEstimate?.withinDeliveryRadius !== false && deliveryEstimate?.deliveryFee != null
+        ? deliveryEstimate.deliveryFee
+        : 0;
+    return Math.max(0, effectiveSubtotal - discountAmountDisplay + delivery);
+  }, [effectiveSubtotal, discountAmountDisplay, deliveryEstimate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -313,6 +328,14 @@ export default function Checkout() {
     };
   }, [selectedPaymentMethod, cartCurrency, effectiveSubtotal]);
 
+  // Seed discount code from cart store when checkout store has none
+  useEffect(() => {
+    if (appliedDiscountCode && !discountCode) {
+      setDiscountCode(appliedDiscountCode);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedDiscountCode]);
+
   useEffect(() => {
     if (user) {
       if (user.phoneNumber && !contactPhone) {
@@ -336,44 +359,52 @@ export default function Checkout() {
         if (shippingAddress) {
           setExistingAddressId(shippingAddress.id || null);
 
-          setShippingInfo({
-            street: shippingAddress.street || "",
-            city: shippingAddress.city || "",
-            state: shippingAddress.state || "",
-            postalCode: shippingAddress.postalCode || "0000",
-            country: shippingAddress.country || "",
-          });
+          // Only overwrite form fields from the backend if the checkout store
+          // doesn't already have a draft (i.e., user is coming back from order review).
+          const hasDraft = !!(shippingInfo.street || shippingCoords.latitude);
+          if (!hasDraft) {
+            setShippingInfo({
+              street: shippingAddress.street || "",
+              city: shippingAddress.city || "",
+              state: shippingAddress.state || "",
+              postalCode: shippingAddress.postalCode || "0000",
+              country: shippingAddress.country || "",
+            });
 
-          if (shippingAddress.latitude && shippingAddress.longitude) {
-            setShippingCoords({
-              latitude: shippingAddress.latitude,
-              longitude: shippingAddress.longitude,
-              placeId: shippingAddress.placeId,
-              formattedAddress: shippingAddress.formattedAddress,
+            if (shippingAddress.latitude && shippingAddress.longitude) {
+              setShippingCoords({
+                latitude: shippingAddress.latitude,
+                longitude: shippingAddress.longitude,
+                placeId: shippingAddress.placeId,
+                formattedAddress: shippingAddress.formattedAddress,
+              });
+            }
+
+            // Only set phone from address if user profile doesn't have one
+            if (!user?.phoneNumber && shippingAddress.contactPhone) {
+              setContactPhone(shippingAddress.contactPhone);
+            }
+
+            toast({
+              title: "Address Loaded",
+              description: "Your saved shipping address has been loaded.",
             });
           }
-
-          // Only set phone from address if user profile doesn't have one
-          if (!user?.phoneNumber && shippingAddress.contactPhone) {
-            setContactPhone(shippingAddress.contactPhone);
-          }
-
-          toast({
-            title: "Address Loaded",
-            description: "Your saved shipping address has been loaded.",
-          });
         }
 
         if (billingAddress) {
           setExistingBillingAddressId(billingAddress.id || null);
-          setBillingInfo({
-            street: billingAddress.street || "",
-            city: billingAddress.city || "",
-            state: billingAddress.state || "",
-            postalCode: billingAddress.postalCode || "0000",
-            country: billingAddress.country || "",
-          });
-          setSameAsShipping(false);
+          const hasBillingDraft = !!billingInfo.street;
+          if (!hasBillingDraft) {
+            setBillingInfo({
+              street: billingAddress.street || "",
+              city: billingAddress.city || "",
+              state: billingAddress.state || "",
+              postalCode: billingAddress.postalCode || "0000",
+              country: billingAddress.country || "",
+            });
+            setSameAsShipping(false);
+          }
         }
       } catch (error) {
         console.log('No existing address found or error fetching:', error);
@@ -560,16 +591,26 @@ export default function Checkout() {
         console.log('Billing address ID:', billingAddressId);
       }
 
+      // Build per-item gift options from checkout selections
+      const itemGiftOptions = Object.entries(itemGiftSelections)
+        .filter(([, sel]) => sel.giftWrapping)
+        .map(([key, sel]) => {
+          const [productId, skuPart] = key.split('-');
+          return {
+            productId: Number(productId),
+            productSkuId: skuPart !== 'default' ? Number(skuPart) : undefined,
+            giftWrapping: true,
+            giftMessage: sel.giftMessage || undefined,
+          };
+        });
+
       // Create order with address IDs
       const orderData: CreateOrderRequest = {
         shippingAddressId: shippingAddressId,
         billingAddressId: billingAddressId, // undefined when sameAsShipping=true, backend will handle this
         contactEmail: contactEmail || undefined,
         contactPhone: contactPhone || undefined,
-        giftOptions: giftWrap ? {
-          giftWrap: true,
-          cardMessage: cardMessage || undefined,
-        } : undefined,
+        itemGiftOptions: itemGiftOptions.length > 0 ? itemGiftOptions : undefined,
         discountCode: discountCode || undefined,
       };
 
@@ -593,6 +634,8 @@ export default function Checkout() {
       // Reset idempotency key for next order
       setOrderIdempotencyKey(null);
       setAppliedDiscountCode(null);
+      // Clear persisted checkout draft now that the order is placed
+      clearCheckout();
 
       // Navigate to order review page before payment
       navigate(`/order-review?orderId=${orderId}&paymentMethod=${selectedPaymentMethod}`);
@@ -832,29 +875,67 @@ export default function Checkout() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="giftWrap"
-                    checked={giftWrap}
-                    onCheckedChange={(checked) => setGiftWrap(checked === true)}
-                  />
-                  <Label htmlFor="giftWrap" className="cursor-pointer">
-                    Add gift wrapping
-                  </Label>
-                </div>
-
-                {giftWrap && (
-                  <div>
-                    <Label htmlFor="cardMessage">Gift Card Message</Label>
-                    <Textarea
-                      id="cardMessage"
-                      value={cardMessage}
-                      onChange={(e) => setCardMessage(e.target.value)}
-                      placeholder="Write a personal message for the gift card..."
-                      rows={3}
-                    />
+                {/* Per-item gift wrapping toggles */}
+                {cartItems.some((item: CartItem) => item.product?.giftWrappable) && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600 font-medium">
+                      Gift Wrapping
+                    </p>
+                    {cartItems.filter((item: CartItem) => item.product?.giftWrappable).map((item: CartItem) => {
+                      const itemKey = `${item.productId}-${item.productSkuId || 'default'}`;
+                      const sel = itemGiftSelections[itemKey] || { giftWrapping: false, giftMessage: '' };
+                      return (
+                        <div key={itemKey} className="p-3 rounded-lg border border-gray-100 bg-gray-50/50 space-y-2">
+                          <div className="flex items-start gap-2">
+                            <Checkbox
+                              id={`gift-wrap-${itemKey}`}
+                              checked={sel.giftWrapping}
+                              onCheckedChange={(checked) => {
+                                setItemGiftSelections({
+                                  ...itemGiftSelections,
+                                  [itemKey]: { ...sel, giftWrapping: checked === true },
+                                });
+                              }}
+                            />
+                            <div className="flex-1">
+                              <Label htmlFor={`gift-wrap-${itemKey}`} className="cursor-pointer text-sm font-medium">
+                                {item.productName || item.product?.name}
+                                {item.product?.giftWrapCustomerPrice && item.product.giftWrapCustomerPrice > 0 && (
+                                  <span className="text-green-600 font-semibold ml-1">
+                                    (+{formatPrice(item.product.giftWrapCustomerPrice, item.product.giftWrapCurrencyCode || cartCurrency)} per item)
+                                  </span>
+                                )}
+                                {(!item.product?.giftWrapCustomerPrice || item.product.giftWrapCustomerPrice === 0) && (
+                                  <span className="text-green-600 font-medium ml-1">— Free</span>
+                                )}
+                              </Label>
+                              {item.quantity > 1 && (
+                                <p className="text-xs text-muted-foreground">× {item.quantity}</p>
+                              )}
+                            </div>
+                          </div>
+                          {sel.giftWrapping && (
+                            <div className="pl-6">
+                              <Textarea
+                                value={sel.giftMessage}
+                                onChange={(e) => {
+                                  setItemGiftSelections({
+                                    ...itemGiftSelections,
+                                    [itemKey]: { ...sel, giftMessage: e.target.value },
+                                  });
+                                }}
+                                placeholder="Write a personal gift message (optional)..."
+                                rows={2}
+                                className="resize-none text-sm"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
+
               </CardContent>
             </Card>
 
@@ -1095,6 +1176,21 @@ export default function Checkout() {
                           {item.productSku.attributes.map(attr => `${attr.name}: ${attr.value}`).join(', ')}
                         </p>
                       )}
+                      {(() => {
+                        const itemKey = `${item.productId}-${item.productSkuId || 'default'}`;
+                        const giftSel = itemGiftSelections[itemKey];
+                        return giftSel?.giftWrapping ? (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Gift className="h-3 w-3 text-green-600" />
+                            <span className="text-xs text-green-600 font-medium">
+                              Gift wrapped
+                              {item.product?.giftWrapCustomerPrice && item.product.giftWrapCustomerPrice > 0 && (
+                                <> (+{formatPrice(item.product.giftWrapCustomerPrice, item.product.giftWrapCurrencyCode || cartCurrency)})</>
+                              )}
+                            </span>
+                          </div>
+                        ) : null;
+                      })()}
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-sm text-gray-600">
                           Qty: {item.quantity}
@@ -1137,11 +1233,28 @@ export default function Checkout() {
                   </span>
                 </div>
 
+                {/* Gift Wrapping Fee */}
+                {cartItems.some((item: CartItem) => {
+                  const itemKey = `${item.productId}-${item.productSkuId || 'default'}`;
+                  const giftSel = itemGiftSelections[itemKey];
+                  return giftSel?.giftWrapping && item.product?.giftWrapCustomerPrice && item.product.giftWrapCustomerPrice > 0;
+                }) && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 flex items-center gap-1">
+                      <Gift className="h-3 w-3" />
+                      Gift Wrapping
+                    </span>
+                    <span className="text-green-600">
+                      Included in subtotal
+                    </span>
+                  </div>
+                )}
+
                 {/* Delivery Fee */}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
-                    Delivery Fee
+                    Shipping Fee
                   </span>
                   <span className="font-medium">
                     {isEstimatingDelivery ? (

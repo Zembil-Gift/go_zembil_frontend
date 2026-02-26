@@ -34,6 +34,10 @@ export interface CartItem {
     deliveryDays?: number;
     stockQuantity?: number;
     activeDiscount?: DiscountInfo;
+    giftWrappable?: boolean;
+    giftWrapPrice?: number;
+    giftWrapCustomerPrice?: number;
+    giftWrapCurrencyCode?: string;
   };
   // Optional nested SKU details
   productSku?: {
