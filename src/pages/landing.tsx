@@ -7,6 +7,7 @@ import { getProductImageUrl, getAllProductImages, getEventImageUrl } from "@/uti
 import { eventOrderService, EventResponse } from "@/services/eventOrderService";
 import { serviceService, ServicePackageResponse, ServiceResponse } from "@/services/serviceService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { DiscountBadge } from "@/components/DiscountBadge";
 import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 
@@ -26,6 +27,7 @@ import CampaignBanner from "@/components/landing/CampaignBanner";
 export default function Landing() {
   const location = useLocation();
   const { user, isInitialized } = useAuth();
+  const activeCurrency = useActiveCurrency();
 
   // Parse URL parameters to set initial category
   const urlParams = new URLSearchParams(location.search);
@@ -37,7 +39,7 @@ export default function Landing() {
 
   // Fetch featured products (wait for auth so currency is correct)
   const { data: featuredProducts, isLoading: isLoadingProducts, error: productsError } = useQuery({
-    queryKey: ["products", "featured", user?.preferredCurrencyCode ?? "default"],
+    queryKey: ["products", "featured", activeCurrency],
     queryFn: async () => {
       try {
         return await productService.getFeaturedProducts(10);
@@ -52,7 +54,7 @@ export default function Landing() {
 
   // Fetch featured events (wait for auth for consistent behaviour)
   const { data: featuredEventsResponse} = useQuery({
-    queryKey: ["events", "featured", user?.preferredCurrencyCode ?? "default"],
+    queryKey: ["events", "featured", activeCurrency],
     queryFn: async () => {
       try {
         return await eventOrderService.getFeaturedEvents(0, 6);
@@ -67,7 +69,7 @@ export default function Landing() {
 
   // Fetch featured services (wait for auth for consistent behaviour)
   const { data: featuredServicesResponse} = useQuery({
-    queryKey: ["services", "featured", user?.preferredCurrencyCode ?? "default"],
+    queryKey: ["services", "featured", activeCurrency],
     queryFn: async () => {
       try {
         return await serviceService.getFeaturedServices(0, 6);
@@ -82,7 +84,7 @@ export default function Landing() {
 
   // Fetch ads (products, events, or services) — wait for auth so product currency is correct
   const { data: adProducts } = useQuery({
-    queryKey: ["products", "ads", user?.preferredCurrencyCode ?? "default"],
+    queryKey: ["products", "ads", activeCurrency],
     queryFn: async () => {
       try {
         return await productService.getAdProducts(3);
@@ -96,7 +98,7 @@ export default function Landing() {
   });
 
   const { data: adEvents } = useQuery({
-    queryKey: ["events", "ads", user?.preferredCurrencyCode ?? "default"],
+    queryKey: ["events", "ads", activeCurrency],
     queryFn: async () => {
       try {
         return await eventOrderService.getAdEvents(2);
@@ -111,7 +113,7 @@ export default function Landing() {
 
 
   const { data: adServices } = useQuery({
-    queryKey: ["services", "ads", user?.preferredCurrencyCode ?? "default"],
+    queryKey: ["services", "ads", activeCurrency],
     queryFn: async () => {
       try {
         return await serviceService.getAdServicePackages(2);

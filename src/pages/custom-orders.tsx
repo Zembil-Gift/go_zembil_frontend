@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { Search as SearchIcon, X } from "lucide-react";
 import { TemplateCard } from "./customer/CustomOrderTemplates";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 
 
 // Category icon mapping based on name
@@ -39,6 +40,7 @@ const getCategoryIcon = (categoryName: string) => {
 
 function CustomOrdersContent() {
   const { user, isInitialized } = useAuth();
+  const activeCurrency = useActiveCurrency();
 
   // State for "Why Choose" section visibility with localStorage persistence
   const [isFeaturesExpanded, setIsFeaturesExpanded] = useState(() => {
@@ -73,14 +75,14 @@ function CustomOrdersContent() {
   }, [searchTerm]);
 
   const { data: searchResults, isLoading: isSearching } = useQuery({
-    queryKey: ['custom-order-templates-search', debouncedSearchTerm, user?.preferredCurrencyCode ?? 'default'],
+    queryKey: ['custom-order-templates-search', debouncedSearchTerm, activeCurrency],
     queryFn: () => customOrderTemplateService.searchTemplates(debouncedSearchTerm, undefined, 0, 20),
     enabled: debouncedSearchTerm.length > 0 && isInitialized,
   });
 
   // Fetch categories with template counts from API (wait for auth so template prices have correct currency)
   const { data: categories, isLoading: isCategoriesLoading } = useQuery({
-    queryKey: ['custom-order-categories', user?.preferredCurrencyCode ?? 'default'],
+    queryKey: ['custom-order-categories', activeCurrency],
     queryFn: () => customOrderTemplateService.getCategoriesWithTemplates(),
     enabled: isInitialized,
   });

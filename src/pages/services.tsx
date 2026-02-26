@@ -35,6 +35,7 @@ import { CompactRating } from "@/components/reviews";
 import { DiscountBadge } from "@/components/DiscountBadge";
 import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 
 // Service Card Component with hover image effect
 function ServiceCard({ service }: { service: ServiceResponse }) {
@@ -243,6 +244,7 @@ export default function Services() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isInitialized } = useAuth();
+  const activeCurrency = useActiveCurrency();
 
   // Parse URL parameters
   const urlParams = new URLSearchParams(location.search);
@@ -284,7 +286,7 @@ export default function Services() {
       query: debouncedSearch,
       city: selectedCity,
       categoryId: selectedCategoryId,
-      currency: user?.preferredCurrencyCode ?? 'default',
+      currency: activeCurrency,
     }],
     queryFn: () => serviceService.getServices({
       page: currentPage,

@@ -40,12 +40,14 @@ import {
   TicketType
 } from '@/services/eventOrderService';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCurrency } from '@/hooks/useActiveCurrency';
 
 export default function EventDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isInitialized } = useAuth();
+  const activeCurrency = useActiveCurrency();
   
   // Ticket selection state - map of ticketTypeId to array of recipient info
   const [selectedTickets, setSelectedTickets] = useState<Map<number, TicketPurchaseItem[]>>(new Map());
@@ -59,7 +61,7 @@ export default function EventDetail() {
 
   // Fetch real event from API (by ID) - wait for auth so currency is correct
   const { data: apiEvent, isLoading: apiLoading } = useQuery({
-    queryKey: ['api-event', slug, user?.preferredCurrencyCode ?? 'default'],
+    queryKey: ['api-event', slug, activeCurrency],
     queryFn: () => eventOrderService.getEvent(Number(slug!)),
     enabled: !!slug && isNumericId && isInitialized,
   });

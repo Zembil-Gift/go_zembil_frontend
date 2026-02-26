@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useCartStore } from "@/stores/cart-store";
 import { 
   Heart, 
@@ -85,11 +86,12 @@ export default function ProductDetail() {
   
   const { toast } = useToast();
   const { user, isInitialized, isAuthenticated } = useAuth();
+  const activeCurrency = useActiveCurrency();
   const { addItem, openCart } = useCartStore();
   const queryClient = useQueryClient();
 
   const { data: product, isLoading } = useQuery<Product>({
-    queryKey: ["products", "detail", productId, user?.preferredCurrencyCode ?? "default"],
+    queryKey: ["products", "detail", productId, activeCurrency],
     queryFn: () => productService.getProductById(Number(productId)),
     enabled: !!productId && isInitialized,
   });

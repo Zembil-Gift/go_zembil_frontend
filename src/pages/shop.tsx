@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import FadeIn from "@/components/animations/FadeIn";
@@ -34,6 +35,7 @@ function ShopContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isInitialized } = useAuth();
+  const activeCurrency = useActiveCurrency();
 
   // Parse URL parameters
   const urlParams = new URLSearchParams(location.search);
@@ -103,7 +105,7 @@ function ShopContent() {
       categoryId: selectedCategoryId,
       subCategoryId: selectedSubCategoryId,
       sortBy,
-      currency: user?.preferredCurrencyCode ?? 'default',
+      currency: activeCurrency,
     }],
     queryFn: () => productService.getFilteredProducts({
       page: currentPage,

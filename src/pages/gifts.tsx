@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { motion } from "framer-motion";
 
 import GiftItemCard from "@/components/gift-card";
@@ -18,6 +19,7 @@ import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
 export default function Gifts() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, isInitialized } = useAuth();
+  const activeCurrency = useActiveCurrency();
   
   // Get path parameters
   const params = useParams<{ categorySlug?: string }>();
@@ -87,7 +89,7 @@ export default function Gifts() {
 
   // Fetch products from backend filter endpoint (wait for auth so currency is correct)
   const { data: initialData, isLoading, isFetching } = useQuery({
-    queryKey: ['gifts', 'products', baseFilterParams, finalRecipientParam, sortParam, priceParam, user?.preferredCurrencyCode ?? 'default'],
+    queryKey: ['gifts', 'products', baseFilterParams, finalRecipientParam, sortParam, priceParam, activeCurrency],
     queryFn: () => productService.getFilteredProducts(baseFilterParams),
     enabled: isInitialized && ((!categorySlug || !!currentCategory || !!currentSubCategory) && !!categoriesWithSubcategories.length),
   });

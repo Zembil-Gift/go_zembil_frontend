@@ -43,13 +43,14 @@ import {
 } from '@/types/events';
 import { eventOrderService, EventResponse } from '@/services/eventOrderService';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCurrency } from '@/hooks/useActiveCurrency';
 
 // Helper function for badge colors
 export default function Events() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isInitialized } = useAuth();
-  
+  const activeCurrency = useActiveCurrency();
   
   // Parse URL parameters for filters
   const urlParams = new URLSearchParams(location.search);
@@ -74,7 +75,7 @@ export default function Events() {
 
   // Fetch real events from API with currency conversion (wait for auth so currency is correct)
   const { data: realEventsData, isLoading: realEventsLoading, isFetching: eventsFetching } = useQuery({
-    queryKey: ['real-events', eventFilters, eventsPage, user?.preferredCurrencyCode ?? 'default'],
+    queryKey: ['real-events', eventFilters, eventsPage, activeCurrency],
     queryFn: async () => {
       try {
         // Try real API first - backend resolves currency from user session

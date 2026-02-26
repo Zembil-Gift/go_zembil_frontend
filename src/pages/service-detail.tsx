@@ -27,17 +27,19 @@ import { PriceWithDiscount } from '@/components/PriceWithDiscount';
 
 import { serviceService, PoliciesConfig, AvailabilityConfig } from '@/services/serviceService';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCurrency } from '@/hooks/useActiveCurrency';
 
 export default function ServiceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isInitialized } = useAuth();
+  const activeCurrency = useActiveCurrency();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
 
   const { data: service, isLoading, error } = useQuery({
-    queryKey: ['service', id, user?.preferredCurrencyCode ?? 'default'],
+    queryKey: ['service', id, activeCurrency],
     queryFn: () => id ? serviceService.getService(parseInt(id)) : null,
     enabled: !!id && isInitialized,
   });

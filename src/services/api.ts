@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { tokenManager } from './tokenManager';
+import { getGuestCurrencyCode } from '@/stores/currency-store';
 
 const CURRENCY_HEADER = 'X-Currency';
 
@@ -42,10 +43,16 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Send preferred currency when available so backend can use it for price conversion
+    // Send preferred currency so backend can convert prices.
+    // Priority: authenticated user preference > guest auto-detected currency
     const user = tokenManager.getUser();
     if (user?.preferredCurrencyCode) {
       config.headers[CURRENCY_HEADER] = user.preferredCurrencyCode;
+    } else {
+      const guestCurrency = getGuestCurrencyCode();
+      if (guestCurrency) {
+        config.headers[CURRENCY_HEADER] = guestCurrency;
+      }
     }
 
     return config;
