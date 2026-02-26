@@ -296,18 +296,18 @@ export default function AdminFeaturedAds() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="products" className="flex items-center gap-2">
+        <TabsList className="flex flex-wrap gap-1 w-full h-auto p-1">
+          <TabsTrigger value="products" className="flex items-center gap-2 whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             <Package className="h-4 w-4" />
             Product SKUs
             <Badge className="ml-1 bg-eagle-green text-white">{productSkus.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="events" className="flex items-center gap-2">
+          <TabsTrigger value="events" className="flex items-center gap-2 whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             <Calendar className="h-4 w-4" />
             Events
             <Badge className="ml-1 bg-eagle-green text-white">{events.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="services" className="flex items-center gap-2">
+          <TabsTrigger value="services" className="flex items-center gap-2 whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             <Briefcase className="h-4 w-4" />
             Service Packages
             <Badge className="ml-1 bg-eagle-green text-white">{servicePackages.length}</Badge>

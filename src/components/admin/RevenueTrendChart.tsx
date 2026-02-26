@@ -155,8 +155,10 @@ export function RevenueTrendChart({
             <Skeleton className="h-full w-full" />
           </div>
         ) : (
-          <ChartContainer config={chartConfig} className="h-[350px] w-full">
-            <ComposedChart
+          <div className="overflow-x-auto -mx-1 sm:mx-0">
+            <div className="min-w-[520px] sm:min-w-0 w-full">
+              <ChartContainer config={chartConfig} className="h-[350px] w-full">
+                <ComposedChart
               data={data?.data || []}
               margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
             >
@@ -323,8 +325,10 @@ export function RevenueTrendChart({
                   }}
                 />
               )}
-            </ComposedChart>
-          </ChartContainer>
+                </ComposedChart>
+              </ChartContainer>
+            </div>
+          </div>
         )}
         
         {/* Legend */}

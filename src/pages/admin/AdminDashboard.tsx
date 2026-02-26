@@ -451,7 +451,7 @@ export default function AdminDashboard() {
               ].filter(item => item.value > 0);
               
               return (
-                <div className="space-y-4">
+                <div className="space-y-4 w-full flex flex-col items-center">
                   <ChartContainer
                     config={{
                       pending: { label: 'Pending', color: '#FDCB2D' },
@@ -460,7 +460,7 @@ export default function AdminDashboard() {
                       delivered: { label: 'Delivered', color: '#11A0A0' },
                       cancelled: { label: 'Cancelled', color: '#E94E1B' },
                     } satisfies ChartConfig}
-                    className="h-[220px]"
+                    className="h-[220px] w-full max-w-full mx-auto"
                   >
                     <RechartsPieChart>
                       <ChartTooltip content={<ChartTooltipContent />} />
@@ -547,28 +547,34 @@ export default function AdminDashboard() {
                 { name: 'Confirmed/Paid', value: completed, fill: '#11A0A0' },
                 { name: 'Cancelled', value: cancelled, fill: '#E94E1B' },
               ].filter(item => item.value > 0);
+
+              const hasEventOrderData = eventOrderData.length > 0;
+              const displayEventOrderData = hasEventOrderData
+                ? eventOrderData
+                : [{ name: 'No orders', value: 1, fill: '#E5E7EB' }];
               
               return (
-                <div className="space-y-4">
+                <div className="space-y-4 w-full flex flex-col items-center">
                   <ChartContainer
                     config={{
                       pending: { label: 'Pending', color: '#FDCB2D' },
                       confirmed: { label: 'Confirmed/Paid', color: '#11A0A0' },
                       cancelled: { label: 'Cancelled', color: '#E94E1B' },
+                      'No orders': { label: 'No orders yet', color: '#E5E7EB' },
                     } satisfies ChartConfig}
-                    className="h-[220px]"
+                    className="h-[220px] w-full max-w-full mx-auto"
                   >
                     <RechartsPieChart>
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Pie
-                        data={eventOrderData}
+                        data={displayEventOrderData}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
                         cy="50%"
                         innerRadius={50}
                         outerRadius={80}
-                        paddingAngle={5}
+                        paddingAngle={hasEventOrderData ? 5 : 0}
                         cornerRadius={8}
                       >
                         <Label
@@ -632,7 +638,7 @@ export default function AdminDashboard() {
                     vendors: { label: 'Vendors', color: '#B2D55B' },
                     admins: { label: 'Admins', color: '#FDCB2D' },
                   } satisfies ChartConfig}
-                  className="h-[220px]"
+                  className="h-[220px] w-full max-w-full mx-auto"
                 >
                   <RechartsPieChart>
                     <ChartTooltip content={<ChartTooltipContent />} />
@@ -860,13 +866,13 @@ export default function AdminDashboard() {
 
       {/* Pending Products Section */}
       {pendingProducts.length > 0 && (
-        <Card className="mt-6">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
+        <Card className="mt-6 overflow-hidden">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="min-w-0">
               <CardTitle>Recent Pending Products</CardTitle>
               <CardDescription>Products waiting for your approval</CardDescription>
             </div>
-            <Link to="/admin/products">
+            <Link to="/admin/products" className="flex-shrink-0">
               <Button variant="ghost" size="sm">
                 View All <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
@@ -882,26 +888,26 @@ export default function AdminDashboard() {
                 {pendingProducts.slice(0, 5).map((product: any) => (
                   <div 
                     key={product.id} 
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
                       <img 
                         src={getProductImageUrl(product.images, product.cover)} 
                         alt={product.name}
-                        className="h-12 w-12 rounded-lg object-cover"
+                        className="h-12 w-12 rounded-lg object-cover flex-shrink-0"
                         onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
                       />
-                      <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center">
+                      <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center flex-shrink-0 hidden">
                         <Package className="h-6 w-6 text-blue-500" />
                       </div>
-                      <div>
-                        <h4 className="font-medium">{product.name}</h4>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-medium truncate">{product.name}</h4>
+                        <p className="text-sm text-muted-foreground truncate">
                           {product.vendorName || `Vendor #${product.vendorId}`} • {product.categoryName || 'Uncategorized'}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                       <Badge className="bg-amber-100 text-amber-800">Pending</Badge>
                       <Button 
                         size="sm" 

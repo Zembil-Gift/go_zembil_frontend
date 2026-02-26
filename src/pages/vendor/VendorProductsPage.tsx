@@ -25,6 +25,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
+import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
 
 export default function VendorProductsPage() {
   const { user, isAuthenticated } = useAuth();
@@ -212,30 +213,34 @@ export default function VendorProductsPage() {
         <div className="grid gap-4">
           {filteredProducts.map((product) => (
             <Card key={product.id}>
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="flex items-center space-x-4">
+              <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4">
+                <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
                   <img 
                     src={getProductImageUrl(product.images, product.cover)} 
                     alt={product.name} 
-                    className="h-16 w-16 rounded object-cover"
+                    className="h-16 w-16 rounded object-cover flex-shrink-0"
                     onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
                   />
                   <div className="h-16 w-16 rounded bg-gray-200 hidden items-center justify-center">
                     <Package className="h-8 w-8 text-gray-400" />
                   </div>
-                  <div>
-                    <h3 className="font-medium">{product.name}</h3>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-lg font-semibold sm:whitespace-normal">{product.name}</h3>
                     <p className="text-sm text-muted-foreground">{product.categoryName}</p>
                     <p className="text-xs text-muted-foreground">Subcategory: {getSubCategoryName(product)}</p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {getStatusBadge(product.status || '')}
                       {product.rejectionReason && (
-                        <span className="text-xs text-red-600">Reason: {product.rejectionReason}</span>
+                        <RejectionReasonWithModal
+                          reason={product.rejectionReason}
+                          title="Product rejection reason"
+                          truncateLength={50}
+                        />
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                   <Button asChild variant="outline" size="sm">
                     <Link to={`/vendor/products/${product.id}`}>View Details</Link>
                   </Button>

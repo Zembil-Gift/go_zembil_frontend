@@ -243,8 +243,8 @@ export default function VendorProductOrders() {
           }}
         >
           <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex gap-4 flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex gap-4 flex-1 min-w-0">
                 {/* Order Icon or First Product Image */}
                 {order.items[0]?.productImage ? (
                   <img 
@@ -283,13 +283,13 @@ export default function VendorProductOrders() {
                     Order #{order.orderNumber}
                   </h3>
                   
-                  <div className="flex items-center gap-4 text-sm text-eagle-green/70">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-eagle-green/70">
                     <span className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
+                      <User className="h-3 w-3 flex-shrink-0" />
                       {order.customerName || 'Customer'}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
+                      <Clock className="h-3 w-3 flex-shrink-0" />
                       {orderService.formatDate(order.createdAt)}
                     </span>
                   </div>
@@ -300,7 +300,7 @@ export default function VendorProductOrders() {
                 </div>
               </div>
               
-              <div className="text-right flex-shrink-0">
+              <div className="text-left sm:text-right flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-eagle-green/10">
                 <p className="font-bold text-eagle-green">
                   {orderService.formatPrice(order.vendorAmountMinor, order.currency)}
                 </p>
@@ -528,7 +528,7 @@ export default function VendorProductOrders() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-full overflow-x-hidden">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -536,9 +536,9 @@ export default function VendorProductOrders() {
           transition={{ duration: 0.6 }}
           className="mb-6"
         >
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-eagle-green mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-eagle-green mb-1 truncate">
                 Product Orders
               </h1>
               <p className="font-light text-eagle-green/70">
@@ -587,8 +587,8 @@ export default function VendorProductOrders() {
         {/* Filters */}
         <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex-1 min-w-[200px]">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4">
+              <div className="flex-1 min-w-0 w-full sm:min-w-[200px]">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                   <Input
@@ -600,7 +600,7 @@ export default function VendorProductOrders() {
                 </div>
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -620,20 +620,20 @@ export default function VendorProductOrders() {
 
         {/* Orders Tabs */}
         <Tabs defaultValue="pending" className="space-y-4">
-          <TabsList className="bg-eagle-green/5 p-1 rounded-lg grid grid-cols-5 w-full">
-            <TabsTrigger value="pending" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white">
+          <TabsList className="bg-eagle-green/5 p-1 rounded-lg flex flex-wrap gap-1 w-full h-auto">
+            <TabsTrigger value="pending" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
               New Orders ({pendingOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="processing" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white">
+            <TabsTrigger value="processing" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
               Processing ({processingOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="shipped" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white">
+            <TabsTrigger value="shipped" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
               Shipped ({shippedOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="awaiting" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white">
+            <TabsTrigger value="awaiting" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
               Awaiting Confirmation ({awaitingConfirmationOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="completed" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white">
+            <TabsTrigger value="completed" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
               Completed ({completedOrders.length})
             </TabsTrigger>
           </TabsList>
@@ -681,7 +681,7 @@ export default function VendorProductOrders() {
 
         {/* Order Detail Dialog */}
         <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white">
+          <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto bg-white p-4 sm:p-6">
             {selectedOrder && (
               <>
                 <DialogHeader>
@@ -729,7 +729,7 @@ export default function VendorProductOrders() {
                       <p className="text-sm text-purple-700 mb-4">
                         This order has been placed and paid. Please review and accept or reject the order.
                       </p>
-                      <div className="flex gap-3">
+                      <div className="flex flex-col sm:flex-row gap-3">
                         <Button
                           onClick={() => acceptOrderMutation.mutate(selectedOrder.orderId)}
                           disabled={acceptOrderMutation.isPending}
@@ -880,28 +880,30 @@ export default function VendorProductOrders() {
                     <h4 className="font-bold text-eagle-green mb-3">Order Items</h4>
                     <div className="space-y-3">
                       {selectedOrder.items.map((item, index) => (
-                        <div key={index} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
-                          {item.productImage ? (
-                            <img 
-                              src={item.productImage} 
-                              alt={item.productName}
-                              className="w-16 h-16 rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="w-16 h-16 rounded-lg bg-eagle-green/10 flex items-center justify-center">
-                              <Package className="h-6 w-6 text-eagle-green/50" />
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <h5 className="font-medium text-eagle-green">{item.productName}</h5>
-                            {item.skuCode && (
-                              <p className="text-xs text-eagle-green/60">SKU: {item.skuCode}</p>
+                        <div key={index} className="flex flex-col sm:flex-row gap-4 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex gap-3 sm:gap-4 flex-1 min-w-0">
+                            {item.productImage ? (
+                              <img 
+                                src={item.productImage} 
+                                alt={item.productName}
+                                className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-lg bg-eagle-green/10 flex items-center justify-center flex-shrink-0">
+                                <Package className="h-6 w-6 text-eagle-green/50" />
+                              </div>
                             )}
-                            <p className="text-sm text-eagle-green/70 mt-1">
-                              Qty: {item.quantity} × {orderService.formatPrice(item.unitAmountMinor, item.currency)}
-                            </p>
+                            <div className="flex-1 min-w-0">
+                              <h5 className="font-medium text-eagle-green">{item.productName}</h5>
+                              {item.skuCode && (
+                                <p className="text-xs text-eagle-green/60">SKU: {item.skuCode}</p>
+                              )}
+                              <p className="text-sm text-eagle-green/70 mt-1">
+                                Qty: {item.quantity} × {orderService.formatPrice(item.unitAmountMinor, item.currency)}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-right">
+                          <div className="text-left sm:text-right flex-shrink-0">
                             <p className="font-medium text-eagle-green">
                               {orderService.formatPrice(item.totalAmountMinor, item.currency)}
                             </p>

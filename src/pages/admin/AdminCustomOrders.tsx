@@ -256,7 +256,7 @@ export default function AdminCustomOrders() {
           {selectedOrder && (
             <div className="space-y-6">
               {/* Order Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm text-gray-500">Order Number</Label>
                   <p className="font-medium">#{selectedOrder.orderNumber}</p>
@@ -285,7 +285,7 @@ export default function AdminCustomOrders() {
               </div>
 
               {/* Template & Price */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm text-gray-500">Template</Label>
                   <p className="font-medium">{selectedOrder.templateName}</p>

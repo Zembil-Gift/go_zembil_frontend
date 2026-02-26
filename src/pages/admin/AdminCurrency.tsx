@@ -314,9 +314,6 @@ export default function AdminCurrency() {
           <TabsTrigger value="currencies">Currencies</TabsTrigger>
           <TabsTrigger value="exchange-rates" className="relative">
             Exchange Rates
-            {exchangeRates.length > 0 && (
-              <Badge className="ml-2 bg-purple-500 text-white">{exchangeRates.length}</Badge>
-            )}
           </TabsTrigger>
         </TabsList>
 
@@ -424,7 +421,6 @@ export default function AdminCurrency() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <ArrowRightLeft className="h-5 w-5 text-purple-500" />
                   Exchange Rates
                 </CardTitle>
                 <CardDescription>Manage currency exchange rates</CardDescription>
@@ -489,9 +485,14 @@ export default function AdminCurrency() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary" className="text-xs">
-                              {rate.provider || 'N/A'}
-                            </Badge>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="secondary" className="text-xs">
+                                {rate.provider === 'ADMIN_MANUAL_INVERSE' ? 'Auto Inverse' : (rate.provider || 'N/A')}
+                              </Badge>
+                              {rate.provider === 'ADMIN_MANUAL_INVERSE' && (
+                                <ArrowRightLeft className="h-3 w-3 text-blue-500" />
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {rate.timestamp ? new Date(rate.timestamp).toLocaleString() : 'N/A'}
@@ -576,10 +577,17 @@ export default function AdminCurrency() {
                 onChange={(e) => setRateForm({ ...rateForm, rate: e.target.value })}
                 placeholder="e.g., 80.00"
               />
-              {rateForm.baseCurrencyCode && rateForm.targetCurrencyCode && rateForm.rate && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  1 {rateForm.baseCurrencyCode} = {parseFloat(rateForm.rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} {rateForm.targetCurrencyCode}
-                </p>
+              {rateForm.baseCurrencyCode && rateForm.targetCurrencyCode && rateForm.rate && parseFloat(rateForm.rate) > 0 && (
+                <div className="mt-2 space-y-1">
+                  <p className="text-sm text-muted-foreground">
+                    1 {rateForm.baseCurrencyCode} = {parseFloat(rateForm.rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} {rateForm.targetCurrencyCode}
+                  </p>
+                  <p className="text-sm text-blue-600 flex items-center gap-1">
+                    <ArrowRightLeft className="h-3 w-3" />
+                    Inverse: 1 {rateForm.targetCurrencyCode} = {(1 / parseFloat(rateForm.rate)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })} {rateForm.baseCurrencyCode}
+                    <span className="text-xs text-muted-foreground">(auto-saved)</span>
+                  </p>
+                </div>
               )}
             </div>
           </div>

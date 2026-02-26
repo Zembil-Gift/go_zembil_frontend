@@ -38,6 +38,7 @@ import {
   Ticket
 } from 'lucide-react';
 import { adminService } from '@/services/adminService';
+import { RejectionReasonWithModal } from '@/components/RejectionReasonModal';
 
 export default function AdminEvents() {
   const [activeTab, setActiveTab] = useState('all');
@@ -248,20 +249,20 @@ export default function AdminEvents() {
       description="Review and manage events and price update requests"
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="all" className="relative">
+        <TabsList className="flex flex-wrap gap-1 w-full h-auto p-1">
+          <TabsTrigger value="all" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             All Events
             {allEventsData && (
               <Badge className="ml-2 bg-eagle-green text-white">{allEventsData.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="pending" className="relative">
+          <TabsTrigger value="pending" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             Pending Events
             {pendingEvents.length > 0 && (
               <Badge className="ml-2 bg-amber-500 text-white">{pendingEvents.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="price-requests" className="relative">
+          <TabsTrigger value="price-requests" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             Price Update Requests
             {pendingPriceRequests.length > 0 && (
               <Badge className="ml-2 bg-blue-500 text-white">{pendingPriceRequests.length}</Badge>
@@ -643,7 +644,7 @@ export default function AdminEvents() {
               </div>
 
               {/* Event Info Grid */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-gray-500 mb-1">Location</p>
                   <p className="font-medium flex items-center">
@@ -739,7 +740,12 @@ export default function AdminEvents() {
               {selectedEvent.status === 'REJECTED' && selectedEvent.rejectionReason && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-sm font-medium text-red-800 mb-1">Rejection Reason</p>
-                  <p className="text-sm text-red-700">{selectedEvent.rejectionReason}</p>
+                  <RejectionReasonWithModal
+                    reason={selectedEvent.rejectionReason}
+                    title="Event rejection reason"
+                    className="text-sm text-red-700"
+                    truncateLength={120}
+                  />
                 </div>
               )}
             </div>

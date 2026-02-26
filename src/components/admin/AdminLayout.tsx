@@ -11,7 +11,6 @@ import {
   Layers,
   Package,
   ChevronRight,
-  Shield,
   DollarSign,
   Receipt,
   Truck,
@@ -40,6 +39,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import GoGeramiLogo from '@/components/GoGeramiLogo';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -70,7 +70,7 @@ const navItems = [
 
 // Super admin only items
 const superAdminNavItems = [
-  { href: '/admin/roles', label: 'Roles', icon: Shield },
+  { href: '/admin/roles', label: 'Roles' },
   { href: '/admin/permissions', label: 'Permissions', icon: Key },
 ];
 
@@ -107,35 +107,39 @@ export default function AdminLayout({ children, title, description, hideHeader =
     : navItems;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F6F8]">
       {/* Mobile Header */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-eagle-green border-b border-white/10 z-50 lg:hidden">
-        <div className="flex items-center justify-between h-full px-4">
+      <div className="fixed top-0 left-0 right-0 h-16 bg-eagle-green shadow-lg z-50 lg:hidden">
+        <div className="flex items-center justify-between h-full px-4 pt-5">
           <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-june-bud" />
-            <span className="text-lg font-bold text-white">Admin Panel</span>
+            <GoGeramiLogo 
+              variant="icon" 
+              size="md" 
+              imagePath="/attached_assets/go-gerami.png"
+              className="h-10 w-auto"
+            />
+            <span className="text-lg font-semibold text-white tracking-tight">Admin Panel</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {/* Mobile User Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-june-bud text-eagle-green text-xs">
+                <Button variant="ghost" size="icon" className="text-white/90 hover:bg-white/15 rounded-full transition-colors">
+                  <Avatar className="h-8 w-8 ring-2 ring-white/20">
+                    <AvatarFallback className="bg-june-bud text-eagle-green text-xs font-medium">
                       {user?.firstName?.[0]}{user?.lastName?.[0]}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{user?.firstName} {user?.lastName}</span>
-                    <span className="text-xs text-muted-foreground">Administrator</span>
+              <DropdownMenuContent align="end" className="w-56 shadow-xl border-0" sideOffset={8}>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium text-foreground">{user?.firstName} {user?.lastName}</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
@@ -146,9 +150,9 @@ export default function AdminLayout({ children, title, description, hideHeader =
               variant="ghost" 
               size="icon" 
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-white hover:bg-white/10"
+              className="text-white/90 hover:bg-white/15 rounded-lg transition-colors"
             >
-              {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
         </div>
@@ -157,7 +161,7 @@ export default function AdminLayout({ children, title, description, hideHeader =
       {/* Backdrop for mobile sidebar */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-opacity"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -165,30 +169,32 @@ export default function AdminLayout({ children, title, description, hideHeader =
       {/* Sidebar */}
       <aside 
         className={cn(
-          "fixed top-16 lg:top-0 left-0 bottom-0 w-64 bg-eagle-green z-40 transition-transform duration-300 ease-in-out overflow-y-auto",
+          "fixed top-16 lg:top-0 left-0 bottom-0 w-[17rem] z-40 transition-transform duration-300 ease-in-out overflow-y-auto scrollbar-thin",
+          "bg-gradient-to-b from-eagle-green via-eagle-green to-[#013347] shadow-xl",
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         <div className="flex flex-col h-full">
           {/* Desktop Logo */}
-          <div className="hidden lg:flex items-center h-16 px-4 bg-eagle-green/90 border-b border-white/10">
-            <Shield className="h-6 w-6 text-june-bud mr-2" />
-            <span className="text-xl font-bold text-white">Admin Panel</span>
+          <div className="hidden lg:flex items-center gap-3 pt-6 pb-4 px-5 border-b border-white/10">
+            <GoGeramiLogo 
+              variant="icon" 
+              size="lg" 
+              imagePath="/attached_assets/go-gerami.png"
+              className="h-9 w-auto brightness-0 invert opacity-90"
+            />
+            <div>
+              <span className="text-lg font-semibold text-white tracking-tight block">Admin Panel</span>
+            </div>
           </div>
           
           {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-1">
+          <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
             {allNavItems.map((item) => {
               const isActive = location.pathname === item.href || 
                 (item.href !== '/admin' && location.pathname.startsWith(item.href) && location.pathname !== '/admin/delivery-confirmations');
               
-              // Better active check needed if we have overlapping prefixes
-              // e.g. /admin/delivery vs /admin/delivery-confirmations
-              
-              // Check if this is a super admin only item
               const isSuperAdminItem = superAdminNavItems.some(i => i.href === item.href);
-              
-              // Show badge for Services if there are pending packages
               const showPendingPackagesBadge = item.href === '/admin/services' && pendingPackagesCount > 0;
               
               return (
@@ -197,52 +203,50 @@ export default function AdminLayout({ children, title, description, hideHeader =
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    'flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all',
+                    'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200',
                     isActive 
-                      ? 'bg-june-bud text-eagle-green shadow-lg' 
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                      ? 'bg-june-bud text-eagle-green shadow-md shadow-june-bud/25' 
+                      : 'text-white/85 hover:bg-white/10 hover:text-white'
                   )}
                 >
-                  <item.icon className="h-5 w-5 mr-3 flex-shrink-0" />
-                  <span className="flex-1">{item.label}</span>
+                  <span className="flex-1 truncate">{item.label}</span>
                   {showPendingPackagesBadge && (
-                    <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1.5 text-xs">
+                    <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1.5 text-xs font-semibold shrink-0">
                       {pendingPackagesCount}
                     </Badge>
                   )}
                   {isSuperAdminItem && !isActive && (
-                    <Badge variant="outline" className="text-xs border-purple-400 text-purple-300">
+                    <Badge variant="outline" className="text-[10px] border-white/30 text-white/70 bg-white/5 shrink-0">
                       Super
                     </Badge>
                   )}
-                  {isActive && <ChevronRight className="h-4 w-4 flex-shrink-0" />}
+                  {isActive && <ChevronRight className="h-4 w-4 flex-shrink-0 text-eagle-green" />}
                 </Link>
               );
             })}
           </nav>
 
           {/* Desktop User Profile Dropdown */}
-          <div className="hidden lg:block p-4 border-t border-white/10">
+          <div className="hidden lg:block p-4 border-t border-white/10 bg-white/[0.03]">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start gap-3 h-auto py-2 text-white hover:bg-white/10 hover:text-white">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-june-bud text-eagle-green">
+                <Button variant="ghost" className="w-full justify-start gap-3 h-auto py-3 px-3 text-white hover:bg-white/10 rounded-xl transition-colors">
+                  <Avatar className="h-9 w-9 ring-2 ring-white/20">
+                    <AvatarFallback className="bg-june-bud/90 text-eagle-green font-medium">
                       {user?.firstName?.[0]}{user?.lastName?.[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col items-start flex-1 min-w-0">
-                    <span className="text-sm text-start font-medium truncate w-full">
+                  <div className="flex flex-col items-start flex-1 min-w-0 text-left">
+                    <span className="text-sm font-medium truncate w-full">
                       {user?.firstName} {user?.lastName}
                     </span>
-                    <span className="text-xs text-white/70">Administrator</span>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuContent align="start" side="top" className="w-56 shadow-xl border-0" sideOffset={8}>
+                <DropdownMenuLabel className="font-normal">My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
@@ -253,21 +257,21 @@ export default function AdminLayout({ children, title, description, hideHeader =
       </aside>
 
       {/* Main content */}
-      <div className="pt-16 lg:pt-0 lg:pl-64 min-h-screen">
+      <div className="pt-16 lg:pt-0 lg:pl-[17rem] min-h-screen">
         {/* Page content */}
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="p-4 sm:p-6 lg:p-8 min-h-screen">
           {/* Page header */}
           {!hideHeader && title && (
-            <div className="mb-6">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-eagle-green">{title}</h1>
+            <header className="mb-8">
+              <h1 className="text-2xl sm:text-3xl font-bold text-eagle-green tracking-tight">{title}</h1>
               {description && (
-                <p className="mt-1 text-sm sm:text-base text-gray-600">{description}</p>
+                <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-2xl">{description}</p>
               )}
-            </div>
+            </header>
           )}
 
           {/* Content */}
-          <div className="w-full">
+          <div className="w-full max-w-full overflow-x-hidden">
             {children}
           </div>
         </main>

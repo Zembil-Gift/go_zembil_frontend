@@ -373,16 +373,16 @@ export default function AdminTax() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="zones" className="flex items-center gap-2">
+        <TabsList className="mb-4 flex flex-wrap gap-1 w-full h-auto p-1">
+          <TabsTrigger value="zones" className="flex items-center gap-2 whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             <MapPin className="h-4 w-4" />
             Tax Zones
           </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2">
+          <TabsTrigger value="categories" className="flex items-center gap-2 whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             <Tag className="h-4 w-4" />
             Categories
           </TabsTrigger>
-          <TabsTrigger value="rates" className="flex items-center gap-2">
+          <TabsTrigger value="rates" className="flex items-center gap-2 whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             <Percent className="h-4 w-4" />
             Rates
           </TabsTrigger>

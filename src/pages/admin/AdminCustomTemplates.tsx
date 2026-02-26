@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { customOrderTemplateService } from '@/services/customOrderTemplateService';
 import type { CustomOrderTemplate, CustomOrderTemplateStatus } from '@/types/customOrders';
+import { RejectionReasonWithModal } from '@/components/RejectionReasonModal';
 
 export default function AdminCustomTemplates() {
   const queryClient = useQueryClient();
@@ -156,12 +157,12 @@ export default function AdminCustomTemplates() {
       description="Review and manage vendor custom order templates"
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="pending" className="flex items-center gap-2">
+        <TabsList className="flex flex-wrap gap-1 w-full h-auto p-1">
+          <TabsTrigger value="pending" className="flex items-center gap-2 whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             <Clock className="h-4 w-4" />
             Pending ({pendingTemplates.length})
           </TabsTrigger>
-          <TabsTrigger value="all" className="flex items-center gap-2">
+          <TabsTrigger value="all" className="flex items-center gap-2 whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             <FileText className="h-4 w-4" />
             All Templates ({allTemplates.length})
           </TabsTrigger>
@@ -398,7 +399,7 @@ export default function AdminCustomTemplates() {
                   <p className="text-gray-700">{selectedTemplate.description || 'No description provided'}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm text-gray-500">Vendor</Label>
                     <p className="font-medium">{selectedTemplate.vendorName}</p>
@@ -409,7 +410,7 @@ export default function AdminCustomTemplates() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm text-gray-500">Base Price</Label>
                     <p className="font-medium text-lg text-green-600">
@@ -463,7 +464,7 @@ export default function AdminCustomTemplates() {
                   <Label className="text-sm text-gray-500 mb-2 block">
                     Template Images ({selectedTemplate.images.length})
                   </Label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {selectedTemplate.images.map((image) => (
                       <img
                         key={image.id}
@@ -473,6 +474,19 @@ export default function AdminCustomTemplates() {
                       />
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Rejection Reason (when template is rejected) */}
+              {selectedTemplate.status === 'REJECTED' && selectedTemplate.rejectionReason && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-red-800 mb-1">Rejection Reason</p>
+                  <RejectionReasonWithModal
+                    reason={selectedTemplate.rejectionReason}
+                    title="Custom order template rejection reason"
+                    className="text-sm text-red-700"
+                    truncateLength={120}
+                  />
                 </div>
               )}
             </div>

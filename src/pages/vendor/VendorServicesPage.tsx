@@ -140,25 +140,25 @@ export default function VendorServicesPage() {
         <div className="grid gap-4">
           {filteredServices.map((service: ServiceResponse) => (
             <Card key={service.id}>
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="flex items-center space-x-4">
+              <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4">
+                <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
                   {service.primaryImageUrl ? (
                     <img 
                       src={service.primaryImageUrl} 
                       alt={service.title} 
-                      className="h-12 w-12 rounded object-cover"
+                      className="h-12 w-12 rounded object-cover flex-shrink-0"
                     />
                   ) : (
                     <div className="h-12 w-12 rounded bg-eagle-green/10 flex items-center justify-center">
                       <Briefcase className="h-6 w-6 text-eagle-green" />
                     </div>
                   )}
-                  <div>
-                    <p className="font-medium">{service.title}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate sm:whitespace-normal">{service.title}</p>
                     <p className="text-sm text-muted-foreground">{service.city}</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                   {getStatusBadge(service.status)}
                   <span className="font-medium">
                     {serviceService.formatPrice(service.defaultPackage?.basePrice ?? service.basePrice ?? 0, service.defaultPackage?.currency ?? service.currency)}

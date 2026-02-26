@@ -44,6 +44,7 @@ import { adminService, ServicePriceUpdateRequestDto, ServiceCategoryChangeReques
 import { apiService } from '@/services/apiService';
 import { Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { RejectionReasonWithModal } from '@/components/RejectionReasonModal';
 
 export default function AdminServices() {
   const queryClient = useQueryClient();
@@ -332,32 +333,32 @@ export default function AdminServices() {
       description="Manage vendor services and approval requests"
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="all" className="relative">
+        <TabsList className="flex flex-wrap gap-1 w-full h-auto p-1">
+          <TabsTrigger value="all" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             All Services
             {allServices.length > 0 && (
               <Badge className="ml-2 bg-eagle-green text-white">{allServices.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="pending" className="relative">
+          <TabsTrigger value="pending" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             Pending Approval
             {pendingServices.length > 0 && (
               <Badge className="ml-2 bg-amber-500 text-white">{pendingServices.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="price-requests" className="relative">
+          <TabsTrigger value="price-requests" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             Price Update Requests
             {pendingPriceRequests.length > 0 && (
               <Badge className="ml-2 bg-blue-500 text-white">{pendingPriceRequests.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="category-requests" className="relative">
+          <TabsTrigger value="category-requests" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             Category Change Requests
             {pendingCategoryRequests.length > 0 && (
               <Badge className="ml-2 bg-purple-500 text-white">{pendingCategoryRequests.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="packages" className="relative">
+          <TabsTrigger value="packages" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             Package Approvals
             {pendingPackages.length > 0 && (
               <Badge className="ml-2 bg-orange-500 text-white">{pendingPackages.length}</Badge>
@@ -715,9 +716,12 @@ export default function AdminServices() {
                               </div>
                             )}
                             {request.status !== 'PENDING' && request.rejectionReason && (
-                              <p className="text-xs text-red-600 max-w-[150px] truncate" title={request.rejectionReason}>
-                                {request.rejectionReason}
-                              </p>
+                              <RejectionReasonWithModal
+                                reason={request.rejectionReason}
+                                title="Price update rejection reason"
+                                className="max-w-[200px]"
+                                truncateLength={60}
+                              />
                             )}
                           </TableCell>
                         </TableRow>
@@ -951,9 +955,12 @@ export default function AdminServices() {
                               </div>
                             )}
                             {request.status !== 'PENDING' && request.rejectionReason && (
-                              <p className="text-xs text-red-600 max-w-[150px] truncate" title={request.rejectionReason}>
-                                {request.rejectionReason}
-                              </p>
+                              <RejectionReasonWithModal
+                                reason={request.rejectionReason}
+                                title="Category change rejection reason"
+                                className="max-w-[200px]"
+                                truncateLength={60}
+                              />
                             )}
                           </TableCell>
                         </TableRow>
@@ -1004,7 +1011,7 @@ export default function AdminServices() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Vendor:</span>
                   <p className="font-medium">{selectedService.vendorName || `Vendor #${selectedService.vendorId}`}</p>
@@ -1074,8 +1081,13 @@ export default function AdminServices() {
 
               {selectedService.rejectionReason && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <span className="text-sm font-medium text-red-800">Rejection Reason:</span>
-                  <p className="mt-1 text-sm text-red-700">{selectedService.rejectionReason}</p>
+                  <span className="text-sm font-medium text-red-800">Rejection Reason: </span>
+                  <RejectionReasonWithModal
+                    reason={selectedService.rejectionReason}
+                    title="Service rejection reason"
+                    className="mt-1"
+                    truncateLength={120}
+                  />
                 </div>
               )}
             </div>

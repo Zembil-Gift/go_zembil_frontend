@@ -47,6 +47,7 @@ import {
 import { adminService } from '@/services/adminService';
 import { vendorTermsService, VendorTermsAcceptanceResponse } from '@/services/vendorTermsService';
 import { certificateService, CertificateResponse } from '@/services/certificateService';
+import { RejectionReasonModal, RejectionReasonWithModal } from '@/components/RejectionReasonModal';
 
 export default function AdminVendors() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,6 +62,7 @@ export default function AdminVendors() {
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [actionVendor, setActionVendor] = useState<any>(null);
   const [declineReason, setDeclineReason] = useState('');
+  const [rejectionModal, setRejectionModal] = useState<{ open: boolean; reason: string; title: string }>({ open: false, reason: '', title: '' });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -309,10 +311,23 @@ export default function AdminVendors() {
                           Approved
                         </Badge>
                       ) : vendor.isActive === false ? (
-                        <Badge className="bg-red-100 text-red-800" title={vendor.rejectionReason || 'Vendor rejected'}>
-                          <XCircle className="h-3 w-3 mr-1" />
-                          Rejected
-                        </Badge>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <Badge className="bg-red-100 text-red-800">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Rejected
+                          </Badge>
+                          {vendor.rejectionReason && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRejectionModal({ open: true, reason: vendor.rejectionReason!, title: 'Vendor rejection reason' });
+                              }}
+                              className="text-xs text-red-700 underline hover:no-underline"
+                            >
+                              View reason
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <Badge className="bg-amber-100 text-amber-800">
                           <Clock className="h-3 w-3 mr-1" />
@@ -458,11 +473,11 @@ export default function AdminVendors() {
             </div>
           ) : vendorDetail && (
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="info">Information</TabsTrigger>
-                <TabsTrigger value="terms">Terms</TabsTrigger>
-                <TabsTrigger value="certificate">Certificate</TabsTrigger>
-                <TabsTrigger value="payout">Payout</TabsTrigger>
+              <TabsList className="flex flex-wrap gap-1 w-full h-auto p-1">
+                <TabsTrigger value="info" className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">Information</TabsTrigger>
+                <TabsTrigger value="terms" className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">Terms</TabsTrigger>
+                <TabsTrigger value="certificate" className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">Certificate</TabsTrigger>
+                <TabsTrigger value="payout" className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">Payout</TabsTrigger>
               </TabsList>
               
               {/* Information Tab */}
@@ -536,7 +551,7 @@ export default function AdminVendors() {
                 )}
 
                 {/* Timestamps */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                     <Clock className="h-4 w-4 text-gray-500" />
                     <div>
@@ -558,7 +573,12 @@ export default function AdminVendors() {
                 {vendorDetail.rejectionReason && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-xs text-red-700 uppercase font-medium">Rejection Reason</p>
-                    <p className="text-sm text-red-800 mt-1">{vendorDetail.rejectionReason}</p>
+                    <RejectionReasonWithModal
+                      reason={vendorDetail.rejectionReason}
+                      title="Vendor rejection reason"
+                      className="text-sm text-red-800 mt-1"
+                      truncateLength={120}
+                    />
                     {vendorDetail.rejectedAt && (
                       <p className="text-xs text-red-700 mt-2">
                         Rejected on {new Date(vendorDetail.rejectedAt).toLocaleString()}
@@ -701,7 +721,7 @@ export default function AdminVendors() {
                         </p>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="p-3 bg-gray-50 rounded-lg border">
                           <p className="text-xs text-gray-500">Full Name</p>
                           <p className="text-sm font-medium">{vendorCertificate.fullName}</p>
@@ -712,7 +732,7 @@ export default function AdminVendors() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="p-3 bg-gray-50 rounded-lg border">
                           <p className="text-xs text-gray-500">Vendor Type</p>
                           <p className="text-sm font-medium">{vendorCertificate.vendorType}</p>
@@ -725,7 +745,7 @@ export default function AdminVendors() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="p-3 bg-gray-50 rounded-lg border">
                           <p className="text-xs text-gray-500">Issued At</p>
                           <p className="text-sm font-medium">
@@ -981,6 +1001,13 @@ export default function AdminVendors() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <RejectionReasonModal
+        open={rejectionModal.open}
+        onOpenChange={(open) => setRejectionModal((m) => ({ ...m, open }))}
+        reason={rejectionModal.reason}
+        title={rejectionModal.title}
+      />
     </AdminLayout>
   );
 }

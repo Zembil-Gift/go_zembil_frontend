@@ -195,7 +195,7 @@ export default function AdminDeliveryPersonnel() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Total Personnel</p>
-                  <p className="text-2xl font-bold">{persons.length}</p>
+                  <p className="text-xl font-bold">{persons.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -208,7 +208,7 @@ export default function AdminDeliveryPersonnel() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Available</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-xl font-bold">
                     {persons.filter(p => p.status === 'AVAILABLE' && p.active).length}
                   </p>
                 </div>

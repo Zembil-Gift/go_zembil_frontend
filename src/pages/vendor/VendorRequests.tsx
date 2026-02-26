@@ -49,6 +49,7 @@ import {
   ShoppingBag,
   Eye,
 } from "lucide-react";
+import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
 
 interface Currency {
   id: number;
@@ -438,7 +439,7 @@ export default function VendorRequests() {
 
     return (
       <div key={request.id} className="border rounded-lg p-4 bg-white">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             {request.entityImageUrl && (
               <img
@@ -487,7 +488,7 @@ export default function VendorRequests() {
           </div>
 
           {canEdit && (
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex flex-wrap gap-2 flex-shrink-0 sm:flex-nowrap">
               <Button
                 variant="outline"
                 size="sm"
@@ -515,9 +516,14 @@ export default function VendorRequests() {
           <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                <p className="text-sm text-red-700">{request.rejectionReason}</p>
+                <RejectionReasonWithModal
+                  reason={request.rejectionReason}
+                  title="Request rejection reason"
+                  className="text-sm text-red-700"
+                  truncateLength={100}
+                />
               </div>
             </div>
           </div>

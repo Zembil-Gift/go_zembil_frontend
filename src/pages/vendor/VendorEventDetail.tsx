@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   CheckCircle,
 } from 'lucide-react';
+import { RejectionReasonWithModal } from '@/components/RejectionReasonModal';
 
 export default function VendorEventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -115,9 +116,14 @@ export default function VendorEventDetail() {
           <CardContent className="pt-6">
             <div className="flex gap-3">
               <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
+              <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-red-900">Rejection Reason</h3>
-                <p className="text-red-700 mt-1">{event.rejectionReason}</p>
+                <RejectionReasonWithModal
+                  reason={event.rejectionReason}
+                  title="Event rejection reason"
+                  className="text-red-700 mt-1"
+                  truncateLength={120}
+                />
               </div>
             </div>
           </CardContent>

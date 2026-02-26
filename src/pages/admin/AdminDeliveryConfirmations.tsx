@@ -193,7 +193,7 @@ export default function AdminDeliveryConfirmations() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Delivery Confirmations</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Delivery Confirmations</h1>
           <p className="text-gray-500 mt-1">Review delivery proof images and confirm deliveries to recognize revenue</p>
         </div>
         <Button onClick={() => refetch()} variant="outline">
@@ -208,7 +208,7 @@ export default function AdminDeliveryConfirmations() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Pending Review</p>
-                  <p className="text-2xl font-bold">{filteredOrders.length}</p>
+                  <p className="text-xl font-bold">{filteredOrders.length}</p>
                 </div>
               </div>
 

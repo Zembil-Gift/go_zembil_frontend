@@ -132,8 +132,8 @@ export default function VendorCustomOrders() {
           onClick={() => navigate(`/vendor/custom-orders/${order.id}`)}
         >
           <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex gap-4 flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex gap-4 flex-1 min-w-0">
                 {/* Order Icon */}
                 <div className="w-16 h-16 rounded-lg bg-eagle-green/10 flex items-center justify-center flex-shrink-0">
                   <Package className="h-6 w-6 text-eagle-green/50" />
@@ -166,20 +166,20 @@ export default function VendorCustomOrders() {
                     Order #{order.orderNumber}
                   </p>
                   
-                  <div className="flex items-center gap-4 text-sm text-eagle-green/70">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-eagle-green/70">
                     <span className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
+                      <User className="h-3 w-3 flex-shrink-0" />
                       {order.customerName}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
+                      <Clock className="h-3 w-3 flex-shrink-0" />
                       {new Date(order.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
               </div>
               
-              <div className="text-right flex-shrink-0">
+              <div className="text-left sm:text-right flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-eagle-green/10">
                 <p className="font-bold text-eagle-green">
                   {order.finalVendorPrice || order.finalVendorPriceMinor 
                     ? customOrderService.formatPrice(order.finalVendorPrice ?? 0, order.currencyCode)
@@ -294,7 +294,7 @@ export default function VendorCustomOrders() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-full overflow-x-hidden">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -302,9 +302,9 @@ export default function VendorCustomOrders() {
           transition={{ duration: 0.6 }}
           className="mb-6"
         >
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-eagle-green mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-eagle-green mb-1 truncate">
                 Custom Orders
               </h1>
               <p className="font-light text-eagle-green/70">
@@ -383,8 +383,8 @@ export default function VendorCustomOrders() {
         {/* Filters */}
         <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex-1 min-w-[200px]">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4">
+              <div className="flex-1 min-w-0 w-full sm:min-w-[200px]">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                   <Input
@@ -396,7 +396,7 @@ export default function VendorCustomOrders() {
                 </div>
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -436,7 +436,7 @@ export default function VendorCustomOrders() {
           </div>
         ) : (
           <Tabs defaultValue="new" className="space-y-6">
-            <TabsList className="bg-june-bud/10 p-1 flex-wrap">
+            <TabsList className="bg-june-bud/10 p-1 flex flex-wrap gap-1 w-full">
               <TabsTrigger 
                 value="new"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"

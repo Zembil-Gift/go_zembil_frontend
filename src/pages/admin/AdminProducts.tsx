@@ -414,26 +414,26 @@ export default function AdminProducts() {
       description="Manage products and price update requests"
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="all" className="relative">
+        <TabsList className="flex flex-wrap gap-1 w-full h-auto p-1">
+          <TabsTrigger value="all" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             All Products
             {allProducts && (
               <Badge className="ml-2 bg-eagle-green text-white">{allProducts.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="pending" className="relative">
+          <TabsTrigger value="pending" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             Pending Products
             {pendingProducts.length > 0 && (
               <Badge className="ml-2 bg-amber-500 text-white">{pendingProducts.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="price-requests" className="relative">
+          <TabsTrigger value="price-requests" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             Price Update Requests
             {pendingPriceRequests.length > 0 && (
               <Badge className="ml-2 bg-blue-500 text-white">{pendingPriceRequests.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="category-changes" className="relative">
+          <TabsTrigger value="category-changes" className="relative whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             Category Changes
             {pendingCategoryChangeRequests.length > 0 && (
               <Badge className="ml-2 bg-purple-500 text-white">{pendingCategoryChangeRequests.length}</Badge>
@@ -926,7 +926,7 @@ export default function AdminProducts() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Base Price</p>
                   <p className="font-medium">{formatPrice(selectedProduct)}</p>
@@ -953,7 +953,7 @@ export default function AdminProducts() {
               )}
 
               {/* Gift Wrapping Section */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Gift Wrappable</p>
                   <p className="font-medium flex items-center gap-1">

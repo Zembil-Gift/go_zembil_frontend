@@ -17,6 +17,7 @@ import { serviceService, ServiceResponse } from "@/services/serviceService";
 import { customOrderTemplateService } from "@/services/customOrderTemplateService";
 import { customOrderService } from "@/services/customOrderService";
 import type { CustomOrder, CustomOrderTemplate, PagedCustomOrderTemplateResponse, PagedCustomOrderResponse } from "@/types/customOrders";
+import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -598,7 +599,12 @@ export default function VendorDashboardNew() {
                     </p>
                     <div className="mt-3 rounded-md border border-red-200 bg-white p-3">
                       <p className="text-xs font-medium uppercase tracking-wide text-red-700">Rejection message</p>
-                      <p className="mt-1 text-sm text-red-800">{vendorProfile.rejectionReason}</p>
+                      <RejectionReasonWithModal
+                        reason={vendorProfile.rejectionReason}
+                        title="Vendor rejection reason"
+                        className="mt-1 text-sm text-red-800"
+                        truncateLength={120}
+                      />
                       {vendorProfile.rejectedAt && (
                         <p className="mt-1 text-xs text-red-600">
                           Rejected on {new Date(vendorProfile.rejectedAt).toLocaleString()}
@@ -919,10 +925,14 @@ export default function VendorDashboardNew() {
                         <div>
                           <h3 className="font-medium">{product.name}</h3>
                           <p className="text-sm text-muted-foreground">{product.categoryName}</p>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
                             {getStatusBadge(product.status || '')}
                             {product.rejectionReason && (
-                              <span className="text-xs text-red-600">Reason: {product.rejectionReason}</span>
+                              <RejectionReasonWithModal
+                                reason={product.rejectionReason}
+                                title="Product rejection reason"
+                                truncateLength={50}
+                              />
                             )}
                           </div>
                         </div>
@@ -2831,9 +2841,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                            <div>
+                            <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                              <p className="text-sm text-red-700">{product.rejectionReason}</p>
+                              <RejectionReasonWithModal
+                                reason={product.rejectionReason}
+                                title="Product rejection reason"
+                                className="text-sm text-red-700"
+                                truncateLength={120}
+                              />
                             </div>
                           </div>
                         </div>
@@ -2915,9 +2930,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                             <div className="flex items-start gap-2">
                               <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                              <div>
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                                <p className="text-sm text-red-700">{request.rejectionReason}</p>
+                                <RejectionReasonWithModal
+                                  reason={request.rejectionReason}
+                                  title="Request rejection reason"
+                                  className="text-sm text-red-700"
+                                  truncateLength={120}
+                                />
                               </div>
                             </div>
                           </div>
@@ -2990,9 +3010,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                            <div>
+                            <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                              <p className="text-sm text-red-700">{event.rejectionReason}</p>
+                              <RejectionReasonWithModal
+                                reason={event.rejectionReason}
+                                title="Event rejection reason"
+                                className="text-sm text-red-700"
+                                truncateLength={120}
+                              />
                             </div>
                           </div>
                         </div>
@@ -3073,9 +3098,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                             <div className="flex items-start gap-2">
                               <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                              <div>
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                                <p className="text-sm text-red-700">{request.rejectionReason}</p>
+                                <RejectionReasonWithModal
+                                  reason={request.rejectionReason}
+                                  title="Request rejection reason"
+                                  className="text-sm text-red-700"
+                                  truncateLength={120}
+                                />
                               </div>
                             </div>
                           </div>
@@ -3151,9 +3181,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                            <div>
+                            <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                              <p className="text-sm text-red-700">{service.rejectionReason}</p>
+                              <RejectionReasonWithModal
+                                reason={service.rejectionReason}
+                                title="Service rejection reason"
+                                className="text-sm text-red-700"
+                                truncateLength={120}
+                              />
                             </div>
                           </div>
                         </div>
@@ -3238,9 +3273,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                             <div className="flex items-start gap-2">
                               <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                              <div>
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                                <p className="text-sm text-red-700">{request.rejectionReason}</p>
+                                <RejectionReasonWithModal
+                                  reason={request.rejectionReason}
+                                  title="Request rejection reason"
+                                  className="text-sm text-red-700"
+                                  truncateLength={120}
+                                />
                               </div>
                             </div>
                           </div>
@@ -3322,9 +3362,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                            <div>
+                            <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                              <p className="text-sm text-red-700">{request.rejectionReason}</p>
+                              <RejectionReasonWithModal
+                                reason={request.rejectionReason}
+                                title="Request rejection reason"
+                                className="text-sm text-red-700"
+                                truncateLength={120}
+                              />
                             </div>
                           </div>
                         </div>
@@ -3405,9 +3450,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                            <div>
+                            <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                              <p className="text-sm text-red-700">{request.rejectionReason}</p>
+                              <RejectionReasonWithModal
+                                reason={request.rejectionReason}
+                                title="Request rejection reason"
+                                className="text-sm text-red-700"
+                                truncateLength={120}
+                              />
                             </div>
                           </div>
                         </div>
@@ -4793,7 +4843,16 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
           {isApplicationRejected && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-4">
               <p className="text-sm font-medium text-red-800">Application rejected</p>
-              <p className="mt-1 text-sm text-red-700">{vendorProfile?.rejectionReason}</p>
+              {vendorProfile?.rejectionReason ? (
+                <RejectionReasonWithModal
+                  reason={vendorProfile.rejectionReason}
+                  title="Vendor rejection reason"
+                  className="mt-1 text-sm text-red-700"
+                  truncateLength={120}
+                />
+              ) : (
+                <p className="mt-1 text-sm text-red-700">No reason provided.</p>
+              )}
               {vendorProfile?.rejectedAt && (
                 <p className="mt-1 text-xs text-red-600">
                   Rejected on {new Date(vendorProfile.rejectedAt).toLocaleString()}

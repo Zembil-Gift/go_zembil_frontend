@@ -19,7 +19,7 @@ export default function AdminDelivery() {
     >
       <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 lg:w-[1000px] h-auto">
+          <TabsList className="flex flex-wrap gap-1 w-full h-auto p-1 max-w-full">
             <TabsTrigger value="personnel" className="flex items-center gap-2 text-xs sm:text-sm">
               <Truck className="h-4 w-4" />
               <span className="hidden sm:inline">Delivery Personnel</span>

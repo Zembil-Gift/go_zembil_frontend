@@ -20,7 +20,9 @@ import {
   CheckCircle,
   Clock,
   Layers,
+  Gift,
 } from 'lucide-react';
+import { RejectionReasonWithModal } from '@/components/RejectionReasonModal';
 
 export default function VendorProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -114,9 +116,14 @@ export default function VendorProductDetail() {
           <CardContent className="pt-6">
             <div className="flex gap-3">
               <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
+              <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-red-900">Rejection Reason</h3>
-                <p className="text-red-700 mt-1">{product.rejectionReason}</p>
+                <RejectionReasonWithModal
+                  reason={product.rejectionReason}
+                  title="Product rejection reason"
+                  className="text-red-700 mt-1"
+                  truncateLength={120}
+                />
               </div>
             </div>
           </CardContent>
@@ -223,6 +230,48 @@ export default function VendorProductDetail() {
                 <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
                 <p className="mt-1 text-sm">{product.updatedAt ? new Date(product.updatedAt).toLocaleDateString() : 'N/A'}</p>
               </div>
+            </div>
+
+            {/* Gift Wrapping Details */}
+            <Separator />
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5 mb-3">
+                <Gift className="h-4 w-4" />
+                Gift Wrapping
+              </Label>
+              {product.giftWrappable ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span className="text-sm text-green-700 font-medium">Gift wrapping enabled</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Your Vendor Price</Label>
+                      <p className="text-lg font-semibold text-eagle-green">
+                        {product.giftWrapPrice != null && product.giftWrapPrice > 0
+                          ? `${product.giftWrapCurrencyCode || product.price?.currencyCode || ''} ${Number(product.giftWrapPrice).toFixed(2)}`
+                          : 'Free'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Customer Price</Label>
+                      <p className="text-lg font-semibold">
+                        {product.giftWrapCustomerPrice != null && product.giftWrapCustomerPrice > 0
+                          ? `${product.giftWrapCurrencyCode || product.price?.currencyCode || ''} ${Number(product.giftWrapCustomerPrice).toFixed(2)}`
+                          : 'Free'}
+                      </p>
+                    </div>
+                  </div>
+                  {product.giftWrapCurrencyCode && (
+                    <p className="text-xs text-muted-foreground">
+                      Prices shown in {product.giftWrapCurrencyCode}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Gift wrapping is not enabled for this product</p>
+              )}
             </div>
           </CardContent>
         </Card>

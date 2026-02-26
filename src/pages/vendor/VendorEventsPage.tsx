@@ -189,19 +189,19 @@ export default function VendorEventsPage() {
         <div className="grid gap-4">
           {filteredEvents.map((event) => (
             <Card key={event.id}>
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="flex items-center space-x-4">
+              <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4">
+                <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
                   <img 
                     src={getEventImageUrl(event.images, event.bannerImageUrl)} 
                     alt={event.title} 
-                    className="h-16 w-24 rounded object-cover"
+                    className="h-16 w-24 rounded object-cover flex-shrink-0"
                     onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
                   />
                   <div className="h-16 w-24 rounded bg-gray-200 hidden items-center justify-center">
                     <Calendar className="h-8 w-8 text-gray-400" />
                   </div>
-                  <div>
-                    <h3 className="font-medium">{event.title}</h3>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium truncate sm:whitespace-normal">{event.title}</h3>
                     <p className="text-sm text-muted-foreground">{event.location}</p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(event.eventDate).toLocaleDateString()}
@@ -214,7 +214,7 @@ export default function VendorEventsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                   <Button asChild variant="outline" size="sm">
                     <Link to={`/vendor/events/${event.id}`}>View Details</Link>
                   </Button>

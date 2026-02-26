@@ -261,7 +261,7 @@ export default function AdminSubcategories() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-eagle-green">{allSubcategories.length}</div>

@@ -214,17 +214,17 @@ export default function VendorCustomTemplates() {
 
         {/* Templates List */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="all">
+          <TabsList className="flex flex-wrap gap-1 w-full h-auto p-1">
+            <TabsTrigger value="all" className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
               All ({templatesByStatus.all.length})
             </TabsTrigger>
-            <TabsTrigger value="pending">
+            <TabsTrigger value="pending" className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
               Pending ({templatesByStatus.pending.length})
             </TabsTrigger>
-            <TabsTrigger value="approved">
+            <TabsTrigger value="approved" className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
               Approved ({templatesByStatus.approved.length})
             </TabsTrigger>
-            <TabsTrigger value="rejected">
+            <TabsTrigger value="rejected" className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
               Rejected ({templatesByStatus.rejected.length})
             </TabsTrigger>
           </TabsList>

@@ -187,7 +187,7 @@ function CustomOrdersContent() {
             )}
             
             <div className="mt-12 border-t border-eagle-green/10 pt-12">
-              <h3 className="text-xl font--bold text-eagle-green mb-6 text-center">Otherwise, browse by category</h3>
+              <h3 className="text-xl font-bold text-eagle-green mb-6 text-center">Otherwise, browse by category</h3>
             </div>
           </motion.section>
         )}

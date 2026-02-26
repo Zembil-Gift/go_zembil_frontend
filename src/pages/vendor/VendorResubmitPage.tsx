@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
 
 const VENDOR_TYPES = [
   { value: "PRODUCT", label: "Product Vendor" },
@@ -163,7 +164,16 @@ export default function VendorResubmitPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-red-800">{vendorProfile.rejectionReason || "Your previous submission was rejected."}</p>
+          {vendorProfile.rejectionReason ? (
+            <RejectionReasonWithModal
+              reason={vendorProfile.rejectionReason}
+              title="Vendor rejection reason"
+              className="text-sm text-red-800"
+              truncateLength={120}
+            />
+          ) : (
+            <p className="text-sm text-red-800">Your previous submission was rejected.</p>
+          )}
           {vendorProfile.rejectedAt && (
             <p className="text-xs text-red-700 mt-1">Rejected on {new Date(vendorProfile.rejectedAt).toLocaleString()}</p>
           )}

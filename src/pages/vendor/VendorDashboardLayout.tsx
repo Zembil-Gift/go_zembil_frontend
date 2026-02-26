@@ -37,6 +37,7 @@ import {
   Edit,
 } from "lucide-react";
 import { useState } from "react";
+import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
 
 // Helper function to check if vendor is Ethiopian
 export const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
@@ -355,7 +356,16 @@ export default function VendorDashboardLayout() {
                       </p>
                       <div className="mt-3 rounded-md border border-red-200 bg-white p-3">
                         <p className="text-xs font-medium uppercase tracking-wide text-red-700">Rejection message</p>
-                        <p className="mt-1 text-sm text-red-800">{vendorProfile.rejectionReason || 'No rejection reason provided.'}</p>
+                        {vendorProfile.rejectionReason ? (
+                          <RejectionReasonWithModal
+                            reason={vendorProfile.rejectionReason}
+                            title="Vendor rejection reason"
+                            className="mt-1 text-sm text-red-800"
+                            truncateLength={120}
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm text-red-800">No rejection reason provided.</p>
+                        )}
                         {vendorProfile.rejectedAt && (
                           <p className="mt-1 text-xs text-red-600">
                             Rejected on {new Date(vendorProfile.rejectedAt).toLocaleString()}
