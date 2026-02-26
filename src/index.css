@@ -121,6 +121,24 @@
   --destructive-foreground: 0 0% 100%;
   --ring: 151 65% 15%;
   --radius: 0.5rem;
+
+  /* Fluid typography - conservative scaling (max ~2–4% larger than min at 1440px) */
+  --font-size-xs: clamp(0.75rem, 0.74rem + 0.04vw, 0.77rem);
+  --font-size-sm: clamp(0.875rem, 0.86rem + 0.06vw, 0.9rem);
+  --font-size-base: clamp(1rem, 0.98rem + 0.08vw, 1.03rem);
+  --font-size-lg: clamp(1.125rem, 1.1rem + 0.1vw, 1.16rem);
+  --font-size-xl: clamp(1.25rem, 1.22rem + 0.12vw, 1.28rem);
+  --font-size-2xl: clamp(1.5rem, 1.46rem + 0.17vw, 1.56rem);
+  --font-size-3xl: clamp(1.875rem, 1.82rem + 0.23vw, 1.96rem);
+  --font-size-4xl: clamp(2.25rem, 2.18rem + 0.31vw, 2.38rem);
+  --font-size-5xl: clamp(3rem, 2.9rem + 0.42vw, 3.15rem);
+  
+  /* Line heights for fluid typography */
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 1.75;
   
   /* Ethiopian color scheme */
   --ethiopian-gold: hsl(48, 96%, 53%);
@@ -149,16 +167,25 @@
   }
 
   body {
-    font-family: 'Gotham', 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
+    font-size: var(--font-size-base);
     background-color: hsl(60, 33%, 97%);
     color: hsl(0, 0%, 13%);
-    line-height: 1.6;
+    line-height: var(--line-height-normal);
     font-weight: 400;
   }
 
-  /* Ensure all text elements use Gotham by default */
+  /* Fluid typography for headings */
+  h1 { font-size: var(--font-size-4xl); line-height: var(--line-height-tight); }
+  h2 { font-size: var(--font-size-3xl); line-height: var(--line-height-tight); }
+  h3 { font-size: var(--font-size-2xl); line-height: var(--line-height-snug); }
+  h4 { font-size: var(--font-size-xl); line-height: var(--line-height-snug); }
+  h5 { font-size: var(--font-size-lg); line-height: var(--line-height-normal); }
+  h6 { font-size: var(--font-size-base); line-height: var(--line-height-normal); }
+
+  /* Ensure all text elements use DM Sans by default */
   h1, h2, h3, h4, h5, h6, p, span, div, a, button, input, textarea, label {
-    font-family: 'Gotham', 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
   }
 
   /* Gotham font utilities */
@@ -175,9 +202,9 @@
   .font-gotham-extra-bold { font-family: 'Gotham', sans-serif; font-weight: 800; }
   
   /* Default font classes */
-  .font-default { font-family: 'Gotham', 'Inter', sans-serif; }
-  .font-primary { font-family: 'Gotham', 'Inter', sans-serif; }
-  .font-brand { font-family: 'Gotham', 'Inter', sans-serif; }
+  .font-default { font-family: 'DM Sans', sans-serif; }
+  .font-primary { font-family: 'DM Sans', sans-serif; }
+  .font-brand { font-family: 'DM Sans', sans-serif; }
 }
 
 @layer utilities {
@@ -302,7 +329,8 @@
   }
 
   .font-display {
-    font-family: 'Gotham-ExtraBold', sans-serif;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
   }
 
   .brand-go {
@@ -394,11 +422,12 @@
 }
 
 .font-display {
-  font-family: 'Gotham-ExtraBold', sans-serif;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
 }
 
 .font-body {
-  font-family: 'Gotham', sans-serif;
+  font-family: 'DM Sans', sans-serif;
 }
 
 /* Horizontal scrolling animation for cultural categories */
