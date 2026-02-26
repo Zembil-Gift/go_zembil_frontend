@@ -17,7 +17,8 @@ import {
   Share2,
   Check,
   X,
-  ZoomIn
+  ZoomIn,
+  Gift
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { productService, Product, extractPriceAmount } from "@/services/productService";
@@ -717,6 +718,24 @@ export default function ProductDetail() {
                 </div>
               </div>
             </div>
+
+            {/* Gift wrapping info - selection happens at checkout */}
+            {product.giftWrappable && (
+              <div className="flex items-center gap-2 p-3 border border-dashed border-viridian-green/30 rounded-lg bg-viridian-green/5">
+                <Gift className="h-4 w-4 text-viridian-green flex-shrink-0" />
+                <span className="text-sm text-charcoal">
+                  Gift wrapping available
+                  {(product.giftWrapCustomerPrice || product.giftWrapPrice) && (product.giftWrapCustomerPrice || product.giftWrapPrice)! > 0 ? (
+                    <span className="text-viridian-green font-semibold ml-1">
+                      (+{formatPrice(product.giftWrapCustomerPrice || product.giftWrapPrice!, product.giftWrapCurrencyCode || currencyCode)})
+                    </span>
+                  ) : (
+                    <span className="text-green-600 font-medium ml-1">— Free</span>
+                  )}
+                  <span className="text-muted-foreground ml-1">· Select at checkout</span>
+                </span>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="space-y-4">

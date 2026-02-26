@@ -26,6 +26,7 @@ import {
   Clock,
   DollarSign,
   FolderTree,
+  Gift,
   ImageIcon,
   Info,
   Layers,
@@ -35,6 +36,7 @@ import {
   Trash2
 } from "lucide-react";
 import {Alert, AlertDescription, AlertTitle,} from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -93,6 +95,9 @@ const productEditSchema = z.object({
   isCustomizable: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
   occasion: z.string().optional(),
+  giftWrappable: z.boolean().optional(),
+  giftWrapPrice: z.number().min(0, "Gift wrap price must be positive").optional(),
+  giftWrapCurrencyCode: z.string().optional(),
   productSku: z.array(skuSchema).min(1, "At least one product SKU is required"),
 }).refine((data) => {
   // Check for duplicate variant names
@@ -195,6 +200,9 @@ export default function EditProduct() {
       isCustomizable: false,
       tags: [],
       occasion: "",
+      giftWrappable: false,
+      giftWrapPrice: 0,
+      giftWrapCurrencyCode: "",
       productSku: [],
     },
   });
@@ -294,6 +302,9 @@ export default function EditProduct() {
         isCustomizable: product.isCustomizable || false,
         tags: product.tags || [],
         occasion: product.occasion || "",
+        giftWrappable: product.giftWrappable || false,
+        giftWrapPrice: product.giftWrapPrice || 0,
+        giftWrapCurrencyCode: product.giftWrapCurrencyCode || "",
         productSku: skuData,
       });
     }
@@ -320,6 +331,11 @@ export default function EditProduct() {
         isCustomizable: data.isCustomizable,
         tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
         occasion: data.occasion || undefined,
+        giftWrappable: data.giftWrappable || false,
+        giftWrapPrice: data.giftWrappable && data.giftWrapPrice ? data.giftWrapPrice : undefined,
+        giftWrapCurrencyCode: data.giftWrappable && data.giftWrapPrice
+          ? (data.giftWrapCurrencyCode || product?.giftWrapCurrencyCode || (product?.productSku?.[0] as any)?.price?.currencyCode || 'ETB')
+          : undefined,
         // Include SKU updates (excluding price changes)
         productSku: data.productSku.map((sku, index) => ({
           id: sku.id,
@@ -1005,6 +1021,76 @@ export default function EditProduct() {
                   </Card>
                 );
               })}
+            </CardContent>
+          </Card>
+
+          {/* Gift Wrapping Options */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gift className="h-5 w-5" />
+                Gift Wrapping
+              </CardTitle>
+              <CardDescription>Allow customers to add gift wrapping for an additional fee.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Controller
+                  name="giftWrappable"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Checkbox
+                      id="giftWrappable"
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked === true);
+                        if (!checked) {
+                          form.setValue('giftWrapPrice', 0);
+                        }
+                      }}
+                    />
+                  )}
+                />
+                <Label htmlFor="giftWrappable" className="cursor-pointer">
+                  This product supports gift wrapping
+                </Label>
+              </div>
+
+              {form.watch("giftWrappable") && (
+                <div>
+                  <Label>
+                    Gift Wrapping Fee ({product?.giftWrapCurrencyCode || (product?.productSku?.[0] as any)?.price?.currencyCode || 'ETB'})
+                  </Label>
+                  <Controller
+                    name="giftWrapPrice"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={field.value || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '') {
+                            field.onChange(0);
+                          } else {
+                            const numValue = parseFloat(value);
+                            if (!isNaN(numValue)) {
+                              field.onChange(Math.round(numValue * 100) / 100);
+                            }
+                          }
+                        }}
+                        onBlur={field.onBlur}
+                      />
+                    )}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Additional charge per item for gift wrapping. Set to 0 for free gift wrapping.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

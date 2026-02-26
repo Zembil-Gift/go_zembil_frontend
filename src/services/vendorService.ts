@@ -159,6 +159,10 @@ export interface Product {
   tags?: string[];
   occasion?: string;
   productSku?: ProductSku[];
+  giftWrappable?: boolean;
+  giftWrapPrice?: number;
+  giftWrapCustomerPrice?: number;
+  giftWrapCurrencyCode?: string;
   createdAt?: string;
   updatedAt?: string;
 }

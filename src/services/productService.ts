@@ -1,5 +1,5 @@
-import { apiService } from './apiService';
-import type { DiscountInfo } from '@/types/discount';
+import {apiService} from './apiService';
+import type {DiscountInfo} from '@/types/discount';
 
 // Types for products
 export interface ProductAttribute {
@@ -89,6 +89,10 @@ export interface Product {
   vendorId?: number;
   vendorName?: string;
   activeDiscount?: DiscountInfo;
+  giftWrappable?: boolean;
+  giftWrapPrice?: number;
+  giftWrapCustomerPrice?: number;
+  giftWrapCurrencyCode?: string;
 }
 
 export interface Tag {
@@ -130,8 +134,7 @@ class ProductService {
   async getAllProducts(page: number = 0, size: number = 20): Promise<PagedProductResponse> {
     try {
       const url = `/api/v1/products?page=${page}&size=${size}`;
-      const response = await apiService.getRequest<PagedProductResponse>(url);
-      return response;
+      return await apiService.getRequest<PagedProductResponse>(url);
     } catch (error) {
       throw error;
     }
@@ -182,8 +185,7 @@ class ProductService {
       }
 
       const url = `/api/v1/products/filter?${queryParams.toString()}`;
-      const response = await apiService.getRequest<PagedProductResponse>(url);
-      return response;
+      return await apiService.getRequest<PagedProductResponse>(url);
     } catch (error) {
       throw error;
     }

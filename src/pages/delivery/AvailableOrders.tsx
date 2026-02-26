@@ -87,6 +87,22 @@ export default function AvailableOrders() {
     }
   };
 
+  const getMapsUrl = (order: OrderReadyForDeliveryDto) => {
+    const hasCoordinates =
+      order.shippingLatitude !== undefined &&
+      order.shippingLongitude !== undefined;
+
+    if (hasCoordinates) {
+      return `https://maps.google.com/?q=${order.shippingLatitude},${order.shippingLongitude}`;
+    }
+
+    const fallbackAddress =
+      order.shippingFormattedAddress ||
+      [order.shippingAddress, order.shippingCity].filter(Boolean).join(", ");
+
+    return `https://maps.google.com/?q=${encodeURIComponent(fallbackAddress)}`;
+  };
+
   const orders = data?.content || [];
   const totalPages = data?.totalPages || 0;
 
@@ -199,9 +215,23 @@ export default function AvailableOrders() {
                         <span className="font-medium">Address:</span> {order.shippingAddress}
                       </p>
                     )}
+
+                    {(order.shippingLatitude !== undefined && order.shippingLongitude !== undefined) ||
+                    order.shippingAddress ||
+                    order.shippingFormattedAddress ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => window.open(getMapsUrl(order), "_blank")}
+                      >
+                        <Navigation className="h-4 w-4 mr-2" />
+                        View Location on Map
+                      </Button>
+                    ) : null}
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 items-end justify-end sm:self-stretch">
                     <Button
                       onClick={() => handleAcceptClick(order)}
                       className="bg-green-600 hover:bg-green-700"

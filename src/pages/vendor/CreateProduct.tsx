@@ -23,8 +23,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/ImageUpload";
 import { TagInput } from "@/components/TagInput";
 import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
-import { ArrowLeft, Package, AlertCircle, Plus, Trash2, Info } from "lucide-react";
+import { ArrowLeft, Package, AlertCircle, Plus, Trash2, Info, Gift } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Currency {
   id: number;
@@ -55,6 +56,8 @@ const productSchema = z.object({
   tags: z.array(z.string()).optional(),
   occasion: z.string().optional(),
   currencyCode: z.string().min(1, "Currency is required"),
+  giftWrappable: z.boolean().optional(),
+  giftWrapPrice: z.number().min(0, "Gift wrap price must be positive").optional(),
   productSku: z.array(skuSchema).min(1, "At least one product SKU is required"),
 }).refine((data) => {
   // Check for duplicate variant names
@@ -105,6 +108,8 @@ export default function CreateProduct() {
       tags: [],
       occasion: "",
       currencyCode: "ETB", // Will be updated by useEffect when vendorProfile loads
+      giftWrappable: false,
+      giftWrapPrice: 0,
       productSku: [{
         skuCode: "",
         skuName: "",
@@ -168,6 +173,9 @@ export default function CreateProduct() {
         subCategoryId: parseInt(data.subCategoryId),
         tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
         occasion: data.occasion || undefined,
+        giftWrappable: data.giftWrappable || false,
+        giftWrapPrice: data.giftWrappable && data.giftWrapPrice ? data.giftWrapPrice : undefined,
+        giftWrapCurrencyCode: data.giftWrappable && data.giftWrapPrice ? data.currencyCode : undefined,
       };
 
       // SKUs are required - first one is default
@@ -753,6 +761,76 @@ export default function CreateProduct() {
               </div>
 
 
+            </CardContent>
+          </Card>
+
+          {/* Gift Wrapping Options */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gift className="h-5 w-5" />
+                Gift Wrapping
+              </CardTitle>
+              <CardDescription>Allow customers to add gift wrapping for an additional fee.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Controller
+                  name="giftWrappable"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Checkbox
+                      id="giftWrappable"
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked === true);
+                        if (!checked) {
+                          form.setValue('giftWrapPrice', 0);
+                        }
+                      }}
+                    />
+                  )}
+                />
+                <Label htmlFor="giftWrappable" className="cursor-pointer">
+                  This product supports gift wrapping
+                </Label>
+              </div>
+
+              {form.watch("giftWrappable") && (
+                <div>
+                  <Label>
+                    Gift Wrapping Fee ({form.watch("currencyCode") || "Currency"})
+                  </Label>
+                  <Controller
+                    name="giftWrapPrice"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={field.value || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '') {
+                            field.onChange(0);
+                          } else {
+                            const numValue = parseFloat(value);
+                            if (!isNaN(numValue)) {
+                              field.onChange(Math.round(numValue * 100) / 100);
+                            }
+                          }
+                        }}
+                        onBlur={field.onBlur}
+                      />
+                    )}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Additional charge per item for gift wrapping. Set to 0 for free gift wrapping.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

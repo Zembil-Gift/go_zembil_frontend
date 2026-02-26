@@ -31,13 +31,13 @@ export const PriceWithDiscount: React.FC<PriceWithDiscountProps> = ({
 
   const sizeClasses = {
     small: {
-      original: 'text-sm',
-      discounted: 'text-lg font-bold',
+      original: 'text-xs',
+      discounted: 'text-base font-bold',
       savings: 'text-xs'
     },
     medium: {
       original: 'text-base',
-      discounted: 'text-2xl font-bold',
+      discounted: 'text-xl font-bold',
       savings: 'text-sm'
     },
     large: {
@@ -57,9 +57,22 @@ export const PriceWithDiscount: React.FC<PriceWithDiscountProps> = ({
     );
   }
 
+  if (!showSavings) {
+    return (
+      <div className="flex items-center gap-3 whitespace-nowrap">
+        <div className={`${classes.discounted} ${theme === 'onRed' ? 'text-white' : 'text-red-600'}`}>
+          {getCurrencySymbol(currency)}{discountedPrice.toFixed(decimals)}
+        </div>
+        <div className={`${classes.original} ${theme === 'onRed' ? 'text-white/80' : 'text-gray-500'} line-through`}>
+          {getCurrencySymbol(currency)}{originalPrice.toFixed(decimals)}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 whitespace-nowrap">
         <div className={`${classes.discounted} ${theme === 'onRed' ? 'text-white' : 'text-red-600'}`}>
           {getCurrencySymbol(currency)}{discountedPrice.toFixed(decimals)}
         </div>
