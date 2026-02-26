@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,7 +20,7 @@ import { apiService } from "@/services/apiService";
 import { vendorTermsService, VendorTermsResponse } from "@/services/vendorTermsService";
 import { vendorCategoryService } from "@/services/vendorCategoryService";
 import { SUPPORTED_COUNTRIES, getCurrencyForCountry, isEthiopianCountry } from "@/lib/countryConfig";
-import { User, Mail, Lock, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Play, Pause, Download, ExternalLink, Shield, DollarSign, Package, MessageCircle, Scale, FileCheck, MapPin } from "lucide-react";
+import { User, Mail, Lock, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Download, ExternalLink, Shield, DollarSign, Package, MessageCircle, Scale, FileCheck, MapPin } from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import { LocationPicker, type LocationData } from "@/components/maps";
 
@@ -47,22 +47,15 @@ const VAT_STATUS_OPTIONS = [
   { value: "VAT_EXEMPT", label: "VAT Exempt", description: "My business is exempt from VAT" },
 ];
 
-// Video URLs for each vendor type
-const ONBOARDING_VIDEOS: Record<string, string> = {
-  PRODUCT: "/videos/vendor-onboarding-product.mp4",
-  SERVICE: "/videos/vendor-onboarding-service.mp4",
-  HYBRID: "/videos/vendor-onboarding-hybrid.mp4",
+const ONBOARDING_VIDEO_IDS: Record<string, string> = {
+  PRODUCT: "MJzYpgf7IEY", 
+  SERVICE: "cZ6cN72lqSg",
+  HYBRID: "RlTCNmSJw1w", 
 };
 
-const DEFAULT_VIDEO_URL = "/videos/vendor-onboarding.mp4";
+const DEFAULT_VIDEO_ID = "dQw4w9WgXcQ";
 
 type OnboardingStep = "form" | "terms" | "video";
-
-const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
 
 // Phone number validation using libphonenumber (E.164 format)
 const phoneValidation = z
@@ -153,20 +146,15 @@ export default function VendorSignup() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("form");
   const [acceptedTerms, setAcceptedTerms] = useState<Record<number, boolean>>({});
   const [hasWatchedVideo, setHasWatchedVideo] = useState(false);
-  const [videoProgress, setVideoProgress] = useState(0);
-  const [videoDuration, setVideoDuration] = useState(0);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [maxWatchedTime, setMaxWatchedTime] = useState(0);
+  const [videoCompletedChecked, setVideoCompletedChecked] = useState(false);
   const [generatedCertificate, setGeneratedCertificate] = useState<CertificateResponse | null>(null);
   const [termsData, setTermsData] = useState<VendorTermsResponse | null>(null);
   const [isLoadingTerms, setIsLoadingTerms] = useState(false);
   const [allTermsAccepted, setAllTermsAccepted] = useState(false);
   const [formData, setFormData] = useState<Partial<VendorSignupForm> | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);
   const [showFullTermsModal, setShowFullTermsModal] = useState(false);
   const [selectedTermForDetail, setSelectedTermForDetail] = useState<number | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -223,82 +211,9 @@ export default function VendorSignup() {
   }, [currentStep, hasWatchedVideo, generatedCertificate, form]);
 
 
-  const handleVideoTimeUpdate = () => {
-    if (videoRef.current) {
-      const currentTime = videoRef.current.currentTime;
-      setVideoProgress(currentTime);
-      // Update max watched time (allow small buffer for natural playback variations)
-      if (currentTime > maxWatchedTime) {
-        setMaxWatchedTime(currentTime);
-        
-        // Save progress to localStorage
-        const email = form.getValues("email");
-        if (email) {
-          localStorage.setItem(`vendor_video_progress_${email}`, JSON.stringify({
-            maxWatchedTime: currentTime,
-            hasWatchedVideo: false
-          }));
-        }
-      }
-    }
-  };
-
-  const handleVideoSeeking = () => {
-    if (videoRef.current) {
-      const seekTime = videoRef.current.currentTime;
-      // If trying to seek forward beyond max watched time, reset to max watched
-      // Allow a small buffer (1s) to prevent sticking
-      if (!hasWatchedVideo && seekTime > maxWatchedTime + 1.0) {
-        videoRef.current.currentTime = maxWatchedTime;
-        toast({
-          title: "Cannot Skip Forward",
-          description: "Please watch the video without skipping ahead.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const handleVideoLoadedMetadata = () => {
-    if (videoRef.current) {
-      setVideoDuration(videoRef.current.duration);
-      // Resume if partially watched and not completed
-      if (maxWatchedTime > 0 && !hasWatchedVideo) {
-        videoRef.current.currentTime = maxWatchedTime;
-      }
-    }
-  };
-
-  const handlePlayPause = () => {
-    if (videoRef.current) {
-      if (isVideoPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsVideoPlaying(!isVideoPlaying);
-    }
-  };
-
-  const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!videoRef.current || videoDuration === 0) return;
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const percentage = clickX / rect.width;
-    const seekTime = percentage * videoDuration;
-    
-    // Only allow seeking to positions already watched (rewind only, no skip forward)
-    if (seekTime <= maxWatchedTime) {
-      videoRef.current.currentTime = seekTime;
-      setVideoProgress(seekTime);
-    } else {
-      toast({
-        title: "Cannot Skip Forward",
-        description: "You can only rewind to previously watched sections.",
-        variant: "destructive",
-      });
-    }
+  const handleVideoCompletedCheckbox = (checked: boolean) => {
+    setVideoCompletedChecked(checked);
+    setHasWatchedVideo(checked);
   };
 
   const selectedVendorType = form.watch("vendorType");
@@ -346,29 +261,6 @@ export default function VendorSignup() {
     return icons[termKey] || <FileText className="w-5 h-5" />;
   };
 
-  const handleVideoEnded = () => {
-    setHasWatchedVideo(true);
-    setIsVideoPlaying(false);
-    
-    // Save completion state
-    const email = form.getValues("email");
-    if (email) {
-      localStorage.setItem(`vendor_video_progress_${email}`, JSON.stringify({
-        maxWatchedTime: videoDuration,
-        hasWatchedVideo: true
-      }));
-    }
-    
-    if (!generatedCertificate) {
-      toast({
-        title: "Video Completed!",
-        description: "Generating your onboarding certificate...",
-        variant: "default",
-      });
-      generateCertificateMutation.mutate();
-    }
-  };
-
   // Download certificate PDF (public endpoint, no auth needed)
   const handleDownloadCertificatePdf = async () => {
     if (!generatedCertificate) return;
@@ -398,36 +290,6 @@ export default function VendorSignup() {
       toast({ title: "Error", description: "Failed to download certificate PDF.", variant: "destructive" });
     } finally {
       setIsDownloadingPdf(false);
-    }
-  };
-
-  // Download onboarding video
-  const handleDownloadVideo = async () => {
-    setIsDownloadingVideo(true);
-    try {
-      const videoUrl = getVideoUrl();
-      const response = await fetch(videoUrl);
-      
-      if (!response.ok) {
-        throw new Error('Failed to download video');
-      }
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const vendorType = form.getValues("vendorType") || "general";
-      a.download = `gogerami-vendor-onboarding-${vendorType.toLowerCase()}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast({ title: "Downloaded!", description: "Onboarding video downloaded successfully." });
-    } catch {
-      toast({ title: "Error", description: "Failed to download video. Please try again.", variant: "destructive" });
-    } finally {
-      setIsDownloadingVideo(false);
     }
   };
 
@@ -587,30 +449,8 @@ export default function VendorSignup() {
       toast({ title: "Terms Required", description: "Please read and accept the full Terms & Conditions.", variant: "destructive" });
       return;
     }
-    
-    // Check for saved progress
-    const email = form.getValues("email");
-    const savedProgress = email ? localStorage.getItem(`vendor_video_progress_${email}`) : null;
-    
-    if (savedProgress) {
-      try {
-        const { maxWatchedTime: savedMax, hasWatchedVideo: savedHasWatched } = JSON.parse(savedProgress);
-        setHasWatchedVideo(savedHasWatched);
-        setMaxWatchedTime(savedMax || 0);
-        setVideoProgress(savedMax || 0);
-      } catch (e) {
-        console.error("Failed to parse video progress", e);
-        setHasWatchedVideo(false);
-        setVideoProgress(0);
-        setMaxWatchedTime(0);
-      }
-    } else {
-      setHasWatchedVideo(false);
-      setVideoProgress(0);
-      setMaxWatchedTime(0);
-    }
-
-    setIsVideoPlaying(false);
+    setVideoCompletedChecked(false);
+    setHasWatchedVideo(false);
     setGeneratedCertificate(null);
     setCurrentStep("video");
   };
@@ -623,9 +463,9 @@ export default function VendorSignup() {
     await signupMutation.mutateAsync(data);
   };
 
-  const getVideoUrl = () => {
+  const getVideoId = () => {
     const vendorType = formData?.vendorType || selectedVendorType;
-    return ONBOARDING_VIDEOS[vendorType] || DEFAULT_VIDEO_URL;
+    return ONBOARDING_VIDEO_IDS[vendorType] || DEFAULT_VIDEO_ID;
   };
 
   const getVendorTypeLabel = () => {
@@ -1118,89 +958,49 @@ export default function VendorSignup() {
                 <span>{getVendorTypeLabel()} Onboarding Video</span>
               </CardTitle>
               <CardDescription>
-                Watch this video completely to learn how to navigate goGerami as a {getVendorTypeLabel().toLowerCase()}.
+                Watch this video to learn how to navigate goGerami as a {getVendorTypeLabel().toLowerCase()}. You may scrub forward or back as needed.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="relative bg-black rounded-lg overflow-hidden">
-                <video
-                  ref={videoRef}
-                  className="w-full aspect-video"
-                  onEnded={handleVideoEnded}
-                  onTimeUpdate={handleVideoTimeUpdate}
-                  onLoadedMetadata={handleVideoLoadedMetadata}
-                  onSeeking={handleVideoSeeking}
-                  onPlay={() => setIsVideoPlaying(true)}
-                  onPause={() => setIsVideoPlaying(false)}
-                  controlsList="nodownload noplaybackrate"
-                  disablePictureInPicture
-                  playsInline
+              <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+                <iframe
+                  className="w-full h-full absolute inset-0"
+                  src={`https://www.youtube.com/embed/${getVideoId()}?rel=0`}
+                  title={`${getVendorTypeLabel()} Onboarding Video`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`https://www.youtube.com/watch?v=${getVideoId()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
                 >
-                  <source src={getVideoUrl()} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-                
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <div className="flex items-center gap-3">
-                    <Button type="button" variant="ghost" size="sm" onClick={handlePlayPause} className="text-white hover:bg-white/20">
-                      {isVideoPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                    </Button>
-                    <div 
-                      className="flex-1 h-2 bg-white/30 rounded-full overflow-hidden cursor-pointer relative"
-                      onClick={handleProgressBarClick}
-                    >
-                      {/* Watched portion (clickable area) */}
-                      <div 
-                        className="absolute h-full bg-white/20" 
-                        style={{ width: `${videoDuration > 0 ? (maxWatchedTime / videoDuration) * 100 : 0}%` }} 
-                      />
-                      {/* Current progress */}
-                      <div 
-                        className="h-full bg-emerald-500 transition-all duration-200 relative z-10" 
-                        style={{ width: `${videoDuration > 0 ? (videoProgress / videoDuration) * 100 : 0}%` }} 
-                      />
-                    </div>
-                    <span className="text-white text-sm font-mono min-w-[80px] text-right">
-                      {formatTime(videoProgress)} / {formatTime(videoDuration)}
-                    </span>
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={handleDownloadVideo}
-                      disabled={isDownloadingVideo}
-                      className="text-white hover:bg-white/20"
-                      title="Download video for offline viewing"
-                    >
-                      {isDownloadingVideo ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <Download className="w-5 h-5" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
+                  <ExternalLink className="w-4 h-4" />
+                  Open in YouTube
+                </a>
               </div>
 
-              <div className={`p-4 rounded-lg border ${hasWatchedVideo ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    {hasWatchedVideo ? (
-                      <>
-                        <CheckCircle2 className="w-5 h-5 text-green-600 mr-2" />
-                        <span className="font-medium text-green-900">Video Completed!</span>
-                      </>
-                    ) : (
-                      <>
-                        <PlayCircle className="w-5 h-5 text-amber-600 mr-2" />
-                        <span className="font-medium text-amber-900">{videoProgress > 0 ? 'Keep watching...' : 'Please watch the entire video'}</span>
-                      </>
-                    )}
-                  </div>
-                  {!hasWatchedVideo && videoDuration > 0 && (
-                    <span className="text-sm text-amber-700">{Math.round((videoProgress / videoDuration) * 100)}% complete</span>
-                  )}
+              <div className={`p-4 rounded-lg border ${hasWatchedVideo ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="video-completed"
+                    checked={videoCompletedChecked}
+                    onCheckedChange={(c) => handleVideoCompletedCheckbox(c === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="video-completed" className="text-sm font-medium cursor-pointer leading-tight">
+                    I've completed the onboarding video
+                  </label>
                 </div>
+                {hasWatchedVideo && (
+                  <p className="text-sm text-green-700 mt-2 flex items-center gap-1">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    Your onboarding certificate will be generated below.
+                  </p>
+                )}
               </div>
 
               {/* Certificate Generation & Download */}
