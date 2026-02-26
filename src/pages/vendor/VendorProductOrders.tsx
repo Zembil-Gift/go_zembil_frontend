@@ -1,42 +1,46 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import {useState} from 'react';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {motion} from 'framer-motion';
 import {
-  Package,
-  Clock,
-  CheckCircle,
-  XCircle,
   AlertCircle,
-  RefreshCw,
-  Phone,
-  Mail,
-  User,
-  Filter,
-  Search,
-  Truck,
-  MapPin,
+  CheckCircle,
+  Clock,
   Copy,
-  ShoppingBag, Play
+  Filter,
+  Mail,
+  MapPin,
+  Package,
+  Phone,
+  Play,
+  RefreshCw,
+  Search,
+  ShoppingBag,
+  Truck,
+  User,
+  XCircle
 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { AuthenticatedImage, useAuthenticatedImageViewer } from '@/components/AuthenticatedImage';
+import {Button} from '@/components/ui/button';
+import {Badge} from '@/components/ui/badge';
+import {Card, CardContent} from '@/components/ui/card';
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
+import {Skeleton} from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import {Separator} from '@/components/ui/separator';
+import {Input} from '@/components/ui/input';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
+import {Textarea} from '@/components/ui/textarea';
+import {useToast} from '@/hooks/use-toast';
+import {AuthenticatedImage, useAuthenticatedImageViewer} from '@/components/AuthenticatedImage';
 
-import { 
-  orderService, 
-  VendorOrder,
-  VendorOrderDeliveryInfo
-} from '@/services/orderService';
+import {orderService, VendorOrder, VendorOrderDeliveryInfo} from '@/services/orderService';
 
 export default function VendorProductOrders() {
   const { toast } = useToast();
@@ -134,12 +138,10 @@ export default function VendorProductOrders() {
 
   // Filter orders by search query
   const filteredOrders = orders.filter((order: VendorOrder) => {
-    const matchesSearch = searchQuery === '' || 
-      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.items.some(item => item.productName.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    return matchesSearch;
+    return searchQuery === '' ||
+        order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.items.some(item => item.productName.toLowerCase().includes(searchQuery.toLowerCase()));
   });
 
   // Categorize orders

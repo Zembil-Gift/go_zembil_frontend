@@ -1,25 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { vendorService } from '@/services/vendorService';
-import { getEventImageUrl } from '@/utils/imageUtils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import {useQuery} from '@tanstack/react-query';
+import {Link, useParams} from 'react-router-dom';
+import {useAuth} from '@/hooks/useAuth';
+import {vendorService} from '@/services/vendorService';
+import {getEventImageUrl} from '@/utils/imageUtils';
+import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {Button} from '@/components/ui/button';
+import {Badge} from '@/components/ui/badge';
+import {Separator} from '@/components/ui/separator';
 import {
+  AlertTriangle,
   ArrowLeft,
   Calendar,
+  CheckCircle,
+  Clock,
   DollarSign,
+  Edit,
   Image as ImageIcon,
   MapPin,
-  Clock,
   Ticket,
-  Edit,
-  AlertTriangle,
-  CheckCircle,
 } from 'lucide-react';
-import { RejectionReasonWithModal } from '@/components/RejectionReasonModal';
+import {RejectionReasonWithModal} from '@/components/RejectionReasonModal';
 
 export default function VendorEventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -29,8 +29,7 @@ export default function VendorEventDetail() {
   const { data: event, isLoading } = useQuery({
     queryKey: ['event', eventId],
     queryFn: async () => {
-      const response = await vendorService.getEventById(eventId!);
-      return response;
+      return await vendorService.getEventById(eventId!);
     },
     enabled: isAuthenticated && !!eventId,
   });

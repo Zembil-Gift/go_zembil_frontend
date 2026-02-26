@@ -1,35 +1,35 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  Package, 
-  Clock,
-  CheckCircle,
-  XCircle,
+import {useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import {Link, useNavigate} from 'react-router-dom';
+import {motion} from 'framer-motion';
+import {
   AlertCircle,
-  RefreshCw,
-  User,
-  Filter,
-  Search,
+  CheckCircle,
+  Clock,
   DollarSign,
-  MessageSquare,
   Eye,
+  Filter,
+  MessageSquare,
+  Package,
   Play,
-  Truck
+  RefreshCw,
+  Search,
+  Truck,
+  User,
+  XCircle
 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/hooks/useAuth';
+import {Button} from '@/components/ui/button';
+import {Badge} from '@/components/ui/badge';
+import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
+import {Skeleton} from '@/components/ui/skeleton';
+import {Input} from '@/components/ui/input';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
+import {useAuth} from '@/hooks/useAuth';
 
-import { customOrderService } from '@/services/customOrderService';
-import type { CustomOrder, CustomOrderStatus } from '@/types/customOrders';
+import {customOrderService} from '@/services/customOrderService';
+import type {CustomOrder, CustomOrderStatus} from '@/types/customOrders';
 
 export default function VendorCustomOrders() {
   const navigate = useNavigate();
@@ -54,12 +54,10 @@ export default function VendorCustomOrders() {
 
   // Filter orders by search query
   const filteredOrders = orders.filter((order: CustomOrder) => {
-    const matchesSearch = searchQuery === '' || 
-      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.templateName?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    return matchesSearch;
+    return searchQuery === '' ||
+        order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.templateName?.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   // Categorize orders

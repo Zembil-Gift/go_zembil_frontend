@@ -1,24 +1,23 @@
-import { useQuery } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { serviceService, ServiceResponse } from '@/services/serviceService';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import {useQuery} from '@tanstack/react-query';
+import {Link, useParams} from 'react-router-dom';
+import {useAuth} from '@/hooks/useAuth';
+import {serviceService} from '@/services/serviceService';
+import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {Button} from '@/components/ui/button';
+import {Badge} from '@/components/ui/badge';
+import {Separator} from '@/components/ui/separator';
 import {
+  AlertTriangle,
   ArrowLeft,
   Briefcase,
-  DollarSign,
-  Image as ImageIcon,
-  Tag,
+  CheckCircle,
   Clock,
   Edit,
-  AlertTriangle,
-  CheckCircle,
+  Image as ImageIcon,
   Package,
+  Tag,
 } from 'lucide-react';
-import { RejectionReasonWithModal } from '@/components/RejectionReasonModal';
+import {RejectionReasonWithModal} from '@/components/RejectionReasonModal';
 
 export default function VendorServiceDetail() {
   const { id } = useParams<{ id: string }>();
@@ -28,8 +27,7 @@ export default function VendorServiceDetail() {
   const { data: service, isLoading } = useQuery({
     queryKey: ['service', serviceId],
     queryFn: async () => {
-      const response = await serviceService.getServiceById(serviceId!);
-      return response;
+      return await serviceService.getServiceById(serviceId!);
     },
     enabled: isAuthenticated && !!serviceId,
   });

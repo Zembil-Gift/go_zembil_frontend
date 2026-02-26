@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { vendorService, Product } from '@/services/vendorService';
-import { getProductImageUrl } from '@/utils/imageUtils';
+import { vendorService } from '@/services/vendorService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +12,6 @@ import {
   DollarSign,
   Image as ImageIcon,
   Tag,
-  Calendar,
-  Eye,
   Edit,
   AlertTriangle,
   CheckCircle,
