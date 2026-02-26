@@ -39,7 +39,7 @@ const getCategoryIcon = (categoryName: string) => {
 };
 
 function CustomOrdersContent() {
-  const { user, isInitialized } = useAuth();
+  const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
 
   // State for "Why Choose" section visibility with localStorage persistence

@@ -18,7 +18,7 @@ import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
 
 export default function Gifts() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, isInitialized } = useAuth();
+  const {isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
   
   // Get path parameters

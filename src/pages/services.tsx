@@ -243,7 +243,7 @@ const CITY_OPTIONS = [
 export default function Services() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isInitialized } = useAuth();
+  const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
 
   // Parse URL parameters

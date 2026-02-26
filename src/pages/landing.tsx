@@ -26,7 +26,7 @@ import CampaignBanner from "@/components/landing/CampaignBanner";
 
 export default function Landing() {
   const location = useLocation();
-  const { user, isInitialized } = useAuth();
+  const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
 
   // Parse URL parameters to set initial category

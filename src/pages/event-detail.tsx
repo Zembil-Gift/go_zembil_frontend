@@ -46,7 +46,7 @@ export default function EventDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isInitialized } = useAuth();
+  const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
   
   // Ticket selection state - map of ticketTypeId to array of recipient info

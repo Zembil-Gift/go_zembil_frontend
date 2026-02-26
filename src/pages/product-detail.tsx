@@ -85,7 +85,7 @@ export default function ProductDetail() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   
   const { toast } = useToast();
-  const { user, isInitialized, isAuthenticated } = useAuth();
+  const { isInitialized, isAuthenticated } = useAuth();
   const activeCurrency = useActiveCurrency();
   const { addItem, openCart } = useCartStore();
   const queryClient = useQueryClient();

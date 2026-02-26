@@ -1,55 +1,40 @@
-import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
+import {useEffect, useState} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {useQuery} from '@tanstack/react-query';
+import {AnimatePresence, motion} from 'framer-motion';
 import FadeIn from '@/components/animations/FadeIn';
-import {
-  Calendar, 
-  MapPin, 
-  Clock, 
-  Search, 
-  Filter, 
-  ChevronDown,
-  ChevronRight,
-  Ticket,
-  Sparkles
-} from 'lucide-react';
+import {Calendar, ChevronDown, ChevronRight, Clock, Filter, MapPin, Search, Sparkles, Ticket} from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
+import {Badge} from '@/components/ui/badge';
+import {Card, CardContent} from '@/components/ui/card';
+import {Skeleton} from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getEventImageUrl } from '@/utils/imageUtils';
-import { formatPrice } from '@/lib/currency';
+import {getEventImageUrl} from '@/utils/imageUtils';
+import {formatPrice} from '@/lib/currency';
 import PageNavigator from '@/components/PageNavigator';
-import { reviewService } from '@/services/reviewService';
-import { CompactRating } from '@/components/reviews';
+import {reviewService} from '@/services/reviewService';
+import {CompactRating} from '@/components/reviews';
 
-import { 
-  EventFilters, 
-  Country,
-  CITIES,
-  EVENT_CATEGORIES
-} from '@/types/events';
-import { eventOrderService, EventResponse } from '@/services/eventOrderService';
-import { useAuth } from '@/hooks/useAuth';
-import { useActiveCurrency } from '@/hooks/useActiveCurrency';
+import {CITIES, Country, EVENT_CATEGORIES, EventFilters} from '@/types/events';
+import {eventOrderService, EventResponse} from '@/services/eventOrderService';
+import {useAuth} from '@/hooks/useAuth';
+import {useActiveCurrency} from '@/hooks/useActiveCurrency';
 
 // Helper function for badge colors
 export default function Events() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isInitialized } = useAuth();
+  const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
   
   // Parse URL parameters for filters
@@ -79,14 +64,13 @@ export default function Events() {
     queryFn: async () => {
       try {
         // Try real API first - backend resolves currency from user session
-        const response = await eventOrderService.searchEvents(
-          eventFilters.q,
-          eventFilters.city,
-          eventFilters.category ? parseInt(eventFilters.category) : undefined,
-          eventsPage, // page from state
-          eventsPerPage // size
+        return await eventOrderService.searchEvents(
+            eventFilters.q,
+            eventFilters.city,
+            eventFilters.category ? parseInt(eventFilters.category) : undefined,
+            eventsPage, // page from state
+            eventsPerPage // size
         );
-        return response;
       } catch (error) {
         console.error('Failed to fetch events from API:', error);
         throw error;
@@ -404,7 +388,7 @@ function RealEventCard({ event, index }: { event: EventResponse; index: number }
             loading="lazy"
             onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
           />
-          <div className="w-full h-full bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center hidden">
+          <div className="w-full h-full bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center">
             <Calendar className="h-16 w-16 text-white/50" />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

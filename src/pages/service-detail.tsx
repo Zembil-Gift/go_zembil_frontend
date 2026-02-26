@@ -32,7 +32,7 @@ import { useActiveCurrency } from '@/hooks/useActiveCurrency';
 export default function ServiceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, isInitialized } = useAuth();
+  const {isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
