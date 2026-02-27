@@ -158,7 +158,7 @@ export default function AdminCustomOrderAssignments() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Waitlist Custom Orders</p>
-                <p className="text-2xl font-bold">{unassignedCustomOrders.length}</p>
+                <p className="text-xl font-bold">{unassignedCustomOrders.length}</p>
               </div>
             </div>
           </CardContent>
@@ -171,7 +171,7 @@ export default function AdminCustomOrderAssignments() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Active Assignments</p>
-                <p className="text-2xl font-bold">
+                <p className="text-xl font-bold">
                   {assignments.filter(a => !['DELIVERED', 'FAILED', 'CANCELLED'].includes(a.status)).length}
                 </p>
               </div>
@@ -186,7 +186,7 @@ export default function AdminCustomOrderAssignments() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Completed</p>
-                <p className="text-2xl font-bold">
+                <p className="text-xl font-bold">
                   {assignments.filter(a => a.status === 'DELIVERED').length}
                 </p>
               </div>

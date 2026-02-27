@@ -143,7 +143,7 @@ export default function AdminDeliveryPayments() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Pending Payments</p>
-                <p className="text-2xl font-bold">{paymentFilter === 'UNPAID' ? unpaidCount : '—'}</p>
+                <p className="text-xl font-bold">{paymentFilter === 'UNPAID' ? unpaidCount : '—'}</p>
               </div>
             </div>
           </CardContent>
@@ -156,7 +156,7 @@ export default function AdminDeliveryPayments() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Total Unpaid</p>
-                <p className="text-2xl font-bold">
+                <p className="text-xl font-bold">
                   {paymentFilter === 'UNPAID' ? formatDeliveryFee(unpaidTotal, assignments[0]?.deliveryFeeCurrency) : '—'}
                 </p>
               </div>
@@ -171,7 +171,7 @@ export default function AdminDeliveryPayments() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Paid This View</p>
-                <p className="text-2xl font-bold">{paymentFilter === 'PAID' ? paidCount : '—'}</p>
+                <p className="text-xl font-bold">{paymentFilter === 'PAID' ? paidCount : '—'}</p>
               </div>
             </div>
           </CardContent>

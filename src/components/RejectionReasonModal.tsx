@@ -46,10 +46,8 @@ export function RejectionReasonModal({
   );
 }
 
-/** Character length after which we suggest viewing in modal (e.g. in cards). */
 export const REJECTION_REASON_TRUNCATE_LENGTH = 80;
 
-/** Renders truncated reason and a "View reason" button that opens the modal. */
 export function RejectionReasonWithModal({
   reason,
   title,
