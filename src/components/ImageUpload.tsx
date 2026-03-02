@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { X, Upload, Star, Loader2, Sparkles } from 'lucide-react';
+import { X, Upload, Star, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ImageDto } from '@/services/imageService';
@@ -351,15 +351,7 @@ export function ImageUpload({
             aria-label="Upload images"
           />
 
-          {isCompressing ? (
-            <>
-              <Sparkles className="h-8 w-8 animate-pulse text-amber-500" />
-              <div className="text-center">
-                 <p className="text-sm font-medium text-amber-600">Optimizing images...</p>
-                 <p className="text-xs text-muted-foreground mt-1">Compressing for faster upload</p>
-              </div>
-            </>
-          ) : isUploading ? (
+          {isUploading ? (
             <>
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Uploading...</p>
