@@ -65,6 +65,7 @@ import AdminCustomTemplates from "@/pages/admin/AdminCustomTemplates";
 import AdminCustomOrders from "@/pages/admin/AdminCustomOrders";
 import AdminPaymentMethods from "@/pages/admin/AdminPaymentMethods";
 import AdminCampaigns from "@/pages/admin/AdminCampaigns";
+import AdminCampaignParticipations from "@/pages/admin/AdminCampaignParticipations";
 import AdminCommission from "@/pages/admin/AdminCommission";
 import AdminRoles from "@/pages/admin/AdminRoles";
 import AdminPermissions from "@/pages/admin/AdminPermissions";
@@ -106,6 +107,8 @@ import CreateDiscount from "@/pages/vendor/CreateDiscount";
 import VendorDiscountDetail from "@/pages/vendor/VendorDiscountDetail";
 import EditDiscount from "@/pages/vendor/EditDiscount";
 import VendorDiscountUsages from "@/pages/vendor/VendorDiscountUsages";
+import VendorCampaignsPage from "@/pages/vendor/VendorCampaignsPage";
+import CampaignDetailPage from "@/pages/campaign-detail";
 import MyCustomOrders from "@/pages/customer/MyCustomOrders";
 import CustomerCustomOrderDetail from "@/pages/customer/CustomerCustomOrderDetail";
 import CustomOrderCategories from "@/pages/customer/CustomOrderCategories";
@@ -278,7 +281,26 @@ function DeliveryRoute({ children }: { children: React.ReactNode }) {
 }
 
 function HomeRoute() {
-  // Allow all users to browse home page - no forced redirects
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-eagle-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const role = user?.role?.toUpperCase();
+  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+
+  if (isAuthenticated && isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+
   return <Landing />;
 }
 
@@ -320,6 +342,9 @@ export default function Router() {
           <Route path="service-checkout/:serviceId" element={<ProtectedRoute><ServiceCheckout /></ProtectedRoute>} />
           <Route path="service-confirmation/:orderId" element={<ProtectedRoute><ServiceConfirmation /></ProtectedRoute>} />
           <Route path="service-confirmation" element={<ProtectedRoute><ServiceConfirmation /></ProtectedRoute>} />
+          
+          {/* Campaign Detail / Registration */}
+          <Route path="campaigns/:id" element={<CampaignDetailPage />} />
           
           {/* Product Detail */}
           <Route path="product/:id" element={<ProductDetail />} />
@@ -467,6 +492,7 @@ export default function Router() {
           <Route path="discounts/:id" element={<VendorDiscountDetail />} />
           <Route path="discounts/:id/edit" element={<EditDiscount />} />
           <Route path="discounts/:id/usages" element={<VendorDiscountUsages />} />
+          <Route path="campaigns" element={<VendorCampaignsPage />} />
           <Route path="custom-templates" element={<VendorCustomTemplates />} />
           <Route path="custom-templates/new" element={<CreateCustomTemplate />} />
           <Route path="custom-templates/:id" element={<VendorCustomTemplateDetail />} />
@@ -499,6 +525,7 @@ export default function Router() {
           <Route path="order-assignments" element={<AdminOrderAssignments />} />
           <Route path="delivery-confirmations" element={<AdminDeliveryConfirmations />} /> */}
           <Route path="campaigns" element={<AdminCampaigns />} />
+          <Route path="campaign-participations" element={<AdminCampaignParticipations />} />
           <Route path="featured-ads" element={<AdminFeaturedAds />} />
           <Route path="custom-templates" element={<AdminCustomTemplates />} />
           <Route path="custom-orders" element={<AdminCustomOrders />} />
