@@ -90,7 +90,7 @@ function CustomOrdersContent() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
       {/* Simplified Hero Section */}
-      <section className="bg-gradient-to-r from-eagle-green to-viridian-green">
+      <section className="bg-eagle-green">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <FadeIn delay={0.1}>
             <div className="flex items-center justify-between">
@@ -207,7 +207,7 @@ function CustomOrdersContent() {
                   <Sparkles className="h-6 w-6 text-eagle-green" />
                 </div>
                 <div className="text-left">
-                  <h2 className="text-2xl lg:text-3xl font--bold text-eagle-green mb-1">
+                  <h2 className="text-xl lg:text-2xl font--bold text-eagle-green mb-1">
                     Why Choose Our Custom Order System?
                   </h2>
                   <p className="text-sm font--light text-eagle-green/70">
@@ -298,7 +298,7 @@ function CustomOrdersContent() {
                   <Info className="h-6 w-6 text-eagle-green" />
                 </div>
                 <div className="text-left">
-                  <h2 className="text-2xl lg:text-3xl font--bold text-eagle-green mb-1">
+                  <h2 className="text-xl lg:text-2xl font--bold text-eagle-green mb-1">
                     How It Works
                   </h2>
                   <p className="text-sm font--light text-eagle-green/70">
