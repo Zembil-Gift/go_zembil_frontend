@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Heart, ShoppingCart, User, Globe, LogOut, Menu, X, Package, Ticket, Shield, Store } from "lucide-react";
+import { Heart, ShoppingCart, User, Globe, LogOut, Menu, X, Package, Ticket, Shield, Store, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -33,10 +33,16 @@ export default function StreamlinedHeader() {
   const location = useLocation();
   const pathname = location.pathname;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = useState(false);
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+    setIsMobileCategoriesOpen(false);
+  };
 
   // Close mobile menu when route changes
   useEffect(() => {
-    setIsMobileMenuOpen(false);
+    closeMobileMenu();
   }, [pathname]);
 
   // Get cart and wishlist counts using real API
@@ -395,7 +401,13 @@ export default function StreamlinedHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                onClick={() => {
+                  if (isMobileMenuOpen) {
+                    closeMobileMenu();
+                  } else {
+                    setIsMobileMenuOpen(true);
+                  }
+                }}
                 className="text-eagle-green hover:text-viridian-green p-2"
               >
                 {isMobileMenuOpen ? (
@@ -415,7 +427,7 @@ export default function StreamlinedHeader() {
           {/* Backdrop */}
           <div 
             className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setIsMobileMenuOpen(false)}
+            onClick={closeMobileMenu}
           />
           
           {/* Mobile Menu */}
@@ -427,7 +439,7 @@ export default function StreamlinedHeader() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={closeMobileMenu}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <X className="h-5 w-5" />
@@ -450,9 +462,24 @@ export default function StreamlinedHeader() {
                   </Link>
                 ))}
                 
-                {/* Categories */}
-                <div className="px-2 py-2">
-                  <CategoryDropdown isMobile={true} />
+                {/* Categories - Collapsed by default on mobile */}
+                <div className="px-2 py-2 border-t border-gray-100 mt-2 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileCategoriesOpen((prev) => !prev)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-base font-medium text-eagle-green rounded-lg hover:bg-gray-50 transition-colors"
+                    aria-expanded={isMobileCategoriesOpen}
+                    aria-controls="mobile-categories-panel"
+                  >
+                    <span>Categories</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${isMobileCategoriesOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isMobileCategoriesOpen && (
+                    <div id="mobile-categories-panel" className="mt-2 pl-1">
+                      <CategoryDropdown isMobile={true} />
+                    </div>
+                  )}
                 </div>
               </nav>
 
@@ -565,7 +592,7 @@ export default function StreamlinedHeader() {
                       <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                         <Link to="/vendor-signup">
                           <Store className="mr-2 h-4 w-4" />
-                          Join Vendor
+                          Join as a Vendor
                         </Link>
                       </Button>
                     )}
@@ -590,16 +617,16 @@ export default function StreamlinedHeader() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
+                    {/* <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/register-celebrity">
                         <span className="mr-2">🌟</span>
                         Celebrity
                       </Link>
-                    </Button>
+                    </Button> */}
                     <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
                       <Link to="/vendor-signup">
                         <Store className="mr-2 h-4 w-4" />
-                        Join Vendor
+                        Join as a Vendor
                       </Link>
                     </Button>
                     <Button size="sm" asChild className="w-full h-9">
