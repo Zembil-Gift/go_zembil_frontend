@@ -62,8 +62,8 @@ const CategoriesList = forwardRef<HTMLDivElement, CategoriesListProps>(
           const hasSubcategories = category.subcategories && category.subcategories.length > 0;
 
           return (
-            <div key={category.id} className={`${isMobile ? 'border-b border-gray-50 last:border-b-0' : 'border-b border-gray-100 last:border-b-0 pb-2 last:pb-0'}`}>
-              <div className={`flex items-center ${isMobile ? 'gap-2 px-4 py-4' : 'justify-between'}`}
+            <div key={category.id} className={`${isMobile ? 'border-b border-gray-100 last:border-b-0' : 'border-b border-gray-100 last:border-b-0 pb-2 last:pb-0'}`}>
+              <div className={`flex items-center ${isMobile ? 'gap-2 px-2 py-2' : 'justify-between'}`}
                    role="button" 
                    tabIndex={0}
                    aria-expanded={isExpanded}
@@ -72,9 +72,9 @@ const CategoriesList = forwardRef<HTMLDivElement, CategoriesListProps>(
                 <Button
                   variant="ghost"
                   onClick={(e) => handleCategoryClick(category, e)}
-                  className={`${isMobile ? 'flex-1' : 'flex-1 mr-2'} justify-start text-left hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 p-3 h-auto rounded-lg group`}
+                  className={`${isMobile ? 'flex-1 p-2' : 'flex-1 mr-2 p-3'} justify-start text-left hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 h-auto rounded-lg group`}
                 >
-                  <Icon className="h-5 w-5 mr-3 text-blue-600 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
+                  <Icon className="h-5 w-5 mr-2 text-blue-600 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-gray-900 group-hover:text-blue-700 text-base leading-tight transition-colors duration-200 truncate pr-2">
                       {category.name}
@@ -90,7 +90,7 @@ const CategoriesList = forwardRef<HTMLDivElement, CategoriesListProps>(
                     type="button"
                     onClick={(e) => toggleCategory(category.id, e)}
                     onKeyDown={(e) => handleKeyDown(e, () => toggleCategory(category.id, e as any))}
-                    className="p-2 hover:bg-blue-100 rounded-lg transition-all duration-200 group flex-shrink-0 border border-gray-300 hover:border-blue-400 shadow-sm hover:shadow-md min-w-[32px] min-h-[32px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="p-1.5 hover:bg-blue-100 rounded-lg transition-all duration-200 group flex-shrink-0 border border-gray-300 hover:border-blue-400 shadow-sm hover:shadow-md min-w-[28px] min-h-[28px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${category.name} subcategories`}
                     aria-expanded={isExpanded}
                     aria-controls={`category-${category.id}-subcategories`}
@@ -112,19 +112,19 @@ const CategoriesList = forwardRef<HTMLDivElement, CategoriesListProps>(
                     animate={{ height: "auto", opacity: 1, y: 0 }}
                     exit={{ height: 0, opacity: 0, y: -10 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className={`overflow-hidden ${isMobile ? 'border-l-2 border-blue-300 ml-8 pl-4 bg-blue-50 rounded-r-lg' : 'mt-2 ml-8 pl-4 border-l-2 border-blue-300 bg-blue-50 rounded-r-lg'}`}
+                    className={`overflow-hidden ${isMobile ? 'border-l-2 border-blue-300 ml-5 pl-2 bg-blue-50 rounded-r-lg' : 'mt-2 ml-8 pl-4 border-l-2 border-blue-300 bg-blue-50 rounded-r-lg'}`}
                     role="region"
                     aria-label={`${category.name} subcategories`}
                     aria-live="polite"
                   >
-                    <div className={`space-y-1 ${isMobile ? 'pb-4' : 'py-2'}`}>
+                    <div className={`space-y-1 ${isMobile ? 'pb-2' : 'py-2'}`}>
                       {category.subcategories?.map((subcategory) => (
                         <Button
                           key={subcategory.id}
                           variant="ghost"
                           onClick={(e) => handleSubcategoryClick(category, subcategory, e)}
                           onKeyDown={(e) => handleKeyDown(e, () => handleSubcategoryClick(category, subcategory, e as any))}
-                          className={`w-full justify-start text-left hover:bg-blue-100 hover:text-blue-700 transition-all duration-200 rounded-lg group ${isMobile ? 'py-3 px-3' : 'py-2 px-3'}`}
+                          className={`w-full justify-start text-left hover:bg-blue-100 hover:text-blue-700 transition-all duration-200 rounded-lg group ${isMobile ? 'py-2 px-2' : 'py-2 px-3'}`}
                           aria-label={`Browse ${subcategory.name} products`}
                         >
                           <div className="flex items-center">

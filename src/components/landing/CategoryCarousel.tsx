@@ -225,7 +225,7 @@ export default function CategoryCarousel({
 
   if (isLoading) {
     return (
-      <section id="perfect-gift" className="py-16 bg-white">
+      <section id="perfect-gift" className="pt-6 pb-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-eagle-green" />
@@ -237,7 +237,7 @@ export default function CategoryCarousel({
   }
 
   return (
-    <section id="perfect-gift" className="py-16 bg-white">
+    <section id="perfect-gift" className="pt-6 pb-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <FadeIn delay={0.2} duration={0.8}>
           <div className="text-center mb-12">
@@ -250,14 +250,13 @@ export default function CategoryCarousel({
           </div>
         </FadeIn>
 
-        {/* Category Pills */}
-        <div className="flex justify-center mb-12">
-          <div className="bg-white border border-eagle-green/20 p-1 rounded-xl inline-flex flex-wrap shadow-sm gap-2">
+        <div className="flex justify-center mb-8 sm:mb-12">
+          <div className="w-full max-w-md sm:max-w-none bg-white border border-eagle-green/20 p-1.5 sm:p-1 rounded-xl shadow-sm grid grid-cols-2 gap-1.5 sm:inline-flex sm:flex-wrap sm:w-auto sm:gap-2">
             {categoryTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => handleCategorySelect(tab.id)}
-                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-all duration-200 text-sm sm:text-base whitespace-nowrap ${
+                className={`px-2.5 sm:px-6 py-2.5 sm:py-3 rounded-lg transition-all duration-200 text-xs sm:text-base leading-tight min-h-[44px] sm:min-h-0 ${
                   selectedCategory === tab.id
                     ? "bg-eagle-green text-white shadow-sm ring-2 ring-yellow/40"
                     : "text-eagle-green hover:text-white hover:bg-viridian-green"
