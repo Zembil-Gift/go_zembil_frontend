@@ -181,7 +181,7 @@ function ShopContent() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
         {/* Hero skeleton */}
-        <div className="relative bg-gradient-to-br from-eagle-green via-eagle-green to-viridian-green">
+        <div className="relative bg-eagle-green">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <Skeleton className="h-12 w-96 mb-4 bg-white/20" />
             <Skeleton className="h-6 w-80 bg-white/20" />
@@ -228,11 +228,11 @@ function ShopContent() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
       {/* Simplified Hero Section */}
-      <section className="bg-gradient-to-r from-eagle-green to-viridian-green">
+      <section className="bg-eagle-green">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <FadeIn delay={0.1}>
             <div className="flex items-center gap-2 mb-2">
-              <Gift className="h-5 w-5 text-june-bud" />
+              <Gift className="h-5 w-5 text-white" />
               <h1 className="text-2xl lg:text-3xl font-bold text-white">
                 Shop Gifts
               </h1>
