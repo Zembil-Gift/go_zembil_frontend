@@ -1,5 +1,5 @@
 import * as React from "react";
-import { parsePhoneNumberFromString, getCountries, getCountryCallingCode, CountryCode, isValidPhoneNumber } from "libphonenumber-js";
+import { parsePhoneNumberFromString, getCountries, getCountryCallingCode, CountryCode, isValidPhoneNumber } from "libphonenumber-js/max";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -85,6 +85,8 @@ export interface PhoneInputProps {
   value?: string;
   onChange?: (value: string, isValid: boolean, e164?: string) => void;
   defaultCountry?: CountryCode;
+  country?: CountryCode;
+  onCountryChange?: (country: CountryCode) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -96,6 +98,8 @@ export function PhoneInput({
   value = "",
   onChange,
   defaultCountry = "ET",
+  country,
+  onCountryChange,
   placeholder = "911 234 567",
   disabled = false,
   className,
@@ -108,10 +112,12 @@ export function PhoneInput({
 
   // Parse initial value if provided
   React.useEffect(() => {
-    if (value && !isInitialized) {
+    if (isInitialized) return;
+
+    if (value) {
       const parsed = parsePhoneNumberFromString(value);
       if (parsed) {
-        setSelectedCountry(parsed.country as CountryCode || defaultCountry);
+        setSelectedCountry((parsed.country as CountryCode) || defaultCountry);
         setNationalNumber(parsed.nationalNumber);
       } else if (value.startsWith("+")) {
         // Try to extract country from the value
@@ -126,18 +132,48 @@ export function PhoneInput({
       } else {
         setNationalNumber(value.replace(/\D/g, ""));
       }
-      setIsInitialized(true);
     }
+
+    // Mark initialized even if value is empty so later typing doesn't re-run
+    // initialization logic and override the user's first country selection.
+    setIsInitialized(true);
   }, [value, defaultCountry, isInitialized]);
 
+  // Keep selected country synced when parent controls it.
+  React.useEffect(() => {
+    if (country && country !== selectedCountry) {
+      setSelectedCountry(country);
+    }
+  }, [country, selectedCountry]);
+
   const handleCountryChange = (country: string) => {
+    // Guard against empty/invalid country values from the select
+    if (!country) {
+      return;
+    }
+
     const countryCode = country as CountryCode;
+
+    let callingCode: string;
+    try {
+      callingCode = getCountryCallingCode(countryCode);
+    } catch {
+      // If libphonenumber-js doesn't recognize this country, don't update state
+      return;
+    }
+
     setSelectedCountry(countryCode);
+    onCountryChange?.(countryCode);
+
+    if (!nationalNumber) {
+      onChange?.("", false, undefined);
+      return;
+    }
     
     // Re-validate with new country
-    const callingCode = getCountryCallingCode(countryCode);
     const fullNumber = `+${callingCode}${nationalNumber}`;
-    const isValid = nationalNumber.length > 0 && isValidPhoneNumber(fullNumber, countryCode);
+    const isValid =
+      nationalNumber.length > 0 && isValidPhoneNumber(fullNumber, countryCode);
     
     onChange?.(fullNumber, isValid, isValid ? fullNumber : undefined);
   };
@@ -148,8 +184,25 @@ export function PhoneInput({
     const digitsOnly = input.replace(/\s/g, "");
     
     setNationalNumber(digitsOnly);
+
+    if (!digitsOnly) {
+      onChange?.("", false, undefined);
+      return;
+    }
     
-    const callingCode = getCountryCallingCode(selectedCountry);
+    // Safely determine the calling code, falling back to the default country if needed
+    let callingCode: string;
+    try {
+      callingCode = getCountryCallingCode(selectedCountry);
+    } catch {
+      try {
+        callingCode = getCountryCallingCode(defaultCountry);
+      } catch {
+        onChange?.("", false, undefined);
+        return;
+      }
+    }
+
     const fullNumber = `+${callingCode}${digitsOnly}`;
     
     // Validate the number
@@ -165,19 +218,35 @@ export function PhoneInput({
     onChange?.(fullNumber, isValid, e164);
   };
 
-  const callingCode = getCountryCallingCode(selectedCountry);
+  // Safely compute the current calling code so invalid country codes don't crash the app
+  let callingCode = "";
+  try {
+    callingCode = getCountryCallingCode(selectedCountry);
+  } catch {
+    try {
+      callingCode = getCountryCallingCode(defaultCountry);
+    } catch {
+      callingCode = "";
+    }
+  }
   const countryData = COUNTRY_DATA[selectedCountry];
   const sortedCountries = React.useMemo(() => getSortedCountries(), []);
 
   // Format national number for display
   const formatDisplayNumber = (num: string): string => {
     if (num.length === 0) return "";
-    const parsed = parsePhoneNumberFromString(`+${callingCode}${num}`, selectedCountry);
-    if (parsed) {
-      const formatted = parsed.formatInternational();
-      // Remove the country code part for display
-      return formatted.replace(`+${callingCode}`, "").trim();
+
+    try {
+      const parsed = parsePhoneNumberFromString(`+${callingCode}${num}`, selectedCountry);
+      if (parsed) {
+        const formatted = parsed.formatInternational();
+        // Remove the country code part for display
+        return formatted.replace(`+${callingCode}`, "").trim();
+      }
+    } catch {
+      // Fall through to returning the raw digits if parsing fails
     }
+
     return num;
   };
 
