@@ -4,7 +4,7 @@ import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useMutation} from "@tanstack/react-query";
-import {isValidPhoneNumber, parsePhoneNumberFromString} from "libphonenumber-js";
+import {isValidPhoneNumber, parsePhoneNumberFromString} from "libphonenumber-js/max";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
