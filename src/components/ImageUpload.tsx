@@ -46,7 +46,7 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const [previewImages, setPreviewImages] = useState<PreviewImage[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
-  const [isCompressing, setIsCompressing] = useState(false);
+  const [, setIsCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

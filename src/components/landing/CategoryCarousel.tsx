@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import FadeIn from "../animations/FadeIn";
-import { parseUrlParams, buildUrlParams } from "../../shared/categories";
+import { parseUrlParams, buildUrlParams } from "@shared/categories.ts";
 import { useCategories, SubCategoryResponse } from "@/hooks/useCategories";
 import { getIconByName } from "./iconMapping";
 

@@ -49,7 +49,7 @@ export default function StreamlinedHeader() {
   const { data: cartData } = useQuery({
     queryKey: ['cart', 'items'],
     queryFn: () => cartService.getCart(),
-    enabled: !!isAuthenticated,
+    enabled: isAuthenticated,
   });
   
   // Use the wishlist hook for count
