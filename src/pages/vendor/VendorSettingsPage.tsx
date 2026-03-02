@@ -120,7 +120,7 @@ function VendorCertificateCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
+        <div className="flex flex-col sm:flex-row sm:items-center items-start gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
           <CheckCircle className="h-8 w-8 text-green-600 flex-shrink-0" />
           <div className="flex-1">
             <h4 className="font-medium text-green-900">Certificate Verified</h4>
@@ -133,6 +133,7 @@ function VendorCertificateCard() {
             variant="outline"
             onClick={handleDownloadPdf}
             disabled={isDownloading}
+            className="w-full sm:w-auto"
           >
             {isDownloading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

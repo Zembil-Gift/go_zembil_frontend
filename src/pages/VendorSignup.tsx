@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
-import { isValidPhoneNumber, parsePhoneNumberFromString } from "libphonenumber-js";
+import { isValidPhoneNumber, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js/max";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,6 +155,7 @@ export default function VendorSignup() {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [showFullTermsModal, setShowFullTermsModal] = useState(false);
   const [selectedTermForDetail, setSelectedTermForDetail] = useState<number | null>(null);
+  const [phoneCountry, setPhoneCountry] = useState<CountryCode>("ET");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -442,6 +443,9 @@ export default function VendorSignup() {
     setFormData(form.getValues());
     await fetchTermsForVendorType(vendorType);
     setCurrentStep("terms");
+
+    // Ensure the new step starts at the top of the page
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleProceedToVideo = () => {
@@ -453,6 +457,9 @@ export default function VendorSignup() {
     setHasWatchedVideo(false);
     setGeneratedCertificate(null);
     setCurrentStep("video");
+
+    // Ensure the new step starts at the top of the page
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const onSubmit = async (data: VendorSignupForm) => {
@@ -574,9 +581,17 @@ export default function VendorSignup() {
                   <PhoneInput
                     id="phoneNumber"
                     value={form.watch("phoneNumber")}
+                    country={phoneCountry}
+                    onCountryChange={setPhoneCountry}
                     onChange={(value, isValid, e164) => {
-                      form.setValue("phoneNumber", e164 || value, { shouldValidate: true });
-                      if (!isValid && value.length > 3) {
+                      const nextValue = e164 || value;
+                      const hasDigits = nextValue.replace(/\D/g, "").length > 0;
+                      form.setValue("phoneNumber", nextValue, { shouldValidate: hasDigits });
+                      if (!hasDigits) {
+                        form.clearErrors("phoneNumber");
+                        return;
+                      }
+                      if (!isValid && hasDigits) {
                         form.setError("phoneNumber", { message: "Please enter a valid phone number" });
                       } else {
                         form.clearErrors("phoneNumber");
@@ -729,9 +744,17 @@ export default function VendorSignup() {
                   <PhoneInput
                     id="businessPhone"
                     value={form.watch("businessPhone")}
+                    country={phoneCountry}
+                    onCountryChange={setPhoneCountry}
                     onChange={(value, isValid, e164) => {
-                      form.setValue("businessPhone", e164 || value, { shouldValidate: true });
-                      if (!isValid && value.length > 3) {
+                      const nextValue = e164 || value;
+                      const hasDigits = nextValue.replace(/\D/g, "").length > 0;
+                      form.setValue("businessPhone", nextValue, { shouldValidate: hasDigits });
+                      if (!hasDigits) {
+                        form.clearErrors("businessPhone");
+                        return;
+                      }
+                      if (!isValid && hasDigits) {
                         form.setError("businessPhone", { message: "Please enter a valid business phone number" });
                       } else {
                         form.clearErrors("businessPhone");
@@ -935,12 +958,22 @@ export default function VendorSignup() {
                 <div className="text-center py-8 text-gray-500">No terms found for this vendor type.</div>
               )}
 
-              <div className="flex justify-between pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep("form")}>
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-between pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentStep("form")}
+                  className="w-full sm:w-auto"
+                >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Details
                 </Button>
-                <Button type="button" onClick={handleProceedToVideo} disabled={!allTermsAccepted} className="bg-emerald-600 hover:bg-emerald-700">
+                <Button
+                  type="button"
+                  onClick={handleProceedToVideo}
+                  disabled={!allTermsAccepted}
+                  className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
+                >
                   Continue to Onboarding Video
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -1046,6 +1079,7 @@ export default function VendorSignup() {
                           variant="outline"
                           onClick={handleDownloadCertificatePdf}
                           disabled={isDownloadingPdf}
+                          className="w-full sm:w-auto"
                         >
                           {isDownloadingPdf ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1060,8 +1094,13 @@ export default function VendorSignup() {
                 </div>
               )}
 
-              <div className="flex justify-between pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep("terms")}>
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-between pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentStep("terms")}
+                  className="w-full sm:w-auto"
+                >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Terms
                 </Button>
@@ -1069,7 +1108,7 @@ export default function VendorSignup() {
                   type="button"
                   onClick={form.handleSubmit(onSubmit)}
                   disabled={!generatedCertificate || signupMutation.isPending}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
                 >
                   {signupMutation.isPending ? (
                     <>

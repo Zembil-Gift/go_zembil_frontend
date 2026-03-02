@@ -35,6 +35,7 @@ import {
   Percent,
   XCircle,
   Edit,
+  Megaphone,
 } from "lucide-react";
 import { useState } from "react";
 import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
@@ -132,6 +133,7 @@ export default function VendorDashboardLayout() {
     { value: 'services', path: '/vendor/services', label: 'Services', icon: Briefcase, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
     { value: 'service-orders', path: '/vendor/service-orders', label: 'Service Bookings', icon: Calendar, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
     { value: 'discounts', path: '/vendor/discounts', label: 'Discounts', icon: Percent, show: true },
+    { value: 'campaigns', path: '/vendor/campaigns', label: 'Campaigns', icon: Megaphone, show: true },
     { value: 'custom-templates', path: '/vendor/custom-templates', label: 'Custom Templates', icon: Layers, show: vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID' },
     { value: 'custom-orders', path: '/vendor/custom-orders', label: 'Custom Orders', icon: ShoppingBag, show: vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID', badge: customOrdersNeedsAction },
     { value: 'check-in', path: '/vendor/check-in', label: 'Check-In', icon: ScanLine, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
