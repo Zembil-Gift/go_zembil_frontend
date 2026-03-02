@@ -38,8 +38,6 @@ function useCountdown(endDateTime: string): TimeRemaining {
   return remaining;
 }
 
-
-
 function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center group/timer">
@@ -56,16 +54,49 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
   );
 }
 
+function getCtaConfig(campaign: EventCampaign): { text: string; action: (navigate: ReturnType<typeof useNavigate>) => void } {
+  if (campaign.ctaText && campaign.ctaUrl) {
+    return {
+      text: campaign.ctaText,
+      action: (navigate) => {
+        if (campaign.ctaUrl!.startsWith('http')) {
+          window.open(campaign.ctaUrl!, '_blank');
+        } else {
+          navigate(campaign.ctaUrl!);
+        }
+      },
+    };
+  }
 
+  switch (campaign.campaignType) {
+    case 'VENDOR_PARTICIPATION':
+      return {
+        text: campaign.ctaText || 'Join as Vendor',
+        action: (navigate) => navigate(campaign.ctaUrl || '/vendor/campaigns'),
+      };
+    case 'USER_PARTICIPATION':
+      return {
+        text: campaign.ctaText || 'Join the Challenge',
+        action: (navigate) => navigate(campaign.ctaUrl || `/campaigns/${campaign.id}`),
+      };
+    case 'PRODUCT_EVENT':
+    default:
+      return {
+        text: campaign.ctaText || 'Shop The Collection',
+        action: (navigate) => navigate(`/gifts?category=${campaign.subCategorySlug}`),
+      };
+  }
+}
 
 function CampaignSlide({ campaign, isActive }: { campaign: EventCampaign; isActive: boolean }) {
   const navigate = useNavigate();
   const countdown = useCountdown(campaign.endDateTime);
+  const cta = getCtaConfig(campaign);
 
   if (countdown.total <= 0) return null;
 
   return (
-    <div className="relative w-full h-[550px] sm:h-[600px] md:h-[650px] lg:h-[720px] overflow-hidden group">
+    <div className="relative w-full min-h-[550px] sm:min-h-[600px] md:min-h-[650px] lg:min-h-[720px] group bg-charcoal overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <img
           src={campaign.imageUrl || ''}
@@ -82,15 +113,20 @@ function CampaignSlide({ campaign, isActive }: { campaign: EventCampaign; isActi
 
       <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
-      <div className="absolute inset-0 z-30 flex flex-col justify-end px-5 sm:px-10 md:px-16 lg:px-24 pt-20 sm:pt-24 md:pt-28 lg:pt-32 pb-16 sm:pb-20 md:pb-24 lg:pb-12">
+      <div className="relative z-30 flex flex-col justify-end min-h-[550px] sm:min-h-[600px] md:min-h-[650px] lg:min-h-[720px] px-5 sm:px-10 md:px-16 lg:px-24 pt-8 sm:pt-10 md:pt-12 lg:pt-16 pb-28 sm:pb-32 md:pb-36 lg:pb-32">
         <div className={cn(
           "max-w-4xl pt-3 sm:pt-4 md:pt-6 transition-all duration-1000 ease-out transform",
           isActive ? "opacity-100 translate-y-0 delay-300" : "opacity-0 translate-y-8"
         )}>
-        
+
+          {campaign.campaignType !== 'PRODUCT_EVENT' && (
+            <span className="inline-block px-3 py-1 mb-4 text-xs font-semibold uppercase tracking-wider rounded-full bg-ethiopian-gold/20 text-ethiopian-gold border border-ethiopian-gold/30">
+              {campaign.campaignType === 'VENDOR_PARTICIPATION' ? 'Vendor Campaign' : 'Join & Win'}
+            </span>
+          )}
 
           <h2 className="pt-1 sm:pt-2 lg:pt-3 text-[clamp(1.75rem,6vw,4.75rem)] font-serif font-bold text-white leading-[1.05] sm:leading-[1.08] tracking-tight mb-4 sm:mb-7 drop-shadow-2xl max-w-[20ch] break-words">
-            <span className="bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-white/70">
+            <span className="bg-clip-text font-serif font-bold text-transparent bg-gradient-to-b from-white via-white to-white/70">
               {campaign.name}
             </span>
           </h2>
@@ -111,13 +147,13 @@ function CampaignSlide({ campaign, isActive }: { campaign: EventCampaign; isActi
             <CountdownUnit value={countdown.seconds} label="Secs" />
           </div>
 
-          <div className="relative z-40 inline-block rounded-full bg-black/40 backdrop-blur-sm p-1.5">
+          <div className="relative z-40 inline-block rounded-full bg-black/40 backdrop-blur-sm p-1.5 shadow-[0_0_40px_12px_rgba(0,0,0,0.4)]">
             <button
-              onClick={() => navigate(`/gifts?category=${campaign.subCategorySlug}`)}
+              onClick={() => cta.action(navigate)}
               className="group/btn relative inline-flex items-center gap-3 sm:gap-4 bg-white hover:bg-ethiopian-gold text-charcoal text-base sm:text-xl font-bold px-6 sm:px-10 py-3.5 sm:py-5 rounded-full transition-all duration-500 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(253,203,45,0.6)] overflow-hidden"
             >
               <span className="relative z-10 flex items-center gap-2 sm:gap-3">
-                Shop The Collection
+                {cta.text}
                 <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 group-hover/btn:translate-x-2" />
               </span>
 
@@ -142,7 +178,11 @@ export default function CampaignBanner() {
   });
 
   const liveCampaigns = campaigns.filter((c) => {
-    return new Date(c.endDateTime).getTime() > Date.now() && !!c.imageUrl;
+    return (
+      new Date(c.endDateTime).getTime() > Date.now() &&
+      !!c.imageUrl &&
+      (c.targetRole === 'ALL' || c.targetRole === 'USER')
+    );
   });
 
   useEffect(() => {
@@ -176,13 +216,15 @@ export default function CampaignBanner() {
       <div className="max-w-[1400px] mx-auto">
         <div className="relative overflow-hidden rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl bg-charcoal ring-4 ring-white/10">
 
-          <div className="relative h-[550px] sm:h-[600px] md:h-[650px] lg:h-[720px]">
+          <div className="relative bg-charcoal overflow-hidden">
             {liveCampaigns.map((campaign, index) => (
               <div
                 key={campaign.id}
                 className={cn(
-                  "absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out",
-                  index === currentSlide ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                  "w-full transition-opacity duration-700 ease-in-out",
+                  index === currentSlide
+                    ? "relative opacity-100 pointer-events-auto z-10"
+                    : "absolute inset-0 opacity-0 pointer-events-none z-0"
                 )}
               >
                 <CampaignSlide campaign={campaign} isActive={index === currentSlide} />
