@@ -59,6 +59,7 @@ const navItems = [
   { href: '/admin/custom-orders', label: 'Custom Orders', icon: ShoppingBag },
   { href: '/admin/featured-ads', label: 'Featured & Ads', icon: Star },
   { href: '/admin/campaigns', label: 'Campaigns', icon: Megaphone },
+  { href: '/admin/campaign-participations', label: 'Campaign Participations', icon: Users },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
   { href: '/admin/subcategories', label: 'Subcategories', icon: Layers },
   { href: '/admin/delivery', label: 'Delivery', icon: Truck },
@@ -108,7 +109,6 @@ export default function AdminLayout({ children, title, description, hideHeader =
 
   return (
     <div className="min-h-screen bg-[#F5F6F8]">
-      {/* Mobile Header */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-eagle-green shadow-lg z-50 lg:hidden">
         <div className="flex items-center justify-between h-full px-4 pt-5">
           <div className="flex items-center gap-2">
@@ -121,7 +121,6 @@ export default function AdminLayout({ children, title, description, hideHeader =
             <span className="text-lg font-semibold text-white tracking-tight">Admin Panel</span>
           </div>
           <div className="flex items-center gap-1">
-            {/* Mobile User Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-white/90 hover:bg-white/15 rounded-full transition-colors">
@@ -145,7 +144,6 @@ export default function AdminLayout({ children, title, description, hideHeader =
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {/* Hamburger Menu */}
             <Button 
               variant="ghost" 
               size="icon" 
@@ -158,7 +156,6 @@ export default function AdminLayout({ children, title, description, hideHeader =
         </div>
       </div>
 
-      {/* Backdrop for mobile sidebar */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-opacity"
@@ -166,7 +163,6 @@ export default function AdminLayout({ children, title, description, hideHeader =
         />
       )}
 
-      {/* Sidebar */}
       <aside 
         className={cn(
           "fixed top-16 lg:top-0 left-0 bottom-0 w-[17rem] z-40 transition-transform duration-300 ease-in-out overflow-y-auto scrollbar-thin",
@@ -175,7 +171,6 @@ export default function AdminLayout({ children, title, description, hideHeader =
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Desktop Logo */}
           <div className="hidden lg:flex items-center gap-3 pt-6 pb-4 px-5 border-b border-white/10">
             <GoGeramiLogo 
               variant="icon" 
@@ -188,7 +183,6 @@ export default function AdminLayout({ children, title, description, hideHeader =
             </div>
           </div>
           
-          {/* Navigation */}
           <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
             {allNavItems.map((item) => {
               const isActive = location.pathname === item.href || 

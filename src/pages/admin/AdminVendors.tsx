@@ -592,7 +592,7 @@ export default function AdminVendors() {
               <TabsContent value="terms" className="space-y-4 mt-4">
                 {termsAcceptance ? (
                   <>
-                    <div className="flex items-center gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center items-start gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
                       <CheckCircle className="h-8 w-8 text-green-600" />
                       <div className="flex-1">
                         <h4 className="font-medium text-green-900">Terms Accepted</h4>
@@ -630,6 +630,7 @@ export default function AdminVendors() {
                               });
                             }
                           }}
+                          className="w-full sm:w-auto"
                         >
                           <Download className="h-4 w-4 mr-2" />
                           Download PDF
@@ -675,7 +676,7 @@ export default function AdminVendors() {
               <TabsContent value="certificate" className="space-y-4 mt-4">
                 {vendorCertificate ? (
                   <>
-                    <div className="flex items-center gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center items-start gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
                       <Award className="h-8 w-8 text-green-600" />
                       <div className="flex-1">
                         <h4 className="font-medium text-green-900">Onboarding Certificate</h4>
@@ -707,6 +708,7 @@ export default function AdminVendors() {
                             });
                           }
                         }}
+                        className="w-full sm:w-auto"
                       >
                         <Download className="h-4 w-4 mr-2" />
                         Download PDF
