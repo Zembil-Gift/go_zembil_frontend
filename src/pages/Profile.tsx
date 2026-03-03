@@ -46,6 +46,33 @@ import {
   X
 } from "lucide-react";
 
+const MINIMUM_AGE_YEARS = 18;
+
+const isAtLeastAge = (birthDate: string, minimumAge: number): boolean => {
+  const parsedDate = new Date(birthDate);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - parsedDate.getFullYear();
+  const hasNotHadBirthdayYet =
+    today.getMonth() < parsedDate.getMonth() ||
+    (today.getMonth() === parsedDate.getMonth() && today.getDate() < parsedDate.getDate());
+
+  if (hasNotHadBirthdayYet) {
+    age -= 1;
+  }
+
+  return age >= minimumAge;
+};
+
+const getMaxBirthDateForMinimumAge = (minimumAge: number): string => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - minimumAge);
+  return date.toISOString().split('T')[0];
+};
+
 // Profile form schema
 const profileSchema = z.object({
   firstName: z.preprocess(
@@ -65,7 +92,11 @@ const profileSchema = z.object({
     (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
     z.string().min(3, "Username must be at least 3 characters").optional()
   ),
-  birthDate: z.string().optional(),
+  birthDate: z
+    .preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().optional())
+    .refine((value) => !value || isAtLeastAge(value, MINIMUM_AGE_YEARS), {
+      message: "You must be at least 18 years old",
+    }),
   country: z.preprocess(
     (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
     z.string().optional()
@@ -124,6 +155,7 @@ export default function Profile() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { isIncomplete, missingFields, isOAuth2User } = useIncompleteProfile();
+  const maxBirthDate = getMaxBirthDateForMinimumAge(MINIMUM_AGE_YEARS);
 
   const userRole = user?.role?.toUpperCase();
   const isVendor = userRole === 'VENDOR';
@@ -593,11 +625,17 @@ export default function Profile() {
                         Birth Date
                       </Label>
                       {isEditing ? (
-                        <Input
-                          id="birthDate"
-                          type="date"
-                          {...form.register("birthDate")}
-                        />
+                        <>
+                          <Input
+                            id="birthDate"
+                            type="date"
+                            max={maxBirthDate}
+                            {...form.register("birthDate")}
+                          />
+                          {form.formState.errors.birthDate && (
+                            <p className="text-red-500 text-sm">{form.formState.errors.birthDate.message}</p>
+                          )}
+                        </>
                       ) : (
                         <p className="text-gray-900 py-2">
                           {profile?.birthDate 
