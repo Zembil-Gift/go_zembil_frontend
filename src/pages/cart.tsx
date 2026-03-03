@@ -196,12 +196,38 @@ export default function Cart() {
     return calculateSubtotal();
   };
 
+  const getItemStockQuantity = (item: CartItem): number | null => {
+    const skuStock = item.productSku?.stockQuantity;
+    if (typeof skuStock === 'number') {
+      return skuStock;
+    }
+
+    const productStock = item.product?.stockQuantity;
+    if (typeof productStock === 'number') {
+      return productStock;
+    }
+
+    return null;
+  };
+
   const handleQuantityChange = (item: CartItem, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeItemMutation.mutate(item.id);
-    } else {
-      updateQuantityMutation.mutate({ id: item.id, quantity: newQuantity });
+      return;
     }
+
+    const stockQuantity = getItemStockQuantity(item);
+    const cappedQuantity = stockQuantity !== null ? Math.min(newQuantity, stockQuantity) : newQuantity;
+
+    if (stockQuantity !== null && newQuantity > stockQuantity) {
+      toast({
+        title: "Stock limit reached",
+        description: `Only ${stockQuantity} item${stockQuantity === 1 ? '' : 's'} available in stock.`,
+        variant: "destructive",
+      });
+    }
+
+    updateQuantityMutation.mutate({ id: item.id, quantity: cappedQuantity });
   };
 
   const handleMoveToWishlist = async (item: CartItem) => {
@@ -355,6 +381,11 @@ export default function Cart() {
               {cartItems.map((item: CartItem) => (
                 <Card key={item.id} className="overflow-hidden">
                   <CardContent className="p-6">
+                    {(() => {
+                      const stockQuantity = getItemStockQuantity(item);
+                      const isAtMaxStock = stockQuantity !== null && item.quantity >= stockQuantity;
+
+                      return (
                     <div className="flex items-center space-x-4">
                       {/* Product Image */}
                       <div className="relative w-24 h-24 flex-shrink-0">
@@ -431,7 +462,7 @@ export default function Cart() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleQuantityChange(item, item.quantity + 1)}
-                              disabled={updateQuantityMutation.isPending}
+                              disabled={updateQuantityMutation.isPending || isAtMaxStock}
                               className="h-8 w-8 p-0"
                             >
                               <Plus size={14} />
@@ -491,6 +522,8 @@ export default function Cart() {
                         })()}
                       </div>
                     </div>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               ))}
