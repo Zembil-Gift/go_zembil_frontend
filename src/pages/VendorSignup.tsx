@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -56,6 +56,60 @@ const ONBOARDING_VIDEO_IDS: Record<string, string> = {
 const DEFAULT_VIDEO_ID = "dQw4w9WgXcQ";
 
 type OnboardingStep = "form" | "terms" | "video";
+
+const VENDOR_SIGNUP_DRAFT_KEY = "vendor-signup-draft-v1";
+
+interface VendorSignupDraft {
+  formValues: Partial<VendorSignupForm>;
+  currentStep: OnboardingStep;
+  acceptedTerms: Record<number, boolean>;
+  hasWatchedVideo: boolean;
+  videoCompletedChecked: boolean;
+  generatedCertificate: CertificateResponse | null;
+  allTermsAccepted: boolean;
+  formData: Partial<VendorSignupForm> | null;
+  phoneCountry: CountryCode;
+}
+
+const getInitialVendorSignupDraft = (): VendorSignupDraft | null => {
+  try {
+    const raw = sessionStorage.getItem(VENDOR_SIGNUP_DRAFT_KEY);
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw) as VendorSignupDraft;
+  } catch {
+    return null;
+  }
+};
+
+const getDuplicateAccountMessage = ({
+  emailExists,
+  usernameExists,
+  phoneExists,
+}: {
+  emailExists: boolean;
+  usernameExists: boolean;
+  phoneExists: boolean;
+}): string | null => {
+  if (emailExists) {
+    return "An account with this email already exists. Please sign in instead.";
+  }
+
+  if (usernameExists && phoneExists) {
+    return "This username and phone number are already linked with another account. Please use different details.";
+  }
+
+  if (usernameExists) {
+    return "This username is already linked with another account. Please choose a different username.";
+  }
+
+  if (phoneExists) {
+    return "This phone number is already linked with another account. Please use a different phone number.";
+  }
+
+  return null;
+};
 
 // Phone number validation using libphonenumber (E.164 format)
 const phoneValidation = z
@@ -141,21 +195,23 @@ const vendorSignupSchema = z
 type VendorSignupForm = z.infer<typeof vendorSignupSchema>;
 
 export default function VendorSignup() {
+  const initialDraft = getInitialVendorSignupDraft();
+  const isBrowserUnloadingRef = useRef(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>("form");
-  const [acceptedTerms, setAcceptedTerms] = useState<Record<number, boolean>>({});
-  const [hasWatchedVideo, setHasWatchedVideo] = useState(false);
-  const [videoCompletedChecked, setVideoCompletedChecked] = useState(false);
-  const [generatedCertificate, setGeneratedCertificate] = useState<CertificateResponse | null>(null);
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>(initialDraft?.currentStep || "form");
+  const [acceptedTerms, setAcceptedTerms] = useState<Record<number, boolean>>(initialDraft?.acceptedTerms || {});
+  const [hasWatchedVideo, setHasWatchedVideo] = useState(initialDraft?.hasWatchedVideo || false);
+  const [videoCompletedChecked, setVideoCompletedChecked] = useState(initialDraft?.videoCompletedChecked || false);
+  const [generatedCertificate, setGeneratedCertificate] = useState<CertificateResponse | null>(initialDraft?.generatedCertificate || null);
   const [termsData, setTermsData] = useState<VendorTermsResponse | null>(null);
   const [isLoadingTerms, setIsLoadingTerms] = useState(false);
-  const [allTermsAccepted, setAllTermsAccepted] = useState(false);
-  const [formData, setFormData] = useState<Partial<VendorSignupForm> | null>(null);
+  const [allTermsAccepted, setAllTermsAccepted] = useState(initialDraft?.allTermsAccepted || false);
+  const [formData, setFormData] = useState<Partial<VendorSignupForm> | null>(initialDraft?.formData || null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [showFullTermsModal, setShowFullTermsModal] = useState(false);
   const [selectedTermForDetail, setSelectedTermForDetail] = useState<number | null>(null);
-  const [phoneCountry, setPhoneCountry] = useState<CountryCode>("ET");
+  const [phoneCountry, setPhoneCountry] = useState<CountryCode>(initialDraft?.phoneCountry || "ET");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -169,13 +225,77 @@ export default function VendorSignup() {
     mode: "onTouched",
     reValidateMode: "onChange",
     defaultValues: {
-      firstName: "", lastName: "", username: "", email: "", phoneNumber: "",
-      password: "", confirmPassword: "", birthDate: "",
-      businessName: "", description: "", businessEmail: "", businessPhone: "",
-      city: "", country: "", vendorCategoryId: "", vendorType: "", vatStatus: "",
-      latitude: undefined, longitude: undefined, placeId: "", formattedAddress: "", streetAddress: "", deliveryRadiusKm: 25,
+      firstName: initialDraft?.formValues.firstName || "",
+      lastName: initialDraft?.formValues.lastName || "",
+      username: initialDraft?.formValues.username || "",
+      email: initialDraft?.formValues.email || "",
+      phoneNumber: initialDraft?.formValues.phoneNumber || "",
+      password: initialDraft?.formValues.password || "",
+      confirmPassword: initialDraft?.formValues.confirmPassword || "",
+      birthDate: initialDraft?.formValues.birthDate || "",
+      businessName: initialDraft?.formValues.businessName || "",
+      description: initialDraft?.formValues.description || "",
+      businessEmail: initialDraft?.formValues.businessEmail || "",
+      businessPhone: initialDraft?.formValues.businessPhone || "",
+      city: initialDraft?.formValues.city || "",
+      country: initialDraft?.formValues.country || "",
+      vendorCategoryId: initialDraft?.formValues.vendorCategoryId || "",
+      vendorType: initialDraft?.formValues.vendorType || "",
+      vatStatus: initialDraft?.formValues.vatStatus || "",
+      latitude: initialDraft?.formValues.latitude,
+      longitude: initialDraft?.formValues.longitude,
+      placeId: initialDraft?.formValues.placeId || "",
+      formattedAddress: initialDraft?.formValues.formattedAddress || "",
+      streetAddress: initialDraft?.formValues.streetAddress || "",
+      deliveryRadiusKm: initialDraft?.formValues.deliveryRadiusKm ?? 25,
     },
   });
+
+  const saveDraft = () => {
+    const draft: VendorSignupDraft = {
+      formValues: form.getValues(),
+      currentStep,
+      acceptedTerms,
+      hasWatchedVideo,
+      videoCompletedChecked,
+      generatedCertificate,
+      allTermsAccepted,
+      formData,
+      phoneCountry,
+    };
+
+    sessionStorage.setItem(VENDOR_SIGNUP_DRAFT_KEY, JSON.stringify(draft));
+  };
+
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      saveDraft();
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form, currentStep, acceptedTerms, hasWatchedVideo, videoCompletedChecked, generatedCertificate, allTermsAccepted, formData, phoneCountry]);
+
+  useEffect(() => {
+    saveDraft();
+  }, [currentStep, acceptedTerms, hasWatchedVideo, videoCompletedChecked, generatedCertificate, allTermsAccepted, formData, phoneCountry]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      isBrowserUnloadingRef.current = true;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
+
+      if (!isBrowserUnloadingRef.current) {
+        sessionStorage.removeItem(VENDOR_SIGNUP_DRAFT_KEY);
+      }
+    };
+  }, []);
 
   // Generate certificate mutation
   const generateCertificateMutation = useMutation({
@@ -232,6 +352,15 @@ export default function VendorSignup() {
       setIsLoadingTerms(false);
     }
   };
+
+  useEffect(() => {
+    if ((currentStep === "terms" || currentStep === "video") && !termsData && !isLoadingTerms) {
+      const vendorType = formData?.vendorType || form.getValues("vendorType");
+      if (vendorType) {
+        fetchTermsForVendorType(vendorType);
+      }
+    }
+  }, [currentStep, termsData, isLoadingTerms, formData, form]);
 
   const handleAcceptAllTerms = (checked: boolean) => {
     setAllTermsAccepted(checked);
@@ -364,14 +493,30 @@ export default function VendorSignup() {
       }, 500);
     },
     onError: (error: any) => {
-      // Use generic message for security - don't reveal if email/username exists
-      const errorMsg = error?.message?.toLowerCase() || "";
-      const isUserExistsError = errorMsg.includes("email") || errorMsg.includes("username") || errorMsg.includes("already");
+      const responseData = error?.response?.data;
+      const details = responseData?.details || {};
+      const errorMsg = (error?.message || "").toLowerCase();
+
+      const emailExists =
+        Boolean(details?.email) ||
+        (errorMsg.includes("email") && (errorMsg.includes("exists") || errorMsg.includes("already")));
+      const usernameExists =
+        Boolean(details?.username) ||
+        (errorMsg.includes("username") && (errorMsg.includes("exists") || errorMsg.includes("already")));
+      const phoneExists =
+        Boolean(details?.phoneNumber) ||
+        Boolean(details?.phone) ||
+        ((errorMsg.includes("phone") || errorMsg.includes("number")) && (errorMsg.includes("exists") || errorMsg.includes("already")));
+
+      const duplicateMessage = getDuplicateAccountMessage({
+        emailExists,
+        usernameExists,
+        phoneExists,
+      });
+
       toast({ 
         title: "Signup Failed", 
-        description: isUserExistsError 
-          ? "An account with these details already exists. Please sign in instead."
-          : (error.message || "Please try again."), 
+        description: duplicateMessage || (error.message || "Please try again."), 
         variant: "destructive" 
       });
     },
@@ -429,9 +574,14 @@ export default function VendorSignup() {
         apiService.getRequest<boolean>(`/api/users/check-phone?phoneNumber=${encodeURIComponent(phoneNumber)}`)
       ]);
       
-      if (emailExists || usernameExists || phoneExists) {
-        // Use generic message for security - don't reveal which field exists
-        toast({ title: "Account Exists", description: "An account with these details already exists. Please sign in instead.", variant: "destructive" });
+      const duplicateMessage = getDuplicateAccountMessage({
+        emailExists,
+        usernameExists,
+        phoneExists,
+      });
+
+      if (duplicateMessage) {
+        toast({ title: "Account Exists", description: duplicateMessage, variant: "destructive" });
         return;
       }
     } catch (error) {
