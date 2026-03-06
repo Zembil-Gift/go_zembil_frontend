@@ -8,6 +8,7 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -71,6 +72,8 @@ const campaignFormSchema = z.object({
   rewardValue: z.coerce.number().min(0).optional(),
   rewardDurationType: z.string().optional(),
   rewardDurationDays: z.coerce.number().min(0).optional(),
+  minimumSalesAmountMinor: z.coerce.number().min(0).optional(),
+  minimumOrderCount: z.coerce.number().min(0).optional(),
   eligibilityRules: z.string().optional().default(''),
 }).refine((data) => {
   if (data.startDateTime && data.endDateTime) {
@@ -80,6 +83,12 @@ const campaignFormSchema = z.object({
 }, {
   message: 'End date/time must be after start date/time',
   path: ['endDateTime'],
+}).refine((data) => {
+  if (data.campaignType !== 'PRODUCT_EVENT') return true;
+  return Boolean(data.ctaUrl?.trim());
+}, {
+  message: 'CTA URL is required for Product / Event campaigns',
+  path: ['ctaUrl'],
 });
 
 type CampaignFormValues = z.infer<typeof campaignFormSchema>;
@@ -149,6 +158,211 @@ const CAMPAIGN_TYPE_FILTER_OPTIONS: { value: string; label: string }[] = [
 ];
 
 const PARTICIPATION_TYPES: CampaignType[] = ['VENDOR_PARTICIPATION', 'USER_PARTICIPATION'];
+const VENDOR_ACTION_TYPES = ['COMPLETE_MIN_SALES', 'COMPLETE_MIN_ORDERS'] as const;
+
+type EligibilityBuilderState = {
+  minAccountAgeDaysEnabled: boolean;
+  minAccountAgeDays: string;
+  emailVerified: boolean;
+  minProductOrdersEnabled: boolean;
+  minProductOrders: string;
+  minServiceBookingsEnabled: boolean;
+  minServiceBookings: string;
+  minEventOrdersEnabled: boolean;
+  minEventOrders: string;
+  vendorApproved: boolean;
+  minCompletedProductOrdersEnabled: boolean;
+  minCompletedProductOrders: string;
+  minPaidServiceOrdersEnabled: boolean;
+  minPaidServiceOrders: string;
+  minPaidEventOrdersEnabled: boolean;
+  minPaidEventOrders: string;
+  minPaidCustomOrdersEnabled: boolean;
+  minPaidCustomOrders: string;
+  minTotalRevenueMinorEnabled: boolean;
+  minTotalRevenueMinor: string;
+  registeredWithinCampaignWindow: boolean;
+  vendorCategoryIdsEnabled: boolean;
+  vendorCategoryIds: string;
+  vendorCitiesEnabled: boolean;
+  vendorCities: string;
+};
+
+const DEFAULT_ELIGIBILITY_BUILDER: EligibilityBuilderState = {
+  minAccountAgeDaysEnabled: false,
+  minAccountAgeDays: '',
+  emailVerified: false,
+  minProductOrdersEnabled: false,
+  minProductOrders: '',
+  minServiceBookingsEnabled: false,
+  minServiceBookings: '',
+  minEventOrdersEnabled: false,
+  minEventOrders: '',
+  vendorApproved: false,
+  minCompletedProductOrdersEnabled: false,
+  minCompletedProductOrders: '',
+  minPaidServiceOrdersEnabled: false,
+  minPaidServiceOrders: '',
+  minPaidEventOrdersEnabled: false,
+  minPaidEventOrders: '',
+  minPaidCustomOrdersEnabled: false,
+  minPaidCustomOrders: '',
+  minTotalRevenueMinorEnabled: false,
+  minTotalRevenueMinor: '',
+  registeredWithinCampaignWindow: false,
+  vendorCategoryIdsEnabled: false,
+  vendorCategoryIds: '',
+  vendorCitiesEnabled: false,
+  vendorCities: '',
+};
+
+function parseEligibilityRulesToBuilder(json: string | null | undefined): EligibilityBuilderState {
+  const next = { ...DEFAULT_ELIGIBILITY_BUILDER };
+  if (!json?.trim()) return next;
+
+  try {
+    const parsed = JSON.parse(json) as Record<string, unknown>;
+
+    if (typeof parsed.minAccountAgeDays === 'number') {
+      next.minAccountAgeDaysEnabled = true;
+      next.minAccountAgeDays = String(parsed.minAccountAgeDays);
+    }
+
+    if (parsed.emailVerified === true) next.emailVerified = true;
+    if (typeof parsed.minProductOrders === 'number') {
+      next.minProductOrdersEnabled = true;
+      next.minProductOrders = String(parsed.minProductOrders);
+    }
+    if (typeof parsed.minServiceBookings === 'number') {
+      next.minServiceBookingsEnabled = true;
+      next.minServiceBookings = String(parsed.minServiceBookings);
+    }
+    if (typeof parsed.minEventOrders === 'number') {
+      next.minEventOrdersEnabled = true;
+      next.minEventOrders = String(parsed.minEventOrders);
+    }
+
+    if (parsed.vendorApproved === true) next.vendorApproved = true;
+    if (typeof parsed.minCompletedProductOrders === 'number') {
+      next.minCompletedProductOrdersEnabled = true;
+      next.minCompletedProductOrders = String(parsed.minCompletedProductOrders);
+    }
+    if (typeof parsed.minPaidServiceOrders === 'number') {
+      next.minPaidServiceOrdersEnabled = true;
+      next.minPaidServiceOrders = String(parsed.minPaidServiceOrders);
+    }
+    if (typeof parsed.minPaidEventOrders === 'number') {
+      next.minPaidEventOrdersEnabled = true;
+      next.minPaidEventOrders = String(parsed.minPaidEventOrders);
+    }
+    if (typeof parsed.minPaidCustomOrders === 'number') {
+      next.minPaidCustomOrdersEnabled = true;
+      next.minPaidCustomOrders = String(parsed.minPaidCustomOrders);
+    }
+    if (typeof parsed.minTotalRevenueMinor === 'number') {
+      next.minTotalRevenueMinorEnabled = true;
+      next.minTotalRevenueMinor = String(parsed.minTotalRevenueMinor);
+    }
+    if (parsed.registeredWithinCampaignWindow === true) next.registeredWithinCampaignWindow = true;
+
+    if (Array.isArray(parsed.vendorCategoryIds) && parsed.vendorCategoryIds.length > 0) {
+      next.vendorCategoryIdsEnabled = true;
+      next.vendorCategoryIds = (parsed.vendorCategoryIds as number[]).join(', ');
+    }
+    if (Array.isArray(parsed.vendorCities) && parsed.vendorCities.length > 0) {
+      next.vendorCitiesEnabled = true;
+      next.vendorCities = (parsed.vendorCities as string[]).join(', ');
+    }
+  } catch {
+    return next;
+  }
+
+  return next;
+}
+
+function buildEligibilityRulesObject(builder: EligibilityBuilderState, campaignType: CampaignType): Record<string, unknown> {
+  const rules: Record<string, unknown> = {};
+
+  const parseEnabledNumber = (enabled: boolean, value: string): number | null => {
+    if (!enabled) return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    return parsed;
+  };
+
+  const minAccountAgeDays = parseEnabledNumber(builder.minAccountAgeDaysEnabled, builder.minAccountAgeDays);
+  if (minAccountAgeDays !== null) rules.minAccountAgeDays = minAccountAgeDays;
+
+  if (campaignType === 'USER_PARTICIPATION') {
+    if (builder.emailVerified) rules.emailVerified = true;
+
+    const minProductOrders = parseEnabledNumber(builder.minProductOrdersEnabled, builder.minProductOrders);
+    if (minProductOrders !== null) rules.minProductOrders = minProductOrders;
+
+    const minServiceBookings = parseEnabledNumber(builder.minServiceBookingsEnabled, builder.minServiceBookings);
+    if (minServiceBookings !== null) rules.minServiceBookings = minServiceBookings;
+
+    const minEventOrders = parseEnabledNumber(builder.minEventOrdersEnabled, builder.minEventOrders);
+    if (minEventOrders !== null) rules.minEventOrders = minEventOrders;
+  }
+
+  if (campaignType === 'VENDOR_PARTICIPATION') {
+    if (builder.vendorApproved) rules.vendorApproved = true;
+
+    const minCompletedProductOrders = parseEnabledNumber(builder.minCompletedProductOrdersEnabled, builder.minCompletedProductOrders);
+    if (minCompletedProductOrders !== null) rules.minCompletedProductOrders = minCompletedProductOrders;
+
+    const minPaidServiceOrders = parseEnabledNumber(builder.minPaidServiceOrdersEnabled, builder.minPaidServiceOrders);
+    if (minPaidServiceOrders !== null) rules.minPaidServiceOrders = minPaidServiceOrders;
+
+    const minPaidEventOrders = parseEnabledNumber(builder.minPaidEventOrdersEnabled, builder.minPaidEventOrders);
+    if (minPaidEventOrders !== null) rules.minPaidEventOrders = minPaidEventOrders;
+
+    const minPaidCustomOrders = parseEnabledNumber(builder.minPaidCustomOrdersEnabled, builder.minPaidCustomOrders);
+    if (minPaidCustomOrders !== null) rules.minPaidCustomOrders = minPaidCustomOrders;
+
+    const minTotalRevenueMinor = parseEnabledNumber(builder.minTotalRevenueMinorEnabled, builder.minTotalRevenueMinor);
+    if (minTotalRevenueMinor !== null) rules.minTotalRevenueMinor = minTotalRevenueMinor;
+
+    if (builder.registeredWithinCampaignWindow) rules.registeredWithinCampaignWindow = true;
+
+    if (builder.vendorCategoryIdsEnabled) {
+      const ids = builder.vendorCategoryIds
+        .split(',')
+        .map((part) => Number(part.trim()))
+        .filter((value) => Number.isFinite(value) && value >= 0);
+      if (ids.length > 0) rules.vendorCategoryIds = ids;
+    }
+
+    if (builder.vendorCitiesEnabled) {
+      const cities = builder.vendorCities
+        .split(',')
+        .map((city) => city.trim())
+        .filter(Boolean);
+      if (cities.length > 0) rules.vendorCities = cities;
+    }
+  }
+
+  return rules;
+}
+
+function parseVendorCriteria(criteria: string | null | undefined): {
+  minimumSalesAmountMinor?: number;
+  minimumOrderCount?: number;
+} {
+  if (!criteria?.trim()) return {};
+  try {
+    const parsed = JSON.parse(criteria) as Record<string, unknown>;
+    return {
+      minimumSalesAmountMinor: typeof parsed.minimumSalesAmountMinor === 'number' ? parsed.minimumSalesAmountMinor : undefined,
+      minimumOrderCount: typeof parsed.minimumOrderCount === 'number' ? parsed.minimumOrderCount : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
 
 // ==================== Component ====================
 
@@ -161,6 +375,7 @@ export default function AdminCampaigns() {
   const [pendingImageFiles, setPendingImageFiles] = useState<File[]>([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [step, setStep] = useState(1);
+  const [eligibilityBuilder, setEligibilityBuilder] = useState<EligibilityBuilderState>(DEFAULT_ELIGIBILITY_BUILDER);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -186,13 +401,21 @@ export default function AdminCampaigns() {
       rewardValue: undefined,
       rewardDurationType: '',
       rewardDurationDays: undefined,
+      minimumSalesAmountMinor: undefined,
+      minimumOrderCount: undefined,
       eligibilityRules: '',
     },
   });
 
   const campaignType = form.watch('campaignType');
+  const actionType = form.watch('actionType');
   const isParticipation = PARTICIPATION_TYPES.includes(campaignType);
+  const isVendorParticipation = campaignType === 'VENDOR_PARTICIPATION';
+  const isUserParticipation = campaignType === 'USER_PARTICIPATION';
   const maxStep = isParticipation ? 4 : 2;
+  const generatedEligibilityRules = isParticipation
+    ? buildEligibilityRulesObject(eligibilityBuilder, campaignType)
+    : {};
 
   // ---- Data queries ----
 
@@ -307,6 +530,7 @@ export default function AdminCampaigns() {
     setIsDialogOpen(false);
     setEditingCampaign(null);
     setPendingImageFiles([]);
+    setEligibilityBuilder(DEFAULT_ELIGIBILITY_BUILDER);
     setStep(1);
     form.reset();
   }
@@ -314,6 +538,7 @@ export default function AdminCampaigns() {
   function openCreate() {
     setEditingCampaign(null);
     setPendingImageFiles([]);
+    setEligibilityBuilder(DEFAULT_ELIGIBILITY_BUILDER);
     setStep(1);
     form.reset({
       campaignType: 'PRODUCT_EVENT',
@@ -335,6 +560,8 @@ export default function AdminCampaigns() {
       rewardValue: undefined,
       rewardDurationType: '',
       rewardDurationDays: undefined,
+      minimumSalesAmountMinor: undefined,
+      minimumOrderCount: undefined,
       eligibilityRules: '',
     });
     setIsDialogOpen(true);
@@ -343,6 +570,8 @@ export default function AdminCampaigns() {
   function openEdit(campaign: EventCampaign) {
     setEditingCampaign(campaign);
     setPendingImageFiles([]);
+    setEligibilityBuilder(parseEligibilityRulesToBuilder(campaign.eligibilityRules));
+    const parsedCriteria = parseVendorCriteria(campaign.criteria);
     setStep(1);
     form.reset({
       campaignType: campaign.campaignType,
@@ -364,39 +593,154 @@ export default function AdminCampaigns() {
       rewardValue: campaign.rewardValue ?? undefined,
       rewardDurationType: campaign.rewardDurationType || '',
       rewardDurationDays: campaign.rewardDurationDays ?? undefined,
+      minimumSalesAmountMinor: parsedCriteria.minimumSalesAmountMinor,
+      minimumOrderCount: parsedCriteria.minimumOrderCount,
       eligibilityRules: campaign.eligibilityRules || '',
     });
     setIsDialogOpen(true);
   }
 
   async function validateStep(): Promise<boolean> {
-    const values = form.getValues();
-
     if (step === 1) {
       return (await form.trigger(['name', 'description', 'startDateTime', 'endDateTime', 'active', 'displayPriority', 'campaignType'])) as boolean;
     }
 
     if (step === 2) {
       if (campaignType === 'PRODUCT_EVENT') {
-        return (await form.trigger(['subCategoryId'])) as boolean;
+        return (await form.trigger(['subCategoryId', 'ctaUrl'])) as boolean;
       }
+
+      if (isVendorParticipation) {
+        const valid = await form.trigger(['actionType', 'verificationMethod']);
+        if (!valid) return false;
+
+        if (!actionType || !VENDOR_ACTION_TYPES.includes(actionType as (typeof VENDOR_ACTION_TYPES)[number])) {
+          form.setError('actionType', { message: 'Select a valid vendor action type' });
+          return false;
+        }
+
+        if (actionType === 'COMPLETE_MIN_SALES') {
+          const value = Number(form.getValues('minimumSalesAmountMinor'));
+          if (!Number.isFinite(value) || value <= 0) {
+            form.setError('minimumSalesAmountMinor', { message: 'Minimum sales amount must be greater than 0' });
+            return false;
+          }
+        }
+
+        if (actionType === 'COMPLETE_MIN_ORDERS') {
+          const value = Number(form.getValues('minimumOrderCount'));
+          if (!Number.isFinite(value) || value <= 0) {
+            form.setError('minimumOrderCount', { message: 'Minimum order count must be greater than 0' });
+            return false;
+          }
+        }
+
+        return true;
+      }
+
       return (await form.trigger(['targetRole', 'actionType', 'proofType', 'proofDescription', 'verificationMethod'])) as boolean;
     }
 
     if (step === 3) {
-      return (await form.trigger(['rewardType', 'rewardValue', 'rewardDurationType', 'rewardDurationDays'])) as boolean;
-    }
+      const valid = await form.trigger(['rewardType', 'rewardValue', 'rewardDurationType', 'rewardDurationDays']);
+      if (!valid) return false;
 
-    if (step === 4) {
-      const rules = values.eligibilityRules?.trim();
-      if (rules) {
-        try {
-          JSON.parse(rules);
-        } catch {
-          form.setError('eligibilityRules', { message: 'Invalid JSON format' });
+      if (isVendorParticipation) {
+        const rewardType = form.getValues('rewardType');
+        const rewardValue = Number(form.getValues('rewardValue'));
+        const rewardDurationType = form.getValues('rewardDurationType');
+        const rewardDurationDays = Number(form.getValues('rewardDurationDays'));
+
+        if (!rewardType) {
+          form.setError('rewardType', { message: 'Reward type is required' });
+          return false;
+        }
+
+        if ((rewardType === 'COMMISSION_BONUS' || rewardType === 'FIXED_BONUS') && (!Number.isFinite(rewardValue) || rewardValue <= 0)) {
+          form.setError('rewardValue', { message: 'Reward value must be greater than 0 for this reward type' });
+          return false;
+        }
+
+        if (rewardDurationType === 'FIXED_PERIOD' && (!Number.isFinite(rewardDurationDays) || rewardDurationDays <= 0)) {
+          form.setError('rewardDurationDays', { message: 'Reward duration days must be greater than 0 for Fixed Period' });
           return false;
         }
       }
+
+      return true;
+    }
+
+    if (step === 4) {
+      if (isUserParticipation) {
+        const toValidate = [
+          ['minProductOrdersEnabled', 'minProductOrders'],
+          ['minServiceBookingsEnabled', 'minServiceBookings'],
+          ['minEventOrdersEnabled', 'minEventOrders'],
+        ] as const;
+
+        for (const [flag, valueKey] of toValidate) {
+          if (!eligibilityBuilder[flag]) continue;
+          const parsed = Number(eligibilityBuilder[valueKey]);
+          if (!Number.isFinite(parsed) || parsed < 0) {
+            toast({ title: 'Invalid eligibility value', description: 'Please provide valid non-negative numbers for selected user rules.', variant: 'destructive' });
+            return false;
+          }
+        }
+      }
+
+      if (isVendorParticipation) {
+        const toValidate = [
+          ['minCompletedProductOrdersEnabled', 'minCompletedProductOrders'],
+          ['minPaidServiceOrdersEnabled', 'minPaidServiceOrders'],
+          ['minPaidEventOrdersEnabled', 'minPaidEventOrders'],
+          ['minPaidCustomOrdersEnabled', 'minPaidCustomOrders'],
+          ['minTotalRevenueMinorEnabled', 'minTotalRevenueMinor'],
+        ] as const;
+
+        for (const [flag, valueKey] of toValidate) {
+          if (!eligibilityBuilder[flag]) continue;
+          const parsed = Number(eligibilityBuilder[valueKey]);
+          if (!Number.isFinite(parsed) || parsed < 0) {
+            toast({ title: 'Invalid eligibility value', description: 'Please provide valid non-negative numbers for selected vendor rules.', variant: 'destructive' });
+            return false;
+          }
+        }
+
+        if (eligibilityBuilder.vendorCategoryIdsEnabled) {
+          const parsedIds = eligibilityBuilder.vendorCategoryIds
+            .split(',')
+            .map((part) => Number(part.trim()))
+            .filter((value) => Number.isFinite(value) && value >= 0);
+          if (parsedIds.length === 0) {
+            toast({
+              title: 'Invalid category IDs',
+              description: 'Please add at least one valid category ID when Vendor Category IDs is selected.',
+              variant: 'destructive',
+            });
+            return false;
+          }
+        }
+
+        if (eligibilityBuilder.vendorCitiesEnabled) {
+          const cities = eligibilityBuilder.vendorCities
+            .split(',')
+            .map((city) => city.trim())
+            .filter(Boolean);
+          if (cities.length === 0) {
+            toast({ title: 'Invalid cities', description: 'Please add at least one city when Vendor Cities is selected.', variant: 'destructive' });
+            return false;
+          }
+        }
+      }
+
+      if (eligibilityBuilder.minAccountAgeDaysEnabled) {
+        const parsed = Number(eligibilityBuilder.minAccountAgeDays);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          toast({ title: 'Invalid account age', description: 'Please provide a valid non-negative minimum account age.', variant: 'destructive' });
+          return false;
+        }
+      }
+
       return true;
     }
 
@@ -432,10 +776,33 @@ export default function AdminCampaigns() {
       };
     }
 
+    if (values.campaignType === 'VENDOR_PARTICIPATION') {
+      const criteria = values.actionType === 'COMPLETE_MIN_SALES'
+        ? { minimumSalesAmountMinor: Number(values.minimumSalesAmountMinor) }
+        : { minimumOrderCount: Number(values.minimumOrderCount) };
+
+      return {
+        ...base,
+        campaignType: 'VENDOR_PARTICIPATION',
+        targetRole: 'VENDOR',
+        actionType: (values.actionType || null) as EventCampaignRequest['actionType'],
+        criteria: JSON.stringify(criteria),
+        proofType: null,
+        proofDescription: null,
+        verificationMethod: (values.verificationMethod || null) as EventCampaignRequest['verificationMethod'],
+        rewardType: (values.rewardType || null) as EventCampaignRequest['rewardType'],
+        rewardValue: values.rewardType === 'FEATURED_PLACEMENT' ? null : values.rewardValue ?? null,
+        rewardDurationType: (values.rewardDurationType || null) as EventCampaignRequest['rewardDurationType'],
+        rewardDurationDays: values.rewardDurationType === 'FIXED_PERIOD' ? values.rewardDurationDays ?? null : null,
+        eligibilityRules: Object.keys(generatedEligibilityRules).length > 0 ? JSON.stringify(generatedEligibilityRules) : null,
+      };
+    }
+
     return {
       ...base,
       targetRole: values.targetRole as EventCampaignRequest['targetRole'],
       actionType: (values.actionType || null) as EventCampaignRequest['actionType'],
+      criteria: null,
       proofType: (values.proofType || null) as EventCampaignRequest['proofType'],
       proofDescription: values.proofDescription || null,
       verificationMethod: (values.verificationMethod || null) as EventCampaignRequest['verificationMethod'],
@@ -443,16 +810,15 @@ export default function AdminCampaigns() {
       rewardValue: values.rewardValue ?? null,
       rewardDurationType: (values.rewardDurationType || null) as EventCampaignRequest['rewardDurationType'],
       rewardDurationDays: values.rewardDurationDays ?? null,
-      eligibilityRules: values.eligibilityRules?.trim() || null,
+      eligibilityRules: Object.keys(generatedEligibilityRules).length > 0 ? JSON.stringify(generatedEligibilityRules) : null,
     };
   }
 
-  async function onSubmit(values: CampaignFormValues) {
-    if (step < maxStep) {
-      await handleNext();
-      return;
-    }
+  async function handleFinalSubmit() {
+    const valid = await validateStep();
+    if (!valid) return;
 
+    const values = form.getValues() as CampaignFormValues;
     const payload = buildPayload(values);
 
     if (editingCampaign) {
@@ -562,7 +928,7 @@ export default function AdminCampaigns() {
           <Button onClick={openCreate} className="bg-eagle-green hover:bg-eagle-green/90 whitespace-nowrap text-white">
             <Plus className="mr-2 h-4 w-4 text-white" /> New Campaign
           </Button>
-        </div>
+        </div>wh
 
         {/* Table */}
         <Card>
@@ -722,9 +1088,11 @@ export default function AdminCampaigns() {
 
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && step < maxStep) {
+                if (e.key === 'Enter' && !(e.target instanceof HTMLTextAreaElement)) {
                   e.preventDefault();
                 }
               }}
@@ -898,78 +1266,135 @@ export default function AdminCampaigns() {
 
                   {isParticipation && (
                     <>
-                      <FormField control={form.control} name="targetRole" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Target Role *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                      {isVendorParticipation ? (
+                        <>
+                          <FormItem>
+                            <FormLabel>Target Role</FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select target" />
-                              </SelectTrigger>
+                              <Input value="VENDOR" readOnly />
                             </FormControl>
-                            <SelectContent>
-                              {(Object.keys(TARGET_ROLE_LABELS) as ('ALL' | 'VENDOR' | 'USER')[]).map((r) => (
-                                <SelectItem key={r} value={r}>
-                                  {TARGET_ROLE_LABELS[r]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
+                            <FormDescription>Fixed by backend for Vendor Participation campaigns.</FormDescription>
+                          </FormItem>
 
-                      <FormField control={form.control} name="actionType" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Action Type *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select action" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {(Object.keys(ACTION_TYPE_LABELS) as (keyof typeof ACTION_TYPE_LABELS)[]).map((a) => (
-                                <SelectItem key={a} value={a}>
-                                  {ACTION_TYPE_LABELS[a]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
+                          <FormField control={form.control} name="actionType" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Action Type *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select action" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="COMPLETE_MIN_SALES">{ACTION_TYPE_LABELS.COMPLETE_MIN_SALES}</SelectItem>
+                                  <SelectItem value="COMPLETE_MIN_ORDERS">{ACTION_TYPE_LABELS.COMPLETE_MIN_ORDERS}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
 
-                      <FormField control={form.control} name="proofType" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Proof Type *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select proof type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {(Object.keys(PROOF_TYPE_LABELS) as (keyof typeof PROOF_TYPE_LABELS)[]).map((p) => (
-                                <SelectItem key={p} value={p}>
-                                  {PROOF_TYPE_LABELS[p]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
+                          {actionType === 'COMPLETE_MIN_SALES' && (
+                            <FormField control={form.control} name="minimumSalesAmountMinor" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Minimum Sales Amount (minor unit) *</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min={1} placeholder="e.g. 5000000" {...field} value={field.value ?? ''} />
+                                </FormControl>
+                                <FormDescription>Example: 5000000 = 50,000 ETB in santim.</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )} />
+                          )}
 
-                      <FormField control={form.control} name="proofDescription" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Proof Description</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Describe what participants need to submit..." rows={2} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
+                          {actionType === 'COMPLETE_MIN_ORDERS' && (
+                            <FormField control={form.control} name="minimumOrderCount" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Minimum Order Count *</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min={1} placeholder="e.g. 50" {...field} value={field.value ?? ''} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )} />
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <FormField control={form.control} name="targetRole" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Target Role *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select target" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {(Object.keys(TARGET_ROLE_LABELS) as ('ALL' | 'VENDOR' | 'USER')[]).map((r) => (
+                                    <SelectItem key={r} value={r}>
+                                      {TARGET_ROLE_LABELS[r]}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+
+                          <FormField control={form.control} name="actionType" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Action Type *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select action" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {(Object.keys(ACTION_TYPE_LABELS) as (keyof typeof ACTION_TYPE_LABELS)[]).map((a) => (
+                                    <SelectItem key={a} value={a}>
+                                      {ACTION_TYPE_LABELS[a]}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+
+                          <FormField control={form.control} name="proofType" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Proof Type *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select proof type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {(Object.keys(PROOF_TYPE_LABELS) as (keyof typeof PROOF_TYPE_LABELS)[]).map((p) => (
+                                    <SelectItem key={p} value={p}>
+                                      {PROOF_TYPE_LABELS[p]}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+
+                          <FormField control={form.control} name="proofDescription" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Proof Description</FormLabel>
+                              <FormControl>
+                                <Textarea placeholder="Describe what participants need to submit..." rows={2} {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </>
+                      )}
 
                       <FormField control={form.control} name="verificationMethod" render={({ field }) => (
                         <FormItem>
@@ -1006,7 +1431,7 @@ export default function AdminCampaigns() {
 
                   <FormField control={form.control} name="ctaUrl" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CTA URL</FormLabel>
+                      <FormLabel>CTA URL{campaignType === 'PRODUCT_EVENT' ? ' *' : ''}</FormLabel>
                       <FormControl>
                         <Input placeholder="https://..." {...field} />
                       </FormControl>
@@ -1087,29 +1512,266 @@ export default function AdminCampaigns() {
 
               {/* Step 4 - Eligibility (participation only) */}
               {step === 4 && isParticipation && (
-                <FormField control={form.control} name="eligibilityRules" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Eligibility Rules (JSON)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder={`{
-  "vendorApproved": true,
-  "vendorCategoryIds": [1, 3],
-  "vendorCities": ["Addis Ababa", "Hawassa"],
-  "registeredWithinCampaignWindow": true,
-  "minAccountAgeDays": 30
-}`}
-                        rows={8}
-                        className="font-mono text-sm"
-                        {...field}
+                <div className="space-y-5">
+                  <div className="rounded-lg border p-4 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id="rule-minAccountAgeDays"
+                        checked={eligibilityBuilder.minAccountAgeDaysEnabled}
+                        onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, minAccountAgeDaysEnabled: checked === true }))}
                       />
-                    </FormControl>
-                    <FormDescription>
-                      Optional JSON defining who can participate. Supported keys — Common: minAccountAgeDays. Users: emailVerified, minProductOrders, minServiceBookings, minEventOrders. Vendors: vendorApproved, minCompletedProductOrders, minPaidServiceOrders, minPaidEventOrders, minPaidCustomOrders, minTotalRevenueMinor, registeredWithinCampaignWindow (bool), vendorCategoryIds (array of IDs), vendorCities (array of city names).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                      <label htmlFor="rule-minAccountAgeDays" className="text-sm font-medium">Minimum account age (days)</label>
+                    </div>
+                    {eligibilityBuilder.minAccountAgeDaysEnabled && (
+                      <Input
+                        type="number"
+                        min={0}
+                        placeholder="e.g. 30"
+                        value={eligibilityBuilder.minAccountAgeDays}
+                        onChange={(e) => setEligibilityBuilder((prev) => ({ ...prev, minAccountAgeDays: e.target.value }))}
+                      />
+                    )}
+                  </div>
+
+                  {isUserParticipation && (
+                    <div className="rounded-lg border p-4 space-y-4">
+                      <p className="text-sm font-medium">User eligibility rules</p>
+
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="rule-emailVerified"
+                          checked={eligibilityBuilder.emailVerified}
+                          onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, emailVerified: checked === true }))}
+                        />
+                        <label htmlFor="rule-emailVerified" className="text-sm">Email verified</label>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="rule-minProductOrders"
+                            checked={eligibilityBuilder.minProductOrdersEnabled}
+                            onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, minProductOrdersEnabled: checked === true }))}
+                          />
+                          <label htmlFor="rule-minProductOrders" className="text-sm">Minimum product orders</label>
+                        </div>
+                        {eligibilityBuilder.minProductOrdersEnabled && (
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="e.g. 2"
+                            value={eligibilityBuilder.minProductOrders}
+                            onChange={(e) => setEligibilityBuilder((prev) => ({ ...prev, minProductOrders: e.target.value }))}
+                          />
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="rule-minServiceBookings"
+                            checked={eligibilityBuilder.minServiceBookingsEnabled}
+                            onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, minServiceBookingsEnabled: checked === true }))}
+                          />
+                          <label htmlFor="rule-minServiceBookings" className="text-sm">Minimum service bookings</label>
+                        </div>
+                        {eligibilityBuilder.minServiceBookingsEnabled && (
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="e.g. 1"
+                            value={eligibilityBuilder.minServiceBookings}
+                            onChange={(e) => setEligibilityBuilder((prev) => ({ ...prev, minServiceBookings: e.target.value }))}
+                          />
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="rule-minEventOrders"
+                            checked={eligibilityBuilder.minEventOrdersEnabled}
+                            onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, minEventOrdersEnabled: checked === true }))}
+                          />
+                          <label htmlFor="rule-minEventOrders" className="text-sm">Minimum event orders</label>
+                        </div>
+                        {eligibilityBuilder.minEventOrdersEnabled && (
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="e.g. 1"
+                            value={eligibilityBuilder.minEventOrders}
+                            onChange={(e) => setEligibilityBuilder((prev) => ({ ...prev, minEventOrders: e.target.value }))}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {isVendorParticipation && (
+                    <div className="rounded-lg border p-4 space-y-4">
+                      <p className="text-sm font-medium">Vendor eligibility rules</p>
+
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="rule-vendorApproved"
+                          checked={eligibilityBuilder.vendorApproved}
+                          onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, vendorApproved: checked === true }))}
+                        />
+                        <label htmlFor="rule-vendorApproved" className="text-sm">Vendor approved</label>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="rule-minCompletedProductOrders"
+                            checked={eligibilityBuilder.minCompletedProductOrdersEnabled}
+                            onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, minCompletedProductOrdersEnabled: checked === true }))}
+                          />
+                          <label htmlFor="rule-minCompletedProductOrders" className="text-sm">Min completed product orders</label>
+                        </div>
+                        {eligibilityBuilder.minCompletedProductOrdersEnabled && (
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="e.g. 5"
+                            value={eligibilityBuilder.minCompletedProductOrders}
+                            onChange={(e) => setEligibilityBuilder((prev) => ({ ...prev, minCompletedProductOrders: e.target.value }))}
+                          />
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="rule-minPaidServiceOrders"
+                            checked={eligibilityBuilder.minPaidServiceOrdersEnabled}
+                            onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, minPaidServiceOrdersEnabled: checked === true }))}
+                          />
+                          <label htmlFor="rule-minPaidServiceOrders" className="text-sm">Min paid service orders</label>
+                        </div>
+                        {eligibilityBuilder.minPaidServiceOrdersEnabled && (
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="e.g. 2"
+                            value={eligibilityBuilder.minPaidServiceOrders}
+                            onChange={(e) => setEligibilityBuilder((prev) => ({ ...prev, minPaidServiceOrders: e.target.value }))}
+                          />
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="rule-minPaidEventOrders"
+                            checked={eligibilityBuilder.minPaidEventOrdersEnabled}
+                            onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, minPaidEventOrdersEnabled: checked === true }))}
+                          />
+                          <label htmlFor="rule-minPaidEventOrders" className="text-sm">Min paid event orders</label>
+                        </div>
+                        {eligibilityBuilder.minPaidEventOrdersEnabled && (
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="e.g. 1"
+                            value={eligibilityBuilder.minPaidEventOrders}
+                            onChange={(e) => setEligibilityBuilder((prev) => ({ ...prev, minPaidEventOrders: e.target.value }))}
+                          />
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="rule-minPaidCustomOrders"
+                            checked={eligibilityBuilder.minPaidCustomOrdersEnabled}
+                            onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, minPaidCustomOrdersEnabled: checked === true }))}
+                          />
+                          <label htmlFor="rule-minPaidCustomOrders" className="text-sm">Min paid custom orders</label>
+                        </div>
+                        {eligibilityBuilder.minPaidCustomOrdersEnabled && (
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="e.g. 1"
+                            value={eligibilityBuilder.minPaidCustomOrders}
+                            onChange={(e) => setEligibilityBuilder((prev) => ({ ...prev, minPaidCustomOrders: e.target.value }))}
+                          />
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="rule-minTotalRevenueMinor"
+                            checked={eligibilityBuilder.minTotalRevenueMinorEnabled}
+                            onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, minTotalRevenueMinorEnabled: checked === true }))}
+                          />
+                          <label htmlFor="rule-minTotalRevenueMinor" className="text-sm">Minimum total revenue (minor)</label>
+                        </div>
+                        {eligibilityBuilder.minTotalRevenueMinorEnabled && (
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="e.g. 500000"
+                            value={eligibilityBuilder.minTotalRevenueMinor}
+                            onChange={(e) => setEligibilityBuilder((prev) => ({ ...prev, minTotalRevenueMinor: e.target.value }))}
+                          />
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="rule-registeredWithinCampaignWindow"
+                          checked={eligibilityBuilder.registeredWithinCampaignWindow}
+                          onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, registeredWithinCampaignWindow: checked === true }))}
+                        />
+                        <label htmlFor="rule-registeredWithinCampaignWindow" className="text-sm">Registered within campaign window</label>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="rule-vendorCategoryIds"
+                            checked={eligibilityBuilder.vendorCategoryIdsEnabled}
+                            onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, vendorCategoryIdsEnabled: checked === true }))}
+                          />
+                          <label htmlFor="rule-vendorCategoryIds" className="text-sm">Vendor category IDs</label>
+                        </div>
+                        {eligibilityBuilder.vendorCategoryIdsEnabled && (
+                          <Input
+                            placeholder="e.g. 3, 7"
+                            value={eligibilityBuilder.vendorCategoryIds}
+                            onChange={(e) => setEligibilityBuilder((prev) => ({ ...prev, vendorCategoryIds: e.target.value }))}
+                          />
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="rule-vendorCities"
+                            checked={eligibilityBuilder.vendorCitiesEnabled}
+                            onCheckedChange={(checked) => setEligibilityBuilder((prev) => ({ ...prev, vendorCitiesEnabled: checked === true }))}
+                          />
+                          <label htmlFor="rule-vendorCities" className="text-sm">Vendor cities</label>
+                        </div>
+                        {eligibilityBuilder.vendorCitiesEnabled && (
+                          <Input
+                            placeholder="e.g. Addis Ababa, Dire Dawa"
+                            value={eligibilityBuilder.vendorCities}
+                            onChange={(e) => setEligibilityBuilder((prev) => ({ ...prev, vendorCities: e.target.value }))}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <FormDescription>
+                    Select eligibility rules. The app converts your selections to `eligibilityRules` JSON and sends it only when you click submit.
+                  </FormDescription>
+                </div>
               )}
 
               {/* Navigation */}
@@ -1131,7 +1793,7 @@ export default function AdminCampaigns() {
                       Next <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={isSaving} className="bg-eagle-green hover:bg-eagle-green/90 text-white">
+                    <Button type="button" onClick={handleFinalSubmit} disabled={isSaving} className="bg-eagle-green hover:bg-eagle-green/90 text-white">
                       {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {editingCampaign ? 'Update Campaign' : 'Create Campaign'}
                     </Button>
