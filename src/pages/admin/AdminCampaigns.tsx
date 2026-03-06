@@ -224,7 +224,10 @@ const PARTICIPATION_TYPES: CampaignType[] = [
 const VENDOR_ACTION_TYPES = [
   "COMPLETE_MIN_SALES",
   "COMPLETE_MIN_ORDERS",
+  "NO_ACTION_REQUIRED",
 ] as const;
+
+const VENDOR_NO_ACTION_VALUE = "NO_ACTION_REQUIRED" as const;
 
 type EligibilityBuilderState = {
   minAccountAgeDaysEnabled: boolean;
@@ -534,6 +537,7 @@ export default function AdminCampaigns() {
 
   const campaignType = form.watch("campaignType");
   const actionType = form.watch("actionType");
+  const rewardDurationType = form.watch("rewardDurationType");
   const isParticipation = PARTICIPATION_TYPES.includes(campaignType);
   const isVendorParticipation = campaignType === "VENDOR_PARTICIPATION";
   const isUserParticipation = campaignType === "USER_PARTICIPATION";
@@ -742,7 +746,10 @@ export default function AdminCampaigns() {
         ? String(campaign.subCategoryId)
         : "",
       targetRole: campaign.targetRole || "ALL",
-      actionType: campaign.actionType || "",
+      actionType:
+        campaign.campaignType === "VENDOR_PARTICIPATION" && !campaign.actionType
+          ? VENDOR_NO_ACTION_VALUE
+          : campaign.actionType || "",
       proofType: campaign.proofType || "",
       proofDescription: campaign.proofDescription || "",
       verificationMethod: campaign.verificationMethod || "",
@@ -752,7 +759,10 @@ export default function AdminCampaigns() {
       rewardValue: campaign.rewardValue ?? undefined,
       rewardDurationType: campaign.rewardDurationType || "",
       rewardDurationDays: campaign.rewardDurationDays ?? undefined,
-      minimumSalesAmountMinor: parsedCriteria.minimumSalesAmountMinor,
+      minimumSalesAmountMinor:
+        parsedCriteria.minimumSalesAmountMinor != null
+          ? Number((parsedCriteria.minimumSalesAmountMinor / 100).toFixed(2))
+          : undefined,
       minimumOrderCount: parsedCriteria.minimumOrderCount,
       eligibilityRules: campaign.eligibilityRules || "",
     });
@@ -987,7 +997,10 @@ export default function AdminCampaigns() {
       campaignType: values.campaignType,
       displayPriority: values.displayPriority ?? 0,
       ctaText: values.ctaText || null,
-      ctaUrl: values.ctaUrl || null,
+      ctaUrl:
+        values.campaignType === "VENDOR_PARTICIPATION"
+          ? null
+          : values.ctaUrl || null,
     };
 
     if (values.campaignType === "PRODUCT_EVENT") {
@@ -1002,16 +1015,26 @@ export default function AdminCampaigns() {
     if (values.campaignType === "VENDOR_PARTICIPATION") {
       const criteria =
         values.actionType === "COMPLETE_MIN_SALES"
-          ? { minimumSalesAmountMinor: Number(values.minimumSalesAmountMinor) }
-          : { minimumOrderCount: Number(values.minimumOrderCount) };
+          ? {
+              minimumSalesAmountMinor: Math.round(
+                Number(values.minimumSalesAmountMinor) * 100
+              ),
+            }
+          : values.actionType === "COMPLETE_MIN_ORDERS"
+          ? { minimumOrderCount: Number(values.minimumOrderCount) }
+          : null;
+
+      const vendorActionType =
+        values.actionType === VENDOR_NO_ACTION_VALUE
+          ? null
+          : values.actionType || null;
 
       return {
         ...base,
         campaignType: "VENDOR_PARTICIPATION",
         targetRole: "VENDOR",
-        actionType: (values.actionType ||
-          null) as EventCampaignRequest["actionType"],
-        criteria: JSON.stringify(criteria),
+        actionType: vendorActionType as EventCampaignRequest["actionType"],
+        criteria: criteria ? JSON.stringify(criteria) : JSON.stringify({}),
         proofType: null,
         proofDescription: null,
         verificationMethod: (values.verificationMethod ||
@@ -1671,6 +1694,9 @@ export default function AdminCampaigns() {
                                     <SelectItem value="COMPLETE_MIN_ORDERS">
                                       {ACTION_TYPE_LABELS.COMPLETE_MIN_ORDERS}
                                     </SelectItem>
+                                    <SelectItem value={VENDOR_NO_ACTION_VALUE}>
+                                      No Action Required
+                                    </SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -1685,20 +1711,19 @@ export default function AdminCampaigns() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>
-                                    Minimum Sales Amount (minor unit) *
+                                    Minimum Sales Amount (Birr) *
                                   </FormLabel>
                                   <FormControl>
                                     <Input
                                       type="number"
                                       min={1}
-                                      placeholder="e.g. 5000000"
+                                      step="0.01"
+                                      placeholder="e.g. 50000"
                                       {...field}
                                       value={field.value ?? ""}
                                     />
                                   </FormControl>
-                                  <FormDescription>
-                                    Example: 5000000 = 50,000 ETB in santim.
-                                  </FormDescription>
+
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -1895,21 +1920,24 @@ export default function AdminCampaigns() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="ctaUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          CTA URL{campaignType === "PRODUCT_EVENT" ? " *" : ""}
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {!isVendorParticipation && (
+                    <FormField
+                      control={form.control}
+                      name="ctaUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            CTA URL
+                            {campaignType === "PRODUCT_EVENT" ? " *" : ""}
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </>
               )}
 
@@ -2003,28 +2031,30 @@ export default function AdminCampaigns() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="rewardDurationDays"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Reward Duration (days)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            placeholder="e.g. 30"
-                            {...field}
-                            value={field.value ?? ""}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Used when duration type is Fixed Period
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {rewardDurationType === "FIXED_PERIOD" && (
+                    <FormField
+                      control={form.control}
+                      name="rewardDurationDays"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Reward Duration (days)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={0}
+                              placeholder="e.g. 30"
+                              {...field}
+                              value={field.value ?? ""}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Used when duration type is Fixed Period
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </>
               )}
 

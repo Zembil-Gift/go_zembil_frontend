@@ -1,6 +1,11 @@
-import { Fragment, useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { Fragment, useState, useMemo } from "react";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useQueries,
+} from "@tanstack/react-query";
+import AdminLayout from "@/components/admin/AdminLayout";
 import {
   campaignService,
   CampaignActionProgress,
@@ -8,11 +13,11 @@ import {
   EventCampaign,
   ParticipationStatus,
   TargetRole,
-} from '@/services/campaignService';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/services/campaignService";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -20,22 +25,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import {
   Users,
   CheckCircle,
@@ -45,24 +50,24 @@ import {
   MessageSquare,
   Loader2,
   FileText,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ==================== Helpers ====================
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 function truncate(str: string | null, maxLen: number): string {
-  if (!str) return '—';
+  if (!str) return "—";
   if (str.length <= maxLen) return str;
-  return str.slice(0, maxLen) + '…';
+  return str.slice(0, maxLen) + "…";
 }
 
 interface SubmittedDataResult {
@@ -72,22 +77,26 @@ interface SubmittedDataResult {
 }
 
 function extractSubmittedValue(raw: string | null): SubmittedDataResult {
-  if (!raw) return { display: '—', isUrl: false, isJson: false };
+  if (!raw) return { display: "—", isUrl: false, isJson: false };
   try {
     const parsed = JSON.parse(raw);
     // Unwrap the backend's {"value": "..."} wrapper — used to normalize plain strings into JSONB
     if (
       parsed &&
-      typeof parsed === 'object' &&
+      typeof parsed === "object" &&
       !Array.isArray(parsed) &&
       Object.keys(parsed).length === 1 &&
-      'value' in parsed
+      "value" in parsed
     ) {
       const val = String(parsed.value);
       return { display: val, isUrl: /^https?:\/\//.test(val), isJson: false };
     }
     // Complex JSON — pretty print
-    return { display: JSON.stringify(parsed, null, 2), isUrl: false, isJson: true };
+    return {
+      display: JSON.stringify(parsed, null, 2),
+      isUrl: false,
+      isJson: true,
+    };
   } catch {
     return { display: raw, isUrl: /^https?:\/\//.test(raw), isJson: false };
   }
@@ -97,18 +106,23 @@ function extractSubmittedValue(raw: string | null): SubmittedDataResult {
 
 function ParticipationStatusBadge({ status }: { status: ParticipationStatus }) {
   const styles: Record<ParticipationStatus, string> = {
-    PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    APPROVED: 'bg-green-100 text-green-800 border-green-200',
-    REJECTED: 'bg-red-100 text-red-800 border-red-200',
-    COMPLETED: 'bg-blue-100 text-blue-800 border-blue-200',
+    PENDING: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    APPROVED: "bg-green-100 text-green-800 border-green-200",
+    REJECTED: "bg-red-100 text-red-800 border-red-200",
+    COMPLETED: "bg-blue-100 text-blue-800 border-blue-200",
   };
 
   return (
-    <Badge variant="outline" className={styles[status] || 'bg-gray-100 text-gray-600'}>
-      {status === 'PENDING' && <Clock className="inline h-3 w-3 mr-1" />}
-      {status === 'APPROVED' && <CheckCircle className="inline h-3 w-3 mr-1" />}
-      {status === 'REJECTED' && <XCircle className="inline h-3 w-3 mr-1" />}
-      {status === 'COMPLETED' && <CheckCircle className="inline h-3 w-3 mr-1" />}
+    <Badge
+      variant="outline"
+      className={styles[status] || "bg-gray-100 text-gray-600"}
+    >
+      {status === "PENDING" && <Clock className="inline h-3 w-3 mr-1" />}
+      {status === "APPROVED" && <CheckCircle className="inline h-3 w-3 mr-1" />}
+      {status === "REJECTED" && <XCircle className="inline h-3 w-3 mr-1" />}
+      {status === "COMPLETED" && (
+        <CheckCircle className="inline h-3 w-3 mr-1" />
+      )}
       {status}
     </Badge>
   );
@@ -116,27 +130,33 @@ function ParticipationStatusBadge({ status }: { status: ParticipationStatus }) {
 
 // ==================== Participation Tab Content ====================
 
-type StatusFilter = 'ALL' | ParticipationStatus;
+type StatusFilter = "ALL" | ParticipationStatus;
 
 interface ParticipationTabContentProps {
   role: TargetRole;
   campaigns: EventCampaign[];
 }
 
-function ParticipationTabContent({ role, campaigns }: ParticipationTabContentProps) {
-  const [campaignFilter, setCampaignFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
-  const [reviewingParticipation, setReviewingParticipation] = useState<CampaignParticipation | null>(null);
-  const [expandedProgressRows, setExpandedProgressRows] = useState<Record<number, boolean>>({});
-  const [adminNote, setAdminNote] = useState('');
+function ParticipationTabContent({
+  role,
+  campaigns,
+}: ParticipationTabContentProps) {
+  const [campaignFilter, setCampaignFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [reviewingParticipation, setReviewingParticipation] =
+    useState<CampaignParticipation | null>(null);
+  const [expandedProgressRows, setExpandedProgressRows] = useState<
+    Record<number, boolean>
+  >({});
+  const [adminNote, setAdminNote] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const statusParam: ParticipationStatus | undefined =
-    statusFilter === 'ALL' ? undefined : statusFilter;
+    statusFilter === "ALL" ? undefined : statusFilter;
 
   const { data: participations = [], isLoading } = useQuery({
-    queryKey: ['admin', 'campaign-participations', role, statusParam],
+    queryKey: ["admin", "campaign-participations", role, statusParam],
     queryFn: () => campaignService.getParticipationsByRole(role, statusParam),
   });
 
@@ -147,7 +167,7 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
       adminNote,
     }: {
       id: number;
-      status: 'APPROVED' | 'REJECTED';
+      status: "APPROVED" | "REJECTED";
       adminNote?: string;
     }) =>
       campaignService.reviewParticipation(id, {
@@ -156,24 +176,33 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
       }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ['admin', 'campaign-participations', role],
+        queryKey: ["admin", "campaign-participations", role],
       });
       queryClient.invalidateQueries({
-        queryKey: ['admin', 'campaign-participations', role === 'VENDOR' ? 'USER' : 'VENDOR'],
+        queryKey: [
+          "admin",
+          "campaign-participations",
+          role === "VENDOR" ? "USER" : "VENDOR",
+        ],
       });
       toast({
-        title: 'Success',
-        description: `Participation ${variables.status === 'APPROVED' ? 'approved' : 'rejected'} successfully`,
+        title: "Success",
+        description: `Participation ${
+          variables.status === "APPROVED" ? "approved" : "rejected"
+        } successfully`,
       });
       setReviewingParticipation(null);
-      setAdminNote('');
+      setAdminNote("");
     },
     onError: (error: unknown) => {
-      const msg = error instanceof Error ? error.message : 'Failed to review participation';
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "Failed to review participation";
       toast({
-        title: 'Error',
+        title: "Error",
         description: msg,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -183,29 +212,36 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
       campaignService.completeParticipation(participationId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['admin', 'campaign-participations', role],
+        queryKey: ["admin", "campaign-participations", role],
       });
       queryClient.invalidateQueries({
-        queryKey: ['admin', 'campaign-participations', role === 'VENDOR' ? 'USER' : 'VENDOR'],
+        queryKey: [
+          "admin",
+          "campaign-participations",
+          role === "VENDOR" ? "USER" : "VENDOR",
+        ],
       });
       toast({
-        title: 'Success',
-        description: 'Participation marked as completed',
+        title: "Success",
+        description: "Participation marked as completed",
       });
     },
     onError: (error: unknown) => {
-      const msg = error instanceof Error ? error.message : 'Failed to complete participation';
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "Failed to complete participation";
       toast({
-        title: 'Error',
+        title: "Error",
         description: msg,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   const filtered = useMemo(() => {
     let list = participations;
-    if (campaignFilter !== 'all') {
+    if (campaignFilter !== "all") {
       const id = Number(campaignFilter);
       list = list.filter((p) => p.campaignId === id);
     }
@@ -223,11 +259,15 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
     queries: filtered.map((participation) => {
       const campaign = campaignById[participation.campaignId];
       const isImplementedAction =
-        campaign?.actionType === 'COMPLETE_MIN_SALES' ||
-        campaign?.actionType === 'COMPLETE_MIN_ORDERS';
+        campaign?.actionType === "COMPLETE_MIN_SALES" ||
+        campaign?.actionType === "COMPLETE_MIN_ORDERS";
 
       return {
-        queryKey: ['admin', 'campaign-participation-progress', participation.id],
+        queryKey: [
+          "admin",
+          "campaign-participation-progress",
+          participation.id,
+        ],
         queryFn: () => campaignService.getActionProgress(participation.id),
         enabled: isImplementedAction,
         staleTime: 30_000,
@@ -237,19 +277,27 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
   });
 
   const progressByParticipationId = useMemo(() => {
-    return filtered.reduce<Record<number, CampaignActionProgress | null>>((acc, participation, index) => {
-      const query = actionProgressQueries[index];
-      acc[participation.id] = query?.data ?? null;
-      return acc;
-    }, {});
+    return filtered.reduce<Record<number, CampaignActionProgress | null>>(
+      (acc, participation, index) => {
+        const query = actionProgressQueries[index];
+        acc[participation.id] = query?.data ?? null;
+        return acc;
+      },
+      {}
+    );
   }, [filtered, actionProgressQueries]);
 
-  const formatProgressSummary = (progress: CampaignActionProgress | null): string => {
-    if (!progress) return '';
-    if (progress.valueUnit === 'MINOR_CURRENCY') {
-      return `Sales: ${(progress.effectiveActualValue / 100).toLocaleString(undefined, {
-        maximumFractionDigits: 2,
-      })} / ${(progress.requiredValue / 100).toLocaleString(undefined, {
+  const formatProgressSummary = (
+    progress: CampaignActionProgress | null
+  ): string => {
+    if (!progress) return "";
+    if (progress.valueUnit === "MINOR_CURRENCY") {
+      return `Sales: ${(progress.effectiveActualValue / 100).toLocaleString(
+        undefined,
+        {
+          maximumFractionDigits: 2,
+        }
+      )} / ${(progress.requiredValue / 100).toLocaleString(undefined, {
         maximumFractionDigits: 2,
       })}`;
     }
@@ -257,14 +305,14 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
   };
 
   const getProgressMetricLabel = (progress: CampaignActionProgress): string => {
-    return progress.valueUnit === 'MINOR_CURRENCY' ? 'Sales' : 'Orders';
+    return progress.valueUnit === "MINOR_CURRENCY" ? "Sales" : "Orders";
   };
 
   const formatProgressValue = (
     progress: CampaignActionProgress,
     value: number
   ): string => {
-    if (progress.valueUnit === 'MINOR_CURRENCY') {
+    if (progress.valueUnit === "MINOR_CURRENCY") {
       return (value / 100).toLocaleString(undefined, {
         maximumFractionDigits: 2,
       });
@@ -280,7 +328,7 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
     }));
   };
 
-  const handleReview = (status: 'APPROVED' | 'REJECTED') => {
+  const handleReview = (status: "APPROVED" | "REJECTED") => {
     if (!reviewingParticipation) return;
     reviewMutation.mutate({
       id: reviewingParticipation.id,
@@ -291,7 +339,7 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
 
   const handleCloseReview = () => {
     setReviewingParticipation(null);
-    setAdminNote('');
+    setAdminNote("");
   };
 
   return (
@@ -358,18 +406,21 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
                   {filtered.map((p) => {
                     const progress = progressByParticipationId[p.id];
                     const progressSummary = formatProgressSummary(progress);
-                    const submittedValue = extractSubmittedValue(p.submittedData).display;
-                    const submittedDataLabel = progressSummary || truncate(submittedValue, 60);
+                    const submittedValue = extractSubmittedValue(
+                      p.submittedData
+                    ).display;
+                    const submittedDataLabel =
+                      progressSummary || truncate(submittedValue, 60);
                     const isExpanded = !!expandedProgressRows[p.id];
 
                     return (
                       <Fragment key={p.id}>
                         <TableRow>
                           <TableCell className="font-medium">
-                            {p.participantName || '—'}
+                            {p.participantName || "—"}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {p.participantEmail || '—'}
+                            {p.participantEmail || "—"}
                           </TableCell>
                           <TableCell>{p.campaignName}</TableCell>
                           <TableCell className="max-w-[220px] text-sm">
@@ -382,7 +433,9 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
                                 {submittedDataLabel}
                               </button>
                             ) : (
-                              <span className="truncate block">{submittedDataLabel}</span>
+                              <span className="truncate block">
+                                {submittedDataLabel}
+                              </span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -393,7 +446,7 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              {role === 'VENDOR' && p.status === 'APPROVED' && (
+                              {role === "VENDOR" && p.status === "APPROVED" && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -413,12 +466,16 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
                                 size="sm"
                                 onClick={() => {
                                   setReviewingParticipation(p);
-                                  setAdminNote(p.adminNote || '');
+                                  setAdminNote(p.adminNote || "");
                                 }}
-                                title={p.status === 'PENDING' ? 'Review' : 'View details'}
+                                title={
+                                  p.status === "PENDING"
+                                    ? "Review"
+                                    : "View details"
+                                }
                               >
                                 <Eye className="h-4 w-4 mr-1" />
-                                {p.status === 'PENDING' ? 'Review' : 'View'}
+                                {p.status === "PENDING" ? "Review" : "View"}
                               </Button>
                             </div>
                           </TableCell>
@@ -432,15 +489,25 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
                                 </p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   <div className="rounded-md border bg-white p-3">
-                                    <p className="text-xs text-muted-foreground">Current Progress</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Current Progress
+                                    </p>
                                     <p className="text-sm font-semibold">
-                                      {formatProgressValue(progress, progress.effectiveActualValue)}
+                                      {formatProgressValue(
+                                        progress,
+                                        progress.effectiveActualValue
+                                      )}
                                     </p>
                                   </div>
                                   <div className="rounded-md border bg-white p-3">
-                                    <p className="text-xs text-muted-foreground">Required Target</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Required Target
+                                    </p>
                                     <p className="text-sm font-semibold">
-                                      {formatProgressValue(progress, progress.requiredValue)}
+                                      {formatProgressValue(
+                                        progress,
+                                        progress.requiredValue
+                                      )}
                                     </p>
                                   </div>
                                 </div>
@@ -459,12 +526,17 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
       </Card>
 
       {/* Review Dialog */}
-      <Dialog open={!!reviewingParticipation} onOpenChange={(open) => !open && handleCloseReview()}>
+      <Dialog
+        open={!!reviewingParticipation}
+        onOpenChange={(open) => !open && handleCloseReview()}
+      >
         <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              {reviewingParticipation?.status === 'PENDING' ? 'Review Participation' : 'Participation Details'}
+              {reviewingParticipation?.status === "PENDING"
+                ? "Review Participation"
+                : "Participation Details"}
             </DialogTitle>
           </DialogHeader>
 
@@ -472,17 +544,25 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
             <div className="space-y-4">
               {/* Participant info */}
               <div className="rounded-lg border p-4 space-y-2">
-                <h4 className="font-medium text-sm text-muted-foreground">Participant</h4>
-                <p className="font-medium">{reviewingParticipation.participantName || '—'}</p>
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  Participant
+                </h4>
+                <p className="font-medium">
+                  {reviewingParticipation.participantName || "—"}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  {reviewingParticipation.participantEmail || '—'}
+                  {reviewingParticipation.participantEmail || "—"}
                 </p>
               </div>
 
               {/* Campaign info */}
               <div className="rounded-lg border p-4 space-y-2">
-                <h4 className="font-medium text-sm text-muted-foreground">Campaign</h4>
-                <p className="font-medium">{reviewingParticipation.campaignName}</p>
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  Campaign
+                </h4>
+                <p className="font-medium">
+                  {reviewingParticipation.campaignName}
+                </p>
               </div>
 
               {/* Submitted data */}
@@ -492,7 +572,8 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
                   Submitted Data
                 </h4>
                 {(() => {
-                  const progress = progressByParticipationId[reviewingParticipation.id];
+                  const progress =
+                    progressByParticipationId[reviewingParticipation.id];
                   if (!progress) return null;
                   return (
                     <div className="bg-blue-50 border border-blue-100 rounded-md p-3">
@@ -501,15 +582,25 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="rounded-md border border-blue-200 bg-white p-3">
-                          <p className="text-xs text-muted-foreground">Current Progress</p>
+                          <p className="text-xs text-muted-foreground">
+                            Current Progress
+                          </p>
                           <p className="text-sm font-semibold text-blue-900">
-                            {formatProgressValue(progress, progress.effectiveActualValue)}
+                            {formatProgressValue(
+                              progress,
+                              progress.effectiveActualValue
+                            )}
                           </p>
                         </div>
                         <div className="rounded-md border border-blue-200 bg-white p-3">
-                          <p className="text-xs text-muted-foreground">Required Target</p>
+                          <p className="text-xs text-muted-foreground">
+                            Required Target
+                          </p>
                           <p className="text-sm font-semibold text-blue-900">
-                            {formatProgressValue(progress, progress.requiredValue)}
+                            {formatProgressValue(
+                              progress,
+                              progress.requiredValue
+                            )}
                           </p>
                         </div>
                       </div>
@@ -517,7 +608,9 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
                   );
                 })()}
                 {(() => {
-                  const { display, isUrl, isJson } = extractSubmittedValue(reviewingParticipation.submittedData);
+                  const { display, isUrl, isJson } = extractSubmittedValue(
+                    reviewingParticipation.submittedData
+                  );
                   if (isJson) {
                     return (
                       <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto max-h-40 overflow-y-auto whitespace-pre-wrap break-words">
@@ -542,9 +635,11 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
               </div>
 
               {/* Admin note */}
-              {reviewingParticipation.status === 'PENDING' && (
+              {reviewingParticipation.status === "PENDING" && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Admin note (optional)</label>
+                  <label className="text-sm font-medium">
+                    Admin note (optional)
+                  </label>
                   <Textarea
                     placeholder="Add a note for the participant..."
                     value={adminNote}
@@ -556,23 +651,28 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
               )}
 
               {/* Existing admin note when viewing approved/rejected */}
-              {reviewingParticipation.status !== 'PENDING' && reviewingParticipation.adminNote && (
-                <div className="rounded-lg border p-4 space-y-2">
-                  <h4 className="font-medium text-sm text-muted-foreground">Admin note</h4>
-                  <p className="text-sm">{reviewingParticipation.adminNote}</p>
-                </div>
-              )}
+              {reviewingParticipation.status !== "PENDING" &&
+                reviewingParticipation.adminNote && (
+                  <div className="rounded-lg border p-4 space-y-2">
+                    <h4 className="font-medium text-sm text-muted-foreground">
+                      Admin note
+                    </h4>
+                    <p className="text-sm">
+                      {reviewingParticipation.adminNote}
+                    </p>
+                  </div>
+                )}
 
               {/* Actions */}
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={handleCloseReview}>
                   Close
                 </Button>
-                {reviewingParticipation.status === 'PENDING' && (
+                {reviewingParticipation.status === "PENDING" && (
                   <>
                     <Button
                       variant="destructive"
-                      onClick={() => handleReview('REJECTED')}
+                      onClick={() => handleReview("REJECTED")}
                       disabled={reviewMutation.isPending}
                     >
                       {reviewMutation.isPending ? (
@@ -584,7 +684,7 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
                     </Button>
                     <Button
                       className="bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => handleReview('APPROVED')}
+                      onClick={() => handleReview("APPROVED")}
                       disabled={reviewMutation.isPending}
                     >
                       {reviewMutation.isPending ? (
@@ -609,7 +709,7 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
 
 export default function AdminCampaignParticipations() {
   const { data: campaigns = [] } = useQuery({
-    queryKey: ['admin', 'campaigns'],
+    queryKey: ["admin", "campaigns"],
     queryFn: () => campaignService.getAllCampaigns(),
   });
 
