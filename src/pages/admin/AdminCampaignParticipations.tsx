@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Fragment, useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
 import {
   campaignService,
+  CampaignActionProgress,
   CampaignParticipation,
   EventCampaign,
   ParticipationStatus,
@@ -99,6 +100,7 @@ function ParticipationStatusBadge({ status }: { status: ParticipationStatus }) {
     PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     APPROVED: 'bg-green-100 text-green-800 border-green-200',
     REJECTED: 'bg-red-100 text-red-800 border-red-200',
+    COMPLETED: 'bg-blue-100 text-blue-800 border-blue-200',
   };
 
   return (
@@ -106,6 +108,7 @@ function ParticipationStatusBadge({ status }: { status: ParticipationStatus }) {
       {status === 'PENDING' && <Clock className="inline h-3 w-3 mr-1" />}
       {status === 'APPROVED' && <CheckCircle className="inline h-3 w-3 mr-1" />}
       {status === 'REJECTED' && <XCircle className="inline h-3 w-3 mr-1" />}
+      {status === 'COMPLETED' && <CheckCircle className="inline h-3 w-3 mr-1" />}
       {status}
     </Badge>
   );
@@ -124,6 +127,7 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
   const [campaignFilter, setCampaignFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [reviewingParticipation, setReviewingParticipation] = useState<CampaignParticipation | null>(null);
+  const [expandedProgressRows, setExpandedProgressRows] = useState<Record<number, boolean>>({});
   const [adminNote, setAdminNote] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -174,6 +178,31 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
     },
   });
 
+  const completeMutation = useMutation({
+    mutationFn: (participationId: number) =>
+      campaignService.completeParticipation(participationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['admin', 'campaign-participations', role],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['admin', 'campaign-participations', role === 'VENDOR' ? 'USER' : 'VENDOR'],
+      });
+      toast({
+        title: 'Success',
+        description: 'Participation marked as completed',
+      });
+    },
+    onError: (error: unknown) => {
+      const msg = error instanceof Error ? error.message : 'Failed to complete participation';
+      toast({
+        title: 'Error',
+        description: msg,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const filtered = useMemo(() => {
     let list = participations;
     if (campaignFilter !== 'all') {
@@ -182,6 +211,74 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
     }
     return list;
   }, [participations, campaignFilter]);
+
+  const campaignById = useMemo(() => {
+    return campaigns.reduce<Record<number, EventCampaign>>((acc, campaign) => {
+      acc[campaign.id] = campaign;
+      return acc;
+    }, {});
+  }, [campaigns]);
+
+  const actionProgressQueries = useQueries({
+    queries: filtered.map((participation) => {
+      const campaign = campaignById[participation.campaignId];
+      const isImplementedAction =
+        campaign?.actionType === 'COMPLETE_MIN_SALES' ||
+        campaign?.actionType === 'COMPLETE_MIN_ORDERS';
+
+      return {
+        queryKey: ['admin', 'campaign-participation-progress', participation.id],
+        queryFn: () => campaignService.getActionProgress(participation.id),
+        enabled: isImplementedAction,
+        staleTime: 30_000,
+        retry: false,
+      };
+    }),
+  });
+
+  const progressByParticipationId = useMemo(() => {
+    return filtered.reduce<Record<number, CampaignActionProgress | null>>((acc, participation, index) => {
+      const query = actionProgressQueries[index];
+      acc[participation.id] = query?.data ?? null;
+      return acc;
+    }, {});
+  }, [filtered, actionProgressQueries]);
+
+  const formatProgressSummary = (progress: CampaignActionProgress | null): string => {
+    if (!progress) return '';
+    if (progress.valueUnit === 'MINOR_CURRENCY') {
+      return `Sales: ${(progress.effectiveActualValue / 100).toLocaleString(undefined, {
+        maximumFractionDigits: 2,
+      })} / ${(progress.requiredValue / 100).toLocaleString(undefined, {
+        maximumFractionDigits: 2,
+      })}`;
+    }
+    return `Orders: ${progress.effectiveActualValue.toLocaleString()} / ${progress.requiredValue.toLocaleString()}`;
+  };
+
+  const getProgressMetricLabel = (progress: CampaignActionProgress): string => {
+    return progress.valueUnit === 'MINOR_CURRENCY' ? 'Sales' : 'Orders';
+  };
+
+  const formatProgressValue = (
+    progress: CampaignActionProgress,
+    value: number
+  ): string => {
+    if (progress.valueUnit === 'MINOR_CURRENCY') {
+      return (value / 100).toLocaleString(undefined, {
+        maximumFractionDigits: 2,
+      });
+    }
+
+    return value.toLocaleString();
+  };
+
+  const toggleExpandProgress = (participationId: number) => {
+    setExpandedProgressRows((prev) => ({
+      ...prev,
+      [participationId]: !prev[participationId],
+    }));
+  };
 
   const handleReview = (status: 'APPROVED' | 'REJECTED') => {
     if (!reviewingParticipation) return;
@@ -226,6 +323,7 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
             <SelectItem value="PENDING">Pending</SelectItem>
             <SelectItem value="APPROVED">Approved</SelectItem>
             <SelectItem value="REJECTED">Rejected</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -257,40 +355,102 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">
-                        {p.participantName || '—'}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {p.participantEmail || '—'}
-                      </TableCell>
-                      <TableCell>{p.campaignName}</TableCell>
-                      <TableCell className="max-w-[180px] truncate text-sm">
-                        {truncate(extractSubmittedValue(p.submittedData).display, 60)}
-                      </TableCell>
-                      <TableCell>
-                        <ParticipationStatusBadge status={p.status} />
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {formatDateTime(p.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setReviewingParticipation(p);
-                            setAdminNote(p.adminNote || '');
-                          }}
-                          title={p.status === 'PENDING' ? 'Review' : 'View details'}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          {p.status === 'PENDING' ? 'Review' : 'View'}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filtered.map((p) => {
+                    const progress = progressByParticipationId[p.id];
+                    const progressSummary = formatProgressSummary(progress);
+                    const submittedValue = extractSubmittedValue(p.submittedData).display;
+                    const submittedDataLabel = progressSummary || truncate(submittedValue, 60);
+                    const isExpanded = !!expandedProgressRows[p.id];
+
+                    return (
+                      <Fragment key={p.id}>
+                        <TableRow>
+                          <TableCell className="font-medium">
+                            {p.participantName || '—'}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {p.participantEmail || '—'}
+                          </TableCell>
+                          <TableCell>{p.campaignName}</TableCell>
+                          <TableCell className="max-w-[220px] text-sm">
+                            {progress ? (
+                              <button
+                                type="button"
+                                className="text-left text-blue-700 hover:underline"
+                                onClick={() => toggleExpandProgress(p.id)}
+                              >
+                                {submittedDataLabel}
+                              </button>
+                            ) : (
+                              <span className="truncate block">{submittedDataLabel}</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <ParticipationStatusBadge status={p.status} />
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                            {formatDateTime(p.createdAt)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              {role === 'VENDOR' && p.status === 'APPROVED' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => completeMutation.mutate(p.id)}
+                                  disabled={completeMutation.isPending}
+                                >
+                                  {completeMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                  ) : (
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                  )}
+                                  Complete
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setReviewingParticipation(p);
+                                  setAdminNote(p.adminNote || '');
+                                }}
+                                title={p.status === 'PENDING' ? 'Review' : 'View details'}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                {p.status === 'PENDING' ? 'Review' : 'View'}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {isExpanded && progress && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="bg-muted/20">
+                              <div className="space-y-2 py-2">
+                                <p className="text-xs font-medium text-muted-foreground">
+                                  {getProgressMetricLabel(progress)} Progress
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div className="rounded-md border bg-white p-3">
+                                    <p className="text-xs text-muted-foreground">Current Progress</p>
+                                    <p className="text-sm font-semibold">
+                                      {formatProgressValue(progress, progress.effectiveActualValue)}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-md border bg-white p-3">
+                                    <p className="text-xs text-muted-foreground">Required Target</p>
+                                    <p className="text-sm font-semibold">
+                                      {formatProgressValue(progress, progress.requiredValue)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -331,6 +491,31 @@ function ParticipationTabContent({ role, campaigns }: ParticipationTabContentPro
                   <MessageSquare className="h-4 w-4" />
                   Submitted Data
                 </h4>
+                {(() => {
+                  const progress = progressByParticipationId[reviewingParticipation.id];
+                  if (!progress) return null;
+                  return (
+                    <div className="bg-blue-50 border border-blue-100 rounded-md p-3">
+                      <p className="text-xs font-medium text-blue-800 mb-2">
+                        {getProgressMetricLabel(progress)} Progress
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="rounded-md border border-blue-200 bg-white p-3">
+                          <p className="text-xs text-muted-foreground">Current Progress</p>
+                          <p className="text-sm font-semibold text-blue-900">
+                            {formatProgressValue(progress, progress.effectiveActualValue)}
+                          </p>
+                        </div>
+                        <div className="rounded-md border border-blue-200 bg-white p-3">
+                          <p className="text-xs text-muted-foreground">Required Target</p>
+                          <p className="text-sm font-semibold text-blue-900">
+                            {formatProgressValue(progress, progress.requiredValue)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
                 {(() => {
                   const { display, isUrl, isJson } = extractSubmittedValue(reviewingParticipation.submittedData);
                   if (isJson) {
