@@ -33,6 +33,7 @@ export interface EventCampaign {
   ctaUrl: string | null;
   verificationMethod: VerificationMethod | null;
   actionType: ActionType | null;
+  criteria: string | null;
   proofType: ProofType | null;
   proofDescription: string | null;
   eligibilityRules: string | null;
@@ -61,6 +62,7 @@ export interface EventCampaignRequest {
   ctaUrl?: string | null;
   verificationMethod?: VerificationMethod | null;
   actionType?: ActionType | null;
+  criteria?: string | null;
   proofType?: ProofType | null;
   proofDescription?: string | null;
   eligibilityRules?: string | null;

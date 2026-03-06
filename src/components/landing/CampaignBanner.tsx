@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { campaignService, EventCampaign } from '@/services/campaignService';
+import { campaignService, EventCampaign, TargetRole } from '@/services/campaignService';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TimeRemaining {
   days: number;
@@ -169,10 +170,14 @@ function CampaignSlide({ campaign, isActive }: { campaign: EventCampaign; isActi
 export default function CampaignBanner() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const { user, isInitialized } = useAuth();
+
+  const campaignRole: TargetRole = user?.role?.toUpperCase() === 'VENDOR' ? 'VENDOR' : 'USER';
 
   const { data: campaigns = [] } = useQuery({
-    queryKey: ['campaigns', 'active'],
-    queryFn: () => campaignService.getActiveCampaigns(),
+    queryKey: ['campaigns', 'active', 'role', campaignRole],
+    queryFn: () => campaignService.getActiveCampaignsByRole(campaignRole),
+    enabled: isInitialized,
     staleTime: 2 * 60 * 1000,
     retry: 1,
   });
@@ -180,8 +185,7 @@ export default function CampaignBanner() {
   const liveCampaigns = campaigns.filter((c) => {
     return (
       new Date(c.endDateTime).getTime() > Date.now() &&
-      !!c.imageUrl &&
-      (c.targetRole === 'ALL' || c.targetRole === 'USER')
+      !!c.imageUrl
     );
   });
 
