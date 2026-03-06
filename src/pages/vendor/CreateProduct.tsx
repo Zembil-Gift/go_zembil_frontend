@@ -185,7 +185,7 @@ export default function CreateProduct() {
           skuCode: sku.skuCode,
           skuName: sku.skuName, // Add skuName to payload
           stockQuantity: sku.stockQuantity,
-          isDefault: index === 0, // First SKU is default
+          isDefault: index === 0,
           price: {
             currencyCode: data.currencyCode,
             amount: sku.amount,

@@ -1,5 +1,6 @@
 import { apiService } from './apiService';
 import { PageResponse } from './vendorService';
+import { toInstantISOString } from '@/lib/instant';
 
 // ===== Types =====
 
@@ -139,11 +140,19 @@ export const discountService = {
 
   // Create a new discount
   createDiscount: (request: CreateDiscountRequest) =>
-    apiService.postRequest<DiscountResponse>('/api/vendor/discounts', request),
+    apiService.postRequest<DiscountResponse>('/api/vendor/discounts', {
+      ...request,
+      validFrom: toInstantISOString(request.validFrom),
+      validUntil: toInstantISOString(request.validUntil),
+    }),
 
   // Update an existing discount
   updateDiscount: (discountId: number, request: CreateDiscountRequest) =>
-    apiService.putRequest<DiscountResponse>(`/api/vendor/discounts/${discountId}`, request),
+    apiService.putRequest<DiscountResponse>(`/api/vendor/discounts/${discountId}`, {
+      ...request,
+      validFrom: toInstantISOString(request.validFrom),
+      validUntil: toInstantISOString(request.validUntil),
+    }),
 
   // Deactivate (soft delete) a discount
   deactivateDiscount: (discountId: number) =>

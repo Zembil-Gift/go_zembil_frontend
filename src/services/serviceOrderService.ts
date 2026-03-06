@@ -1,6 +1,7 @@
 import { apiService } from './apiService';
 import { ServiceResponse } from './serviceService';
 import { getCurrencyDecimals, formatCurrency } from '@/lib/currency';
+import { toInstantISOString } from '@/lib/instant';
 
 /**
  * Service Order types matching the backend ServiceOrderResponse DTO
@@ -160,7 +161,10 @@ class ServiceOrderService {
   async createOrder(request: CreateServiceOrderRequest): Promise<ServiceOrderResponse> {
     return await apiService.postRequest<ServiceOrderResponse, CreateServiceOrderRequest>(
       '/api/service-orders',
-      request
+      {
+        ...request,
+        scheduledDateTime: toInstantISOString(request.scheduledDateTime) || request.scheduledDateTime,
+      }
     );
   }
 
@@ -258,7 +262,8 @@ class ServiceOrderService {
    * Request reschedule (vendor)
    */
   async vendorRescheduleOrder(orderId: number, newDateTime: string): Promise<ServiceOrderResponse> {
-    const url = `/api/service-orders/${orderId}/vendor-reschedule?newDateTime=${encodeURIComponent(newDateTime)}`;
+    const instant = toInstantISOString(newDateTime) || newDateTime;
+    const url = `/api/service-orders/${orderId}/vendor-reschedule?newDateTime=${encodeURIComponent(instant)}`;
     return await apiService.postRequest<ServiceOrderResponse>(url, {});
   }
 
@@ -278,7 +283,8 @@ class ServiceOrderService {
    * Reschedule a service order (customer)
    */
   async rescheduleOrder(orderId: number, newDateTime: string): Promise<ServiceOrderResponse> {
-    const url = `/api/service-orders/${orderId}/reschedule?newDateTime=${encodeURIComponent(newDateTime)}`;
+    const instant = toInstantISOString(newDateTime) || newDateTime;
+    const url = `/api/service-orders/${orderId}/reschedule?newDateTime=${encodeURIComponent(instant)}`;
     return await apiService.postRequest<ServiceOrderResponse>(url, {});
   }
 

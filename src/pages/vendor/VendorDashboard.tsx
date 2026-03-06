@@ -600,7 +600,7 @@ export default function VendorDashboardNew() {
                     <div className="mt-3 rounded-md border border-red-200 bg-white p-3">
                       <p className="text-xs font-medium uppercase tracking-wide text-red-700">Rejection message</p>
                       <RejectionReasonWithModal
-                        reason={vendorProfile.rejectionReason}
+                        reason={vendorProfile.rejectionReason || 'No rejection reason provided.'}
                         title="Vendor rejection reason"
                         className="mt-1 text-sm text-red-800"
                         truncateLength={120}

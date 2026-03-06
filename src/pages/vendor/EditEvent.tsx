@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { vendorService, VendorProfile, UpdateEventRequest } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService, ImageDto } from "@/services/imageService";
+import { toInstantISOString } from "@/lib/instant";
 import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -206,8 +207,8 @@ export default function EditEvent() {
         title: data.title,
         description: data.description,
         summary: data.summary,
-        startDateTime: data.startDateTime,
-        endDateTime: data.endDateTime,
+        eventDate: toInstantISOString(data.startDateTime),
+        eventEndDate: toInstantISOString(data.endDateTime),
         location: data.location,
         city: data.city,
       };
