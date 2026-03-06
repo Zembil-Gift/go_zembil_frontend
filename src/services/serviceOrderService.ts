@@ -487,11 +487,9 @@ class ServiceOrderService {
     }
     
     // Check if there's already a pending reschedule
-    if (order.rescheduleInfo?.pendingRescheduleDateTime) {
-      return false;
-    }
+    return !order.rescheduleInfo?.pendingRescheduleDateTime;
     
-    return true;
+
   }
 
   /**
