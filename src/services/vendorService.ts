@@ -1,5 +1,6 @@
 import { apiService } from './apiService';
 import { ImageDto } from './imageService';
+import { toInstantISOString } from '@/lib/instant';
 
 export interface VendorProfile {
   id: number;
@@ -324,8 +325,8 @@ export interface UpdateEventRequest {
   title?: string;
   description?: string;
   summary?: string;
-  startDateTime?: string;
-  endDateTime?: string;
+  eventDate?: string;
+  eventEndDate?: string;
   location?: string;
   city?: string;
   imageUrl?: string;
@@ -636,7 +637,11 @@ export const vendorService = {
     apiService.putRequest<Product>(`/api/v1/products/${productId}/edit`, product),
 
   createEvent: (event: CreateEventRequest) =>
-    apiService.postRequest<EventResponse>('/api/vendor/events', event),
+    apiService.postRequest<EventResponse>('/api/vendor/events', {
+      ...event,
+      eventDate: toInstantISOString(event.eventDate) || event.eventDate,
+      eventEndDate: toInstantISOString(event.eventEndDate),
+    }),
 
   getMyEvents: (status?: string, page = 0, size = 20) => {
     let url = `/api/vendor/events?page=${page}&size=${size}`;
@@ -657,7 +662,11 @@ export const vendorService = {
     apiService.getRequest<EventResponse>(`/api/vendor/events/${eventId}`),
 
   updateEvent: (eventId: number, event: UpdateEventRequest) =>
-    apiService.putRequest<EventResponse>(`/api/vendor/events/${eventId}`, event),
+    apiService.putRequest<EventResponse>(`/api/vendor/events/${eventId}`, {
+      ...event,
+      eventDate: toInstantISOString(event.eventDate),
+      eventEndDate: toInstantISOString(event.eventEndDate),
+    }),
 
   cancelEvent: (eventId: number, reason: string) =>
     apiService.postRequest<EventResponse>(`/api/vendor/events/${eventId}/cancel?reason=${encodeURIComponent(reason)}`, {}),
@@ -708,7 +717,11 @@ export const vendorService = {
     apiService.getRequest<PageResponse<EventPriceUpdateResponse>>(`/api/vendor/change-requests/entity-type/EVENT?page=${page}&size=${size}`),
 
   editPendingOrRejectedEvent: (eventId: number, event: UpdateEventRequest) =>
-    apiService.putRequest<EventResponse>(`/api/vendor/events/${eventId}/edit`, event),
+    apiService.putRequest<EventResponse>(`/api/vendor/events/${eventId}/edit`, {
+      ...event,
+      eventDate: toInstantISOString(event.eventDate),
+      eventEndDate: toInstantISOString(event.eventEndDate),
+    }),
 
   editEventPriceUpdateRequest: (requestId: number, request: EventPriceUpdateRequest) =>
     apiService.putRequest<EventPriceUpdateResponse>(`/api/vendor/change-requests/${requestId}`, {

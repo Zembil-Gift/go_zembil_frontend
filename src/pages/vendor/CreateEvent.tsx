@@ -9,6 +9,7 @@ import {useToast} from "@/hooks/use-toast";
 import {vendorService, VendorProfile, CreateEventRequest} from "@/services/vendorService";
 import {apiService} from "@/services/apiService";
 import {imageService} from "@/services/imageService";
+import {toInstantISOString} from "@/lib/instant";
 import {SubcategorySearchCombobox} from "@/components/SubcategorySearchCombobox";
 
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
@@ -132,8 +133,8 @@ export default function CreateEvent() {
                 summary: data.summary,
                 location: data.location,
                 city: data.city,
-                eventDate: data.startDateTime,
-                eventEndDate: data.endDateTime,
+                eventDate: toInstantISOString(data.startDateTime) || data.startDateTime,
+                eventEndDate: toInstantISOString(data.endDateTime),
                 eventTypeId: data.categoryId ? parseInt(data.categoryId) : undefined,
                 bannerImageUrl: data.imageUrl || undefined,
                 organizerContact: data.organizerContact || undefined,

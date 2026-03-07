@@ -1,5 +1,6 @@
-import { apiService } from "./apiService";
-import api from "./api";
+import { apiService } from './apiService';
+import api from './api';
+import { toInstantISOString } from '@/lib/instant';
 
 // ==================== Enums ====================
 
@@ -245,14 +246,19 @@ class CampaignService {
   }
 
   async createCampaign(data: EventCampaignRequest): Promise<EventCampaign> {
-    return apiService.postRequest<EventCampaign>("/api/campaigns", data);
+    return apiService.postRequest<EventCampaign>('/api/campaigns', {
+      ...data,
+      startDateTime: toInstantISOString(data.startDateTime) || data.startDateTime,
+      endDateTime: toInstantISOString(data.endDateTime) || data.endDateTime,
+    });
   }
 
-  async updateCampaign(
-    id: number,
-    data: EventCampaignRequest
-  ): Promise<EventCampaign> {
-    return apiService.putRequest<EventCampaign>(`/api/campaigns/${id}`, data);
+  async updateCampaign(id: number, data: EventCampaignRequest): Promise<EventCampaign> {
+    return apiService.putRequest<EventCampaign>(`/api/campaigns/${id}`, {
+      ...data,
+      startDateTime: toInstantISOString(data.startDateTime) || data.startDateTime,
+      endDateTime: toInstantISOString(data.endDateTime) || data.endDateTime,
+    });
   }
 
   async toggleCampaign(id: number): Promise<EventCampaign> {
