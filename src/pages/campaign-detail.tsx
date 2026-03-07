@@ -244,7 +244,10 @@ function parseEligibilityRules(
     });
   }
   if (typeof rules.minTotalRevenueMinor === "number") {
-    const minRevenue = formatMinorCurrency(rules.minTotalRevenueMinor, currencyCode);
+    const minRevenue = formatMinorCurrency(
+      rules.minTotalRevenueMinor,
+      currencyCode
+    );
     items.push({
       icon: "💰",
       label: `Minimum total revenue of ${minRevenue}`,
@@ -656,7 +659,6 @@ export default function CampaignDetailPage() {
                         </p>
                         <p className="text-sm font-semibold text-gray-800">
                           {participantCount} joined
-                          
                         </p>
                       </div>
                     </div>
@@ -869,7 +871,7 @@ export default function CampaignDetailPage() {
                           Register now and earn your reward!
                         </p>
                       </div>
-{/* 
+                      {/* 
                       {eligibilityRuleItems.length > 0 && (
                         <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 space-y-1.5">
                           <p className="text-xs font-semibold text-blue-800 uppercase tracking-wider">

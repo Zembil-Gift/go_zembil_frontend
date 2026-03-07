@@ -3,42 +3,58 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { 
-  formatPrice, 
-  toMinorUnits, 
+import {
+  formatPrice,
+  toMinorUnits,
   getDiscountAmountForDisplay,
-  calculateDiscountedPrice
-} from '@/lib/currency';
+  calculateDiscountedPrice,
+} from "@/lib/currency";
 import { getProductImageUrl } from "@/utils/imageUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { ShoppingBag, Plus, Minus, X, Truck, Heart, ArrowRight, LogIn, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import {
+  ShoppingBag,
+  Plus,
+  Minus,
+  X,
+  Truck,
+  Heart,
+  ArrowRight,
+  LogIn,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { cartService, CartItem } from "@/services/cartService";
 import { wishlistService } from "@/services/wishlistService";
-import { discountService, type DiscountValidationResult } from "@/services/discountService";
+import {
+  discountService,
+  type DiscountValidationResult,
+} from "@/services/discountService";
 
 export default function Cart() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  
+
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { 
-    cartItems, 
-    cartCurrency, 
-    isLoading: cartLoading, 
-    getTotalItems, 
-    error: cartError, 
+  const {
+    cartItems,
+    cartCurrency,
+    isLoading: cartLoading,
+    getTotalItems,
+    error: cartError,
     refetch,
     appliedDiscountCode,
-    setAppliedDiscountCode
+    setAppliedDiscountCode,
   } = useCart();
 
   const [discountCode, setDiscountCode] = useState(appliedDiscountCode || "");
-  const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
+  const [discountResult, setDiscountResult] =
+    useState<DiscountValidationResult | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   const [discountError, setDiscountError] = useState<string | null>(null);
 
@@ -51,10 +67,24 @@ export default function Cart() {
 
   useEffect(() => {
     // Auto-validate discount if it exists in store but hasn't been validated in this session
-    if (appliedDiscountCode && cartItems.length > 0 && cartCurrency && !discountResult && !isValidatingDiscount && !discountError) {
+    if (
+      appliedDiscountCode &&
+      cartItems.length > 0 &&
+      cartCurrency &&
+      !discountResult &&
+      !isValidatingDiscount &&
+      !discountError
+    ) {
       handleApplyDiscount();
     }
-  }, [appliedDiscountCode, cartItems.length, cartCurrency, discountResult, isValidatingDiscount, discountError]);
+  }, [
+    appliedDiscountCode,
+    cartItems.length,
+    cartCurrency,
+    discountResult,
+    isValidatingDiscount,
+    discountError,
+  ]);
 
   const cartProductIds = useMemo(() => {
     if (!Array.isArray(cartItems)) return [];
@@ -99,7 +129,9 @@ export default function Cart() {
       } else {
         setDiscountResult(null);
         setAppliedDiscountCode(null);
-        setDiscountError(result.reason || "Discount code is not valid for this order");
+        setDiscountError(
+          result.reason || "Discount code is not valid for this order"
+        );
       }
     } catch (error: any) {
       setDiscountResult(null);
@@ -108,7 +140,13 @@ export default function Cart() {
     } finally {
       setIsValidatingDiscount(false);
     }
-  }, [discountCode, cartCurrency, cartProductIds, toast, setAppliedDiscountCode]);
+  }, [
+    discountCode,
+    cartCurrency,
+    cartProductIds,
+    toast,
+    setAppliedDiscountCode,
+  ]);
 
   const handleRemoveDiscount = useCallback(() => {
     setDiscountResult(null);
@@ -198,12 +236,12 @@ export default function Cart() {
 
   const getItemStockQuantity = (item: CartItem): number | null => {
     const skuStock = item.productSku?.stockQuantity;
-    if (typeof skuStock === 'number') {
+    if (typeof skuStock === "number") {
       return skuStock;
     }
 
     const productStock = item.product?.stockQuantity;
-    if (typeof productStock === 'number') {
+    if (typeof productStock === "number") {
       return productStock;
     }
 
@@ -217,12 +255,17 @@ export default function Cart() {
     }
 
     const stockQuantity = getItemStockQuantity(item);
-    const cappedQuantity = stockQuantity !== null ? Math.min(newQuantity, stockQuantity) : newQuantity;
+    const cappedQuantity =
+      stockQuantity !== null
+        ? Math.min(newQuantity, stockQuantity)
+        : newQuantity;
 
     if (stockQuantity !== null && newQuantity > stockQuantity) {
       toast({
         title: "Stock limit reached",
-        description: `Only ${stockQuantity} item${stockQuantity === 1 ? '' : 's'} available in stock.`,
+        description: `Only ${stockQuantity} item${
+          stockQuantity === 1 ? "" : "s"
+        } available in stock.`,
         variant: "destructive",
       });
     }
@@ -239,7 +282,7 @@ export default function Cart() {
       // Error already handled by mutation
     }
   };
-  
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -254,7 +297,7 @@ export default function Cart() {
       </div>
     );
   }
-  
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -265,9 +308,13 @@ export default function Cart() {
               Sign in to view your cart
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Please sign in to your account to view and manage your shopping cart.
+              Please sign in to your account to view and manage your shopping
+              cart.
             </p>
-            <Button asChild className="bg-ethiopian-gold hover:bg-amber text-white">
+            <Button
+              asChild
+              className="bg-ethiopian-gold hover:bg-amber text-white"
+            >
               <Link to="/signin">Sign In</Link>
             </Button>
           </div>
@@ -286,9 +333,13 @@ export default function Cart() {
               Sign in to view your cart
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Please sign in to your account to view and manage your shopping cart.
+              Please sign in to your account to view and manage your shopping
+              cart.
             </p>
-            <Button asChild className="bg-ethiopian-gold hover:bg-amber text-white">
+            <Button
+              asChild
+              className="bg-ethiopian-gold hover:bg-amber text-white"
+            >
               <Link to="/signin">Sign In</Link>
             </Button>
           </div>
@@ -300,7 +351,6 @@ export default function Cart() {
   if (cartLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-gray-200 rounded w-1/4"></div>
@@ -314,7 +364,6 @@ export default function Cart() {
             </div>
           </div>
         </div>
-        
       </div>
     );
   }
@@ -331,7 +380,10 @@ export default function Cart() {
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
               There was an error loading your cart. Please try again.
             </p>
-            <Button onClick={() => refetch()} className="bg-ethiopian-gold hover:bg-amber text-white">
+            <Button
+              onClick={() => refetch()}
+              className="bg-ethiopian-gold hover:bg-amber text-white"
+            >
               Try Again
             </Button>
           </div>
@@ -342,8 +394,6 @@ export default function Cart() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -351,7 +401,8 @@ export default function Cart() {
             Shopping Cart
           </h1>
           <p className="text-gray-600">
-            {getTotalItems()} {getTotalItems() === 1 ? 'item' : 'items'} in your cart
+            {getTotalItems()} {getTotalItems() === 1 ? "item" : "items"} in your
+            cart
           </p>
         </div>
 
@@ -362,14 +413,22 @@ export default function Cart() {
               Your cart is empty
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Looks like you haven't added any items to your cart yet. Start shopping to fill it up!
+              Looks like you haven't added any items to your cart yet. Start
+              shopping to fill it up!
             </p>
             <div className="space-y-4">
-              <Button asChild className="bg-ethiopian-gold hover:bg-amber text-white">
+              <Button
+                asChild
+                className="bg-ethiopian-gold hover:bg-amber text-white"
+              >
                 <Link to="/gifts">Browse All Gifts</Link>
               </Button>
               <br />
-              <Button asChild variant="outline" className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white">
+              <Button
+                asChild
+                variant="outline"
+                className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
+              >
                 <Link to="/wishlist">View Wishlist</Link>
               </Button>
             </div>
@@ -383,145 +442,189 @@ export default function Cart() {
                   <CardContent className="p-6">
                     {(() => {
                       const stockQuantity = getItemStockQuantity(item);
-                      const isAtMaxStock = stockQuantity !== null && item.quantity >= stockQuantity;
+                      const isAtMaxStock =
+                        stockQuantity !== null &&
+                        item.quantity >= stockQuantity;
 
                       return (
-                    <div className="flex items-center space-x-4">
-                      {/* Product Image */}
-                      <div className="relative w-24 h-24 flex-shrink-0">
-                        {getProductImageUrl(item.product?.images, item.product?.cover || item.productImage) ? (
-                          <img
-                            src={getProductImageUrl(
+                        <div className="flex items-center space-x-4">
+                          {/* Product Image */}
+                          <div className="relative w-24 h-24 flex-shrink-0">
+                            {getProductImageUrl(
                               item.product?.images,
                               item.product?.cover || item.productImage
+                            ) ? (
+                              <img
+                                src={getProductImageUrl(
+                                  item.product?.images,
+                                  item.product?.cover || item.productImage
+                                )}
+                                alt={
+                                  item.productName ||
+                                  item.product?.name ||
+                                  "Product"
+                                }
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                                <div className="text-center text-gray-400">
+                                  <p className="text-xs">No image</p>
+                                </div>
+                              </div>
                             )}
-                            alt={item.productName || item.product?.name || "Product"}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
-                            <div className="text-center text-gray-400">
-                              <p className="text-xs">No image</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Product Details */}
-                      <div className="flex-1 min-w-0">
-                        <Link to={`/product/${item.productId}`}>
-                          <h3 className="font-semibold text-lg text-charcoal hover:text-ethiopian-gold transition-colors line-clamp-2">
-                            {item.product?.name || `Product #${item.productId}`}
-                          </h3>
-                        </Link>
-                        {(() => {
-                          const baseUnitPrice = Number(item.unitPrice || 0);
-                          const discount = item.product?.activeDiscount;
-                          const discountedUnitPrice = discount
-                            ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
-                            : baseUnitPrice;
-                          const hasDiscount = discountedUnitPrice < baseUnitPrice;
-
-                          return (
-                            <div className="mt-1">
-                              <p className="text-ethiopian-gold font-bold text-lg">
-                                {formatPrice(discountedUnitPrice, cartCurrency)}
-                              </p>
-                              {hasDiscount && (
-                                <p className="text-xs text-gray-500 line-through">
-                                  {formatPrice(baseUnitPrice, cartCurrency)}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })()}
-                        
-                        {/* Delivery Info */}
-                        <div className="flex items-center mt-2 text-sm text-gray-500">
-                          <Truck size={14} className="mr-1" />
-                          <span>{item.product?.deliveryDays || 3} days delivery</span>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center space-x-4 mt-4">
-                          {/* Quantity Controls */}
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleQuantityChange(item, item.quantity - 1)}
-                              disabled={updateQuantityMutation.isPending}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Minus size={14} />
-                            </Button>
-                            <span className="text-sm font-medium w-8 text-center">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleQuantityChange(item, item.quantity + 1)}
-                              disabled={updateQuantityMutation.isPending || isAtMaxStock}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Plus size={14} />
-                            </Button>
                           </div>
 
-                          {/* Move to Wishlist */}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleMoveToWishlist(item)}
-                            disabled={moveToWishlistMutation.isPending}
-                            className="text-gray-600 hover:text-ethiopian-gold"
-                          >
-                            <Heart size={14} className="mr-1" />
-                            Save for later
-                          </Button>
+                          {/* Product Details */}
+                          <div className="flex-1 min-w-0">
+                            <Link to={`/product/${item.productId}`}>
+                              <h3 className="font-semibold text-lg text-charcoal hover:text-ethiopian-gold transition-colors line-clamp-2">
+                                {item.product?.name ||
+                                  `Product #${item.productId}`}
+                              </h3>
+                            </Link>
+                            {(() => {
+                              const baseUnitPrice = Number(item.unitPrice || 0);
+                              const discount = item.product?.activeDiscount;
+                              const discountedUnitPrice = discount
+                                ? calculateDiscountedPrice(
+                                    baseUnitPrice,
+                                    cartCurrency,
+                                    discount
+                                  )
+                                : baseUnitPrice;
+                              const hasDiscount =
+                                discountedUnitPrice < baseUnitPrice;
 
-                          {/* Remove */}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeItemMutation.mutate(item.id)}
-                            disabled={removeItemMutation.isPending}
-                            className="text-gray-600 hover:text-red-600"
-                          >
-                            <X size={14} className="mr-1" />
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
+                              return (
+                                <div className="mt-1">
+                                  <p className="text-ethiopian-gold font-bold text-lg">
+                                    {formatPrice(
+                                      discountedUnitPrice,
+                                      cartCurrency
+                                    )}
+                                  </p>
+                                  {hasDiscount && (
+                                    <p className="text-xs text-gray-500 line-through">
+                                      {formatPrice(baseUnitPrice, cartCurrency)}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
 
-                      {/* Item Total */}
-                      <div className="text-right">
-                        {(() => {
-                          const baseUnitPrice = Number(item.unitPrice || 0);
-                          const discount = item.product?.activeDiscount;
-                          const discountedUnitPrice = discount
-                            ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
-                            : baseUnitPrice;
-                          const itemTotal = discountedUnitPrice * item.quantity;
-                          const originalLineTotal = baseUnitPrice * item.quantity;
-                          const hasDiscount = itemTotal < originalLineTotal;
-
-                          return (
-                            <div>
-                              <p className="font-bold text-lg text-charcoal">
-                                {formatPrice(itemTotal, cartCurrency)}
-                              </p>
-                              {hasDiscount && (
-                                <p className="text-xs text-gray-500 line-through">
-                                  {formatPrice(originalLineTotal, cartCurrency)}
-                                </p>
-                              )}
+                            {/* Delivery Info */}
+                            <div className="flex items-center mt-2 text-sm text-gray-500">
+                              <Truck size={14} className="mr-1" />
+                              <span>
+                                {item.product?.deliveryDays || 3} days delivery
+                              </span>
                             </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center space-x-4 mt-4">
+                              {/* Quantity Controls */}
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    handleQuantityChange(
+                                      item,
+                                      item.quantity - 1
+                                    )
+                                  }
+                                  disabled={updateQuantityMutation.isPending}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Minus size={14} />
+                                </Button>
+                                <span className="text-sm font-medium w-8 text-center">
+                                  {item.quantity}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    handleQuantityChange(
+                                      item,
+                                      item.quantity + 1
+                                    )
+                                  }
+                                  disabled={
+                                    updateQuantityMutation.isPending ||
+                                    isAtMaxStock
+                                  }
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Plus size={14} />
+                                </Button>
+                              </div>
+
+                              {/* Move to Wishlist */}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleMoveToWishlist(item)}
+                                disabled={moveToWishlistMutation.isPending}
+                                className="text-gray-600 hover:text-ethiopian-gold"
+                              >
+                                <Heart size={14} className="mr-1" />
+                                Save for later
+                              </Button>
+
+                              {/* Remove */}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  removeItemMutation.mutate(item.id)
+                                }
+                                disabled={removeItemMutation.isPending}
+                                className="text-gray-600 hover:text-red-600"
+                              >
+                                <X size={14} className="mr-1" />
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Item Total */}
+                          <div className="text-right">
+                            {(() => {
+                              const baseUnitPrice = Number(item.unitPrice || 0);
+                              const discount = item.product?.activeDiscount;
+                              const discountedUnitPrice = discount
+                                ? calculateDiscountedPrice(
+                                    baseUnitPrice,
+                                    cartCurrency,
+                                    discount
+                                  )
+                                : baseUnitPrice;
+                              const itemTotal =
+                                discountedUnitPrice * item.quantity;
+                              const originalLineTotal =
+                                baseUnitPrice * item.quantity;
+                              const hasDiscount = itemTotal < originalLineTotal;
+
+                              return (
+                                <div>
+                                  <p className="font-bold text-lg text-charcoal">
+                                    {formatPrice(itemTotal, cartCurrency)}
+                                  </p>
+                                  {hasDiscount && (
+                                    <p className="text-xs text-gray-500 line-through">
+                                      {formatPrice(
+                                        originalLineTotal,
+                                        cartCurrency
+                                      )}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
                       );
                     })()}
                   </CardContent>
@@ -540,8 +643,12 @@ export default function Cart() {
                   <div className="space-y-4">
                     {/* Subtotal */}
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Subtotal ({getTotalItems()} items)</span>
-                      <span className="font-medium">{formatPrice(calculateSubtotal(), cartCurrency)}</span>
+                      <span className="text-gray-600">
+                        Subtotal ({getTotalItems()} items)
+                      </span>
+                      <span className="font-medium">
+                        {formatPrice(calculateSubtotal(), cartCurrency)}
+                      </span>
                     </div>
 
                     {/* Discount Code Input */}
@@ -555,7 +662,11 @@ export default function Cart() {
                                 "{discountCode}" applied
                               </p>
                               <p className="text-xs text-green-600">
-                                Save {formatPrice(discountAmountDisplay, cartCurrency)}
+                                Save{" "}
+                                {formatPrice(
+                                  discountAmountDisplay,
+                                  cartCurrency
+                                )}
                               </p>
                             </div>
                           </div>
@@ -578,14 +689,20 @@ export default function Cart() {
                                 setDiscountCode(e.target.value);
                                 setDiscountError(null);
                               }}
-                              onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()}
-                              className={`flex-1 h-9 text-sm ${discountError ? 'border-red-300' : ''}`}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && handleApplyDiscount()
+                              }
+                              className={`flex-1 h-9 text-sm ${
+                                discountError ? "border-red-300" : ""
+                              }`}
                               disabled={isValidatingDiscount}
                             />
                             <Button
                               type="button"
                               onClick={handleApplyDiscount}
-                              disabled={isValidatingDiscount || !discountCode.trim()}
+                              disabled={
+                                isValidatingDiscount || !discountCode.trim()
+                              }
                               className="bg-eagle-green hover:bg-eagle-green/90 text-white h-9 px-4 shrink-0 transition-all font-medium"
                             >
                               {isValidatingDiscount ? (
@@ -606,12 +723,15 @@ export default function Cart() {
                     </div>
 
                     {/* Discount Line Item */}
-                    {discountResult?.applicable && discountAmountDisplay > 0 && (
-                      <div className="flex justify-between text-sm text-green-600">
-                        <span>Discount</span>
-                        <span>-{formatPrice(discountAmountDisplay, cartCurrency)}</span>
-                      </div>
-                    )}
+                    {discountResult?.applicable &&
+                      discountAmountDisplay > 0 && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Discount</span>
+                          <span>
+                            -{formatPrice(discountAmountDisplay, cartCurrency)}
+                          </span>
+                        </div>
+                      )}
 
                     <Separator />
 
@@ -619,7 +739,10 @@ export default function Cart() {
                     <div className="flex justify-between text-lg font-bold">
                       <span>Estimated Total</span>
                       <span className="text-ethiopian-gold">
-                        {formatPrice(Math.max(0, calculateTotal() - discountAmountDisplay), cartCurrency)}
+                        {formatPrice(
+                          Math.max(0, calculateTotal() - discountAmountDisplay),
+                          cartCurrency
+                        )}
                       </span>
                     </div>
 
@@ -630,16 +753,28 @@ export default function Cart() {
                     )}
 
                     {/* Checkout Button */}
-                    <Button 
+                    <Button
                       className="w-full bg-ethiopian-gold hover:bg-amber text-white h-12"
-                      onClick={() => navigate("/checkout", { state: { appliedDiscountCode: discountResult?.applicable ? discountCode : undefined } })}
+                      onClick={() =>
+                        navigate("/checkout", {
+                          state: {
+                            appliedDiscountCode: discountResult?.applicable
+                              ? discountCode
+                              : undefined,
+                          },
+                        })
+                      }
                     >
                       Proceed to Checkout
                       <ArrowRight size={16} className="ml-2" />
                     </Button>
 
                     {/* Continue Shopping */}
-                    <Button asChild variant="outline" className="w-full border-gray-300">
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="w-full border-gray-300"
+                    >
                       <Link to="/gifts">Continue Shopping</Link>
                     </Button>
                   </div>
@@ -649,8 +784,6 @@ export default function Cart() {
           </div>
         )}
       </div>
-
-      
     </div>
   );
 }

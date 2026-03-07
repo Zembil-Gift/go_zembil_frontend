@@ -4,23 +4,76 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
-import { isValidPhoneNumber, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js/max";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  isValidPhoneNumber,
+  parsePhoneNumberFromString,
+  type CountryCode,
+} from "libphonenumber-js/max";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/apiService";
-import { vendorTermsService, VendorTermsResponse } from "@/services/vendorTermsService";
+import {
+  vendorTermsService,
+  VendorTermsResponse,
+} from "@/services/vendorTermsService";
 import { vendorCategoryService } from "@/services/vendorCategoryService";
-import { SUPPORTED_COUNTRIES, getCurrencyForCountry, isEthiopianCountry } from "@/lib/countryConfig";
-import { User, Mail, Lock, Calendar, Building2, Eye, EyeOff, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, FileText, Loader2, Download, ExternalLink, Shield, DollarSign, Package, MessageCircle, Scale, FileCheck, MapPin } from "lucide-react";
+import {
+  SUPPORTED_COUNTRIES,
+  getCurrencyForCountry,
+  isEthiopianCountry,
+} from "@/lib/countryConfig";
+import {
+  User,
+  Mail,
+  Lock,
+  Calendar,
+  Building2,
+  Eye,
+  EyeOff,
+  PlayCircle,
+  CheckCircle2,
+  ArrowRight,
+  ArrowLeft,
+  FileText,
+  Loader2,
+  Download,
+  ExternalLink,
+  Shield,
+  DollarSign,
+  Package,
+  MessageCircle,
+  Scale,
+  FileCheck,
+  MapPin,
+} from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import { LocationPicker, type LocationData } from "@/components/maps";
 
@@ -36,21 +89,45 @@ interface CertificateResponse {
 }
 
 const VENDOR_TYPES = [
-  { value: "PRODUCT", label: "Product Vendor", description: "I sell physical goods that require delivery" },
-  { value: "SERVICE", label: "Service Vendor", description: "I provide experiences, events, or time-based services" },
-  { value: "HYBRID", label: "Hybrid Vendor", description: "I sell both physical products and services" },
+  {
+    value: "PRODUCT",
+    label: "Product Vendor",
+    description: "I sell physical goods that require delivery",
+  },
+  {
+    value: "SERVICE",
+    label: "Service Vendor",
+    description: "I provide experiences, events, or time-based services",
+  },
+  {
+    value: "HYBRID",
+    label: "Hybrid Vendor",
+    description: "I sell both physical products and services",
+  },
 ];
 
 const VAT_STATUS_OPTIONS = [
-  { value: "VAT_REGISTERED", label: "VAT Registered", description: "I am registered for VAT with the Ethiopian Revenue Authority" },
-  { value: "NOT_VAT_REGISTERED", label: "Not VAT Registered", description: "I am not registered for VAT" },
-  { value: "VAT_EXEMPT", label: "VAT Exempt", description: "My business is exempt from VAT" },
+  {
+    value: "VAT_REGISTERED",
+    label: "VAT Registered",
+    description: "I am registered for VAT with the Ethiopian Revenue Authority",
+  },
+  {
+    value: "NOT_VAT_REGISTERED",
+    label: "Not VAT Registered",
+    description: "I am not registered for VAT",
+  },
+  {
+    value: "VAT_EXEMPT",
+    label: "VAT Exempt",
+    description: "My business is exempt from VAT",
+  },
 ];
 
 const ONBOARDING_VIDEO_IDS: Record<string, string> = {
-  PRODUCT: "MJzYpgf7IEY", 
+  PRODUCT: "MJzYpgf7IEY",
   SERVICE: "cZ6cN72lqSg",
-  HYBRID: "RlTCNmSJw1w", 
+  HYBRID: "RlTCNmSJw1w",
 };
 
 const DEFAULT_VIDEO_ID = "dQw4w9WgXcQ";
@@ -115,14 +192,11 @@ const getDuplicateAccountMessage = ({
 const phoneValidation = z
   .string()
   .min(1, "Phone number is required")
-  .refine(
-    (val) => {
-      if (!val) return false;
-      // Validate using libphonenumber-js
-      return isValidPhoneNumber(val);
-    },
-    "Please enter a valid phone number"
-  )
+  .refine((val) => {
+    if (!val) return false;
+    // Validate using libphonenumber-js
+    return isValidPhoneNumber(val);
+  }, "Please enter a valid phone number")
   .transform((val) => {
     // Normalize to E.164 format for storage
     const parsed = parsePhoneNumberFromString(val);
@@ -135,7 +209,10 @@ const usernameValidation = z
   .string()
   .min(8, "Username must be at least 8 characters")
   .max(20, "Username must not exceed 20 characters")
-  .regex(usernameRegex, "Username must start with a letter and contain only letters, numbers, and underscores");
+  .regex(
+    usernameRegex,
+    "Username must start with a letter and contain only letters, numbers, and underscores"
+  );
 
 const vendorSignupSchema = z
   .object({
@@ -147,24 +224,45 @@ const vendorSignupSchema = z
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
-      .regex(/^(?=.*[a-z])/, "Password must contain at least one lowercase letter")
-      .regex(/^(?=.*[A-Z])/, "Password must contain at least one uppercase letter")
+      .regex(
+        /^(?=.*[a-z])/,
+        "Password must contain at least one lowercase letter"
+      )
+      .regex(
+        /^(?=.*[A-Z])/,
+        "Password must contain at least one uppercase letter"
+      )
       .regex(/^(?=.*\d)/, "Password must contain at least one number")
-      .regex(/^(?=.*[@$!%*?&#^()_+=\-\[\]{}|;:',.<>/~`])/, "Password must contain at least one special character"),
-    confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
-    birthDate: z.string().min(1, "Birth date is required").refine((date) => {
-      const birthDate = new Date(date);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-      return age >= 18;
-    }, "You must be at least 18 years old to sign up as a vendor"),
-    businessName: z.string()
+      .regex(
+        /^(?=.*[@$!%*?&#^()_+=\-\[\]{}|;:',.<>/~`])/,
+        "Password must contain at least one special character"
+      ),
+    confirmPassword: z
+      .string()
+      .min(8, "Password confirmation must be at least 8 characters"),
+    birthDate: z
+      .string()
+      .min(1, "Birth date is required")
+      .refine((date) => {
+        const birthDate = new Date(date);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+        return age >= 18;
+      }, "You must be at least 18 years old to sign up as a vendor"),
+    businessName: z
+      .string()
       .min(2, "Business name must be at least 2 characters")
       .max(200, "Business name is too long")
-      .regex(/^[a-zA-Z0-9\s\-'&.]+$/, "Business name contains invalid characters. Only letters, numbers, spaces, hyphens, apostrophes, ampersands, and periods are allowed"),
-    description: z.string().max(1000, "Description must be less than 1000 characters").optional(),
+      .regex(
+        /^[a-zA-Z0-9\s\-'&.]+$/,
+        "Business name contains invalid characters. Only letters, numbers, spaces, hyphens, apostrophes, ampersands, and periods are allowed"
+      ),
+    description: z
+      .string()
+      .max(1000, "Description must be less than 1000 characters")
+      .optional(),
     businessEmail: z.string().email("Valid business email is required"),
     businessPhone: phoneValidation,
     city: z.string().min(2, "City is required"),
@@ -184,13 +282,15 @@ const vendorSignupSchema = z
     path: ["confirmPassword"],
     message: "Passwords must match",
   })
-  .refine((data) => {
-    return !(data.country === "Ethiopia" && !data.vatStatus);
-
-  }, {
-    path: ["vatStatus"],
-    message: "VAT status is required for Ethiopian vendors",
-  });
+  .refine(
+    (data) => {
+      return !(data.country === "Ethiopia" && !data.vatStatus);
+    },
+    {
+      path: ["vatStatus"],
+      message: "VAT status is required for Ethiopian vendors",
+    }
+  );
 
 type VendorSignupForm = z.infer<typeof vendorSignupSchema>;
 
@@ -199,24 +299,43 @@ export default function VendorSignup() {
   const isBrowserUnloadingRef = useRef(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>(initialDraft?.currentStep || "form");
-  const [acceptedTerms, setAcceptedTerms] = useState<Record<number, boolean>>(initialDraft?.acceptedTerms || {});
-  const [hasWatchedVideo, setHasWatchedVideo] = useState(initialDraft?.hasWatchedVideo || false);
-  const [videoCompletedChecked, setVideoCompletedChecked] = useState(initialDraft?.videoCompletedChecked || false);
-  const [generatedCertificate, setGeneratedCertificate] = useState<CertificateResponse | null>(initialDraft?.generatedCertificate || null);
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>(
+    initialDraft?.currentStep || "form"
+  );
+  const [acceptedTerms, setAcceptedTerms] = useState<Record<number, boolean>>(
+    initialDraft?.acceptedTerms || {}
+  );
+  const [hasWatchedVideo, setHasWatchedVideo] = useState(
+    initialDraft?.hasWatchedVideo || false
+  );
+  const [videoCompletedChecked, setVideoCompletedChecked] = useState(
+    initialDraft?.videoCompletedChecked || false
+  );
+  const [generatedCertificate, setGeneratedCertificate] =
+    useState<CertificateResponse | null>(
+      initialDraft?.generatedCertificate || null
+    );
   const [termsData, setTermsData] = useState<VendorTermsResponse | null>(null);
   const [isLoadingTerms, setIsLoadingTerms] = useState(false);
-  const [allTermsAccepted, setAllTermsAccepted] = useState(initialDraft?.allTermsAccepted || false);
-  const [formData, setFormData] = useState<Partial<VendorSignupForm> | null>(initialDraft?.formData || null);
+  const [allTermsAccepted, setAllTermsAccepted] = useState(
+    initialDraft?.allTermsAccepted || false
+  );
+  const [formData, setFormData] = useState<Partial<VendorSignupForm> | null>(
+    initialDraft?.formData || null
+  );
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [showFullTermsModal, setShowFullTermsModal] = useState(false);
-  const [selectedTermForDetail, setSelectedTermForDetail] = useState<number | null>(null);
-  const [phoneCountry, setPhoneCountry] = useState<CountryCode>(initialDraft?.phoneCountry || "ET");
+  const [selectedTermForDetail, setSelectedTermForDetail] = useState<
+    number | null
+  >(null);
+  const [phoneCountry, setPhoneCountry] = useState<CountryCode>(
+    initialDraft?.phoneCountry || "ET"
+  );
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const { data: vendorCategories = [] } = useQuery({
-    queryKey: ['vendor-categories'],
+    queryKey: ["vendor-categories"],
     queryFn: () => vendorCategoryService.getAllActiveCategories(),
   });
 
@@ -273,23 +392,42 @@ export default function VendorSignup() {
     });
 
     return () => subscription.unsubscribe();
-  }, [form, currentStep, acceptedTerms, hasWatchedVideo, videoCompletedChecked, generatedCertificate, allTermsAccepted, formData, phoneCountry]);
+  }, [
+    form,
+    currentStep,
+    acceptedTerms,
+    hasWatchedVideo,
+    videoCompletedChecked,
+    generatedCertificate,
+    allTermsAccepted,
+    formData,
+    phoneCountry,
+  ]);
 
   useEffect(() => {
     saveDraft();
-  }, [currentStep, acceptedTerms, hasWatchedVideo, videoCompletedChecked, generatedCertificate, allTermsAccepted, formData, phoneCountry]);
+  }, [
+    currentStep,
+    acceptedTerms,
+    hasWatchedVideo,
+    videoCompletedChecked,
+    generatedCertificate,
+    allTermsAccepted,
+    formData,
+    phoneCountry,
+  ]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
       isBrowserUnloadingRef.current = true;
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('pagehide', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handleBeforeUnload);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('pagehide', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handleBeforeUnload);
 
       if (!isBrowserUnloadingRef.current) {
         sessionStorage.removeItem(VENDOR_SIGNUP_DRAFT_KEY);
@@ -304,25 +442,43 @@ export default function VendorSignup() {
       const email = formData?.email || form.getValues("email");
       const firstName = formData?.firstName || form.getValues("firstName");
       const lastName = formData?.lastName || form.getValues("lastName");
-      
-      return await apiService.postRequest<CertificateResponse>('/api/vendor-certificates/generate', {
-        email,
-        fullName: `${firstName} ${lastName}`,
-        vendorType,
-      });
+
+      return await apiService.postRequest<CertificateResponse>(
+        "/api/vendor-certificates/generate",
+        {
+          email,
+          fullName: `${firstName} ${lastName}`,
+          vendorType,
+        }
+      );
     },
     onSuccess: (data) => {
       setGeneratedCertificate(data);
-      toast({ title: "Certificate Generated!", description: "Your onboarding certificate is ready.", variant: "default" });
+      toast({
+        title: "Certificate Generated!",
+        description: "Your onboarding certificate is ready.",
+        variant: "default",
+      });
     },
     onError: (error: any) => {
-      toast({ title: "Certificate Generation Failed", description: error.message || "Please try again.", variant: "destructive" });
+      toast({
+        title: "Certificate Generation Failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
   // Automatically trigger certificate generation if video is already watched
   useEffect(() => {
-    if (currentStep === "video" && hasWatchedVideo && !generatedCertificate && !generateCertificateMutation.isPending && !generateCertificateMutation.isError && form.getValues("email")) {
+    if (
+      currentStep === "video" &&
+      hasWatchedVideo &&
+      !generatedCertificate &&
+      !generateCertificateMutation.isPending &&
+      !generateCertificateMutation.isError &&
+      form.getValues("email")
+    ) {
       // Small delay to ensure render cycle complete
       const timer = setTimeout(() => {
         generateCertificateMutation.mutate();
@@ -330,7 +486,6 @@ export default function VendorSignup() {
       return () => clearTimeout(timer);
     }
   }, [currentStep, hasWatchedVideo, generatedCertificate, form]);
-
 
   const handleVideoCompletedCheckbox = (checked: boolean) => {
     setVideoCompletedChecked(checked);
@@ -347,14 +502,22 @@ export default function VendorSignup() {
       setAcceptedTerms({});
       setAllTermsAccepted(false);
     } catch {
-      toast({ title: "Error", description: "Failed to load terms and conditions", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to load terms and conditions",
+        variant: "destructive",
+      });
     } finally {
       setIsLoadingTerms(false);
     }
   };
 
   useEffect(() => {
-    if ((currentStep === "terms" || currentStep === "video") && !termsData && !isLoadingTerms) {
+    if (
+      (currentStep === "terms" || currentStep === "video") &&
+      !termsData &&
+      !isLoadingTerms
+    ) {
       const vendorType = formData?.vendorType || form.getValues("vendorType");
       if (vendorType) {
         fetchTermsForVendorType(vendorType);
@@ -366,7 +529,9 @@ export default function VendorSignup() {
     setAllTermsAccepted(checked);
     if (checked && termsData) {
       const allAccepted: Record<number, boolean> = {};
-      termsData.terms.forEach(term => { allAccepted[term.id] = true; });
+      termsData.terms.forEach((term) => {
+        allAccepted[term.id] = true;
+      });
       setAcceptedTerms(allAccepted);
     } else {
       setAcceptedTerms({});
@@ -394,30 +559,39 @@ export default function VendorSignup() {
   // Download certificate PDF (public endpoint, no auth needed)
   const handleDownloadCertificatePdf = async () => {
     if (!generatedCertificate) return;
-    
+
     setIsDownloadingPdf(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/vendor-certificates/${generatedCertificate.certificateCode}/pdf`
+        `${
+          import.meta.env.VITE_API_URL || "http://localhost:8080"
+        }/api/vendor-certificates/${generatedCertificate.certificateCode}/pdf`
       );
-      
+
       if (!response.ok) {
-        throw new Error('Failed to download PDF');
+        throw new Error("Failed to download PDF");
       }
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `onboarding-certificate-${generatedCertificate.certificateCode}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
-      toast({ title: "Downloaded!", description: "Certificate PDF downloaded successfully." });
+
+      toast({
+        title: "Downloaded!",
+        description: "Certificate PDF downloaded successfully.",
+      });
     } catch {
-      toast({ title: "Error", description: "Failed to download certificate PDF.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to download certificate PDF.",
+        variant: "destructive",
+      });
     } finally {
       setIsDownloadingPdf(false);
     }
@@ -426,17 +600,19 @@ export default function VendorSignup() {
   // Signup mutation
   const signupMutation = useMutation({
     mutationFn: async (data: VendorSignupForm) => {
-      const acceptedTermIds = termsData ? termsData.terms.filter(t => acceptedTerms[t.id]).map(t => t.id) : [];
-      
+      const acceptedTermIds = termsData
+        ? termsData.terms.filter((t) => acceptedTerms[t.id]).map((t) => t.id)
+        : [];
+
       // Derive currency from country selection
       const preferredCurrencyCode = getCurrencyForCountry(data.country);
       const isEthiopian = isEthiopianCountry(data.country);
-      
+
       // Set supported payment providers based on country
-      const supportedPaymentProviders = isEthiopian 
-        ? ["CHAPA", "TELEBIRR"] 
+      const supportedPaymentProviders = isEthiopian
+        ? ["CHAPA", "TELEBIRR"]
         : ["STRIPE"];
-      
+
       const payload = {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -469,11 +645,16 @@ export default function VendorSignup() {
       };
 
       return await apiService.postRequest<{
-        user: { id: number; email: string; firstName: string; lastName: string };
+        user: {
+          id: number;
+          email: string;
+          firstName: string;
+          lastName: string;
+        };
         vendor: any;
         message: string;
         requiresEmailVerification?: boolean;
-      }>('/api/vendors/signup', payload);
+      }>("/api/vendors/signup", payload);
     },
     onSuccess: (_response, variables) => {
       // Always redirect to email verification for vendors
@@ -484,11 +665,11 @@ export default function VendorSignup() {
       });
       // Redirect to email verification page
       setTimeout(() => {
-        navigate('/verify-email', { 
-          state: { 
+        navigate("/verify-email", {
+          state: {
             email: variables.email,
-            returnUrl: '/signin'
-          }
+            returnUrl: "/signin",
+          },
         });
       }, 500);
     },
@@ -499,14 +680,17 @@ export default function VendorSignup() {
 
       const emailExists =
         Boolean(details?.email) ||
-        (errorMsg.includes("email") && (errorMsg.includes("exists") || errorMsg.includes("already")));
+        (errorMsg.includes("email") &&
+          (errorMsg.includes("exists") || errorMsg.includes("already")));
       const usernameExists =
         Boolean(details?.username) ||
-        (errorMsg.includes("username") && (errorMsg.includes("exists") || errorMsg.includes("already")));
+        (errorMsg.includes("username") &&
+          (errorMsg.includes("exists") || errorMsg.includes("already")));
       const phoneExists =
         Boolean(details?.phoneNumber) ||
         Boolean(details?.phone) ||
-        ((errorMsg.includes("phone") || errorMsg.includes("number")) && (errorMsg.includes("exists") || errorMsg.includes("already")));
+        ((errorMsg.includes("phone") || errorMsg.includes("number")) &&
+          (errorMsg.includes("exists") || errorMsg.includes("already")));
 
       const duplicateMessage = getDuplicateAccountMessage({
         emailExists,
@@ -514,29 +698,43 @@ export default function VendorSignup() {
         phoneExists,
       });
 
-      toast({ 
-        title: "Signup Failed", 
-        description: duplicateMessage || (error.message || "Please try again."), 
-        variant: "destructive" 
+      toast({
+        title: "Signup Failed",
+        description: duplicateMessage || error.message || "Please try again.",
+        variant: "destructive",
       });
     },
   });
 
   const handleProceedToTerms = async () => {
     const fieldsToValidate = [
-      "firstName", "lastName", "username", "email", "phoneNumber",
-      "password", "confirmPassword", "birthDate", "businessName",
-      "businessEmail", "businessPhone", "city", "country", "vendorCategoryId", "vendorType"
+      "firstName",
+      "lastName",
+      "username",
+      "email",
+      "phoneNumber",
+      "password",
+      "confirmPassword",
+      "birthDate",
+      "businessName",
+      "businessEmail",
+      "businessPhone",
+      "city",
+      "country",
+      "vendorCategoryId",
+      "vendorType",
     ] as const;
-    
+
     const isValid = await form.trigger(fieldsToValidate);
     const country = form.getValues("country");
     const vatStatus = form.getValues("vatStatus");
-    
+
     if (country === "Ethiopia" && !vatStatus) {
-      form.setError("vatStatus", { message: "VAT status is required for Ethiopian vendors" });
+      form.setError("vatStatus", {
+        message: "VAT status is required for Ethiopian vendors",
+      });
     }
-    
+
     if (!isValid || (country === "Ethiopia" && !vatStatus)) {
       // Count all errors
       const errors = form.formState.errors;
@@ -544,10 +742,12 @@ export default function VendorSignup() {
         const error = errors[key as keyof typeof errors];
         return count + (error ? 1 : 0);
       }, 0);
-      
+
       toast({
         title: "Validation Errors",
-        description: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''} before continuing.`,
+        description: `Please fix ${errorCount} error${
+          errorCount > 1 ? "s" : ""
+        } before continuing.`,
         variant: "destructive",
       });
 
@@ -555,25 +755,33 @@ export default function VendorSignup() {
       const firstErrorField = Object.keys(errors)[0];
       const element = document.getElementById(firstErrorField);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
         element.focus();
       }
-      
+
       return;
     }
-    
+
     // Check for duplicate email, username, and phone number before proceeding
     const email = form.getValues("email");
     const username = form.getValues("username");
     const phoneNumber = form.getValues("phoneNumber");
-    
+
     try {
       const [emailExists, usernameExists, phoneExists] = await Promise.all([
-        apiService.getRequest<boolean>(`/api/users/check-email?email=${encodeURIComponent(email)}`),
-        apiService.getRequest<boolean>(`/api/users/check-username?username=${encodeURIComponent(username)}`),
-        apiService.getRequest<boolean>(`/api/users/check-phone?phoneNumber=${encodeURIComponent(phoneNumber)}`)
+        apiService.getRequest<boolean>(
+          `/api/users/check-email?email=${encodeURIComponent(email)}`
+        ),
+        apiService.getRequest<boolean>(
+          `/api/users/check-username?username=${encodeURIComponent(username)}`
+        ),
+        apiService.getRequest<boolean>(
+          `/api/users/check-phone?phoneNumber=${encodeURIComponent(
+            phoneNumber
+          )}`
+        ),
       ]);
-      
+
       const duplicateMessage = getDuplicateAccountMessage({
         emailExists,
         usernameExists,
@@ -581,14 +789,22 @@ export default function VendorSignup() {
       });
 
       if (duplicateMessage) {
-        toast({ title: "Account Exists", description: duplicateMessage, variant: "destructive" });
+        toast({
+          title: "Account Exists",
+          description: duplicateMessage,
+          variant: "destructive",
+        });
         return;
       }
     } catch (error) {
-      toast({ title: "Validation Error", description: "Could not verify account availability. Please try again.", variant: "destructive" });
+      toast({
+        title: "Validation Error",
+        description: "Could not verify account availability. Please try again.",
+        variant: "destructive",
+      });
       return;
     }
-    
+
     const vendorType = form.getValues("vendorType");
     setFormData(form.getValues());
     await fetchTermsForVendorType(vendorType);
@@ -600,7 +816,11 @@ export default function VendorSignup() {
 
   const handleProceedToVideo = () => {
     if (!allTermsAccepted) {
-      toast({ title: "Terms Required", description: "Please read and accept the full Terms & Conditions.", variant: "destructive" });
+      toast({
+        title: "Terms Required",
+        description: "Please read and accept the full Terms & Conditions.",
+        variant: "destructive",
+      });
       return;
     }
     setVideoCompletedChecked(false);
@@ -614,7 +834,11 @@ export default function VendorSignup() {
 
   const onSubmit = async (data: VendorSignupForm) => {
     if (!generatedCertificate) {
-      toast({ title: "Certificate Required", description: "Please generate your certificate first.", variant: "destructive" });
+      toast({
+        title: "Certificate Required",
+        description: "Please generate your certificate first.",
+        variant: "destructive",
+      });
       return;
     }
     await signupMutation.mutateAsync(data);
@@ -627,7 +851,7 @@ export default function VendorSignup() {
 
   const getVendorTypeLabel = () => {
     const vendorType = formData?.vendorType || selectedVendorType;
-    return VENDOR_TYPES.find(t => t.value === vendorType)?.label || "Vendor";
+    return VENDOR_TYPES.find((t) => t.value === vendorType)?.label || "Vendor";
   };
 
   return (
@@ -638,350 +862,632 @@ export default function VendorSignup() {
           <Link to="/" className="flex justify-center mb-6">
             <GoGeramiLogo size="lg" variant="icon" className="h-16 w-16" />
           </Link>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Vendor Signup</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Vendor Signup
+          </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Create your vendor account and join goGerami's marketplace.
           </p>
           <p className="text-sm text-gray-500 mt-2">
             Already have an account?{" "}
-            <Link to="/signin" className="text-emerald-600 hover:text-emerald-700 font-medium">Sign in here</Link>
+            <Link
+              to="/signin"
+              className="text-emerald-600 hover:text-emerald-700 font-medium"
+            >
+              Sign in here
+            </Link>
           </p>
         </div>
 
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-center space-x-2 sm:space-x-4">
-            <div className={`flex items-center ${currentStep === "form" ? "text-emerald-600" : formData ? "text-emerald-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "form" ? "border-emerald-600 bg-emerald-50" : formData ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
-                {formData && currentStep !== "form" ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <User className="w-4 h-4 sm:w-5 sm:h-5" />}
+            <div
+              className={`flex items-center ${
+                currentStep === "form"
+                  ? "text-emerald-600"
+                  : formData
+                  ? "text-emerald-600"
+                  : "text-gray-400"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${
+                  currentStep === "form"
+                    ? "border-emerald-600 bg-emerald-50"
+                    : formData
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : "border-gray-300"
+                }`}
+              >
+                {formData && currentStep !== "form" ? (
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                ) : (
+                  <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                )}
               </div>
-              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Details</span>
+              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">
+                Details
+              </span>
             </div>
             <div className="w-8 sm:w-16 h-0.5 bg-gray-300">
-              <div className={`h-full transition-all duration-300 ${formData ? "bg-emerald-600 w-full" : "w-0"}`} />
+              <div
+                className={`h-full transition-all duration-300 ${
+                  formData ? "bg-emerald-600 w-full" : "w-0"
+                }`}
+              />
             </div>
-            
-            <div className={`flex items-center ${currentStep === "terms" ? "text-emerald-600" : allTermsAccepted ? "text-emerald-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "terms" ? "border-emerald-600 bg-emerald-50" : allTermsAccepted ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
-                {allTermsAccepted && currentStep !== "terms" ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <FileText className="w-4 h-4 sm:w-5 sm:h-5" />}
+
+            <div
+              className={`flex items-center ${
+                currentStep === "terms"
+                  ? "text-emerald-600"
+                  : allTermsAccepted
+                  ? "text-emerald-600"
+                  : "text-gray-400"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${
+                  currentStep === "terms"
+                    ? "border-emerald-600 bg-emerald-50"
+                    : allTermsAccepted
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : "border-gray-300"
+                }`}
+              >
+                {allTermsAccepted && currentStep !== "terms" ? (
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                ) : (
+                  <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                )}
               </div>
-              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Terms</span>
+              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">
+                Terms
+              </span>
             </div>
             <div className="w-8 sm:w-16 h-0.5 bg-gray-300">
-              <div className={`h-full transition-all duration-300 ${allTermsAccepted ? "bg-emerald-600 w-full" : "w-0"}`} />
+              <div
+                className={`h-full transition-all duration-300 ${
+                  allTermsAccepted ? "bg-emerald-600 w-full" : "w-0"
+                }`}
+              />
             </div>
-            
-            <div className={`flex items-center ${currentStep === "video" ? "text-emerald-600" : generatedCertificate ? "text-emerald-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${currentStep === "video" ? "border-emerald-600 bg-emerald-50" : generatedCertificate ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"}`}>
-                {generatedCertificate ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <PlayCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
+
+            <div
+              className={`flex items-center ${
+                currentStep === "video"
+                  ? "text-emerald-600"
+                  : generatedCertificate
+                  ? "text-emerald-600"
+                  : "text-gray-400"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${
+                  currentStep === "video"
+                    ? "border-emerald-600 bg-emerald-50"
+                    : generatedCertificate
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : "border-gray-300"
+                }`}
+              >
+                {generatedCertificate ? (
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                ) : (
+                  <PlayCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                )}
               </div>
-              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">Video & Complete</span>
+              <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">
+                Video & Complete
+              </span>
             </div>
           </div>
         </div>
 
-
         {/* Step 1: Registration Form */}
         {currentStep === "form" && (
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="w-5 h-5" />
-                <span>Personal Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">First Name *</Label>
-                  <Input id="firstName" {...form.register("firstName")} />
-                  {form.formState.errors.firstName && <p className="text-sm text-red-600 mt-1">{form.formState.errors.firstName.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor="lastName">Last Name *</Label>
-                  <Input id="lastName" {...form.register("lastName")} />
-                  {form.formState.errors.lastName && <p className="text-sm text-red-600 mt-1">{form.formState.errors.lastName.message}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="username">Username *</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="username" className="pl-10" {...form.register("username")} maxLength={20} autoComplete="off" />
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <User className="w-5 h-5" />
+                  <span>Personal Information</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="firstName">First Name *</Label>
+                    <Input id="firstName" {...form.register("firstName")} />
+                    {form.formState.errors.firstName && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.firstName.message}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">8-20 characters, start with a letter, letters/numbers/underscores only</p>
-                  {form.formState.errors.username && <p className="text-sm text-red-600 mt-1">{form.formState.errors.username.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="email" type="email" className="pl-10" {...form.register("email")} autoComplete="username" />
+                  <div>
+                    <Label htmlFor="lastName">Last Name *</Label>
+                    <Input id="lastName" {...form.register("lastName")} />
+                    {form.formState.errors.lastName && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.lastName.message}
+                      </p>
+                    )}
                   </div>
-                  {form.formState.errors.email && <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>}
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="username">Username *</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="username"
+                        className="pl-10"
+                        {...form.register("username")}
+                        maxLength={20}
+                        autoComplete="off"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      8-20 characters, start with a letter,
+                      letters/numbers/underscores only
+                    </p>
+                    {form.formState.errors.username && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.username.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email *</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="email"
+                        type="email"
+                        className="pl-10"
+                        {...form.register("email")}
+                        autoComplete="username"
+                      />
+                    </div>
+                    {form.formState.errors.email && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.email.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="phoneNumber">Phone Number *</Label>
+                    <PhoneInput
+                      id="phoneNumber"
+                      value={form.watch("phoneNumber")}
+                      country={phoneCountry}
+                      onCountryChange={setPhoneCountry}
+                      onChange={(value, isValid, e164) => {
+                        const nextValue = e164 || value;
+                        const hasDigits =
+                          nextValue.replace(/\D/g, "").length > 0;
+                        form.setValue("phoneNumber", nextValue, {
+                          shouldValidate: hasDigits,
+                        });
+                        if (!hasDigits) {
+                          form.clearErrors("phoneNumber");
+                          return;
+                        }
+                        if (!isValid && hasDigits) {
+                          form.setError("phoneNumber", {
+                            message: "Please enter a valid phone number",
+                          });
+                        } else {
+                          form.clearErrors("phoneNumber");
+                        }
+                      }}
+                      defaultCountry="ET"
+                      placeholder="911 234 567"
+                      error={!!form.formState.errors.phoneNumber}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Select your country and enter your phone number
+                    </p>
+                    {form.formState.errors.phoneNumber && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.phoneNumber.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="birthDate">Birth Date *</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="birthDate"
+                        type="date"
+                        className="pl-10"
+                        {...form.register("birthDate")}
+                      />
+                    </div>
+                    {form.formState.errors.birthDate && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.birthDate.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="password">Password *</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        className="pl-10 pr-10"
+                        {...form.register("password")}
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      At least 8 characters with uppercase, lowercase, number,
+                      and special character
+                    </p>
+                    {form.formState.errors.password && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.password.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirm ? "text" : "password"}
+                        className="pl-10 pr-10"
+                        {...form.register("confirmPassword")}
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirm(!showConfirm)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                      >
+                        {showConfirm ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                    {form.formState.errors.confirmPassword && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.confirmPassword.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="country">Country *</Label>
+                    <Select
+                      value={form.watch("country")}
+                      onValueChange={(value) => {
+                        form.setValue("country", value);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SUPPORTED_COUNTRIES.map((country) => (
+                          <SelectItem key={country.value} value={country.value}>
+                            {country.label} ({country.currencyCode})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Your currency will be set based on your country
+                    </p>
+                    {form.formState.errors.country && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.country.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Building2 className="w-5 h-5" />
+                  <span>Business Information</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="phoneNumber">Phone Number *</Label>
-                  <PhoneInput
-                    id="phoneNumber"
-                    value={form.watch("phoneNumber")}
-                    country={phoneCountry}
-                    onCountryChange={setPhoneCountry}
-                    onChange={(value, isValid, e164) => {
-                      const nextValue = e164 || value;
-                      const hasDigits = nextValue.replace(/\D/g, "").length > 0;
-                      form.setValue("phoneNumber", nextValue, { shouldValidate: hasDigits });
-                      if (!hasDigits) {
-                        form.clearErrors("phoneNumber");
-                        return;
-                      }
-                      if (!isValid && hasDigits) {
-                        form.setError("phoneNumber", { message: "Please enter a valid phone number" });
-                      } else {
-                        form.clearErrors("phoneNumber");
-                      }
-                    }}
-                    defaultCountry="ET"
-                    placeholder="911 234 567"
-                    error={!!form.formState.errors.phoneNumber}
+                  <Label htmlFor="businessName">Business Name *</Label>
+                  <Input id="businessName" {...form.register("businessName")} />
+                  {form.formState.errors.businessName && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {form.formState.errors.businessName.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="description">Business Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Describe your business..."
+                    className="min-h-[100px]"
+                    {...form.register("description")}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Select your country and enter your phone number</p>
-                  {form.formState.errors.phoneNumber && <p className="text-sm text-red-600 mt-1">{form.formState.errors.phoneNumber.message}</p>}
                 </div>
-                <div>
-                  <Label htmlFor="birthDate">Birth Date *</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="birthDate" type="date" className="pl-10" {...form.register("birthDate")} />
-                  </div>
-                  {form.formState.errors.birthDate && <p className="text-sm text-red-600 mt-1">{form.formState.errors.birthDate.message}</p>}
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="password">Password *</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="password" type={showPassword ? "text" : "password"} className="pl-10 pr-10" {...form.register("password")} autoComplete="new-password" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">At least 8 characters with uppercase, lowercase, number, and special character</p>
-                  {form.formState.errors.password && <p className="text-sm text-red-600 mt-1">{form.formState.errors.password.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="confirmPassword" type={showConfirm ? "text" : "password"} className="pl-10 pr-10" {...form.register("confirmPassword")} autoComplete="new-password" />
-                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
-                      {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {form.formState.errors.confirmPassword && <p className="text-sm text-red-600 mt-1">{form.formState.errors.confirmPassword.message}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="country">Country *</Label>
-                  <Select 
-                    value={form.watch("country")}
-                    onValueChange={(value) => {
-                      form.setValue("country", value);
-                    }}
+                  <Label htmlFor="vendorCategoryId">Business Category *</Label>
+                  <Select
+                    value={form.watch("vendorCategoryId")}
+                    onValueChange={(value) =>
+                      form.setValue("vendorCategoryId", value)
+                    }
                   >
-                    <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your business category" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {SUPPORTED_COUNTRIES.map((country) => (
-                        <SelectItem key={country.value} value={country.value}>
-                          {country.label} ({country.currencyCode})
+                      {vendorCategories.map((category) => (
+                        <SelectItem
+                          key={category.id}
+                          value={category.id.toString()}
+                        >
+                          {category.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-gray-500 mt-1">Your currency will be set based on your country</p>
-                  {form.formState.errors.country && <p className="text-sm text-red-600 mt-1">{form.formState.errors.country.message}</p>}
+                  {form.formState.errors.vendorCategoryId && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {form.formState.errors.vendorCategoryId.message}
+                    </p>
+                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Building2 className="w-5 h-5" />
-                <span>Business Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="businessName">Business Name *</Label>
-                <Input id="businessName" {...form.register("businessName")} />
-                {form.formState.errors.businessName && <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessName.message}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="description">Business Description</Label>
-                <Textarea id="description" placeholder="Describe your business..." className="min-h-[100px]" {...form.register("description")} />
-              </div>
-
-              <div>
-                <Label htmlFor="vendorCategoryId">Business Category *</Label>
-                <Select value={form.watch("vendorCategoryId")} onValueChange={(value) => form.setValue("vendorCategoryId", value)}>
-                  <SelectTrigger><SelectValue placeholder="Select your business category" /></SelectTrigger>
-                  <SelectContent>
-                    {vendorCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>{category.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.vendorCategoryId && <p className="text-sm text-red-600 mt-1">{form.formState.errors.vendorCategoryId.message}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="vendorType">Vendor Type *</Label>
-                <Select value={form.watch("vendorType")} onValueChange={(value) => form.setValue("vendorType", value)}>
-                  <SelectTrigger><SelectValue placeholder="Select your vendor type" /></SelectTrigger>
-                  <SelectContent>
-                    {VENDOR_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.watch("vendorType") && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {VENDOR_TYPES.find(t => t.value === form.watch("vendorType"))?.description}
-                  </p>
-                )}
-                {form.formState.errors.vendorType && <p className="text-sm text-red-600 mt-1">{form.formState.errors.vendorType.message}</p>}
-              </div>
-
-              {form.watch("country") === "Ethiopia" && (
-                <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
-                  <Label htmlFor="vatStatus" className="text-amber-800">VAT Registration Status *</Label>
-                  <Select onValueChange={(value) => form.setValue("vatStatus", value)} value={form.watch("vatStatus") || undefined}>
-                    <SelectTrigger className="mt-2"><SelectValue placeholder="Select your VAT status" /></SelectTrigger>
+                <div>
+                  <Label htmlFor="vendorType">Vendor Type *</Label>
+                  <Select
+                    value={form.watch("vendorType")}
+                    onValueChange={(value) =>
+                      form.setValue("vendorType", value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your vendor type" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {VAT_STATUS_OPTIONS.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                      {VENDOR_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {form.formState.errors.vatStatus && <p className="text-sm text-red-600 mt-1">{form.formState.errors.vatStatus.message}</p>}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="businessEmail">Business Email *</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="businessEmail" type="email" className="pl-10" {...form.register("businessEmail")} />
-                  </div>
-                  {form.formState.errors.businessEmail && <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessEmail.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor="businessPhone">Business Phone *</Label>
-                  <PhoneInput
-                    id="businessPhone"
-                    value={form.watch("businessPhone")}
-                    country={phoneCountry}
-                    onCountryChange={setPhoneCountry}
-                    onChange={(value, isValid, e164) => {
-                      const nextValue = e164 || value;
-                      const hasDigits = nextValue.replace(/\D/g, "").length > 0;
-                      form.setValue("businessPhone", nextValue, { shouldValidate: hasDigits });
-                      if (!hasDigits) {
-                        form.clearErrors("businessPhone");
-                        return;
+                  {form.watch("vendorType") && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {
+                        VENDOR_TYPES.find(
+                          (t) => t.value === form.watch("vendorType")
+                        )?.description
                       }
-                      if (!isValid && hasDigits) {
-                        form.setError("businessPhone", { message: "Please enter a valid business phone number" });
-                      } else {
-                        form.clearErrors("businessPhone");
+                    </p>
+                  )}
+                  {form.formState.errors.vendorType && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {form.formState.errors.vendorType.message}
+                    </p>
+                  )}
+                </div>
+
+                {form.watch("country") === "Ethiopia" && (
+                  <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
+                    <Label htmlFor="vatStatus" className="text-amber-800">
+                      VAT Registration Status *
+                    </Label>
+                    <Select
+                      onValueChange={(value) =>
+                        form.setValue("vatStatus", value)
+                      }
+                      value={form.watch("vatStatus") || undefined}
+                    >
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select your VAT status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VAT_STATUS_OPTIONS.map((status) => (
+                          <SelectItem key={status.value} value={status.value}>
+                            {status.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {form.formState.errors.vatStatus && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.vatStatus.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="businessEmail">Business Email *</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="businessEmail"
+                        type="email"
+                        className="pl-10"
+                        {...form.register("businessEmail")}
+                      />
+                    </div>
+                    {form.formState.errors.businessEmail && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.businessEmail.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="businessPhone">Business Phone *</Label>
+                    <PhoneInput
+                      id="businessPhone"
+                      value={form.watch("businessPhone")}
+                      country={phoneCountry}
+                      onCountryChange={setPhoneCountry}
+                      onChange={(value, isValid, e164) => {
+                        const nextValue = e164 || value;
+                        const hasDigits =
+                          nextValue.replace(/\D/g, "").length > 0;
+                        form.setValue("businessPhone", nextValue, {
+                          shouldValidate: hasDigits,
+                        });
+                        if (!hasDigits) {
+                          form.clearErrors("businessPhone");
+                          return;
+                        }
+                        if (!isValid && hasDigits) {
+                          form.setError("businessPhone", {
+                            message:
+                              "Please enter a valid business phone number",
+                          });
+                        } else {
+                          form.clearErrors("businessPhone");
+                        }
+                      }}
+                      defaultCountry="ET"
+                      placeholder="911 111 111"
+                      error={!!form.formState.errors.businessPhone}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Select country and enter your business phone number
+                    </p>
+                    {form.formState.errors.businessPhone && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {form.formState.errors.businessPhone.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="city">City *</Label>
+                  <Input
+                    id="city"
+                    placeholder="Enter City"
+                    {...form.register("city")}
+                  />
+                  {form.formState.errors.city && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {form.formState.errors.city.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Business Location Map Picker */}
+                <div className="space-y-2 pt-2">
+                  <Label className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-emerald-600" />
+                    Business Location
+                  </Label>
+                  <p className="text-xs text-gray-500">
+                    Pin your business location on the map. This helps with
+                    delivery pricing and connects you with nearby customers.
+                    Your country and city will be auto-detected.
+                  </p>
+                  <LocationPicker
+                    latitude={form.watch("latitude")}
+                    longitude={form.watch("longitude")}
+                    onLocationSelect={(location: LocationData) => {
+                      form.setValue("latitude", location.latitude, {
+                        shouldValidate: true,
+                      });
+                      form.setValue("longitude", location.longitude, {
+                        shouldValidate: true,
+                      });
+                      form.setValue("placeId", location.placeId);
+                      form.setValue(
+                        "formattedAddress",
+                        location.formattedAddress
+                      );
+                      form.setValue("streetAddress", location.streetAddress);
+
+                      // Auto-populate city from map if empty or different
+                      if (location.city) {
+                        form.setValue("city", location.city, {
+                          shouldValidate: true,
+                        });
+                      }
+
+                      // Auto-match country from map to supported countries
+                      if (location.country) {
+                        const matchedCountry = SUPPORTED_COUNTRIES.find(
+                          (c) =>
+                            c.value.toLowerCase() ===
+                              location.country.toLowerCase() ||
+                            c.label.toLowerCase() ===
+                              location.country.toLowerCase()
+                        );
+                        if (matchedCountry) {
+                          form.setValue("country", matchedCountry.value, {
+                            shouldValidate: true,
+                          });
+                        }
                       }
                     }}
-                    defaultCountry="ET"
-                    placeholder="911 111 111"
-                    error={!!form.formState.errors.businessPhone}
+                    height="300px"
+                    placeholder="Search for your business location..."
                   />
-                  <p className="text-xs text-gray-500 mt-1">Select country and enter your business phone number</p>
-                  {form.formState.errors.businessPhone && <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessPhone.message}</p>}
+                  {form.watch("formattedAddress") && (
+                    <p className="text-xs text-emerald-700 bg-emerald-50 rounded-md px-3 py-2 mt-1">
+                      📍 {form.watch("formattedAddress")}
+                    </p>
+                  )}
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              <div>
-                <Label htmlFor="city">City *</Label>
-                <Input id="city" placeholder="Enter City" {...form.register("city")} />
-                {form.formState.errors.city && <p className="text-sm text-red-600 mt-1">{form.formState.errors.city.message}</p>}
-              </div>
-
-              {/* Business Location Map Picker */}
-              <div className="space-y-2 pt-2">
-                <Label className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-emerald-600" />
-                  Business Location
-                </Label>
-                <p className="text-xs text-gray-500">
-                  Pin your business location on the map. This helps with delivery pricing and connects you with nearby customers. Your country and city will be auto-detected.
-                </p>
-                <LocationPicker
-                  latitude={form.watch("latitude")}
-                  longitude={form.watch("longitude")}
-                  onLocationSelect={(location: LocationData) => {
-                    form.setValue("latitude", location.latitude, { shouldValidate: true });
-                    form.setValue("longitude", location.longitude, { shouldValidate: true });
-                    form.setValue("placeId", location.placeId);
-                    form.setValue("formattedAddress", location.formattedAddress);
-                    form.setValue("streetAddress", location.streetAddress);
-
-                    // Auto-populate city from map if empty or different
-                    if (location.city) {
-                      form.setValue("city", location.city, { shouldValidate: true });
-                    }
-
-                    // Auto-match country from map to supported countries
-                    if (location.country) {
-                      const matchedCountry = SUPPORTED_COUNTRIES.find(
-                        (c) =>
-                          c.value.toLowerCase() === location.country.toLowerCase() ||
-                          c.label.toLowerCase() === location.country.toLowerCase()
-                      );
-                      if (matchedCountry) {
-                        form.setValue("country", matchedCountry.value, { shouldValidate: true });
-                      }
-                    }
-                  }}
-                  height="300px"
-                  placeholder="Search for your business location..."
-                />
-                {form.watch("formattedAddress") && (
-                  <p className="text-xs text-emerald-700 bg-emerald-50 rounded-md px-3 py-2 mt-1">
-                    📍 {form.watch("formattedAddress")}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-end pt-6">
-            <Button type="button" onClick={handleProceedToTerms} className="bg-emerald-600 hover:bg-emerald-700 px-8">
-              Continue to Terms & Conditions
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-        </form>
+            <div className="flex justify-end pt-6">
+              <Button
+                type="button"
+                onClick={handleProceedToTerms}
+                className="bg-emerald-600 hover:bg-emerald-700 px-8"
+              >
+                Continue to Terms & Conditions
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </form>
         )}
-
 
         {/* Step 2: Terms and Conditions */}
         {currentStep === "terms" && (
@@ -992,7 +1498,8 @@ export default function VendorSignup() {
                 <span>Terms & Conditions</span>
               </CardTitle>
               <CardDescription>
-                Review the key points below and accept the full legal terms to continue.
+                Review the key points below and accept the full legal terms to
+                continue.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1009,22 +1516,32 @@ export default function VendorSignup() {
                       <div
                         key={term.id}
                         className="p-4 rounded-lg border bg-white hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => setSelectedTermForDetail(selectedTermForDetail === term.id ? null : term.id)}
+                        onClick={() =>
+                          setSelectedTermForDetail(
+                            selectedTermForDetail === term.id ? null : term.id
+                          )
+                        }
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
                             {getTermIcon(term.termKey)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 text-sm">{term.title}</h4>
+                            <h4 className="font-semibold text-gray-900 text-sm">
+                              {term.title}
+                            </h4>
                             <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                              {term.summary || term.description.substring(0, 100) + '...'}
+                              {term.summary ||
+                                term.description.substring(0, 100) + "..."}
                             </p>
                           </div>
                         </div>
                         {selectedTermForDetail === term.id && (
                           <div className="mt-3 pt-3 border-t">
-                            <p className="text-sm text-gray-700">{term.summary || term.description.substring(0, 200)}</p>
+                            <p className="text-sm text-gray-700">
+                              {term.summary ||
+                                term.description.substring(0, 200)}
+                            </p>
                             <Button
                               variant="link"
                               size="sm"
@@ -1034,7 +1551,8 @@ export default function VendorSignup() {
                                 setShowFullTermsModal(true);
                               }}
                             >
-                              Read full details <ExternalLink className="w-3 h-3 ml-1" />
+                              Read full details{" "}
+                              <ExternalLink className="w-3 h-3 ml-1" />
                             </Button>
                           </div>
                         )}
@@ -1044,7 +1562,10 @@ export default function VendorSignup() {
 
                   {/* View Full Terms Button */}
                   <div className="flex justify-center pt-4">
-                    <Dialog open={showFullTermsModal} onOpenChange={setShowFullTermsModal}>
+                    <Dialog
+                      open={showFullTermsModal}
+                      onOpenChange={setShowFullTermsModal}
+                    >
                       <DialogTrigger asChild>
                         <Button variant="outline" className="gap-2">
                           <FileText className="w-4 h-4" />
@@ -1067,7 +1588,9 @@ export default function VendorSignup() {
                             {termsData.terms.map((term, index) => (
                               <div key={term.id} className="space-y-2">
                                 <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
-                                  <span className="text-emerald-600">{index + 1}.</span>
+                                  <span className="text-emerald-600">
+                                    {index + 1}.
+                                  </span>
                                   {term.title}
                                 </h3>
                                 <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed pl-6">
@@ -1082,9 +1605,13 @@ export default function VendorSignup() {
                   </div>
 
                   {/* Acceptance Checkbox */}
-                  <div className={`p-4 rounded-lg border transition-all duration-200 ${
-                    allTermsAccepted ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20" : "border-gray-300 bg-white"
-                  }`}>
+                  <div
+                    className={`p-4 rounded-lg border transition-all duration-200 ${
+                      allTermsAccepted
+                        ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20"
+                        : "border-gray-300 bg-white"
+                    }`}
+                  >
                     <div className="flex items-start space-x-3">
                       <Checkbox
                         id="accept-all-terms"
@@ -1093,19 +1620,34 @@ export default function VendorSignup() {
                         className="mt-0.5"
                       />
                       <div className="flex-1">
-                        <label htmlFor="accept-all-terms" className="font-medium cursor-pointer flex items-center text-gray-900">
-                          <CheckCircle2 className={`w-5 h-5 mr-2 ${allTermsAccepted ? "text-emerald-600" : "text-gray-400"}`} />
-                          I have read and agree to the full goGerami Vendor Terms & Conditions
+                        <label
+                          htmlFor="accept-all-terms"
+                          className="font-medium cursor-pointer flex items-center text-gray-900"
+                        >
+                          <CheckCircle2
+                            className={`w-5 h-5 mr-2 ${
+                              allTermsAccepted
+                                ? "text-emerald-600"
+                                : "text-gray-400"
+                            }`}
+                          />
+                          I have read and agree to the full goGerami Vendor
+                          Terms & Conditions
                         </label>
                         <p className="text-xs text-gray-500 mt-1">
-                          By checking this box, you acknowledge that you have read, understood, and agree to be bound by all {termsData.terms.length} sections of the Terms & Conditions.
+                          By checking this box, you acknowledge that you have
+                          read, understood, and agree to be bound by all{" "}
+                          {termsData.terms.length} sections of the Terms &
+                          Conditions.
                         </p>
                       </div>
                     </div>
                   </div>
                 </>
               ) : (
-                <div className="text-center py-8 text-gray-500">No terms found for this vendor type.</div>
+                <div className="text-center py-8 text-gray-500">
+                  No terms found for this vendor type.
+                </div>
               )}
 
               <div className="flex flex-col sm:flex-row gap-3 sm:justify-between pt-4 border-t">
@@ -1141,7 +1683,9 @@ export default function VendorSignup() {
                 <span>{getVendorTypeLabel()} Onboarding Video</span>
               </CardTitle>
               <CardDescription>
-                Watch this video to learn how to navigate goGerami as a {getVendorTypeLabel().toLowerCase()}. You may scrub forward or back as needed.
+                Watch this video to learn how to navigate goGerami as a{" "}
+                {getVendorTypeLabel().toLowerCase()}. You may scrub forward or
+                back as needed.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1166,15 +1710,26 @@ export default function VendorSignup() {
                 </a>
               </div>
 
-              <div className={`p-4 rounded-lg border ${hasWatchedVideo ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+              <div
+                className={`p-4 rounded-lg border ${
+                  hasWatchedVideo
+                    ? "bg-green-50 border-green-200"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
                 <div className="flex items-start gap-3">
                   <Checkbox
                     id="video-completed"
                     checked={videoCompletedChecked}
-                    onCheckedChange={(c) => handleVideoCompletedCheckbox(c === true)}
+                    onCheckedChange={(c) =>
+                      handleVideoCompletedCheckbox(c === true)
+                    }
                     className="mt-0.5"
                   />
-                  <label htmlFor="video-completed" className="text-sm font-medium cursor-pointer leading-tight">
+                  <label
+                    htmlFor="video-completed"
+                    className="text-sm font-medium cursor-pointer leading-tight"
+                  >
                     I've completed the onboarding video
                   </label>
                 </div>
@@ -1193,17 +1748,19 @@ export default function VendorSignup() {
                     <div className="p-6 bg-emerald-50 rounded-lg border border-emerald-200 text-center">
                       <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
                       <h4 className="font-medium text-emerald-900 text-lg mb-2">
-                         {generateCertificateMutation.isPending ? "Generating Certificate..." : "Certificate Generation Needed"}
+                        {generateCertificateMutation.isPending
+                          ? "Generating Certificate..."
+                          : "Certificate Generation Needed"}
                       </h4>
                       <p className="text-sm text-emerald-700 mb-4">
-                         {generateCertificateMutation.isPending 
-                            ? "Please wait while we generate your onboarding certificate." 
-                            : "Click below to generate your certificate."}
+                        {generateCertificateMutation.isPending
+                          ? "Please wait while we generate your onboarding certificate."
+                          : "Click below to generate your certificate."}
                       </p>
                       {generateCertificateMutation.isPending ? (
-                         <div className="flex justify-center py-2">
-                           <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-                         </div>
+                        <div className="flex justify-center py-2">
+                          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                        </div>
                       ) : (
                         <Button
                           type="button"
@@ -1219,9 +1776,12 @@ export default function VendorSignup() {
                       <div className="flex items-center justify-center mb-4">
                         <CheckCircle2 className="w-12 h-12 text-green-600" />
                       </div>
-                      <h4 className="font-medium text-green-900 text-lg text-center mb-4">Certificate Generated!</h4>
+                      <h4 className="font-medium text-green-900 text-lg text-center mb-4">
+                        Certificate Generated!
+                      </h4>
                       <p className="text-sm text-green-700 text-center mb-4">
-                        Your onboarding certificate is ready. You can download it for your records.
+                        Your onboarding certificate is ready. You can download
+                        it for your records.
                       </p>
                       <div className="flex justify-center">
                         <Button

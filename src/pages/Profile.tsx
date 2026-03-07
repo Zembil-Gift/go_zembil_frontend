@@ -1,19 +1,31 @@
-import {useEffect, useState} from "react";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {z} from "zod";
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
-import {Link} from "react-router-dom";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {Badge} from "@/components/ui/badge";
-import {Separator} from "@/components/ui/separator";
-import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -23,10 +35,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {useToast} from "@/hooks/use-toast";
-import {useAuth} from "@/hooks/useAuth";
-import {useIncompleteProfile} from "@/hooks/useIncompleteProfile";
-import {apiService} from "@/services/apiService";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useIncompleteProfile } from "@/hooks/useIncompleteProfile";
+import { apiService } from "@/services/apiService";
 import { SUPPORTED_COUNTRIES } from "@/lib/countryConfig";
 import {
   AlertCircle,
@@ -43,7 +55,7 @@ import {
   ShoppingBag,
   Store,
   User,
-  X
+  X,
 } from "lucide-react";
 
 const MINIMUM_AGE_YEARS = 18;
@@ -58,7 +70,8 @@ const isAtLeastAge = (birthDate: string, minimumAge: number): boolean => {
   let age = today.getFullYear() - parsedDate.getFullYear();
   const hasNotHadBirthdayYet =
     today.getMonth() < parsedDate.getMonth() ||
-    (today.getMonth() === parsedDate.getMonth() && today.getDate() < parsedDate.getDate());
+    (today.getMonth() === parsedDate.getMonth() &&
+      today.getDate() < parsedDate.getDate());
 
   if (hasNotHadBirthdayYet) {
     age -= 1;
@@ -70,59 +83,68 @@ const isAtLeastAge = (birthDate: string, minimumAge: number): boolean => {
 const getMaxBirthDateForMinimumAge = (minimumAge: number): string => {
   const date = new Date();
   date.setFullYear(date.getFullYear() - minimumAge);
-  return date.toISOString().split('T')[0];
+  return date.toISOString().split("T")[0];
 };
 
 // Profile form schema
 const profileSchema = z.object({
   firstName: z.preprocess(
-    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z.string().min(2, "First name must be at least 2 characters").optional()
   ),
   lastName: z.preprocess(
-    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z.string().min(2, "Last name must be at least 2 characters").optional()
   ),
   email: z.preprocess(
-    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z.string().email("Please enter a valid email address").optional()
   ),
   phoneNumber: z.string().optional(),
   username: z.preprocess(
-    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z.string().min(3, "Username must be at least 3 characters").optional()
   ),
   birthDate: z
-    .preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().optional())
+    .preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+      z.string().optional()
+    )
     .refine((value) => !value || isAtLeastAge(value, MINIMUM_AGE_YEARS), {
       message: "You must be at least 18 years old",
     }),
   country: z.preprocess(
-    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z.string().optional()
   ),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-const passwordSchema = z.object({
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string()
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const passwordSchema = z
+  .object({
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
-const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string().min(8, "New password must be at least 8 characters"),
-  confirmPassword: z.string()
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(8, "New password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
@@ -158,22 +180,26 @@ export default function Profile() {
   const maxBirthDate = getMaxBirthDateForMinimumAge(MINIMUM_AGE_YEARS);
 
   const userRole = user?.role?.toUpperCase();
-  const isVendor = userRole === 'VENDOR';
-  const isAdmin = userRole === 'ADMIN';
-  
-  const { data: profile, isLoading, error } = useQuery({
-    queryKey: ['userProfile'],
+  const isVendor = userRole === "VENDOR";
+  const isAdmin = userRole === "ADMIN";
+
+  const {
+    data: profile,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["userProfile"],
     queryFn: async () => {
-      return await apiService.getRequest<UserProfile>('/api/users/me');
+      return await apiService.getRequest<UserProfile>("/api/users/me");
     },
     enabled: !!user,
   });
 
   // Fetch available currencies
   const { data: currencies = [] } = useQuery({
-    queryKey: ['currencies'],
+    queryKey: ["currencies"],
     queryFn: async () => {
-      return await apiService.getRequest<Currency[]>('/api/currencies');
+      return await apiService.getRequest<Currency[]>("/api/currencies");
     },
   });
 
@@ -208,7 +234,8 @@ export default function Profile() {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] =
+    useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
@@ -233,23 +260,26 @@ export default function Profile() {
   const setPasswordMutation = useMutation({
     mutationFn: async (data: PasswordFormData) => {
       const userId = profile?.userId || user?.id;
-      await apiService.postRequest<void>(`/api/users/${userId}/password`, { password: data.password });
+      await apiService.postRequest<void>(`/api/users/${userId}/password`, {
+        password: data.password,
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       // Update local storage user object to reflect password is set
-      const currentUserStr = localStorage.getItem('user');
+      const currentUserStr = localStorage.getItem("user");
       if (currentUserStr) {
         const parsedUser = JSON.parse(currentUserStr);
         const updatedUser = {
           ...parsedUser,
           hasPassword: true,
         };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        localStorage.setItem("user", JSON.stringify(updatedUser));
       }
       toast({
         title: "Password Set",
-        description: "Your password has been set successfully. You can now log in with your email and password.",
+        description:
+          "Your password has been set successfully. You can now log in with your email and password.",
       });
       setIsPasswordDialogOpen(false);
       passwordForm.reset();
@@ -266,10 +296,13 @@ export default function Profile() {
   const changePasswordMutation = useMutation({
     mutationFn: async (data: ChangePasswordFormData) => {
       const userId = profile?.userId || user?.id;
-      await apiService.postRequest<void>(`/api/users/${userId}/change-password`, { 
-        currentPassword: data.currentPassword,
-        newPassword: data.newPassword 
-      });
+      await apiService.postRequest<void>(
+        `/api/users/${userId}/change-password`,
+        {
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        }
+      );
     },
     onSuccess: () => {
       toast({
@@ -296,19 +329,21 @@ export default function Profile() {
     changePasswordMutation.mutate(data);
   };
 
-
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
       const userId = profile?.userId || user?.id;
-      return await apiService.putRequest<UserProfile>(`/api/users/${userId}`, data);
+      return await apiService.putRequest<UserProfile>(
+        `/api/users/${userId}`,
+        data
+      );
     },
     onSuccess: (updatedProfile) => {
-      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+
       // Update local storage with new user data
-      const currentUser = localStorage.getItem('user');
+      const currentUser = localStorage.getItem("user");
       if (currentUser) {
         const parsedUser = JSON.parse(currentUser);
         const updatedUser = {
@@ -318,7 +353,7 @@ export default function Profile() {
           email: updatedProfile.email,
           phoneNumber: updatedProfile.phoneNumber,
         };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        localStorage.setItem("user", JSON.stringify(updatedUser));
       }
 
       toast({
@@ -330,27 +365,35 @@ export default function Profile() {
     onError: (error: Error) => {
       toast({
         title: "Update Failed",
-        description: error.message || "Failed to update profile. Please try again.",
+        description:
+          error.message || "Failed to update profile. Please try again.",
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: ProfileFormData) => {
-    const dirtyFields = form.formState.dirtyFields as Partial<Record<keyof ProfileFormData, boolean>>;
+    const dirtyFields = form.formState.dirtyFields as Partial<
+      Record<keyof ProfileFormData, boolean>
+    >;
     const patch: Partial<ProfileFormData> = {};
 
-    (Object.keys(dirtyFields) as Array<keyof ProfileFormData>).forEach((key) => {
-      if (dirtyFields[key]) {
-        const value = data[key];
-        if (value !== "" && value !== undefined) {
-          patch[key] = value;
+    (Object.keys(dirtyFields) as Array<keyof ProfileFormData>).forEach(
+      (key) => {
+        if (dirtyFields[key]) {
+          const value = data[key];
+          if (value !== "" && value !== undefined) {
+            patch[key] = value;
+          }
         }
       }
-    });
+    );
 
     if (Object.keys(patch).length === 0) {
-      toast({ title: "No changes", description: "Update at least one field to save." });
+      toast({
+        title: "No changes",
+        description: "Update at least one field to save.",
+      });
       return;
     }
 
@@ -373,21 +416,21 @@ export default function Profile() {
   };
 
   const getInitials = (firstName?: string, lastName?: string) => {
-    const first = firstName?.charAt(0)?.toUpperCase() || '';
-    const last = lastName?.charAt(0)?.toUpperCase() || '';
-    return first + last || 'U';
+    const first = firstName?.charAt(0)?.toUpperCase() || "";
+    const last = lastName?.charAt(0)?.toUpperCase() || "";
+    return first + last || "U";
   };
 
   const getRoleBadgeColor = (role: string) => {
     switch (role?.toUpperCase()) {
-      case 'ADMIN':
-        return 'bg-red-100 text-red-700 border-red-200';
-      case 'VENDOR':
-        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'DELIVERY_PERSON':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case "ADMIN":
+        return "bg-red-100 text-red-700 border-red-200";
+      case "VENDOR":
+        return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      case "DELIVERY_PERSON":
+        return "bg-blue-100 text-blue-700 border-blue-200";
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+        return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
@@ -408,9 +451,7 @@ export default function Profile() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <p className="text-red-500 mb-4">Failed to load profile</p>
-            <Button onClick={() => window.location.reload()}>
-              Try Again
-            </Button>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
           </CardContent>
         </Card>
       </div>
@@ -423,30 +464,39 @@ export default function Profile() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
+          <p className="text-gray-600 mt-2">
+            Manage your account settings and preferences
+          </p>
         </div>
 
         {/* Incomplete Profile Alert */}
         {isIncomplete && (
           <Alert className="mb-6 border-amber-300 bg-amber-50">
             <AlertCircle className="h-5 w-5 text-amber-600" />
-            <AlertTitle className="text-amber-900 font-semibold">Complete Your Profile</AlertTitle>
+            <AlertTitle className="text-amber-900 font-semibold">
+              Complete Your Profile
+            </AlertTitle>
             <AlertDescription className="text-amber-800">
               {isOAuth2User && (
                 <p className="mb-2">
-                  You signed up with {user?.email} using social login. To access all features, please add the following information:
+                  You signed up with {user?.email} using social login. To access
+                  all features, please add the following information:
                 </p>
               )}
               <ul className="list-disc list-inside space-y-1">
-                {missingFields.includes('username') && <li>Username (choose a unique username for your profile)</li>}
-                {missingFields.includes('phoneNumber') && <li>Phone Number</li>}
-                {missingFields.includes('birthDate') && <li>Date of Birth</li>}
-                {missingFields.includes('password') && isOAuth2User && <li>Password (to enable standard login)</li>}
+                {missingFields.includes("username") && (
+                  <li>Username (choose a unique username for your profile)</li>
+                )}
+                {missingFields.includes("phoneNumber") && <li>Phone Number</li>}
+                {missingFields.includes("birthDate") && <li>Date of Birth</li>}
+                {missingFields.includes("password") && isOAuth2User && (
+                  <li>Password (to enable standard login)</li>
+                )}
               </ul>
               {!isEditing && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="mt-3 border-amber-600 text-amber-900 hover:bg-amber-100"
                   onClick={() => setIsEditing(true)}
                 >
@@ -468,36 +518,47 @@ export default function Profile() {
                     {getInitials(profile?.firstName, profile?.lastName)}
                   </AvatarFallback>
                 </Avatar>
-                
+
                 <h2 className="text-xl font-semibold text-gray-900">
                   {profile?.firstName} {profile?.lastName}
                 </h2>
-                
+
                 <p className="text-gray-500 text-sm mt-1">
-                  @{profile?.username || 'username'}
+                  @{profile?.username || "username"}
                 </p>
-                
-                <Badge className={`mt-3 ${getRoleBadgeColor(profile?.role || '')}`}>
-                  {profile?.role || 'Customer'}
+
+                <Badge
+                  className={`mt-3 ${getRoleBadgeColor(profile?.role || "")}`}
+                >
+                  {profile?.role || "Customer"}
                 </Badge>
 
                 <Separator className="my-6 w-full" />
 
                 {/* Quick Links */}
                 <div className="w-full space-y-2">
-                  <Link to="/wishlist" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
+                  <Link
+                    to="/wishlist"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
                     <Heart className="w-5 h-5 text-red-500" />
                     <span className="text-gray-700">Wishlist</span>
                   </Link>
-                  
-                  <Link to="/my-tickets" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
+
+                  <Link
+                    to="/my-tickets"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
                     <ShoppingBag className="w-5 h-5 text-ethiopian-gold" />
                     <span className="text-gray-700">My Tickets</span>
                   </Link>
 
                   {/* Only show Join as Vendor if user is NOT a vendor */}
                   {!isVendor && !isAdmin && (
-                    <Link to="/vendor-signup" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
+                    <Link
+                      to="/vendor-signup"
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
                       <Store className="w-5 h-5 text-viridian-green" />
                       <span className="text-gray-700">Join as Vendor</span>
                     </Link>
@@ -505,7 +566,10 @@ export default function Profile() {
 
                   {/* Show vendor dashboard link if user IS a vendor */}
                   {isVendor && (
-                    <Link to="/vendor" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
+                    <Link
+                      to="/vendor"
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
                       <Store className="w-5 h-5 text-viridian-green" />
                       <span className="text-gray-700">Vendor Dashboard</span>
                     </Link>
@@ -521,7 +585,9 @@ export default function Profile() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Profile Information</CardTitle>
-                  <CardDescription>Update your personal details</CardDescription>
+                  <CardDescription>
+                    Update your personal details
+                  </CardDescription>
                 </div>
                 {!isEditing ? (
                   <Button variant="outline" onClick={() => setIsEditing(true)}>
@@ -530,11 +596,18 @@ export default function Profile() {
                   </Button>
                 ) : (
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleCancel} disabled={updateProfileMutation.isPending}>
+                    <Button
+                      variant="outline"
+                      onClick={handleCancel}
+                      disabled={updateProfileMutation.isPending}
+                    >
                       <X className="w-4 h-4 mr-2" />
                       Cancel
                     </Button>
-                    <Button onClick={form.handleSubmit(onSubmit)} disabled={updateProfileMutation.isPending}>
+                    <Button
+                      onClick={form.handleSubmit(onSubmit)}
+                      disabled={updateProfileMutation.isPending}
+                    >
                       {updateProfileMutation.isPending ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       ) : (
@@ -558,7 +631,10 @@ export default function Profile() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       {/* First Name */}
                       <div className="space-y-2">
-                        <Label htmlFor="firstName" className="flex items-center gap-2">
+                        <Label
+                          htmlFor="firstName"
+                          className="flex items-center gap-2"
+                        >
                           <User className="w-4 h-4 text-gray-500" />
                           First Name
                         </Label>
@@ -570,17 +646,24 @@ export default function Profile() {
                               placeholder="Enter your first name"
                             />
                             {form.formState.errors.firstName && (
-                              <p className="text-red-500 text-sm">{form.formState.errors.firstName.message}</p>
+                              <p className="text-red-500 text-sm">
+                                {form.formState.errors.firstName.message}
+                              </p>
                             )}
                           </>
                         ) : (
-                          <p className="text-gray-900 py-2">{profile?.firstName || '-'}</p>
+                          <p className="text-gray-900 py-2">
+                            {profile?.firstName || "-"}
+                          </p>
                         )}
                       </div>
 
                       {/* Last Name */}
                       <div className="space-y-2">
-                        <Label htmlFor="lastName" className="flex items-center gap-2">
+                        <Label
+                          htmlFor="lastName"
+                          className="flex items-center gap-2"
+                        >
                           <User className="w-4 h-4 text-gray-500" />
                           Last Name
                         </Label>
@@ -592,18 +675,25 @@ export default function Profile() {
                               placeholder="Enter your last name"
                             />
                             {form.formState.errors.lastName && (
-                              <p className="text-red-500 text-sm">{form.formState.errors.lastName.message}</p>
+                              <p className="text-red-500 text-sm">
+                                {form.formState.errors.lastName.message}
+                              </p>
                             )}
                           </>
                         ) : (
-                          <p className="text-gray-900 py-2">{profile?.lastName || '-'}</p>
+                          <p className="text-gray-900 py-2">
+                            {profile?.lastName || "-"}
+                          </p>
                         )}
                       </div>
                     </div>
 
                     {/* Phone Number */}
                     <div className="space-y-2">
-                      <Label htmlFor="phoneNumber" className="flex items-center gap-2">
+                      <Label
+                        htmlFor="phoneNumber"
+                        className="flex items-center gap-2"
+                      >
                         <Phone className="w-4 h-4 text-gray-500" />
                         Phone Number
                       </Label>
@@ -614,13 +704,18 @@ export default function Profile() {
                           placeholder="Enter your phone number"
                         />
                       ) : (
-                        <p className="text-gray-900 py-2">{profile?.phoneNumber || '-'}</p>
+                        <p className="text-gray-900 py-2">
+                          {profile?.phoneNumber || "-"}
+                        </p>
                       )}
                     </div>
 
                     {/* Birth Date */}
                     <div className="space-y-2">
-                      <Label htmlFor="birthDate" className="flex items-center gap-2">
+                      <Label
+                        htmlFor="birthDate"
+                        className="flex items-center gap-2"
+                      >
                         <Calendar className="w-4 h-4 text-gray-500" />
                         Birth Date
                       </Label>
@@ -633,19 +728,23 @@ export default function Profile() {
                             {...form.register("birthDate")}
                           />
                           {form.formState.errors.birthDate && (
-                            <p className="text-red-500 text-sm">{form.formState.errors.birthDate.message}</p>
+                            <p className="text-red-500 text-sm">
+                              {form.formState.errors.birthDate.message}
+                            </p>
                           )}
                         </>
                       ) : (
                         <p className="text-gray-900 py-2">
-                          {profile?.birthDate 
-                            ? new Date(profile.birthDate).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })
-                            : '-'
-                          }
+                          {profile?.birthDate
+                            ? new Date(profile.birthDate).toLocaleDateString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                }
+                              )
+                            : "-"}
                         </p>
                       )}
                     </div>
@@ -657,15 +756,24 @@ export default function Profile() {
                   {profile && !profile.hasPassword && (
                     <Alert className="mb-6 border-blue-200 bg-blue-50">
                       <Lock className="h-5 w-5 text-blue-600" />
-                      <AlertTitle className="text-blue-900 font-semibold">Set a Password</AlertTitle>
+                      <AlertTitle className="text-blue-900 font-semibold">
+                        Set a Password
+                      </AlertTitle>
                       <AlertDescription className="text-blue-800">
                         <p className="mb-3">
-                          You currently don't have a password set because you signed up with a social account. 
-                          Setting a password allows you to log in with your email address directly.
+                          You currently don't have a password set because you
+                          signed up with a social account. Setting a password
+                          allows you to log in with your email address directly.
                         </p>
-                        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                        <Dialog
+                          open={isPasswordDialogOpen}
+                          onOpenChange={setIsPasswordDialogOpen}
+                        >
                           <DialogTrigger asChild>
-                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white border-none">
+                            <Button
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700 text-white border-none"
+                            >
                               Create Password
                             </Button>
                           </DialogTrigger>
@@ -676,7 +784,12 @@ export default function Profile() {
                                 Set a password to enable email/password login.
                               </DialogDescription>
                             </DialogHeader>
-                            <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4 py-4">
+                            <form
+                              onSubmit={passwordForm.handleSubmit(
+                                onPasswordSubmit
+                              )}
+                              className="space-y-4 py-4"
+                            >
                               <div className="space-y-2">
                                 <Label htmlFor="password">New Password</Label>
                                 <div className="relative">
@@ -688,39 +801,73 @@ export default function Profile() {
                                   />
                                   <button
                                     type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
+                                    onClick={() =>
+                                      setShowPassword(!showPassword)
+                                    }
                                     className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
                                   >
-                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    {showPassword ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
                                   </button>
                                 </div>
                                 {passwordForm.formState.errors.password && (
-                                  <p className="text-red-500 text-sm">{passwordForm.formState.errors.password.message}</p>
+                                  <p className="text-red-500 text-sm">
+                                    {
+                                      passwordForm.formState.errors.password
+                                        .message
+                                    }
+                                  </p>
                                 )}
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                                <Label htmlFor="confirmPassword">
+                                  Confirm Password
+                                </Label>
                                 <div className="relative">
                                   <Input
                                     id="confirmPassword"
-                                    type={showConfirmPassword ? "text" : "password"}
+                                    type={
+                                      showConfirmPassword ? "text" : "password"
+                                    }
                                     placeholder="Confirm new password"
-                                    {...passwordForm.register("confirmPassword")}
+                                    {...passwordForm.register(
+                                      "confirmPassword"
+                                    )}
                                   />
                                   <button
                                     type="button"
-                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    onClick={() =>
+                                      setShowConfirmPassword(
+                                        !showConfirmPassword
+                                      )
+                                    }
                                     className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
                                   >
-                                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    {showConfirmPassword ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
                                   </button>
                                 </div>
-                                {passwordForm.formState.errors.confirmPassword && (
-                                  <p className="text-red-500 text-sm">{passwordForm.formState.errors.confirmPassword.message}</p>
+                                {passwordForm.formState.errors
+                                  .confirmPassword && (
+                                  <p className="text-red-500 text-sm">
+                                    {
+                                      passwordForm.formState.errors
+                                        .confirmPassword.message
+                                    }
+                                  </p>
                                 )}
                               </div>
                               <DialogFooter>
-                                <Button type="submit" disabled={setPasswordMutation.isPending}>
+                                <Button
+                                  type="submit"
+                                  disabled={setPasswordMutation.isPending}
+                                >
                                   {setPasswordMutation.isPending && (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                   )}
@@ -730,20 +877,26 @@ export default function Profile() {
                             </form>
                           </DialogContent>
                         </Dialog>
-
                       </AlertDescription>
                     </Alert>
                   )}
-                  
+
                   {/* Change Password Button */}
                   {profile && profile.hasPassword && (
                     <div className="border border-gray-200 rounded-lg p-4 bg-white">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-semibold text-gray-900">Password</h3>
-                          <p className="text-sm text-gray-500">Change your account password securely.</p>
+                          <h3 className="font-semibold text-gray-900">
+                            Password
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Change your account password securely.
+                          </p>
                         </div>
-                        <Dialog open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
+                        <Dialog
+                          open={isChangePasswordDialogOpen}
+                          onOpenChange={setIsChangePasswordDialogOpen}
+                        >
                           <DialogTrigger asChild>
                             <Button variant="outline" className="gap-2">
                               <Lock className="h-4 w-4" />
@@ -757,72 +910,138 @@ export default function Profile() {
                                 Enter your current password and a new password.
                               </DialogDescription>
                             </DialogHeader>
-                            <form onSubmit={changePasswordForm.handleSubmit(onChangePasswordSubmit)} className="space-y-4 py-4">
+                            <form
+                              onSubmit={changePasswordForm.handleSubmit(
+                                onChangePasswordSubmit
+                              )}
+                              className="space-y-4 py-4"
+                            >
                               <div className="space-y-2">
-                                <Label htmlFor="currentPassword">Current Password</Label>
+                                <Label htmlFor="currentPassword">
+                                  Current Password
+                                </Label>
                                 <div className="relative">
                                   <Input
                                     id="currentPassword"
-                                    type={showCurrentPassword ? "text" : "password"}
+                                    type={
+                                      showCurrentPassword ? "text" : "password"
+                                    }
                                     placeholder="Enter current password"
-                                    {...changePasswordForm.register("currentPassword")}
+                                    {...changePasswordForm.register(
+                                      "currentPassword"
+                                    )}
                                   />
                                   <button
                                     type="button"
-                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                    onClick={() =>
+                                      setShowCurrentPassword(
+                                        !showCurrentPassword
+                                      )
+                                    }
                                     className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
                                   >
-                                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    {showCurrentPassword ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
                                   </button>
                                 </div>
-                                {changePasswordForm.formState.errors.currentPassword && (
-                                  <p className="text-red-500 text-sm">{changePasswordForm.formState.errors.currentPassword.message}</p>
+                                {changePasswordForm.formState.errors
+                                  .currentPassword && (
+                                  <p className="text-red-500 text-sm">
+                                    {
+                                      changePasswordForm.formState.errors
+                                        .currentPassword.message
+                                    }
+                                  </p>
                                 )}
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor="newPassword">New Password</Label>
+                                <Label htmlFor="newPassword">
+                                  New Password
+                                </Label>
                                 <div className="relative">
                                   <Input
                                     id="newPassword"
                                     type={showNewPassword ? "text" : "password"}
                                     placeholder="Enter new password"
-                                    {...changePasswordForm.register("newPassword")}
+                                    {...changePasswordForm.register(
+                                      "newPassword"
+                                    )}
                                   />
                                   <button
                                     type="button"
-                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                    onClick={() =>
+                                      setShowNewPassword(!showNewPassword)
+                                    }
                                     className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
                                   >
-                                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    {showNewPassword ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
                                   </button>
                                 </div>
-                                {changePasswordForm.formState.errors.newPassword && (
-                                  <p className="text-red-500 text-sm">{changePasswordForm.formState.errors.newPassword.message}</p>
+                                {changePasswordForm.formState.errors
+                                  .newPassword && (
+                                  <p className="text-red-500 text-sm">
+                                    {
+                                      changePasswordForm.formState.errors
+                                        .newPassword.message
+                                    }
+                                  </p>
                                 )}
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor="confirmNewPassword">Confirm New Password</Label>
+                                <Label htmlFor="confirmNewPassword">
+                                  Confirm New Password
+                                </Label>
                                 <div className="relative">
                                   <Input
                                     id="confirmNewPassword"
-                                    type={showConfirmNewPassword ? "text" : "password"}
+                                    type={
+                                      showConfirmNewPassword
+                                        ? "text"
+                                        : "password"
+                                    }
                                     placeholder="Confirm new password"
-                                    {...changePasswordForm.register("confirmPassword")}
+                                    {...changePasswordForm.register(
+                                      "confirmPassword"
+                                    )}
                                   />
                                   <button
                                     type="button"
-                                    onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                                    onClick={() =>
+                                      setShowConfirmNewPassword(
+                                        !showConfirmNewPassword
+                                      )
+                                    }
                                     className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
                                   >
-                                    {showConfirmNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    {showConfirmNewPassword ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
                                   </button>
                                 </div>
-                                {changePasswordForm.formState.errors.confirmPassword && (
-                                  <p className="text-red-500 text-sm">{changePasswordForm.formState.errors.confirmPassword.message}</p>
+                                {changePasswordForm.formState.errors
+                                  .confirmPassword && (
+                                  <p className="text-red-500 text-sm">
+                                    {
+                                      changePasswordForm.formState.errors
+                                        .confirmPassword.message
+                                    }
+                                  </p>
                                 )}
                               </div>
                               <DialogFooter>
-                                <Button type="submit" disabled={changePasswordMutation.isPending}>
+                                <Button
+                                  type="submit"
+                                  disabled={changePasswordMutation.isPending}
+                                >
                                   {changePasswordMutation.isPending && (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                   )}
@@ -851,11 +1070,15 @@ export default function Profile() {
                             type="email"
                           />
                           {form.formState.errors.email && (
-                            <p className="text-red-500 text-sm">{form.formState.errors.email.message}</p>
+                            <p className="text-red-500 text-sm">
+                              {form.formState.errors.email.message}
+                            </p>
                           )}
                         </>
                       ) : (
-                        <p className="text-gray-900 py-2">{profile?.email || '-'}</p>
+                        <p className="text-gray-900 py-2">
+                          {profile?.email || "-"}
+                        </p>
                       )}
                     </div>
 
@@ -872,11 +1095,15 @@ export default function Profile() {
                             placeholder="Enter your username"
                           />
                           {form.formState.errors.username && (
-                            <p className="text-red-500 text-sm">{form.formState.errors.username.message}</p>
+                            <p className="text-red-500 text-sm">
+                              {form.formState.errors.username.message}
+                            </p>
                           )}
                         </>
                       ) : (
-                        <p className="text-gray-900 py-2">{profile?.username || '-'}</p>
+                        <p className="text-gray-900 py-2">
+                          {profile?.username || "-"}
+                        </p>
                       )}
                     </div>
 
@@ -889,21 +1116,30 @@ export default function Profile() {
                       {isEditing ? (
                         <Select
                           value={form.watch("country") || ""}
-                          onValueChange={(value) => form.setValue("country", value, { shouldDirty: true })}
+                          onValueChange={(value) =>
+                            form.setValue("country", value, {
+                              shouldDirty: true,
+                            })
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select country" />
                           </SelectTrigger>
                           <SelectContent>
                             {SUPPORTED_COUNTRIES.map((country) => (
-                              <SelectItem key={country.value} value={country.value}>
+                              <SelectItem
+                                key={country.value}
+                                value={country.value}
+                              >
                                 {country.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       ) : (
-                        <p className="text-gray-900 py-2">{profile?.country || '-'}</p>
+                        <p className="text-gray-900 py-2">
+                          {profile?.country || "-"}
+                        </p>
                       )}
                     </div>
 
@@ -913,8 +1149,8 @@ export default function Profile() {
                         <User className="w-4 h-4 text-gray-500" />
                         Account Type
                       </Label>
-                      <Badge className={getRoleBadgeColor(profile?.role || '')}>
-                        {profile?.role || 'Customer'}
+                      <Badge className={getRoleBadgeColor(profile?.role || "")}>
+                        {profile?.role || "Customer"}
                       </Badge>
                     </div>
                   </div>
