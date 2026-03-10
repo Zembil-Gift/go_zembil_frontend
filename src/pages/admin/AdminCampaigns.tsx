@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -83,7 +83,6 @@ import {
   REWARD_TYPE_LABELS,
   REWARD_DURATION_LABELS,
   VENDOR_REWARD_TYPES,
-  USER_REWARD_TYPES,
 } from "@/services/campaignService";
 import { adminService } from "@/services/adminService";
 
@@ -94,6 +93,7 @@ const campaignFormSchema = z
     campaignType: z.enum([
       "PRODUCT_EVENT",
       "VENDOR_PARTICIPATION",
+      "CUSTOMER_PARTICIPATION",
       "USER_PARTICIPATION",
     ]),
     name: z.string().min(1, "Campaign name is required").max(255),
@@ -103,7 +103,7 @@ const campaignFormSchema = z
     active: z.boolean().default(false),
     displayPriority: z.coerce.number().min(0).default(0),
     subCategoryId: z.string().optional(),
-    targetRole: z.enum(["ALL", "VENDOR", "USER"]).optional(),
+    targetRole: z.enum(["ALL", "VENDOR", "CUSTOMER", "USER"]).optional(),
     actionType: z.string().optional(),
     proofType: z.string().optional(),
     proofDescription: z.string().max(500).optional().default(""),
@@ -173,6 +173,8 @@ function TypeBadge({ type }: { type: CampaignType }) {
   const styles: Record<CampaignType, string> = {
     PRODUCT_EVENT: "bg-indigo-100 text-indigo-800 border-indigo-200",
     VENDOR_PARTICIPATION: "bg-amber-100 text-amber-800 border-amber-200",
+    CUSTOMER_PARTICIPATION:
+      "bg-emerald-100 text-emerald-800 border-emerald-200",
     USER_PARTICIPATION: "bg-emerald-100 text-emerald-800 border-emerald-200",
   };
 
@@ -214,18 +216,28 @@ const CAMPAIGN_TYPE_FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: "all", label: "All" },
   { value: "PRODUCT_EVENT", label: "Product / Event" },
   { value: "VENDOR_PARTICIPATION", label: "Vendor" },
-  { value: "USER_PARTICIPATION", label: "User" },
+  { value: "CUSTOMER_PARTICIPATION", label: "Customer" },
 ];
 
 const PARTICIPATION_TYPES: CampaignType[] = [
   "VENDOR_PARTICIPATION",
+  "CUSTOMER_PARTICIPATION",
   "USER_PARTICIPATION",
 ];
 const VENDOR_ACTION_TYPES = [
   "COMPLETE_MIN_SALES",
   "COMPLETE_MIN_ORDERS",
+  "UPLOAD_PROOF",
   "NO_ACTION_REQUIRED",
 ] as const;
+
+const CUSTOMER_ACTION_TYPES = [
+  "NO_ACTION_REQUIRED",
+  "UPLOAD_PROOF",
+  "COMPLETE_PROFILE",
+] as const;
+
+const CUSTOMER_REWARD_TYPES = ["FREE_DELIVERY", "FIXED_DISCOUNT"] as const;
 
 const VENDOR_NO_ACTION_VALUE = "NO_ACTION_REQUIRED" as const;
 
@@ -381,7 +393,10 @@ function buildEligibilityRulesObject(
   );
   if (minAccountAgeDays !== null) rules.minAccountAgeDays = minAccountAgeDays;
 
-  if (campaignType === "USER_PARTICIPATION") {
+  if (
+    campaignType === "CUSTOMER_PARTICIPATION" ||
+    campaignType === "USER_PARTICIPATION"
+  ) {
     if (builder.emailVerified) rules.emailVerified = true;
 
     const minProductOrders = parseEnabledNumber(
@@ -537,14 +552,40 @@ export default function AdminCampaigns() {
 
   const campaignType = form.watch("campaignType");
   const actionType = form.watch("actionType");
+  const rewardType = form.watch("rewardType");
   const rewardDurationType = form.watch("rewardDurationType");
   const isParticipation = PARTICIPATION_TYPES.includes(campaignType);
   const isVendorParticipation = campaignType === "VENDOR_PARTICIPATION";
-  const isUserParticipation = campaignType === "USER_PARTICIPATION";
+  const isUserParticipation =
+    campaignType === "CUSTOMER_PARTICIPATION" ||
+    campaignType === "USER_PARTICIPATION";
   const maxStep = isParticipation ? 4 : 2;
   const generatedEligibilityRules = isParticipation
     ? buildEligibilityRulesObject(eligibilityBuilder, campaignType)
     : {};
+
+  useEffect(() => {
+    if (!isParticipation || actionType !== "UPLOAD_PROOF") return;
+    if (form.getValues("verificationMethod") !== "MANUAL") {
+      form.setValue("verificationMethod", "MANUAL", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  }, [actionType, isParticipation, form]);
+
+  useEffect(() => {
+    if (!isUserParticipation || !actionType || actionType === "UPLOAD_PROOF") {
+      return;
+    }
+
+    if (form.getValues("verificationMethod") !== "AUTOMATIC") {
+      form.setValue("verificationMethod", "AUTOMATIC", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  }, [actionType, isUserParticipation, form]);
 
   // ---- Data queries ----
 
@@ -823,16 +864,80 @@ export default function AdminCampaigns() {
           }
         }
 
+        if (actionType === "UPLOAD_PROOF") {
+          const verificationMethod = form.getValues("verificationMethod");
+          const proofType = form.getValues("proofType");
+
+          if (verificationMethod !== "MANUAL") {
+            form.setError("verificationMethod", {
+              message: "Upload Proof campaigns must use Manual verification",
+            });
+            return false;
+          }
+
+          if (!proofType) {
+            form.setError("proofType", {
+              message: "Proof type is required for Upload Proof",
+            });
+            return false;
+          }
+        }
+
         return true;
       }
 
-      return (await form.trigger([
-        "targetRole",
-        "actionType",
-        "proofType",
-        "proofDescription",
-        "verificationMethod",
-      ])) as boolean;
+      const valid = await form.trigger(["actionType", "verificationMethod"]);
+      if (!valid) return false;
+
+      if (isUserParticipation) {
+        if (
+          !actionType ||
+          !CUSTOMER_ACTION_TYPES.includes(
+            actionType as (typeof CUSTOMER_ACTION_TYPES)[number]
+          )
+        ) {
+          form.setError("actionType", {
+            message: "Select a valid customer action type",
+          });
+          return false;
+        }
+      }
+
+      if (actionType === "UPLOAD_PROOF") {
+        const uploadProofValid = await form.trigger([
+          "proofType",
+          "proofDescription",
+        ]);
+        if (!uploadProofValid) return false;
+
+        const verificationMethod = form.getValues("verificationMethod");
+        const proofType = form.getValues("proofType");
+
+        if (verificationMethod !== "MANUAL") {
+          form.setError("verificationMethod", {
+            message: "Upload Proof campaigns must use Manual verification",
+          });
+          return false;
+        }
+
+        if (!proofType) {
+          form.setError("proofType", {
+            message: "Proof type is required for Upload Proof",
+          });
+          return false;
+        }
+      } else if (isUserParticipation) {
+        const verificationMethod = form.getValues("verificationMethod");
+        if (verificationMethod !== "AUTOMATIC") {
+          form.setError("verificationMethod", {
+            message:
+              "User participation campaigns must use Automatic verification for this action type",
+          });
+          return false;
+        }
+      }
+
+      return true;
     }
 
     if (step === 3) {
@@ -872,6 +977,33 @@ export default function AdminCampaigns() {
           form.setError("rewardDurationDays", {
             message:
               "Reward duration days must be greater than 0 for Fixed Period",
+          });
+          return false;
+        }
+      }
+
+      if (isUserParticipation) {
+        const rewardType = form.getValues("rewardType");
+        const rewardValue = Number(form.getValues("rewardValue"));
+
+        if (
+          !rewardType ||
+          !CUSTOMER_REWARD_TYPES.includes(
+            rewardType as (typeof CUSTOMER_REWARD_TYPES)[number]
+          )
+        ) {
+          form.setError("rewardType", {
+            message: "Reward type must be Free Delivery or Fixed Discount",
+          });
+          return false;
+        }
+
+        if (
+          rewardType === "FIXED_DISCOUNT" &&
+          (!Number.isFinite(rewardValue) || rewardValue <= 0)
+        ) {
+          form.setError("rewardValue", {
+            message: "Reward value must be greater than 0 for Fixed Discount",
           });
           return false;
         }
@@ -998,9 +1130,7 @@ export default function AdminCampaigns() {
       displayPriority: values.displayPriority ?? 0,
       ctaText: values.ctaText || null,
       ctaUrl:
-        values.campaignType === "VENDOR_PARTICIPATION"
-          ? null
-          : values.ctaUrl || null,
+        values.campaignType === "PRODUCT_EVENT" ? values.ctaUrl || null : null,
     };
 
     if (values.campaignType === "PRODUCT_EVENT") {
@@ -1024,21 +1154,31 @@ export default function AdminCampaigns() {
           ? { minimumOrderCount: Number(values.minimumOrderCount) }
           : null;
 
-      const vendorActionType =
-        values.actionType === VENDOR_NO_ACTION_VALUE
-          ? null
-          : values.actionType || null;
+      const vendorActionType = values.actionType || null;
 
       return {
         ...base,
         campaignType: "VENDOR_PARTICIPATION",
         targetRole: "VENDOR",
         actionType: vendorActionType as EventCampaignRequest["actionType"],
-        criteria: criteria ? JSON.stringify(criteria) : JSON.stringify({}),
-        proofType: null,
-        proofDescription: null,
-        verificationMethod: (values.verificationMethod ||
-          null) as EventCampaignRequest["verificationMethod"],
+        criteria: criteria
+          ? JSON.stringify(criteria)
+          : values.actionType === VENDOR_NO_ACTION_VALUE
+          ? JSON.stringify({})
+          : null,
+        proofType:
+          values.actionType === "UPLOAD_PROOF"
+            ? ((values.proofType || null) as EventCampaignRequest["proofType"])
+            : null,
+        proofDescription:
+          values.actionType === "UPLOAD_PROOF"
+            ? values.proofDescription || null
+            : null,
+        verificationMethod:
+          values.actionType === "UPLOAD_PROOF"
+            ? "MANUAL"
+            : ((values.verificationMethod ||
+                null) as EventCampaignRequest["verificationMethod"]),
         rewardType: (values.rewardType ||
           null) as EventCampaignRequest["rewardType"],
         rewardValue:
@@ -1060,18 +1200,30 @@ export default function AdminCampaigns() {
 
     return {
       ...base,
-      targetRole: values.targetRole as EventCampaignRequest["targetRole"],
+      campaignType:
+        values.campaignType === "USER_PARTICIPATION"
+          ? "CUSTOMER_PARTICIPATION"
+          : values.campaignType,
+      targetRole: "CUSTOMER",
       actionType: (values.actionType ||
         null) as EventCampaignRequest["actionType"],
       criteria: null,
-      proofType: (values.proofType ||
-        null) as EventCampaignRequest["proofType"],
-      proofDescription: values.proofDescription || null,
-      verificationMethod: (values.verificationMethod ||
-        null) as EventCampaignRequest["verificationMethod"],
+      proofType:
+        values.actionType === "UPLOAD_PROOF"
+          ? ((values.proofType || null) as EventCampaignRequest["proofType"])
+          : null,
+      proofDescription:
+        values.actionType === "UPLOAD_PROOF"
+          ? values.proofDescription || null
+          : null,
+      verificationMethod:
+        values.actionType === "UPLOAD_PROOF" ? "MANUAL" : "AUTOMATIC",
       rewardType: (values.rewardType ||
         null) as EventCampaignRequest["rewardType"],
-      rewardValue: values.rewardValue ?? null,
+      rewardValue:
+        values.rewardType === "FIXED_DISCOUNT"
+          ? values.rewardValue ?? null
+          : null,
       rewardDurationType: (values.rewardDurationType ||
         null) as EventCampaignRequest["rewardDurationType"],
       rewardDurationDays: values.rewardDurationDays ?? null,
@@ -1209,7 +1361,6 @@ export default function AdminCampaigns() {
             <Plus className="mr-2 h-4 w-4 text-white" /> New Campaign
           </Button>
         </div>
-        wh
         {/* Table */}
         <Card>
           <CardContent className="p-0">
@@ -1425,9 +1576,11 @@ export default function AdminCampaigns() {
                           </FormControl>
                           <SelectContent>
                             {(
-                              Object.keys(
-                                CAMPAIGN_TYPE_LABELS
-                              ) as CampaignType[]
+                              [
+                                "PRODUCT_EVENT",
+                                "VENDOR_PARTICIPATION",
+                                "CUSTOMER_PARTICIPATION",
+                              ] as CampaignType[]
                             ).map((t) => (
                               <SelectItem key={t} value={t}>
                                 {CAMPAIGN_TYPE_LABELS[t]}
@@ -1436,8 +1589,8 @@ export default function AdminCampaigns() {
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          Product/Event: banner linking to shop. Vendor/User:
-                          participation campaigns with rewards.
+                          Product/Event: banner linking to shop.
+                          Vendor/Customer: participation campaigns with rewards.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1661,17 +1814,6 @@ export default function AdminCampaigns() {
                     <>
                       {isVendorParticipation ? (
                         <>
-                          <FormItem>
-                            <FormLabel>Target Role</FormLabel>
-                            <FormControl>
-                              <Input value="VENDOR" readOnly />
-                            </FormControl>
-                            <FormDescription>
-                              Fixed by backend for Vendor Participation
-                              campaigns.
-                            </FormDescription>
-                          </FormItem>
-
                           <FormField
                             control={form.control}
                             name="actionType"
@@ -1694,6 +1836,9 @@ export default function AdminCampaigns() {
                                     <SelectItem value="COMPLETE_MIN_ORDERS">
                                       {ACTION_TYPE_LABELS.COMPLETE_MIN_ORDERS}
                                     </SelectItem>
+                                    <SelectItem value="UPLOAD_PROOF">
+                                      {ACTION_TYPE_LABELS.UPLOAD_PROOF}
+                                    </SelectItem>
                                     <SelectItem value={VENDOR_NO_ACTION_VALUE}>
                                       No Action Required
                                     </SelectItem>
@@ -1703,6 +1848,60 @@ export default function AdminCampaigns() {
                               </FormItem>
                             )}
                           />
+
+                          {actionType === "UPLOAD_PROOF" && (
+                            <>
+                              <FormField
+                                control={form.control}
+                                name="proofType"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Proof Type *</FormLabel>
+                                    <Select
+                                      onValueChange={field.onChange}
+                                      value={field.value}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select proof type" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {(
+                                          Object.keys(
+                                            PROOF_TYPE_LABELS
+                                          ) as (keyof typeof PROOF_TYPE_LABELS)[]
+                                        ).map((p) => (
+                                          <SelectItem key={p} value={p}>
+                                            {PROOF_TYPE_LABELS[p]}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="proofDescription"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Proof Description</FormLabel>
+                                    <FormControl>
+                                      <Textarea
+                                        placeholder="Describe what participants need to submit..."
+                                        rows={2}
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </>
+                          )}
 
                           {actionType === "COMPLETE_MIN_SALES" && (
                             <FormField
@@ -1752,42 +1951,8 @@ export default function AdminCampaigns() {
                             />
                           )}
                         </>
-                      ) : (
+                      ) : isUserParticipation ? (
                         <>
-                          <FormField
-                            control={form.control}
-                            name="targetRole"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Target Role *</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  value={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select target" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {(
-                                      Object.keys(TARGET_ROLE_LABELS) as (
-                                        | "ALL"
-                                        | "VENDOR"
-                                        | "USER"
-                                      )[]
-                                    ).map((r) => (
-                                      <SelectItem key={r} value={r}>
-                                        {TARGET_ROLE_LABELS[r]}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
                           <FormField
                             control={form.control}
                             name="actionType"
@@ -1804,11 +1969,7 @@ export default function AdminCampaigns() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {(
-                                      Object.keys(
-                                        ACTION_TYPE_LABELS
-                                      ) as (keyof typeof ACTION_TYPE_LABELS)[]
-                                    ).map((a) => (
+                                    {CUSTOMER_ACTION_TYPES.map((a) => (
                                       <SelectItem key={a} value={a}>
                                         {ACTION_TYPE_LABELS[a]}
                                       </SelectItem>
@@ -1820,57 +1981,61 @@ export default function AdminCampaigns() {
                             )}
                           />
 
-                          <FormField
-                            control={form.control}
-                            name="proofType"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Proof Type *</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  value={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select proof type" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {(
-                                      Object.keys(
-                                        PROOF_TYPE_LABELS
-                                      ) as (keyof typeof PROOF_TYPE_LABELS)[]
-                                    ).map((p) => (
-                                      <SelectItem key={p} value={p}>
-                                        {PROOF_TYPE_LABELS[p]}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                          {actionType === "UPLOAD_PROOF" && (
+                            <>
+                              <FormField
+                                control={form.control}
+                                name="proofType"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Proof Type *</FormLabel>
+                                    <Select
+                                      onValueChange={field.onChange}
+                                      value={field.value}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select proof type" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {(
+                                          Object.keys(
+                                            PROOF_TYPE_LABELS
+                                          ) as (keyof typeof PROOF_TYPE_LABELS)[]
+                                        ).map((p) => (
+                                          <SelectItem key={p} value={p}>
+                                            {PROOF_TYPE_LABELS[p]}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
 
-                          <FormField
-                            control={form.control}
-                            name="proofDescription"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Proof Description</FormLabel>
-                                <FormControl>
-                                  <Textarea
-                                    placeholder="Describe what participants need to submit..."
-                                    rows={2}
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                              <FormField
+                                control={form.control}
+                                name="proofDescription"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Proof Description</FormLabel>
+                                    <FormControl>
+                                      <Textarea
+                                        placeholder="Describe what participants need to submit..."
+                                        rows={2}
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </>
+                          )}
                         </>
-                      )}
+                      ) : null}
 
                       <FormField
                         control={form.control}
@@ -1881,6 +2046,12 @@ export default function AdminCampaigns() {
                             <Select
                               onValueChange={field.onChange}
                               value={field.value}
+                              disabled={
+                                actionType === "UPLOAD_PROOF" ||
+                                (isUserParticipation &&
+                                  !!actionType &&
+                                  actionType !== "UPLOAD_PROOF")
+                              }
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -1892,13 +2063,39 @@ export default function AdminCampaigns() {
                                   Object.keys(
                                     VERIFICATION_METHOD_LABELS
                                   ) as (keyof typeof VERIFICATION_METHOD_LABELS)[]
-                                ).map((v) => (
-                                  <SelectItem key={v} value={v}>
-                                    {VERIFICATION_METHOD_LABELS[v]}
-                                  </SelectItem>
-                                ))}
+                                )
+                                  .filter((v) => {
+                                    if (actionType === "UPLOAD_PROOF") {
+                                      return v === "MANUAL";
+                                    }
+                                    if (
+                                      isUserParticipation &&
+                                      !!actionType &&
+                                      actionType !== "UPLOAD_PROOF"
+                                    ) {
+                                      return v === "AUTOMATIC";
+                                    }
+                                    return true;
+                                  })
+                                  .map((v) => (
+                                    <SelectItem key={v} value={v}>
+                                      {VERIFICATION_METHOD_LABELS[v]}
+                                    </SelectItem>
+                                  ))}
                               </SelectContent>
                             </Select>
+                            {actionType === "UPLOAD_PROOF" && (
+                              <FormDescription>
+                                Upload Proof requires manual verification.
+                              </FormDescription>
+                            )}
+                            {isUserParticipation &&
+                              !!actionType &&
+                              actionType !== "UPLOAD_PROOF" && (
+                                <FormDescription>
+                                  This action type uses automatic verification.
+                                </FormDescription>
+                              )}
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1920,7 +2117,7 @@ export default function AdminCampaigns() {
                     )}
                   />
 
-                  {!isVendorParticipation && (
+                  {campaignType === "PRODUCT_EVENT" && (
                     <FormField
                       control={form.control}
                       name="ctaUrl"
@@ -1962,7 +2159,7 @@ export default function AdminCampaigns() {
                           <SelectContent>
                             {(campaignType === "VENDOR_PARTICIPATION"
                               ? VENDOR_REWARD_TYPES
-                              : USER_REWARD_TYPES
+                              : CUSTOMER_REWARD_TYPES
                             ).map((r) => (
                               <SelectItem key={r} value={r}>
                                 {REWARD_TYPE_LABELS[r]}
@@ -1975,29 +2172,34 @@ export default function AdminCampaigns() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="rewardValue"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Reward Value</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            placeholder="e.g. 10"
-                            {...field}
-                            value={field.value ?? ""}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Percentage or fixed amount depending on reward type
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {(isVendorParticipation ||
+                    rewardType === "FIXED_DISCOUNT") && (
+                    <FormField
+                      control={form.control}
+                      name="rewardValue"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Reward Value</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              placeholder="e.g. 10"
+                              {...field}
+                              value={field.value ?? ""}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            {isVendorParticipation
+                              ? "Percentage or fixed amount depending on reward type"
+                              : "Enter the fixed discount amount"}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}

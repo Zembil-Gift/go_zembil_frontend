@@ -73,32 +73,77 @@ function truncate(str: string | null, maxLen: number): string {
 interface SubmittedDataResult {
   display: string;
   isUrl: boolean;
-  isJson: boolean;
+}
+
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value.trim());
+}
+
+function extractFromParsedValue(value: unknown): SubmittedDataResult | null {
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    if (!normalized) return null;
+    return { display: normalized, isUrl: isHttpUrl(normalized) };
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const extracted = extractFromParsedValue(item);
+      if (extracted) return extracted;
+    }
+    return null;
+  }
+
+  if (!value || typeof value !== "object") return null;
+
+  const data = value as Record<string, unknown>;
+  const prioritizedUrlKeys = [
+    "proofUrl",
+    "url",
+    "link",
+    "fileUrl",
+    "fileLink",
+    "attachmentUrl",
+  ];
+
+  for (const key of prioritizedUrlKeys) {
+    const candidate = data[key];
+    if (typeof candidate === "string" && isHttpUrl(candidate)) {
+      return { display: candidate.trim(), isUrl: true };
+    }
+  }
+
+  const prioritizedTextKeys = ["proofText", "text", "message", "note", "value"];
+  for (const key of prioritizedTextKeys) {
+    const candidate = data[key];
+    if (typeof candidate === "string" && candidate.trim()) {
+      const normalized = candidate.trim();
+      return { display: normalized, isUrl: isHttpUrl(normalized) };
+    }
+  }
+
+  for (const nested of Object.values(data)) {
+    const extracted = extractFromParsedValue(nested);
+    if (extracted) return extracted;
+  }
+
+  return null;
 }
 
 function extractSubmittedValue(raw: string | null): SubmittedDataResult {
-  if (!raw) return { display: "—", isUrl: false, isJson: false };
+  if (!raw) return { display: "—", isUrl: false };
+
   try {
     const parsed = JSON.parse(raw);
-    // Unwrap the backend's {"value": "..."} wrapper — used to normalize plain strings into JSONB
-    if (
-      parsed &&
-      typeof parsed === "object" &&
-      !Array.isArray(parsed) &&
-      Object.keys(parsed).length === 1 &&
-      "value" in parsed
-    ) {
-      const val = String(parsed.value);
-      return { display: val, isUrl: /^https?:\/\//.test(val), isJson: false };
-    }
-    // Complex JSON — pretty print
-    return {
-      display: JSON.stringify(parsed, null, 2),
-      isUrl: false,
-      isJson: true,
-    };
+    const extracted = extractFromParsedValue(parsed);
+    if (extracted) return extracted;
+    return { display: "—", isUrl: false };
   } catch {
-    return { display: raw, isUrl: /^https?:\/\//.test(raw), isJson: false };
+    const normalized = raw.trim();
+    return {
+      display: normalized || "—",
+      isUrl: isHttpUrl(normalized),
+    };
   }
 }
 
@@ -182,7 +227,7 @@ function ParticipationTabContent({
         queryKey: [
           "admin",
           "campaign-participations",
-          role === "VENDOR" ? "USER" : "VENDOR",
+          role === "VENDOR" ? "CUSTOMER" : "VENDOR",
         ],
       });
       toast({
@@ -218,7 +263,7 @@ function ParticipationTabContent({
         queryKey: [
           "admin",
           "campaign-participations",
-          role === "VENDOR" ? "USER" : "VENDOR",
+          role === "VENDOR" ? "CUSTOMER" : "VENDOR",
         ],
       });
       toast({
@@ -406,11 +451,11 @@ function ParticipationTabContent({
                   {filtered.map((p) => {
                     const progress = progressByParticipationId[p.id];
                     const progressSummary = formatProgressSummary(progress);
-                    const submittedValue = extractSubmittedValue(
+                    const submittedData = extractSubmittedValue(
                       p.submittedData
-                    ).display;
+                    );
                     const submittedDataLabel =
-                      progressSummary || truncate(submittedValue, 60);
+                      progressSummary || truncate(submittedData.display, 60);
                     const isExpanded = !!expandedProgressRows[p.id];
 
                     return (
@@ -432,6 +477,15 @@ function ParticipationTabContent({
                               >
                                 {submittedDataLabel}
                               </button>
+                            ) : submittedData.isUrl ? (
+                              <a
+                                href={submittedData.display}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="truncate block text-blue-700 hover:underline"
+                              >
+                                {submittedDataLabel}
+                              </a>
                             ) : (
                               <span className="truncate block">
                                 {submittedDataLabel}
@@ -446,7 +500,7 @@ function ParticipationTabContent({
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              {role === "VENDOR" && p.status === "APPROVED" && (
+                              {p.status === "APPROVED" && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -458,7 +512,7 @@ function ParticipationTabContent({
                                   ) : (
                                     <CheckCircle className="h-4 w-4 mr-1" />
                                   )}
-                                  Complete
+                                  Mark Complete
                                 </Button>
                               )}
                               <Button
@@ -608,16 +662,9 @@ function ParticipationTabContent({
                   );
                 })()}
                 {(() => {
-                  const { display, isUrl, isJson } = extractSubmittedValue(
+                  const { display, isUrl } = extractSubmittedValue(
                     reviewingParticipation.submittedData
                   );
-                  if (isJson) {
-                    return (
-                      <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto max-h-40 overflow-y-auto whitespace-pre-wrap break-words">
-                        {display}
-                      </pre>
-                    );
-                  }
                   if (isUrl) {
                     return (
                       <a
@@ -722,13 +769,13 @@ export default function AdminCampaignParticipations() {
         <Tabs defaultValue="vendor" className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="vendor">Vendor Submissions</TabsTrigger>
-            <TabsTrigger value="user">User Submissions</TabsTrigger>
+            <TabsTrigger value="user">Customer Submissions</TabsTrigger>
           </TabsList>
           <TabsContent value="vendor" className="mt-4">
             <ParticipationTabContent role="VENDOR" campaigns={campaigns} />
           </TabsContent>
           <TabsContent value="user" className="mt-4">
-            <ParticipationTabContent role="USER" campaigns={campaigns} />
+            <ParticipationTabContent role="CUSTOMER" campaigns={campaigns} />
           </TabsContent>
         </Tabs>
       </div>

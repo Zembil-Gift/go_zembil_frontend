@@ -170,7 +170,7 @@ export default function CampaignBanner() {
   const { user, isInitialized } = useAuth();
 
   const campaignRole: TargetRole =
-    user?.role?.toUpperCase() === "VENDOR" ? "VENDOR" : "USER";
+    user?.role?.toUpperCase() === "VENDOR" ? "VENDOR" : "CUSTOMER";
 
   const { data: campaigns = [] } = useQuery({
     queryKey: ["campaigns", "active", "role", campaignRole],

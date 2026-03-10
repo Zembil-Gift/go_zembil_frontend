@@ -283,6 +283,9 @@ export default function CampaignDetailPage() {
 
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [submittedData, setSubmittedData] = useState("");
+  const [proofText, setProofText] = useState("");
+  const [proofUrl, setProofUrl] = useState("");
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const campaignId = Number(id);
@@ -335,7 +338,10 @@ export default function CampaignDetailPage() {
   const joinMutation = useMutation({
     mutationFn: () =>
       campaignService.submitParticipation(campaignId, {
-        submittedData: submittedData.trim() || undefined,
+        submittedData:
+          campaign?.actionType === "UPLOAD_PROOF"
+            ? undefined
+            : submittedData.trim() || undefined,
       }),
     onSuccess: () => {
       setJoinDialogOpen(false);
@@ -358,6 +364,77 @@ export default function CampaignDetailPage() {
     },
   });
 
+  const submitProofMutation = useMutation({
+    mutationFn: async () => {
+      if (!myParticipation) {
+        throw new Error("Participation record not found");
+      }
+
+      if (campaign?.proofType === "TEXT") {
+        if (!proofText.trim()) {
+          throw new Error("Please enter proof text");
+        }
+        return campaignService.submitTextProof(myParticipation.id, {
+          proofText: proofText.trim(),
+        });
+      }
+
+      if (campaign?.proofType === "URL") {
+        if (!proofUrl.trim()) {
+          throw new Error("Please enter proof URL");
+        }
+        return campaignService.submitUrlProof(myParticipation.id, {
+          proofUrl: proofUrl.trim(),
+        });
+      }
+
+      if (campaign?.proofType === "FILE") {
+        if (!proofFile) {
+          throw new Error("Please attach a proof file");
+        }
+        return campaignService.submitFileProof(myParticipation.id, proofFile);
+      }
+
+      if (campaign?.proofType === "MULTIPLE") {
+        const text = proofText.trim();
+        const url = proofUrl.trim();
+        if (!text && !url && !proofFile) {
+          throw new Error("Please provide at least one proof item");
+        }
+        return campaignService.submitMultipleProof(
+          myParticipation.id,
+          {
+            proofText: text || null,
+            proofUrl: url || null,
+          },
+          proofFile || undefined
+        );
+      }
+
+      throw new Error("This campaign does not accept proof submissions");
+    },
+    onSuccess: () => {
+      setProofText("");
+      setProofUrl("");
+      setProofFile(null);
+      toast({
+        title: "Proof submitted",
+        description: "Your proof has been sent successfully.",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["campaigns", "my-participations"],
+      });
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to submit proof";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    },
+  });
+
   const countdown = useCountdown(
     campaign?.endDateTime ?? new Date().toISOString()
   );
@@ -371,12 +448,25 @@ export default function CampaignDetailPage() {
   const pendingCount = campaign?.pendingCount ?? 0;
 
   const isParticipationCampaign =
+    campaign?.campaignType === "CUSTOMER_PARTICIPATION" ||
     campaign?.campaignType === "USER_PARTICIPATION" ||
     campaign?.campaignType === "VENDOR_PARTICIPATION";
-  const isUserRole = normalizedRole === "USER" || normalizedRole === "CUSTOMER";
+  const isUserRole = normalizedRole === "CUSTOMER";
   const isVendorRole = normalizedRole === "VENDOR";
+  const isUploadProofCampaign = campaign?.actionType === "UPLOAD_PROOF";
+  const isCompleteProfileCampaign = campaign?.actionType === "COMPLETE_PROFILE";
+  const needsProofAfterJoin =
+    isUploadProofCampaign &&
+    campaign?.verificationMethod === "MANUAL" &&
+    !!myParticipation &&
+    myParticipation.status === "APPROVED";
+  const canCompleteProfile =
+    isCompleteProfileCampaign &&
+    !!myParticipation &&
+    myParticipation.status === "APPROVED";
   const isRoleEligibleForCampaign = campaign
     ? campaign.targetRole === "ALL" ||
+      (campaign.targetRole === "CUSTOMER" && isUserRole) ||
       (campaign.targetRole === "USER" && isUserRole) ||
       (campaign.targetRole === "VENDOR" && isVendorRole)
     : false;
@@ -404,6 +494,32 @@ export default function CampaignDetailPage() {
   const handleJoinSubmit = () => {
     joinMutation.mutate();
   };
+
+  const completeProfileMutation = useMutation({
+    mutationFn: () => {
+      if (!myParticipation) {
+        throw new Error("Participation record not found");
+      }
+      return campaignService.completeProfileParticipation(myParticipation.id);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profile submitted",
+        description: "Your profile completion check was submitted.",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["campaigns", "my-participations"],
+      });
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to complete profile action";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    },
+  });
 
   // Determine if the reward is user-relevant
   const rewardLabel = campaign?.rewardType
@@ -484,7 +600,8 @@ export default function CampaignDetailPage() {
             {/* Badge */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <Badge className="bg-ethiopian-gold/20 text-ethiopian-gold border border-ethiopian-gold/30 text-xs uppercase tracking-wider font-semibold">
-                {campaign.campaignType === "USER_PARTICIPATION"
+                {campaign.campaignType === "CUSTOMER_PARTICIPATION" ||
+                campaign.campaignType === "USER_PARTICIPATION"
                   ? "Join & Win"
                   : "Campaign"}
               </Badge>
@@ -924,6 +1041,89 @@ export default function CampaignDetailPage() {
                       )}
                     </div>
                   )}
+
+                  {hasParticipated && myParticipation && needsProofAfterJoin && (
+                    <div className="mt-4 pt-4 border-t space-y-3">
+                      <p className="text-sm font-semibold text-gray-800">
+                        Submit Required Proof
+                      </p>
+
+                      {(campaign.proofType === "TEXT" || campaign.proofType === "MULTIPLE") && (
+                        <Textarea
+                          value={proofText}
+                          onChange={(e) => setProofText(e.target.value)}
+                          placeholder="Enter proof details..."
+                          rows={3}
+                        />
+                      )}
+
+                      {(campaign.proofType === "URL" || campaign.proofType === "MULTIPLE") && (
+                        <Input
+                          value={proofUrl}
+                          onChange={(e) => setProofUrl(e.target.value)}
+                          placeholder="https://..."
+                          type="url"
+                        />
+                      )}
+
+                      {(campaign.proofType === "FILE" || campaign.proofType === "MULTIPLE") && (
+                        <Input
+                          type="file"
+                          onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                        />
+                      )}
+
+                      <Button
+                        onClick={() => submitProofMutation.mutate()}
+                        disabled={submitProofMutation.isPending}
+                        className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white"
+                      >
+                        {submitProofMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                        )}
+                        Submit Proof
+                      </Button>
+                    </div>
+                  )}
+
+                  {hasParticipated && myParticipation && canCompleteProfile && (
+                    <div className="mt-4 pt-4 border-t space-y-3">
+                      <p className="text-sm font-semibold text-gray-800">
+                        Complete Profile Action
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        After approval, click below to verify your profile and
+                        complete this campaign.
+                      </p>
+                      <Button
+                        onClick={() => completeProfileMutation.mutate()}
+                        disabled={completeProfileMutation.isPending}
+                        className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white"
+                      >
+                        {completeProfileMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                        )}
+                        Complete Profile
+                      </Button>
+                    </div>
+                  )}
+
+                  {hasParticipated &&
+                    myParticipation &&
+                    isUploadProofCampaign &&
+                    campaign.verificationMethod === "MANUAL" &&
+                    myParticipation.status === "PENDING" && (
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-3">
+                          Your participation is pending admin approval. You can
+                          upload proof after your participation is approved.
+                        </p>
+                      </div>
+                    )}
                 </CardContent>
               </Card>
             )}
@@ -997,37 +1197,12 @@ export default function CampaignDetailPage() {
               </div>
             )}
 
-            {/* Proof / notes input */}
-            {(campaign.proofType === "TEXT" ||
-              campaign.proofType === "URL" ||
-              campaign.proofType === "MULTIPLE" ||
-              campaign.actionType === "UPLOAD_PROOF") && (
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1.5 block">
-                  {campaign.proofType === "URL"
-                    ? "Proof URL"
-                    : campaign.proofType === "MULTIPLE"
-                    ? "Required Information"
-                    : "Additional Information"}
-                </label>
-                {campaign.proofType === "URL" ? (
-                  <Input
-                    value={submittedData}
-                    onChange={(e) => setSubmittedData(e.target.value)}
-                    placeholder="https://..."
-                    type="url"
-                  />
-                ) : (
-                  <Textarea
-                    value={submittedData}
-                    onChange={(e) => setSubmittedData(e.target.value)}
-                    placeholder={
-                      campaign.proofDescription ||
-                      "Enter any required proof or notes..."
-                    }
-                    rows={3}
-                  />
-                )}
+            {isUploadProofCampaign && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  After you join, your participation will be reviewed first.
+                  Once approved, you can submit your proof from this page.
+                </p>
               </div>
             )}
 
@@ -1094,7 +1269,9 @@ export default function CampaignDetailPage() {
             </DialogTitle>
             <DialogDescription className="text-base">
               Your campaign participation has been submitted successfully.
-              {campaign.verificationMethod === "AUTOMATIC"
+              {isUploadProofCampaign
+                ? " Your request is now pending admin approval. You can upload proof once approved."
+                : campaign.verificationMethod === "AUTOMATIC"
                 ? " Your reward will be activated shortly."
                 : " We'll review your submission and notify you once it's approved."}
             </DialogDescription>

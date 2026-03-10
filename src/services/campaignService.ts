@@ -7,13 +7,15 @@ import { toInstantISOString } from '@/lib/instant';
 export type CampaignType =
   | "PRODUCT_EVENT"
   | "VENDOR_PARTICIPATION"
+  | "CUSTOMER_PARTICIPATION"
   | "USER_PARTICIPATION";
-export type TargetRole = "ALL" | "VENDOR" | "USER";
+export type TargetRole = "ALL" | "VENDOR" | "CUSTOMER" | "USER";
 export type VerificationMethod = "AUTOMATIC" | "MANUAL" | "HYBRID";
 export type ActionType =
   | "UPLOAD_PROOF"
   | "COMPLETE_MIN_SALES"
   | "COMPLETE_MIN_ORDERS"
+  | "NO_ACTION_REQUIRED"
   | "USE_REFERRAL_CODE"
   | "COMPLETE_PROFILE"
   | "MANUAL_APPROVAL"
@@ -136,6 +138,19 @@ export interface CampaignParticipationRequest {
   submittedData?: string;
 }
 
+export interface TextProofRequest {
+  proofText: string;
+}
+
+export interface UrlProofRequest {
+  proofUrl: string;
+}
+
+export interface MultipleProofMetadataRequest {
+  proofText?: string | null;
+  proofUrl?: string | null;
+}
+
 export interface ParticipationReviewRequest {
   status: "APPROVED" | "REJECTED";
   adminNote?: string;
@@ -146,12 +161,14 @@ export interface ParticipationReviewRequest {
 export const CAMPAIGN_TYPE_LABELS: Record<CampaignType, string> = {
   PRODUCT_EVENT: "Product / Event",
   VENDOR_PARTICIPATION: "Vendor Participation",
+  CUSTOMER_PARTICIPATION: "Customer Participation",
   USER_PARTICIPATION: "User Participation",
 };
 
 export const TARGET_ROLE_LABELS: Record<TargetRole, string> = {
   ALL: "All Users",
   VENDOR: "Vendors Only",
+  CUSTOMER: "Customers Only",
   USER: "Customers Only",
 };
 
@@ -165,6 +182,7 @@ export const ACTION_TYPE_LABELS: Record<ActionType, string> = {
   UPLOAD_PROOF: "Upload Proof",
   COMPLETE_MIN_SALES: "Complete Minimum Sales",
   COMPLETE_MIN_ORDERS: "Complete Minimum Orders",
+  NO_ACTION_REQUIRED: "No Action Required",
   USE_REFERRAL_CODE: "Use Referral Code",
   COMPLETE_PROFILE: "Complete Profile",
   MANUAL_APPROVAL: "Manual Approval",
@@ -383,6 +401,78 @@ class CampaignService {
   ): Promise<CampaignActionProgress> {
     return apiService.getRequest<CampaignActionProgress>(
       `/api/campaigns/participations/${participationId}/action-progress`
+    );
+  }
+
+  async submitTextProof(
+    participationId: number,
+    data: TextProofRequest
+  ): Promise<CampaignParticipation> {
+    return apiService.patchRequest<CampaignParticipation>(
+      `/api/campaigns/participations/${participationId}/proof/text`,
+      data
+    );
+  }
+
+  async submitUrlProof(
+    participationId: number,
+    data: UrlProofRequest
+  ): Promise<CampaignParticipation> {
+    return apiService.patchRequest<CampaignParticipation>(
+      `/api/campaigns/participations/${participationId}/proof/url`,
+      data
+    );
+  }
+
+  async submitFileProof(
+    participationId: number,
+    file: File
+  ): Promise<CampaignParticipation> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await api.patch<CampaignParticipation>(
+      `/api/campaigns/participations/${participationId}/proof/file`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    return response.data;
+  }
+
+  async submitMultipleProof(
+    participationId: number,
+    metadata?: MultipleProofMetadataRequest,
+    file?: File
+  ): Promise<CampaignParticipation> {
+    const formData = new FormData();
+
+    if (metadata && (metadata.proofText || metadata.proofUrl)) {
+      formData.append(
+        "metadata",
+        new Blob([JSON.stringify(metadata)], { type: "application/json" })
+      );
+    }
+
+    if (file) {
+      formData.append("file", file);
+    }
+
+    const response = await api.patch<CampaignParticipation>(
+      `/api/campaigns/participations/${participationId}/proof/multiple`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    return response.data;
+  }
+
+  async completeProfileParticipation(
+    participationId: number
+  ): Promise<CampaignParticipation> {
+    return apiService.patchRequest<CampaignParticipation>(
+      `/api/campaigns/participations/${participationId}/complete-profile`,
+      {}
     );
   }
 }
