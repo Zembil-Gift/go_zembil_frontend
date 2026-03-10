@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
@@ -57,6 +57,77 @@ export default function Cart() {
     useState<DiscountValidationResult | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   const [discountError, setDiscountError] = useState<string | null>(null);
+  const [pendingQuantityItemKey, setPendingQuantityItemKey] = useState<
+    string | null
+  >(null);
+  const [pendingRemoveItemKey, setPendingRemoveItemKey] = useState<
+    string | null
+  >(null);
+  const [pendingWishlistItemKey, setPendingWishlistItemKey] = useState<
+    string | null
+  >(null);
+  const cartItemOrderRef = useRef<number[]>([]);
+
+  const getCartItemKey = useCallback((item: CartItem) => {
+    return `${item.id}-${item.productId}-${item.productSkuId || "default"}`;
+  }, []);
+
+  const calculateSubtotalForItems = useCallback(
+    (items: CartItem[], currency: string) => {
+      return items.reduce((total: number, item: CartItem) => {
+        const baseUnitPrice = Number(item.unitPrice || 0);
+        const discount = item.product?.activeDiscount;
+        const discountedUnitPrice = discount
+          ? calculateDiscountedPrice(baseUnitPrice, currency, discount)
+          : baseUnitPrice;
+        return total + discountedUnitPrice * item.quantity;
+      }, 0);
+    },
+    []
+  );
+
+  const buildOrderItems = useCallback((items: CartItem[], currency: string) => {
+    return items
+      .map((item: CartItem) => {
+        const baseUnitPrice = Number(item.unitPrice || 0);
+        const discount = item.product?.activeDiscount;
+        const discountedUnitPrice = discount
+          ? calculateDiscountedPrice(baseUnitPrice, currency, discount)
+          : baseUnitPrice;
+        const lineTotal = discountedUnitPrice * item.quantity;
+
+        const productDetails = item.product as
+          | {
+              categoryId?: number;
+              parentCategoryId?: number;
+              parentCategory?: { id?: number };
+            }
+          | undefined;
+
+        const categoryId =
+          productDetails?.parentCategory?.id ??
+          productDetails?.parentCategoryId ??
+          productDetails?.categoryId ??
+          null;
+
+        if (!item.productId || lineTotal <= 0) return null;
+
+        return {
+          itemId: item.productId,
+          categoryId,
+          itemTotalMinor: toMinorUnits(lineTotal, currency),
+        };
+      })
+      .filter(
+        (
+          orderItem
+        ): orderItem is {
+          itemId: number;
+          categoryId: number | null;
+          itemTotalMinor: number;
+        } => Boolean(orderItem)
+      );
+  }, []);
 
   // Sync with persistent discount code
   useEffect(() => {
@@ -75,7 +146,7 @@ export default function Cart() {
       !isValidatingDiscount &&
       !discountError
     ) {
-      handleApplyDiscount();
+      handleApplyDiscount(appliedDiscountCode);
     }
   }, [
     appliedDiscountCode,
@@ -86,67 +157,105 @@ export default function Cart() {
     discountError,
   ]);
 
-  const cartProductIds = useMemo(() => {
-    if (!Array.isArray(cartItems)) return [];
-    return cartItems.map((item: CartItem) => item.productId).filter(Boolean);
+  const cartOrderItems = useMemo(() => {
+    if (!Array.isArray(cartItems) || !cartCurrency) return [];
+    return buildOrderItems(cartItems, cartCurrency);
+  }, [cartItems, cartCurrency, buildOrderItems]);
+
+  const orderedCartItems = useMemo(() => {
+    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+      cartItemOrderRef.current = [];
+      return [] as CartItem[];
+    }
+
+    const currentIds = cartItems.map((item) => item.id);
+    const existingOrder = cartItemOrderRef.current.filter((id) =>
+      currentIds.includes(id)
+    );
+    const newIds = currentIds.filter((id) => !existingOrder.includes(id));
+    const nextOrder = [...existingOrder, ...newIds];
+
+    cartItemOrderRef.current = nextOrder;
+
+    const itemMap = new Map(cartItems.map((item) => [item.id, item]));
+    return nextOrder
+      .map((id) => itemMap.get(id))
+      .filter((item): item is CartItem => Boolean(item));
   }, [cartItems]);
 
   const discountAmountDisplay = useMemo(() => {
     return getDiscountAmountForDisplay(discountResult, cartCurrency);
   }, [discountResult, cartCurrency]);
 
-  const handleApplyDiscount = useCallback(async () => {
-    const code = discountCode.trim();
-    if (!code) {
-      setDiscountError("Please enter a discount code");
-      return;
-    }
-    const subtotal = calculateSubtotal();
-    if (!cartCurrency || subtotal <= 0) {
-      setDiscountError("Cart is empty");
-      return;
-    }
+  const handleApplyDiscount = useCallback(
+    async (
+      codeOverride?: string,
+      showToast = true,
+      itemsOverride?: CartItem[],
+      currencyOverride?: string
+    ) => {
+      const code = (codeOverride || discountCode).trim();
+      if (!code) {
+        setDiscountError("Please enter a discount code");
+        return;
+      }
 
-    setIsValidatingDiscount(true);
-    setDiscountError(null);
-    setDiscountResult(null);
+      const sourceItems = itemsOverride ?? cartItems;
+      const sourceCurrency = currencyOverride ?? cartCurrency;
+      const subtotal = calculateSubtotalForItems(sourceItems, sourceCurrency);
+      if (!sourceCurrency || subtotal <= 0) {
+        setDiscountError("Cart is empty");
+        return;
+      }
 
-    try {
-      const result = await discountService.validateDiscountCode({
-        discountCode: code,
-        orderTotalMinor: toMinorUnits(subtotal, cartCurrency),
-        productIds: cartProductIds,
-      });
+      const sourceOrderItems = buildOrderItems(sourceItems, sourceCurrency);
 
-      if (result.applicable) {
-        setDiscountResult(result);
-        setAppliedDiscountCode(code);
-        setDiscountError(null);
-        toast({
-          title: "Discount Applied",
-          description: `Discount code "${code}" is valid! Savings shown below.`,
+      setIsValidatingDiscount(true);
+      setDiscountError(null);
+      setDiscountResult(null);
+
+      try {
+        const result = await discountService.validateDiscountCode({
+          discountCode: code,
+          orderTotalMinor: toMinorUnits(subtotal, sourceCurrency),
+          orderItems: sourceOrderItems,
         });
-      } else {
+
+        if (result.applicable) {
+          setDiscountResult(result);
+          setAppliedDiscountCode(code);
+          setDiscountError(null);
+          if (showToast) {
+            toast({
+              title: "Discount Applied",
+              description: `Discount code "${code}" is valid! Savings shown below.`,
+            });
+          }
+        } else {
+          setDiscountResult(null);
+          setAppliedDiscountCode(null);
+          setDiscountError(
+            result.reason || "Discount code is not valid for this order"
+          );
+        }
+      } catch (error: any) {
         setDiscountResult(null);
         setAppliedDiscountCode(null);
-        setDiscountError(
-          result.reason || "Discount code is not valid for this order"
-        );
+        setDiscountError(error?.message || "Failed to validate discount code");
+      } finally {
+        setIsValidatingDiscount(false);
       }
-    } catch (error: any) {
-      setDiscountResult(null);
-      setAppliedDiscountCode(null);
-      setDiscountError(error?.message || "Failed to validate discount code");
-    } finally {
-      setIsValidatingDiscount(false);
-    }
-  }, [
-    discountCode,
-    cartCurrency,
-    cartProductIds,
-    toast,
-    setAppliedDiscountCode,
-  ]);
+    },
+    [
+      discountCode,
+      cartItems,
+      cartCurrency,
+      calculateSubtotalForItems,
+      buildOrderItems,
+      toast,
+      setAppliedDiscountCode,
+    ]
+  );
 
   const handleRemoveDiscount = useCallback(() => {
     setDiscountResult(null);
@@ -156,17 +265,81 @@ export default function Cart() {
   }, [setAppliedDiscountCode]);
 
   const updateQuantityMutation = useMutation({
-    mutationFn: async ({ id, quantity }: { id: number; quantity: number }) => {
-      return await cartService.updateCartItem(id, quantity);
+    mutationFn: async ({
+      item,
+      quantity,
+    }: {
+      item: CartItem;
+      quantity: number;
+    }) => {
+      return await cartService.updateCartItem(item.id, quantity);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
+    onMutate: async ({ item, quantity }) => {
+      const itemKey = getCartItemKey(item);
+      setPendingQuantityItemKey(itemKey);
+
+      await queryClient.cancelQueries({ queryKey: ["cart", "items"] });
+
+      const previousCartData = queryClient.getQueryData<{
+        items: CartItem[];
+        currency: string;
+        totalPrice: number;
+      }>(["cart", "items"]);
+
+      if (previousCartData) {
+        queryClient.setQueryData<{
+          items: CartItem[];
+          currency: string;
+          totalPrice: number;
+        }>(["cart", "items"], {
+          ...previousCartData,
+          items: previousCartData.items.map((existingItem) =>
+            getCartItemKey(existingItem) === itemKey
+              ? {
+                  ...existingItem,
+                  quantity,
+                  totalPrice: Number(existingItem.unitPrice || 0) * quantity,
+                }
+              : existingItem
+          ),
+        });
+      }
+
+      return { previousCartData, itemKey };
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["cart", "items"] });
+      if (appliedDiscountCode) {
+        const latestCartData = queryClient.getQueryData<{
+          items: CartItem[];
+          currency: string;
+        }>(["cart", "items"]);
+        const latestItems = latestCartData?.items || [];
+        const latestCurrency = latestCartData?.currency || cartCurrency;
+
+        if (latestItems.length > 0) {
+          await handleApplyDiscount(
+            appliedDiscountCode,
+            false,
+            latestItems,
+            latestCurrency
+          );
+        } else {
+          handleRemoveDiscount();
+        }
+      }
       toast({
         title: "Quantity updated",
         description: "Cart item quantity updated successfully",
       });
     },
-    onError: () => {
+    onSettled: () => {
+      setPendingQuantityItemKey(null);
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousCartData) {
+        queryClient.setQueryData(["cart", "items"], context.previousCartData);
+      }
       toast({
         title: "Error",
         description: "Failed to update cart item",
@@ -179,14 +352,66 @@ export default function Cart() {
     mutationFn: async (id: number) => {
       return await cartService.removeFromCart(id);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
+    onMutate: async (itemId: number) => {
+      const itemToRemove = cartItems.find((item) => item.id === itemId);
+      if (itemToRemove) {
+        setPendingRemoveItemKey(getCartItemKey(itemToRemove));
+      }
+
+      await queryClient.cancelQueries({ queryKey: ["cart", "items"] });
+
+      const previousCartData = queryClient.getQueryData<{
+        items: CartItem[];
+        currency: string;
+        totalPrice: number;
+      }>(["cart", "items"]);
+
+      if (previousCartData) {
+        queryClient.setQueryData<{
+          items: CartItem[];
+          currency: string;
+          totalPrice: number;
+        }>(["cart", "items"], {
+          ...previousCartData,
+          items: previousCartData.items.filter((item) => item.id !== itemId),
+        });
+      }
+
+      return { previousCartData };
+    },
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["cart", "items"] });
+      if (appliedDiscountCode) {
+        const latestCartData = queryClient.getQueryData<{
+          items: CartItem[];
+          currency: string;
+        }>(["cart", "items"]);
+        const latestItems = latestCartData?.items || [];
+        const latestCurrency = latestCartData?.currency || cartCurrency;
+
+        if (latestItems.length > 0) {
+          await handleApplyDiscount(
+            appliedDiscountCode,
+            false,
+            latestItems,
+            latestCurrency
+          );
+        } else {
+          handleRemoveDiscount();
+        }
+      }
       toast({
         title: "Item removed",
         description: "Item removed from cart",
       });
     },
-    onError: () => {
+    onSettled: () => {
+      setPendingRemoveItemKey(null);
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousCartData) {
+        queryClient.setQueryData(["cart", "items"], context.previousCartData);
+      }
       toast({
         title: "Error",
         description: "Failed to remove item from cart",
@@ -199,13 +424,41 @@ export default function Cart() {
     mutationFn: async (cartItemId: number) => {
       return await wishlistService.saveForLater({ cartItemId });
     },
-    onSuccess: () => {
+    onMutate: async (cartItemId: number) => {
+      const itemToMove = cartItems.find((item) => item.id === cartItemId);
+      if (itemToMove) {
+        setPendingWishlistItemKey(getCartItemKey(itemToMove));
+      }
+    },
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["/api/wish-list"] });
-      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
+      await queryClient.refetchQueries({ queryKey: ["cart", "items"] });
+      if (appliedDiscountCode) {
+        const latestCartData = queryClient.getQueryData<{
+          items: CartItem[];
+          currency: string;
+        }>(["cart", "items"]);
+        const latestItems = latestCartData?.items || [];
+        const latestCurrency = latestCartData?.currency || cartCurrency;
+
+        if (latestItems.length > 0) {
+          await handleApplyDiscount(
+            appliedDiscountCode,
+            false,
+            latestItems,
+            latestCurrency
+          );
+        } else {
+          handleRemoveDiscount();
+        }
+      }
       toast({
         title: "Saved for later",
         description: "Item moved to your wishlist",
       });
+    },
+    onSettled: () => {
+      setPendingWishlistItemKey(null);
     },
     onError: () => {
       toast({
@@ -218,15 +471,7 @@ export default function Cart() {
 
   const calculateSubtotal = () => {
     if (!Array.isArray(cartItems)) return 0;
-    return cartItems.reduce((total: number, item: CartItem) => {
-      const baseUnitPrice = Number(item.unitPrice || 0);
-      const discount = item.product?.activeDiscount;
-      const discountedUnitPrice = discount
-        ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
-        : baseUnitPrice;
-      const itemTotal = discountedUnitPrice * item.quantity;
-      return total + itemTotal;
-    }, 0);
+    return calculateSubtotalForItems(cartItems, cartCurrency);
   };
 
   const calculateTotal = () => {
@@ -270,7 +515,7 @@ export default function Cart() {
       });
     }
 
-    updateQuantityMutation.mutate({ id: item.id, quantity: cappedQuantity });
+    updateQuantityMutation.mutate({ item, quantity: cappedQuantity });
   };
 
   const handleMoveToWishlist = async (item: CartItem) => {
@@ -437,199 +682,212 @@ export default function Cart() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {cartItems.map((item: CartItem) => (
-                <Card key={item.id} className="overflow-hidden">
-                  <CardContent className="p-6">
-                    {(() => {
-                      const stockQuantity = getItemStockQuantity(item);
-                      const isAtMaxStock =
-                        stockQuantity !== null &&
-                        item.quantity >= stockQuantity;
+              {orderedCartItems.map((item: CartItem) => {
+                const itemKey = getCartItemKey(item);
+                const isQuantityPending = pendingQuantityItemKey === itemKey;
+                const isRemovePending = pendingRemoveItemKey === itemKey;
+                const isWishlistPending = pendingWishlistItemKey === itemKey;
 
-                      return (
-                        <div className="flex items-center space-x-4">
-                          {/* Product Image */}
-                          <div className="relative w-24 h-24 flex-shrink-0">
-                            {getProductImageUrl(
-                              item.product?.images,
-                              item.product?.cover || item.productImage
-                            ) ? (
-                              <img
-                                src={getProductImageUrl(
-                                  item.product?.images,
-                                  item.product?.cover || item.productImage
-                                )}
-                                alt={
-                                  item.productName ||
-                                  item.product?.name ||
-                                  "Product"
-                                }
-                                className="w-full h-full object-cover rounded-lg"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
-                                <div className="text-center text-gray-400">
-                                  <p className="text-xs">No image</p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                return (
+                  <Card key={itemKey} className="overflow-hidden">
+                    <CardContent className="p-6">
+                      {(() => {
+                        const stockQuantity = getItemStockQuantity(item);
+                        const isAtMaxStock =
+                          stockQuantity !== null &&
+                          item.quantity >= stockQuantity;
 
-                          {/* Product Details */}
-                          <div className="flex-1 min-w-0">
-                            <Link to={`/product/${item.productId}`}>
-                              <h3 className="font-semibold text-lg text-charcoal hover:text-ethiopian-gold transition-colors line-clamp-2">
-                                {item.product?.name ||
-                                  `Product #${item.productId}`}
-                              </h3>
-                            </Link>
-                            {(() => {
-                              const baseUnitPrice = Number(item.unitPrice || 0);
-                              const discount = item.product?.activeDiscount;
-                              const discountedUnitPrice = discount
-                                ? calculateDiscountedPrice(
-                                    baseUnitPrice,
-                                    cartCurrency,
-                                    discount
-                                  )
-                                : baseUnitPrice;
-                              const hasDiscount =
-                                discountedUnitPrice < baseUnitPrice;
-
-                              return (
-                                <div className="mt-1">
-                                  <p className="text-ethiopian-gold font-bold text-lg">
-                                    {formatPrice(
-                                      discountedUnitPrice,
-                                      cartCurrency
-                                    )}
-                                  </p>
-                                  {hasDiscount && (
-                                    <p className="text-xs text-gray-500 line-through">
-                                      {formatPrice(baseUnitPrice, cartCurrency)}
-                                    </p>
+                        return (
+                          <div className="flex items-center space-x-4">
+                            {/* Product Image */}
+                            <div className="relative w-24 h-24 flex-shrink-0">
+                              {getProductImageUrl(
+                                item.product?.images,
+                                item.product?.cover || item.productImage
+                              ) ? (
+                                <img
+                                  src={getProductImageUrl(
+                                    item.product?.images,
+                                    item.product?.cover || item.productImage
                                   )}
+                                  alt={
+                                    item.productName ||
+                                    item.product?.name ||
+                                    "Product"
+                                  }
+                                  className="w-full h-full object-cover rounded-lg"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                                  <div className="text-center text-gray-400">
+                                    <p className="text-xs">No image</p>
+                                  </div>
                                 </div>
-                              );
-                            })()}
-
-                            {/* Delivery Info */}
-                            <div className="flex items-center mt-2 text-sm text-gray-500">
-                              <Truck size={14} className="mr-1" />
-                              <span>
-                                {item.product?.deliveryDays || 3} days delivery
-                              </span>
+                              )}
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex items-center space-x-4 mt-4">
-                              {/* Quantity Controls */}
-                              <div className="flex items-center space-x-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    handleQuantityChange(
-                                      item,
-                                      item.quantity - 1
+                            {/* Product Details */}
+                            <div className="flex-1 min-w-0">
+                              <Link to={`/product/${item.productId}`}>
+                                <h3 className="font-semibold text-lg text-charcoal hover:text-ethiopian-gold transition-colors line-clamp-2">
+                                  {item.product?.name ||
+                                    `Product #${item.productId}`}
+                                </h3>
+                              </Link>
+                              {(() => {
+                                const baseUnitPrice = Number(
+                                  item.unitPrice || 0
+                                );
+                                const discount = item.product?.activeDiscount;
+                                const discountedUnitPrice = discount
+                                  ? calculateDiscountedPrice(
+                                      baseUnitPrice,
+                                      cartCurrency,
+                                      discount
                                     )
-                                  }
-                                  disabled={updateQuantityMutation.isPending}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Minus size={14} />
-                                </Button>
-                                <span className="text-sm font-medium w-8 text-center">
-                                  {item.quantity}
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    handleQuantityChange(
-                                      item,
-                                      item.quantity + 1
-                                    )
-                                  }
-                                  disabled={
-                                    updateQuantityMutation.isPending ||
-                                    isAtMaxStock
-                                  }
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Plus size={14} />
-                                </Button>
-                              </div>
+                                  : baseUnitPrice;
+                                const hasDiscount =
+                                  discountedUnitPrice < baseUnitPrice;
 
-                              {/* Move to Wishlist */}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleMoveToWishlist(item)}
-                                disabled={moveToWishlistMutation.isPending}
-                                className="text-gray-600 hover:text-ethiopian-gold"
-                              >
-                                <Heart size={14} className="mr-1" />
-                                Save for later
-                              </Button>
-
-                              {/* Remove */}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() =>
-                                  removeItemMutation.mutate(item.id)
-                                }
-                                disabled={removeItemMutation.isPending}
-                                className="text-gray-600 hover:text-red-600"
-                              >
-                                <X size={14} className="mr-1" />
-                                Remove
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Item Total */}
-                          <div className="text-right">
-                            {(() => {
-                              const baseUnitPrice = Number(item.unitPrice || 0);
-                              const discount = item.product?.activeDiscount;
-                              const discountedUnitPrice = discount
-                                ? calculateDiscountedPrice(
-                                    baseUnitPrice,
-                                    cartCurrency,
-                                    discount
-                                  )
-                                : baseUnitPrice;
-                              const itemTotal =
-                                discountedUnitPrice * item.quantity;
-                              const originalLineTotal =
-                                baseUnitPrice * item.quantity;
-                              const hasDiscount = itemTotal < originalLineTotal;
-
-                              return (
-                                <div>
-                                  <p className="font-bold text-lg text-charcoal">
-                                    {formatPrice(itemTotal, cartCurrency)}
-                                  </p>
-                                  {hasDiscount && (
-                                    <p className="text-xs text-gray-500 line-through">
+                                return (
+                                  <div className="mt-1">
+                                    <p className="text-ethiopian-gold font-bold text-lg">
                                       {formatPrice(
-                                        originalLineTotal,
+                                        discountedUnitPrice,
                                         cartCurrency
                                       )}
                                     </p>
-                                  )}
+                                    {hasDiscount && (
+                                      <p className="text-xs text-gray-500 line-through">
+                                        {formatPrice(
+                                          baseUnitPrice,
+                                          cartCurrency
+                                        )}
+                                      </p>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Delivery Info */}
+                              <div className="flex items-center mt-2 text-sm text-gray-500">
+                                <Truck size={14} className="mr-1" />
+                                <span>
+                                  {item.product?.deliveryDays || 3} days
+                                  delivery
+                                </span>
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex items-center space-x-4 mt-4">
+                                {/* Quantity Controls */}
+                                <div className="flex items-center space-x-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      handleQuantityChange(
+                                        item,
+                                        item.quantity - 1
+                                      )
+                                    }
+                                    disabled={isQuantityPending}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Minus size={14} />
+                                  </Button>
+                                  <span className="text-sm font-medium w-8 text-center">
+                                    {item.quantity}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      handleQuantityChange(
+                                        item,
+                                        item.quantity + 1
+                                      )
+                                    }
+                                    disabled={isQuantityPending || isAtMaxStock}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Plus size={14} />
+                                  </Button>
                                 </div>
-                              );
-                            })()}
+
+                                {/* Move to Wishlist */}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleMoveToWishlist(item)}
+                                  disabled={isWishlistPending}
+                                  className="text-gray-600 hover:text-ethiopian-gold"
+                                >
+                                  <Heart size={14} className="mr-1" />
+                                  Save for later
+                                </Button>
+
+                                {/* Remove */}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    removeItemMutation.mutate(item.id)
+                                  }
+                                  disabled={isRemovePending}
+                                  className="text-gray-600 hover:text-red-600"
+                                >
+                                  <X size={14} className="mr-1" />
+                                  Remove
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Item Total */}
+                            <div className="text-right">
+                              {(() => {
+                                const baseUnitPrice = Number(
+                                  item.unitPrice || 0
+                                );
+                                const discount = item.product?.activeDiscount;
+                                const discountedUnitPrice = discount
+                                  ? calculateDiscountedPrice(
+                                      baseUnitPrice,
+                                      cartCurrency,
+                                      discount
+                                    )
+                                  : baseUnitPrice;
+                                const itemTotal =
+                                  discountedUnitPrice * item.quantity;
+                                const originalLineTotal =
+                                  baseUnitPrice * item.quantity;
+                                const hasDiscount =
+                                  itemTotal < originalLineTotal;
+
+                                return (
+                                  <div>
+                                    <p className="font-bold text-lg text-charcoal">
+                                      {formatPrice(itemTotal, cartCurrency)}
+                                    </p>
+                                    {hasDiscount && (
+                                      <p className="text-xs text-gray-500 line-through">
+                                        {formatPrice(
+                                          originalLineTotal,
+                                          cartCurrency
+                                        )}
+                                      </p>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-              ))}
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {/* Order Summary */}
@@ -699,7 +957,7 @@ export default function Cart() {
                             />
                             <Button
                               type="button"
-                              onClick={handleApplyDiscount}
+                              onClick={() => handleApplyDiscount()}
                               disabled={
                                 isValidatingDiscount || !discountCode.trim()
                               }

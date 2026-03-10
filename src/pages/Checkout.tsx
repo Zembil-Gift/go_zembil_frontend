@@ -19,15 +19,39 @@ import {
 } from "@/components/ui/select";
 import { StateSelect, COUNTRIES } from "@/components/ui/state-select";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, ArrowLeft, CreditCard, Smartphone, Loader2, Gift, Tag, CheckCircle2, XCircle, AlertCircle, MapPin } from "lucide-react";
+import {
+  ShoppingCart,
+  ArrowLeft,
+  CreditCard,
+  Smartphone,
+  Loader2,
+  Gift,
+  Tag,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  MapPin,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { formatPrice, toMinorUnits, getDiscountAmountForDisplay, calculateDiscountedPrice } from "@/lib/currency";
+import {
+  formatPrice,
+  toMinorUnits,
+  getDiscountAmountForDisplay,
+  calculateDiscountedPrice,
+} from "@/lib/currency";
 import { apiService } from "@/services/apiService";
 import { orderService, type CreateOrderRequest } from "@/services/orderService";
-import { discountService, type DiscountValidationResult } from "@/services/discountService";
+import {
+  discountService,
+  type DiscountValidationResult,
+} from "@/services/discountService";
 import { type CartItem } from "@/services/cartService";
-import { getPaymentMethodsForCountry, getDefaultPaymentMethod, type PaymentMethod } from "@/lib/countryConfig";
+import {
+  getPaymentMethodsForCountry,
+  getDefaultPaymentMethod,
+  type PaymentMethod,
+} from "@/lib/countryConfig";
 import { paymentMethodConfigService } from "@/services/paymentMethodConfigService";
 import { LocationPicker, type LocationData } from "@/components/maps";
 import { useCheckoutStore } from "@/stores/checkout-store";
@@ -51,7 +75,7 @@ interface AddressDto {
   contactName?: string;
   contactPhone?: string;
   additionalDetails?: string;
-  type?: 'BILLING' | 'SHIPPING';
+  type?: "BILLING" | "SHIPPING";
   isDefault?: boolean;
   latitude?: number;
   longitude?: number;
@@ -61,12 +85,12 @@ interface AddressDto {
 
 export default function Checkout() {
   const { isAuthenticated, user } = useAuth();
-  const { 
-    cartItems, 
-    cartCurrency, 
+  const {
+    cartItems,
+    cartCurrency,
     getTotalItems,
     appliedDiscountCode,
-    setAppliedDiscountCode
+    setAppliedDiscountCode,
   } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -96,10 +120,17 @@ export default function Checkout() {
 
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
-  const [existingAddressId, setExistingAddressId] = useState<number | null>(null);
-  const [existingBillingAddressId, setExistingBillingAddressId] = useState<number | null>(null);
-  const [orderIdempotencyKey, setOrderIdempotencyKey] = useState<string | null>(null);
-  const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
+  const [existingAddressId, setExistingAddressId] = useState<number | null>(
+    null
+  );
+  const [existingBillingAddressId, setExistingBillingAddressId] = useState<
+    number | null
+  >(null);
+  const [orderIdempotencyKey, setOrderIdempotencyKey] = useState<string | null>(
+    null
+  );
+  const [discountResult, setDiscountResult] =
+    useState<DiscountValidationResult | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   const [discountError, setDiscountError] = useState<string | null>(null);
 
@@ -118,7 +149,8 @@ export default function Checkout() {
     distanceKm?: number;
     vendorLocationAvailable?: boolean;
   }
-  const [deliveryEstimate, setDeliveryEstimate] = useState<DeliveryEstimate | null>(null);
+  const [deliveryEstimate, setDeliveryEstimate] =
+    useState<DeliveryEstimate | null>(null);
   const [isEstimatingDelivery, setIsEstimatingDelivery] = useState(false);
 
   const fetchDeliveryEstimate = async (lat: number, lng: number) => {
@@ -126,26 +158,28 @@ export default function Checkout() {
     setDeliveryEstimate(null);
     try {
       const result = await apiService.postRequest<DeliveryEstimate>(
-        '/api/delivery/estimate/cart',
+        "/api/delivery/estimate/cart",
         { destinationLatitude: lat, destinationLongitude: lng }
       );
       setDeliveryEstimate(result);
     } catch (err: any) {
-      console.warn('Delivery estimate failed:', err?.message);
+      console.warn("Delivery estimate failed:", err?.message);
       setDeliveryEstimate(null);
     } finally {
       setIsEstimatingDelivery(false);
     }
   };
 
-  
   // Determine available payment methods based on user's country AND backend config
-  const userCountry = user?.country || '';
-  const countryPaymentMethods = useMemo(() => getPaymentMethodsForCountry(userCountry), [userCountry]);
+  const userCountry = user?.country || "";
+  const countryPaymentMethods = useMemo(
+    () => getPaymentMethodsForCountry(userCountry),
+    [userCountry]
+  );
 
   // Fetch backend-enabled payment methods
   const { data: backendEnabledMethods } = useQuery({
-    queryKey: ['payment-method-configs'],
+    queryKey: ["payment-method-configs"],
     queryFn: () => paymentMethodConfigService.getAllConfigs(),
     staleTime: 60_000, // Cache for 1 minute
   });
@@ -165,87 +199,145 @@ export default function Checkout() {
     if (availablePaymentMethods.length > 0) return availablePaymentMethods[0];
     return getDefaultPaymentMethod(userCountry);
   }, [availablePaymentMethods, userCountry]);
-  
+
   // selectedPaymentMethod is backed by the checkout store so it survives navigation
   const selectedPaymentMethod: PaymentMethod =
     (storedPaymentMethod as PaymentMethod) || defaultPaymentMethod;
-  const setSelectedPaymentMethod = (method: PaymentMethod) => storeSetSelectedPaymentMethod(method);
-  const [telebirrConversion, setTelebirrConversion] = useState<CurrencyConversionDto | null>(null);
+  const setSelectedPaymentMethod = (method: PaymentMethod) =>
+    storeSetSelectedPaymentMethod(method);
+  const [telebirrConversion, setTelebirrConversion] =
+    useState<CurrencyConversionDto | null>(null);
   const [isConvertingTelebirr, setIsConvertingTelebirr] = useState(false);
-  
+
   const totalItems = getTotalItems();
+  const effectiveDiscountCode = useMemo(() => {
+    const appliedCode = (appliedDiscountCode || "").trim();
+    if (appliedCode) return appliedCode;
+    const checkoutCode = (discountCode || "").trim();
+    return checkoutCode;
+  }, [appliedDiscountCode, discountCode]);
 
-  // Extract product IDs from cart for discount validation
-  const cartProductIds = useMemo(() => {
-    if (!Array.isArray(cartItems)) return [];
-    return cartItems.map((item: CartItem) => item.productId).filter(Boolean);
-  }, [cartItems]);
-
-  const getDiscountedItemTotal = useCallback((item: CartItem) => {
-    const baseUnitPrice = Number(item.unitPrice || 0);
-    const discount = item.product?.activeDiscount;
-    const discountedUnitPrice = discount
-      ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
-      : baseUnitPrice;
-    return discountedUnitPrice * item.quantity;
-  }, [cartCurrency]);
+  const getDiscountedItemTotal = useCallback(
+    (item: CartItem) => {
+      const baseUnitPrice = Number(item.unitPrice || 0);
+      const discount = item.product?.activeDiscount;
+      const discountedUnitPrice = discount
+        ? calculateDiscountedPrice(baseUnitPrice, cartCurrency, discount)
+        : baseUnitPrice;
+      return discountedUnitPrice * item.quantity;
+    },
+    [cartCurrency]
+  );
 
   const effectiveSubtotal = useMemo(() => {
     if (!Array.isArray(cartItems)) return 0;
     return cartItems.reduce((total, item) => {
       const itemTotal = getDiscountedItemTotal(item);
       // Gift wrapping cost from checkout-level selections
-      const itemKey = `${item.productId}-${item.productSkuId || 'default'}`;
+      const itemKey = `${item.productId}-${item.productSkuId || "default"}`;
       const giftSel = itemGiftSelections[itemKey];
-      const giftCost = giftSel?.giftWrapping && item.product?.giftWrapCustomerPrice
-        ? item.product.giftWrapCustomerPrice * item.quantity : 0;
+      const giftCost =
+        giftSel?.giftWrapping && item.product?.giftWrapCustomerPrice
+          ? item.product.giftWrapCustomerPrice * item.quantity
+          : 0;
       return total + itemTotal + giftCost;
     }, 0);
   }, [cartItems, getDiscountedItemTotal, itemGiftSelections]);
 
-  const handleApplyDiscount = useCallback(async (codeOverride?: string) => {
-    const code = (codeOverride || discountCode).trim();
-    if (!code) {
-      setDiscountError("Please enter a discount code");
-      return;
-    }
-    if (!cartCurrency || effectiveSubtotal <= 0) {
-      setDiscountError("Cart is empty or currency not set");
-      return;
-    }
+  const cartOrderItems = useMemo(() => {
+    if (!Array.isArray(cartItems) || !cartCurrency) return [];
 
-    setIsValidatingDiscount(true);
-    setDiscountError(null);
-    setDiscountResult(null);
+    return cartItems
+      .map((item: CartItem) => {
+        const itemTotal = getDiscountedItemTotal(item);
+        const productDetails = item.product as
+          | {
+              categoryId?: number;
+              parentCategoryId?: number;
+              parentCategory?: { id?: number };
+            }
+          | undefined;
 
-    try {
-      const result = await discountService.validateDiscountCode({
-        discountCode: code,
-        orderTotalMinor: toMinorUnits(effectiveSubtotal, cartCurrency),
-        productIds: cartProductIds,
-      });
+        const categoryId =
+          productDetails?.parentCategory?.id ??
+          productDetails?.parentCategoryId ??
+          productDetails?.categoryId ??
+          null;
 
-      if (result.applicable) {
-        setDiscountResult(result);
-        setAppliedDiscountCode(code);
-        setDiscountError(null);
-        toast({
-          title: "Discount Applied",
-          description: `Discount code "${code}" applied successfully!`,
+        if (!item.productId || itemTotal <= 0) return null;
+
+        return {
+          itemId: item.productId,
+          categoryId,
+          itemTotalMinor: toMinorUnits(itemTotal, cartCurrency),
+        };
+      })
+      .filter(
+        (
+          orderItem
+        ): orderItem is {
+          itemId: number;
+          categoryId: number | null;
+          itemTotalMinor: number;
+        } => Boolean(orderItem)
+      );
+  }, [cartItems, cartCurrency, getDiscountedItemTotal]);
+
+  const handleApplyDiscount = useCallback(
+    async (codeOverride?: string) => {
+      const code = (codeOverride || discountCode).trim();
+      if (!code) {
+        setDiscountError("Please enter a discount code");
+        return;
+      }
+      if (!cartCurrency || effectiveSubtotal <= 0) {
+        setDiscountError("Cart is empty or currency not set");
+        return;
+      }
+
+      setIsValidatingDiscount(true);
+      setDiscountError(null);
+      setDiscountResult(null);
+
+      try {
+        const result = await discountService.validateDiscountCode({
+          discountCode: code,
+          orderTotalMinor: toMinorUnits(effectiveSubtotal, cartCurrency),
+          orderItems: cartOrderItems,
         });
-      } else {
+
+        if (result.applicable) {
+          setDiscountResult(result);
+          setAppliedDiscountCode(code);
+          setDiscountError(null);
+          toast({
+            title: "Discount Applied",
+            description: `Discount code "${code}" applied successfully!`,
+          });
+        } else {
+          setDiscountResult(null);
+          setAppliedDiscountCode(null);
+          setDiscountError(
+            result.reason || "Discount code is not valid for this order"
+          );
+        }
+      } catch (error: any) {
         setDiscountResult(null);
         setAppliedDiscountCode(null);
-        setDiscountError(result.reason || "Discount code is not valid for this order");
+        setDiscountError(error?.message || "Failed to validate discount code");
+      } finally {
+        setIsValidatingDiscount(false);
       }
-    } catch (error: any) {
-      setDiscountResult(null);
-      setAppliedDiscountCode(null);
-      setDiscountError(error?.message || "Failed to validate discount code");
-    } finally {
-      setIsValidatingDiscount(false);
-    }
-  }, [discountCode, cartCurrency, effectiveSubtotal, cartProductIds, toast, setAppliedDiscountCode]);
+    },
+    [
+      discountCode,
+      cartCurrency,
+      effectiveSubtotal,
+      cartOrderItems,
+      toast,
+      setAppliedDiscountCode,
+    ]
+  );
 
   const handleRemoveDiscount = useCallback(() => {
     setDiscountResult(null);
@@ -256,15 +348,25 @@ export default function Checkout() {
 
   // Handle automatic discount application from persistent state
   useEffect(() => {
-    if (appliedDiscountCode && 
-        cartCurrency && 
-        effectiveSubtotal > 0 && 
-        !discountResult && 
-        !isValidatingDiscount && 
-        !discountError) {
+    if (
+      appliedDiscountCode &&
+      cartCurrency &&
+      effectiveSubtotal > 0 &&
+      !discountResult &&
+      !isValidatingDiscount &&
+      !discountError
+    ) {
       handleApplyDiscount(appliedDiscountCode);
     }
-  }, [appliedDiscountCode, cartCurrency, effectiveSubtotal, discountResult, isValidatingDiscount, discountError, handleApplyDiscount]);
+  }, [
+    appliedDiscountCode,
+    cartCurrency,
+    effectiveSubtotal,
+    discountResult,
+    isValidatingDiscount,
+    discountError,
+    handleApplyDiscount,
+  ]);
 
   // Update selected payment method when default changes (e.g., user data loads)
   useEffect(() => {
@@ -281,7 +383,8 @@ export default function Checkout() {
   // Final total after discount + delivery fee
   const finalTotal = useMemo(() => {
     const delivery =
-      deliveryEstimate?.withinDeliveryRadius !== false && deliveryEstimate?.deliveryFee != null
+      deliveryEstimate?.withinDeliveryRadius !== false &&
+      deliveryEstimate?.deliveryFee != null
         ? deliveryEstimate.deliveryFee
         : 0;
     return Math.max(0, effectiveSubtotal - discountAmountDisplay + delivery);
@@ -290,10 +393,11 @@ export default function Checkout() {
   useEffect(() => {
     let cancelled = false;
 
-    const shouldConvert = selectedPaymentMethod === 'telebirr'
-      && cartCurrency
-      && cartCurrency.toUpperCase() !== 'ETB'
-      && effectiveSubtotal > 0;
+    const shouldConvert =
+      selectedPaymentMethod === "telebirr" &&
+      cartCurrency &&
+      cartCurrency.toUpperCase() !== "ETB" &&
+      effectiveSubtotal > 0;
 
     if (!shouldConvert) {
       setTelebirrConversion(null);
@@ -305,7 +409,9 @@ export default function Checkout() {
       try {
         setIsConvertingTelebirr(true);
         const result = await apiService.getRequest<CurrencyConversionDto>(
-          `/api/currencies/convert?amount=${encodeURIComponent(effectiveSubtotal)}&from=${encodeURIComponent(cartCurrency)}&to=ETB`
+          `/api/currencies/convert?amount=${encodeURIComponent(
+            effectiveSubtotal
+          )}&from=${encodeURIComponent(cartCurrency)}&to=ETB`
         );
         if (!cancelled) {
           setTelebirrConversion(result);
@@ -333,7 +439,7 @@ export default function Checkout() {
     if (appliedDiscountCode && !discountCode) {
       setDiscountCode(appliedDiscountCode);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appliedDiscountCode]);
 
   useEffect(() => {
@@ -352,9 +458,15 @@ export default function Checkout() {
       if (!isAuthenticated) return;
 
       try {
-        const addresses = await apiService.getRequest<AddressDto[]>('/api/addresses');
-        const shippingAddress = addresses?.find(addr => addr.type === 'SHIPPING');
-        const billingAddress = addresses?.find(addr => addr.type === 'BILLING');
+        const addresses = await apiService.getRequest<AddressDto[]>(
+          "/api/addresses"
+        );
+        const shippingAddress = addresses?.find(
+          (addr) => addr.type === "SHIPPING"
+        );
+        const billingAddress = addresses?.find(
+          (addr) => addr.type === "BILLING"
+        );
 
         if (shippingAddress) {
           setExistingAddressId(shippingAddress.id || null);
@@ -407,7 +519,7 @@ export default function Checkout() {
           }
         }
       } catch (error) {
-        console.log('No existing address found or error fetching:', error);
+        console.log("No existing address found or error fetching:", error);
       } finally {
         setIsLoadingAddress(false);
       }
@@ -419,14 +531,14 @@ export default function Checkout() {
   // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/signin?redirect=/checkout');
+      navigate("/signin?redirect=/checkout");
     }
   }, [isAuthenticated, navigate]);
 
   // Redirect if cart is empty
   useEffect(() => {
     if (isAuthenticated && cartItems.length === 0) {
-      navigate('/shop');
+      navigate("/shop");
     }
   }, [isAuthenticated, cartItems.length, navigate]);
 
@@ -439,7 +551,9 @@ export default function Checkout() {
 
   const handleProceedToPayment = async () => {
     // Validate required fields
-    const hasValidLocation = shippingCoords.latitude != null || (!!shippingInfo.street && !!shippingInfo.city);
+    const hasValidLocation =
+      shippingCoords.latitude != null ||
+      (!!shippingInfo.street && !!shippingInfo.city);
     const isOutsideRadius = deliveryEstimate?.withinDeliveryRadius === false;
     if (!contactPhone || !hasValidLocation) {
       toast({
@@ -454,7 +568,11 @@ export default function Checkout() {
     if (isOutsideRadius) {
       toast({
         title: "Outside Delivery Area",
-        description: `Your delivery address is ${deliveryEstimate?.distanceKm?.toFixed(1)} km from the vendor, which exceeds their ${deliveryEstimate?.vendorDeliveryRadiusKm?.toFixed(0)} km delivery radius. Please choose a closer address.`,
+        description: `Your delivery address is ${deliveryEstimate?.distanceKm?.toFixed(
+          1
+        )} km from the vendor, which exceeds their ${deliveryEstimate?.vendorDeliveryRadiusKm?.toFixed(
+          0
+        )} km delivery radius. Please choose a closer address.`,
         variant: "destructive",
       });
       return;
@@ -465,25 +583,66 @@ export default function Checkout() {
     // Generate idempotency key once for this order attempt
     // If user retries after a failure, we reuse the same key
     let currentIdempotencyKey = orderIdempotencyKey;
-    console.log('Current idempotency key from state:', currentIdempotencyKey);
+    console.log("Current idempotency key from state:", currentIdempotencyKey);
     if (!currentIdempotencyKey) {
       currentIdempotencyKey = crypto.randomUUID();
-      console.log('Generated NEW idempotency key:', currentIdempotencyKey);
+      console.log("Generated NEW idempotency key:", currentIdempotencyKey);
       setOrderIdempotencyKey(currentIdempotencyKey);
     } else {
-      console.log('REUSING existing idempotency key:', currentIdempotencyKey);
+      console.log("REUSING existing idempotency key:", currentIdempotencyKey);
     }
 
     try {
+      let confirmedDiscountCode: string | null = null;
+
+      if (effectiveDiscountCode) {
+        setIsValidatingDiscount(true);
+        setDiscountError(null);
+
+        try {
+          const validationResult = await discountService.validateDiscountCode({
+            discountCode: effectiveDiscountCode,
+            orderTotalMinor: toMinorUnits(effectiveSubtotal, cartCurrency),
+            orderItems: cartOrderItems,
+          });
+
+          if (!validationResult.applicable) {
+            setDiscountResult(null);
+            setAppliedDiscountCode(null);
+            setDiscountCode("");
+            setDiscountError(
+              validationResult.reason ||
+                "Discount code is not valid for this order"
+            );
+            toast({
+              title: "Discount Invalid",
+              description:
+                validationResult.reason ||
+                "Your discount code could not be applied. Please review it and try again.",
+              variant: "destructive",
+            });
+            setIsCreatingOrder(false);
+            return;
+          }
+
+          confirmedDiscountCode =
+            validationResult.discountCode || effectiveDiscountCode;
+          setDiscountResult(validationResult);
+          setAppliedDiscountCode(confirmedDiscountCode);
+        } finally {
+          setIsValidatingDiscount(false);
+        }
+      }
+
       let shippingAddressId: number;
 
       const addressPayload: AddressDto = {
-        street: shippingInfo.street || shippingCoords.formattedAddress || '',
-        city: shippingInfo.city || shippingInfo.state || 'N/A',
-        state: shippingInfo.state || shippingInfo.city || 'N/A',
-        postalCode: shippingInfo.postalCode || '',
-        country: shippingInfo.country || '',
-        type: 'SHIPPING',
+        street: shippingInfo.street || shippingCoords.formattedAddress || "",
+        city: shippingInfo.city || shippingInfo.state || "N/A",
+        state: shippingInfo.state || shippingInfo.city || "N/A",
+        postalCode: shippingInfo.postalCode || "",
+        country: shippingInfo.country || "",
+        type: "SHIPPING",
         isDefault: true,
         latitude: shippingCoords.latitude,
         longitude: shippingCoords.longitude,
@@ -493,46 +652,49 @@ export default function Checkout() {
 
       if (existingAddressId) {
         // Update existing shipping address
-        console.log('Updating existing shipping address:', existingAddressId);
+        console.log("Updating existing shipping address:", existingAddressId);
         const updatedAddress = await apiService.putRequest<AddressDto>(
           `/api/addresses/${existingAddressId}`,
           addressPayload
         );
         shippingAddressId = updatedAddress.id!;
-        console.log('Updated shipping address:', updatedAddress);
+        console.log("Updated shipping address:", updatedAddress);
       } else {
         // Create new shipping address
-        console.log('Creating new shipping address...');
+        console.log("Creating new shipping address...");
         const savedAddress = await apiService.postRequest<AddressDto>(
-          '/api/addresses/type/SHIPPING',
+          "/api/addresses/type/SHIPPING",
           addressPayload
         );
 
         if (!savedAddress.id) {
-          throw new Error('Failed to create shipping address - no ID returned');
+          throw new Error("Failed to create shipping address - no ID returned");
         }
         shippingAddressId = savedAddress.id;
-        console.log('Created shipping address with ID:', shippingAddressId);
+        console.log("Created shipping address with ID:", shippingAddressId);
       }
 
       // Handle billing address
       let billingAddressId: number | undefined;
-      
+
       if (sameAsShipping) {
         // Create billing address with same data as shipping
         const billingPayload: AddressDto = {
           street: shippingInfo.street,
           city: shippingInfo.city,
           state: shippingInfo.state || shippingInfo.city,
-          postalCode: shippingInfo.postalCode || '',
+          postalCode: shippingInfo.postalCode || "",
           country: shippingInfo.country,
-          type: 'BILLING',
+          type: "BILLING",
           isDefault: false,
         };
 
         if (existingBillingAddressId) {
           // Update existing billing address with shipping data
-          console.log('Updating billing address with shipping data:', existingBillingAddressId);
+          console.log(
+            "Updating billing address with shipping data:",
+            existingBillingAddressId
+          );
           const updatedBillingAddress = await apiService.putRequest<AddressDto>(
             `/api/addresses/${existingBillingAddressId}`,
             billingPayload
@@ -540,15 +702,15 @@ export default function Checkout() {
           billingAddressId = updatedBillingAddress.id!;
         } else {
           // Create new billing address with shipping data
-          console.log('Creating billing address with same data as shipping...');
+          console.log("Creating billing address with same data as shipping...");
           const savedBillingAddress = await apiService.postRequest<AddressDto>(
-            '/api/addresses/type/BILLING',
+            "/api/addresses/type/BILLING",
             billingPayload
           );
           billingAddressId = savedBillingAddress.id;
           setExistingBillingAddressId(billingAddressId || null);
         }
-        console.log('Billing address (same as shipping) ID:', billingAddressId);
+        console.log("Billing address (same as shipping) ID:", billingAddressId);
       } else {
         // Different billing address - validate and create/update
         if (!billingInfo.street || !billingInfo.city || !billingInfo.country) {
@@ -565,15 +727,18 @@ export default function Checkout() {
           street: billingInfo.street,
           city: billingInfo.city,
           state: billingInfo.state || billingInfo.city,
-          postalCode: billingInfo.postalCode || '',
+          postalCode: billingInfo.postalCode || "",
           country: billingInfo.country,
-          type: 'BILLING',
+          type: "BILLING",
           isDefault: false,
         };
 
         if (existingBillingAddressId) {
           // Update existing billing address
-          console.log('Updating existing billing address:', existingBillingAddressId);
+          console.log(
+            "Updating existing billing address:",
+            existingBillingAddressId
+          );
           const updatedBillingAddress = await apiService.putRequest<AddressDto>(
             `/api/addresses/${existingBillingAddressId}`,
             billingPayload
@@ -581,28 +746,28 @@ export default function Checkout() {
           billingAddressId = updatedBillingAddress.id!;
         } else {
           // Create new billing address
-          console.log('Creating new billing address...');
+          console.log("Creating new billing address...");
           const savedBillingAddress = await apiService.postRequest<AddressDto>(
-            '/api/addresses/type/BILLING',
+            "/api/addresses/type/BILLING",
             billingPayload
           );
           billingAddressId = savedBillingAddress.id;
         }
-        console.log('Billing address ID:', billingAddressId);
+        console.log("Billing address ID:", billingAddressId);
       }
 
       // Build per-item gift options from checkout selections
-      const itemGiftOptions = Object.entries(itemGiftSelections)
-        .filter(([, sel]) => sel.giftWrapping)
-        .map(([key, sel]) => {
-          const [productId, skuPart] = key.split('-');
-          return {
-            productId: Number(productId),
-            productSkuId: skuPart !== 'default' ? Number(skuPart) : undefined,
-            giftWrapping: true,
-            giftMessage: sel.giftMessage || undefined,
-          };
-        });
+      const itemGiftOptions = cartItems.map((item: CartItem) => {
+        const itemKey = `${item.productId}-${item.productSkuId || "default"}`;
+        const selection = itemGiftSelections[itemKey];
+
+        return {
+          productId: item.productId,
+          productSkuId: item.productSkuId || undefined,
+          giftWrapping: selection?.giftWrapping === true,
+          giftMessage: selection?.giftMessage?.trim() || null,
+        };
+      });
 
       // Create order with address IDs
       const orderData: CreateOrderRequest = {
@@ -610,25 +775,38 @@ export default function Checkout() {
         billingAddressId: billingAddressId, // undefined when sameAsShipping=true, backend will handle this
         contactEmail: contactEmail || undefined,
         contactPhone: contactPhone || undefined,
-        itemGiftOptions: itemGiftOptions.length > 0 ? itemGiftOptions : undefined,
-        discountCode: discountCode || undefined,
+        giftOptions: {
+          giftWrap: false,
+          cardMessage: null,
+        },
+        itemGiftOptions,
+        discountCode: confirmedDiscountCode,
       };
 
-      console.log('Creating order with data:', orderData);
-      console.log('Using idempotency key for API call:', currentIdempotencyKey);
-      const orderResponse = await orderService.placeOrder(orderData, currentIdempotencyKey);
+      console.log("Creating order with data:", orderData);
+      console.log("Using idempotency key for API call:", currentIdempotencyKey);
+      const orderResponse = await orderService.placeOrder(
+        orderData,
+        currentIdempotencyKey
+      );
 
-      console.log('Order created - full response:', JSON.stringify(orderResponse, null, 2));
+      console.log(
+        "Order created - full response:",
+        JSON.stringify(orderResponse, null, 2)
+      );
 
       const orderId = (orderResponse as any).orderId;
       if (!orderId) {
-        console.error('Order response missing ID:', orderResponse);
-        throw new Error('Order created but no order ID returned. Please check your orders.');
+        console.error("Order response missing ID:", orderResponse);
+        throw new Error(
+          "Order created but no order ID returned. Please check your orders."
+        );
       }
 
       toast({
         title: "Order Created",
-        description: "Your order has been created. Please review the details before payment.",
+        description:
+          "Your order has been created. Please review the details before payment.",
       });
 
       // Reset idempotency key for next order
@@ -638,13 +816,15 @@ export default function Checkout() {
       clearCheckout();
 
       // Navigate to order review page before payment
-      navigate(`/order-review?orderId=${orderId}&paymentMethod=${selectedPaymentMethod}`);
-
+      navigate(
+        `/order-review?orderId=${orderId}&paymentMethod=${selectedPaymentMethod}`
+      );
     } catch (error: any) {
-      console.error('Failed to create order:', error);
+      console.error("Failed to create order:", error);
       toast({
         title: "Order Creation Failed",
-        description: error.message || "Failed to create order. Please try again.",
+        description:
+          error.message || "Failed to create order. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -667,7 +847,7 @@ export default function Checkout() {
         <div className="mb-8">
           <Button
             variant="ghost"
-            onClick={() => navigate('/cart')}
+            onClick={() => navigate("/cart")}
             className="mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -729,7 +909,8 @@ export default function Checkout() {
                     Delivery Location *
                   </Label>
                   <p className="text-xs text-gray-500">
-                    Click on the map or use search to pin your exact delivery location
+                    Click on the map or use search to pin your exact delivery
+                    location
                   </p>
                   <LocationPicker
                     latitude={shippingCoords.latitude}
@@ -760,8 +941,12 @@ export default function Checkout() {
                     <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-emerald-800">Delivery location confirmed</p>
-                        <p className="text-sm text-emerald-700 mt-0.5">{shippingCoords.formattedAddress}</p>
+                        <p className="text-sm font-medium text-emerald-800">
+                          Delivery location confirmed
+                        </p>
+                        <p className="text-sm text-emerald-700 mt-0.5">
+                          {shippingCoords.formattedAddress}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -784,7 +969,9 @@ export default function Checkout() {
                   <Checkbox
                     id="sameAsShipping"
                     checked={sameAsShipping}
-                    onCheckedChange={(checked) => setSameAsShipping(checked === true)}
+                    onCheckedChange={(checked) =>
+                      setSameAsShipping(checked === true)
+                    }
                   />
                   <Label htmlFor="sameAsShipping" className="cursor-pointer">
                     Same as shipping address
@@ -823,7 +1010,9 @@ export default function Checkout() {
                           <StateSelect
                             id="billingState"
                             value={billingInfo.state}
-                            onValueChange={(value) => setBillingInfo({ ...billingInfo, state: value })}
+                            onValueChange={(value) =>
+                              setBillingInfo({ ...billingInfo, state: value })
+                            }
                           />
                         </div>
                       )}
@@ -845,7 +1034,11 @@ export default function Checkout() {
                         <Select
                           value={billingInfo.country}
                           onValueChange={(value) => {
-                            setBillingInfo({ ...billingInfo, country: value, state: "" });
+                            setBillingInfo({
+                              ...billingInfo,
+                              country: value,
+                              state: "",
+                            });
                           }}
                         >
                           <SelectTrigger id="billingCountry">
@@ -853,7 +1046,10 @@ export default function Checkout() {
                           </SelectTrigger>
                           <SelectContent>
                             {COUNTRIES.map((country) => (
-                              <SelectItem key={country.value} value={country.value}>
+                              <SelectItem
+                                key={country.value}
+                                value={country.value}
+                              >
                                 {country.label}
                               </SelectItem>
                             ))}
@@ -876,66 +1072,99 @@ export default function Checkout() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Per-item gift wrapping toggles */}
-                {cartItems.some((item: CartItem) => item.product?.giftWrappable) && (
+                {cartItems.some(
+                  (item: CartItem) => item.product?.giftWrappable
+                ) && (
                   <div className="space-y-3">
                     <p className="text-sm text-gray-600 font-medium">
                       Gift Wrapping
                     </p>
-                    {cartItems.filter((item: CartItem) => item.product?.giftWrappable).map((item: CartItem) => {
-                      const itemKey = `${item.productId}-${item.productSkuId || 'default'}`;
-                      const sel = itemGiftSelections[itemKey] || { giftWrapping: false, giftMessage: '' };
-                      return (
-                        <div key={itemKey} className="p-3 rounded-lg border border-gray-100 bg-gray-50/50 space-y-2">
-                          <div className="flex items-start gap-2">
-                            <Checkbox
-                              id={`gift-wrap-${itemKey}`}
-                              checked={sel.giftWrapping}
-                              onCheckedChange={(checked) => {
-                                setItemGiftSelections({
-                                  ...itemGiftSelections,
-                                  [itemKey]: { ...sel, giftWrapping: checked === true },
-                                });
-                              }}
-                            />
-                            <div className="flex-1">
-                              <Label htmlFor={`gift-wrap-${itemKey}`} className="cursor-pointer text-sm font-medium">
-                                {item.productName || item.product?.name}
-                                {item.product?.giftWrapCustomerPrice && item.product.giftWrapCustomerPrice > 0 && (
-                                  <span className="text-green-600 font-semibold ml-1">
-                                    (+{formatPrice(item.product.giftWrapCustomerPrice, item.product.giftWrapCurrencyCode || cartCurrency)} per item)
-                                  </span>
-                                )}
-                                {(!item.product?.giftWrapCustomerPrice || item.product.giftWrapCustomerPrice === 0) && (
-                                  <span className="text-green-600 font-medium ml-1">— Free</span>
-                                )}
-                              </Label>
-                              {item.quantity > 1 && (
-                                <p className="text-xs text-muted-foreground">× {item.quantity}</p>
-                              )}
-                            </div>
-                          </div>
-                          {sel.giftWrapping && (
-                            <div className="pl-6">
-                              <Textarea
-                                value={sel.giftMessage}
-                                onChange={(e) => {
+                    {cartItems
+                      .filter((item: CartItem) => item.product?.giftWrappable)
+                      .map((item: CartItem) => {
+                        const itemKey = `${item.productId}-${
+                          item.productSkuId || "default"
+                        }`;
+                        const sel = itemGiftSelections[itemKey] || {
+                          giftWrapping: false,
+                          giftMessage: "",
+                        };
+                        return (
+                          <div
+                            key={itemKey}
+                            className="p-3 rounded-lg border border-gray-100 bg-gray-50/50 space-y-2"
+                          >
+                            <div className="flex items-start gap-2">
+                              <Checkbox
+                                id={`gift-wrap-${itemKey}`}
+                                checked={sel.giftWrapping}
+                                onCheckedChange={(checked) => {
                                   setItemGiftSelections({
                                     ...itemGiftSelections,
-                                    [itemKey]: { ...sel, giftMessage: e.target.value },
+                                    [itemKey]: {
+                                      ...sel,
+                                      giftWrapping: checked === true,
+                                    },
                                   });
                                 }}
-                                placeholder="Write a personal gift message (optional)..."
-                                rows={2}
-                                className="resize-none text-sm"
                               />
+                              <div className="flex-1">
+                                <Label
+                                  htmlFor={`gift-wrap-${itemKey}`}
+                                  className="cursor-pointer text-sm font-medium"
+                                >
+                                  {item.productName || item.product?.name}
+                                  {item.product?.giftWrapCustomerPrice &&
+                                    item.product.giftWrapCustomerPrice > 0 && (
+                                      <span className="text-green-600 font-semibold ml-1">
+                                        (+
+                                        {formatPrice(
+                                          item.product.giftWrapCustomerPrice,
+                                          item.product.giftWrapCurrencyCode ||
+                                            cartCurrency
+                                        )}{" "}
+                                        per item)
+                                      </span>
+                                    )}
+                                  {(!item.product?.giftWrapCustomerPrice ||
+                                    item.product.giftWrapCustomerPrice ===
+                                      0) && (
+                                    <span className="text-green-600 font-medium ml-1">
+                                      — Free
+                                    </span>
+                                  )}
+                                </Label>
+                                {item.quantity > 1 && (
+                                  <p className="text-xs text-muted-foreground">
+                                    × {item.quantity}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                            {sel.giftWrapping && (
+                              <div className="pl-6">
+                                <Textarea
+                                  value={sel.giftMessage}
+                                  onChange={(e) => {
+                                    setItemGiftSelections({
+                                      ...itemGiftSelections,
+                                      [itemKey]: {
+                                        ...sel,
+                                        giftMessage: e.target.value,
+                                      },
+                                    });
+                                  }}
+                                  placeholder="Write a personal gift message (optional)..."
+                                  rows={2}
+                                  className="resize-none text-sm"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                   </div>
                 )}
-
               </CardContent>
             </Card>
 
@@ -958,7 +1187,8 @@ export default function Checkout() {
                             Code "{discountCode}" applied
                           </p>
                           <p className="text-xs text-green-600">
-                            You save {formatPrice(discountAmountDisplay, cartCurrency)}
+                            You save{" "}
+                            {formatPrice(discountAmountDisplay, cartCurrency)}
                           </p>
                         </div>
                       </div>
@@ -982,8 +1212,12 @@ export default function Checkout() {
                           setDiscountCode(e.target.value);
                           setDiscountError(null);
                         }}
-                        onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()}
-                        className={`flex-1 ${discountError ? 'border-red-300' : ''}`}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handleApplyDiscount()
+                        }
+                        className={`flex-1 ${
+                          discountError ? "border-red-300" : ""
+                        }`}
                         disabled={isValidatingDiscount}
                       />
                       <Button
@@ -995,7 +1229,7 @@ export default function Checkout() {
                         {isValidatingDiscount ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          'Apply Code'
+                          "Apply Code"
                         )}
                       </Button>
                     </div>
@@ -1020,20 +1254,24 @@ export default function Checkout() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Stripe Option - Only show for non-Ethiopian users */}
-                {availablePaymentMethods.includes('stripe') && (
-                  <div 
+                {availablePaymentMethods.includes("stripe") && (
+                  <div
                     className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      selectedPaymentMethod === 'stripe' 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-200 hover:border-gray-300'
+                      selectedPaymentMethod === "stripe"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
-                    onClick={() => setSelectedPaymentMethod('stripe')}
+                    onClick={() => setSelectedPaymentMethod("stripe")}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        selectedPaymentMethod === 'stripe' ? 'border-blue-500' : 'border-gray-300'
-                      }`}>
-                        {selectedPaymentMethod === 'stripe' && (
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          selectedPaymentMethod === "stripe"
+                            ? "border-blue-500"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {selectedPaymentMethod === "stripe" && (
                           <div className="w-3 h-3 rounded-full bg-blue-500" />
                         )}
                       </div>
@@ -1041,7 +1279,9 @@ export default function Checkout() {
                         <div className="flex items-center gap-2">
                           <CreditCard className="h-5 w-5 text-blue-600" />
                           <span className="font-medium">Stripe</span>
-                          <span className="text-xs text-gray-500">(International)</span>
+                          <span className="text-xs text-gray-500">
+                            (International)
+                          </span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                           Credit/Debit Cards, Apple Pay, Google Pay, PayPal
@@ -1052,20 +1292,24 @@ export default function Checkout() {
                 )}
 
                 {/* Chapa Option - Only show for Ethiopian users */}
-                {availablePaymentMethods.includes('chapa') && (
-                  <div 
+                {availablePaymentMethods.includes("chapa") && (
+                  <div
                     className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      selectedPaymentMethod === 'chapa' 
-                        ? 'border-green-500 bg-green-50' 
-                        : 'border-gray-200 hover:border-gray-300'
+                      selectedPaymentMethod === "chapa"
+                        ? "border-green-500 bg-green-50"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
-                    onClick={() => setSelectedPaymentMethod('chapa')}
+                    onClick={() => setSelectedPaymentMethod("chapa")}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        selectedPaymentMethod === 'chapa' ? 'border-green-500' : 'border-gray-300'
-                      }`}>
-                        {selectedPaymentMethod === 'chapa' && (
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          selectedPaymentMethod === "chapa"
+                            ? "border-green-500"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {selectedPaymentMethod === "chapa" && (
                           <div className="w-3 h-3 rounded-full bg-green-500" />
                         )}
                       </div>
@@ -1073,7 +1317,9 @@ export default function Checkout() {
                         <div className="flex items-center gap-2">
                           <Smartphone className="h-5 w-5 text-green-600" />
                           <span className="font-medium">Chapa</span>
-                          <span className="text-xs text-gray-500">(Ethiopia)</span>
+                          <span className="text-xs text-gray-500">
+                            (Ethiopia)
+                          </span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                           CBE Birr, M-Pesa, Awash Bank, Bank Transfer
@@ -1084,20 +1330,24 @@ export default function Checkout() {
                 )}
 
                 {/* TeleBirr Option - Only show for Ethiopian users */}
-                {availablePaymentMethods.includes('telebirr') && (
-                  <div 
+                {availablePaymentMethods.includes("telebirr") && (
+                  <div
                     className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      selectedPaymentMethod === 'telebirr' 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-200 hover:border-gray-300'
+                      selectedPaymentMethod === "telebirr"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
-                    onClick={() => setSelectedPaymentMethod('telebirr')}
+                    onClick={() => setSelectedPaymentMethod("telebirr")}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        selectedPaymentMethod === 'telebirr' ? 'border-blue-500' : 'border-gray-300'
-                      }`}>
-                        {selectedPaymentMethod === 'telebirr' && (
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          selectedPaymentMethod === "telebirr"
+                            ? "border-blue-500"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {selectedPaymentMethod === "telebirr" && (
                           <div className="w-3 h-3 rounded-full bg-blue-500" />
                         )}
                       </div>
@@ -1105,7 +1355,9 @@ export default function Checkout() {
                         <div className="flex items-center gap-2">
                           <Smartphone className="h-5 w-5 text-blue-600" />
                           <span className="font-medium">TeleBirr</span>
-                          <span className="text-xs text-gray-500">(Ethiopia)</span>
+                          <span className="text-xs text-gray-500">
+                            (Ethiopia)
+                          </span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                           TeleBirr Wallet, Bank Account, Cards
@@ -1120,12 +1372,11 @@ export default function Checkout() {
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      No payment methods are currently available. Please try again later or contact support.
+                      No payment methods are currently available. Please try
+                      again later or contact support.
                     </AlertDescription>
                   </Alert>
                 )}
-
-               
               </CardContent>
             </Card>
           </div>
@@ -1139,85 +1390,125 @@ export default function Checkout() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {cartItems.map((item: CartItem) => {
-                  const images = item.product?.images as Array<{ id: number; url: string; fullUrl?: string; isPrimary: boolean; sortOrder: number }> | undefined;
-                  const imageUrl = images?.[0]?.fullUrl || 
-                                   images?.[0]?.url || 
-                                   item.product?.cover || 
-                                   item.productImage || '';
-                  
+                  const images = item.product?.images as
+                    | Array<{
+                        id: number;
+                        url: string;
+                        fullUrl?: string;
+                        isPrimary: boolean;
+                        sortOrder: number;
+                      }>
+                    | undefined;
+                  const imageUrl =
+                    images?.[0]?.fullUrl ||
+                    images?.[0]?.url ||
+                    item.product?.cover ||
+                    item.productImage ||
+                    "";
+
                   return (
-                  <div key={item.id} className="flex gap-4">
-                    <div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden">
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={item.productName || item.product?.name || "Product"}
-                          className="w-full h-full object-cover"
-                          onError={(e) => { 
-                            e.currentTarget.classList.add('hidden'); 
-                            const fallback = e.currentTarget.nextElementSibling; 
-                            if (fallback) fallback.classList.remove('hidden'); 
-                          }}
-                        />
-                      ) : null}
-                      <div className={`w-full h-full bg-gray-100 rounded-md flex items-center justify-center ${imageUrl ? 'hidden' : ''}`}>
-                        <div className="text-center text-gray-400">
-                          <p className="text-xs">No image</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex-1">
-                      <h4 className="font-medium line-clamp-2">
-                        {item.productName || item.product?.name || `Product #${item.productId}`}
-                      </h4>
-                      {item.productSku?.attributes && item.productSku.attributes.length > 0 && (
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {item.productSku.attributes.map(attr => `${attr.name}: ${attr.value}`).join(', ')}
-                        </p>
-                      )}
-                      {(() => {
-                        const itemKey = `${item.productId}-${item.productSkuId || 'default'}`;
-                        const giftSel = itemGiftSelections[itemKey];
-                        return giftSel?.giftWrapping ? (
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <Gift className="h-3 w-3 text-green-600" />
-                            <span className="text-xs text-green-600 font-medium">
-                              Gift wrapped
-                              {item.product?.giftWrapCustomerPrice && item.product.giftWrapCustomerPrice > 0 && (
-                                <> (+{formatPrice(item.product.giftWrapCustomerPrice, item.product.giftWrapCurrencyCode || cartCurrency)})</>
-                              )}
-                            </span>
+                    <div key={item.id} className="flex gap-4">
+                      <div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={
+                              item.productName ||
+                              item.product?.name ||
+                              "Product"
+                            }
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.classList.add("hidden");
+                              const fallback =
+                                e.currentTarget.nextElementSibling;
+                              if (fallback) fallback.classList.remove("hidden");
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`w-full h-full bg-gray-100 rounded-md flex items-center justify-center ${
+                            imageUrl ? "hidden" : ""
+                          }`}
+                        >
+                          <div className="text-center text-gray-400">
+                            <p className="text-xs">No image</p>
                           </div>
-                        ) : null;
-                      })()}
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-sm text-gray-600">
-                          Qty: {item.quantity}
-                        </span>
-                        <div className="text-right">
-                          {(() => {
-                            const lineTotal = getDiscountedItemTotal(item);
-                            const originalLineTotal = Number(item.unitPrice || 0) * item.quantity;
-                            const hasDiscount = lineTotal < originalLineTotal;
+                        </div>
+                      </div>
 
-                            return (
-                              <>
-                                <p className="font-semibold">
-                                  {formatPrice(lineTotal, cartCurrency)}
-                                </p>
-                                {hasDiscount && (
-                                  <p className="text-xs text-gray-500 line-through">
-                                    {formatPrice(originalLineTotal, cartCurrency)}
+                      <div className="flex-1">
+                        <h4 className="font-medium line-clamp-2">
+                          {item.productName ||
+                            item.product?.name ||
+                            `Product #${item.productId}`}
+                        </h4>
+                        {item.productSku?.attributes &&
+                          item.productSku.attributes.length > 0 && (
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {item.productSku.attributes
+                                .map((attr) => `${attr.name}: ${attr.value}`)
+                                .join(", ")}
+                            </p>
+                          )}
+                        {(() => {
+                          const itemKey = `${item.productId}-${
+                            item.productSkuId || "default"
+                          }`;
+                          const giftSel = itemGiftSelections[itemKey];
+                          return giftSel?.giftWrapping ? (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Gift className="h-3 w-3 text-green-600" />
+                              <span className="text-xs text-green-600 font-medium">
+                                Gift wrapped
+                                {item.product?.giftWrapCustomerPrice &&
+                                  item.product.giftWrapCustomerPrice > 0 && (
+                                    <>
+                                      {" "}
+                                      (+
+                                      {formatPrice(
+                                        item.product.giftWrapCustomerPrice,
+                                        item.product.giftWrapCurrencyCode ||
+                                          cartCurrency
+                                      )}
+                                      )
+                                    </>
+                                  )}
+                              </span>
+                            </div>
+                          ) : null;
+                        })()}
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-sm text-gray-600">
+                            Qty: {item.quantity}
+                          </span>
+                          <div className="text-right">
+                            {(() => {
+                              const lineTotal = getDiscountedItemTotal(item);
+                              const originalLineTotal =
+                                Number(item.unitPrice || 0) * item.quantity;
+                              const hasDiscount = lineTotal < originalLineTotal;
+
+                              return (
+                                <>
+                                  <p className="font-semibold">
+                                    {formatPrice(lineTotal, cartCurrency)}
                                   </p>
-                                )}
-                              </>
-                            );
-                          })()}
+                                  {hasDiscount && (
+                                    <p className="text-xs text-gray-500 line-through">
+                                      {formatPrice(
+                                        originalLineTotal,
+                                        cartCurrency
+                                      )}
+                                    </p>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
                   );
                 })}
 
@@ -1227,26 +1518,30 @@ export default function Checkout() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal</span>
                   <span>
-                    {selectedPaymentMethod === 'telebirr' && telebirrConversion
-                      ? formatPrice(telebirrConversion.convertedAmount, 'ETB')
+                    {selectedPaymentMethod === "telebirr" && telebirrConversion
+                      ? formatPrice(telebirrConversion.convertedAmount, "ETB")
                       : formatPrice(effectiveSubtotal, cartCurrency)}
                   </span>
                 </div>
 
                 {/* Gift Wrapping Fee */}
                 {cartItems.some((item: CartItem) => {
-                  const itemKey = `${item.productId}-${item.productSkuId || 'default'}`;
+                  const itemKey = `${item.productId}-${
+                    item.productSkuId || "default"
+                  }`;
                   const giftSel = itemGiftSelections[itemKey];
-                  return giftSel?.giftWrapping && item.product?.giftWrapCustomerPrice && item.product.giftWrapCustomerPrice > 0;
+                  return (
+                    giftSel?.giftWrapping &&
+                    item.product?.giftWrapCustomerPrice &&
+                    item.product.giftWrapCustomerPrice > 0
+                  );
                 }) && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 flex items-center gap-1">
                       <Gift className="h-3 w-3" />
                       Gift Wrapping
                     </span>
-                    <span className="text-green-600">
-                      Included in subtotal
-                    </span>
+                    <span className="text-green-600">Included in subtotal</span>
                   </div>
                 )}
 
@@ -1259,17 +1554,31 @@ export default function Checkout() {
                   <span className="font-medium">
                     {isEstimatingDelivery ? (
                       <span className="flex items-center gap-1 text-gray-400">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Calculating...
+                        <Loader2 className="h-3 w-3 animate-spin" />{" "}
+                        Calculating...
                       </span>
                     ) : deliveryEstimate?.deliveryFee != null ? (
-                      <span className={deliveryEstimate.withinDeliveryRadius === false ? 'text-red-500' : 'text-gray-900'}>
-                        {formatPrice(deliveryEstimate.deliveryFee, deliveryEstimate.currencyCode || cartCurrency)}
+                      <span
+                        className={
+                          deliveryEstimate.withinDeliveryRadius === false
+                            ? "text-red-500"
+                            : "text-gray-900"
+                        }
+                      >
+                        {formatPrice(
+                          deliveryEstimate.deliveryFee,
+                          deliveryEstimate.currencyCode || cartCurrency
+                        )}
                         {deliveryEstimate.distanceText && (
-                          <span className="text-xs text-gray-400 ml-1">({deliveryEstimate.distanceText})</span>
+                          <span className="text-xs text-gray-400 ml-1">
+                            ({deliveryEstimate.distanceText})
+                          </span>
                         )}
                       </span>
                     ) : (
-                      <span className="text-gray-400 text-xs">Select location</span>
+                      <span className="text-gray-400 text-xs">
+                        Select location
+                      </span>
                     )}
                   </span>
                 </div>
@@ -1279,9 +1588,15 @@ export default function Checkout() {
                   <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                     <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs font-medium text-red-700">Outside delivery area</p>
+                      <p className="text-xs font-medium text-red-700">
+                        Outside delivery area
+                      </p>
                       <p className="text-xs text-red-600">
-                        Your address is {deliveryEstimate.distanceKm?.toFixed(1)} km away. This vendor only delivers within {deliveryEstimate.vendorDeliveryRadiusKm?.toFixed(0)} km.
+                        Your address is{" "}
+                        {deliveryEstimate.distanceKm?.toFixed(1)} km away. This
+                        vendor only delivers within{" "}
+                        {deliveryEstimate.vendorDeliveryRadiusKm?.toFixed(0)}{" "}
+                        km.
                       </p>
                     </div>
                   </div>
@@ -1294,46 +1609,61 @@ export default function Checkout() {
                       <Tag className="h-3 w-3" />
                       Discount ({discountCode})
                     </span>
-                    <span>-{formatPrice(discountAmountDisplay, cartCurrency)}</span>
+                    <span>
+                      -{formatPrice(discountAmountDisplay, cartCurrency)}
+                    </span>
                   </div>
                 )}
-            
+
                 {/* Estimated Total */}
                 <div className="flex justify-between font-semibold text-lg pt-2">
                   <span>Estimated Total</span>
                   <span className="text-ethiopian-gold">
-                    {selectedPaymentMethod === 'telebirr' && telebirrConversion
+                    {selectedPaymentMethod === "telebirr" && telebirrConversion
                       ? formatPrice(
-                          Math.max(0, telebirrConversion.convertedAmount - (discountAmountDisplay * (telebirrConversion.rate || 1))),
-                          'ETB'
+                          Math.max(
+                            0,
+                            telebirrConversion.convertedAmount -
+                              discountAmountDisplay *
+                                (telebirrConversion.rate || 1)
+                          ),
+                          "ETB"
                         )
                       : formatPrice(finalTotal, cartCurrency)}
                   </span>
                 </div>
 
-                {selectedPaymentMethod === 'telebirr' && cartCurrency?.toUpperCase() !== 'ETB' && (
-                  <div className="text-xs text-blue-700 bg-blue-50 rounded-md p-2">
-                    {isConvertingTelebirr && (
-                      <span>Converting total to ETB for TeleBirr...</span>
-                    )}
-                    {!isConvertingTelebirr && telebirrConversion && (
-                      <span>
-                        TeleBirr charges in ETB. Converted from {cartCurrency} at rate {telebirrConversion.rate}.
-                      </span>
-                    )}
-                    {!isConvertingTelebirr && !telebirrConversion && (
-                      <span>TeleBirr charges in ETB. Unable to fetch conversion rate right now.</span>
-                    )}
-                  </div>
-                )}
+                {selectedPaymentMethod === "telebirr" &&
+                  cartCurrency?.toUpperCase() !== "ETB" && (
+                    <div className="text-xs text-blue-700 bg-blue-50 rounded-md p-2">
+                      {isConvertingTelebirr && (
+                        <span>Converting total to ETB for TeleBirr...</span>
+                      )}
+                      {!isConvertingTelebirr && telebirrConversion && (
+                        <span>
+                          TeleBirr charges in ETB. Converted from {cartCurrency}{" "}
+                          at rate {telebirrConversion.rate}.
+                        </span>
+                      )}
+                      {!isConvertingTelebirr && !telebirrConversion && (
+                        <span>
+                          TeleBirr charges in ETB. Unable to fetch conversion
+                          rate right now.
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                 <Button
                   onClick={handleProceedToPayment}
-                  disabled={isCreatingOrder || deliveryEstimate?.withinDeliveryRadius === false}
+                  disabled={
+                    isCreatingOrder ||
+                    deliveryEstimate?.withinDeliveryRadius === false
+                  }
                   className={`w-full h-12 text-lg mt-4 ${
                     deliveryEstimate?.withinDeliveryRadius === false
-                      ? 'opacity-50 cursor-not-allowed'
-                      : ''
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
                   }`}
                 >
                   {isCreatingOrder ? (

@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import { useState, useMemo, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
   ArrowLeft,
   Package,
   FileText,
@@ -19,40 +19,52 @@ import {
   ChevronRight,
   Tag,
   CheckCircle2,
-  XCircle
-} from 'lucide-react';
+  XCircle,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import ProtectedRoute from '@/components/protected-route';
-import { DiscountBadge } from '@/components/DiscountBadge';
-import { PriceWithDiscount } from '@/components/PriceWithDiscount';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/protected-route";
+import { DiscountBadge } from "@/components/DiscountBadge";
+import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 
-import { customOrderTemplateService } from '@/services/customOrderTemplateService';
-import { customOrderService } from '@/services/customOrderService';
-import { imageService } from '@/services/imageService';
-import { discountService, type DiscountValidationResult } from '@/services/discountService';
-import { formatPrice, getDiscountAmountForDisplay } from '@/lib/currency';
-import type { CustomOrderTemplateField, CreateCustomOrderRequest } from '@/types/customOrders';
-import { getAllTemplateImages } from '@/utils/imageUtils';
-import imageCompression from 'browser-image-compression';
+import { customOrderTemplateService } from "@/services/customOrderTemplateService";
+import { customOrderService } from "@/services/customOrderService";
+import { imageService } from "@/services/imageService";
+import {
+  discountService,
+  type DiscountValidationResult,
+} from "@/services/discountService";
+import { formatPrice, getDiscountAmountForDisplay } from "@/lib/currency";
+import type {
+  CustomOrderTemplateField,
+  CreateCustomOrderRequest,
+} from "@/types/customOrders";
+import { getAllTemplateImages } from "@/utils/imageUtils";
+import imageCompression from "browser-image-compression";
 
 // Field type icon mapping
 const getFieldTypeIcon = (fieldType: string) => {
   switch (fieldType) {
-    case 'TEXT':
+    case "TEXT":
       return FileText;
-    case 'NUMBER':
+    case "NUMBER":
       return Hash;
-    case 'IMAGE':
+    case "IMAGE":
       return ImageIcon;
-    case 'VIDEO':
+    case "VIDEO":
       return Video;
     default:
       return FileText;
@@ -74,35 +86,44 @@ function CreateCustomOrderContent() {
   const { toast } = useToast();
   const { isAuthenticated, user, isInitialized } = useAuth();
   const queryClient = useQueryClient();
-  
+
   const templateIdNum = templateId ? parseInt(templateId) : 0;
-  
+
   // Get user's preferred currency
-  const fallbackCurrency = isAuthenticated ? 'ETB' : 'USD';
+  const fallbackCurrency = isAuthenticated ? "ETB" : "USD";
   const preferredCurrency = user?.preferredCurrencyCode || fallbackCurrency;
-  
-  const [fieldValues, setFieldValues] = useState<{ [fieldId: number]: FieldValue }>({});
-  const [additionalDescription, setAdditionalDescription] = useState('');
-  const [uploadingFields, setUploadingFields] = useState<{ [fieldId: number]: boolean }>({});
+
+  const [fieldValues, setFieldValues] = useState<{
+    [fieldId: number]: FieldValue;
+  }>({});
+  const [additionalDescription, setAdditionalDescription] = useState("");
+  const [uploadingFields, setUploadingFields] = useState<{
+    [fieldId: number]: boolean;
+  }>({});
   const [errors, setErrors] = useState<{ [fieldId: number]: string }>({});
-  const [discountCode, setDiscountCode] = useState('');
-  const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountResult, setDiscountResult] =
+    useState<DiscountValidationResult | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   const [discountError, setDiscountError] = useState<string | null>(null);
-  
+
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   // Fetch template details (wait for auth so currency is correct)
   const { data: template, isLoading } = useQuery({
-    queryKey: ['custom-order-template', templateIdNum, user?.preferredCurrencyCode ?? 'default'],
+    queryKey: [
+      "custom-order-template",
+      templateIdNum,
+      user?.preferredCurrencyCode ?? "default",
+    ],
     queryFn: () => customOrderTemplateService.getById(templateIdNum),
     enabled: templateIdNum > 0 && isInitialized,
   });
 
-  const templateImages = useMemo(() => 
-    template ? getAllTemplateImages(template.images) : [], 
+  const templateImages = useMemo(
+    () => (template ? getAllTemplateImages(template.images) : []),
     [template]
   );
 
@@ -113,7 +134,9 @@ function CreateCustomOrderContent() {
 
   const prevImage = () => {
     if (templateImages.length === 0) return;
-    setSelectedImageIndex((prev) => (prev - 1 + templateImages.length) % templateImages.length);
+    setSelectedImageIndex(
+      (prev) => (prev - 1 + templateImages.length) % templateImages.length
+    );
   };
 
   const openLightbox = (index: number) => {
@@ -121,16 +144,27 @@ function CreateCustomOrderContent() {
     setLightboxOpen(true);
   };
 
-  const sortedFields = useMemo(() => 
-    template?.fields ? customOrderTemplateService.sortFieldsBySortOrder(template.fields) : [],
+  const sortedFields = useMemo(
+    () =>
+      template?.fields
+        ? customOrderTemplateService.sortFieldsBySortOrder(template.fields)
+        : [],
     [template?.fields]
   );
 
   // Calculate the manually-validated discount amount in display (major) units
   const manualDiscountAmountDisplay = useMemo(() => {
-    const targetCurrency = template?.price?.currencyCode || template?.currencyCode || preferredCurrency;
+    const targetCurrency =
+      template?.price?.currencyCode ||
+      template?.currencyCode ||
+      preferredCurrency;
     return getDiscountAmountForDisplay(discountResult, targetCurrency);
-  }, [discountResult, template?.price?.currencyCode, template?.currencyCode, preferredCurrency]);
+  }, [
+    discountResult,
+    template?.price?.currencyCode,
+    template?.currencyCode,
+    preferredCurrency,
+  ]);
 
   const handleApplyDiscount = useCallback(async () => {
     const code = discountCode.trim();
@@ -151,7 +185,13 @@ function CreateCustomOrderContent() {
       const result = await discountService.validateDiscountCode({
         discountCode: code,
         orderTotalMinor: template.basePriceMinor,
-        customOrderTemplateIds: [templateIdNum],
+        orderItems: [
+          {
+            itemId: templateIdNum,
+            categoryId: null,
+            itemTotalMinor: template.basePriceMinor,
+          },
+        ],
       });
 
       if (result.applicable) {
@@ -163,7 +203,9 @@ function CreateCustomOrderContent() {
         });
       } else {
         setDiscountResult(null);
-        setDiscountError(result.reason || "Discount code is not valid for this order");
+        setDiscountError(
+          result.reason || "Discount code is not valid for this order"
+        );
       }
     } catch (error: any) {
       setDiscountResult(null);
@@ -181,25 +223,26 @@ function CreateCustomOrderContent() {
 
   // Create order mutation
   const createOrderMutation = useMutation({
-    mutationFn: (data: CreateCustomOrderRequest) => customOrderService.create(data),
+    mutationFn: (data: CreateCustomOrderRequest) =>
+      customOrderService.create(data),
     onSuccess: (order) => {
       // Invalidate relevant queries so lists refresh immediately
-      queryClient.invalidateQueries({ queryKey: ['my-custom-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'custom-orders'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["my-custom-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["vendor", "custom-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "custom-orders"] });
+
       const isNonNegotiable = template?.negotiable === false;
-      
+
       if (isNonNegotiable) {
         toast({
-          title: 'Order Created!',
+          title: "Order Created!",
           description: `Your order #${order.orderNumber} is ready for payment.`,
         });
         // For non-negotiable orders, redirect to order detail which will show payment options
         navigate(`/my-custom-orders/${order.id}?action=pay`);
       } else {
         toast({
-          title: 'Order Submitted!',
+          title: "Order Submitted!",
           description: `Your custom order #${order.orderNumber} has been submitted successfully.`,
         });
         navigate(`/my-custom-orders/${order.id}`);
@@ -207,18 +250,22 @@ function CreateCustomOrderContent() {
     },
     onError: (error: Error) => {
       toast({
-        title: 'Submission Failed',
-        description: error.message || 'Failed to submit order. Please try again.',
-        variant: 'destructive',
+        title: "Submission Failed",
+        description:
+          error.message || "Failed to submit order. Please try again.",
+        variant: "destructive",
       });
     },
   });
 
   // Handle text/number field change
-  const handleFieldChange = (field: CustomOrderTemplateField, value: string) => {
+  const handleFieldChange = (
+    field: CustomOrderTemplateField,
+    value: string
+  ) => {
     const fieldValue: FieldValue = { fieldId: field.id };
-    
-    if (field.fieldType === 'NUMBER') {
+
+    if (field.fieldType === "NUMBER") {
       const numValue = parseFloat(value);
       if (!isNaN(numValue)) {
         fieldValue.numberValue = numValue;
@@ -226,15 +273,15 @@ function CreateCustomOrderContent() {
     } else {
       fieldValue.textValue = value;
     }
-    
-    setFieldValues(prev => ({
+
+    setFieldValues((prev) => ({
       ...prev,
-      [field.id]: fieldValue
+      [field.id]: fieldValue,
     }));
-    
+
     // Clear error
     if (errors[field.id]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field.id];
         return newErrors;
@@ -245,7 +292,7 @@ function CreateCustomOrderContent() {
   // Compress image before upload
   const compressImage = async (file: File): Promise<File> => {
     // Only compress if it's an image and not a GIF (GIFs lose animation)
-    if (!file.type.startsWith('image/') || file.type.includes('gif')) {
+    if (!file.type.startsWith("image/") || file.type.includes("gif")) {
       return file;
     }
 
@@ -253,7 +300,7 @@ function CreateCustomOrderContent() {
       maxSizeMB: 1, // Compress to ~1MB
       maxWidthOrHeight: 1920, // Max dimension 1920px (Full HD)
       useWebWorker: true,
-      fileType: 'image/webp' as const, // Convert to efficient WebP format
+      fileType: "image/webp" as const, // Convert to efficient WebP format
       initialQuality: 0.8,
     };
 
@@ -261,7 +308,10 @@ function CreateCustomOrderContent() {
       const compressedBlob = await imageCompression(file, options);
       // Create a new file with the same name (but .webp extension)
       const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
-      return new File([compressedBlob], newName, { type: 'image/webp', lastModified: Date.now() });
+      return new File([compressedBlob], newName, {
+        type: "image/webp",
+        lastModified: Date.now(),
+      });
     } catch (error) {
       console.error("Image compression failed:", error);
       return file; // Return original if compression fails
@@ -269,43 +319,49 @@ function CreateCustomOrderContent() {
   };
 
   // Handle file upload
-  const handleFileUpload = async (field: CustomOrderTemplateField, file: File) => {
+  const handleFileUpload = async (
+    field: CustomOrderTemplateField,
+    file: File
+  ) => {
     // Validate file size BEFORE compression
-    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024; // 50MB for video, 10MB for images
+    const maxSize = file.type.startsWith("video/")
+      ? 50 * 1024 * 1024
+      : 10 * 1024 * 1024; // 50MB for video, 10MB for images
     if (file.size > maxSize) {
       const maxSizeMB = maxSize / (1024 * 1024);
       toast({
-        title: 'File Too Large',
+        title: "File Too Large",
         description: `File size exceeds ${maxSizeMB}MB limit. Please choose a smaller file.`,
-        variant: 'destructive',
+        variant: "destructive",
       });
       return;
     }
 
     // Validate file type
-    const isImage = field.fieldType === 'IMAGE';
-    const isVideo = field.fieldType === 'VIDEO';
-    
-    if (isImage && !file.type.startsWith('image/')) {
+    const isImage = field.fieldType === "IMAGE";
+    const isVideo = field.fieldType === "VIDEO";
+
+    if (isImage && !file.type.startsWith("image/")) {
       toast({
-        title: 'Invalid File Type',
-        description: 'Please upload an image file (jpg, png, gif, or webp).',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (isVideo && !file.type.startsWith('video/')) {
-      toast({
-        title: 'Invalid File Type',
-        description: 'Please upload a video file (mp4, mov, avi, mkv, or webm).',
-        variant: 'destructive',
+        title: "Invalid File Type",
+        description: "Please upload an image file (jpg, png, gif, or webp).",
+        variant: "destructive",
       });
       return;
     }
 
-    setUploadingFields(prev => ({ ...prev, [field.id]: true }));
-    
+    if (isVideo && !file.type.startsWith("video/")) {
+      toast({
+        title: "Invalid File Type",
+        description:
+          "Please upload a video file (mp4, mov, avi, mkv, or webm).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingFields((prev) => ({ ...prev, [field.id]: true }));
+
     try {
       // Compress image if applicable
       let fileToUpload = file;
@@ -315,34 +371,35 @@ function CreateCustomOrderContent() {
 
       // Upload file to server using imageService
       const response = await imageService.uploadCustomOrderFile(fileToUpload);
-      
+
       // The backend returns a path like "custom-orders/{userId}/{filename}"
       // We need to construct the proper backend proxy URL: /api/images/custom-orders/files/{userId}/{filename}
       // Parse the path to extract userId and filename
       const pathMatch = response.fileUrl.match(/custom-orders\/(\d+)\/(.+)$/);
       if (!pathMatch) {
-        throw new Error('Invalid file path returned from server');
+        throw new Error("Invalid file path returned from server");
       }
       const userId = pathMatch[1];
       const filename = pathMatch[2];
-      
+
       // Construct full URL using the API base URL
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const apiBaseUrl =
+        import.meta.env.VITE_API_URL || "http://localhost:8080";
       const previewUrl = `${apiBaseUrl}/api/images/custom-orders/files/${userId}/${filename}`;
-      
-      setFieldValues(prev => ({
+
+      setFieldValues((prev) => ({
         ...prev,
         [field.id]: {
           fieldId: field.id,
           fileUrl: response.fileUrl, // Store relative path for backend
           originalFilename: response.originalFilename || fileToUpload.name,
-          previewUrl: previewUrl // Use full backend proxy URL for preview
-        }
+          previewUrl: previewUrl, // Use full backend proxy URL for preview
+        },
       }));
-      
+
       // Clear error
       if (errors[field.id]) {
-        setErrors(prev => {
+        setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors[field.id];
           return newErrors;
@@ -350,24 +407,27 @@ function CreateCustomOrderContent() {
       }
 
       toast({
-        title: 'Upload Successful',
+        title: "Upload Successful",
         description: `${file.name} uploaded successfully.`,
       });
     } catch (error: any) {
-      const errorMessage = error?.message || error?.response?.data?.message || 'Failed to upload file. Please try again.';
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Failed to upload file. Please try again.";
       toast({
-        title: 'Upload Failed',
+        title: "Upload Failed",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
-      setUploadingFields(prev => ({ ...prev, [field.id]: false }));
+      setUploadingFields((prev) => ({ ...prev, [field.id]: false }));
     }
   };
 
   // Remove uploaded file
   const handleRemoveFile = (fieldId: number) => {
-    setFieldValues(prev => {
+    setFieldValues((prev) => {
       const newValues = { ...prev };
       delete newValues[fieldId];
       return newValues;
@@ -377,73 +437,80 @@ function CreateCustomOrderContent() {
   // Validate form
   const validateForm = (): boolean => {
     const newErrors: { [fieldId: number]: string } = {};
-    
-    sortedFields.forEach(field => {
+
+    sortedFields.forEach((field) => {
       if (field.required) {
         const value = fieldValues[field.id];
-        
+
         if (!value) {
           newErrors[field.id] = `${field.fieldName} is required`;
-        } else if (field.fieldType === 'TEXT' && !value.textValue?.trim()) {
+        } else if (field.fieldType === "TEXT" && !value.textValue?.trim()) {
           newErrors[field.id] = `${field.fieldName} is required`;
-        } else if (field.fieldType === 'NUMBER' && value.numberValue === undefined) {
+        } else if (
+          field.fieldType === "NUMBER" &&
+          value.numberValue === undefined
+        ) {
           newErrors[field.id] = `${field.fieldName} is required`;
-        } else if ((field.fieldType === 'IMAGE' || field.fieldType === 'VIDEO') && !value.fileUrl) {
+        } else if (
+          (field.fieldType === "IMAGE" || field.fieldType === "VIDEO") &&
+          !value.fileUrl
+        ) {
           newErrors[field.id] = `${field.fieldName} is required`;
         }
       }
-      
+
       // Type validation for NUMBER fields
-      if (field.fieldType === 'NUMBER' && fieldValues[field.id]?.textValue) {
+      if (field.fieldType === "NUMBER" && fieldValues[field.id]?.textValue) {
         const numValue = parseFloat(fieldValues[field.id].textValue!);
         if (isNaN(numValue)) {
           newErrors[field.id] = `${field.fieldName} must be a valid number`;
         }
       }
     });
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validateDescription = () => {
     if (!additionalDescription.trim()) {
-      setErrors(prev => ({...prev, [-1]: "Description is required"}));
+      setErrors((prev) => ({ ...prev, [-1]: "Description is required" }));
       return false;
     }
     return true;
-  }
+  };
 
   // Handle form submission
   const handleSubmit = () => {
     const isFormValid = validateForm();
     const isDescriptionValid = validateDescription();
-    
+
     if (!isFormValid || !isDescriptionValid) {
       toast({
-        title: 'Validation Error',
-        description: 'Please fill in all required fields correctly.',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Please fill in all required fields correctly.",
+        variant: "destructive",
       });
       return;
     }
-    
-    const values = Object.values(fieldValues).filter(v => 
-      v.textValue || v.numberValue !== undefined || v.fileUrl
+
+    const values = Object.values(fieldValues).filter(
+      (v) => v.textValue || v.numberValue !== undefined || v.fileUrl
     );
-    
+
     // Always send discount code when available (both negotiable and non-negotiable templates)
     // For non-negotiable: discount sets the final payment price
     // For negotiable: discount sets the initial discounted price as a starting point
-    const appliedDiscountCode = discountCode.trim() || template?.activeDiscount?.code;
+    const appliedDiscountCode =
+      discountCode.trim() || template?.activeDiscount?.code;
 
     const request: CreateCustomOrderRequest = {
       templateId: templateIdNum,
       discountCode: appliedDiscountCode || undefined,
       additionalDescription: additionalDescription.trim() || undefined,
-      values
+      values,
     };
-    
+
     createOrderMutation.mutate(request);
   };
 
@@ -461,44 +528,44 @@ function CreateCustomOrderContent() {
           {field.fieldName}
           {field.required && <span className="text-red-500">*</span>}
         </Label>
-        
+
         {field.description && (
           <p className="text-sm text-eagle-green/60">{field.description}</p>
         )}
-        
-        {field.fieldType === 'TEXT' && (
+
+        {field.fieldType === "TEXT" && (
           <Textarea
-            value={value?.textValue || ''}
+            value={value?.textValue || ""}
             onChange={(e) => handleFieldChange(field, e.target.value)}
             placeholder={`Enter ${field.fieldName.toLowerCase()}`}
-            className={`min-h-[100px] ${error ? 'border-red-500' : ''}`}
+            className={`min-h-[100px] ${error ? "border-red-500" : ""}`}
           />
         )}
-        
-        {field.fieldType === 'NUMBER' && (
+
+        {field.fieldType === "NUMBER" && (
           <Input
             type="number"
-            value={value?.numberValue ?? ''}
+            value={value?.numberValue ?? ""}
             onChange={(e) => handleFieldChange(field, e.target.value)}
             placeholder={`Enter ${field.fieldName.toLowerCase()}`}
-            className={error ? 'border-red-500' : ''}
+            className={error ? "border-red-500" : ""}
           />
         )}
-        
-        {(field.fieldType === 'IMAGE' || field.fieldType === 'VIDEO') && (
+
+        {(field.fieldType === "IMAGE" || field.fieldType === "VIDEO") && (
           <div>
             {value?.fileUrl ? (
               <div className="relative inline-block">
-                {field.fieldType === 'IMAGE' ? (
-                  <img 
-                    src={value.previewUrl || value.fileUrl} 
+                {field.fieldType === "IMAGE" ? (
+                  <img
+                    src={value.previewUrl || value.fileUrl}
                     alt={field.fieldName}
                     className="w-32 h-32 object-cover rounded-lg border"
                     onError={(e) => {
                       // Fallback if preview fails
                       const target = e.target as HTMLImageElement;
                       if (value.previewUrl && target.src === value.previewUrl) {
-                        target.src = value.fileUrl || '';
+                        target.src = value.fileUrl || "";
                       }
                     }}
                   />
@@ -519,16 +586,18 @@ function CreateCustomOrderContent() {
                 </p>
               </div>
             ) : (
-              <label className={`
+              <label
+                className={`
                 flex flex-col items-center justify-center w-full h-32 
                 border-2 border-dashed rounded-lg cursor-pointer
                 hover:bg-june-bud/5 transition-colors
-                ${error ? 'border-red-500' : 'border-eagle-green/30'}
-                ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}
-              `}>
+                ${error ? "border-red-500" : "border-eagle-green/30"}
+                ${isUploading ? "opacity-50 cursor-not-allowed" : ""}
+              `}
+              >
                 <input
                   type="file"
-                  accept={field.fieldType === 'IMAGE' ? 'image/*' : 'video/*'}
+                  accept={field.fieldType === "IMAGE" ? "image/*" : "video/*"}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleFileUpload(field, file);
@@ -540,7 +609,9 @@ function CreateCustomOrderContent() {
                   <div className="flex flex-col items-center">
                     <Loader2 className="h-8 w-8 text-eagle-green/50 animate-spin mb-2" />
                     <span className="text-xs text-eagle-green/60">
-                      {field.fieldType === 'IMAGE' ? 'Optimizing & uploading...' : 'Uploading...'}
+                      {field.fieldType === "IMAGE"
+                        ? "Optimizing & uploading..."
+                        : "Uploading..."}
                     </span>
                   </div>
                 ) : (
@@ -550,7 +621,9 @@ function CreateCustomOrderContent() {
                       Click to upload {field.fieldType.toLowerCase()}
                     </span>
                     <span className="text-xs text-eagle-green/40 mt-1">
-                      {field.fieldType === 'VIDEO' ? 'Max 50MB' : 'Max 10MB • Auto-optimized'}
+                      {field.fieldType === "VIDEO"
+                        ? "Max 50MB"
+                        : "Max 10MB • Auto-optimized"}
                     </span>
                   </>
                 )}
@@ -558,7 +631,7 @@ function CreateCustomOrderContent() {
             )}
           </div>
         )}
-        
+
         {error && (
           <p className="text-sm text-red-500 flex items-center gap-1">
             <AlertCircle className="h-4 w-4" />
@@ -574,9 +647,16 @@ function CreateCustomOrderContent() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-eagle-green mb-2">Sign In Required</h2>
-          <p className="font-light text-eagle-green/70 mb-4">Please sign in to create a custom order.</p>
-          <Button onClick={() => navigate('/signin')} className="bg-eagle-green hover:bg-viridian-green text-white">
+          <h2 className="text-2xl font-bold text-eagle-green mb-2">
+            Sign In Required
+          </h2>
+          <p className="font-light text-eagle-green/70 mb-4">
+            Please sign in to create a custom order.
+          </p>
+          <Button
+            onClick={() => navigate("/signin")}
+            className="bg-eagle-green hover:bg-viridian-green text-white"
+          >
             Sign In
           </Button>
         </div>
@@ -617,9 +697,16 @@ function CreateCustomOrderContent() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <Package className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-eagle-green mb-2">Template Not Found</h2>
-          <p className="font-light text-eagle-green/70 mb-4">The template you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate('/custom-orders')} className="bg-eagle-green hover:bg-viridian-green text-white">
+          <h2 className="text-2xl font-bold text-eagle-green mb-2">
+            Template Not Found
+          </h2>
+          <p className="font-light text-eagle-green/70 mb-4">
+            The template you're looking for doesn't exist.
+          </p>
+          <Button
+            onClick={() => navigate("/custom-orders")}
+            className="bg-eagle-green hover:bg-viridian-green text-white"
+          >
             Browse Templates
           </Button>
         </div>
@@ -658,7 +745,7 @@ function CreateCustomOrderContent() {
                         className="w-full h-full object-cover cursor-pointer"
                         onClick={() => openLightbox(selectedImageIndex)}
                       />
-                      
+
                       {/* Navigation Arrows */}
                       {templateImages.length > 1 && (
                         <>
@@ -676,13 +763,13 @@ function CreateCustomOrderContent() {
                           </button>
                         </>
                       )}
-                      
+
                       {/* Image Counter */}
                       <div className="absolute bottom-4 right-4 px-3 py-1 bg-black/60 text-white text-sm rounded-full">
                         {selectedImageIndex + 1} / {templateImages.length}
                       </div>
                     </div>
-                    
+
                     {/* Thumbnail Strip */}
                     {templateImages.length > 1 && (
                       <div className="p-4 bg-white">
@@ -693,8 +780,8 @@ function CreateCustomOrderContent() {
                               onClick={() => setSelectedImageIndex(index)}
                               className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
                                 selectedImageIndex === index
-                                  ? 'border-eagle-green shadow-md'
-                                  : 'border-transparent hover:border-eagle-green/50'
+                                  ? "border-eagle-green shadow-md"
+                                  : "border-transparent hover:border-eagle-green/50"
                               }`}
                             >
                               <img
@@ -709,39 +796,51 @@ function CreateCustomOrderContent() {
                     )}
                   </CardContent>
                 </Card>
-                
+
                 {/* Template Info Card Below Images */}
                 <Card className="mt-6">
                   <CardHeader>
-                    <CardTitle className="text-eagle-green text-lg">Order Summary</CardTitle>
+                    <CardTitle className="text-eagle-green text-lg">
+                      Order Summary
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-2 text-sm">
                       <Store className="h-4 w-4 text-viridian-green" />
                       <span className="text-eagle-green/70">Vendor:</span>
-                      <span className="text-eagle-green font-medium">{template.vendorName}</span>
+                      <span className="text-eagle-green font-medium">
+                        {template.vendorName}
+                      </span>
                     </div>
-                    
+
                     {/* Active Discount Badge */}
                     {template.activeDiscount && (
                       <div className="border-t border-gray-200 pt-4">
-                        <DiscountBadge 
-                          discount={template.activeDiscount} 
-                          variant="full" 
-                          targetCurrency={template.price?.currencyCode || template.currencyCode || preferredCurrency}
+                        <DiscountBadge
+                          discount={template.activeDiscount}
+                          variant="full"
+                          targetCurrency={
+                            template.price?.currencyCode ||
+                            template.currencyCode ||
+                            preferredCurrency
+                          }
                         />
                       </div>
                     )}
-                    
+
                     <div className="bg-june-bud/10 rounded-lg p-4">
                       <p className="text-sm text-eagle-green/70 mb-1">
-                        {template.negotiable === false ? 'Price' : 'Base Price'}
+                        {template.negotiable === false ? "Price" : "Base Price"}
                       </p>
                       {template.activeDiscount ? (
                         <div className="space-y-2">
                           <PriceWithDiscount
                             originalPrice={template.price?.amount || 0}
-                            currency={template.price?.currencyCode || template.currencyCode || preferredCurrency}
+                            currency={
+                              template.price?.currencyCode ||
+                              template.currencyCode ||
+                              preferredCurrency
+                            }
                             discount={template.activeDiscount}
                             size="large"
                           />
@@ -758,7 +857,9 @@ function CreateCustomOrderContent() {
                       ) : (
                         <>
                           <p className="text-2xl font-bold text-eagle-green">
-                            {customOrderTemplateService.formatTemplatePrice(template)}
+                            {customOrderTemplateService.formatTemplatePrice(
+                              template
+                            )}
                           </p>
                           {template.negotiable === false ? (
                             <p className="text-xs text-viridian-green mt-1 font-medium">
@@ -788,7 +889,12 @@ function CreateCustomOrderContent() {
                                   Code "{discountCode}" applied
                                 </p>
                                 <p className="text-xs text-green-600">
-                                  You save {formatPrice(manualDiscountAmountDisplay, template?.price?.currencyCode || preferredCurrency)}
+                                  You save{" "}
+                                  {formatPrice(
+                                    manualDiscountAmountDisplay,
+                                    template?.price?.currencyCode ||
+                                      preferredCurrency
+                                  )}
                                 </p>
                               </div>
                             </div>
@@ -811,20 +917,26 @@ function CreateCustomOrderContent() {
                                   setDiscountCode(e.target.value);
                                   setDiscountError(null);
                                 }}
-                                onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()}
-                                className={discountError ? 'border-red-300' : ''}
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" && handleApplyDiscount()
+                                }
+                                className={
+                                  discountError ? "border-red-300" : ""
+                                }
                                 disabled={isValidatingDiscount}
                               />
                               <Button
                                 type="button"
                                 onClick={handleApplyDiscount}
-                                disabled={isValidatingDiscount || !discountCode.trim()}
+                                disabled={
+                                  isValidatingDiscount || !discountCode.trim()
+                                }
                                 className="bg-eagle-green hover:bg-eagle-green/90 text-white font-medium min-w-[90px] transition-all"
                               >
                                 {isValidatingDiscount ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
-                                  'Apply Code'
+                                  "Apply Code"
                                 )}
                               </Button>
                             </div>
@@ -834,11 +946,14 @@ function CreateCustomOrderContent() {
                                 {discountError}
                               </p>
                             )}
-                            {!discountError && !discountCode.trim() && template.activeDiscount && (
-                              <p className="text-xs text-eagle-green/60">
-                                A template discount will be applied automatically.
-                              </p>
-                            )}
+                            {!discountError &&
+                              !discountCode.trim() &&
+                              template.activeDiscount && (
+                                <p className="text-xs text-eagle-green/60">
+                                  A template discount will be applied
+                                  automatically.
+                                </p>
+                              )}
                           </>
                         )}
                       </div>
@@ -850,7 +965,7 @@ function CreateCustomOrderContent() {
           )}
 
           {/* Right Column - Form */}
-          <div className={templateImages.length > 0 ? '' : 'lg:col-span-2'}>
+          <div className={templateImages.length > 0 ? "" : "lg:col-span-2"}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -858,18 +973,23 @@ function CreateCustomOrderContent() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-eagle-green text-2xl">{template.name}</CardTitle>
+                  <CardTitle className="text-eagle-green text-2xl">
+                    {template.name}
+                  </CardTitle>
                   {template.description && (
                     <CardDescription>{template.description}</CardDescription>
                   )}
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Customization Fields */}
-                  {sortedFields.map(field => renderFieldInput(field))}
+                  {sortedFields.map((field) => renderFieldInput(field))}
 
                   {/* Additional Description */}
                   <div className="space-y-2 pt-4 border-t">
-                    <Label htmlFor="additionalDescription" className="text-eagle-green font-medium">
+                    <Label
+                      htmlFor="additionalDescription"
+                      className="text-eagle-green font-medium"
+                    >
                       Description <span className="text-red-500">*</span>
                     </Label>
                     <Textarea
@@ -878,24 +998,26 @@ function CreateCustomOrderContent() {
                       onChange={(e) => {
                         setAdditionalDescription(e.target.value);
                         if (e.target.value.trim() && errors[-1]) {
-                             setErrors(prev => {
-                                const newErrors = { ...prev };
-                                delete newErrors[-1];
-                                return newErrors;
-                              });
+                          setErrors((prev) => {
+                            const newErrors = { ...prev };
+                            delete newErrors[-1];
+                            return newErrors;
+                          });
                         }
                       }}
                       placeholder="Please provide a detailed description of your request..."
-                      className={`min-h-[100px] ${errors[-1] ? 'border-red-500' : ''}`}
+                      className={`min-h-[100px] ${
+                        errors[-1] ? "border-red-500" : ""
+                      }`}
                     />
-                     {errors[-1] && (
-                        <p className="text-sm text-red-500 flex items-center gap-1">
-                          <AlertCircle className="h-4 w-4" />
-                          {errors[-1]}
-                        </p>
-                      )}
+                    {errors[-1] && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors[-1]}
+                      </p>
+                    )}
                   </div>
-                  
+
                   {/* Submit Button */}
                   <div className="pt-4">
                     <Button
@@ -911,15 +1033,16 @@ function CreateCustomOrderContent() {
                       ) : (
                         <>
                           <CheckCircle className="h-4 w-4 mr-2" />
-                          {template.negotiable === false ? 'Place Order & Pay' : 'Submit Order'}
+                          {template.negotiable === false
+                            ? "Place Order & Pay"
+                            : "Submit Order"}
                         </>
                       )}
                     </Button>
                     <p className="text-xs text-eagle-green/60 text-center mt-2">
-                      {template.negotiable === false 
-                        ? 'You will be redirected to payment after submission'
-                        : 'The vendor will review your order and propose a final price'
-                      }
+                      {template.negotiable === false
+                        ? "You will be redirected to payment after submission"
+                        : "The vendor will review your order and propose a final price"}
                     </p>
                   </div>
                 </CardContent>
@@ -928,7 +1051,7 @@ function CreateCustomOrderContent() {
           </div>
         </div>
       </div>
-      
+
       {/* Image Lightbox */}
       <AnimatePresence>
         {lightboxOpen && (
@@ -945,25 +1068,34 @@ function CreateCustomOrderContent() {
             >
               <X className="h-6 w-6 text-white" />
             </button>
-            
+
             {templateImages.length > 1 && (
               <>
                 <button
-                  onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prevImage();
+                  }}
                   className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
                 >
                   <ChevronLeft className="h-8 w-8 text-white" />
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nextImage();
+                  }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
                 >
                   <ChevronRight className="h-8 w-8 text-white" />
                 </button>
               </>
             )}
-            
-            <div className="relative max-w-7xl max-h-full" onClick={(e) => e.stopPropagation()}>
+
+            <div
+              className="relative max-w-7xl max-h-full"
+              onClick={(e) => e.stopPropagation()}
+            >
               <img
                 src={templateImages[selectedImageIndex]}
                 alt={`${template?.name} ${selectedImageIndex + 1}`}

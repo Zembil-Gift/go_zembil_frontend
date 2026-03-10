@@ -1910,7 +1910,7 @@ export default function AdminCampaigns() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>
-                                    Minimum Sales Amount (Birr) *
+                                    Minimum Sales Amount (USD) *
                                   </FormLabel>
                                   <FormControl>
                                     <Input

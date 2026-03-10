@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { 
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import {
   ArrowLeft,
   Calendar,
   MapPin,
@@ -20,25 +20,35 @@ import {
   ChevronRight,
   Tag,
   CheckCircle2,
-  XCircle
-} from 'lucide-react';
+  XCircle,
+} from "lucide-react";
 
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
-import { DiscountBadge } from '@/components/DiscountBadge';
-import { PriceWithDiscount } from '@/components/PriceWithDiscount';
-import PaymentMethodSelector from '@/components/PaymentMethodSelector';
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { DiscountBadge } from "@/components/DiscountBadge";
+import { PriceWithDiscount } from "@/components/PriceWithDiscount";
+import PaymentMethodSelector from "@/components/PaymentMethodSelector";
 
-import { serviceService, AvailabilityConfig } from '@/services/serviceService';
-import { serviceOrderService, CreateServiceOrderRequest } from '@/services/serviceOrderService';
-import { discountService, type DiscountValidationResult } from '@/services/discountService';
-import { formatPrice, calculateDiscountedPrice, getDiscountAmountForDisplay } from '@/lib/currency';
+import { serviceService, AvailabilityConfig } from "@/services/serviceService";
+import {
+  serviceOrderService,
+  CreateServiceOrderRequest,
+} from "@/services/serviceOrderService";
+import {
+  discountService,
+  type DiscountValidationResult,
+} from "@/services/discountService";
+import {
+  formatPrice,
+  calculateDiscountedPrice,
+  getDiscountAmountForDisplay,
+} from "@/lib/currency";
 
 export default function ServiceCheckout() {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -47,19 +57,22 @@ export default function ServiceCheckout() {
   const { user } = useAuth();
 
   // Form state
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactPhone, setContactPhone] = useState('');
-  const [recipientName, setRecipientName] = useState('');
-  const [recipientEmail, setRecipientEmail] = useState('');
-  const [recipientPhone, setRecipientPhone] = useState('');
-  const [giftMessage, setGiftMessage] = useState('');
-  const [discountCode, setDiscountCode] = useState('');
-  const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [giftMessage, setGiftMessage] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountResult, setDiscountResult] =
+    useState<DiscountValidationResult | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   const [discountError, setDiscountError] = useState<string | null>(null);
-  const [paymentProvider, setPaymentProvider] = useState<'STRIPE' | 'CHAPA'>('STRIPE');
+  const [paymentProvider, setPaymentProvider] = useState<"STRIPE" | "CHAPA">(
+    "STRIPE"
+  );
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Calendar navigation state - track current month
@@ -70,26 +83,33 @@ export default function ServiceCheckout() {
 
   // Fetch service details
   const { data: service, isLoading } = useQuery({
-    queryKey: ['service', serviceId],
+    queryKey: ["service", serviceId],
     queryFn: () => serviceService.getService(Number(serviceId)),
     enabled: !!serviceId,
   });
 
   // Fetch available dates for the next 30 days
   const { data: availableDates } = useQuery({
-    queryKey: ['service-available-dates', serviceId],
+    queryKey: ["service-available-dates", serviceId],
     queryFn: () => {
-      const startDate = new Date().toISOString().split('T')[0];
-      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      return serviceService.getAvailableDates(Number(serviceId), startDate, endDate);
+      const startDate = new Date().toISOString().split("T")[0];
+      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+      return serviceService.getAvailableDates(
+        Number(serviceId),
+        startDate,
+        endDate
+      );
     },
     enabled: !!serviceId,
   });
 
   // Fetch available time slots for selected date
   const { data: availableSlots } = useQuery({
-    queryKey: ['service-available-slots', serviceId, selectedDate],
-    queryFn: () => serviceService.getAvailableSlots(Number(serviceId), selectedDate),
+    queryKey: ["service-available-slots", serviceId, selectedDate],
+    queryFn: () =>
+      serviceService.getAvailableSlots(Number(serviceId), selectedDate),
     enabled: !!serviceId && !!selectedDate,
   });
 
@@ -98,9 +118,10 @@ export default function ServiceCheckout() {
     if (!service) return {};
     const config = serviceService.parseAvailabilityConfig(service);
     // Debug: log availability config source
-    console.log('Availability Config Debug:', {
+    console.log("Availability Config Debug:", {
       serviceAvailabilityConfig: service.availabilityConfig,
-      defaultPackageAvailabilityConfig: service.defaultPackage?.availabilityConfig,
+      defaultPackageAvailabilityConfig:
+        service.defaultPackage?.availabilityConfig,
       parsedConfig: config,
       workingDays: config.workingDays,
     });
@@ -108,21 +129,25 @@ export default function ServiceCheckout() {
   }, [service]);
 
   const displayPriceMajor = useMemo(() => {
-    return service?.defaultPackage?.basePrice ?? service?.basePrice ?? undefined;
+    return (
+      service?.defaultPackage?.basePrice ?? service?.basePrice ?? undefined
+    );
   }, [service]);
 
   const displayPriceMinor = useMemo(() => {
-    return service?.defaultPackage?.basePriceMinor ?? service?.basePriceMinor ?? 0;
+    return (
+      service?.defaultPackage?.basePriceMinor ?? service?.basePriceMinor ?? 0
+    );
   }, [service]);
 
   const displayCurrency = useMemo(() => {
-    return service?.defaultPackage?.currency ?? service?.currency ?? 'ETB';
+    return service?.defaultPackage?.currency ?? service?.currency ?? "ETB";
   }, [service]);
 
   const appliedDiscountCode = useMemo(() => {
     const manualCode = discountCode.trim();
     if (manualCode) return manualCode;
-    return service?.activeDiscount?.code || '';
+    return service?.activeDiscount?.code || "";
   }, [discountCode, service?.activeDiscount?.code]);
 
   // Calculate the manually-validated discount amount in display (major) units
@@ -132,19 +157,29 @@ export default function ServiceCheckout() {
 
   const finalAmount = useMemo(() => {
     if (displayPriceMajor === undefined) return 0;
-    
+
     // If we have a manual discount applied, use its amount (already converted in manualDiscountAmountDisplay)
     if (discountResult?.applicable && manualDiscountAmountDisplay > 0) {
       return Math.max(0, displayPriceMajor - manualDiscountAmountDisplay);
     }
-    
+
     // Fallback to service's active discount - use the centralized utility
     if (service?.activeDiscount) {
-      return calculateDiscountedPrice(displayPriceMajor, displayCurrency, service.activeDiscount);
+      return calculateDiscountedPrice(
+        displayPriceMajor,
+        displayCurrency,
+        service.activeDiscount
+      );
     }
-    
+
     return displayPriceMajor;
-  }, [displayPriceMajor, displayCurrency, discountResult, manualDiscountAmountDisplay, service?.activeDiscount]);
+  }, [
+    displayPriceMajor,
+    displayCurrency,
+    discountResult,
+    manualDiscountAmountDisplay,
+    service?.activeDiscount,
+  ]);
 
   const handleApplyDiscount = useCallback(async () => {
     const code = discountCode.trim();
@@ -165,7 +200,13 @@ export default function ServiceCheckout() {
       const result = await discountService.validateDiscountCode({
         discountCode: code,
         orderTotalMinor: displayPriceMinor,
-        serviceIds: [Number(serviceId)],
+        orderItems: [
+          {
+            itemId: Number(serviceId),
+            categoryId: null,
+            itemTotalMinor: displayPriceMinor,
+          },
+        ],
       });
 
       if (result.applicable) {
@@ -177,7 +218,9 @@ export default function ServiceCheckout() {
         });
       } else {
         setDiscountResult(null);
-        setDiscountError(result.reason || "Discount code is not valid for this service");
+        setDiscountError(
+          result.reason || "Discount code is not valid for this service"
+        );
       }
     } catch (error: any) {
       setDiscountResult(null);
@@ -209,44 +252,46 @@ export default function ServiceCheckout() {
     const today = new Date();
     const workingDays = availability.workingDays || [0, 1, 2, 3, 4, 5, 6];
     const blackoutDates = availability.blackoutDates || [];
-    const advanceBookingDays = availability.advanceBookingDays || 60; 
-    
+    const advanceBookingDays = availability.advanceBookingDays || 60;
+
     // Debug: log what workingDays are being used
-    console.log('Calendar Dates Debug:', {
+    console.log("Calendar Dates Debug:", {
       workingDays,
       availableDatesFromAPI: availableDates,
       advanceBookingDays,
     });
-    
+
     for (let i = 1; i <= advanceBookingDays; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       const dayOfWeek = date.getDay();
       // Format date in local timezone (avoid toISOString which uses UTC)
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
       const dateStr = `${year}-${month}-${day}`;
 
       if (workingDays.includes(dayOfWeek) && !blackoutDates.includes(dateStr)) {
         dates.push(dateStr);
       }
     }
-    
+
     // If API returns available dates, filter them by workingDays as well
     if (availableDates && availableDates.length > 0) {
-      const filtered = availableDates.filter(dateStr => {
+      const filtered = availableDates.filter((dateStr) => {
         // Parse date in local timezone to avoid day-of-week shifts
-        const [year, month, day] = dateStr.split('-').map(Number);
+        const [year, month, day] = dateStr.split("-").map(Number);
         const date = new Date(year, month - 1, day);
         const dayOfWeek = date.getDay();
-        return workingDays.includes(dayOfWeek) && !blackoutDates.includes(dateStr);
+        return (
+          workingDays.includes(dayOfWeek) && !blackoutDates.includes(dateStr)
+        );
       });
-      console.log('Using API dates filtered:', filtered.slice(0, 5), '...');
+      console.log("Using API dates filtered:", filtered.slice(0, 5), "...");
       return filtered;
     }
-    
-    console.log('Using local dates:', dates.slice(0, 5), '...');
+
+    console.log("Using local dates:", dates.slice(0, 5), "...");
     return dates;
   }, [availability, availableDates]);
 
@@ -254,33 +299,35 @@ export default function ServiceCheckout() {
   const calendarGrid = useMemo(() => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    
+
     // Get first day of month and how many days in month
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
-    
+
     // Create calendar grid (6 weeks x 7 days = 42 cells)
     const grid: (string | null)[] = [];
-    
+
     // Add empty cells for days before month starts
     for (let i = 0; i < startingDayOfWeek; i++) {
       grid.push(null);
     }
-    
+
     // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       // Format date as YYYY-MM-DD in local timezone (avoid toISOString which uses UTC)
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+        day
+      ).padStart(2, "0")}`;
       grid.push(dateStr);
     }
-    
+
     // Fill remaining cells to complete the grid (42 total cells)
     while (grid.length < 42) {
       grid.push(null);
     }
-    
+
     return grid;
   }, [currentMonth]);
 
@@ -289,22 +336,30 @@ export default function ServiceCheckout() {
     // Format month boundaries in local timezone
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const monthStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
     const lastDay = new Date(year, month + 1, 0).getDate();
-    const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-    
-    return calendarDates.filter(date => date >= monthStart && date <= monthEnd);
+    const monthEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+      lastDay
+    ).padStart(2, "0")}`;
+
+    return calendarDates.filter(
+      (date) => date >= monthStart && date <= monthEnd
+    );
   }, [calendarDates, currentMonth]);
 
   // Navigation functions - move by month
   const goToPreviousMonth = () => {
     const newMonth = new Date(currentMonth);
     newMonth.setMonth(currentMonth.getMonth() - 1);
-    
+
     // Don't go before current month if it would make all dates unavailable
     const today = new Date();
-    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    
+    const currentMonthStart = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      1
+    );
+
     if (newMonth >= currentMonthStart) {
       setCurrentMonth(newMonth);
     }
@@ -313,11 +368,11 @@ export default function ServiceCheckout() {
   const goToNextMonth = () => {
     const newMonth = new Date(currentMonth);
     newMonth.setMonth(currentMonth.getMonth() + 1);
-    
+
     // Don't go beyond reasonable booking limit (e.g., 6 months ahead)
     const maxMonth = new Date();
     maxMonth.setMonth(maxMonth.getMonth() + 6);
-    
+
     if (newMonth <= maxMonth) {
       setCurrentMonth(newMonth);
     }
@@ -326,7 +381,11 @@ export default function ServiceCheckout() {
   // Check if navigation buttons should be disabled
   const canGoPrevious = useMemo(() => {
     const today = new Date();
-    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const currentMonthStart = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      1
+    );
     const prevMonth = new Date(currentMonth);
     prevMonth.setMonth(currentMonth.getMonth() - 1);
     return prevMonth >= currentMonthStart;
@@ -346,37 +405,58 @@ export default function ServiceCheckout() {
     if (service?.availabilityType === "TIME_SLOTS") {
       if (availableSlots && availableSlots.length > 0) {
         // If API returns full datetime strings, extract just the time portion (HH:MM)
-        return availableSlots.map(slot => {
-          if (slot.includes('T')) {
+        return availableSlots.map((slot) => {
+          if (slot.includes("T")) {
             // Extract time from datetime string like "2025-12-31T09:00:00"
-            const timePart = slot.split('T')[1];
+            const timePart = slot.split("T")[1];
             return timePart ? timePart.substring(0, 5) : slot; // Get HH:MM
           }
           return slot;
         });
       }
-      return availability.timeSlots || ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
+      return (
+        availability.timeSlots || [
+          "09:00",
+          "10:00",
+          "11:00",
+          "14:00",
+          "15:00",
+          "16:00",
+        ]
+      );
     }
-    
+
     // For WORKING_HOURS mode, generate hourly slots within working hours
-    if (service?.availabilityType === "WORKING_HOURS" && availability.workingHoursStart && availability.workingHoursEnd) {
+    if (
+      service?.availabilityType === "WORKING_HOURS" &&
+      availability.workingHoursStart &&
+      availability.workingHoursEnd
+    ) {
       const slots: string[] = [];
-      const [startHour, startMin] = availability.workingHoursStart.split(':').map(Number);
-      const [endHour, endMin] = availability.workingHoursEnd.split(':').map(Number);
-      
-      for (let hour = startHour; hour < endHour || (hour === endHour && startMin < endMin); hour++) {
-        const hourStr = hour.toString().padStart(2, '0');
+      const [startHour, startMin] = availability.workingHoursStart
+        .split(":")
+        .map(Number);
+      const [endHour, endMin] = availability.workingHoursEnd
+        .split(":")
+        .map(Number);
+
+      for (
+        let hour = startHour;
+        hour < endHour || (hour === endHour && startMin < endMin);
+        hour++
+      ) {
+        const hourStr = hour.toString().padStart(2, "0");
         slots.push(`${hourStr}:00`);
         if (hour < endHour) {
           slots.push(`${hourStr}:30`);
         }
       }
-      
+
       return slots;
     }
-    
+
     // Fallback to default slots
-    return ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
+    return ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"];
   }, [service?.availabilityType, availability, availableSlots]);
 
   const handleCheckout = async () => {
@@ -385,20 +465,29 @@ export default function ServiceCheckout() {
     // Validation
     if (!selectedDate || !selectedTime) {
       toast({
-        title: 'Missing Date/Time',
-        description: 'Please select a date and time for your service.',
-        variant: 'destructive',
+        title: "Missing Date/Time",
+        description: "Please select a date and time for your service.",
+        variant: "destructive",
       });
       return;
     }
 
     // For WORKING_HOURS mode, validate time is within range
-    if (service.availabilityType === "WORKING_HOURS" && availability.workingHoursStart && availability.workingHoursEnd) {
-      if (selectedTime < availability.workingHoursStart || selectedTime > availability.workingHoursEnd) {
+    if (
+      service.availabilityType === "WORKING_HOURS" &&
+      availability.workingHoursStart &&
+      availability.workingHoursEnd
+    ) {
+      if (
+        selectedTime < availability.workingHoursStart ||
+        selectedTime > availability.workingHoursEnd
+      ) {
         toast({
-          title: 'Invalid Time',
-          description: `Please select a time between ${formatTime(availability.workingHoursStart)} and ${formatTime(availability.workingHoursEnd)}.`,
-          variant: 'destructive',
+          title: "Invalid Time",
+          description: `Please select a time between ${formatTime(
+            availability.workingHoursStart
+          )} and ${formatTime(availability.workingHoursEnd)}.`,
+          variant: "destructive",
         });
         return;
       }
@@ -406,9 +495,9 @@ export default function ServiceCheckout() {
 
     if (!contactEmail) {
       toast({
-        title: 'Missing Contact Email',
-        description: 'Please enter your contact email.',
-        variant: 'destructive',
+        title: "Missing Contact Email",
+        description: "Please enter your contact email.",
+        variant: "destructive",
       });
       return;
     }
@@ -416,20 +505,24 @@ export default function ServiceCheckout() {
 
     try {
       // Debug logging
-      console.log('Selected Date:', selectedDate);
-      console.log('Selected Time:', selectedTime);
-      
+      console.log("Selected Date:", selectedDate);
+      console.log("Selected Time:", selectedTime);
+
       // Ensure date is in YYYY-MM-DD format
-      const dateOnly = selectedDate.includes('T') ? selectedDate.split('T')[0] : selectedDate;
+      const dateOnly = selectedDate.includes("T")
+        ? selectedDate.split("T")[0]
+        : selectedDate;
       // Ensure time is in HH:MM format
-      const timeOnly = selectedTime.includes('T') ? selectedTime.split('T')[1]?.substring(0, 5) || selectedTime : selectedTime;
-      
-      console.log('Date Only:', dateOnly);
-      console.log('Time Only:', timeOnly);
-      
+      const timeOnly = selectedTime.includes("T")
+        ? selectedTime.split("T")[1]?.substring(0, 5) || selectedTime
+        : selectedTime;
+
+      console.log("Date Only:", dateOnly);
+      console.log("Time Only:", timeOnly);
+
       // Combine date and time into ISO datetime string
       const scheduledDateTime = `${dateOnly}T${timeOnly}:00`;
-      console.log('Scheduled DateTime:', scheduledDateTime);
+      console.log("Scheduled DateTime:", scheduledDateTime);
 
       const orderRequest: CreateServiceOrderRequest = {
         serviceId: service.id,
@@ -451,30 +544,34 @@ export default function ServiceCheckout() {
       if (order.discountValidationError && order.discountCode) {
         // Format error message to be more user-friendly
         let errorMessage = order.discountValidationError;
-        if (errorMessage.includes('minimum requirement')) {
-          errorMessage = 'Your order total does not meet the minimum amount required for this discount.';
-        } else if (errorMessage.includes('usage limit')) {
-          errorMessage = 'This discount code has reached its usage limit.';
-        } else if (errorMessage.includes('not valid')) {
-          errorMessage = 'This discount code is not valid for this service.';
-        } else if (errorMessage.includes('expired')) {
-          errorMessage = 'This discount code has expired.';
+        if (errorMessage.includes("minimum requirement")) {
+          errorMessage =
+            "Your order total does not meet the minimum amount required for this discount.";
+        } else if (errorMessage.includes("usage limit")) {
+          errorMessage = "This discount code has reached its usage limit.";
+        } else if (errorMessage.includes("not valid")) {
+          errorMessage = "This discount code is not valid for this service.";
+        } else if (errorMessage.includes("expired")) {
+          errorMessage = "This discount code has expired.";
         }
-        
+
         toast({
-          title: 'Discount Not Applied',
+          title: "Discount Not Applied",
           description: `The discount code "${order.discountCode}" could not be applied: ${errorMessage} Your order will proceed without the discount.`,
-          variant: 'destructive',
+          variant: "destructive",
           duration: 6000, // Show for 6 seconds since it's important info
         });
         // Clear the discount code from UI state since it wasn't applied
-        setDiscountCode('');
+        setDiscountCode("");
         setDiscountResult(null);
         setDiscountError(errorMessage);
       }
 
       // Initialize payment
-      const paymentInit = await serviceOrderService.initializePayment(order.id, paymentProvider);
+      const paymentInit = await serviceOrderService.initializePayment(
+        order.id,
+        paymentProvider
+      );
 
       // Redirect based on payment provider response
       if (paymentInit.checkoutUrl) {
@@ -483,7 +580,7 @@ export default function ServiceCheckout() {
         window.location.href = paymentInit.checkoutUrl;
         // Component will unmount during redirect, so don't update state after this
         return;
-      } else if (paymentProvider === 'STRIPE' && paymentInit.clientSecret) {
+      } else if (paymentProvider === "STRIPE" && paymentInit.clientSecret) {
         // Stripe Payment Intent - navigate to stripe payment page
         navigate(`/payment/stripe?orderId=${order.id}&orderType=service`, {
           state: {
@@ -499,23 +596,26 @@ export default function ServiceCheckout() {
         // Component will likely unmount during navigation, so return early
         return;
       } else {
-        throw new Error('Payment initialization failed. No checkout URL returned.');
+        throw new Error(
+          "Payment initialization failed. No checkout URL returned."
+        );
       }
     } catch (error: any) {
-      console.error('Checkout error:', error);
+      console.error("Checkout error:", error);
       toast({
-        title: 'Checkout Failed',
-        description: error.message || 'Failed to process your order. Please try again.',
-        variant: 'destructive',
+        title: "Checkout Failed",
+        description:
+          error.message || "Failed to process your order. Please try again.",
+        variant: "destructive",
       });
       setIsProcessing(false);
     }
   };
 
   const formatMonthYear = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric',
+    return date.toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
     });
   };
 
@@ -525,14 +625,16 @@ export default function ServiceCheckout() {
 
   const isPastDate = (dateStr: string) => {
     const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayStr = `${today.getFullYear()}-${String(
+      today.getMonth() + 1
+    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     return dateStr < todayStr;
   };
 
   const formatTime = (timeStr: string) => {
-    const [hours, minutes] = timeStr.split(':');
+    const [hours, minutes] = timeStr.split(":");
     const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const ampm = hour >= 12 ? "PM" : "AM";
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${ampm}`;
   };
@@ -552,8 +654,13 @@ export default function ServiceCheckout() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-eagle-green mb-2">Service Not Found</h2>
-          <Button onClick={() => navigate('/services')} className="bg-eagle-green hover:bg-viridian-green text-white">
+          <h2 className="text-2xl font-bold text-eagle-green mb-2">
+            Service Not Found
+          </h2>
+          <Button
+            onClick={() => navigate("/services")}
+            className="bg-eagle-green hover:bg-viridian-green text-white"
+          >
             Browse Services
           </Button>
         </div>
@@ -578,7 +685,7 @@ export default function ServiceCheckout() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Service
           </Button>
-          
+
           <h1 className="text-3xl font-bold text-eagle-green">
             Book Your Service
           </h1>
@@ -600,8 +707,8 @@ export default function ServiceCheckout() {
                 <CardContent className="p-6">
                   <div className="flex gap-4">
                     {serviceService.getPrimaryImageUrl(service) ? (
-                      <img 
-                        src={serviceService.getPrimaryImageUrl(service)} 
+                      <img
+                        src={serviceService.getPrimaryImageUrl(service)}
                         alt={service.title}
                         className="w-24 h-24 rounded-lg object-cover"
                       />
@@ -624,15 +731,17 @@ export default function ServiceCheckout() {
                         {service.city && (
                           <p className="flex items-center gap-2">
                             <MapPin className="h-4 w-4" />
-                            {service.city}{service.location ? `, ${service.location}` : ''}
+                            {service.city}
+                            {service.location ? `, ${service.location}` : ""}
                           </p>
                         )}
-                        {service.durationMinutes != null && service.durationMinutes > 0 && (
-                          <p className="flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            {service.durationMinutes} minutes
-                          </p>
-                        )}
+                        {service.durationMinutes != null &&
+                          service.durationMinutes > 0 && (
+                            <p className="flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              {service.durationMinutes} minutes
+                            </p>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -681,13 +790,18 @@ export default function ServiceCheckout() {
                 <CardContent>
                   {/* Calendar Header - Days of Week */}
                   <div className="grid grid-cols-7 gap-1 mb-2">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                      <div key={day} className="p-2 text-center text-sm font-semibold text-eagle-green/70">
-                        {day}
-                      </div>
-                    ))}
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                      (day) => (
+                        <div
+                          key={day}
+                          className="p-2 text-center text-sm font-semibold text-eagle-green/70"
+                        >
+                          {day}
+                        </div>
+                      )
+                    )}
                   </div>
-                  
+
                   {/* Calendar Grid */}
                   <div className="grid grid-cols-7 gap-1">
                     {calendarGrid.map((dateStr, index) => {
@@ -695,37 +809,40 @@ export default function ServiceCheckout() {
                         // Empty cell for days outside current month
                         return <div key={index} className="p-3 h-12"></div>;
                       }
-                      
-                      const isAvailable = availableDatesInMonth.includes(dateStr);
+
+                      const isAvailable =
+                        availableDatesInMonth.includes(dateStr);
                       const isSelected = selectedDate === dateStr;
                       const isPast = isPastDate(dateStr);
-                      
+
                       return (
                         <button
                           key={dateStr}
                           onClick={() => {
                             if (isAvailable && !isPast) {
                               setSelectedDate(dateStr);
-                              setSelectedTime(''); // Reset time when date changes
+                              setSelectedTime(""); // Reset time when date changes
                             }
                           }}
                           disabled={!isAvailable || isPast}
                           className={`p-3 h-12 rounded-lg text-center transition-all duration-200 relative ${
                             isSelected
-                              ? 'bg-eagle-green text-white shadow-lg scale-105'
+                              ? "bg-eagle-green text-white shadow-lg scale-105"
                               : isAvailable && !isPast
-                              ? 'bg-gray-100 hover:bg-june-bud/20 text-eagle-green hover:scale-102'
+                              ? "bg-gray-100 hover:bg-june-bud/20 text-eagle-green hover:scale-102"
                               : isPast
-                              ? 'text-gray-300 cursor-not-allowed'
-                              : 'text-gray-400 cursor-not-allowed'
+                              ? "text-gray-300 cursor-not-allowed"
+                              : "text-gray-400 cursor-not-allowed"
                           }`}
                         >
-                          <span className="font-semibold">{getDayOfMonth(dateStr)}</span>
+                          <span className="font-semibold">
+                            {getDayOfMonth(dateStr)}
+                          </span>
                         </button>
                       );
                     })}
                   </div>
-                  
+
                   {/* Legend */}
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="flex flex-wrap gap-4 justify-center text-xs">
@@ -755,20 +872,26 @@ export default function ServiceCheckout() {
                       <Clock className="h-5 w-5" />
                       Select Time
                     </CardTitle>
-                    {service?.availabilityType === "WORKING_HOURS" && availability.workingHoursStart && availability.workingHoursEnd && (
-                      <p className="text-sm font-light text-eagle-green/70">
-                        Available from {formatTime(availability.workingHoursStart)} to {formatTime(availability.workingHoursEnd)}
-                      </p>
-                    )}
+                    {service?.availabilityType === "WORKING_HOURS" &&
+                      availability.workingHoursStart &&
+                      availability.workingHoursEnd && (
+                        <p className="text-sm font-light text-eagle-green/70">
+                          Available from{" "}
+                          {formatTime(availability.workingHoursStart)} to{" "}
+                          {formatTime(availability.workingHoursEnd)}
+                        </p>
+                      )}
                   </CardHeader>
                   <CardContent>
                     {service?.availabilityType === "WORKING_HOURS" ? (
                       <div className="space-y-4">
                         <div>
-                          <Label className="text-sm font-light mb-2 block">Select or enter your preferred time</Label>
+                          <Label className="text-sm font-light mb-2 block">
+                            Select or enter your preferred time
+                          </Label>
                           <input
                             type="time"
-                            value={selectedTime || ''}
+                            value={selectedTime || ""}
                             onChange={(e) => setSelectedTime(e.target.value)}
                             min={availability.workingHoursStart}
                             max={availability.workingHoursEnd}
@@ -776,7 +899,9 @@ export default function ServiceCheckout() {
                           />
                         </div>
                         <div>
-                          <p className="text-sm font-light text-eagle-green/70 mb-2">Or choose a suggested time:</p>
+                          <p className="text-sm font-light text-eagle-green/70 mb-2">
+                            Or choose a suggested time:
+                          </p>
                           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                             {timeSlots.map((time) => (
                               <button
@@ -784,11 +909,13 @@ export default function ServiceCheckout() {
                                 onClick={() => setSelectedTime(time)}
                                 className={`p-3 rounded-lg text-center transition-colors ${
                                   selectedTime === time
-                                    ? 'bg-eagle-green text-white'
-                                    : 'bg-gray-100 hover:bg-june-bud/20 text-eagle-green'
+                                    ? "bg-eagle-green text-white"
+                                    : "bg-gray-100 hover:bg-june-bud/20 text-eagle-green"
                                 }`}
                               >
-                                <span className="font-bold">{formatTime(time)}</span>
+                                <span className="font-bold">
+                                  {formatTime(time)}
+                                </span>
                               </button>
                             ))}
                           </div>
@@ -802,11 +929,13 @@ export default function ServiceCheckout() {
                             onClick={() => setSelectedTime(time)}
                             className={`p-3 rounded-lg text-center transition-colors ${
                               selectedTime === time
-                                ? 'bg-eagle-green text-white'
-                                : 'bg-gray-100 hover:bg-june-bud/20 text-eagle-green'
+                                ? "bg-eagle-green text-white"
+                                : "bg-gray-100 hover:bg-june-bud/20 text-eagle-green"
                             }`}
                           >
-                            <span className="font-bold">{formatTime(time)}</span>
+                            <span className="font-bold">
+                              {formatTime(time)}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -835,7 +964,9 @@ export default function ServiceCheckout() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-light">Recipient Name</Label>
+                      <Label className="text-sm font-light">
+                        Recipient Name
+                      </Label>
                       <div className="relative mt-1">
                         <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                         <Input
@@ -847,7 +978,9 @@ export default function ServiceCheckout() {
                       </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-light">Recipient Email</Label>
+                      <Label className="text-sm font-light">
+                        Recipient Email
+                      </Label>
                       <div className="relative mt-1">
                         <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                         <Input
@@ -861,7 +994,9 @@ export default function ServiceCheckout() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-light">Recipient Phone</Label>
+                    <Label className="text-sm font-light">
+                      Recipient Phone
+                    </Label>
                     <div className="relative mt-1">
                       <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                       <Input
@@ -977,7 +1112,11 @@ export default function ServiceCheckout() {
                               Code "{discountCode}" applied
                             </p>
                             <p className="text-xs text-green-600">
-                              You save {formatPrice(manualDiscountAmountDisplay, displayCurrency)}
+                              You save{" "}
+                              {formatPrice(
+                                manualDiscountAmountDisplay,
+                                displayCurrency
+                              )}
                             </p>
                           </div>
                         </div>
@@ -1001,20 +1140,26 @@ export default function ServiceCheckout() {
                             setDiscountCode(e.target.value);
                             setDiscountError(null);
                           }}
-                          onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()}
-                          className={`flex-1 ${discountError ? 'border-red-300' : ''}`}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && handleApplyDiscount()
+                          }
+                          className={`flex-1 ${
+                            discountError ? "border-red-300" : ""
+                          }`}
                           disabled={isValidatingDiscount}
                         />
                         <Button
                           type="button"
                           onClick={handleApplyDiscount}
-                          disabled={isValidatingDiscount || !discountCode.trim()}
+                          disabled={
+                            isValidatingDiscount || !discountCode.trim()
+                          }
                           className="bg-eagle-green hover:bg-eagle-green/90 text-white font-medium min-w-[90px] transition-all"
                         >
                           {isValidatingDiscount ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            'Apply Code'
+                            "Apply Code"
                           )}
                         </Button>
                       </div>
@@ -1024,11 +1169,13 @@ export default function ServiceCheckout() {
                           {discountError}
                         </p>
                       )}
-                      {!discountError && !discountCode.trim() && service?.activeDiscount && (
-                        <p className="text-xs text-eagle-green/60 mt-1">
-                          A service discount will be applied automatically.
-                        </p>
-                      )}
+                      {!discountError &&
+                        !discountCode.trim() &&
+                        service?.activeDiscount && (
+                          <p className="text-xs text-eagle-green/60 mt-1">
+                            A service discount will be applied automatically.
+                          </p>
+                        )}
                     </div>
                   )}
                 </CardContent>
@@ -1053,10 +1200,10 @@ export default function ServiceCheckout() {
                     amount={finalAmount}
                     currency={displayCurrency}
                     onPaymentMethodSelect={(method) => {
-                      if (method === 'stripe') {
-                        setPaymentProvider('STRIPE');
+                      if (method === "stripe") {
+                        setPaymentProvider("STRIPE");
                       } else {
-                        setPaymentProvider('CHAPA');
+                        setPaymentProvider("CHAPA");
                       }
                     }}
                     userLocation={user?.country || "Ethiopia"}
@@ -1083,12 +1230,15 @@ export default function ServiceCheckout() {
                 <CardContent className="p-6 space-y-4">
                   {/* Service */}
                   <div>
-                    <p className="font-bold text-eagle-green">{service.title}</p>
-                    {service.durationMinutes != null && service.durationMinutes > 0 && (
-                      <p className="text-sm font-light text-eagle-green/70">
-                        {service.durationMinutes} minutes
-                      </p>
-                    )}
+                    <p className="font-bold text-eagle-green">
+                      {service.title}
+                    </p>
+                    {service.durationMinutes != null &&
+                      service.durationMinutes > 0 && (
+                        <p className="text-sm font-light text-eagle-green/70">
+                          {service.durationMinutes} minutes
+                        </p>
+                      )}
                   </div>
 
                   <Separator />
@@ -1099,11 +1249,11 @@ export default function ServiceCheckout() {
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4 text-viridian-green" />
                         <span className="font-light text-eagle-green">
-                          {new Date(selectedDate).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
+                          {new Date(selectedDate).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
                           })}
                         </span>
                       </div>
@@ -1125,10 +1275,10 @@ export default function ServiceCheckout() {
                   {/* Total */}
                   {service.activeDiscount && (
                     <div className="flex justify-center">
-                      <DiscountBadge 
-                        discount={service.activeDiscount} 
-                        variant="compact" 
-                        size="small" 
+                      <DiscountBadge
+                        discount={service.activeDiscount}
+                        variant="compact"
+                        size="small"
                         targetCurrency={displayCurrency}
                       />
                     </div>
@@ -1146,16 +1296,24 @@ export default function ServiceCheckout() {
                             showSavings={false}
                           />
                         ) : (
-                          serviceService.formatPrice(displayPriceMajor ?? 0, displayCurrency)
+                          serviceService.formatPrice(
+                            displayPriceMajor ?? 0,
+                            displayCurrency
+                          )
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <Button 
+                  <Button
                     className="w-full bg-eagle-green hover:bg-viridian-green text-white font-bold h-12"
                     onClick={handleCheckout}
-                    disabled={isProcessing || !selectedDate || !selectedTime || !contactEmail}
+                    disabled={
+                      isProcessing ||
+                      !selectedDate ||
+                      !selectedTime ||
+                      !contactEmail
+                    }
                   >
                     {isProcessing ? (
                       <>
@@ -1171,7 +1329,8 @@ export default function ServiceCheckout() {
                   </Button>
 
                   <p className="text-xs font-light text-eagle-green/60 text-center">
-                    By completing this booking, you agree to our terms of service.
+                    By completing this booking, you agree to our terms of
+                    service.
                   </p>
                 </CardContent>
               </Card>

@@ -3,11 +3,11 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   campaignService,
+  EventCampaign,
   REWARD_TYPE_LABELS,
   REWARD_DURATION_LABELS,
   ACTION_TYPE_LABELS,
   PROOF_TYPE_LABELS,
-  USER_REWARD_TYPES,
 } from "@/services/campaignService";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -148,6 +148,48 @@ function parseCampaignCriteria(
 
 function formatMinorCurrency(minor: number, currencyCode: string): string {
   return formatCurrency(minor / 100, currencyCode);
+}
+
+function hasSubmittedProofData(raw: string | null | undefined): boolean {
+  if (!raw || !raw.trim()) return false;
+
+  try {
+    const parsed = JSON.parse(raw);
+
+    if (typeof parsed === "string") return parsed.trim().length > 0;
+    if (Array.isArray(parsed)) return parsed.length > 0;
+
+    if (parsed && typeof parsed === "object") {
+      return Object.values(parsed as Record<string, unknown>).some((value) => {
+        if (typeof value === "string") return value.trim().length > 0;
+        if (Array.isArray(value)) return value.length > 0;
+        return value !== null && value !== undefined;
+      });
+    }
+
+    return Boolean(parsed);
+  } catch {
+    return true;
+  }
+}
+
+function formatRewardValueDisplay(
+  rewardType: EventCampaign["rewardType"],
+  rewardValue: number,
+  currencyCode: string
+): string {
+  switch (rewardType) {
+    case "DISCOUNT_COUPON":
+    case "COMMISSION_BONUS":
+      return `${rewardValue}%`;
+    case "FIXED_BONUS":
+    case "FIXED_DISCOUNT":
+    case "WALLET_CREDIT":
+    case "GIFT_VOUCHER":
+      return formatCurrency(rewardValue, currencyCode);
+    default:
+      return String(rewardValue);
+  }
 }
 
 function parseEligibilityRules(
@@ -454,12 +496,14 @@ export default function CampaignDetailPage() {
   const isUserRole = normalizedRole === "CUSTOMER";
   const isVendorRole = normalizedRole === "VENDOR";
   const isUploadProofCampaign = campaign?.actionType === "UPLOAD_PROOF";
+  const hasSubmittedProof = hasSubmittedProofData(myParticipation?.submittedData);
   const isCompleteProfileCampaign = campaign?.actionType === "COMPLETE_PROFILE";
   const needsProofAfterJoin =
     isUploadProofCampaign &&
     campaign?.verificationMethod === "MANUAL" &&
     !!myParticipation &&
-    myParticipation.status === "APPROVED";
+    myParticipation.status === "APPROVED" &&
+    !hasSubmittedProof;
   const canCompleteProfile =
     isCompleteProfileCampaign &&
     !!myParticipation &&
@@ -521,13 +565,17 @@ export default function CampaignDetailPage() {
     },
   });
 
-  // Determine if the reward is user-relevant
   const rewardLabel = campaign?.rewardType
     ? REWARD_TYPE_LABELS[campaign.rewardType]
     : null;
-  const isUserReward = campaign?.rewardType
-    ? USER_REWARD_TYPES.includes(campaign.rewardType)
-    : false;
+  const rewardValueDisplay =
+    campaign?.rewardType && campaign.rewardValue != null
+      ? formatRewardValueDisplay(
+          campaign.rewardType,
+          campaign.rewardValue,
+          preferredCurrencyCode
+        )
+      : null;
 
   /* ─── Loading / Error States ─── */
 
@@ -725,12 +773,7 @@ export default function CampaignDetailPage() {
                             </>
                           )}
                       </div>
-                      {myParticipation.adminNote && (
-                        <div className="mt-3 bg-gray-50 rounded-lg p-3 text-sm text-gray-700 italic">
-                          <span className="font-medium not-italic">Note:</span>{" "}
-                          {myParticipation.adminNote}
-                        </div>
-                      )}
+                    
                     </div>
                   </div>
                 </CardContent>
@@ -904,19 +947,11 @@ export default function CampaignDetailPage() {
                       <p className="text-sm font-medium text-green-800">
                         {rewardLabel}
                       </p>
-                      {campaign.rewardValue != null && (
+                      {rewardValueDisplay && (
                         <p className="text-2xl font-bold text-green-700 mt-1">
-                          {isUserReward &&
-                          campaign.rewardType === "DISCOUNT_COUPON"
-                            ? `${campaign.rewardValue}% OFF`
-                            : isUserReward &&
-                              (campaign.rewardType === "FIXED_DISCOUNT" ||
-                                campaign.rewardType === "WALLET_CREDIT")
-                            ? formatCurrency(
-                                campaign.rewardValue,
-                                preferredCurrencyCode
-                              )
-                            : `${campaign.rewardValue}%`}
+                          {campaign.rewardType === "DISCOUNT_COUPON"
+                            ? `${rewardValueDisplay} OFF`
+                            : rewardValueDisplay}
                         </p>
                       )}
                     </div>
@@ -1088,6 +1123,17 @@ export default function CampaignDetailPage() {
                     </div>
                   )}
 
+                  {hasParticipated &&
+                    myParticipation &&
+                    isUploadProofCampaign &&
+                    hasSubmittedProof && (
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-md p-3">
+                          We received your submitted data and will review it.
+                        </p>
+                      </div>
+                    )}
+
                   {hasParticipated && myParticipation && canCompleteProfile && (
                     <div className="mt-4 pt-4 border-t space-y-3">
                       <p className="text-sm font-semibold text-gray-800">
@@ -1180,10 +1226,8 @@ export default function CampaignDetailPage() {
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-sm font-medium text-green-800">
                   🎁 Reward: {REWARD_TYPE_LABELS[campaign.rewardType]}
-                  {campaign.rewardValue != null &&
-                    ` — ${campaign.rewardValue}${
-                      campaign.rewardType === "DISCOUNT_COUPON" ? "%" : ""
-                    }`}
+                  {rewardValueDisplay &&
+                    ` — ${campaign.rewardType === "DISCOUNT_COUPON" ? `${rewardValueDisplay} OFF` : rewardValueDisplay}`}
                 </p>
               </div>
             )}
