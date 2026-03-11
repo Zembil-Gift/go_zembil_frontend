@@ -321,7 +321,12 @@ export default function CampaignDetailPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const {
+    isAuthenticated,
+    isLoading: authLoading,
+    isInitialized: authInitialized,
+    user,
+  } = useAuth();
 
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [submittedData, setSubmittedData] = useState("");
@@ -334,16 +339,19 @@ export default function CampaignDetailPage() {
   const normalizedRole = user?.role?.toUpperCase();
   const preferredCurrencyCode = user?.preferredCurrencyCode ?? "ETB";
 
-  // Fetch campaign details
+  // Fetch campaign details — wait for auth to initialize so the request is sent
+  // with the correct auth token. Including `isAuthenticated` in the query key ensures
+  // a fresh fetch (with proper auth headers) if the session restores after the first
+  // unauthenticated render (which would otherwise cache an ETB-converted value).
   const {
     data: campaign,
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["campaigns", "active", campaignId],
+    queryKey: ["campaigns", "active", campaignId, isAuthenticated],
     queryFn: () => campaignService.getActiveCampaign(campaignId),
-    enabled: !!id && !isNaN(campaignId),
+    enabled: !!id && !isNaN(campaignId) && authInitialized,
     staleTime: 60_000,
     retry: 1,
   });
@@ -496,7 +504,9 @@ export default function CampaignDetailPage() {
   const isUserRole = normalizedRole === "CUSTOMER";
   const isVendorRole = normalizedRole === "VENDOR";
   const isUploadProofCampaign = campaign?.actionType === "UPLOAD_PROOF";
-  const hasSubmittedProof = hasSubmittedProofData(myParticipation?.submittedData);
+  const hasSubmittedProof = hasSubmittedProofData(
+    myParticipation?.submittedData
+  );
   const isCompleteProfileCampaign = campaign?.actionType === "COMPLETE_PROFILE";
   const needsProofAfterJoin =
     isUploadProofCampaign &&
@@ -773,7 +783,6 @@ export default function CampaignDetailPage() {
                             </>
                           )}
                       </div>
-                    
                     </div>
                   </div>
                 </CardContent>
@@ -1077,51 +1086,58 @@ export default function CampaignDetailPage() {
                     </div>
                   )}
 
-                  {hasParticipated && myParticipation && needsProofAfterJoin && (
-                    <div className="mt-4 pt-4 border-t space-y-3">
-                      <p className="text-sm font-semibold text-gray-800">
-                        Submit Required Proof
-                      </p>
+                  {hasParticipated &&
+                    myParticipation &&
+                    needsProofAfterJoin && (
+                      <div className="mt-4 pt-4 border-t space-y-3">
+                        <p className="text-sm font-semibold text-gray-800">
+                          Submit Required Proof
+                        </p>
 
-                      {(campaign.proofType === "TEXT" || campaign.proofType === "MULTIPLE") && (
-                        <Textarea
-                          value={proofText}
-                          onChange={(e) => setProofText(e.target.value)}
-                          placeholder="Enter proof details..."
-                          rows={3}
-                        />
-                      )}
-
-                      {(campaign.proofType === "URL" || campaign.proofType === "MULTIPLE") && (
-                        <Input
-                          value={proofUrl}
-                          onChange={(e) => setProofUrl(e.target.value)}
-                          placeholder="https://..."
-                          type="url"
-                        />
-                      )}
-
-                      {(campaign.proofType === "FILE" || campaign.proofType === "MULTIPLE") && (
-                        <Input
-                          type="file"
-                          onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-                        />
-                      )}
-
-                      <Button
-                        onClick={() => submitProofMutation.mutate()}
-                        disabled={submitProofMutation.isPending}
-                        className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white"
-                      >
-                        {submitProofMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                        {(campaign.proofType === "TEXT" ||
+                          campaign.proofType === "MULTIPLE") && (
+                          <Textarea
+                            value={proofText}
+                            onChange={(e) => setProofText(e.target.value)}
+                            placeholder="Enter proof details..."
+                            rows={3}
+                          />
                         )}
-                        Submit Proof
-                      </Button>
-                    </div>
-                  )}
+
+                        {(campaign.proofType === "URL" ||
+                          campaign.proofType === "MULTIPLE") && (
+                          <Input
+                            value={proofUrl}
+                            onChange={(e) => setProofUrl(e.target.value)}
+                            placeholder="https://..."
+                            type="url"
+                          />
+                        )}
+
+                        {(campaign.proofType === "FILE" ||
+                          campaign.proofType === "MULTIPLE") && (
+                          <Input
+                            type="file"
+                            onChange={(e) =>
+                              setProofFile(e.target.files?.[0] || null)
+                            }
+                          />
+                        )}
+
+                        <Button
+                          onClick={() => submitProofMutation.mutate()}
+                          disabled={submitProofMutation.isPending}
+                          className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white"
+                        >
+                          {submitProofMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                          )}
+                          Submit Proof
+                        </Button>
+                      </div>
+                    )}
 
                   {hasParticipated &&
                     myParticipation &&
@@ -1227,7 +1243,11 @@ export default function CampaignDetailPage() {
                 <p className="text-sm font-medium text-green-800">
                   🎁 Reward: {REWARD_TYPE_LABELS[campaign.rewardType]}
                   {rewardValueDisplay &&
-                    ` — ${campaign.rewardType === "DISCOUNT_COUPON" ? `${rewardValueDisplay} OFF` : rewardValueDisplay}`}
+                    ` — ${
+                      campaign.rewardType === "DISCOUNT_COUPON"
+                        ? `${rewardValueDisplay} OFF`
+                        : rewardValueDisplay
+                    }`}
                 </p>
               </div>
             )}

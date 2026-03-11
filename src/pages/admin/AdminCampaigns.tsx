@@ -2731,11 +2731,6 @@ export default function AdminCampaigns() {
                     </div>
                   )}
 
-                  <FormDescription>
-                    Select eligibility rules. The app converts your selections
-                    to `eligibilityRules` JSON and sends it only when you click
-                    submit.
-                  </FormDescription>
                 </div>
               )}
 
