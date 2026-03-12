@@ -210,12 +210,16 @@ export default function EventCheckout() {
       // Create order
       const order = await eventOrderService.createOrder(orderRequest);
 
+      if (paymentProvider === 'chapa') {
+        navigate(`/payment/chapa?orderId=${order.id}&orderType=event`);
+        return;
+      }
+
       // Initialize payment
       const paymentInit = await eventOrderService.initializePayment(order.id, paymentProvider.toUpperCase());
 
       // Redirect based on payment provider response
       if (paymentInit.checkoutUrl) {
-        // Chapa or Stripe Checkout - redirect to their hosted page
         window.location.href = paymentInit.checkoutUrl;
       } else if (paymentProvider === 'stripe' && paymentInit.clientSecret) {
         // Stripe Payment Intent - navigate to stripe payment page with event order context

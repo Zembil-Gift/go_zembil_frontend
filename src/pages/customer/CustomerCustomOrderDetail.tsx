@@ -244,11 +244,15 @@ function CustomerCustomOrderDetailContent() {
   const handlePayment = async (provider: string) => {
     setProcessingPaymentMethod(provider);
     try {
+      if (provider.toLowerCase() === 'chapa') {
+        navigate(`/payment/chapa?orderId=${orderIdNum}&orderType=custom`);
+        return;
+      }
+
       const paymentInit = await customOrderService.initPayment(orderIdNum, provider);
       
       // Redirect based on payment provider response
       if (paymentInit.checkoutUrl) {
-        // Chapa or Stripe Checkout - redirect to their hosted page
         // Don't set isProcessingPayment to false as we're navigating away
         window.location.href = paymentInit.checkoutUrl;
         // Component will unmount during redirect, so don't update state after this

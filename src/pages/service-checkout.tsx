@@ -567,6 +567,11 @@ export default function ServiceCheckout() {
         setDiscountError(errorMessage);
       }
 
+      if (paymentProvider === 'CHAPA') {
+        navigate(`/payment/chapa?orderId=${order.id}&orderType=service`);
+        return;
+      }
+
       // Initialize payment
       const paymentInit = await serviceOrderService.initializePayment(
         order.id,
@@ -575,7 +580,6 @@ export default function ServiceCheckout() {
 
       // Redirect based on payment provider response
       if (paymentInit.checkoutUrl) {
-        // Chapa or Stripe Checkout - redirect to their hosted page
         // Don't set isProcessing to false as we're navigating away
         window.location.href = paymentInit.checkoutUrl;
         // Component will unmount during redirect, so don't update state after this
