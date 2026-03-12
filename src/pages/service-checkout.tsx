@@ -567,7 +567,7 @@ export default function ServiceCheckout() {
         setDiscountError(errorMessage);
       }
 
-      if (paymentProvider === 'CHAPA') {
+      if (paymentProvider === "CHAPA") {
         navigate(`/payment/chapa?orderId=${order.id}&orderType=service`);
         return;
       }

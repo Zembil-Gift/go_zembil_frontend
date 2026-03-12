@@ -1,10 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, AlertTriangle, ArrowRight, Clock, Home, Loader2, ShoppingBag, Ticket } from "lucide-react";
+import {
+  CheckCircle,
+  AlertTriangle,
+  ArrowRight,
+  Clock,
+  Home,
+  Loader2,
+  ShoppingBag,
+  Ticket,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiService } from '@/services/apiService';
+import { apiService } from "@/services/apiService";
 
 interface ProductOrderPaymentStatusResponse {
   orderId: number;
@@ -18,13 +27,21 @@ interface ProductOrderPaymentStatusResponse {
   checkedAt: string;
 }
 
-const COMPLETED_PAYMENT_STATUSES = new Set(['COMPLETED', 'PAID', 'CONFIRMED']);
-const PENDING_PAYMENT_STATUSES = new Set(['PENDING', 'PROCESSING', 'AWAITING_PAYMENT']);
+const COMPLETED_PAYMENT_STATUSES = new Set(["COMPLETED", "PAID", "CONFIRMED"]);
+const PENDING_PAYMENT_STATUSES = new Set([
+  "PENDING",
+  "PROCESSING",
+  "AWAITING_PAYMENT",
+]);
 
 export default function PaymentSuccess() {
-  const [paymentStatus, setPaymentStatus] = useState<'loading' | 'success' | 'failed' | 'pending'>('loading');
+  const [paymentStatus, setPaymentStatus] = useState<
+    "loading" | "success" | "failed" | "pending"
+  >("loading");
   const [orderInfo, setOrderInfo] = useState<any>(null);
-  const [statusMessage, setStatusMessage] = useState('Please wait while we confirm your payment.');
+  const [statusMessage, setStatusMessage] = useState(
+    "Please wait while we confirm your payment."
+  );
   const { toast } = useToast();
 
   useEffect(() => {
@@ -36,50 +53,54 @@ export default function PaymentSuccess() {
       trxRef: string,
       maxAttempts: number = 5
     ) => {
-      setStatusMessage('Checking payment status...');
+      setStatusMessage("Checking payment status...");
 
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
         try {
-          const result = await apiService.getRequest<ProductOrderPaymentStatusResponse>(
-            `/api/orders/${targetOrderId}/payment-status`
-          );
+          const result =
+            await apiService.getRequest<ProductOrderPaymentStatusResponse>(
+              `/api/orders/${targetOrderId}/payment-status`
+            );
 
           if (cancelled) {
             return;
           }
 
           if (COMPLETED_PAYMENT_STATUSES.has(result.paymentStatus)) {
-            setPaymentStatus('success');
+            setPaymentStatus("success");
             setOrderInfo({
               id: targetOrderId,
               orderType: targetOrderType,
-              paymentMethod: 'Chapa',
+              paymentMethod: "Chapa",
               paymentId: result.providerRef || trxRef,
               backendStatus: result.paymentStatus,
               providerStatus: result.providerStatus,
               verifiedAt: result.checkedAt,
             });
-            setStatusMessage('Your payment has been confirmed.');
+            setStatusMessage("Your payment has been confirmed.");
             toast({
-              title: 'Payment Successful!',
-              description: result.message || 'Your Chapa payment has been confirmed.',
+              title: "Payment Successful!",
+              description:
+                result.message || "Your Chapa payment has been confirmed.",
             });
             return;
           }
 
           if (PENDING_PAYMENT_STATUSES.has(result.paymentStatus)) {
-            setStatusMessage(result.message || 'Your payment is being verified.');
+            setStatusMessage(
+              result.message || "Your payment is being verified."
+            );
 
             if (attempt < maxAttempts - 1) {
               await new Promise((resolve) => setTimeout(resolve, 3000));
               continue;
             }
 
-            setPaymentStatus('pending');
+            setPaymentStatus("pending");
             setOrderInfo({
               id: targetOrderId,
               orderType: targetOrderType,
-              paymentMethod: 'Chapa',
+              paymentMethod: "Chapa",
               paymentId: result.providerRef || trxRef,
               backendStatus: result.paymentStatus,
               providerStatus: result.providerStatus,
@@ -88,12 +109,16 @@ export default function PaymentSuccess() {
             return;
           }
 
-          setPaymentStatus('failed');
-          setStatusMessage(result.message || 'The payment could not be confirmed.');
+          setPaymentStatus("failed");
+          setStatusMessage(
+            result.message || "The payment could not be confirmed."
+          );
           toast({
-            title: 'Payment Not Confirmed',
-            description: result.message || 'The backend could not confirm your Chapa payment.',
-            variant: 'destructive',
+            title: "Payment Not Confirmed",
+            description:
+              result.message ||
+              "The backend could not confirm your Chapa payment.",
+            variant: "destructive",
           });
           return;
         } catch (error: any) {
@@ -106,14 +131,15 @@ export default function PaymentSuccess() {
             continue;
           }
 
-          setPaymentStatus('pending');
+          setPaymentStatus("pending");
           setStatusMessage(
-            error?.message || 'We could not verify the payment yet. Please refresh in a moment or check your orders.'
+            error?.message ||
+              "We could not verify the payment yet. Please refresh in a moment or check your orders."
           );
           setOrderInfo({
             id: targetOrderId,
             orderType: targetOrderType,
-            paymentMethod: 'Chapa',
+            paymentMethod: "Chapa",
             paymentId: trxRef,
           });
           return;
@@ -123,71 +149,78 @@ export default function PaymentSuccess() {
 
     const processReturn = async () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const paymentIntent = urlParams.get('payment_intent');
-      const orderId = urlParams.get('orderId');
-      const orderType = urlParams.get('orderType') || 'PRODUCT';
-      const trxRef = urlParams.get('trx_ref');
-      const status = urlParams.get('status');
+      const paymentIntent = urlParams.get("payment_intent");
+      const orderId = urlParams.get("orderId");
+      const orderType = urlParams.get("orderType") || "PRODUCT";
+      const trxRef = urlParams.get("trx_ref");
+      const status = urlParams.get("status");
 
       if (paymentIntent) {
-        setPaymentStatus('success');
+        setPaymentStatus("success");
         setOrderInfo({
           id: orderId,
           orderType,
-          paymentMethod: 'Stripe',
-          paymentId: paymentIntent
+          paymentMethod: "Stripe",
+          paymentId: paymentIntent,
         });
-        setStatusMessage('Your Stripe payment has been processed successfully.');
+        setStatusMessage(
+          "Your Stripe payment has been processed successfully."
+        );
         return;
       }
 
       if (trxRef) {
-        if (status !== 'success') {
-          setPaymentStatus('failed');
-          setStatusMessage('Your Chapa payment was not successful. Please try again.');
+        if (status !== "success") {
+          setPaymentStatus("failed");
+          setStatusMessage(
+            "Your Chapa payment was not successful. Please try again."
+          );
           toast({
-            title: 'Payment Failed',
-            description: 'Your Chapa payment was not successful. Please try again.',
-            variant: 'destructive',
+            title: "Payment Failed",
+            description:
+              "Your Chapa payment was not successful. Please try again.",
+            variant: "destructive",
           });
           return;
         }
 
-        if (orderId && orderType === 'PRODUCT') {
+        if (orderId && orderType === "PRODUCT") {
           await verifyChapaProductPayment(orderId, orderType, trxRef);
           return;
         }
 
-        setPaymentStatus('success');
+        setPaymentStatus("success");
         setOrderInfo({
           id: orderId,
           orderType,
-          paymentMethod: 'Chapa',
-          paymentId: trxRef
+          paymentMethod: "Chapa",
+          paymentId: trxRef,
         });
-        setStatusMessage('Chapa returned a successful payment result.');
+        setStatusMessage("Chapa returned a successful payment result.");
         toast({
-          title: 'Payment Successful!',
-          description: 'Your Chapa payment has been processed successfully.',
+          title: "Payment Successful!",
+          description: "Your Chapa payment has been processed successfully.",
         });
         return;
       }
 
       if (orderId) {
-        setPaymentStatus('success');
+        setPaymentStatus("success");
         setOrderInfo({
           id: orderId,
           orderType,
-          paymentMethod: 'Unknown'
+          paymentMethod: "Unknown",
         });
-        setStatusMessage('Order details loaded successfully.');
+        setStatusMessage("Order details loaded successfully.");
         return;
       }
 
       setTimeout(() => {
         if (!cancelled) {
-          setPaymentStatus('failed');
-          setStatusMessage('No payment information was found in the return URL.');
+          setPaymentStatus("failed");
+          setStatusMessage(
+            "No payment information was found in the return URL."
+          );
         }
       }, 2000);
     };
@@ -199,7 +232,7 @@ export default function PaymentSuccess() {
     };
   }, [toast]);
 
-  if (paymentStatus === 'loading') {
+  if (paymentStatus === "loading") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -215,7 +248,7 @@ export default function PaymentSuccess() {
     );
   }
 
-  if (paymentStatus === 'pending') {
+  if (paymentStatus === "pending") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -228,23 +261,32 @@ export default function PaymentSuccess() {
           <CardContent className="space-y-4">
             <Alert>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <AlertDescription>
-                {statusMessage}
-              </AlertDescription>
+              <AlertDescription>{statusMessage}</AlertDescription>
             </Alert>
 
             {orderInfo?.id && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
-                <p><span className="font-medium">Order ID:</span> {orderInfo.id}</p>
-                <p><span className="font-medium">Payment Method:</span> {orderInfo.paymentMethod}</p>
+                <p>
+                  <span className="font-medium">Order ID:</span> {orderInfo.id}
+                </p>
+                <p>
+                  <span className="font-medium">Payment Method:</span>{" "}
+                  {orderInfo.paymentMethod}
+                </p>
                 {orderInfo.paymentId && (
-                  <p><span className="font-medium">Payment ID:</span> {orderInfo.paymentId}</p>
+                  <p>
+                    <span className="font-medium">Payment ID:</span>{" "}
+                    {orderInfo.paymentId}
+                  </p>
                 )}
               </div>
             )}
 
             <div className="space-y-3">
-              <Button onClick={() => window.location.reload()} className="w-full">
+              <Button
+                onClick={() => window.location.reload()}
+                className="w-full"
+              >
                 <ArrowRight className="w-4 h-4 mr-2" />
                 Check Again
               </Button>
@@ -262,7 +304,7 @@ export default function PaymentSuccess() {
     );
   }
 
-  if (paymentStatus === 'failed') {
+  if (paymentStatus === "failed") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -276,10 +318,11 @@ export default function PaymentSuccess() {
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                {statusMessage || 'Your payment could not be processed. This could be due to insufficient funds, network issues, or payment cancellation.'}
+                {statusMessage ||
+                  "Your payment could not be processed. This could be due to insufficient funds, network issues, or payment cancellation."}
               </AlertDescription>
             </Alert>
-            
+
             <div className="space-y-3">
               <Button asChild className="w-full">
                 <a href="/checkout">
@@ -287,7 +330,7 @@ export default function PaymentSuccess() {
                   Try Again
                 </a>
               </Button>
-              
+
               <Button variant="outline" asChild className="w-full">
                 <a href="/cart">
                   <ShoppingBag className="w-4 h-4 mr-2" />
@@ -314,7 +357,8 @@ export default function PaymentSuccess() {
           <Alert>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              {statusMessage || 'Your payment has been processed successfully. You will receive an email confirmation shortly with your order details.'}
+              {statusMessage ||
+                "Your payment has been processed successfully. You will receive an email confirmation shortly with your order details."}
             </AlertDescription>
           </Alert>
 
@@ -343,9 +387,12 @@ export default function PaymentSuccess() {
           )} */}
 
           <div className="space-y-3">
-            {orderInfo?.id && orderInfo?.orderType === 'EVENT' ? (
+            {orderInfo?.id && orderInfo?.orderType === "EVENT" ? (
               // For event orders, show View Tickets button
-              <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+              <Button
+                asChild
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
                 <a href="/my-tickets">
                   <Ticket className="w-4 h-4 mr-2" />
                   View My Tickets
@@ -353,18 +400,23 @@ export default function PaymentSuccess() {
               </Button>
             ) : orderInfo?.id ? (
               // For product orders, show Track Order button
-              <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+              <Button
+                asChild
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
                 <a href={`/track/${orderInfo.id}`}>
                   <ShoppingBag className="w-4 h-4 mr-2" />
                   Track Your Order
                 </a>
               </Button>
             ) : null}
-            
+
             <Button variant="outline" asChild className="w-full">
-              <a href={orderInfo?.orderType === 'EVENT' ? '/events' : '/shop'}>
+              <a href={orderInfo?.orderType === "EVENT" ? "/events" : "/shop"}>
                 <Home className="w-4 h-4 mr-2" />
-                {orderInfo?.orderType === 'EVENT' ? 'Browse More Events' : 'Continue Shopping'}
+                {orderInfo?.orderType === "EVENT"
+                  ? "Browse More Events"
+                  : "Continue Shopping"}
               </a>
             </Button>
           </div>

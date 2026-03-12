@@ -4,7 +4,9 @@ interface ChapaInlineCheckoutOptions {
   currency?: string;
   mobile?: string;
   tx_ref: string;
-  availablePaymentMethods?: Array<'telebirr' | 'cbebirr' | 'ebirr' | 'mpesa' | 'chapa'>;
+  availablePaymentMethods?: Array<
+    "telebirr" | "cbebirr" | "ebirr" | "mpesa" | "chapa"
+  >;
   customizations?: {
     buttonText?: string;
     styles?: string;
@@ -23,7 +25,7 @@ interface ChapaInlineCheckoutInstance {
   initialize: (containerId?: string) => void;
 }
 
-declare module '@chapa_et/inline.js/lib/inline.js' {
+declare module "@chapa_et/inline.js/lib/inline.js" {
   const ChapaInlineModule: {
     new (options: ChapaInlineCheckoutOptions): ChapaInlineCheckoutInstance;
   };
