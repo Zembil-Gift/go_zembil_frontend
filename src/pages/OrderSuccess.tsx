@@ -263,7 +263,6 @@ export default function OrderSuccess() {
           <Button 
             className="bg-ethiopian-gold hover:bg-amber text-white"
             onClick={() => {
-              console.log('🔄 Track My Order clicked, navigating to:', `/track/${order.id}`);
               navigate(`/track/${order.id}`);
             }}
           >

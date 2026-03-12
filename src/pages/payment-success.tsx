@@ -17,6 +17,7 @@ import { apiService } from "@/services/apiService";
 
 interface ProductOrderPaymentStatusResponse {
   orderId: number;
+  orderNumber?: string;
   orderStatus: string;
   paymentStatus: string;
   provider: string | null;
@@ -70,6 +71,7 @@ export default function PaymentSuccess() {
             setPaymentStatus("success");
             setOrderInfo({
               id: targetOrderId,
+              orderNumber: result.orderNumber,
               orderType: targetOrderType,
               paymentMethod: "Chapa",
               paymentId: result.providerRef || trxRef,
@@ -99,6 +101,7 @@ export default function PaymentSuccess() {
             setPaymentStatus("pending");
             setOrderInfo({
               id: targetOrderId,
+              orderNumber: result.orderNumber,
               orderType: targetOrderType,
               paymentMethod: "Chapa",
               paymentId: result.providerRef || trxRef,
@@ -404,7 +407,7 @@ export default function PaymentSuccess() {
                 asChild
                 className="w-full bg-green-600 hover:bg-green-700"
               >
-                <a href={`/track/${orderInfo.id}`}>
+                <a href={`/track/${orderInfo.orderNumber || orderInfo.id}`}>
                   <ShoppingBag className="w-4 h-4 mr-2" />
                   Track Your Order
                 </a>
