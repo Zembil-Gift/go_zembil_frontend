@@ -1,15 +1,17 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import {
   formatPrice,
+  getCurrencyDecimals,
   toMinorUnits,
   getDiscountAmountForDisplay,
   calculateDiscountedPrice,
 } from "@/lib/currency";
 import { getProductImageUrl } from "@/utils/imageUtils";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,6 +36,11 @@ import {
   discountService,
   type DiscountValidationResult,
 } from "@/services/discountService";
+import {
+  campaignService,
+  REWARD_TYPE_LABELS,
+  type CampaignRewardPreviewItem,
+} from "@/services/campaignService";
 
 export default function Cart() {
   const { toast } = useToast();
@@ -186,6 +193,59 @@ export default function Cart() {
   const discountAmountDisplay = useMemo(() => {
     return getDiscountAmountForDisplay(discountResult, cartCurrency);
   }, [discountResult, cartCurrency]);
+
+  const cartSubtotal = useMemo(() => {
+    if (!Array.isArray(cartItems)) return 0;
+    return calculateSubtotalForItems(cartItems, cartCurrency);
+  }, [cartItems, cartCurrency, calculateSubtotalForItems]);
+
+  const rewardPreviewSubtotalMinor = useMemo(() => {
+    if (!cartCurrency || cartSubtotal <= 0) return 0;
+    return toMinorUnits(cartSubtotal, cartCurrency);
+  }, [cartSubtotal, cartCurrency]);
+
+  const { data: campaignRewardPreview } = useQuery({
+    queryKey: ["campaigns", "rewards", "preview", rewardPreviewSubtotalMinor],
+    queryFn: () => campaignService.previewRewards(rewardPreviewSubtotalMinor),
+    enabled: isAuthenticated && cartItems.length > 0,
+    staleTime: 0,
+    retry: false,
+  });
+
+  const campaignRewardDiscountDisplay = useMemo(() => {
+    if (!campaignRewardPreview?.hasDiscount) return 0;
+
+    return (
+      (campaignRewardPreview.discountAmountMinor || 0) /
+      Math.pow(10, getCurrencyDecimals(cartCurrency))
+    );
+  }, [campaignRewardPreview, cartCurrency]);
+
+  const hasCampaignRewards =
+    Boolean(campaignRewardPreview?.freeDeliveryActive) ||
+    Boolean(campaignRewardPreview?.hasDiscount) ||
+    (campaignRewardPreview?.rewards?.length || 0) > 0;
+
+  const estimatedTotal = Math.max(
+    0,
+    cartSubtotal - discountAmountDisplay - campaignRewardDiscountDisplay
+  );
+
+  const formatRewardValue = useCallback(
+    (
+      rewardType: CampaignRewardPreviewItem["rewardType"],
+      valueMinor: number
+    ) => {
+      if (rewardType === "FREE_DELIVERY") {
+        return "Free delivery";
+      }
+
+      const value =
+        valueMinor / Math.pow(10, getCurrencyDecimals(cartCurrency));
+      return `Save ${formatPrice(value, cartCurrency)}`;
+    },
+    [cartCurrency]
+  );
 
   const handleApplyDiscount = useCallback(
     async (
@@ -470,8 +530,7 @@ export default function Cart() {
   });
 
   const calculateSubtotal = () => {
-    if (!Array.isArray(cartItems)) return 0;
-    return calculateSubtotalForItems(cartItems, cartCurrency);
+    return cartSubtotal;
   };
 
   const calculateTotal = () => {
@@ -905,9 +964,68 @@ export default function Cart() {
                         Subtotal ({getTotalItems()} items)
                       </span>
                       <span className="font-medium">
-                        {formatPrice(calculateSubtotal(), cartCurrency)}
+                        {formatPrice(cartSubtotal, cartCurrency)}
                       </span>
                     </div>
+
+                    {hasCampaignRewards && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-amber-950">
+                              Campaign rewards ready
+                            </p>
+                            <p className="text-xs text-amber-800 mt-1">
+                              Active rewards are previewed here and will be
+                              applied automatically at checkout.
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {campaignRewardPreview?.freeDeliveryActive && (
+                              <Badge className="bg-emerald-600 text-white px-2.5 py-1 text-[11px]">
+                                Free Delivery
+                              </Badge>
+                            )}
+                            {campaignRewardPreview?.hasDiscount &&
+                              campaignRewardDiscountDisplay > 0 && (
+                                <Badge className="bg-amber-600 text-white px-2.5 py-1 text-[11px]">
+                                  Save{" "}
+                                  {formatPrice(
+                                    campaignRewardDiscountDisplay,
+                                    cartCurrency
+                                  )}
+                                </Badge>
+                              )}
+                          </div>
+                        </div>
+
+                        {campaignRewardPreview?.rewards?.length ? (
+                          <div className="space-y-2">
+                            {campaignRewardPreview.rewards.map((reward) => (
+                              <div
+                                key={`${reward.participationId}-${reward.rewardType}`}
+                                className="flex items-start justify-between gap-3 rounded-md bg-white/70 px-3 py-2"
+                              >
+                                <div>
+                                  <p className="text-sm font-medium text-charcoal">
+                                    {reward.campaignName}
+                                  </p>
+                                  <p className="text-xs text-gray-600 mt-0.5">
+                                    {REWARD_TYPE_LABELS[reward.rewardType]}
+                                  </p>
+                                </div>
+                                <p className="text-xs font-semibold text-amber-900 text-right">
+                                  {formatRewardValue(
+                                    reward.rewardType,
+                                    reward.valueMinor
+                                  )}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
 
                     {/* Discount Code Input */}
                     <div className="space-y-2">
@@ -984,12 +1102,33 @@ export default function Cart() {
                     {discountResult?.applicable &&
                       discountAmountDisplay > 0 && (
                         <div className="flex justify-between text-sm text-green-600">
-                          <span>Discount</span>
+                          <span>Discount code</span>
                           <span>
                             -{formatPrice(discountAmountDisplay, cartCurrency)}
                           </span>
                         </div>
                       )}
+
+                    {campaignRewardPreview?.hasDiscount &&
+                      campaignRewardDiscountDisplay > 0 && (
+                        <div className="flex justify-between text-sm text-amber-700">
+                          <span>Campaign reward</span>
+                          <span>
+                            -
+                            {formatPrice(
+                              campaignRewardDiscountDisplay,
+                              cartCurrency
+                            )}
+                          </span>
+                        </div>
+                      )}
+
+                    {campaignRewardPreview?.freeDeliveryActive && (
+                      <div className="flex justify-between text-sm text-emerald-600">
+                        <span>Delivery reward</span>
+                        <span>Free at checkout</span>
+                      </div>
+                    )}
 
                     <Separator />
 
@@ -997,16 +1136,14 @@ export default function Cart() {
                     <div className="flex justify-between text-lg font-bold">
                       <span>Estimated Total</span>
                       <span className="text-ethiopian-gold">
-                        {formatPrice(
-                          Math.max(0, calculateTotal() - discountAmountDisplay),
-                          cartCurrency
-                        )}
+                        {formatPrice(estimatedTotal, cartCurrency)}
                       </span>
                     </div>
 
-                    {discountResult?.applicable && (
+                    {(discountResult?.applicable || hasCampaignRewards) && (
                       <p className="text-xs text-gray-500">
-                        Discount will be confirmed at checkout.
+                        Discounts and reward benefits will be confirmed at
+                        checkout.
                       </p>
                     )}
 

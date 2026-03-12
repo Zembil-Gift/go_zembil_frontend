@@ -1,6 +1,6 @@
-import { apiService } from './apiService';
-import api from './api';
-import { toInstantISOString } from '@/lib/instant';
+import { apiService } from "./apiService";
+import api from "./api";
+import { toInstantISOString } from "@/lib/instant";
 
 // ==================== Enums ====================
 
@@ -38,7 +38,8 @@ export type ParticipationStatus =
   | "PENDING"
   | "APPROVED"
   | "REJECTED"
-  | "COMPLETED";
+  | "COMPLETED"
+  | "PAID";
 
 // ==================== Types ====================
 
@@ -109,6 +110,7 @@ export interface CampaignParticipation {
   participantEmail: string | null;
   participantRole: TargetRole;
   status: ParticipationStatus;
+  rewardType?: RewardType | null;
   submittedData: string | null;
   adminNote: string | null;
   approvedAt: string | null;
@@ -116,6 +118,23 @@ export interface CampaignParticipation {
   rewardEndDate: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CampaignRewardPreviewItem {
+  participationId: number;
+  campaignName: string;
+  rewardType: Extract<
+    RewardType,
+    "FIXED_DISCOUNT" | "DISCOUNT_COUPON" | "FREE_DELIVERY"
+  >;
+  valueMinor: number;
+}
+
+export interface CampaignRewardPreview {
+  freeDeliveryActive: boolean;
+  discountAmountMinor: number;
+  hasDiscount: boolean;
+  rewards: CampaignRewardPreviewItem[];
 }
 
 export interface CampaignActionProgress {
@@ -264,17 +283,22 @@ class CampaignService {
   }
 
   async createCampaign(data: EventCampaignRequest): Promise<EventCampaign> {
-    return apiService.postRequest<EventCampaign>('/api/campaigns', {
+    return apiService.postRequest<EventCampaign>("/api/campaigns", {
       ...data,
-      startDateTime: toInstantISOString(data.startDateTime) || data.startDateTime,
+      startDateTime:
+        toInstantISOString(data.startDateTime) || data.startDateTime,
       endDateTime: toInstantISOString(data.endDateTime) || data.endDateTime,
     });
   }
 
-  async updateCampaign(id: number, data: EventCampaignRequest): Promise<EventCampaign> {
+  async updateCampaign(
+    id: number,
+    data: EventCampaignRequest
+  ): Promise<EventCampaign> {
     return apiService.putRequest<EventCampaign>(`/api/campaigns/${id}`, {
       ...data,
-      startDateTime: toInstantISOString(data.startDateTime) || data.startDateTime,
+      startDateTime:
+        toInstantISOString(data.startDateTime) || data.startDateTime,
       endDateTime: toInstantISOString(data.endDateTime) || data.endDateTime,
     });
   }
@@ -332,6 +356,18 @@ class CampaignService {
   async getMyParticipations(): Promise<CampaignParticipation[]> {
     return apiService.getRequest<CampaignParticipation[]>(
       "/api/campaigns/my-participations"
+    );
+  }
+
+  async previewRewards(
+    subtotalMinor: number = 0
+  ): Promise<CampaignRewardPreview> {
+    const params = new URLSearchParams({
+      subtotalMinor: String(Math.max(0, subtotalMinor)),
+    });
+
+    return apiService.getRequest<CampaignRewardPreview>(
+      `/api/campaigns/rewards/preview?${params.toString()}`
     );
   }
 

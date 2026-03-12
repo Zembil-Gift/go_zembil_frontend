@@ -155,6 +155,7 @@ function ParticipationStatusBadge({ status }: { status: ParticipationStatus }) {
     APPROVED: "bg-green-100 text-green-800 border-green-200",
     REJECTED: "bg-red-100 text-red-800 border-red-200",
     COMPLETED: "bg-blue-100 text-blue-800 border-blue-200",
+    PAID: "bg-purple-100 text-purple-800 border-purple-200",
   };
 
   return (
@@ -168,6 +169,7 @@ function ParticipationStatusBadge({ status }: { status: ParticipationStatus }) {
       {status === "COMPLETED" && (
         <CheckCircle className="inline h-3 w-3 mr-1" />
       )}
+      {status === "PAID" && <CheckCircle className="inline h-3 w-3 mr-1" />}
       {status}
     </Badge>
   );
