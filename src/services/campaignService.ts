@@ -151,6 +151,103 @@ export interface CampaignActionProgress {
   valueUnit: "MINOR_CURRENCY" | "COUNT";
   campaignStartDateTime: string;
   campaignEndDateTime: string;
+  soldObjects?: CampaignActionProgressObject[];
+  orderedObjects?: CampaignActionProgressObject[];
+  qualifyingObjects?: CampaignActionProgressObject[];
+}
+
+export interface CampaignActionProgressObject {
+  orderType?: string | null;
+  orderId?: number | null;
+  orderNumber?: string | null;
+  soldAt?: string | null;
+  amountMinor?: number | null;
+  quantity?: number | null;
+  product?: CampaignActionProgressProduct | null;
+  service?: unknown;
+  event?: unknown;
+}
+
+export interface CampaignActionProgressProduct {
+  id: number;
+  name: string;
+  description?: string;
+  summary?: string;
+  cover?: string;
+  images?: Array<{
+    id: number;
+    url: string;
+    fullUrl?: string;
+    originalFilename?: string;
+    altText?: string;
+    sortOrder: number;
+    isPrimary: boolean;
+    fileSize?: number;
+    contentType?: string;
+    createdAt?: string;
+  }>;
+  status?:
+    | "PENDING"
+    | "ACTIVE"
+    | "REJECTED"
+    | "DRAFT"
+    | "INACTIVE"
+    | "ARCHIVED"
+    | "APPROVED";
+  vendorId?: number;
+  vendorName?: string;
+  categoryName?: string;
+  subCategoryName?: string;
+  subCategoryId?: number;
+  createdAt?: string;
+  giftWrappable?: boolean;
+  giftWrapPrice?: number;
+  giftWrapCustomerPrice?: number;
+  giftWrapCurrencyCode?: string;
+  price?: {
+    id?: number;
+    amount: number;
+    vendorAmount?: number;
+    unitAmountMinor?: number;
+    vendorAmountMinor?: number;
+    currencyCode: string;
+    originalCurrencyCode?: string;
+    originalVendorAmountMinor?: number;
+  };
+  productSku?: Array<{
+    id: number;
+    skuCode?: string | null;
+    skuName?: string | null;
+    stockQuantity: number;
+    isDefault?: boolean;
+    attributes?: Array<{
+      id?: number;
+      name: string;
+      value: string;
+    }> | null;
+    images?: Array<{
+      id: number;
+      url: string;
+      fullUrl?: string;
+      originalFilename?: string;
+      altText?: string;
+      sortOrder?: number;
+      isPrimary?: boolean;
+      fileSize?: number;
+      contentType?: string;
+      createdAt?: string;
+    }>;
+    price?: {
+      id?: number;
+      amount: number;
+      vendorAmount?: number;
+      unitAmountMinor?: number;
+      vendorAmountMinor?: number;
+      currencyCode: string;
+      originalCurrencyCode?: string;
+      originalVendorAmountMinor?: number;
+    };
+  }>;
 }
 
 export interface CampaignParticipationRequest {
@@ -173,6 +270,40 @@ export interface MultipleProofMetadataRequest {
 export interface ParticipationReviewRequest {
   status: "APPROVED" | "REJECTED";
   adminNote?: string;
+}
+
+export interface CampaignPayoutReportParticipation {
+  id: number;
+  campaignId: number;
+  campaignName: string;
+  participantId: number;
+  participantName: string | null;
+  participantEmail: string | null;
+  participantRole: Extract<TargetRole, "VENDOR" | "CUSTOMER">;
+  status: "PAID";
+  submittedData: string | null;
+  adminNote: string | null;
+  approvedAt: string | null;
+  rewardStartDate: string | null;
+  rewardEndDate: string | null;
+  salesSnapshotAmountMinor: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CampaignPayoutReportItem {
+  participation: CampaignPayoutReportParticipation;
+  paidAt: string | null;
+  rewardType: string | null;
+  rewardValue: number | string | null;
+  payoutAmountMinor: number | null;
+  payoutAmountNote: string | null;
+}
+
+export interface CampaignPayoutReportFilters {
+  from?: string;
+  to?: string;
+  participantRole?: Extract<TargetRole, "VENDOR" | "CUSTOMER">;
 }
 
 // ==================== Labels ====================
@@ -437,6 +568,26 @@ class CampaignService {
   ): Promise<CampaignActionProgress> {
     return apiService.getRequest<CampaignActionProgress>(
       `/api/campaigns/participations/${participationId}/action-progress`
+    );
+  }
+
+  async getCampaignPayoutReport(
+    campaignId: number,
+    filters?: CampaignPayoutReportFilters
+  ): Promise<CampaignPayoutReportItem[]> {
+    const params = new URLSearchParams();
+
+    if (filters?.from) params.append("from", filters.from);
+    if (filters?.to) params.append("to", filters.to);
+    if (filters?.participantRole) {
+      params.append("participantRole", filters.participantRole);
+    }
+
+    const query = params.toString();
+    const suffix = query ? `?${query}` : "";
+
+    return apiService.getRequest<CampaignPayoutReportItem[]>(
+      `/api/campaigns/${campaignId}/participations/payout-report${suffix}`
     );
   }
 
