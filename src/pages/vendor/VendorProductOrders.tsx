@@ -1,6 +1,6 @@
-import {useState} from 'react';
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {motion} from 'framer-motion';
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import {
   AlertCircle,
   CheckCircle,
@@ -17,62 +17,78 @@ import {
   ShoppingBag,
   Truck,
   User,
-  XCircle
-} from 'lucide-react';
+  XCircle,
+} from "lucide-react";
 
-import {Button} from '@/components/ui/button';
-import {Badge} from '@/components/ui/badge';
-import {Card, CardContent} from '@/components/ui/card';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import {Skeleton} from '@/components/ui/skeleton';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
-import {Separator} from '@/components/ui/separator';
-import {Input} from '@/components/ui/input';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {Textarea} from '@/components/ui/textarea';
-import {useToast} from '@/hooks/use-toast';
-import {AuthenticatedImage, useAuthenticatedImageViewer} from '@/components/AuthenticatedImage';
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AuthenticatedImage,
+  useAuthenticatedImageViewer,
+} from "@/components/AuthenticatedImage";
 
-import {orderService, VendorOrder, VendorOrderDeliveryInfo} from '@/services/orderService';
+import {
+  orderService,
+  VendorOrder,
+  VendorOrderDeliveryInfo,
+} from "@/services/orderService";
 
 export default function VendorProductOrders() {
   const { toast } = useToast();
   const { openImage } = useAuthenticatedImageViewer();
   const queryClient = useQueryClient();
-  
+
   const [selectedOrder, setSelectedOrder] = useState<VendorOrder | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
   // Rejection dialog state
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [orderToReject, setOrderToReject] = useState<VendorOrder | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionReason, setRejectionReason] = useState("");
 
   // Accept order mutation
   const acceptOrderMutation = useMutation({
     mutationFn: (orderId: number) => orderService.acceptOrder(orderId),
     onSuccess: async () => {
       toast({
-        title: 'Order Accepted',
-        description: 'The order has been confirmed and is ready for processing.',
+        title: "Order Accepted",
+        description:
+          "The order has been confirmed and is ready for processing.",
       });
-      await queryClient.invalidateQueries({ queryKey: ['vendor-product-orders'] });
+      await queryClient.invalidateQueries({
+        queryKey: ["vendor-product-orders"],
+      });
       setDetailDialogOpen(false);
       setSelectedOrder(null);
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to accept order',
+        title: "Error",
+        description: error.message || "Failed to accept order",
         variant: "destructive",
       });
     },
@@ -80,21 +96,30 @@ export default function VendorProductOrders() {
 
   // Update order status mutation
   const updateStatusMutation = useMutation({
-    mutationFn: ({ orderId, status, notes }: { orderId: number; status: string; notes?: string }) => 
-      orderService.updateVendorOrderStatus(orderId, status, notes),
+    mutationFn: ({
+      orderId,
+      status,
+      notes,
+    }: {
+      orderId: number;
+      status: string;
+      notes?: string;
+    }) => orderService.updateVendorOrderStatus(orderId, status, notes),
     onSuccess: async (updatedOrder) => {
       toast({
-        title: 'Status Updated',
+        title: "Status Updated",
         description: `Order status moved to ${updatedOrder.status}.`,
       });
-      await queryClient.invalidateQueries({ queryKey: ['vendor-product-orders'] });
+      await queryClient.invalidateQueries({
+        queryKey: ["vendor-product-orders"],
+      });
       setDetailDialogOpen(false);
       setSelectedOrder(null);
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update order status',
+        title: "Error",
+        description: error.message || "Failed to update order status",
         variant: "destructive",
       });
     },
@@ -102,97 +127,113 @@ export default function VendorProductOrders() {
 
   // Deny order mutation
   const denyOrderMutation = useMutation({
-    mutationFn: ({ orderId, reason }: { orderId: number; reason: string }) => 
+    mutationFn: ({ orderId, reason }: { orderId: number; reason: string }) =>
       orderService.denyOrder(orderId, reason),
     onSuccess: async () => {
       toast({
-        title: 'Order Rejected',
-        description: 'The order has been rejected and the customer will be notified.',
+        title: "Order Rejected",
+        description:
+          "The order has been rejected and the customer will be notified.",
       });
-      await queryClient.invalidateQueries({ queryKey: ['vendor-product-orders'] });
+      await queryClient.invalidateQueries({
+        queryKey: ["vendor-product-orders"],
+      });
       setRejectDialogOpen(false);
       setDetailDialogOpen(false);
-      setRejectionReason('');
+      setRejectionReason("");
       setOrderToReject(null);
       setSelectedOrder(null);
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to reject order',
+        title: "Error",
+        description: error.message || "Failed to reject order",
         variant: "destructive",
       });
     },
   });
 
   // Fetch vendor's product orders
-  const { data: ordersData, isLoading, refetch } = useQuery({
-    queryKey: ['vendor-product-orders', statusFilter],
+  const {
+    data: ordersData,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["vendor-product-orders", statusFilter],
     queryFn: () => {
-      const status = statusFilter === 'all' ? undefined : statusFilter;
+      const status = statusFilter === "all" ? undefined : statusFilter;
       return orderService.getVendorOrders(0, 100, status);
     },
   });
 
-  const orders = ordersData?.content || [];
+  const orders = ordersData?.content || ordersData?.items || [];
 
   // Filter orders by search query
   const filteredOrders = orders.filter((order: VendorOrder) => {
-    return searchQuery === '' ||
-        order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.items.some(item => item.productName.toLowerCase().includes(searchQuery.toLowerCase()));
+    return (
+      searchQuery === "" ||
+      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.items.some((item) =>
+        item.productName.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
   });
 
   // Categorize orders
-  const pendingOrders = filteredOrders.filter((order: VendorOrder) => 
-    order.status === 'PENDING' || order.status === 'PLACED' || order.status === 'CONFIRMED'
+  const pendingOrders = filteredOrders.filter(
+    (order: VendorOrder) =>
+      order.status === "PENDING" ||
+      order.status === "PLACED" ||
+      order.status === "CONFIRMED"
   );
 
-  const processingOrders = filteredOrders.filter((order: VendorOrder) => 
-    order.status === 'PROCESSING'
+  const processingOrders = filteredOrders.filter(
+    (order: VendorOrder) => order.status === "PROCESSING"
   );
 
-  const shippedOrders = filteredOrders.filter((order: VendorOrder) => 
-    order.status === 'SHIPPED'
+  const shippedOrders = filteredOrders.filter(
+    (order: VendorOrder) => order.status === "SHIPPED"
   );
 
-  const awaitingConfirmationOrders = filteredOrders.filter((order: VendorOrder) => 
-    order.status === 'DELIVERED' && !order.deliveryConfirmedAt
+  const awaitingConfirmationOrders = filteredOrders.filter(
+    (order: VendorOrder) =>
+      order.status === "DELIVERED" && !order.deliveryConfirmedAt
   );
 
-  const completedOrders = filteredOrders.filter((order: VendorOrder) => 
-    (order.status === 'DELIVERED' && !!order.deliveryConfirmedAt) ||
-    ['CANCELLED', 'REFUNDED', 'REJECTED'].includes(order.status)
+  const completedOrders = filteredOrders.filter(
+    (order: VendorOrder) =>
+      (order.status === "DELIVERED" && !!order.deliveryConfirmedAt) ||
+      ["CANCELLED", "REFUNDED", "REJECTED"].includes(order.status)
   );
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({
-      title: 'Copied!',
+      title: "Copied!",
       description: `${label} copied to clipboard`,
     });
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'PENDING':
+      case "PENDING":
         return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 'PLACED':
+      case "PLACED":
         return <Clock className="h-4 w-4 text-purple-600" />;
-      case 'CONFIRMED':
+      case "CONFIRMED":
         return <CheckCircle className="h-4 w-4 text-blue-600" />;
-      case 'PROCESSING':
+      case "PROCESSING":
         return <Package className="h-4 w-4 text-purple-600" />;
-      case 'SHIPPED':
+      case "SHIPPED":
         return <Truck className="h-4 w-4 text-indigo-600" />;
-      case 'DELIVERED':
+      case "DELIVERED":
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'CANCELLED':
+      case "CANCELLED":
         return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'REFUNDED':
+      case "REFUNDED":
         return <AlertCircle className="h-4 w-4 text-gray-600" />;
-      case 'REJECTED':
+      case "REJECTED":
         return <XCircle className="h-4 w-4 text-red-600" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-600" />;
@@ -201,23 +242,23 @@ export default function VendorProductOrders() {
 
   const getDeliveryStatusIcon = (status: string) => {
     switch (status) {
-      case 'ASSIGNED':
+      case "ASSIGNED":
         return <User className="h-4 w-4 text-blue-600" />;
-      case 'ACCEPTED':
+      case "ACCEPTED":
         return <CheckCircle className="h-4 w-4 text-cyan-600" />;
-      case 'PICKED_UP':
+      case "PICKED_UP":
         return <Package className="h-4 w-4 text-purple-600" />;
-      case 'IN_TRANSIT':
+      case "IN_TRANSIT":
         return <Truck className="h-4 w-4 text-indigo-600" />;
-      case 'ARRIVED':
+      case "ARRIVED":
         return <MapPin className="h-4 w-4 text-orange-600" />;
-      case 'DELIVERED':
+      case "DELIVERED":
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'FAILED':
+      case "FAILED":
         return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'RETURNED':
+      case "RETURNED":
         return <AlertCircle className="h-4 w-4 text-amber-600" />;
-      case 'CANCELLED':
+      case "CANCELLED":
         return <XCircle className="h-4 w-4 text-gray-600" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-600" />;
@@ -227,7 +268,7 @@ export default function VendorProductOrders() {
   const OrderCard = ({ order }: { order: VendorOrder }) => {
     const statusDisplay = orderService.getStatusDisplay(order.status);
     const hasDelivery = !!order.deliveryInfo;
-    const deliveryStatusDisplay = order.deliveryInfo 
+    const deliveryStatusDisplay = order.deliveryInfo
       ? orderService.getDeliveryStatusDisplay(order.deliveryInfo.status)
       : null;
 
@@ -237,7 +278,7 @@ export default function VendorProductOrders() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Card 
+        <Card
           className="cursor-pointer hover:shadow-lg transition-all duration-300 border-eagle-green/10"
           onClick={() => {
             setSelectedOrder(order);
@@ -249,8 +290,8 @@ export default function VendorProductOrders() {
               <div className="flex gap-4 flex-1 min-w-0">
                 {/* Order Icon or First Product Image */}
                 {order.items[0]?.productImage ? (
-                  <img 
-                    src={order.items[0].productImage} 
+                  <img
+                    src={order.items[0].productImage}
                     alt={order.items[0].productName}
                     className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                   />
@@ -259,54 +300,70 @@ export default function VendorProductOrders() {
                     <ShoppingBag className="h-6 w-6 text-eagle-green/50" />
                   </div>
                 )}
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <Badge className={`${statusDisplay.bgColor} ${statusDisplay.color} border-none`}>
+                    <Badge
+                      className={`${statusDisplay.bgColor} ${statusDisplay.color} border-none`}
+                    >
                       {getStatusIcon(order.status)}
                       <span className="ml-1">{statusDisplay.text}</span>
                     </Badge>
-                    {(order.paymentStatus === 'PAID' || order.paymentStatus === 'COMPLETED') && (
+                    {(order.paymentStatus === "PAID" ||
+                      order.paymentStatus === "COMPLETED" ||
+                      order.paymentStatus === "SUCCESS") && (
                       <Badge className="bg-green-100 text-green-700 border-none">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Paid
                       </Badge>
                     )}
                     {/* Only show delivery status badge if order isn't already showing DELIVERED status */}
-                    {hasDelivery && deliveryStatusDisplay && order.status !== 'DELIVERED' && (
-                      <Badge className={`${deliveryStatusDisplay.bgColor} ${deliveryStatusDisplay.color} border-none`}>
-                        {getDeliveryStatusIcon(order.deliveryInfo!.status)}
-                        <span className="ml-1">{deliveryStatusDisplay.text}</span>
-                      </Badge>
-                    )}
+                    {hasDelivery &&
+                      deliveryStatusDisplay &&
+                      order.status !== "DELIVERED" && (
+                        <Badge
+                          className={`${deliveryStatusDisplay.bgColor} ${deliveryStatusDisplay.color} border-none`}
+                        >
+                          {getDeliveryStatusIcon(order.deliveryInfo!.status)}
+                          <span className="ml-1">
+                            {deliveryStatusDisplay.text}
+                          </span>
+                        </Badge>
+                      )}
                   </div>
-                  
+
                   <h3 className="font-bold text-eagle-green text-base mb-1">
                     Order #{order.orderNumber}
                   </h3>
-                  
+
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-eagle-green/70">
                     <span className="flex items-center gap-1">
                       <User className="h-3 w-3 flex-shrink-0" />
-                      {order.customerName || 'Customer'}
+                      {order.customerName || "Customer"}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3 flex-shrink-0" />
                       {orderService.formatDate(order.createdAt)}
                     </span>
                   </div>
-                  
+
                   <p className="text-sm text-eagle-green/60 mt-1">
-                    {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                    {order.items.length} item
+                    {order.items.length !== 1 ? "s" : ""}
                   </p>
                 </div>
               </div>
-              
+
               <div className="text-left sm:text-right flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-eagle-green/10">
                 <p className="font-bold text-eagle-green">
-                  {orderService.formatPrice(order.vendorAmountMinor, order.currency)}
+                  {orderService.formatPrice(
+                    order.vendorAmountMinor,
+                    order.currency
+                  )}
                 </p>
-                <p className="text-xs text-eagle-green/60 mt-1">Your earnings</p>
+                <p className="text-xs text-eagle-green/60 mt-1">
+                  Your earnings
+                </p>
                 {hasDelivery && (
                   <div className="mt-2 flex items-center gap-1 text-xs text-indigo-600">
                     <Truck className="h-3 w-3" />
@@ -320,7 +377,10 @@ export default function VendorProductOrders() {
             <div className="mt-3 pt-3 border-t border-eagle-green/10">
               <div className="flex flex-wrap gap-2">
                 {order.items.slice(0, 3).map((item, index) => (
-                  <span key={index} className="text-xs bg-eagle-green/5 text-eagle-green/70 px-2 py-1 rounded">
+                  <span
+                    key={index}
+                    className="text-xs bg-eagle-green/5 text-eagle-green/70 px-2 py-1 rounded"
+                  >
                     {item.productName} × {item.quantity}
                   </span>
                 ))}
@@ -367,9 +427,15 @@ export default function VendorProductOrders() {
     </div>
   );
 
-  const DeliveryPersonCard = ({ deliveryInfo }: { deliveryInfo: VendorOrderDeliveryInfo }) => {
-    const statusDisplay = orderService.getDeliveryStatusDisplay(deliveryInfo.status);
-    
+  const DeliveryPersonCard = ({
+    deliveryInfo,
+  }: {
+    deliveryInfo: VendorOrderDeliveryInfo;
+  }) => {
+    const statusDisplay = orderService.getDeliveryStatusDisplay(
+      deliveryInfo.status
+    );
+
     return (
       <div className="bg-indigo-50 rounded-lg p-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -377,26 +443,30 @@ export default function VendorProductOrders() {
             <Truck className="h-5 w-5" />
             Delivery Information
           </h4>
-          <Badge className={`${statusDisplay.bgColor} ${statusDisplay.color} border-none`}>
+          <Badge
+            className={`${statusDisplay.bgColor} ${statusDisplay.color} border-none`}
+          >
             {getDeliveryStatusIcon(deliveryInfo.status)}
             <span className="ml-1">{statusDisplay.text}</span>
           </Badge>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
               <User className="h-4 w-4 text-indigo-600" />
               <span className="text-indigo-700">Delivery Person:</span>
-              <span className="font-medium text-indigo-900">{deliveryInfo.deliveryPersonName}</span>
+              <span className="font-medium text-indigo-900">
+                {deliveryInfo.deliveryPersonName}
+              </span>
             </div>
-            
+
             {deliveryInfo.deliveryPersonPhone && (
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="h-4 w-4 text-indigo-600" />
                 <span className="text-indigo-700">Phone:</span>
-                <a 
-                  href={`tel:${deliveryInfo.deliveryPersonPhone}`} 
+                <a
+                  href={`tel:${deliveryInfo.deliveryPersonPhone}`}
                   className="font-medium text-indigo-900 hover:underline"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -408,20 +478,23 @@ export default function VendorProductOrders() {
                   className="h-6 w-6"
                   onClick={(e) => {
                     e.stopPropagation();
-                    copyToClipboard(deliveryInfo.deliveryPersonPhone!, 'Phone number');
+                    copyToClipboard(
+                      deliveryInfo.deliveryPersonPhone!,
+                      "Phone number"
+                    );
                   }}
                 >
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
             )}
-            
+
             {deliveryInfo.deliveryPersonEmail && (
               <div className="flex items-center gap-2 text-sm">
                 <Mail className="h-4 w-4 text-indigo-600" />
                 <span className="text-indigo-700">Email:</span>
-                <a 
-                  href={`mailto:${deliveryInfo.deliveryPersonEmail}`} 
+                <a
+                  href={`mailto:${deliveryInfo.deliveryPersonEmail}`}
                   className="font-medium text-indigo-900 hover:underline"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -430,7 +503,7 @@ export default function VendorProductOrders() {
               </div>
             )}
           </div>
-          
+
           <div className="space-y-2">
             {deliveryInfo.vehicleType && (
               <div className="flex items-center gap-2 text-sm">
@@ -438,11 +511,12 @@ export default function VendorProductOrders() {
                 <span className="text-indigo-700">Vehicle:</span>
                 <span className="font-medium text-indigo-900">
                   {deliveryInfo.vehicleType}
-                  {deliveryInfo.vehicleNumber && ` (${deliveryInfo.vehicleNumber})`}
+                  {deliveryInfo.vehicleNumber &&
+                    ` (${deliveryInfo.vehicleNumber})`}
                 </span>
               </div>
             )}
-            
+
             {deliveryInfo.expectedDeliveryAt && (
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-indigo-600" />
@@ -452,7 +526,7 @@ export default function VendorProductOrders() {
                 </span>
               </div>
             )}
-            
+
             {deliveryInfo.assignedAt && (
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-indigo-600" />
@@ -464,25 +538,27 @@ export default function VendorProductOrders() {
             )}
           </div>
         </div>
-        
+
         {/* Delivery Timeline */}
         <div className="pt-3 border-t border-indigo-200">
           <div className="flex flex-wrap gap-4 text-xs">
             {deliveryInfo.pickedUpAt && (
               <div className="flex items-center gap-1 text-indigo-700">
                 <CheckCircle className="h-3 w-3 text-green-600" />
-                Picked up: {orderService.formatDateTime(deliveryInfo.pickedUpAt)}
+                Picked up:{" "}
+                {orderService.formatDateTime(deliveryInfo.pickedUpAt)}
               </div>
             )}
             {deliveryInfo.deliveredAt && (
               <div className="flex items-center gap-1 text-indigo-700">
                 <CheckCircle className="h-3 w-3 text-green-600" />
-                Delivered: {orderService.formatDateTime(deliveryInfo.deliveredAt)}
+                Delivered:{" "}
+                {orderService.formatDateTime(deliveryInfo.deliveredAt)}
               </div>
             )}
           </div>
         </div>
-        
+
         {/* Proof Images */}
         {(deliveryInfo.pickupImageUrl || deliveryInfo.proofImageUrl) && (
           <div className="pt-3 border-t border-indigo-200">
@@ -490,12 +566,12 @@ export default function VendorProductOrders() {
             <div className="flex gap-3">
               {deliveryInfo.pickupImageUrl && (
                 <div className="text-center">
-                  <AuthenticatedImage 
-                    src={deliveryInfo.pickupImageUrl} 
+                  <AuthenticatedImage
+                    src={deliveryInfo.pickupImageUrl}
                     alt="Pickup proof"
                     className="w-20 h-20 rounded-lg object-cover cursor-pointer hover:opacity-80"
                     onClick={() => {
-                      openImage(deliveryInfo.pickupImageUrl ?? '');
+                      openImage(deliveryInfo.pickupImageUrl ?? "");
                     }}
                   />
                   <p className="text-xs text-indigo-600 mt-1">Pickup</p>
@@ -503,12 +579,12 @@ export default function VendorProductOrders() {
               )}
               {deliveryInfo.proofImageUrl && (
                 <div className="text-center">
-                  <AuthenticatedImage 
-                    src={deliveryInfo.proofImageUrl} 
+                  <AuthenticatedImage
+                    src={deliveryInfo.proofImageUrl}
                     alt="Delivery proof"
                     className="w-20 h-20 rounded-lg object-cover cursor-pointer hover:opacity-80"
                     onClick={() => {
-                      openImage(deliveryInfo.proofImageUrl ?? '');
+                      openImage(deliveryInfo.proofImageUrl ?? "");
                     }}
                   />
                   <p className="text-xs text-indigo-600 mt-1">Delivery</p>
@@ -517,7 +593,7 @@ export default function VendorProductOrders() {
             </div>
           </div>
         )}
-        
+
         {deliveryInfo.notes && (
           <div className="pt-3 border-t border-indigo-200">
             <p className="text-sm text-indigo-700">Notes:</p>
@@ -562,25 +638,33 @@ export default function VendorProductOrders() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <Card className="bg-yellow-50 border-yellow-200">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-yellow-700">{pendingOrders.length}</p>
+              <p className="text-2xl font-bold text-yellow-700">
+                {pendingOrders.length}
+              </p>
               <p className="text-sm text-yellow-600">Pending</p>
             </CardContent>
           </Card>
           <Card className="bg-purple-50 border-purple-200">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-purple-700">{processingOrders.length}</p>
+              <p className="text-2xl font-bold text-purple-700">
+                {processingOrders.length}
+              </p>
               <p className="text-sm text-purple-600">Processing</p>
             </CardContent>
           </Card>
           <Card className="bg-indigo-50 border-indigo-200">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-indigo-700">{shippedOrders.length}</p>
+              <p className="text-2xl font-bold text-indigo-700">
+                {shippedOrders.length}
+              </p>
               <p className="text-sm text-indigo-600">Shipped</p>
             </CardContent>
           </Card>
           <Card className="bg-green-50 border-green-200">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-green-700">{completedOrders.filter(o => o.status === 'DELIVERED').length}</p>
+              <p className="text-2xl font-bold text-green-700">
+                {completedOrders.filter((o) => o.status === "DELIVERED").length}
+              </p>
               <p className="text-sm text-green-600">Delivered</p>
             </CardContent>
           </Card>
@@ -623,60 +707,105 @@ export default function VendorProductOrders() {
         {/* Orders Tabs */}
         <Tabs defaultValue="pending" className="space-y-4">
           <TabsList className="bg-eagle-green/5 p-1 rounded-lg flex flex-wrap gap-1 w-full h-auto">
-            <TabsTrigger value="pending" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
+            <TabsTrigger
+              value="pending"
+              className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
+            >
               New Orders ({pendingOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="processing" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
+            <TabsTrigger
+              value="processing"
+              className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
+            >
               Processing ({processingOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="shipped" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
+            <TabsTrigger
+              value="shipped"
+              className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
+            >
               Shipped ({shippedOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="awaiting" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
+            <TabsTrigger
+              value="awaiting"
+              className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
+            >
               Awaiting Confirmation ({awaitingConfirmationOrders.length})
             </TabsTrigger>
-            <TabsTrigger value="completed" className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
+            <TabsTrigger
+              value="completed"
+              className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
+            >
               Completed ({completedOrders.length})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pending">
-            {isLoading ? <LoadingState /> : (
-              pendingOrders.length === 0 
-                ? <EmptyState message="No pending orders at the moment" />
-                : <div className="space-y-4">{pendingOrders.map((order: VendorOrder) => <OrderCard key={order.orderId} order={order} />)}</div>
+            {isLoading ? (
+              <LoadingState />
+            ) : pendingOrders.length === 0 ? (
+              <EmptyState message="No pending orders at the moment" />
+            ) : (
+              <div className="space-y-4">
+                {pendingOrders.map((order: VendorOrder) => (
+                  <OrderCard key={order.orderId} order={order} />
+                ))}
+              </div>
             )}
           </TabsContent>
 
           <TabsContent value="processing">
-            {isLoading ? <LoadingState /> : (
-              processingOrders.length === 0 
-                ? <EmptyState message="No orders being processed" />
-                : <div className="space-y-4">{processingOrders.map((order: VendorOrder) => <OrderCard key={order.orderId} order={order} />)}</div>
+            {isLoading ? (
+              <LoadingState />
+            ) : processingOrders.length === 0 ? (
+              <EmptyState message="No orders being processed" />
+            ) : (
+              <div className="space-y-4">
+                {processingOrders.map((order: VendorOrder) => (
+                  <OrderCard key={order.orderId} order={order} />
+                ))}
+              </div>
             )}
           </TabsContent>
 
           <TabsContent value="shipped">
-            {isLoading ? <LoadingState /> : (
-              shippedOrders.length === 0 
-                ? <EmptyState message="No orders in transit" />
-                : <div className="space-y-4">{shippedOrders.map((order: VendorOrder) => <OrderCard key={order.orderId} order={order} />)}</div>
+            {isLoading ? (
+              <LoadingState />
+            ) : shippedOrders.length === 0 ? (
+              <EmptyState message="No orders in transit" />
+            ) : (
+              <div className="space-y-4">
+                {shippedOrders.map((order: VendorOrder) => (
+                  <OrderCard key={order.orderId} order={order} />
+                ))}
+              </div>
             )}
           </TabsContent>
 
           <TabsContent value="awaiting">
-            {isLoading ? <LoadingState /> : (
-              awaitingConfirmationOrders.length === 0 
-                ? <EmptyState message="No orders awaiting confirmation" />
-                : <div className="space-y-4">{awaitingConfirmationOrders.map((order: VendorOrder) => <OrderCard key={order.orderId} order={order} />)}</div>
+            {isLoading ? (
+              <LoadingState />
+            ) : awaitingConfirmationOrders.length === 0 ? (
+              <EmptyState message="No orders awaiting confirmation" />
+            ) : (
+              <div className="space-y-4">
+                {awaitingConfirmationOrders.map((order: VendorOrder) => (
+                  <OrderCard key={order.orderId} order={order} />
+                ))}
+              </div>
             )}
           </TabsContent>
 
           <TabsContent value="completed">
-            {isLoading ? <LoadingState /> : (
-              completedOrders.length === 0 
-                ? <EmptyState message="No completed orders yet" />
-                : <div className="space-y-4">{completedOrders.map((order: VendorOrder) => <OrderCard key={order.orderId} order={order} />)}</div>
+            {isLoading ? (
+              <LoadingState />
+            ) : completedOrders.length === 0 ? (
+              <EmptyState message="No completed orders yet" />
+            ) : (
+              <div className="space-y-4">
+                {completedOrders.map((order: VendorOrder) => (
+                  <OrderCard key={order.orderId} order={order} />
+                ))}
+              </div>
             )}
           </TabsContent>
         </Tabs>
@@ -693,13 +822,19 @@ export default function VendorProductOrders() {
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => copyToClipboard(selectedOrder.orderNumber, 'Order number')}
+                      onClick={() =>
+                        copyToClipboard(
+                          selectedOrder.orderNumber,
+                          "Order number"
+                        )
+                      }
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
                   </DialogTitle>
                   <DialogDescription>
-                    Placed on {orderService.formatDateTime(selectedOrder.createdAt)}
+                    Placed on{" "}
+                    {orderService.formatDateTime(selectedOrder.createdAt)}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -707,38 +842,74 @@ export default function VendorProductOrders() {
                   {/* Status Badges */}
                   <div className="flex items-center gap-4 flex-wrap">
                     <div>
-                      <span className="text-sm font-light text-eagle-green/70">Order Status</span>
-                      <Badge className={`ml-2 ${orderService.getStatusDisplay(selectedOrder.status).bgColor} ${orderService.getStatusDisplay(selectedOrder.status).color} border-none`}>
+                      <span className="text-sm font-light text-eagle-green/70">
+                        Order Status
+                      </span>
+                      <Badge
+                        className={`ml-2 ${
+                          orderService.getStatusDisplay(selectedOrder.status)
+                            .bgColor
+                        } ${
+                          orderService.getStatusDisplay(selectedOrder.status)
+                            .color
+                        } border-none`}
+                      >
                         {getStatusIcon(selectedOrder.status)}
-                        <span className="ml-1">{orderService.getStatusDisplay(selectedOrder.status).text}</span>
+                        <span className="ml-1">
+                          {
+                            orderService.getStatusDisplay(selectedOrder.status)
+                              .text
+                          }
+                        </span>
                       </Badge>
                     </div>
                     <div>
-                      <span className="text-sm font-light text-eagle-green/70">Payment</span>
-                      <Badge className={`ml-2 ${orderService.getPaymentStatusDisplay(selectedOrder.paymentStatus).bgColor} ${orderService.getPaymentStatusDisplay(selectedOrder.paymentStatus).color} border-none`}>
-                        {orderService.getPaymentStatusDisplay(selectedOrder.paymentStatus).text}
+                      <span className="text-sm font-light text-eagle-green/70">
+                        Payment
+                      </span>
+                      <Badge
+                        className={`ml-2 ${
+                          orderService.getPaymentStatusDisplay(
+                            selectedOrder.paymentStatus
+                          ).bgColor
+                        } ${
+                          orderService.getPaymentStatusDisplay(
+                            selectedOrder.paymentStatus
+                          ).color
+                        } border-none`}
+                      >
+                        {
+                          orderService.getPaymentStatusDisplay(
+                            selectedOrder.paymentStatus
+                          ).text
+                        }
                       </Badge>
                     </div>
                   </div>
 
                   {/* Action Buttons for PLACED orders */}
-                  {selectedOrder.status === 'PLACED' && (
+                  {selectedOrder.status === "PLACED" && (
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                       <h4 className="font-bold text-purple-800 mb-2 flex items-center gap-2">
                         <Clock className="h-4 w-4" />
                         Order Awaiting Your Approval
                       </h4>
                       <p className="text-sm text-purple-700 mb-4">
-                        This order has been placed and paid. Please review and accept or reject the order.
+                        This order has been placed and paid. Please review and
+                        accept or reject the order.
                       </p>
                       <div className="flex flex-col sm:flex-row gap-3">
                         <Button
-                          onClick={() => acceptOrderMutation.mutate(selectedOrder.orderId)}
+                          onClick={() =>
+                            acceptOrderMutation.mutate(selectedOrder.orderId)
+                          }
                           disabled={acceptOrderMutation.isPending}
                           className="bg-green-600 hover:bg-green-700 text-white"
                         >
                           <CheckCircle className="h-4 w-4 mr-2" />
-                          {acceptOrderMutation.isPending ? 'Accepting...' : 'Accept Order'}
+                          {acceptOrderMutation.isPending
+                            ? "Accepting..."
+                            : "Accept Order"}
                         </Button>
                         <Button
                           variant="outline"
@@ -757,43 +928,59 @@ export default function VendorProductOrders() {
                   )}
 
                   {/* Action Buttons for CONFIRMED orders */}
-                  {selectedOrder.status === 'CONFIRMED' && (
+                  {selectedOrder.status === "CONFIRMED" && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
                         <Play className="h-4 w-4" />
                         Order Confirmed
                       </h4>
                       <p className="text-sm text-blue-700 mb-4">
-                        You've accepted this order. Start processing it when you're ready to prepare the items.
+                        You've accepted this order. Start processing it when
+                        you're ready to prepare the items.
                       </p>
                       <Button
-                        onClick={() => updateStatusMutation.mutate({ orderId: selectedOrder.orderId, status: 'PROCESSING' })}
+                        onClick={() =>
+                          updateStatusMutation.mutate({
+                            orderId: selectedOrder.orderId,
+                            status: "PROCESSING",
+                          })
+                        }
                         disabled={updateStatusMutation.isPending}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                       >
                         <Package className="h-4 w-4 mr-2" />
-                        {updateStatusMutation.isPending ? 'Updating...' : 'Start Processing'}
+                        {updateStatusMutation.isPending
+                          ? "Updating..."
+                          : "Start Processing"}
                       </Button>
                     </div>
                   )}
 
                   {/* Action Buttons for PROCESSING orders */}
-                  {selectedOrder.status === 'PROCESSING' && (
+                  {selectedOrder.status === "PROCESSING" && (
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                       <h4 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
                         <Package className="h-4 w-4" />
                         Order in Processing
                       </h4>
                       <p className="text-sm text-orange-700 mb-4">
-                        Once you've handed over the items to the delivery service, mark the order as shipped.
+                        Once you've handed over the items to the delivery
+                        service, mark the order as shipped.
                       </p>
                       <Button
-                        onClick={() => updateStatusMutation.mutate({ orderId: selectedOrder.orderId, status: 'SHIPPED' })}
+                        onClick={() =>
+                          updateStatusMutation.mutate({
+                            orderId: selectedOrder.orderId,
+                            status: "SHIPPED",
+                          })
+                        }
                         disabled={updateStatusMutation.isPending}
                         className="bg-orange-600 hover:bg-orange-600 text-white"
                       >
                         <Truck className="h-4 w-4 mr-2" />
-                        {updateStatusMutation.isPending ? 'Updating...' : 'Mark as Shipped'}
+                        {updateStatusMutation.isPending
+                          ? "Updating..."
+                          : "Mark as Shipped"}
                       </Button>
                     </div>
                   )}
@@ -802,20 +989,25 @@ export default function VendorProductOrders() {
 
                   {/* Customer Contact Info */}
                   <div>
-                    <h4 className="font-bold text-eagle-green mb-3">Customer Information</h4>
+                    <h4 className="font-bold text-eagle-green mb-3">
+                      Customer Information
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center gap-2 text-sm">
                         <User className="h-4 w-4 text-eagle-green/50" />
                         <span className="text-eagle-green/70">Name:</span>
                         <span className="font-medium text-eagle-green">
-                          {selectedOrder.customerName || 'N/A'}
+                          {selectedOrder.customerName || "N/A"}
                         </span>
                       </div>
                       {selectedOrder.customerEmail && (
                         <div className="flex items-center gap-2 text-sm">
                           <Mail className="h-4 w-4 text-eagle-green/50" />
                           <span className="text-eagle-green/70">Email:</span>
-                          <a href={`mailto:${selectedOrder.customerEmail}`} className="font-medium text-eagle-green hover:underline">
+                          <a
+                            href={`mailto:${selectedOrder.customerEmail}`}
+                            className="font-medium text-eagle-green hover:underline"
+                          >
                             {selectedOrder.customerEmail}
                           </a>
                         </div>
@@ -824,14 +1016,22 @@ export default function VendorProductOrders() {
                         <div className="flex items-center gap-2 text-sm">
                           <Phone className="h-4 w-4 text-eagle-green/50" />
                           <span className="text-eagle-green/70">Phone:</span>
-                          <a href={`tel:${selectedOrder.customerPhone}`} className="font-medium text-eagle-green hover:underline">
+                          <a
+                            href={`tel:${selectedOrder.customerPhone}`}
+                            className="font-medium text-eagle-green hover:underline"
+                          >
                             {selectedOrder.customerPhone}
                           </a>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6"
-                            onClick={() => copyToClipboard(selectedOrder.customerPhone!, 'Phone number')}
+                            onClick={() =>
+                              copyToClipboard(
+                                selectedOrder.customerPhone!,
+                                "Phone number"
+                              )
+                            }
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
@@ -850,14 +1050,19 @@ export default function VendorProductOrders() {
                           Shipping Address
                         </h4>
                         <div className="bg-gray-50 rounded-lg p-4 text-sm text-eagle-green/80">
-                          <p>{selectedOrder.shippingAddress.addressLine1 || selectedOrder.shippingAddress.street}</p>
+                          <p>
+                            {selectedOrder.shippingAddress.addressLine1 ||
+                              selectedOrder.shippingAddress.street}
+                          </p>
                           {selectedOrder.shippingAddress.addressLine2 && (
                             <p>{selectedOrder.shippingAddress.addressLine2}</p>
                           )}
                           <p>
                             {selectedOrder.shippingAddress.city}
-                            {selectedOrder.shippingAddress.state && `, ${selectedOrder.shippingAddress.state}`}
-                            {selectedOrder.shippingAddress.zipcode && ` ${selectedOrder.shippingAddress.zipcode}`}
+                            {selectedOrder.shippingAddress.state &&
+                              `, ${selectedOrder.shippingAddress.state}`}
+                            {selectedOrder.shippingAddress.zipcode &&
+                              ` ${selectedOrder.shippingAddress.zipcode}`}
                           </p>
                           {selectedOrder.shippingAddress.country && (
                             <p>{selectedOrder.shippingAddress.country}</p>
@@ -871,7 +1076,9 @@ export default function VendorProductOrders() {
                   {selectedOrder.deliveryInfo && (
                     <>
                       <Separator />
-                      <DeliveryPersonCard deliveryInfo={selectedOrder.deliveryInfo} />
+                      <DeliveryPersonCard
+                        deliveryInfo={selectedOrder.deliveryInfo}
+                      />
                     </>
                   )}
 
@@ -879,14 +1086,19 @@ export default function VendorProductOrders() {
 
                   {/* Order Items */}
                   <div>
-                    <h4 className="font-bold text-eagle-green mb-3">Order Items</h4>
+                    <h4 className="font-bold text-eagle-green mb-3">
+                      Order Items
+                    </h4>
                     <div className="space-y-3">
                       {selectedOrder.items.map((item, index) => (
-                        <div key={index} className="flex flex-col sm:flex-row gap-4 p-3 bg-gray-50 rounded-lg">
+                        <div
+                          key={index}
+                          className="flex flex-col sm:flex-row gap-4 p-3 bg-gray-50 rounded-lg"
+                        >
                           <div className="flex gap-3 sm:gap-4 flex-1 min-w-0">
                             {item.productImage ? (
-                              <img 
-                                src={item.productImage} 
+                              <img
+                                src={item.productImage}
                                 alt={item.productName}
                                 className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                               />
@@ -896,18 +1108,29 @@ export default function VendorProductOrders() {
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <h5 className="font-medium text-eagle-green">{item.productName}</h5>
+                              <h5 className="font-medium text-eagle-green">
+                                {item.productName}
+                              </h5>
                               {item.skuCode && (
-                                <p className="text-xs text-eagle-green/60">SKU: {item.skuCode}</p>
+                                <p className="text-xs text-eagle-green/60">
+                                  SKU: {item.skuCode}
+                                </p>
                               )}
                               <p className="text-sm text-eagle-green/70 mt-1">
-                                Qty: {item.quantity} × {orderService.formatPrice(item.unitAmountMinor, item.currency)}
+                                Qty: {item.quantity} ×{" "}
+                                {orderService.formatPrice(
+                                  item.unitAmountMinor,
+                                  item.currency
+                                )}
                               </p>
                             </div>
                           </div>
                           <div className="text-left sm:text-right flex-shrink-0">
                             <p className="font-medium text-eagle-green">
-                              {orderService.formatPrice(item.totalAmountMinor, item.currency)}
+                              {orderService.formatPrice(
+                                item.totalAmountMinor,
+                                item.currency
+                              )}
                             </p>
                           </div>
                         </div>
@@ -920,7 +1143,9 @@ export default function VendorProductOrders() {
                     <>
                       <Separator />
                       <div className="bg-yellow-50 rounded-lg p-4">
-                        <h4 className="font-bold text-yellow-800 mb-2">Gift Options</h4>
+                        <h4 className="font-bold text-yellow-800 mb-2">
+                          Gift Options
+                        </h4>
                         {selectedOrder.giftWrap && (
                           <div className="flex items-center gap-2 text-sm text-yellow-700 mb-1">
                             <CheckCircle className="h-4 w-4" />
@@ -929,8 +1154,12 @@ export default function VendorProductOrders() {
                         )}
                         {selectedOrder.cardMessage && (
                           <div>
-                            <p className="text-sm text-yellow-700">Gift message:</p>
-                            <p className="text-sm italic text-yellow-800 mt-1">"{selectedOrder.cardMessage}"</p>
+                            <p className="text-sm text-yellow-700">
+                              Gift message:
+                            </p>
+                            <p className="text-sm italic text-yellow-800 mt-1">
+                              "{selectedOrder.cardMessage}"
+                            </p>
                           </div>
                         )}
                       </div>
@@ -941,27 +1170,74 @@ export default function VendorProductOrders() {
 
                   {/* Payment Summary */}
                   <div>
-                    <h4 className="font-bold text-eagle-green mb-3">Payment Summary</h4>
+                    <h4 className="font-bold text-eagle-green mb-3">
+                      Payment Summary
+                    </h4>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-eagle-green/70">Subtotal</span>
                         <span className="text-eagle-green">
-                          {orderService.formatPrice(selectedOrder.subtotalMinor, selectedOrder.currency)}
+                          {orderService.formatPrice(
+                            selectedOrder.subtotalMinor ?? 0,
+                            selectedOrder.currency
+                          )}
                         </span>
                       </div>
-                      {selectedOrder.vatAmountMinor && selectedOrder.vatAmountMinor > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-eagle-green/70">VAT</span>
+                        <span className="text-eagle-green">
+                          {orderService.formatPrice(
+                            selectedOrder.vatAmountMinor ?? 0,
+                            selectedOrder.currency
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-eagle-green/70">
+                          Platform Fee
+                        </span>
+                        <span className="text-red-600">
+                          -
+                          {orderService.formatPrice(
+                            selectedOrder.platformFeeMinor ?? 0,
+                            selectedOrder.currency
+                          )}
+                        </span>
+                      </div>
+                      {selectedOrder.deliveryFeeMinor &&
+                        selectedOrder.deliveryFeeMinor > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-eagle-green/70">
+                              Delivery Fee
+                            </span>
+                            <span className="text-eagle-green">
+                              {orderService.formatPrice(
+                                selectedOrder.deliveryFeeMinor,
+                                selectedOrder.currency
+                              )}
+                            </span>
+                          </div>
+                        )}
+                      <div className="flex justify-between text-sm">
+                        <span className="text-eagle-green/70">Discount</span>
+                        <span className="text-red-600">
+                          {orderService.formatPrice(
+                            selectedOrder.discountMinor ?? 0,
+                            selectedOrder.currency
+                          )}
+                        </span>
+                      </div>
+                      {selectedOrder.campaignRewardApplied && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-eagle-green/70">VAT</span>
-                          <span className="text-eagle-green">
-                            {orderService.formatPrice(selectedOrder.vatAmountMinor, selectedOrder.currency)}
+                          <span className="text-eagle-green/70">
+                            Campaign Bonus
                           </span>
-                        </div>
-                      )}
-                      {selectedOrder.platformFeeMinor && selectedOrder.platformFeeMinor > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-eagle-green/70">Platform Fee</span>
-                          <span className="text-red-600">
-                            -{orderService.formatPrice(selectedOrder.platformFeeMinor, selectedOrder.currency)}
+                          <span className="text-green-700">
+                            +
+                            {orderService.formatPrice(
+                              selectedOrder.commissionBonusMinor ?? 0,
+                              selectedOrder.currency
+                            )}
                           </span>
                         </div>
                       )}
@@ -969,13 +1245,21 @@ export default function VendorProductOrders() {
                       <div className="flex justify-between text-sm">
                         <span className="text-eagle-green/70">Order Total</span>
                         <span className="text-eagle-green">
-                          {orderService.formatPrice(selectedOrder.totalAmountMinor, selectedOrder.currency)}
+                          {orderService.formatPrice(
+                            selectedOrder.totalAmountMinor ?? 0,
+                            selectedOrder.currency
+                          )}
                         </span>
                       </div>
                       <div className="flex justify-between pt-2 border-t border-green-200 bg-green-50 -mx-2 px-2 py-2 rounded">
-                        <span className="font-bold text-green-700">Your Earnings</span>
+                        <span className="font-bold text-green-700">
+                          Your Earnings
+                        </span>
                         <span className="font-bold text-green-700 text-lg">
-                          {orderService.formatPrice(selectedOrder.vendorAmountMinor, selectedOrder.currency)}
+                          {orderService.formatPrice(
+                            selectedOrder.vendorAmountMinor ?? 0,
+                            selectedOrder.currency
+                          )}
                         </span>
                       </div>
                     </div>
@@ -986,15 +1270,26 @@ export default function VendorProductOrders() {
                     <>
                       <Separator />
                       <div className="bg-blue-50 rounded-lg p-4">
-                        <h4 className="font-bold text-blue-800 mb-2">Tracking Information</h4>
+                        <h4 className="font-bold text-blue-800 mb-2">
+                          Tracking Information
+                        </h4>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-blue-700">Tracking Code:</span>
-                          <span className="font-mono font-medium text-blue-900">{selectedOrder.trackingCode}</span>
+                          <span className="text-sm text-blue-700">
+                            Tracking Code:
+                          </span>
+                          <span className="font-mono font-medium text-blue-900">
+                            {selectedOrder.trackingCode}
+                          </span>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6"
-                            onClick={() => copyToClipboard(selectedOrder.trackingCode!, 'Tracking code')}
+                            onClick={() =>
+                              copyToClipboard(
+                                selectedOrder.trackingCode!,
+                                "Tracking code"
+                              )
+                            }
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
@@ -1008,8 +1303,12 @@ export default function VendorProductOrders() {
                     <>
                       <Separator />
                       <div>
-                        <h4 className="font-bold text-eagle-green mb-2">Order Notes</h4>
-                        <p className="text-sm text-eagle-green/70">{selectedOrder.notes}</p>
+                        <h4 className="font-bold text-eagle-green mb-2">
+                          Order Notes
+                        </h4>
+                        <p className="text-sm text-eagle-green/70">
+                          {selectedOrder.notes}
+                        </p>
                       </div>
                     </>
                   )}
@@ -1029,7 +1328,10 @@ export default function VendorProductOrders() {
               </DialogTitle>
               <DialogDescription>
                 {orderToReject && (
-                  <>Rejecting order #{orderToReject.orderNumber}. Please provide a reason for rejection.</>
+                  <>
+                    Rejecting order #{orderToReject.orderNumber}. Please provide
+                    a reason for rejection.
+                  </>
                 )}
               </DialogDescription>
             </DialogHeader>
@@ -1047,7 +1349,8 @@ export default function VendorProductOrders() {
                 />
               </div>
               <p className="text-xs text-eagle-green/60">
-                The customer will be notified of this rejection with the reason provided.
+                The customer will be notified of this rejection with the reason
+                provided.
               </p>
             </div>
 
@@ -1056,7 +1359,7 @@ export default function VendorProductOrders() {
                 variant="outline"
                 onClick={() => {
                   setRejectDialogOpen(false);
-                  setRejectionReason('');
+                  setRejectionReason("");
                   setOrderToReject(null);
                 }}
               >
@@ -1066,15 +1369,19 @@ export default function VendorProductOrders() {
                 variant="destructive"
                 onClick={() => {
                   if (orderToReject && rejectionReason.trim()) {
-                    denyOrderMutation.mutate({ 
-                      orderId: orderToReject.orderId, 
-                      reason: rejectionReason.trim() 
+                    denyOrderMutation.mutate({
+                      orderId: orderToReject.orderId,
+                      reason: rejectionReason.trim(),
                     });
                   }
                 }}
-                disabled={!rejectionReason.trim() || denyOrderMutation.isPending}
+                disabled={
+                  !rejectionReason.trim() || denyOrderMutation.isPending
+                }
               >
-                {denyOrderMutation.isPending ? 'Rejecting...' : 'Confirm Rejection'}
+                {denyOrderMutation.isPending
+                  ? "Rejecting..."
+                  : "Confirm Rejection"}
               </Button>
             </DialogFooter>
           </DialogContent>

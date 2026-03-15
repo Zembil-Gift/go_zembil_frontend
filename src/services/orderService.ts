@@ -195,7 +195,13 @@ export interface VendorOrder {
     | "CANCELLED"
     | "REFUNDED"
     | "REJECTED";
-  paymentStatus: "PENDING" | "PAID" | "COMPLETED" | "FAILED" | "REFUNDED";
+  paymentStatus:
+    | "PENDING"
+    | "PAID"
+    | "COMPLETED"
+    | "SUCCESS"
+    | "FAILED"
+    | "REFUNDED";
   rejectionReason?: string;
   rejectedAt?: string;
   rejectedBy?: string;
@@ -208,6 +214,10 @@ export interface VendorOrder {
   vendorAmountMinor: number;
   platformFeeMinor?: number;
   vatAmountMinor?: number;
+  deliveryFeeMinor?: number;
+  discountMinor?: number;
+  commissionBonusMinor?: number;
+  campaignRewardApplied?: boolean;
   currency: string;
   shippingAddress?: {
     street?: string;
@@ -229,13 +239,22 @@ export interface VendorOrder {
 }
 
 export interface VendorOrdersResponse {
-  content: VendorOrder[];
-  totalElements: number;
-  totalPages: number;
-  size: number;
-  number: number;
-  first: boolean;
-  last: boolean;
+  content?: VendorOrder[];
+  items?: VendorOrder[];
+  totalElements?: number;
+  totalPages?: number;
+  size?: number;
+  number?: number;
+  first?: boolean;
+  last?: boolean;
+  pagination?: {
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
 }
 
 class OrderService {
@@ -476,10 +495,13 @@ class OrderService {
     status: string,
     notes?: string
   ): Promise<VendorOrder> {
-    const data = { status, notes };
+    const queryParams = new URLSearchParams({ status });
+    if (notes) {
+      queryParams.append("notes", notes);
+    }
     return await apiService.putRequest<VendorOrder>(
-      `/api/vendor/orders/${orderId}/status`,
-      data
+      `/api/vendor/orders/${orderId}/status?${queryParams.toString()}`,
+      null
     );
   }
 
@@ -514,11 +536,10 @@ class OrderService {
    * Format price for display. Converts minor units to major units.
    */
   formatPrice(
-    amountMinor: number | undefined,
+    amountMinor: number | undefined | null,
     currency: string = "USD"
   ): string {
-    if (amountMinor === undefined || amountMinor === null) return "-";
-    const amount = amountMinor / 100;
+    const amount = (amountMinor ?? 0) / 100;
     return formatCurrency(amount, currency);
   }
 

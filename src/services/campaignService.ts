@@ -306,6 +306,55 @@ export interface CampaignPayoutReportFilters {
   participantRole?: Extract<TargetRole, "VENDOR" | "CUSTOMER">;
 }
 
+export interface VendorCampaignStatusItem {
+  status: ParticipationStatus;
+  statusSummary: string;
+  nextRecommendedAction: string;
+  rewardWindowActive: boolean;
+  paidAt: string | null;
+  payoutAmountMinor: number | null;
+  actionType: string | null;
+  verificationMethod: VerificationMethod | null;
+  rewardType: RewardType | null;
+  rewardValue: number | string | null;
+  campaignStartDateTime: string | null;
+  campaignEndDateTime: string | null;
+  participation: {
+    id: number;
+    campaignId: number;
+    campaignName: string;
+    participantId: number;
+    participantName: string | null;
+    participantEmail: string | null;
+    participantRole: "VENDOR";
+    status: ParticipationStatus;
+    submittedData: string | null;
+    adminNote: string | null;
+    approvedAt: string | null;
+    rewardStartDate: string | null;
+    rewardEndDate: string | null;
+    salesSnapshotAmountMinor: number | null;
+    createdAt: string | null;
+    updatedAt: string | null;
+  };
+  actionProgress: {
+    participationId: number;
+    campaignId: number;
+    actionType: "COMPLETE_MIN_SALES" | "COMPLETE_MIN_ORDERS";
+    verificationMethod: VerificationMethod | null;
+    participationStatus: string;
+    requiredValue: number;
+    recordedValue: number | null;
+    computedValue: number;
+    effectiveActualValue: number;
+    requirementMet: boolean;
+    valueUnit: "MINOR_CURRENCY" | "COUNT";
+    campaignStartDateTime: string | null;
+    campaignEndDateTime: string | null;
+    soldObjects: unknown[] | null;
+  } | null;
+}
+
 // ==================== Labels ====================
 
 export const CAMPAIGN_TYPE_LABELS: Record<CampaignType, string> = {
@@ -588,6 +637,18 @@ class CampaignService {
 
     return apiService.getRequest<CampaignPayoutReportItem[]>(
       `/api/campaigns/${campaignId}/participations/payout-report${suffix}`
+    );
+  }
+
+  async getVendorMyStatus(
+    status?: Extract<
+      ParticipationStatus,
+      "PENDING" | "APPROVED" | "COMPLETED" | "PAID" | "REJECTED"
+    >
+  ): Promise<VendorCampaignStatusItem[]> {
+    const suffix = status ? `?status=${status}` : "";
+    return apiService.getRequest<VendorCampaignStatusItem[]>(
+      `/api/campaigns/vendor/my-status${suffix}`
     );
   }
 
