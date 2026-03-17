@@ -390,6 +390,7 @@ export default function CreateCustomTemplate() {
                       value={field.value}
                       onValueChange={(val) => field.onChange(val ? parseInt(val) : undefined)}
                       placeholder="Search and select a category"
+                      required
                     />
                   )}
                 />

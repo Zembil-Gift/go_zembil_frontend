@@ -181,6 +181,40 @@ export default function ServiceCheckout() {
     service?.activeDiscount,
   ]);
 
+  const hasManualDiscount = useMemo(() => {
+    return !!(discountResult?.applicable && manualDiscountAmountDisplay > 0);
+  }, [discountResult, manualDiscountAmountDisplay]);
+
+  const hasDiscountedTotal = useMemo(() => {
+    if (displayPriceMajor === undefined) return false;
+    return finalAmount < displayPriceMajor;
+  }, [displayPriceMajor, finalAmount]);
+
+  const paymentProviderLabel = useMemo(() => {
+    return paymentProvider === "STRIPE" ? "Stripe" : "Chapa";
+  }, [paymentProvider]);
+
+  const preferredCurrencyCode = useMemo(() => {
+    return (user?.preferredCurrencyCode || "ETB").toUpperCase();
+  }, [user?.preferredCurrencyCode]);
+
+  const allowedPaymentMethods = useMemo(() => {
+    return preferredCurrencyCode === "ETB"
+      ? (["chapa"] as const)
+      : (["stripe"] as const);
+  }, [preferredCurrencyCode]);
+
+  useEffect(() => {
+    if (preferredCurrencyCode === "ETB" && paymentProvider !== "CHAPA") {
+      setPaymentProvider("CHAPA");
+      return;
+    }
+
+    if (preferredCurrencyCode !== "ETB" && paymentProvider !== "STRIPE") {
+      setPaymentProvider("STRIPE");
+    }
+  }, [preferredCurrencyCode, paymentProvider]);
+
   const handleApplyDiscount = useCallback(async () => {
     const code = discountCode.trim();
     if (!code) {
@@ -1203,6 +1237,8 @@ export default function ServiceCheckout() {
                   <PaymentMethodSelector
                     amount={finalAmount}
                     currency={displayCurrency}
+                    allowedMethods={[...allowedPaymentMethods]}
+                    notifyOnSelectionChange
                     onPaymentMethodSelect={(method) => {
                       if (method === "stripe") {
                         setPaymentProvider("STRIPE");
@@ -1267,6 +1303,12 @@ export default function ServiceCheckout() {
                           {formatTime(selectedTime)}
                         </span>
                       </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <CreditCard className="h-4 w-4 text-viridian-green" />
+                        <span className="font-light text-eagle-green">
+                          Payment: {paymentProviderLabel}
+                        </span>
+                      </div>
                     </div>
                   ) : (
                     <p className="text-sm font-light text-eagle-green/50">
@@ -1291,7 +1333,19 @@ export default function ServiceCheckout() {
                     <div className="flex justify-between items-center">
                       <span className="font-light text-eagle-green">Total</span>
                       <div className="font-bold text-eagle-green text-2xl">
-                        {service.activeDiscount ? (
+                        {hasManualDiscount && hasDiscountedTotal ? (
+                          <div className="text-right leading-tight">
+                            <div className="text-sm font-medium text-eagle-green/60 line-through">
+                              {serviceService.formatPrice(
+                                displayPriceMajor ?? 0,
+                                displayCurrency
+                              )}
+                            </div>
+                            <div className="font-bold text-eagle-green text-2xl">
+                              {formatPrice(finalAmount, displayCurrency)}
+                            </div>
+                          </div>
+                        ) : service.activeDiscount ? (
                           <PriceWithDiscount
                             originalPrice={displayPriceMajor || 0}
                             currency={displayCurrency}

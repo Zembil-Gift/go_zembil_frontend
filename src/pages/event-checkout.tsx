@@ -69,6 +69,10 @@ export default function EventCheckout() {
   >("stripe");
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const preferredCurrencyCode = useMemo(() => {
+    return (user?.preferredCurrencyCode || "ETB").toUpperCase();
+  }, [user?.preferredCurrencyCode]);
+
   // Fetch backend-enabled payment methods
   const { data: backendConfigs } = useQuery({
     queryKey: ["payment-method-configs"],
@@ -77,11 +81,19 @@ export default function EventCheckout() {
   });
 
   const enabledPaymentMethods = useMemo(() => {
-    if (!backendConfigs) return ["stripe", "chapa", "telebirr"]; // Fallback while loading
-    return backendConfigs
+    const allowedMethodsByCurrency =
+      preferredCurrencyCode === "ETB" ? ["chapa"] : ["stripe"];
+
+    if (!backendConfigs) return allowedMethodsByCurrency;
+
+    const backendEnabled = backendConfigs
       .filter((c) => c.enabled)
       .map((c) => c.paymentMethod.toLowerCase());
-  }, [backendConfigs]);
+
+    return backendEnabled.filter((method) =>
+      allowedMethodsByCurrency.includes(method)
+    );
+  }, [backendConfigs, preferredCurrencyCode]);
 
   // Auto-select first enabled method if current selection is disabled
   useEffect(() => {
@@ -371,12 +383,12 @@ export default function EventCheckout() {
                       className="w-24 h-24 rounded-lg object-cover"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
-                        e.currentTarget.nextElementSibling?.classList.remove(
-                          "hidden"
-                        );
+                        const fallback = e.currentTarget.nextElementSibling;
+                        fallback?.classList.remove("hidden");
+                        fallback?.classList.add("flex");
                       }}
                     />
-                    <div className="w-24 h-24 rounded-lg bg-eagle-green/10 flex items-center justify-center hidden">
+                    <div className="w-24 h-24 rounded-lg bg-eagle-green/10 items-center justify-center hidden">
                       <Calendar className="h-8 w-8 text-eagle-green/50" />
                     </div>
                     <div className="flex-1">
@@ -679,35 +691,35 @@ export default function EventCheckout() {
                         </div>
                       )}
                       {enabledPaymentMethods.includes("telebirr") && (
-                        <div
-                          className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
-                            paymentProvider === "telebirr"
-                              ? "border-eagle-green bg-june-bud/10"
-                              : "border-gray-200 hover:border-eagle-green/50"
-                          }`}
-                        >
-                          <RadioGroupItem value="telebirr" id="telebirr" />
-                          <Label
-                            htmlFor="telebirr"
-                            className="flex-1 cursor-pointer"
-                          >
-                            <span className="font-bold text-eagle-green">
-                              TeleBirr
-                            </span>
-                            <p className="text-sm font-light text-eagle-green/70">
-                              Pay with TeleBirr Wallet, Bank Account, or Cards
-                            </p>
-                          </Label>
-                          <img
-                            src="/telebirr-logo.png"
-                            alt="TeleBirr"
-                            className="h-8 w-auto"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        </div>
-                      )}
+                                        <div
+                                          className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
+                                            paymentProvider === "telebirr"
+                                              ? "border-eagle-green bg-june-bud/10"
+                                              : "border-gray-200 hover:border-eagle-green/50"
+                                          }`}
+                                        >
+                                          <RadioGroupItem value="telebirr" id="telebirr" />
+                                          <Label
+                                            htmlFor="telebirr"
+                                            className="flex-1 cursor-pointer"
+                                          >
+                                            <span className="font-bold text-eagle-green">
+                                              TeleBirr
+                                            </span>
+                                            <p className="text-sm font-light text-eagle-green/70">
+                                              Pay with TeleBirr Wallet, Bank Account, or Cards
+                                            </p>
+                                          </Label>
+                                          <img
+                                            src="/telebirr-logo.png"
+                                            alt="TeleBirr"
+                                            className="h-8 w-auto"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = "none";
+                                            }}
+                                          />
+                                        </div>
+                                      )}
                     </RadioGroup>
                   )}
                 </CardContent>

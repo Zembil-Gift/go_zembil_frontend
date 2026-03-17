@@ -16,6 +16,8 @@ export interface PaymentMethodSelectorProps {
   currency: string;
   userLocation?: string;
   onPaymentMethodSelect: (method: PaymentMethodType, data?: any) => void;
+  allowedMethods?: PaymentMethodType[];
+  notifyOnSelectionChange?: boolean;
   isLoading?: boolean;
   error?: string;
 }
@@ -37,6 +39,8 @@ export default function PaymentMethodSelector({
   currency,
   userLocation,
   onPaymentMethodSelect,
+  allowedMethods,
+  notifyOnSelectionChange = false,
   isLoading = false,
   error
 }: PaymentMethodSelectorProps) {
@@ -106,11 +110,25 @@ export default function PaymentMethodSelector({
       );
       methods = methods.filter((m) => enabledSet.has(m.id));
     }
+
+    if (allowedMethods && allowedMethods.length > 0) {
+      const allowedSet = new Set(allowedMethods);
+      methods = methods.filter((m) => allowedSet.has(m.id));
+    }
+
     return methods;
   };
 
   const handleMethodSelect = (methodId: PaymentMethodType) => {
     setSelectedMethod(methodId);
+
+    if (notifyOnSelectionChange) {
+      onPaymentMethodSelect(methodId, {
+        amount,
+        currency,
+        paymentMethod: methodId,
+      });
+    }
   };
 
   const handlePaymentSubmit = () => {

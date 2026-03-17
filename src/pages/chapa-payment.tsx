@@ -51,6 +51,15 @@ interface ChapaInitializationResult {
   checkoutUrl?: string;
 }
 
+interface CurrencyConversionDto {
+  amount: number;
+  fromCurrency: string;
+  toCurrency: string;
+  convertedAmount: number;
+  rate: number;
+  rateTimestamp?: string;
+}
+
 const chapaPublicKey = import.meta.env.VITE_CHAPA_PUBLIC_KEY?.trim();
 
 const normalizeEthiopianPhone = (phone?: string | null): string => {
@@ -355,6 +364,29 @@ export default function ChapaPaymentPage() {
           : orderDetails?.totals?.totalMinor || 0;
       const orderCurrency =
         orderDetails?.currency || orderDetails?.currencyCode || "ETB";
+
+      let chapaAmountMinor = orderAmountMinor;
+      let chapaCurrency = orderCurrency;
+
+      // Chapa should always be initialized with Ethiopian pricing.
+      if (orderCurrency.toUpperCase() !== "ETB") {
+        try {
+          const conversion = await apiService.getRequest<CurrencyConversionDto>(
+            `/api/currencies/convert?amount=${encodeURIComponent(
+              orderAmountMinor / 100
+            )}&from=${encodeURIComponent(orderCurrency)}&to=ETB`
+          );
+
+          chapaAmountMinor = Math.round(conversion.convertedAmount * 100);
+          chapaCurrency = "ETB";
+        } catch (conversionError) {
+          console.warn(
+            "Failed to convert Chapa amount to ETB, using original order currency:",
+            conversionError
+          );
+        }
+      }
+
       const txRef = initResult?.paymentId?.trim();
       const contactPhone =
         type === "event"
@@ -368,7 +400,7 @@ export default function ChapaPaymentPage() {
       console.log("Prepared Chapa inline payment context:", {
         orderId: orderIdNum,
         orderType: type,
-        currency: orderCurrency,
+        currency: chapaCurrency,
         txRef,
         checkoutUrl: initResult?.checkoutUrl,
       });
@@ -386,9 +418,9 @@ export default function ChapaPaymentPage() {
       }
 
       setPaymentData({
-        amountMajor: (orderAmountMinor / 100).toFixed(2),
-        amountMinor: orderAmountMinor,
-        currency: orderCurrency,
+        amountMajor: (chapaAmountMinor / 100).toFixed(2),
+        amountMinor: chapaAmountMinor,
+        currency: chapaCurrency,
         orderId: orderIdNum,
         txRef,
         orderType: formatOrderType(type),

@@ -140,7 +140,7 @@ function getStatusCta(status: VendorCampaignStatusItem["status"]): string {
     case "PAID":
       return "Reward consumed/paid";
     case "REJECTED":
-      return "Review reason and re-join if applicable";
+      return "Join other campaigns";
     default:
       return "—";
   }
@@ -498,15 +498,12 @@ export default function VendorCampaignsPage() {
                               {(item.status === "PENDING" ||
                                 item.status === "REJECTED") && (
                                 <>
-                                  <p className="text-sm text-muted-foreground">
-                                    Next action:{" "}
-                                    {item.nextRecommendedAction || "—"}
-                                  </p>
-                                  {item.participation.adminNote && (
+                            
+                                  {/* {item.participation.adminNote && (
                                     <p className="text-sm text-muted-foreground">
                                       Admin note: {item.participation.adminNote}
                                     </p>
-                                  )}
+                                  )} */}
                                 </>
                               )}
 
