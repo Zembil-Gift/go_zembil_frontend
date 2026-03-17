@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { 
-  Calendar, 
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import {
+  Calendar,
   Clock,
-  MapPin, 
+  MapPin,
   ChevronRight,
   CheckCircle,
   XCircle,
@@ -14,45 +14,61 @@ import {
   X,
   CalendarClock,
   DollarSign,
-  Info
-} from 'lucide-react';
+  Info,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
-import { 
-  serviceOrderService, 
+import {
+  serviceOrderService,
   ServiceOrderResponse,
-  ServiceOrderStatus 
-} from '@/services/serviceOrderService';
-import { serviceService } from '@/services/serviceService';
-
+  ServiceOrderStatus,
+} from "@/services/serviceOrderService";
+import { serviceService } from "@/services/serviceService";
 
 export default function MyServiceOrders() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
-  const [selectedOrder, setSelectedOrder] = useState<ServiceOrderResponse | null>(null);
+  const { user } = useAuth();
+
+  const [selectedOrder, setSelectedOrder] =
+    useState<ServiceOrderResponse | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
-  const [pendingRescheduleDialogOpen, setPendingRescheduleDialogOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
-  const [newScheduledDate, setNewScheduledDate] = useState('');
-  const [newScheduledTime, setNewScheduledTime] = useState('');
+  const [pendingRescheduleDialogOpen, setPendingRescheduleDialogOpen] =
+    useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [newScheduledDate, setNewScheduledDate] = useState("");
+  const [newScheduledTime, setNewScheduledTime] = useState("");
+  const [retryingPaymentOrderId, setRetryingPaymentOrderId] = useState<
+    number | null
+  >(null);
 
   // Fetch user's service orders
-  const { data: ordersData, isLoading, refetch } = useQuery({
-    queryKey: ['my-service-orders'],
+  const {
+    data: ordersData,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["my-service-orders"],
     queryFn: () => serviceOrderService.getCustomerOrders(0, 50),
   });
 
@@ -64,113 +80,193 @@ export default function MyServiceOrders() {
       serviceOrderService.cancelOrder(orderId, reason),
     onSuccess: () => {
       toast({
-        title: 'Order Cancelled',
-        description: 'Your service order has been cancelled successfully.',
+        title: "Order Cancelled",
+        description: "Your service order has been cancelled successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['my-service-orders'] });
+      queryClient.invalidateQueries({ queryKey: ["my-service-orders"] });
       setCancelDialogOpen(false);
       setSelectedOrder(null);
-      setCancelReason('');
+      setCancelReason("");
     },
     onError: (error: Error) => {
       toast({
-        title: 'Cancellation Failed',
-        description: error.message || 'Failed to cancel order. Please try again.',
-        variant: 'destructive',
+        title: "Cancellation Failed",
+        description:
+          error.message || "Failed to cancel order. Please try again.",
+        variant: "destructive",
       });
     },
   });
 
-
   // Reschedule order mutation
   const rescheduleMutation = useMutation({
-    mutationFn: ({ orderId, newDateTime }: { orderId: number; newDateTime: string }) =>
-      serviceOrderService.rescheduleOrder(orderId, newDateTime),
+    mutationFn: ({
+      orderId,
+      newDateTime,
+    }: {
+      orderId: number;
+      newDateTime: string;
+    }) => serviceOrderService.rescheduleOrder(orderId, newDateTime),
     onSuccess: () => {
       toast({
-        title: 'Order Rescheduled',
-        description: 'Your service has been rescheduled successfully.',
+        title: "Order Rescheduled",
+        description: "Your service has been rescheduled successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['my-service-orders'] });
+      queryClient.invalidateQueries({ queryKey: ["my-service-orders"] });
       setRescheduleDialogOpen(false);
       setSelectedOrder(null);
-      setNewScheduledDate('');
-      setNewScheduledTime('');
+      setNewScheduledDate("");
+      setNewScheduledTime("");
     },
     onError: (error: Error) => {
       toast({
-        title: 'Reschedule Failed',
-        description: error.message || 'Failed to reschedule order. Please try again.',
-        variant: 'destructive',
+        title: "Reschedule Failed",
+        description:
+          error.message || "Failed to reschedule order. Please try again.",
+        variant: "destructive",
       });
     },
   });
 
   // Approve/reject vendor reschedule mutation
   const approveRescheduleMutation = useMutation({
-    mutationFn: ({ orderId, approved }: { orderId: number; approved: boolean }) =>
-      serviceOrderService.approveReschedule(orderId, approved),
+    mutationFn: ({
+      orderId,
+      approved,
+    }: {
+      orderId: number;
+      approved: boolean;
+    }) => serviceOrderService.approveReschedule(orderId, approved),
     onSuccess: (_, variables) => {
       toast({
-        title: variables.approved ? 'Reschedule Approved' : 'Reschedule Rejected',
-        description: variables.approved 
-          ? 'The new schedule has been confirmed.'
-          : 'The vendor reschedule request has been rejected.',
+        title: variables.approved
+          ? "Reschedule Approved"
+          : "Reschedule Rejected",
+        description: variables.approved
+          ? "The new schedule has been confirmed."
+          : "The vendor reschedule request has been rejected.",
       });
-      queryClient.invalidateQueries({ queryKey: ['my-service-orders'] });
+      queryClient.invalidateQueries({ queryKey: ["my-service-orders"] });
       setPendingRescheduleDialogOpen(false);
       setSelectedOrder(null);
     },
     onError: (error: Error) => {
       toast({
-        title: 'Action Failed',
-        description: error.message || 'Failed to process reschedule request.',
-        variant: 'destructive',
+        title: "Action Failed",
+        description: error.message || "Failed to process reschedule request.",
+        variant: "destructive",
       });
     },
   });
 
+  const preferredCurrencyCode = (
+    user?.preferredCurrencyCode || "ETB"
+  ).toUpperCase();
 
-  // Filter orders by status
-  const upcomingOrders = orders.filter((order: ServiceOrderResponse) => 
-    !['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(order.status) && 
-    order.paymentStatus === 'PAID' &&
-    new Date(order.scheduledDateTime) > new Date()
-  );
+  const handleContinueCheckout = async (order: ServiceOrderResponse) => {
+    const isPendingPayment = ["PENDING", "FAILED"].includes(
+      order.paymentStatus
+    );
+    const isPayableStatus = !["CANCELLED", "COMPLETED", "NO_SHOW"].includes(
+      order.status
+    );
 
-  const pastOrders = orders.filter((order: ServiceOrderResponse) => 
-    order.paymentStatus === 'PAID' &&
-    (new Date(order.scheduledDateTime) <= new Date() || 
-     ['COMPLETED', 'NO_SHOW'].includes(order.status))
-  );
+    if (!isPendingPayment || !isPayableStatus) {
+      return;
+    }
 
-  const cancelledOrders = orders.filter((order: ServiceOrderResponse) => 
-    order.status === 'CANCELLED'
-  );
+    const provider: "STRIPE" | "CHAPA" =
+      preferredCurrencyCode === "ETB" ? "CHAPA" : "STRIPE";
 
-  const pendingOrders = orders.filter((order: ServiceOrderResponse) => 
-    order.paymentStatus === 'PENDING'
-  );
+    try {
+      setRetryingPaymentOrderId(order.id);
+
+      if (provider === "CHAPA") {
+        navigate(`/payment/chapa?orderId=${order.id}&orderType=service`);
+        return;
+      }
+
+      const paymentInit = await serviceOrderService.initializePayment(
+        order.id,
+        "STRIPE"
+      );
+
+      if (paymentInit.checkoutUrl) {
+        window.location.href = paymentInit.checkoutUrl;
+        return;
+      }
+
+      if (paymentInit.clientSecret) {
+        navigate(`/payment/stripe?orderId=${order.id}&orderType=service`, {
+          state: {
+            clientSecret: paymentInit.clientSecret,
+            publishableKey: paymentInit.publishableKey,
+            amount: order.totalAmountMinor,
+            currency: order.currency.toLowerCase(),
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            returnUrl: `${window.location.origin}/my-service-orders`,
+          },
+        });
+        return;
+      }
+
+      throw new Error(
+        "Payment initialization failed. No checkout URL returned."
+      );
+    } catch (error: any) {
+      toast({
+        title: "Checkout Failed",
+        description:
+          error?.message || "Failed to continue checkout. Please try again.",
+        variant: "destructive",
+      });
+      setRetryingPaymentOrderId(null);
+    }
+  };
 
   const getStatusIcon = (status: ServiceOrderStatus) => {
     switch (status) {
-      case 'COMPLETED':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'CONFIRMED_BY_VENDOR':
-        return <CheckCircle className="h-4 w-4 text-blue-600" />;
-      case 'IN_PROGRESS':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 'CANCELLED':
-      case 'NO_SHOW':
-        return <XCircle className="h-4 w-4 text-red-600" />;
+      case "COMPLETED":
+        return <CheckCircle className="h-4 w-4" />;
+      case "CONFIRMED_BY_VENDOR":
+        return <CheckCircle className="h-4 w-4" />;
+      case "IN_PROGRESS":
+        return <Clock className="h-4 w-4" />;
+      case "CANCELLED":
+      case "NO_SHOW":
+        return <XCircle className="h-4 w-4" />;
       default:
-        return <AlertCircle className="h-4 w-4 text-blue-600" />;
+        return <AlertCircle className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusBadgeClass = (status: ServiceOrderStatus) => {
+    switch (status) {
+      case "BOOKED":
+        return "bg-yellow-100 text-yellow-800 border-none";
+      case "CONFIRMED_BY_VENDOR":
+        return "bg-amber-100 text-amber-800 border-none";
+      case "IN_PROGRESS":
+        return "bg-yellow-200 text-yellow-900 border-none";
+      case "COMPLETED":
+        return "bg-yellow-50 text-yellow-800 border-none";
+      case "RESCHEDULED":
+        return "bg-amber-100 text-amber-900 border-none";
+      case "CANCELLED":
+      case "NO_SHOW":
+        return "bg-orange-100 text-orange-800 border-none";
+      default:
+        return "bg-yellow-100 text-yellow-800 border-none";
     }
   };
 
   const handleCancelOrder = () => {
     if (selectedOrder) {
-      cancelMutation.mutate({ orderId: selectedOrder.id, reason: cancelReason || undefined });
+      cancelMutation.mutate({
+        orderId: selectedOrder.id,
+        reason: cancelReason || undefined,
+      });
     }
   };
 
@@ -187,14 +283,22 @@ export default function MyServiceOrders() {
     }
   };
 
-
   const OrderCard = ({ order }: { order: ServiceOrderResponse }) => {
     const statusDisplay = serviceOrderService.getStatusDisplay(order.status);
-    const paymentStatusDisplay = serviceOrderService.getPaymentStatusDisplay(order.paymentStatus);
-    const canCancel = serviceOrderService.canCancelOrder(order);
+    const paymentStatusDisplay = serviceOrderService.getPaymentStatusDisplay(
+      order.paymentStatus
+    );
     const canReschedule = serviceOrderService.canRescheduleOrder(order);
-    const hasPendingReschedule = serviceOrderService.hasPendingReschedule(order);
+    const hasPendingReschedule =
+      serviceOrderService.hasPendingReschedule(order);
     const hoursUntilService = serviceOrderService.getHoursUntilService(order);
+    const isPendingPayment = ["PENDING", "FAILED"].includes(
+      order.paymentStatus
+    );
+    const isPayableStatus = !["CANCELLED", "COMPLETED", "NO_SHOW"].includes(
+      order.status
+    );
+    const canContinueCheckout = isPendingPayment && isPayableStatus;
 
     return (
       <motion.div
@@ -202,17 +306,18 @@ export default function MyServiceOrders() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Card 
+        <Card
           className="cursor-pointer hover:shadow-lg transition-all duration-300 border-eagle-green/10"
-          onClick={() => setSelectedOrder(order)}
+          onClick={() => navigate(`/my-service-orders/${order.id}`)}
         >
           <CardContent className="p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex gap-4 flex-1">
                 {/* Service Image */}
-                {order.service && serviceService.getPrimaryImageUrl(order.service) ? (
-                  <img 
-                    src={serviceService.getPrimaryImageUrl(order.service)} 
+                {order.service &&
+                serviceService.getPrimaryImageUrl(order.service) ? (
+                  <img
+                    src={serviceService.getPrimaryImageUrl(order.service)}
                     alt={order.service.title}
                     className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
                   />
@@ -221,14 +326,16 @@ export default function MyServiceOrders() {
                     <Calendar className="h-8 w-8 text-eagle-green/50" />
                   </div>
                 )}
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <Badge className={`${statusDisplay.bgColor} ${statusDisplay.color} border-none`}>
+                    <Badge className={getStatusBadgeClass(order.status)}>
                       {getStatusIcon(order.status)}
                       <span className="ml-1">{statusDisplay.text}</span>
                     </Badge>
-                    <Badge className={`${paymentStatusDisplay.bgColor} ${paymentStatusDisplay.color} border-none`}>
+                    <Badge
+                      className={`${paymentStatusDisplay.bgColor} ${paymentStatusDisplay.color} border-none`}
+                    >
                       {paymentStatusDisplay.text}
                     </Badge>
                     {hasPendingReschedule && (
@@ -238,35 +345,44 @@ export default function MyServiceOrders() {
                       </Badge>
                     )}
                   </div>
-                  
+
                   <h3 className="font-bold text-eagle-green text-lg mb-1 truncate">
-                    {order.service?.title || 'Service'}
+                    {order.service?.title || "Service"}
                   </h3>
-                  
+
                   <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-1">
                     <Calendar className="h-4 w-4 flex-shrink-0" />
-                    <span className="font-light">{serviceOrderService.formatDate(order.scheduledDateTime)}</span>
+                    <span className="font-light">
+                      {serviceOrderService.formatDate(order.scheduledDateTime)}
+                    </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-1">
                     <Clock className="h-4 w-4 flex-shrink-0" />
-                    <span className="font-light">{serviceOrderService.formatTime(order.scheduledDateTime)}</span>
+                    <span className="font-light">
+                      {serviceOrderService.formatTime(order.scheduledDateTime)}
+                    </span>
                   </div>
 
                   {order.service?.city && (
                     <div className="flex items-center gap-2 text-sm text-eagle-green/70">
                       <MapPin className="h-4 w-4 flex-shrink-0" />
-                      <span className="font-light truncate">{order.service.city}</span>
+                      <span className="font-light truncate">
+                        {order.service.city}
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
-              
+
               <div className="text-right flex-shrink-0">
                 <p className="font-bold text-eagle-green text-lg">
-                  {serviceOrderService.formatPrice(order.totalAmountMinor, order.currency)}
+                  {serviceOrderService.formatPrice(
+                    order.totalAmountMinor,
+                    order.currency
+                  )}
                 </p>
-                {hoursUntilService > 0 && order.status !== 'CANCELLED' && (
+                {hoursUntilService > 0 && order.status !== "CANCELLED" && (
                   <p className="text-xs text-eagle-green/60 mt-1">
                     {hoursUntilService}h until service
                   </p>
@@ -275,8 +391,7 @@ export default function MyServiceOrders() {
               </div>
             </div>
 
-            
-            {/* Refund Eligibility Info */}
+            {/* Refund Eligibility Info
             {order.refundEligibility && canCancel && (
               <div className="mt-3 pt-3 border-t border-eagle-green/10">
                 <div className="flex items-center gap-2 text-sm">
@@ -290,11 +405,31 @@ export default function MyServiceOrders() {
                   </span>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Quick Actions */}
-            {(canCancel || canReschedule || hasPendingReschedule) && (
+            {(canContinueCheckout || canReschedule || hasPendingReschedule) && (
               <div className="mt-3 pt-3 border-t border-eagle-green/10 flex gap-2 flex-wrap">
+                {canContinueCheckout && (
+                  <Button
+                    size="sm"
+                    className="bg-eagle-green hover:bg-viridian-green text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleContinueCheckout(order);
+                    }}
+                    disabled={retryingPaymentOrderId === order.id}
+                  >
+                    {retryingPaymentOrderId === order.id ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                        Initializing...
+                      </>
+                    ) : (
+                      "Continue Checkout"
+                    )}
+                  </Button>
+                )}
                 {hasPendingReschedule && (
                   <Button
                     size="sm"
@@ -325,21 +460,6 @@ export default function MyServiceOrders() {
                     Reschedule
                   </Button>
                 )}
-                {canCancel && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-red-300 text-red-600 hover:bg-red-50"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedOrder(order);
-                      setCancelDialogOpen(true);
-                    }}
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Cancel
-                  </Button>
-                )}
               </div>
             )}
           </CardContent>
@@ -352,15 +472,14 @@ export default function MyServiceOrders() {
     <div className="text-center py-12">
       <Calendar className="h-16 w-16 text-eagle-green/20 mx-auto mb-4" />
       <p className="font-light text-eagle-green/60">{message}</p>
-      <Button 
-        onClick={() => navigate('/services')}
+      <Button
+        onClick={() => navigate("/services")}
         className="mt-4 bg-eagle-green hover:bg-viridian-green text-white"
       >
         Browse Services
       </Button>
     </div>
   );
-
 
   return (
     <div className="min-h-screen bg-white">
@@ -410,81 +529,27 @@ export default function MyServiceOrders() {
             ))}
           </div>
         ) : (
-          <Tabs defaultValue="upcoming" className="space-y-6">
-            <TabsList className="bg-june-bud/10 p-1">
-              <TabsTrigger 
-                value="upcoming"
-                className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
-              >
-                Upcoming ({upcomingOrders.length})
-              </TabsTrigger>
-              <TabsTrigger 
-                value="past"
-                className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
-              >
-                Past ({pastOrders.length})
-              </TabsTrigger>
-              <TabsTrigger 
-                value="cancelled"
-                className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
-              >
-                Cancelled ({cancelledOrders.length})
-              </TabsTrigger>
-              {pendingOrders.length > 0 && (
-                <TabsTrigger 
-                  value="pending"
-                  className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
-                >
-                  Pending ({pendingOrders.length})
-                </TabsTrigger>
-              )}
-            </TabsList>
-
-            <TabsContent value="upcoming" className="space-y-4">
-              {upcomingOrders.length === 0 ? (
-                <EmptyState message="No upcoming service bookings. Browse services to book!" />
-              ) : (
-                upcomingOrders.map((order: ServiceOrderResponse) => (
-                  <OrderCard key={order.id} order={order} />
-                ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="past" className="space-y-4">
-              {pastOrders.length === 0 ? (
-                <EmptyState message="No past service bookings yet." />
-              ) : (
-                pastOrders.map((order: ServiceOrderResponse) => (
-                  <OrderCard key={order.id} order={order} />
-                ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="cancelled" className="space-y-4">
-              {cancelledOrders.length === 0 ? (
-                <EmptyState message="No cancelled bookings." />
-              ) : (
-                cancelledOrders.map((order: ServiceOrderResponse) => (
-                  <OrderCard key={order.id} order={order} />
-                ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="pending" className="space-y-4">
-              {pendingOrders.length === 0 ? (
-                <EmptyState message="No pending orders." />
-              ) : (
-                pendingOrders.map((order: ServiceOrderResponse) => (
-                  <OrderCard key={order.id} order={order} />
-                ))
-              )}
-            </TabsContent>
-          </Tabs>
+          <div className="space-y-4">
+            {orders.length === 0 ? (
+              <EmptyState message="No service bookings yet. Browse services to book!" />
+            ) : (
+              orders.map((order: ServiceOrderResponse) => (
+                <OrderCard key={order.id} order={order} />
+              ))
+            )}
+          </div>
         )}
 
-
         {/* Order Detail Modal */}
-        <Dialog open={!!selectedOrder && !cancelDialogOpen && !rescheduleDialogOpen && !pendingRescheduleDialogOpen} onOpenChange={() => setSelectedOrder(null)}>
+        <Dialog
+          open={
+            !!selectedOrder &&
+            !cancelDialogOpen &&
+            !rescheduleDialogOpen &&
+            !pendingRescheduleDialogOpen
+          }
+          onOpenChange={() => setSelectedOrder(null)}
+        >
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
             {selectedOrder && (
               <>
@@ -498,9 +563,14 @@ export default function MyServiceOrders() {
                   {/* Service Info */}
                   <div className="bg-june-bud/10 rounded-lg p-4">
                     <div className="flex gap-4">
-                      {selectedOrder.service && serviceService.getPrimaryImageUrl(selectedOrder.service) ? (
-                        <img 
-                          src={serviceService.getPrimaryImageUrl(selectedOrder.service)} 
+                      {selectedOrder.service &&
+                      serviceService.getPrimaryImageUrl(
+                        selectedOrder.service
+                      ) ? (
+                        <img
+                          src={serviceService.getPrimaryImageUrl(
+                            selectedOrder.service
+                          )}
                           alt={selectedOrder.service.title}
                           className="w-24 h-24 rounded-lg object-cover"
                         />
@@ -511,7 +581,7 @@ export default function MyServiceOrders() {
                       )}
                       <div>
                         <h3 className="font-bold text-eagle-green text-lg mb-1">
-                          {selectedOrder.service?.title || 'Service'}
+                          {selectedOrder.service?.title || "Service"}
                         </h3>
                         {selectedOrder.vendorName && (
                           <p className="text-sm font-light text-eagle-green/70 mb-2">
@@ -521,11 +591,15 @@ export default function MyServiceOrders() {
                         <div className="space-y-1 text-sm text-eagle-green/70">
                           <p className="flex items-center gap-2">
                             <Calendar className="h-4 w-4" />
-                            {serviceOrderService.formatDate(selectedOrder.scheduledDateTime)}
+                            {serviceOrderService.formatDate(
+                              selectedOrder.scheduledDateTime
+                            )}
                           </p>
                           <p className="flex items-center gap-2">
                             <Clock className="h-4 w-4" />
-                            {serviceOrderService.formatTime(selectedOrder.scheduledDateTime)}
+                            {serviceOrderService.formatTime(
+                              selectedOrder.scheduledDateTime
+                            )}
                           </p>
                           {selectedOrder.service?.city && (
                             <p className="flex items-center gap-2">
@@ -541,40 +615,74 @@ export default function MyServiceOrders() {
                   {/* Order Status */}
                   <div className="flex items-center gap-4 flex-wrap">
                     <div>
-                      <span className="text-sm font-light text-eagle-green/70">Status</span>
-                      <Badge className={`ml-2 ${serviceOrderService.getStatusDisplay(selectedOrder.status).bgColor} ${serviceOrderService.getStatusDisplay(selectedOrder.status).color} border-none`}>
-                        {serviceOrderService.getStatusDisplay(selectedOrder.status).text}
+                      <span className="text-sm font-light text-eagle-green/70">
+                        Status
+                      </span>
+                      <Badge
+                        className={`ml-2 ${getStatusBadgeClass(
+                          selectedOrder.status
+                        )}`}
+                      >
+                        {getStatusIcon(selectedOrder.status)}
+                        <span className="ml-1">
+                          {
+                            serviceOrderService.getStatusDisplay(
+                              selectedOrder.status
+                            ).text
+                          }
+                        </span>
                       </Badge>
                     </div>
                     <div>
-                      <span className="text-sm font-light text-eagle-green/70">Payment</span>
-                      <Badge className={`ml-2 ${serviceOrderService.getPaymentStatusDisplay(selectedOrder.paymentStatus).bgColor} ${serviceOrderService.getPaymentStatusDisplay(selectedOrder.paymentStatus).color} border-none`}>
-                        {serviceOrderService.getPaymentStatusDisplay(selectedOrder.paymentStatus).text}
+                      <span className="text-sm font-light text-eagle-green/70">
+                        Payment
+                      </span>
+                      <Badge
+                        className={`ml-2 ${
+                          serviceOrderService.getPaymentStatusDisplay(
+                            selectedOrder.paymentStatus
+                          ).bgColor
+                        } ${
+                          serviceOrderService.getPaymentStatusDisplay(
+                            selectedOrder.paymentStatus
+                          ).color
+                        } border-none`}
+                      >
+                        {
+                          serviceOrderService.getPaymentStatusDisplay(
+                            selectedOrder.paymentStatus
+                          ).text
+                        }
                       </Badge>
                     </div>
                   </div>
 
                   <Separator />
 
-
                   {/* Recipient Info */}
-                  {(selectedOrder.recipientName || selectedOrder.giftMessage) && (
+                  {(selectedOrder.recipientName ||
+                    selectedOrder.giftMessage) && (
                     <>
                       <div>
-                        <h4 className="font-bold text-eagle-green mb-3">Gift Details</h4>
+                        <h4 className="font-bold text-eagle-green mb-3">
+                          Gift Details
+                        </h4>
                         {selectedOrder.recipientName && (
                           <p className="text-sm font-light text-eagle-green/70 mb-1">
-                            <span className="font-bold">Recipient:</span> {selectedOrder.recipientName}
+                            <span className="font-bold">Recipient:</span>{" "}
+                            {selectedOrder.recipientName}
                           </p>
                         )}
                         {selectedOrder.recipientEmail && (
                           <p className="text-sm font-light text-eagle-green/70 mb-1">
-                            <span className="font-bold">Email:</span> {selectedOrder.recipientEmail}
+                            <span className="font-bold">Email:</span>{" "}
+                            {selectedOrder.recipientEmail}
                           </p>
                         )}
                         {selectedOrder.recipientPhone && (
                           <p className="text-sm font-light text-eagle-green/70 mb-1">
-                            <span className="font-bold">Phone:</span> {selectedOrder.recipientPhone}
+                            <span className="font-bold">Phone:</span>{" "}
+                            {selectedOrder.recipientPhone}
                           </p>
                         )}
                         {selectedOrder.giftMessage && (
@@ -593,22 +701,37 @@ export default function MyServiceOrders() {
                   {selectedOrder.cancellationInfo?.cancelledAt && (
                     <>
                       <div className="bg-red-50 rounded-lg p-4">
-                        <h4 className="font-bold text-red-700 mb-2">Cancellation Details</h4>
+                        <h4 className="font-bold text-red-700 mb-2">
+                          Cancellation Details
+                        </h4>
                         <div className="space-y-1 text-sm">
                           <p className="text-red-600">
-                            <span className="font-bold">Cancelled:</span> {serviceOrderService.formatDateTime(selectedOrder.cancellationInfo.cancelledAt)}
+                            <span className="font-bold">Cancelled:</span>{" "}
+                            {serviceOrderService.formatDateTime(
+                              selectedOrder.cancellationInfo.cancelledAt
+                            )}
                           </p>
                           <p className="text-red-600">
-                            <span className="font-bold">By:</span> {selectedOrder.cancellationInfo.cancelledBy}
+                            <span className="font-bold">By:</span>{" "}
+                            {selectedOrder.cancellationInfo.cancelledBy}
                           </p>
                           {selectedOrder.cancellationInfo.reason && (
                             <p className="text-red-600">
-                              <span className="font-bold">Reason:</span> {selectedOrder.cancellationInfo.reason}
+                              <span className="font-bold">Reason:</span>{" "}
+                              {selectedOrder.cancellationInfo.reason}
                             </p>
                           )}
-                          {selectedOrder.cancellationInfo.refundAmountMinor !== undefined && (
+                          {selectedOrder.cancellationInfo.refundAmountMinor !==
+                            undefined && (
                             <p className="text-red-600">
-                              <span className="font-bold">Refund:</span> {serviceOrderService.formatPrice(selectedOrder.cancellationInfo.refundAmountMinor, selectedOrder.currency)} ({selectedOrder.cancellationInfo.refundPercentage}%)
+                              <span className="font-bold">Refund:</span>{" "}
+                              {serviceOrderService.formatPrice(
+                                selectedOrder.cancellationInfo
+                                  .refundAmountMinor,
+                                selectedOrder.currency
+                              )}{" "}
+                              ({selectedOrder.cancellationInfo.refundPercentage}
+                              %)
                             </p>
                           )}
                         </div>
@@ -621,18 +744,27 @@ export default function MyServiceOrders() {
                   {selectedOrder.rescheduleInfo?.originalDateTime && (
                     <>
                       <div className="bg-purple-50 rounded-lg p-4">
-                        <h4 className="font-bold text-purple-700 mb-2">Reschedule History</h4>
+                        <h4 className="font-bold text-purple-700 mb-2">
+                          Reschedule History
+                        </h4>
                         <div className="space-y-1 text-sm">
                           <p className="text-purple-600">
-                            <span className="font-bold">Original Date:</span> {serviceOrderService.formatDateTime(selectedOrder.rescheduleInfo.originalDateTime)}
+                            <span className="font-bold">Original Date:</span>{" "}
+                            {serviceOrderService.formatDateTime(
+                              selectedOrder.rescheduleInfo.originalDateTime
+                            )}
                           </p>
                           {selectedOrder.rescheduleInfo.rescheduledAt && (
                             <p className="text-purple-600">
-                              <span className="font-bold">Rescheduled:</span> {serviceOrderService.formatDateTime(selectedOrder.rescheduleInfo.rescheduledAt)}
+                              <span className="font-bold">Rescheduled:</span>{" "}
+                              {serviceOrderService.formatDateTime(
+                                selectedOrder.rescheduleInfo.rescheduledAt
+                              )}
                             </p>
                           )}
                           <p className="text-purple-600">
-                            <span className="font-bold">By:</span> {selectedOrder.rescheduleInfo.rescheduledBy}
+                            <span className="font-bold">By:</span>{" "}
+                            {selectedOrder.rescheduleInfo.rescheduledBy}
                           </p>
                         </div>
                       </div>
@@ -640,64 +772,96 @@ export default function MyServiceOrders() {
                     </>
                   )}
 
-
                   {/* Order Summary */}
                   <div className="space-y-2">
-                    <h4 className="font-bold text-eagle-green mb-3">Payment Summary</h4>
+                    <h4 className="font-bold text-eagle-green mb-3">
+                      Payment Summary
+                    </h4>
                     <div className="flex justify-between text-sm">
-                      <span className="font-light text-eagle-green/70">Subtotal</span>
+                      <span className="font-light text-eagle-green/70">
+                        Subtotal
+                      </span>
                       <span className="font-light text-eagle-green">
-                        {serviceOrderService.formatPrice(selectedOrder.subtotalMinor, selectedOrder.currency)}
+                        {serviceOrderService.formatPrice(
+                          selectedOrder.subtotalMinor,
+                          selectedOrder.currency
+                        )}
                       </span>
                     </div>
-                    {selectedOrder.discountMinor && selectedOrder.discountMinor > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="font-light text-eagle-green/70">Discount</span>
-                        <span className="font-light text-green-600">
-                          -{serviceOrderService.formatPrice(selectedOrder.discountMinor, selectedOrder.currency)}
-                        </span>
-                      </div>
-                    )}
-                    {selectedOrder.vatAmountMinor && selectedOrder.vatAmountMinor > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="font-light text-eagle-green/70">VAT</span>
-                        <span className="font-light text-eagle-green">
-                          {serviceOrderService.formatPrice(selectedOrder.vatAmountMinor, selectedOrder.currency)}
-                        </span>
-                      </div>
-                    )}
+                    {selectedOrder.discountMinor &&
+                      selectedOrder.discountMinor > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="font-light text-eagle-green/70">
+                            Discount
+                          </span>
+                          <span className="font-light text-green-600">
+                            -
+                            {serviceOrderService.formatPrice(
+                              selectedOrder.discountMinor,
+                              selectedOrder.currency
+                            )}
+                          </span>
+                        </div>
+                      )}
+                    {selectedOrder.vatAmountMinor &&
+                      selectedOrder.vatAmountMinor > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="font-light text-eagle-green/70">
+                            VAT
+                          </span>
+                          <span className="font-light text-eagle-green">
+                            {serviceOrderService.formatPrice(
+                              selectedOrder.vatAmountMinor,
+                              selectedOrder.currency
+                            )}
+                          </span>
+                        </div>
+                      )}
                     <Separator />
                     <div className="flex justify-between">
                       <span className="font-bold text-eagle-green">Total</span>
                       <span className="font-bold text-eagle-green text-xl">
-                        {serviceOrderService.formatPrice(selectedOrder.totalAmountMinor, selectedOrder.currency)}
+                        {serviceOrderService.formatPrice(
+                          selectedOrder.totalAmountMinor,
+                          selectedOrder.currency
+                        )}
                       </span>
                     </div>
                   </div>
 
                   {/* Refund Eligibility */}
-                  {selectedOrder.refundEligibility && serviceOrderService.canCancelOrder(selectedOrder) && (
-                    <>
-                      <Separator />
-                      <div className="bg-june-bud/10 rounded-lg p-4">
-                        <h4 className="font-bold text-eagle-green mb-2 flex items-center gap-2">
-                          <Info className="h-4 w-4" />
-                          Refund Eligibility
-                        </h4>
-                        <p className="text-sm font-light text-eagle-green/70 mb-2">
-                          {selectedOrder.refundEligibility.reason}
-                        </p>
-                        <p className="text-sm font-bold text-viridian-green">
-                          Estimated refund: {selectedOrder.refundEligibility.refundPercentage}% 
-                          ({serviceOrderService.formatPrice(selectedOrder.refundEligibility.estimatedRefundMinor || 0, selectedOrder.currency)})
-                        </p>
-                      </div>
-                    </>
-                  )}
+                  {selectedOrder.refundEligibility &&
+                    serviceOrderService.canCancelOrder(selectedOrder) && (
+                      <>
+                        <Separator />
+                        <div className="bg-june-bud/10 rounded-lg p-4">
+                          <h4 className="font-bold text-eagle-green mb-2 flex items-center gap-2">
+                            <Info className="h-4 w-4" />
+                            Refund Eligibility
+                          </h4>
+                          <p className="text-sm font-light text-eagle-green/70 mb-2">
+                            {selectedOrder.refundEligibility.reason}
+                          </p>
+                          <p className="text-sm font-bold text-viridian-green">
+                            Estimated refund:{" "}
+                            {selectedOrder.refundEligibility.refundPercentage}%
+                            (
+                            {serviceOrderService.formatPrice(
+                              selectedOrder.refundEligibility
+                                .estimatedRefundMinor || 0,
+                              selectedOrder.currency
+                            )}
+                            )
+                          </p>
+                        </div>
+                      </>
+                    )}
 
                   {/* Actions */}
                   <div className="flex gap-2 flex-wrap">
-                    {serviceOrderService.hasPendingReschedule(selectedOrder) && (
+                    {serviceOrderService.hasPendingReschedule(
+                      selectedOrder
+                    ) && (
                       <Button
                         variant="outline"
                         className="border-purple-300 text-purple-700 hover:bg-purple-50"
@@ -709,18 +873,21 @@ export default function MyServiceOrders() {
                         Review Reschedule Request
                       </Button>
                     )}
-                    {serviceOrderService.canRescheduleOrder(selectedOrder) && !serviceOrderService.hasPendingReschedule(selectedOrder) && (
-                      <Button
-                        variant="outline"
-                        className="border-eagle-green/30 text-eagle-green hover:bg-eagle-green hover:text-white"
-                        onClick={() => {
-                          setRescheduleDialogOpen(true);
-                        }}
-                      >
-                        <CalendarClock className="h-4 w-4 mr-2" />
-                        Reschedule
-                      </Button>
-                    )}
+                    {serviceOrderService.canRescheduleOrder(selectedOrder) &&
+                      !serviceOrderService.hasPendingReschedule(
+                        selectedOrder
+                      ) && (
+                        <Button
+                          variant="outline"
+                          className="border-eagle-green/30 text-eagle-green hover:bg-eagle-green hover:text-white"
+                          onClick={() => {
+                            setRescheduleDialogOpen(true);
+                          }}
+                        >
+                          <CalendarClock className="h-4 w-4 mr-2" />
+                          Reschedule
+                        </Button>
+                      )}
                     {serviceOrderService.canCancelOrder(selectedOrder) && (
                       <Button
                         variant="outline"
@@ -736,7 +903,9 @@ export default function MyServiceOrders() {
                     <Button
                       variant="outline"
                       className="border-eagle-green/30 text-eagle-green"
-                      onClick={() => navigate(`/service-confirmation/${selectedOrder.id}`)}
+                      onClick={() =>
+                        navigate(`/my-service-orders/${selectedOrder.id}`)
+                      }
                     >
                       View Full Details
                     </Button>
@@ -746,7 +915,6 @@ export default function MyServiceOrders() {
             )}
           </DialogContent>
         </Dialog>
-
 
         {/* Cancel Order Dialog */}
         <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
@@ -764,22 +932,32 @@ export default function MyServiceOrders() {
               <div className="space-y-4">
                 <div className="bg-june-bud/10 rounded-lg p-4">
                   <h4 className="font-bold text-eagle-green mb-2">
-                    {selectedOrder.service?.title || 'Service'}
+                    {selectedOrder.service?.title || "Service"}
                   </h4>
                   <p className="text-sm font-light text-eagle-green/70">
-                    {serviceOrderService.formatDateTime(selectedOrder.scheduledDateTime)}
+                    {serviceOrderService.formatDateTime(
+                      selectedOrder.scheduledDateTime
+                    )}
                   </p>
                 </div>
 
                 {selectedOrder.refundEligibility && (
                   <div className="bg-yellow/10 rounded-lg p-4">
-                    <h5 className="font-bold text-eagle-green text-sm mb-1">Refund Information</h5>
+                    <h5 className="font-bold text-eagle-green text-sm mb-1">
+                      Refund Information
+                    </h5>
                     <p className="text-sm font-light text-eagle-green/70 mb-2">
                       {selectedOrder.refundEligibility.reason}
                     </p>
                     <p className="text-sm font-bold text-viridian-green">
-                      Estimated refund: {selectedOrder.refundEligibility.refundPercentage}% 
-                      ({serviceOrderService.formatPrice(selectedOrder.refundEligibility.estimatedRefundMinor || 0, selectedOrder.currency)})
+                      Estimated refund:{" "}
+                      {selectedOrder.refundEligibility.refundPercentage}% (
+                      {serviceOrderService.formatPrice(
+                        selectedOrder.refundEligibility.estimatedRefundMinor ||
+                          0,
+                        selectedOrder.currency
+                      )}
+                      )
                     </p>
                   </div>
                 )}
@@ -804,7 +982,7 @@ export default function MyServiceOrders() {
                 variant="outline"
                 onClick={() => {
                   setCancelDialogOpen(false);
-                  setCancelReason('');
+                  setCancelReason("");
                 }}
                 className="border-eagle-green/30"
               >
@@ -815,15 +993,17 @@ export default function MyServiceOrders() {
                 disabled={cancelMutation.isPending}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
-                {cancelMutation.isPending ? 'Cancelling...' : 'Cancel Booking'}
+                {cancelMutation.isPending ? "Cancelling..." : "Cancel Booking"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-
         {/* Reschedule Order Dialog */}
-        <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
+        <Dialog
+          open={rescheduleDialogOpen}
+          onOpenChange={setRescheduleDialogOpen}
+        >
           <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="font-bold text-eagle-green">
@@ -838,17 +1018,21 @@ export default function MyServiceOrders() {
               <div className="space-y-4">
                 <div className="bg-june-bud/10 rounded-lg p-4">
                   <h4 className="font-bold text-eagle-green mb-2">
-                    {selectedOrder.service?.title || 'Service'}
+                    {selectedOrder.service?.title || "Service"}
                   </h4>
                   <p className="text-sm font-light text-eagle-green/70">
-                    Current: {serviceOrderService.formatDateTime(selectedOrder.scheduledDateTime)}
+                    Current:{" "}
+                    {serviceOrderService.formatDateTime(
+                      selectedOrder.scheduledDateTime
+                    )}
                   </p>
                 </div>
 
                 <div className="bg-blue-50 rounded-lg p-3">
                   <p className="text-sm font-light text-blue-700">
                     <Info className="h-4 w-4 inline mr-1" />
-                    You can only reschedule once per booking. The new date must be at least 48 hours from now.
+                    You can only reschedule once per booking. The new date must
+                    be at least 48 hours from now.
                   </p>
                 </div>
 
@@ -862,7 +1046,11 @@ export default function MyServiceOrders() {
                       type="date"
                       value={newScheduledDate}
                       onChange={(e) => setNewScheduledDate(e.target.value)}
-                      min={new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                      min={
+                        new Date(Date.now() + 48 * 60 * 60 * 1000)
+                          .toISOString()
+                          .split("T")[0]
+                      }
                       className="mt-2"
                     />
                   </div>
@@ -887,8 +1075,8 @@ export default function MyServiceOrders() {
                 variant="outline"
                 onClick={() => {
                   setRescheduleDialogOpen(false);
-                  setNewScheduledDate('');
-                  setNewScheduledTime('');
+                  setNewScheduledDate("");
+                  setNewScheduledTime("");
                 }}
                 className="border-eagle-green/30"
               >
@@ -896,18 +1084,26 @@ export default function MyServiceOrders() {
               </Button>
               <Button
                 onClick={handleRescheduleOrder}
-                disabled={rescheduleMutation.isPending || !newScheduledDate || !newScheduledTime}
+                disabled={
+                  rescheduleMutation.isPending ||
+                  !newScheduledDate ||
+                  !newScheduledTime
+                }
                 className="bg-eagle-green hover:bg-viridian-green text-white"
               >
-                {rescheduleMutation.isPending ? 'Rescheduling...' : 'Confirm Reschedule'}
+                {rescheduleMutation.isPending
+                  ? "Rescheduling..."
+                  : "Confirm Reschedule"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-
         {/* Pending Reschedule Dialog */}
-        <Dialog open={pendingRescheduleDialogOpen} onOpenChange={setPendingRescheduleDialogOpen}>
+        <Dialog
+          open={pendingRescheduleDialogOpen}
+          onOpenChange={setPendingRescheduleDialogOpen}
+        >
           <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="font-bold text-eagle-green">
@@ -922,15 +1118,22 @@ export default function MyServiceOrders() {
               <div className="space-y-4">
                 <div className="bg-june-bud/10 rounded-lg p-4">
                   <h4 className="font-bold text-eagle-green mb-2">
-                    {selectedOrder.service?.title || 'Service'}
+                    {selectedOrder.service?.title || "Service"}
                   </h4>
                   <div className="space-y-2 text-sm">
                     <p className="font-light text-eagle-green/70">
-                      <span className="font-bold">Current:</span> {serviceOrderService.formatDateTime(selectedOrder.scheduledDateTime)}
+                      <span className="font-bold">Current:</span>{" "}
+                      {serviceOrderService.formatDateTime(
+                        selectedOrder.scheduledDateTime
+                      )}
                     </p>
-                    {selectedOrder.rescheduleInfo?.pendingRescheduleDateTime && (
+                    {selectedOrder.rescheduleInfo
+                      ?.pendingRescheduleDateTime && (
                       <p className="font-light text-purple-700">
-                        <span className="font-bold">Proposed:</span> {serviceOrderService.formatDateTime(selectedOrder.rescheduleInfo.pendingRescheduleDateTime)}
+                        <span className="font-bold">Proposed:</span>{" "}
+                        {serviceOrderService.formatDateTime(
+                          selectedOrder.rescheduleInfo.pendingRescheduleDateTime
+                        )}
                       </p>
                     )}
                   </div>
@@ -939,7 +1142,8 @@ export default function MyServiceOrders() {
                 <div className="bg-yellow/10 rounded-lg p-3">
                   <p className="text-sm font-light text-eagle-green/70">
                     <AlertCircle className="h-4 w-4 inline mr-1" />
-                    If you reject this request, the booking will be cancelled and you will receive a full refund.
+                    If you reject this request, the booking will be cancelled
+                    and you will receive a full refund.
                   </p>
                 </div>
               </div>
@@ -952,14 +1156,18 @@ export default function MyServiceOrders() {
                 disabled={approveRescheduleMutation.isPending}
                 className="border-red-300 text-red-600 hover:bg-red-50"
               >
-                {approveRescheduleMutation.isPending ? 'Processing...' : 'Reject & Cancel'}
+                {approveRescheduleMutation.isPending
+                  ? "Processing..."
+                  : "Reject & Cancel"}
               </Button>
               <Button
                 onClick={() => handleApproveReschedule(true)}
                 disabled={approveRescheduleMutation.isPending}
                 className="bg-eagle-green hover:bg-viridian-green text-white"
               >
-                {approveRescheduleMutation.isPending ? 'Processing...' : 'Accept New Time'}
+                {approveRescheduleMutation.isPending
+                  ? "Processing..."
+                  : "Accept New Time"}
               </Button>
             </DialogFooter>
           </DialogContent>

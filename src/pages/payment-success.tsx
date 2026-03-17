@@ -15,7 +15,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/apiService";
 
-interface ProductOrderPaymentStatusResponse {
+interface OrderPaymentStatusResponse {
   orderId: number;
   orderNumber?: string;
   orderStatus: string;
@@ -48,7 +48,7 @@ export default function PaymentSuccess() {
   useEffect(() => {
     let cancelled = false;
 
-    const verifyChapaProductPayment = async (
+    const verifyChapaOrderPayment = async (
       targetOrderId: string,
       targetOrderType: string,
       trxRef: string,
@@ -56,11 +56,15 @@ export default function PaymentSuccess() {
     ) => {
       setStatusMessage("Checking payment status...");
 
+      const normalizedOrderType = targetOrderType.toUpperCase();
+
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
         try {
           const result =
-            await apiService.getRequest<ProductOrderPaymentStatusResponse>(
-              `/api/orders/${targetOrderId}/payment-status`
+            await apiService.getRequest<OrderPaymentStatusResponse>(
+              `/api/orders/${targetOrderId}/payment-status?orderType=${encodeURIComponent(
+                normalizedOrderType
+              )}`
             );
 
           if (cancelled) {
@@ -68,6 +72,11 @@ export default function PaymentSuccess() {
           }
 
           if (COMPLETED_PAYMENT_STATUSES.has(result.paymentStatus)) {
+            if (normalizedOrderType === "SERVICE") {
+              window.location.href = `/service-order-success?orderId=${targetOrderId}`;
+              return;
+            }
+
             setPaymentStatus("success");
             setOrderInfo({
               id: targetOrderId,
@@ -154,7 +163,7 @@ export default function PaymentSuccess() {
       const urlParams = new URLSearchParams(window.location.search);
       const paymentIntent = urlParams.get("payment_intent");
       const orderId = urlParams.get("orderId");
-      const orderType = urlParams.get("orderType") || "PRODUCT";
+      const orderType = (urlParams.get("orderType") || "PRODUCT").toUpperCase();
       const trxRef = urlParams.get("trx_ref");
       const status = urlParams.get("status");
 
@@ -187,8 +196,8 @@ export default function PaymentSuccess() {
           return;
         }
 
-        if (orderId && orderType === "PRODUCT") {
-          await verifyChapaProductPayment(orderId, orderType, trxRef);
+        if (orderId && (orderType === "PRODUCT" || orderType === "SERVICE")) {
+          await verifyChapaOrderPayment(orderId, orderType, trxRef);
           return;
         }
 
