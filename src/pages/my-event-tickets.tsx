@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { QRCodeSVG } from 'qrcode.react';
-import { 
-  Ticket, 
-  Calendar, 
-  MapPin, 
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
+import {
+  Ticket,
+  Calendar,
+  MapPin,
   ChevronRight,
   QrCode,
   CheckCircle,
@@ -14,84 +14,199 @@ import {
   AlertCircle,
   Download,
   Mail,
-  RefreshCw
-} from 'lucide-react';
+  RefreshCw,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { paymentMethodConfigService } from "@/services/paymentMethodConfigService";
 
-import { eventOrderService, EventOrderResponse, TicketResponse } from '@/services/eventOrderService';
+import {
+  eventOrderService,
+  EventOrderResponse,
+  TicketResponse,
+} from "@/services/eventOrderService";
 
 export default function MyEventTickets() {
   const navigate = useNavigate();
-  const [selectedOrder, setSelectedOrder] = useState<EventOrderResponse | null>(null);
-  const [selectedTicket, setSelectedTicket] = useState<TicketResponse | null>(null);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [selectedOrder, setSelectedOrder] = useState<EventOrderResponse | null>(
+    null
+  );
+  const [selectedTicket, setSelectedTicket] = useState<TicketResponse | null>(
+    null
+  );
+  const [processingOrderId, setProcessingOrderId] = useState<number | null>(
+    null
+  );
+
+  const preferredCurrencyCode = useMemo(() => {
+    return (user?.preferredCurrencyCode || "ETB").toUpperCase();
+  }, [user?.preferredCurrencyCode]);
+
+  const { data: backendConfigs } = useQuery({
+    queryKey: ["payment-method-configs"],
+    queryFn: () => paymentMethodConfigService.getAllConfigs(),
+    staleTime: 60_000,
+  });
+
+  const enabledPaymentMethods = useMemo(() => {
+    const allowedMethodsByCurrency =
+      preferredCurrencyCode === "ETB" ? ["chapa"] : ["stripe"];
+
+    if (!backendConfigs) return allowedMethodsByCurrency;
+
+    const backendEnabled = backendConfigs
+      .filter((config) => config.enabled)
+      .map((config) => config.paymentMethod.toLowerCase());
+
+    return backendEnabled.filter((method) =>
+      allowedMethodsByCurrency.includes(method)
+    );
+  }, [backendConfigs, preferredCurrencyCode]);
 
   // Fetch user's event orders
-  const { data: ordersData, isLoading, refetch } = useQuery({
-    queryKey: ['my-event-orders'],
+  const {
+    data: ordersData,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["my-event-orders"],
     queryFn: () => eventOrderService.getMyOrders(0, 50),
   });
 
   const orders = ordersData?.content || [];
 
   // Filter orders by status
-  const upcomingOrders = orders.filter((order: EventOrderResponse) => 
-    order.status !== 'CANCELLED' && 
-    order.paymentStatus === 'PAID' &&
-    new Date(order.eventDate) > new Date()
+  const upcomingOrders = orders.filter(
+    (order: EventOrderResponse) =>
+      order.status !== "CANCELLED" &&
+      order.paymentStatus === "PAID" &&
+      new Date(order.eventDate) > new Date()
   );
 
-  const pastOrders = orders.filter((order: EventOrderResponse) => 
-    order.paymentStatus === 'PAID' &&
-    new Date(order.eventDate) <= new Date()
+  const pastOrders = orders.filter(
+    (order: EventOrderResponse) =>
+      order.paymentStatus === "PAID" && new Date(order.eventDate) <= new Date()
   );
 
-  const pendingOrders = orders.filter((order: EventOrderResponse) => 
-    order.paymentStatus === 'PENDING'
+  const pendingOrders = orders.filter(
+    (order: EventOrderResponse) => order.paymentStatus === "PENDING"
   );
+
+  const handleContinueCheckout = async (order: EventOrderResponse) => {
+    const existingProvider = order.paymentProvider?.toLowerCase();
+    const chosenProvider =
+      existingProvider && enabledPaymentMethods.includes(existingProvider)
+        ? existingProvider
+        : enabledPaymentMethods[0];
+
+    if (!chosenProvider) {
+      toast({
+        title: "Payment method unavailable",
+        description:
+          "No enabled payment method is available for your preferred currency.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setProcessingOrderId(order.id);
+
+      if (chosenProvider === "chapa") {
+        navigate(`/payment/chapa?orderId=${order.id}&orderType=event`);
+        return;
+      }
+
+      const paymentInit = await eventOrderService.initializePayment(
+        order.id,
+        chosenProvider.toUpperCase()
+      );
+
+      if (paymentInit.checkoutUrl) {
+        window.location.href = paymentInit.checkoutUrl;
+        return;
+      }
+
+      if (chosenProvider === "stripe" && paymentInit.clientSecret) {
+        navigate(`/payment/stripe?orderId=${order.id}&orderType=event`, {
+          state: {
+            clientSecret: paymentInit.clientSecret,
+            publishableKey: paymentInit.publishableKey,
+            amount: order.totalAmountMinor,
+            currency: order.currency.toLowerCase(),
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            returnUrl: `${window.location.origin}/my-tickets`,
+          },
+        });
+        return;
+      }
+
+      throw new Error("Payment initialization failed. Please try again.");
+    } catch (error: any) {
+      toast({
+        title: "Unable to continue checkout",
+        description:
+          error?.message ||
+          "We could not initialize payment for this order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'CONFIRMED':
-      case 'COMPLETED':
-        return 'bg-green-100 text-green-700 border-green-300';
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-700 border-red-300';
+      case "CONFIRMED":
+      case "COMPLETED":
+        return "bg-green-100 text-green-700 border-green-300";
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-700 border-yellow-300";
+      case "CANCELLED":
+        return "bg-red-100 text-red-700 border-red-300";
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300';
+        return "bg-gray-100 text-gray-700 border-gray-300";
     }
   };
 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
-      case 'PAID':
-        return 'bg-green-100 text-green-700 border-green-300';
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-      case 'FAILED':
-      case 'REFUNDED':
-        return 'bg-red-100 text-red-700 border-red-300';
+      case "PAID":
+        return "bg-green-100 text-green-700 border-green-300";
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-700 border-yellow-300";
+      case "FAILED":
+      case "REFUNDED":
+        return "bg-red-100 text-red-700 border-red-300";
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300';
+        return "bg-gray-100 text-gray-700 border-gray-300";
     }
   };
 
   const getTicketStatusIcon = (status: string) => {
     switch (status) {
-      case 'ISSUED':
+      case "ISSUED":
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'CHECKED_IN':
+      case "CHECKED_IN":
         return <CheckCircle className="h-4 w-4 text-blue-600" />;
-      case 'CANCELLED':
-      case 'EXPIRED':
+      case "CANCELLED":
+      case "EXPIRED":
         return <XCircle className="h-4 w-4 text-red-600" />;
       default:
         return <AlertCircle className="h-4 w-4 text-yellow-600" />;
@@ -99,23 +214,29 @@ export default function MyEventTickets() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
     });
   };
 
-  const OrderCard = ({ order }: { order: EventOrderResponse }) => (
+  const OrderCard = ({
+    order,
+    showContinueCheckout = false,
+  }: {
+    order: EventOrderResponse;
+    showContinueCheckout?: boolean;
+  }) => (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card 
+      <Card
         className="cursor-pointer hover:shadow-lg transition-all duration-300 border-eagle-green/10"
         onClick={() => setSelectedOrder(order)}
       >
@@ -130,16 +251,18 @@ export default function MyEventTickets() {
                   {order.status}
                 </Badge>
               </div>
-              
+
               <h3 className="font-bold text-eagle-green text-lg mb-1">
                 {order.eventTitle}
               </h3>
-              
+
               <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-1">
                 <Calendar className="h-4 w-4" />
-                <span className="font-light">{formatDate(order.eventDate)}</span>
+                <span className="font-light">
+                  {formatDate(order.eventDate)}
+                </span>
               </div>
-              
+
               <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-2">
                 <MapPin className="h-4 w-4" />
                 <span className="font-light">{order.eventLocation}</span>
@@ -149,15 +272,42 @@ export default function MyEventTickets() {
                 <div className="flex items-center gap-1">
                   <Ticket className="h-4 w-4 text-viridian-green" />
                   <span className="font-bold text-eagle-green">
-                    {order.totalTicketCount} ticket{order.totalTicketCount !== 1 ? 's' : ''}
+                    {order.totalTicketCount} ticket
+                    {order.totalTicketCount !== 1 ? "s" : ""}
                   </span>
                 </div>
                 <span className="font-bold text-eagle-green">
-                  {eventOrderService.formatCurrency(order.totalAmountMinor, order.currency)}
+                  {eventOrderService.formatCurrency(
+                    order.totalAmountMinor,
+                    order.currency
+                  )}
                 </span>
               </div>
+
+              {showContinueCheckout && (
+                <div className="mt-3">
+                  <Button
+                    size="sm"
+                    className="bg-eagle-green hover:bg-viridian-green text-white"
+                    disabled={processingOrderId === order.id}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleContinueCheckout(order);
+                    }}
+                  >
+                    {processingOrderId === order.id ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Initializing...
+                      </>
+                    ) : (
+                      "Continue Checkout"
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
-            
+
             <ChevronRight className="h-5 w-5 text-eagle-green/50" />
           </div>
         </CardContent>
@@ -169,8 +319,8 @@ export default function MyEventTickets() {
     <div className="text-center py-12">
       <Ticket className="h-16 w-16 text-eagle-green/20 mx-auto mb-4" />
       <p className="font-light text-eagle-green/60">{message}</p>
-      <Button 
-        onClick={() => navigate('/events')}
+      <Button
+        onClick={() => navigate("/events")}
         className="mt-4 bg-eagle-green hover:bg-viridian-green text-white"
       >
         Browse Events
@@ -223,20 +373,20 @@ export default function MyEventTickets() {
         ) : (
           <Tabs defaultValue="upcoming" className="space-y-6">
             <TabsList className="bg-june-bud/10 p-1">
-              <TabsTrigger 
+              <TabsTrigger
                 value="upcoming"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
                 Upcoming ({upcomingOrders.length})
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="past"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
                 Past ({pastOrders.length})
               </TabsTrigger>
               {pendingOrders.length > 0 && (
-                <TabsTrigger 
+                <TabsTrigger
                   value="pending"
                   className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
                 >
@@ -270,7 +420,11 @@ export default function MyEventTickets() {
                 <EmptyState message="No pending orders." />
               ) : (
                 pendingOrders.map((order: EventOrderResponse) => (
-                  <OrderCard key={order.id} order={order} />
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    showContinueCheckout
+                  />
                 ))
               )}
             </TabsContent>
@@ -278,7 +432,10 @@ export default function MyEventTickets() {
         )}
 
         {/* Order Detail Modal */}
-        <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+        <Dialog
+          open={!!selectedOrder}
+          onOpenChange={() => setSelectedOrder(null)}
+        >
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
             {selectedOrder && (
               <>
@@ -309,14 +466,26 @@ export default function MyEventTickets() {
                   {/* Order Status */}
                   <div className="flex items-center gap-4">
                     <div>
-                      <span className="text-sm font-light text-eagle-green/70">Payment</span>
-                      <Badge className={`ml-2 ${getPaymentStatusColor(selectedOrder.paymentStatus)}`}>
+                      <span className="text-sm font-light text-eagle-green/70">
+                        Payment
+                      </span>
+                      <Badge
+                        className={`ml-2 ${getPaymentStatusColor(
+                          selectedOrder.paymentStatus
+                        )}`}
+                      >
                         {selectedOrder.paymentStatus}
                       </Badge>
                     </div>
                     <div>
-                      <span className="text-sm font-light text-eagle-green/70">Order</span>
-                      <Badge className={`ml-2 ${getStatusColor(selectedOrder.status)}`}>
+                      <span className="text-sm font-light text-eagle-green/70">
+                        Order
+                      </span>
+                      <Badge
+                        className={`ml-2 ${getStatusColor(
+                          selectedOrder.status
+                        )}`}
+                      >
                         {selectedOrder.status}
                       </Badge>
                     </div>
@@ -331,8 +500,8 @@ export default function MyEventTickets() {
                     </h4>
                     <div className="space-y-3">
                       {selectedOrder.tickets?.map((ticket: TicketResponse) => (
-                        <Card 
-                          key={ticket.id} 
+                        <Card
+                          key={ticket.id}
                           className="cursor-pointer hover:shadow-md transition-shadow"
                           onClick={() => setSelectedTicket(ticket)}
                         >
@@ -349,7 +518,8 @@ export default function MyEventTickets() {
                                   </Badge>
                                 </div>
                                 <p className="text-sm font-light text-eagle-green/70">
-                                  {ticket.recipientName} • {ticket.recipientEmail}
+                                  {ticket.recipientName} •{" "}
+                                  {ticket.recipientEmail}
                                 </p>
                                 <p className="text-xs font-light text-eagle-green/50 mt-1">
                                   Code: {ticket.ticketCode}
@@ -357,9 +527,14 @@ export default function MyEventTickets() {
                               </div>
                               <div className="text-right">
                                 <p className="font-bold text-eagle-green">
-                                  {eventOrderService.formatCurrency(ticket.pricePaidMinor || ticket.pricePaid || 0, ticket.currency)}
+                                  {eventOrderService.formatCurrency(
+                                    ticket.pricePaidMinor ||
+                                      ticket.pricePaid ||
+                                      0,
+                                    ticket.currency
+                                  )}
                                 </p>
-                                {ticket.status === 'ISSUED' && (
+                                {ticket.status === "ISSUED" && (
                                   <QrCode className="h-5 w-5 text-viridian-green mt-1 ml-auto" />
                                 )}
                               </div>
@@ -375,32 +550,53 @@ export default function MyEventTickets() {
                   {/* Order Summary */}
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="font-light text-eagle-green/70">Subtotal</span>
+                      <span className="font-light text-eagle-green/70">
+                        Subtotal
+                      </span>
                       <span className="font-light text-eagle-green">
-                        {eventOrderService.formatCurrency(selectedOrder.subtotalMinor, selectedOrder.currency)}
+                        {eventOrderService.formatCurrency(
+                          selectedOrder.subtotalMinor,
+                          selectedOrder.currency
+                        )}
                       </span>
                     </div>
                     {selectedOrder.discountMinor > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="font-light text-eagle-green/70">Discount</span>
+                        <span className="font-light text-eagle-green/70">
+                          Discount
+                        </span>
                         <span className="font-light text-green-600">
-                          -{eventOrderService.formatCurrency(selectedOrder.discountMinor, selectedOrder.currency)}
+                          -
+                          {eventOrderService.formatCurrency(
+                            selectedOrder.discountMinor,
+                            selectedOrder.currency
+                          )}
                         </span>
                       </div>
                     )}
                     {selectedOrder.vatAmountMinor > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="font-light text-eagle-green/70">VAT (15%)</span>
+                        <span className="font-light text-eagle-green/70">
+                          VAT (15%)
+                        </span>
                         <span className="font-light text-eagle-green">
-                          {eventOrderService.formatCurrency(selectedOrder.vatAmountMinor, selectedOrder.currency)}
+                          {eventOrderService.formatCurrency(
+                            selectedOrder.vatAmountMinor,
+                            selectedOrder.currency
+                          )}
                         </span>
                       </div>
                     )}
                     {selectedOrder.salesTaxMinor > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="font-light text-eagle-green/70">Sales Tax</span>
+                        <span className="font-light text-eagle-green/70">
+                          Sales Tax
+                        </span>
                         <span className="font-light text-eagle-green">
-                          {eventOrderService.formatCurrency(selectedOrder.salesTaxMinor, selectedOrder.currency)}
+                          {eventOrderService.formatCurrency(
+                            selectedOrder.salesTaxMinor,
+                            selectedOrder.currency
+                          )}
                         </span>
                       </div>
                     )}
@@ -408,7 +604,10 @@ export default function MyEventTickets() {
                     <div className="flex justify-between">
                       <span className="font-bold text-eagle-green">Total</span>
                       <span className="font-bold text-eagle-green text-xl">
-                        {eventOrderService.formatCurrency(selectedOrder.totalAmountMinor, selectedOrder.currency)}
+                        {eventOrderService.formatCurrency(
+                          selectedOrder.totalAmountMinor,
+                          selectedOrder.currency
+                        )}
                       </span>
                     </div>
                   </div>
@@ -416,7 +615,9 @@ export default function MyEventTickets() {
                   {/* Gift Message */}
                   {selectedOrder.giftMessage && (
                     <div className="bg-yellow/10 rounded-lg p-4">
-                      <h5 className="font-bold text-eagle-green text-sm mb-1">Gift Message</h5>
+                      <h5 className="font-bold text-eagle-green text-sm mb-1">
+                        Gift Message
+                      </h5>
                       <p className="font-light text-eagle-green/80 text-sm italic">
                         "{selectedOrder.giftMessage}"
                       </p>
@@ -429,7 +630,10 @@ export default function MyEventTickets() {
         </Dialog>
 
         {/* Ticket Detail Modal */}
-        <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
+        <Dialog
+          open={!!selectedTicket}
+          onOpenChange={() => setSelectedTicket(null)}
+        >
           <DialogContent className="max-w-md bg-white">
             {selectedTicket && (
               <>
@@ -443,7 +647,7 @@ export default function MyEventTickets() {
                   {/* QR Code - Generated from ticket code */}
                   <div className="flex justify-center">
                     <div className="bg-white p-4 rounded-lg border-2 border-eagle-green/20">
-                      <QRCodeSVG 
+                      <QRCodeSVG
                         value={selectedTicket.ticketCode}
                         size={192}
                         level="H"
@@ -461,11 +665,15 @@ export default function MyEventTickets() {
                     <p className="font-light text-eagle-green/70 text-sm">
                       Code: {selectedTicket.ticketCode}
                     </p>
-                    <Badge className={`mt-2 ${
-                      selectedTicket.status === 'ISSUED' ? 'bg-green-100 text-green-700' :
-                      selectedTicket.status === 'CHECKED_IN' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
+                    <Badge
+                      className={`mt-2 ${
+                        selectedTicket.status === "ISSUED"
+                          ? "bg-green-100 text-green-700"
+                          : selectedTicket.status === "CHECKED_IN"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
                       {selectedTicket.status}
                     </Badge>
                   </div>
@@ -474,7 +682,9 @@ export default function MyEventTickets() {
 
                   {/* Recipient */}
                   <div className="space-y-2">
-                    <h4 className="font-bold text-eagle-green text-sm">Recipient</h4>
+                    <h4 className="font-bold text-eagle-green text-sm">
+                      Recipient
+                    </h4>
                     <p className="font-light text-eagle-green">
                       {selectedTicket.recipientName}
                     </p>
@@ -499,49 +709,66 @@ export default function MyEventTickets() {
 
                   {/* Actions */}
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="flex-1 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
                       onClick={() => {
                         // Create a canvas element to draw the QR code
-                        const canvas = document.createElement('canvas');
+                        const canvas = document.createElement("canvas");
                         const size = 512;
                         canvas.width = size;
                         canvas.height = size;
-                        const ctx = canvas.getContext('2d');
-                        
+                        const ctx = canvas.getContext("2d");
+
                         if (ctx) {
                           // White background
-                          ctx.fillStyle = '#FFFFFF';
+                          ctx.fillStyle = "#FFFFFF";
                           ctx.fillRect(0, 0, size, size);
-                          
+
                           // Get the QR code SVG element
-                          const svgElement = document.querySelector(`[data-ticket-code="${selectedTicket.ticketCode}"]`);
+                          const svgElement = document.querySelector(
+                            `[data-ticket-code="${selectedTicket.ticketCode}"]`
+                          );
                           if (svgElement) {
                             // Clone the SVG to avoid modifying the original
-                            const clonedSvg = svgElement.cloneNode(true) as SVGElement;
-                            const svgData = new XMLSerializer().serializeToString(clonedSvg);
-                            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                            const clonedSvg = svgElement.cloneNode(
+                              true
+                            ) as SVGElement;
+                            const svgData =
+                              new XMLSerializer().serializeToString(clonedSvg);
+                            const svgBlob = new Blob([svgData], {
+                              type: "image/svg+xml;charset=utf-8",
+                            });
                             const url = URL.createObjectURL(svgBlob);
-                            
+
                             const img = new Image();
                             img.onload = () => {
                               // Draw QR code centered on canvas
                               const qrSize = size * 0.8;
                               const offset = (size - qrSize) / 2;
-                              ctx.drawImage(img, offset, offset, qrSize, qrSize);
-                              
+                              ctx.drawImage(
+                                img,
+                                offset,
+                                offset,
+                                qrSize,
+                                qrSize
+                              );
+
                               // Convert canvas to JPG and download
-                              canvas.toBlob((blob) => {
-                                if (blob) {
-                                  const link = document.createElement('a');
-                                  link.href = URL.createObjectURL(blob);
-                                  link.download = `ticket-${selectedTicket.ticketCode}.jpg`;
-                                  link.click();
-                                  URL.revokeObjectURL(link.href);
-                                }
-                              }, 'image/jpeg', 0.95);
-                              
+                              canvas.toBlob(
+                                (blob) => {
+                                  if (blob) {
+                                    const link = document.createElement("a");
+                                    link.href = URL.createObjectURL(blob);
+                                    link.download = `ticket-${selectedTicket.ticketCode}.jpg`;
+                                    link.click();
+                                    URL.revokeObjectURL(link.href);
+                                  }
+                                },
+                                "image/jpeg",
+                                0.95
+                              );
+
                               URL.revokeObjectURL(url);
                             };
                             img.src = url;
@@ -552,23 +779,29 @@ export default function MyEventTickets() {
                       <Download className="h-4 w-4 mr-2" />
                       Download QR
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="flex-1 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
                       onClick={() => {
                         if (navigator.share) {
-                          navigator.share({
-                            title: `Ticket - ${selectedTicket.ticketTypeName}`,
-                            text: `Ticket Code: ${selectedTicket.ticketCode}`,
-                          }).catch(() => {
-                            // Fallback: copy ticket code to clipboard
-                            navigator.clipboard.writeText(selectedTicket.ticketCode);
-                            alert('Ticket code copied to clipboard!');
-                          });
+                          navigator
+                            .share({
+                              title: `Ticket - ${selectedTicket.ticketTypeName}`,
+                              text: `Ticket Code: ${selectedTicket.ticketCode}`,
+                            })
+                            .catch(() => {
+                              // Fallback: copy ticket code to clipboard
+                              navigator.clipboard.writeText(
+                                selectedTicket.ticketCode
+                              );
+                              alert("Ticket code copied to clipboard!");
+                            });
                         } else {
                           // Fallback: copy ticket code to clipboard
-                          navigator.clipboard.writeText(selectedTicket.ticketCode);
-                          alert('Ticket code copied to clipboard!');
+                          navigator.clipboard.writeText(
+                            selectedTicket.ticketCode
+                          );
+                          alert("Ticket code copied to clipboard!");
                         }
                       }}
                     >

@@ -77,6 +77,11 @@ export default function PaymentSuccess() {
               return;
             }
 
+            if (normalizedOrderType === "EVENT") {
+              window.location.href = `/event-order-success?orderId=${targetOrderId}`;
+              return;
+            }
+
             setPaymentStatus("success");
             setOrderInfo({
               id: targetOrderId,
@@ -196,7 +201,12 @@ export default function PaymentSuccess() {
           return;
         }
 
-        if (orderId && (orderType === "PRODUCT" || orderType === "SERVICE")) {
+        if (
+          orderId &&
+          (orderType === "PRODUCT" ||
+            orderType === "SERVICE" ||
+            orderType === "EVENT")
+        ) {
           await verifyChapaOrderPayment(orderId, orderType, trxRef);
           return;
         }

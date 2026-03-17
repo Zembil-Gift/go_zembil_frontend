@@ -48,6 +48,7 @@ import TelebirrPayment from "@/pages/telebirr-payment";
 import TelebirrReturn from "@/pages/telebirr-return";
 import PaymentSuccess from "@/pages/payment-success";
 import ServiceOrderSuccess from "@/pages/service-order-success";
+import EventOrderSuccess from "@/pages/event-order-success";
 import Checkout from "@/pages/Checkout";
 import OrderReview from "@/pages/OrderReview";
 import NotFound from "@/pages/not-found";
@@ -506,6 +507,15 @@ export default function Router() {
             element={
               <ProtectedRoute>
                 <ServiceOrderSuccess />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="event-order-success"
+            element={
+              <ProtectedRoute>
+                <EventOrderSuccess />
               </ProtectedRoute>
             }
           />

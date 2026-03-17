@@ -1,4 +1,4 @@
-import { apiService } from './apiService';
+import { apiService } from "./apiService";
 
 export interface CurrencyInfo {
   id: number;
@@ -14,10 +14,10 @@ export interface TicketType {
   id: number;
   name: string;
   description?: string;
-  priceMinor: number;         // Minor units (backward compatibility)
-  vendorPriceMinor?: number;  // Minor units (backward compatibility)
-  price?: number;             // Major units for display (from backend)
-  vendorPrice?: number;       // Major units for display (from backend)
+  priceMinor: number; // Minor units (backward compatibility)
+  vendorPriceMinor?: number; // Minor units (backward compatibility)
+  price?: number; // Major units for display (from backend)
+  vendorPrice?: number; // Major units for display (from backend)
   currency: string;
   originalCurrency?: string;
   originalPriceMinor?: number;
@@ -51,12 +51,12 @@ export interface EventResponse {
   eventDate: string;
   eventEndDate?: string;
   organizerContact?: string;
-  status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "CANCELLED";
   isFeatured: boolean;
   isSoldOut: boolean;
   ticketTypes: TicketType[];
-  startingPriceMinor?: number;  // Minor units (backward compatibility)
-  startingPrice?: number;       // Major units for display (from backend)
+  startingPriceMinor?: number; // Minor units (backward compatibility)
+  startingPrice?: number; // Major units for display (from backend)
   vendorId: number;
   vendorName?: string;
   eventTypeId?: number;
@@ -86,7 +86,7 @@ export interface CreateEventOrderRequest {
   contactPhone: string;
   giftMessage?: string;
   discountCode?: string;
-  paymentProvider: 'STRIPE' | 'CHAPA' | 'TELEBIRR';
+  paymentProvider: "STRIPE" | "CHAPA" | "TELEBIRR";
 }
 
 export interface TicketResponse {
@@ -100,7 +100,7 @@ export interface TicketResponse {
   pricePaidMinor: number;
   pricePaid?: number;
   currency: string;
-  status: 'RESERVED' | 'ISSUED' | 'CHECKED_IN' | 'CANCELLED' | 'EXPIRED';
+  status: "RESERVED" | "ISSUED" | "CHECKED_IN" | "CANCELLED" | "EXPIRED";
   checkedInAt?: string;
 }
 
@@ -125,11 +125,11 @@ export interface EventOrderResponse {
   totalAmountMinor: number;
   currency: string;
   giftMessage?: string;
-  paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  paymentStatus: "PENDING" | "PAID" | "FAILED" | "REFUNDED";
   paymentProvider?: string;
   paymentReference?: string;
   paidAt?: string;
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
   cancelledAt?: string;
   cancellationReason?: string;
   createdAt: string;
@@ -162,9 +162,11 @@ class EventOrderService {
     if (this.currencyCachePromise) return this.currencyCachePromise;
 
     this.currencyCachePromise = apiService
-      .getRequest<CurrencyInfo[]>('/api/currencies')
+      .getRequest<CurrencyInfo[]>("/api/currencies")
       .then((currencies) => {
-        currencies.forEach((c) => this.currencyCache.set(c.code.toUpperCase(), c));
+        currencies.forEach((c) =>
+          this.currencyCache.set(c.code.toUpperCase(), c)
+        );
       })
       .catch(() => {});
 
@@ -176,23 +178,29 @@ class EventOrderService {
     return info?.decimalPlaces ?? 2;
   }
 
-  async getEvents(page = 0, size = 12): Promise<PaginatedResponse<EventResponse>> {
+  async getEvents(
+    page = 0,
+    size = 12
+  ): Promise<PaginatedResponse<EventResponse>> {
     await this.loadCurrencies();
     const params = new URLSearchParams();
-    params.append('page', page.toString());
-    params.append('size', size.toString());
-    
+    params.append("page", page.toString());
+    params.append("size", size.toString());
+
     return apiService.getRequest<PaginatedResponse<EventResponse>>(
       `/api/events?${params.toString()}`
     );
   }
 
-  async getFeaturedEvents(page = 0, size = 6): Promise<PaginatedResponse<EventResponse>> {
+  async getFeaturedEvents(
+    page = 0,
+    size = 6
+  ): Promise<PaginatedResponse<EventResponse>> {
     await this.loadCurrencies();
     const params = new URLSearchParams();
-    params.append('page', page.toString());
-    params.append('size', size.toString());
-    
+    params.append("page", page.toString());
+    params.append("size", size.toString());
+
     return apiService.getRequest<PaginatedResponse<EventResponse>>(
       `/api/events/featured?${params.toString()}`
     );
@@ -200,7 +208,7 @@ class EventOrderService {
 
   async getAdEvents(limit = 5): Promise<EventResponse[]> {
     const params = new URLSearchParams();
-    params.append('limit', limit.toString());
+    params.append("limit", limit.toString());
     return apiService.getRequest<EventResponse[]>(
       `/api/events/ads?${params.toString()}`
     );
@@ -215,12 +223,12 @@ class EventOrderService {
   ): Promise<PaginatedResponse<EventResponse>> {
     await this.loadCurrencies();
     const params = new URLSearchParams();
-    params.append('page', page.toString());
-    params.append('size', size.toString());
-    if (query) params.append('query', query);
-    if (city) params.append('city', city);
-    if (categoryId) params.append('categoryId', categoryId.toString());
-    
+    params.append("page", page.toString());
+    params.append("size", size.toString());
+    if (query) params.append("query", query);
+    if (city) params.append("city", city);
+    if (categoryId) params.append("categoryId", categoryId.toString());
+
     return apiService.getRequest<PaginatedResponse<EventResponse>>(
       `/api/events/search?${params.toString()}`
     );
@@ -231,21 +239,28 @@ class EventOrderService {
     return apiService.getRequest<EventResponse>(`/api/events/${eventId}`);
   }
 
-  async createOrder(request: CreateEventOrderRequest): Promise<EventOrderResponse> {
+  async createOrder(
+    request: CreateEventOrderRequest
+  ): Promise<EventOrderResponse> {
     return apiService.postRequest<EventOrderResponse, CreateEventOrderRequest>(
-      '/api/events/orders',
+      "/api/events/orders",
       request
     );
   }
 
-  async initializePayment(orderId: number, provider: string): Promise<PaymentInitResponse> {
+  async initializePayment(
+    orderId: number,
+    provider: string
+  ): Promise<PaymentInitResponse> {
     return apiService.postRequest<PaymentInitResponse>(
-      `/api/events/orders/${orderId}/pay?provider=${provider}`,
-      {}
+      `/api/events/orders/${orderId}/pay?provider=${provider}`
     );
   }
 
-  async getMyOrders(page = 0, size = 10): Promise<PaginatedResponse<EventOrderResponse>> {
+  async getMyOrders(
+    page = 0,
+    size = 10
+  ): Promise<PaginatedResponse<EventOrderResponse>> {
     await this.loadCurrencies();
     return apiService.getRequest<PaginatedResponse<EventOrderResponse>>(
       `/api/events/orders?page=${page}&size=${size}`
@@ -254,27 +269,36 @@ class EventOrderService {
 
   async getOrder(orderId: number): Promise<EventOrderResponse> {
     await this.loadCurrencies();
-    return apiService.getRequest<EventOrderResponse>(`/api/events/orders/${orderId}`);
+    return apiService.getRequest<EventOrderResponse>(
+      `/api/events/orders/${orderId}`
+    );
   }
 
   async getOrderByNumber(orderNumber: string): Promise<EventOrderResponse> {
     await this.loadCurrencies();
-    return apiService.getRequest<EventOrderResponse>(`/api/events/orders/by-number/${orderNumber}`);
+    return apiService.getRequest<EventOrderResponse>(
+      `/api/events/orders/by-number/${orderNumber}`
+    );
   }
 
-  async cancelOrder(orderId: number, reason: string): Promise<EventOrderResponse> {
+  async cancelOrder(
+    orderId: number,
+    reason: string
+  ): Promise<EventOrderResponse> {
     return apiService.postRequest<EventOrderResponse>(
-      `/api/events/orders/${orderId}/cancel?reason=${encodeURIComponent(reason)}`,
+      `/api/events/orders/${orderId}/cancel?reason=${encodeURIComponent(
+        reason
+      )}`,
       {}
     );
   }
 
-  minorToMajor(amountMinor: number, currency: string = 'ETB'): number {
+  minorToMajor(amountMinor: number, currency: string = "ETB"): number {
     const decimalPlaces = this.getDecimalPlaces(currency);
     return amountMinor / Math.pow(10, decimalPlaces);
   }
 
-  majorToMinor(amountMajor: number, currency: string = 'ETB'): number {
+  majorToMinor(amountMajor: number, currency: string = "ETB"): number {
     const decimalPlaces = this.getDecimalPlaces(currency);
     return Math.round(amountMajor * Math.pow(10, decimalPlaces));
   }
@@ -294,16 +318,19 @@ class EventOrderService {
   getStartingPrice(event: EventResponse): number {
     // Prefer backend-provided major units, fallback to conversion if not available
     if (event.startingPrice != null) return event.startingPrice;
-    return this.minorToMajor(event.startingPriceMinor ?? 0, event.currency ?? 'ETB');
+    return this.minorToMajor(
+      event.startingPriceMinor ?? 0,
+      event.currency ?? "ETB"
+    );
   }
 
   formatCurrency(amountMinor: number, currency: string): string {
     const amountMajor = this.minorToMajor(amountMinor, currency);
     const info = this.currencyCache.get(currency.toUpperCase());
     const decimalPlaces = info?.decimalPlaces ?? 2;
-    
-    return new Intl.NumberFormat(currency === 'ETB' ? 'en-ET' : 'en-US', {
-      style: 'currency',
+
+    return new Intl.NumberFormat(currency === "ETB" ? "en-ET" : "en-US", {
+      style: "currency",
       currency: currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: decimalPlaces,
@@ -312,28 +339,34 @@ class EventOrderService {
 
   formatEventDate(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     });
   }
 
-  getAvailabilityStatus(ticketType: TicketType): { available: boolean; message: string } {
+  getAvailabilityStatus(ticketType: TicketType): {
+    available: boolean;
+    message: string;
+  } {
     if (!ticketType.isActive) {
-      return { available: false, message: 'Not available' };
+      return { available: false, message: "Not available" };
     }
     if (ticketType.availableCount === 0) {
-      return { available: false, message: 'Sold out' };
+      return { available: false, message: "Sold out" };
     }
     if (ticketType.availableCount < 10) {
-      return { available: true, message: `Only ${ticketType.availableCount} left!` };
+      return {
+        available: true,
+        message: `Only ${ticketType.availableCount} left!`,
+      };
     }
-    return { available: true, message: 'Available' };
+    return { available: true, message: "Available" };
   }
 }
 
