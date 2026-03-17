@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -52,13 +52,21 @@ import {
 
 export default function ServiceCheckout() {
   const { serviceId } = useParams<{ serviceId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
+  const selectedPackageId = useMemo(() => {
+    const packageIdParam = searchParams.get("packageId");
+    if (!packageIdParam) return undefined;
+    const parsed = Number(packageIdParam);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+  }, [searchParams]);
+
   // Form state
   const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("");
+  const [selectedSlotIso, setSelectedSlotIso] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -88,37 +96,45 @@ export default function ServiceCheckout() {
     enabled: !!serviceId,
   });
 
-  // Fetch available dates for the next 30 days
-  const { data: availableDates } = useQuery({
-    queryKey: ["service-available-dates", serviceId],
-    queryFn: () => {
-      const startDate = new Date().toISOString().split("T")[0];
-      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0];
-      return serviceService.getAvailableDates(
-        Number(serviceId),
-        startDate,
-        endDate
-      );
-    },
-    enabled: !!serviceId,
-  });
+  const selectedPackage = useMemo(() => {
+    if (!service?.packages?.length) return service?.defaultPackage;
+    if (!selectedPackageId) return service.defaultPackage;
+    return (
+      service.packages.find((pkg) => pkg.id === selectedPackageId) ||
+      service.defaultPackage
+    );
+  }, [service, selectedPackageId]);
 
-  // Fetch available time slots for selected date
+  // Fetch available time slots (ISO instants) for selected date
   const { data: availableSlots } = useQuery({
-    queryKey: ["service-available-slots", serviceId, selectedDate],
-    queryFn: () =>
-      serviceService.getAvailableSlots(Number(serviceId), selectedDate),
+    queryKey: [
+      "service-available-slots",
+      serviceId,
+      selectedDate,
+      selectedPackage?.id,
+    ],
+    queryFn: () => {
+      if (selectedPackage?.id) {
+        return serviceService.getAvailablePackageSlots(
+          selectedPackage.id,
+          selectedDate
+        );
+      }
+      return serviceService.getAvailableSlots(Number(serviceId), selectedDate);
+    },
     enabled: !!serviceId && !!selectedDate,
   });
 
   // Parse configs
   const availability = useMemo<AvailabilityConfig>(() => {
     if (!service) return {};
-    const config = serviceService.parseAvailabilityConfig(service);
+    const config =
+      selectedPackage?.availabilityConfig ||
+      serviceService.parseAvailabilityConfig(service);
     // Debug: log availability config source
     console.log("Availability Config Debug:", {
+      selectedPackageId,
+      selectedPackageAvailabilityConfig: selectedPackage?.availabilityConfig,
       serviceAvailabilityConfig: service.availabilityConfig,
       defaultPackageAvailabilityConfig:
         service.defaultPackage?.availabilityConfig,
@@ -126,23 +142,42 @@ export default function ServiceCheckout() {
       workingDays: config.workingDays,
     });
     return config;
-  }, [service]);
+  }, [service, selectedPackage, selectedPackageId]);
 
   const displayPriceMajor = useMemo(() => {
-    return (
-      service?.defaultPackage?.basePrice ?? service?.basePrice ?? undefined
-    );
-  }, [service]);
+    return selectedPackage?.basePrice ?? service?.basePrice ?? undefined;
+  }, [selectedPackage, service]);
 
   const displayPriceMinor = useMemo(() => {
-    return (
-      service?.defaultPackage?.basePriceMinor ?? service?.basePriceMinor ?? 0
-    );
-  }, [service]);
+    return selectedPackage?.basePriceMinor ?? service?.basePriceMinor ?? 0;
+  }, [selectedPackage, service]);
 
   const displayCurrency = useMemo(() => {
-    return service?.defaultPackage?.currency ?? service?.currency ?? "ETB";
-  }, [service]);
+    return selectedPackage?.currency ?? service?.currency ?? "ETB";
+  }, [selectedPackage, service]);
+
+  const effectiveAvailabilityType = useMemo(() => {
+    return (
+      selectedPackage?.availabilityType ??
+      service?.availabilityType ??
+      "TIME_SLOTS"
+    );
+  }, [selectedPackage, service]);
+
+  const bookingDurationMinutes = useMemo(() => {
+    const duration =
+      selectedPackage?.durationMinutes ?? service?.durationMinutes ?? 60;
+    return duration > 0 ? duration : 60;
+  }, [selectedPackage, service]);
+
+  useEffect(() => {
+    setSelectedDate("");
+    setSelectedSlotIso("");
+  }, [selectedPackageId]);
+
+  useEffect(() => {
+    setSelectedSlotIso("");
+  }, [selectedDate]);
 
   const appliedDiscountCode = useMemo(() => {
     const manualCode = discountCode.trim();
@@ -281,53 +316,15 @@ export default function ServiceCheckout() {
     }
   }, [user]);
 
-  const calendarDates = useMemo(() => {
-    const dates: string[] = [];
+  const minimumBookableDate = useMemo(() => {
     const today = new Date();
-    const workingDays = availability.workingDays || [0, 1, 2, 3, 4, 5, 6];
-    const blackoutDates = availability.blackoutDates || [];
-    const advanceBookingDays = availability.advanceBookingDays || 60;
-
-    // Debug: log what workingDays are being used
-    console.log("Calendar Dates Debug:", {
-      workingDays,
-      availableDatesFromAPI: availableDates,
-      advanceBookingDays,
-    });
-
-    for (let i = 1; i <= advanceBookingDays; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      const dayOfWeek = date.getDay();
-      // Format date in local timezone (avoid toISOString which uses UTC)
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      const dateStr = `${year}-${month}-${day}`;
-
-      if (workingDays.includes(dayOfWeek) && !blackoutDates.includes(dateStr)) {
-        dates.push(dateStr);
-      }
-    }
-
-    // If API returns available dates, filter them by workingDays as well
-    if (availableDates && availableDates.length > 0) {
-      const filtered = availableDates.filter((dateStr) => {
-        // Parse date in local timezone to avoid day-of-week shifts
-        const [year, month, day] = dateStr.split("-").map(Number);
-        const date = new Date(year, month - 1, day);
-        const dayOfWeek = date.getDay();
-        return (
-          workingDays.includes(dayOfWeek) && !blackoutDates.includes(dateStr)
-        );
-      });
-      console.log("Using API dates filtered:", filtered.slice(0, 5), "...");
-      return filtered;
-    }
-
-    console.log("Using local dates:", dates.slice(0, 5), "...");
-    return dates;
-  }, [availability, availableDates]);
+    const minDate = new Date(today);
+    minDate.setDate(today.getDate() + (availability.advanceBookingDays || 0));
+    return `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(minDate.getDate()).padStart(2, "0")}`;
+  }, [availability.advanceBookingDays]);
 
   // Generate calendar grid for the current month
   const calendarGrid = useMemo(() => {
@@ -365,36 +362,39 @@ export default function ServiceCheckout() {
     return grid;
   }, [currentMonth]);
 
-  // Filter available dates for current month
+  // Determine available dates for current month using availability config,
+  // starting from (today + advanceBookingDays) and extending indefinitely.
   const availableDatesInMonth = useMemo(() => {
-    // Format month boundaries in local timezone
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const monthStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-    const lastDay = new Date(year, month + 1, 0).getDate();
-    const monthEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(
-      lastDay
-    ).padStart(2, "0")}`;
+    const workingDays = availability.workingDays || [0, 1, 2, 3, 4, 5, 6];
+    const blackoutDates = new Set(availability.blackoutDates || []);
+    const available = new Set<string>();
 
-    return calendarDates.filter(
-      (date) => date >= monthStart && date <= monthEnd
-    );
-  }, [calendarDates, currentMonth]);
+    for (const dateStr of calendarGrid) {
+      if (!dateStr) continue;
+      if (dateStr < minimumBookableDate) continue;
+
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const date = new Date(year, month - 1, day);
+      const dayOfWeek = date.getDay();
+
+      if (workingDays.includes(dayOfWeek) && !blackoutDates.has(dateStr)) {
+        available.add(dateStr);
+      }
+    }
+
+    return available;
+  }, [availability, calendarGrid, minimumBookableDate]);
 
   // Navigation functions - move by month
   const goToPreviousMonth = () => {
     const newMonth = new Date(currentMonth);
     newMonth.setMonth(currentMonth.getMonth() - 1);
 
-    // Don't go before current month if it would make all dates unavailable
-    const today = new Date();
-    const currentMonthStart = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      1
-    );
+    // Don't go before the month that contains the minimum bookable date
+    const [minYear, minMonth] = minimumBookableDate.split("-").map(Number);
+    const minBookableMonthStart = new Date(minYear, minMonth - 1, 1);
 
-    if (newMonth >= currentMonthStart) {
+    if (newMonth >= minBookableMonthStart) {
       setCurrentMonth(newMonth);
     }
   };
@@ -402,129 +402,58 @@ export default function ServiceCheckout() {
   const goToNextMonth = () => {
     const newMonth = new Date(currentMonth);
     newMonth.setMonth(currentMonth.getMonth() + 1);
-
-    // Don't go beyond reasonable booking limit (e.g., 6 months ahead)
-    const maxMonth = new Date();
-    maxMonth.setMonth(maxMonth.getMonth() + 6);
-
-    if (newMonth <= maxMonth) {
-      setCurrentMonth(newMonth);
-    }
+    setCurrentMonth(newMonth);
   };
 
   // Check if navigation buttons should be disabled
   const canGoPrevious = useMemo(() => {
-    const today = new Date();
-    const currentMonthStart = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      1
-    );
+    const [minYear, minMonth] = minimumBookableDate.split("-").map(Number);
+    const currentMonthStart = new Date(minYear, minMonth - 1, 1);
     const prevMonth = new Date(currentMonth);
     prevMonth.setMonth(currentMonth.getMonth() - 1);
     return prevMonth >= currentMonthStart;
-  }, [currentMonth]);
+  }, [currentMonth, minimumBookableDate]);
 
-  const canGoNext = useMemo(() => {
-    const maxMonth = new Date();
-    maxMonth.setMonth(maxMonth.getMonth() + 6);
-    const nextMonth = new Date(currentMonth);
-    nextMonth.setMonth(currentMonth.getMonth() + 1);
-    return nextMonth <= maxMonth;
-  }, [currentMonth]);
+  const canGoNext = true;
 
-  // Generate time slots or time picker based on availability type
-  const timeSlots = useMemo(() => {
-    // For TIME_SLOTS mode, use predefined slots
-    if (service?.availabilityType === "TIME_SLOTS") {
-      if (availableSlots && availableSlots.length > 0) {
-        // If API returns full datetime strings, extract just the time portion (HH:MM)
-        return availableSlots.map((slot) => {
-          if (slot.includes("T")) {
-            // Extract time from datetime string like "2025-12-31T09:00:00"
-            const timePart = slot.split("T")[1];
-            return timePart ? timePart.substring(0, 5) : slot; // Get HH:MM
-          }
-          return slot;
-        });
-      }
-      return (
-        availability.timeSlots || [
-          "09:00",
-          "10:00",
-          "11:00",
-          "14:00",
-          "15:00",
-          "16:00",
-        ]
-      );
+  const slotOptions = useMemo(() => {
+    const unique = Array.from(new Set((availableSlots || []).filter(Boolean)));
+    const sorted = unique
+      .map((iso) => ({
+        iso,
+        timestamp: new Date(iso).getTime(),
+      }))
+      .filter((item) => !Number.isNaN(item.timestamp))
+      .sort((a, b) => a.timestamp - b.timestamp);
+
+    if (effectiveAvailabilityType !== "WORKING_HOURS") {
+      return sorted;
     }
 
-    // For WORKING_HOURS mode, generate hourly slots within working hours
-    if (
-      service?.availabilityType === "WORKING_HOURS" &&
-      availability.workingHoursStart &&
-      availability.workingHoursEnd
-    ) {
-      const slots: string[] = [];
-      const [startHour, startMin] = availability.workingHoursStart
-        .split(":")
-        .map(Number);
-      const [endHour, endMin] = availability.workingHoursEnd
-        .split(":")
-        .map(Number);
+    const minimumGapMs = Math.max(1, bookingDurationMinutes) * 60 * 1000;
+    const filtered: { iso: string; timestamp: number }[] = [];
 
-      for (
-        let hour = startHour;
-        hour < endHour || (hour === endHour && startMin < endMin);
-        hour++
-      ) {
-        const hourStr = hour.toString().padStart(2, "0");
-        slots.push(`${hourStr}:00`);
-        if (hour < endHour) {
-          slots.push(`${hourStr}:30`);
-        }
+    for (const slot of sorted) {
+      const previous = filtered[filtered.length - 1];
+      if (!previous || slot.timestamp - previous.timestamp >= minimumGapMs) {
+        filtered.push(slot);
       }
-
-      return slots;
     }
 
-    // Fallback to default slots
-    return ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"];
-  }, [service?.availabilityType, availability, availableSlots]);
+    return filtered;
+  }, [availableSlots, effectiveAvailabilityType, bookingDurationMinutes]);
 
   const handleCheckout = async () => {
     if (!service) return;
 
     // Validation
-    if (!selectedDate || !selectedTime) {
+    if (!selectedDate || !selectedSlotIso) {
       toast({
         title: "Missing Date/Time",
         description: "Please select a date and time for your service.",
         variant: "destructive",
       });
       return;
-    }
-
-    // For WORKING_HOURS mode, validate time is within range
-    if (
-      service.availabilityType === "WORKING_HOURS" &&
-      availability.workingHoursStart &&
-      availability.workingHoursEnd
-    ) {
-      if (
-        selectedTime < availability.workingHoursStart ||
-        selectedTime > availability.workingHoursEnd
-      ) {
-        toast({
-          title: "Invalid Time",
-          description: `Please select a time between ${formatTime(
-            availability.workingHoursStart
-          )} and ${formatTime(availability.workingHoursEnd)}.`,
-          variant: "destructive",
-        });
-        return;
-      }
     }
 
     if (!contactEmail) {
@@ -540,26 +469,47 @@ export default function ServiceCheckout() {
     try {
       // Debug logging
       console.log("Selected Date:", selectedDate);
-      console.log("Selected Time:", selectedTime);
+      console.log("Selected Slot ISO:", selectedSlotIso);
 
-      // Ensure date is in YYYY-MM-DD format
-      const dateOnly = selectedDate.includes("T")
-        ? selectedDate.split("T")[0]
-        : selectedDate;
-      // Ensure time is in HH:MM format
-      const timeOnly = selectedTime.includes("T")
-        ? selectedTime.split("T")[1]?.substring(0, 5) || selectedTime
-        : selectedTime;
-
-      console.log("Date Only:", dateOnly);
-      console.log("Time Only:", timeOnly);
-
-      // Combine date and time into ISO datetime string
-      const scheduledDateTime = `${dateOnly}T${timeOnly}:00`;
+      // Use server-returned ISO datetime exactly; do not rebuild from local parts
+      const scheduledDateTime = selectedSlotIso;
       console.log("Scheduled DateTime:", scheduledDateTime);
+
+      if (selectedPackage?.id) {
+        const isAvailable = await serviceService.checkPackageSlotAvailability(
+          selectedPackage.id,
+          scheduledDateTime
+        );
+        if (!isAvailable) {
+          toast({
+            title: "Slot Unavailable",
+            description:
+              "Selected time slot is no longer available. Please choose another slot.",
+            variant: "destructive",
+          });
+          setIsProcessing(false);
+          return;
+        }
+      } else {
+        const isAvailable = await serviceService.checkSlotAvailability(
+          service.id,
+          scheduledDateTime
+        );
+        if (!isAvailable) {
+          toast({
+            title: "Slot Unavailable",
+            description:
+              "Selected time slot is no longer available. Please choose another slot.",
+            variant: "destructive",
+          });
+          setIsProcessing(false);
+          return;
+        }
+      }
 
       const orderRequest: CreateServiceOrderRequest = {
         serviceId: service.id,
+        packageId: selectedPackage?.id,
         scheduledDateTime,
         contactEmail,
         contactPhone: contactPhone || undefined,
@@ -675,6 +625,16 @@ export default function ServiceCheckout() {
     const ampm = hour >= 12 ? "PM" : "AM";
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${ampm}`;
+  };
+
+  const formatSlotTime = (isoDateTime: string) => {
+    const date = new Date(isoDateTime);
+    if (Number.isNaN(date.getTime())) return isoDateTime;
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   if (isLoading) {
@@ -848,8 +808,7 @@ export default function ServiceCheckout() {
                         return <div key={index} className="p-3 h-12"></div>;
                       }
 
-                      const isAvailable =
-                        availableDatesInMonth.includes(dateStr);
+                      const isAvailable = availableDatesInMonth.has(dateStr);
                       const isSelected = selectedDate === dateStr;
                       const isPast = isPastDate(dateStr);
 
@@ -859,7 +818,7 @@ export default function ServiceCheckout() {
                           onClick={() => {
                             if (isAvailable && !isPast) {
                               setSelectedDate(dateStr);
-                              setSelectedTime(""); // Reset time when date changes
+                              setSelectedSlotIso(""); // Reset time when date changes
                             }
                           }}
                           disabled={!isAvailable || isPast}
@@ -910,7 +869,7 @@ export default function ServiceCheckout() {
                       <Clock className="h-5 w-5" />
                       Select Time
                     </CardTitle>
-                    {service?.availabilityType === "WORKING_HOURS" &&
+                    {effectiveAvailabilityType === "WORKING_HOURS" &&
                       availability.workingHoursStart &&
                       availability.workingHoursEnd && (
                         <p className="text-sm font-light text-eagle-green/70">
@@ -921,62 +880,28 @@ export default function ServiceCheckout() {
                       )}
                   </CardHeader>
                   <CardContent>
-                    {service?.availabilityType === "WORKING_HOURS" ? (
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-sm font-light mb-2 block">
-                            Select or enter your preferred time
-                          </Label>
-                          <input
-                            type="time"
-                            value={selectedTime || ""}
-                            onChange={(e) => setSelectedTime(e.target.value)}
-                            min={availability.workingHoursStart}
-                            max={availability.workingHoursEnd}
-                            className="w-full p-3 rounded-lg border border-gray-200 focus:border-eagle-green focus:ring-2 focus:ring-eagle-green/20 outline-none"
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-light text-eagle-green/70 mb-2">
-                            Or choose a suggested time:
-                          </p>
-                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                            {timeSlots.map((time) => (
-                              <button
-                                key={time}
-                                onClick={() => setSelectedTime(time)}
-                                className={`p-3 rounded-lg text-center transition-colors ${
-                                  selectedTime === time
-                                    ? "bg-eagle-green text-white"
-                                    : "bg-gray-100 hover:bg-june-bud/20 text-eagle-green"
-                                }`}
-                              >
-                                <span className="font-bold">
-                                  {formatTime(time)}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
+                    {slotOptions.length > 0 ? (
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                        {timeSlots.map((time) => (
+                        {slotOptions.map((slot) => (
                           <button
-                            key={time}
-                            onClick={() => setSelectedTime(time)}
+                            key={slot.iso}
+                            onClick={() => setSelectedSlotIso(slot.iso)}
                             className={`p-3 rounded-lg text-center transition-colors ${
-                              selectedTime === time
+                              selectedSlotIso === slot.iso
                                 ? "bg-eagle-green text-white"
                                 : "bg-gray-100 hover:bg-june-bud/20 text-eagle-green"
                             }`}
                           >
                             <span className="font-bold">
-                              {formatTime(time)}
+                              {formatSlotTime(slot.iso)}
                             </span>
                           </button>
                         ))}
                       </div>
+                    ) : (
+                      <p className="text-sm font-light text-eagle-green/70">
+                        No available time slots for the selected date.
+                      </p>
                     )}
                   </CardContent>
                 </Card>
@@ -1273,18 +1198,22 @@ export default function ServiceCheckout() {
                     <p className="font-bold text-eagle-green">
                       {service.title}
                     </p>
-                    {service.durationMinutes != null &&
-                      service.durationMinutes > 0 && (
-                        <p className="text-sm font-light text-eagle-green/70">
-                          {service.durationMinutes} minutes
-                        </p>
-                      )}
+                    {selectedPackage?.name && (
+                      <p className="text-sm font-light text-eagle-green/70">
+                        {selectedPackage.name}
+                      </p>
+                    )}
+                    {bookingDurationMinutes > 0 && (
+                      <p className="text-sm font-light text-eagle-green/70">
+                        {bookingDurationMinutes} minutes
+                      </p>
+                    )}
                   </div>
 
                   <Separator />
 
                   {/* Selected Date/Time */}
-                  {selectedDate && selectedTime ? (
+                  {selectedDate && selectedSlotIso ? (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4 text-viridian-green" />
@@ -1300,7 +1229,7 @@ export default function ServiceCheckout() {
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="h-4 w-4 text-viridian-green" />
                         <span className="font-light text-eagle-green">
-                          {formatTime(selectedTime)}
+                          {formatSlotTime(selectedSlotIso)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
@@ -1369,7 +1298,7 @@ export default function ServiceCheckout() {
                     disabled={
                       isProcessing ||
                       !selectedDate ||
-                      !selectedTime ||
+                      !selectedSlotIso ||
                       !contactEmail
                     }
                   >
