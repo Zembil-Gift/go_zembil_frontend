@@ -4,6 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   CheckCircle,
   Package,
   Truck,
@@ -16,12 +23,14 @@ import {
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { formatCurrency, getCurrencyDecimals } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import orderService, { Order } from "@/services/orderService";
 
 export default function TrackOrder() {
   const { orderId } = useParams<{ orderId: string }>();
   const { toast } = useToast();
+  const [showDeliveryContactDialog, setShowDeliveryContactDialog] =
+    useState(false);
 
   const {
     data: order,
@@ -212,6 +221,12 @@ export default function TrackOrder() {
   const continueCheckoutUrl = `/order-review?orderId=${
     order.orderId
   }&paymentMethod=${getOrderReviewPaymentMethod(order)}`;
+  const etaValue =
+    order.eta ||
+    (order as any).expectedDeliveryAt ||
+    (order as any).deliveryInfo?.expectedDeliveryAt;
+  const deliveryPersonInfo =
+    order.deliveryPersonInfo || (order as any)["delivery-person-info"];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -235,24 +250,77 @@ export default function TrackOrder() {
               </p>
             </div>
             <div className="text-right">
-              {isPendingOrder ? (
-                <Button
-                  asChild
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white"
-                >
-                  <a href={continueCheckoutUrl}>Continue Checkout</a>
-                </Button>
-              ) : (
-                <Badge
-                  className={getStatusColor(order.status)}
-                  variant="secondary"
-                >
-                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                </Badge>
-              )}
+              <div className="flex items-center gap-2 justify-end">
+                {isPendingOrder ? (
+                  <Button
+                    asChild
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                  >
+                    <a href={continueCheckoutUrl}>Continue Checkout</a>
+                  </Button>
+                ) : (
+                  <Badge
+                    className={getStatusColor(order.status)}
+                    variant="secondary"
+                  >
+                    {order.status.charAt(0).toUpperCase() +
+                      order.status.slice(1)}
+                  </Badge>
+                )}
+
+                {deliveryPersonInfo && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeliveryContactDialog(true)}
+                  >
+                    Contact Delivery
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        <Dialog
+          open={showDeliveryContactDialog}
+          onOpenChange={setShowDeliveryContactDialog}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delivery Contact</DialogTitle>
+              <DialogDescription>
+                Delivery Con Reach out to the assigned delivery person for this
+                order.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              {deliveryPersonInfo?.fullName && (
+                <div>
+                  <p className="text-gray-500">Name</p>
+                  <p className="font-medium text-gray-900">
+                    {deliveryPersonInfo.fullName}
+                  </p>
+                </div>
+              )}
+              {deliveryPersonInfo?.phone && (
+                <div>
+                  <p className="text-gray-500">Phone</p>
+                  <p className="font-medium text-gray-900">
+                    {deliveryPersonInfo.phone}
+                  </p>
+                </div>
+              )}
+              {deliveryPersonInfo?.email && (
+                <div>
+                  <p className="text-gray-500">Email</p>
+                  <p className="font-medium text-gray-900">
+                    {deliveryPersonInfo.email}
+                  </p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Status Timeline */}
         <Card className="mb-8">
@@ -419,21 +487,20 @@ export default function TrackOrder() {
                   </div>
                 )}
               </div>
-              {order.estimatedDeliveryDate && (
+              {etaValue && (
                 <div>
                   <p className="font-medium text-gray-900">
                     Estimated Delivery
                   </p>
                   <p className="text-gray-600">
-                    {new Date(order.estimatedDeliveryDate).toLocaleDateString(
-                      "en-US",
-                      {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      }
-                    )}
+                    {new Date(etaValue).toLocaleString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
                   </p>
                 </div>
               )}

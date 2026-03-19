@@ -56,9 +56,15 @@ export interface Order {
     postalCode: string;
   };
   estimatedDeliveryDate?: string;
+  eta?: string;
   actualDeliveryDate?: string;
   trackingCode?: string;
   notes?: string;
+  deliveryPersonInfo?: {
+    name?: string;
+    phone?: string;
+    email?: string;
+  };
   deliveryConfirmedAt?: string;
   revenueEarned?: boolean;
   totals?: {

@@ -90,7 +90,7 @@ interface Order {
   paymentStatus?: string;
   shippingAddress: ShippingAddress;
   billingAddress?: ShippingAddress;
-  estimatedDeliveryDate?: string;
+  eta?: string;
   actualDeliveryDate?: string;
   trackingCode?: string;
   notes?: string;
@@ -450,14 +450,12 @@ function MyOrdersContent() {
 
                       {/* Status hints */}
                       {order.status.toUpperCase() === "SHIPPED" &&
-                        order.estimatedDeliveryDate && (
+                        order.eta && (
                           <div className="mt-4 pt-4 border-t border-june-bud/20">
                             <p className="text-sm text-green-600 flex items-center gap-2">
                               <Truck className="h-4 w-4" />
                               Estimated delivery:{" "}
-                              {new Date(
-                                order.estimatedDeliveryDate
-                              ).toLocaleDateString()}
+                              {new Date(order.eta).toLocaleDateString()}
                             </p>
                           </div>
                         )}
