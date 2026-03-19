@@ -29,6 +29,19 @@ export interface AvailabilityConfig {
   workingHoursEnd?: string;
 }
 
+export interface AvailabilitySpotDay {
+  date: string;
+  availableSpots: string[];
+}
+
+export interface AvailabilitySpotsPage {
+  page: number;
+  monthsPerPage: number;
+  windowStartDate: string;
+  windowEndDate: string;
+  days: AvailabilitySpotDay[];
+}
+
 export type AvailabilityType = "TIME_SLOTS" | "WORKING_HOURS";
 
 export interface PoliciesConfig {
@@ -72,6 +85,7 @@ export interface ServiceResponse {
   defaultPackage?: ServicePackageResponse;
   hasPackages?: boolean;
   activeDiscount?: DiscountInfo;
+  availabilitySpotsPage?: AvailabilitySpotsPage;
 }
 
 export type ServicePackageStatus =
@@ -274,8 +288,19 @@ class ServiceService {
   /**
    * Get service by ID (public endpoint)
    */
-  async getService(id: number): Promise<ServiceResponse> {
-    return await apiService.getRequest<ServiceResponse>(`/api/services/${id}`);
+  async getService(
+    id: number,
+    availabilityPage?: number
+  ): Promise<ServiceResponse> {
+    const params = new URLSearchParams();
+    if (typeof availabilityPage === "number" && availabilityPage >= 0) {
+      params.append("availabilityPage", availabilityPage.toString());
+    }
+    const queryString = params.toString();
+    const url = queryString
+      ? `/api/services/${id}?${queryString}`
+      : `/api/services/${id}`;
+    return await apiService.getRequest<ServiceResponse>(url);
   }
 
   /**
@@ -288,7 +313,10 @@ class ServiceService {
     const url = `/api/services/${serviceId}/availability?dateTime=${encodeURIComponent(
       dateTime
     )}`;
-    return await apiService.getRequest<boolean>(url);
+    const response = await apiService.getRequest<
+      boolean | { available: boolean }
+    >(url);
+    return typeof response === "boolean" ? response : !!response?.available;
   }
 
   /**
@@ -310,7 +338,10 @@ class ServiceService {
    */
   async getAvailableSlots(serviceId: number, date: string): Promise<string[]> {
     const url = `/api/services/${serviceId}/available-slots?date=${date}`;
-    return await apiService.getRequest<string[]>(url);
+    const response = await apiService.getRequest<
+      string[] | { slots: string[] }
+    >(url);
+    return Array.isArray(response) ? response : response?.slots || [];
   }
 
   /**
@@ -335,7 +366,10 @@ class ServiceService {
   ): Promise<string[]> {
     const packageParam = packageId ? `&packageId=${packageId}` : "";
     const url = `/api/services/${serviceId}/available-dates?startDate=${startDate}&endDate=${endDate}${packageParam}`;
-    return await apiService.getRequest<string[]>(url);
+    const response = await apiService.getRequest<
+      string[] | { dates: string[] }
+    >(url);
+    return Array.isArray(response) ? response : response?.dates || [];
   }
 
   // ==================== Vendor Endpoints ====================

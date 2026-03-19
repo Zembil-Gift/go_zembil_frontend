@@ -82,18 +82,28 @@ export default function ServiceCheckout() {
     "STRIPE"
   );
   const [isProcessing, setIsProcessing] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<{
+    title: string;
+  } | null>(null);
 
-  // Calendar navigation state - track current month
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1);
-  });
+  // Calendar navigation state - backend availability page index (0-based)
+  const [availabilityPage, setAvailabilityPage] = useState(0);
 
   // Fetch service details
-  const { data: service, isLoading } = useQuery({
-    queryKey: ["service", serviceId],
-    queryFn: () => serviceService.getService(Number(serviceId)),
+  const {
+    data: service,
+    isLoading,
+    isFetching: isFetchingServiceMonth,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["service", serviceId, availabilityPage],
+    queryFn: () =>
+      serviceService.getService(Number(serviceId), availabilityPage),
     enabled: !!serviceId,
+    // Keep current month data visible while fetching the next/previous month.
+    placeholderData: (previousData) => previousData,
   });
 
   const selectedPackage = useMemo(() => {
@@ -106,22 +116,19 @@ export default function ServiceCheckout() {
   }, [service, selectedPackageId]);
 
   // Fetch available time slots (ISO instants) for selected date
-  const { data: availableSlots } = useQuery({
+  const {
+    data: availableSlots,
+    refetch: refetchAvailableSlots,
+    isFetching: isFetchingAvailableSlots,
+  } = useQuery({
     queryKey: [
       "service-available-slots",
       serviceId,
       selectedDate,
       selectedPackage?.id,
     ],
-    queryFn: () => {
-      if (selectedPackage?.id) {
-        return serviceService.getAvailablePackageSlots(
-          selectedPackage.id,
-          selectedDate
-        );
-      }
-      return serviceService.getAvailableSlots(Number(serviceId), selectedDate);
-    },
+    queryFn: () =>
+      serviceService.getAvailableSlots(Number(serviceId), selectedDate),
     enabled: !!serviceId && !!selectedDate,
   });
 
@@ -173,6 +180,7 @@ export default function ServiceCheckout() {
   useEffect(() => {
     setSelectedDate("");
     setSelectedSlotIso("");
+    setAvailabilityPage(0);
   }, [selectedPackageId]);
 
   useEffect(() => {
@@ -316,20 +324,26 @@ export default function ServiceCheckout() {
     }
   }, [user]);
 
-  const minimumBookableDate = useMemo(() => {
-    const today = new Date();
-    const minDate = new Date(today);
-    minDate.setDate(today.getDate() + (availability.advanceBookingDays || 0));
-    return `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}-${String(minDate.getDate()).padStart(2, "0")}`;
-  }, [availability.advanceBookingDays]);
+  const monthAnchorDate = useMemo(() => {
+    const windowStartDate = service?.availabilitySpotsPage?.windowStartDate;
+    if (!windowStartDate) {
+      const today = new Date();
+      return new Date(today.getFullYear(), today.getMonth(), 1);
+    }
+
+    const [year, month, day] = windowStartDate.split("-").map(Number);
+    if (!year || !month || !day) {
+      const today = new Date();
+      return new Date(today.getFullYear(), today.getMonth(), 1);
+    }
+
+    return new Date(year, month - 1, 1);
+  }, [service?.availabilitySpotsPage?.windowStartDate]);
 
   // Generate calendar grid for the current month
   const calendarGrid = useMemo(() => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
+    const year = monthAnchorDate.getFullYear();
+    const month = monthAnchorDate.getMonth();
 
     // Get first day of month and how many days in month
     const firstDay = new Date(year, month, 1);
@@ -360,60 +374,35 @@ export default function ServiceCheckout() {
     }
 
     return grid;
-  }, [currentMonth]);
+  }, [monthAnchorDate]);
 
-  // Determine available dates for current month using availability config,
-  // starting from (today + advanceBookingDays) and extending indefinitely.
+  // Backend is the source of truth for which dates are available in this month window.
   const availableDatesInMonth = useMemo(() => {
-    const workingDays = availability.workingDays || [0, 1, 2, 3, 4, 5, 6];
-    const blackoutDates = new Set(availability.blackoutDates || []);
-    const available = new Set<string>();
+    return new Set(
+      (service?.availabilitySpotsPage?.days || []).map((day) => day.date)
+    );
+  }, [service?.availabilitySpotsPage?.days]);
 
-    for (const dateStr of calendarGrid) {
-      if (!dateStr) continue;
-      if (dateStr < minimumBookableDate) continue;
-
-      const [year, month, day] = dateStr.split("-").map(Number);
-      const date = new Date(year, month - 1, day);
-      const dayOfWeek = date.getDay();
-
-      if (workingDays.includes(dayOfWeek) && !blackoutDates.has(dateStr)) {
-        available.add(dateStr);
-      }
+  useEffect(() => {
+    if (selectedDate && !availableDatesInMonth.has(selectedDate)) {
+      setSelectedDate("");
+      setSelectedSlotIso("");
     }
+  }, [selectedDate, availableDatesInMonth]);
 
-    return available;
-  }, [availability, calendarGrid, minimumBookableDate]);
-
-  // Navigation functions - move by month
+  // Navigation functions - move by backend-provided availability pages
   const goToPreviousMonth = () => {
-    const newMonth = new Date(currentMonth);
-    newMonth.setMonth(currentMonth.getMonth() - 1);
-
-    // Don't go before the month that contains the minimum bookable date
-    const [minYear, minMonth] = minimumBookableDate.split("-").map(Number);
-    const minBookableMonthStart = new Date(minYear, minMonth - 1, 1);
-
-    if (newMonth >= minBookableMonthStart) {
-      setCurrentMonth(newMonth);
-    }
+    setAvailabilityPage((prev) => Math.max(0, prev - 1));
   };
 
   const goToNextMonth = () => {
-    const newMonth = new Date(currentMonth);
-    newMonth.setMonth(currentMonth.getMonth() + 1);
-    setCurrentMonth(newMonth);
+    if (canGoNext) {
+      setAvailabilityPage((prev) => prev + 1);
+    }
   };
 
   // Check if navigation buttons should be disabled
-  const canGoPrevious = useMemo(() => {
-    const [minYear, minMonth] = minimumBookableDate.split("-").map(Number);
-    const currentMonthStart = new Date(minYear, minMonth - 1, 1);
-    const prevMonth = new Date(currentMonth);
-    prevMonth.setMonth(currentMonth.getMonth() - 1);
-    return prevMonth >= currentMonthStart;
-  }, [currentMonth, minimumBookableDate]);
-
+  const canGoPrevious = availabilityPage > 0;
   const canGoNext = true;
 
   const slotOptions = useMemo(() => {
@@ -445,6 +434,7 @@ export default function ServiceCheckout() {
 
   const handleCheckout = async () => {
     if (!service) return;
+    setCheckoutError(null);
 
     // Validation
     if (!selectedDate || !selectedSlotIso) {
@@ -475,36 +465,16 @@ export default function ServiceCheckout() {
       const scheduledDateTime = selectedSlotIso;
       console.log("Scheduled DateTime:", scheduledDateTime);
 
-      if (selectedPackage?.id) {
-        const isAvailable = await serviceService.checkPackageSlotAvailability(
-          selectedPackage.id,
-          scheduledDateTime
-        );
-        if (!isAvailable) {
-          toast({
-            title: "Slot Unavailable",
-            description:
-              "Selected time slot is no longer available. Please choose another slot.",
-            variant: "destructive",
-          });
-          setIsProcessing(false);
-          return;
-        }
-      } else {
-        const isAvailable = await serviceService.checkSlotAvailability(
-          service.id,
-          scheduledDateTime
-        );
-        if (!isAvailable) {
-          toast({
-            title: "Slot Unavailable",
-            description:
-              "Selected time slot is no longer available. Please choose another slot.",
-            variant: "destructive",
-          });
-          setIsProcessing(false);
-          return;
-        }
+      const isAvailable = await serviceService.checkSlotAvailability(
+        service.id,
+        scheduledDateTime
+      );
+      if (!isAvailable) {
+        setCheckoutError({
+          title: "This Time Slot Is No Longer Available",
+        });
+        setIsProcessing(false);
+        return;
       }
 
       const orderRequest: CreateServiceOrderRequest = {
@@ -590,11 +560,19 @@ export default function ServiceCheckout() {
       }
     } catch (error: any) {
       console.error("Checkout error:", error);
-      toast({
-        title: "Checkout Failed",
-        description:
-          error.message || "Failed to process your order. Please try again.",
-        variant: "destructive",
+      const rawMessage =
+        error?.message || "Failed to process your order. Please try again.";
+      const isSlotConflict = /slot|available|already booked|conflict/i.test(
+        rawMessage
+      );
+
+      setCheckoutError({
+        title: isSlotConflict
+          ? "This Time Slot Is No Longer Available"
+          : "Checkout Could Not Be Completed",
+        description: isSlotConflict
+          ? "Another user may have just booked it. Refresh available times and choose a different slot."
+          : rawMessage,
       });
       setIsProcessing(false);
     }
@@ -609,14 +587,6 @@ export default function ServiceCheckout() {
 
   const getDayOfMonth = (dateStr: string) => {
     return new Date(dateStr).getDate();
-  };
-
-  const isPastDate = (dateStr: string) => {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    return dateStr < todayStr;
   };
 
   const formatTime = (timeStr: string) => {
@@ -637,13 +607,53 @@ export default function ServiceCheckout() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading && !service) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-eagle-green mx-auto mb-4" />
           <p className="font-light text-eagle-green">Loading checkout...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (isError && !service) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "We could not load this service right now. Please try again.";
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-june-bud/10 flex items-center justify-center px-4">
+        <Card className="w-full max-w-xl border-eagle-green/20 shadow-xl">
+          <CardContent className="p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 border border-red-100">
+              <AlertCircle className="h-8 w-8 text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-eagle-green mb-2">
+              Something Went Wrong
+            </h2>
+            <p className="text-sm font-light text-eagle-green/70 mb-6">
+              {errorMessage}
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
+              <Button
+                onClick={() => refetch()}
+                className="bg-eagle-green hover:bg-viridian-green text-white"
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate("/services")}
+                className="border-eagle-green/30 text-eagle-green hover:bg-eagle-green/5"
+              >
+                Back to Services
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -695,6 +705,65 @@ export default function ServiceCheckout() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Main Form */}
           <div className="lg:col-span-7 space-y-6">
+            {checkoutError && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card className="border-red-200 bg-gradient-to-br from-red-50 via-white to-red-50/40 shadow-sm">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-full bg-red-100 border border-red-200 flex items-center justify-center flex-shrink-0">
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-base font-bold text-red-800">
+                          {checkoutError.title}
+                        </h3>
+                        <p className="text-sm text-red-700/90 mt-1">
+                          {checkoutError.description}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={async () => {
+                              if (selectedDate) {
+                                await refetchAvailableSlots();
+                              }
+                              setSelectedSlotIso("");
+                              setCheckoutError(null);
+                            }}
+                            className="bg-eagle-green hover:bg-viridian-green text-white"
+                            disabled={isFetchingAvailableSlots}
+                          >
+                            {isFetchingAvailableSlots ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Refreshing...
+                              </>
+                            ) : (
+                              "Refresh Slots"
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCheckoutError(null)}
+                            className="border-red-300 text-red-700 hover:bg-red-50"
+                          >
+                            Dismiss
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
             {/* Service Summary */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -760,9 +829,14 @@ export default function ServiceCheckout() {
                     Select Date
                   </CardTitle>
                   <div className="flex items-center justify-between mt-2">
-                    <p className="text-lg font-semibold text-eagle-green">
-                      {formatMonthYear(currentMonth)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-semibold text-eagle-green">
+                        {formatMonthYear(monthAnchorDate)}
+                      </p>
+                      {isFetchingServiceMonth && (
+                        <Loader2 className="h-4 w-4 animate-spin text-eagle-green/60" />
+                      )}
+                    </div>
                     <div className="flex gap-1">
                       <Button
                         variant="outline"
@@ -810,25 +884,22 @@ export default function ServiceCheckout() {
 
                       const isAvailable = availableDatesInMonth.has(dateStr);
                       const isSelected = selectedDate === dateStr;
-                      const isPast = isPastDate(dateStr);
 
                       return (
                         <button
                           key={dateStr}
                           onClick={() => {
-                            if (isAvailable && !isPast) {
+                            if (isAvailable) {
                               setSelectedDate(dateStr);
                               setSelectedSlotIso(""); // Reset time when date changes
                             }
                           }}
-                          disabled={!isAvailable || isPast}
+                          disabled={!isAvailable}
                           className={`p-3 h-12 rounded-lg text-center transition-all duration-200 relative ${
                             isSelected
                               ? "bg-eagle-green text-white shadow-lg scale-105"
-                              : isAvailable && !isPast
+                              : isAvailable
                               ? "bg-gray-100 hover:bg-june-bud/20 text-eagle-green hover:scale-102"
-                              : isPast
-                              ? "text-gray-300 cursor-not-allowed"
                               : "text-gray-400 cursor-not-allowed"
                           }`}
                         >
@@ -842,6 +913,12 @@ export default function ServiceCheckout() {
 
                   {/* Legend */}
                   <div className="mt-4 pt-4 border-t border-gray-200">
+                    {(service?.availabilitySpotsPage?.days?.length || 0) ===
+                      0 && (
+                      <p className="text-sm font-light text-eagle-green/70 text-center mb-3">
+                        No available dates in this month window.
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-4 justify-center text-xs">
                       <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-eagle-green rounded"></div>
