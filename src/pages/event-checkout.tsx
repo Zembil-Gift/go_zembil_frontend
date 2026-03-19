@@ -198,25 +198,6 @@ export default function EventCheckout() {
   const handleCheckout = async () => {
     if (!event) return;
 
-    // Validate all recipients have required info
-    let allValid = true;
-    ticketSelections.forEach((selection) => {
-      selection.recipients.forEach((ticket) => {
-        if (!ticket.recipientName || !ticket.recipientEmail) {
-          allValid = false;
-        }
-      });
-    });
-
-    if (!allValid) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in recipient name and email for all tickets.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!contactEmail) {
       toast({
         title: "Missing Contact Email",
@@ -424,8 +405,7 @@ export default function EventCheckout() {
                     Ticket Recipients
                   </CardTitle>
                   <p className="text-sm font-light text-eagle-green/70">
-                    Each ticket will be sent to the specified recipient via
-                    email
+                    You can optionally add recipient details for each ticket
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -453,7 +433,7 @@ export default function EventCheckout() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <Label className="text-sm font-light">
-                                Recipient Name *
+                                Recipient Name (optional)
                               </Label>
                               <div className="relative mt-1">
                                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
@@ -474,7 +454,7 @@ export default function EventCheckout() {
                             </div>
                             <div>
                               <Label className="text-sm font-light">
-                                Recipient Email *
+                                Recipient Email (optional)
                               </Label>
                               <div className="relative mt-1">
                                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
