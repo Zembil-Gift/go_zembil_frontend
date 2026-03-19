@@ -42,7 +42,6 @@ import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 
 import { customOrderTemplateService } from "@/services/customOrderTemplateService";
 import { customOrderService } from "@/services/customOrderService";
-import { imageService } from "@/services/imageService";
 import {
   discountService,
   type DiscountValidationResult,
@@ -78,6 +77,7 @@ interface FieldValue {
   fileUrl?: string;
   originalFilename?: string;
   previewUrl?: string; // Local preview URL before upload
+  file?: File;
 }
 
 function CreateCustomOrderContent() {
@@ -223,8 +223,13 @@ function CreateCustomOrderContent() {
 
   // Create order mutation
   const createOrderMutation = useMutation({
-    mutationFn: (data: CreateCustomOrderRequest) =>
-      customOrderService.create(data),
+    mutationFn: ({
+      data,
+      files,
+    }: {
+      data: CreateCustomOrderRequest;
+      files: Array<{ fieldId: number; file: File }>;
+    }) => customOrderService.create(data, files),
     onSuccess: (order) => {
       // Invalidate relevant queries so lists refresh immediately
       queryClient.invalidateQueries({ queryKey: ["my-custom-orders"] });
@@ -368,32 +373,16 @@ function CreateCustomOrderContent() {
       if (isImage) {
         fileToUpload = await compressImage(file);
       }
-
-      // Upload file to server using imageService
-      const response = await imageService.uploadCustomOrderFile(fileToUpload);
-
-      // The backend returns a path like "custom-orders/{userId}/{filename}"
-      // We need to construct the proper backend proxy URL: /api/images/custom-orders/files/{userId}/{filename}
-      // Parse the path to extract userId and filename
-      const pathMatch = response.fileUrl.match(/custom-orders\/(\d+)\/(.+)$/);
-      if (!pathMatch) {
-        throw new Error("Invalid file path returned from server");
-      }
-      const userId = pathMatch[1];
-      const filename = pathMatch[2];
-
-      // Construct full URL using the API base URL
-      const apiBaseUrl =
-        import.meta.env.VITE_API_URL || "http://localhost:8080";
-      const previewUrl = `${apiBaseUrl}/api/images/custom-orders/files/${userId}/${filename}`;
+      const previewUrl = URL.createObjectURL(fileToUpload);
 
       setFieldValues((prev) => ({
         ...prev,
         [field.id]: {
           fieldId: field.id,
-          fileUrl: response.fileUrl, // Store relative path for backend
-          originalFilename: response.originalFilename || fileToUpload.name,
-          previewUrl: previewUrl, // Use full backend proxy URL for preview
+          fileUrl: undefined,
+          originalFilename: fileToUpload.name,
+          previewUrl,
+          file: fileToUpload,
         },
       }));
 
@@ -407,8 +396,8 @@ function CreateCustomOrderContent() {
       }
 
       toast({
-        title: "Upload Successful",
-        description: `${file.name} uploaded successfully.`,
+        title: "File Selected",
+        description: `${file.name} will be uploaded when you submit the order.`,
       });
     } catch (error: any) {
       const errorMessage =
@@ -429,6 +418,10 @@ function CreateCustomOrderContent() {
   const handleRemoveFile = (fieldId: number) => {
     setFieldValues((prev) => {
       const newValues = { ...prev };
+      const existingValue = newValues[fieldId];
+      if (existingValue?.previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(existingValue.previewUrl);
+      }
       delete newValues[fieldId];
       return newValues;
     });
@@ -453,7 +446,7 @@ function CreateCustomOrderContent() {
           newErrors[field.id] = `${field.fieldName} is required`;
         } else if (
           (field.fieldType === "IMAGE" || field.fieldType === "VIDEO") &&
-          !value.fileUrl
+          !value.file
         ) {
           newErrors[field.id] = `${field.fieldName} is required`;
         }
@@ -495,7 +488,12 @@ function CreateCustomOrderContent() {
     }
 
     const values = Object.values(fieldValues).filter(
-      (v) => v.textValue || v.numberValue !== undefined || v.fileUrl
+      (v) =>
+        v.textValue?.trim() ||
+        v.numberValue !== undefined ||
+        v.file ||
+        v.fileUrl ||
+        v.originalFilename
     );
 
     // Always send discount code when available (both negotiable and non-negotiable templates)
@@ -504,14 +502,38 @@ function CreateCustomOrderContent() {
     const appliedDiscountCode =
       discountCode.trim() || template?.activeDiscount?.code;
 
+    const requestValues = values.map((v) => {
+      const base: {
+        fieldId: number;
+        textValue?: string;
+        numberValue?: number;
+      } = {
+        fieldId: v.fieldId,
+      };
+
+      if (v.textValue?.trim()) {
+        base.textValue = v.textValue.trim();
+      }
+
+      if (v.numberValue !== undefined) {
+        base.numberValue = v.numberValue;
+      }
+
+      return base;
+    });
+
     const request: CreateCustomOrderRequest = {
       templateId: templateIdNum,
       discountCode: appliedDiscountCode || undefined,
       additionalDescription: additionalDescription.trim() || undefined,
-      values,
+      values: requestValues,
     };
 
-    createOrderMutation.mutate(request);
+    const files = values
+      .filter((v) => !!v.file)
+      .map((v) => ({ fieldId: v.fieldId, file: v.file as File }));
+
+    createOrderMutation.mutate({ data: request, files });
   };
 
   // Render field input based on type
@@ -554,7 +576,7 @@ function CreateCustomOrderContent() {
 
         {(field.fieldType === "IMAGE" || field.fieldType === "VIDEO") && (
           <div>
-            {value?.fileUrl ? (
+            {value?.file || value?.previewUrl || value?.fileUrl ? (
               <div className="relative inline-block">
                 {field.fieldType === "IMAGE" ? (
                   <img

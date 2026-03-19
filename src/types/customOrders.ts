@@ -218,12 +218,13 @@ export interface CreateCustomOrderRequest {
   templateId: number;
   discountCode?: string;
   additionalDescription?: string;
+  fileFieldIds?: number[];
   values: {
     fieldId: number;
-    textValue?: string;
-    numberValue?: number;
-    fileUrl?: string;
-    originalFilename?: string;
+    textValue?: string | null;
+    numberValue?: number | null;
+    fileUrl?: string | null;
+    originalFilename?: string | null;
   }[];
 }
 
