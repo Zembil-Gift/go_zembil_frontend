@@ -1,32 +1,55 @@
-import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, Package, Truck, Clock, MapPin, Phone, Mail, ArrowLeft} from 'lucide-react';
-import { isUnauthorizedError } from '@/lib/authUtils';
-import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
-import orderService, { Order } from '@/services/orderService';
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  CheckCircle,
+  Package,
+  Truck,
+  Clock,
+  MapPin,
+  Phone,
+  Mail,
+  ArrowLeft,
+} from "lucide-react";
+import { isUnauthorizedError } from "@/lib/authUtils";
+import { formatCurrency, getCurrencyDecimals } from "@/lib/currency";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
+import orderService, { Order } from "@/services/orderService";
 
 export default function TrackOrder() {
   const { orderId } = useParams<{ orderId: string }>();
   const { toast } = useToast();
+  const [showDeliveryContactDialog, setShowDeliveryContactDialog] =
+    useState(false);
 
-  const { data: order, isLoading, error } = useQuery<Order>({
-    queryKey: ['order', orderId],
+  const {
+    data: order,
+    isLoading,
+    error,
+  } = useQuery<Order>({
+    queryKey: ["order", orderId],
     queryFn: async () => {
-      if (!orderId || orderId === 'undefined') {
-        throw new Error('Invalid order ID');
+      if (!orderId || orderId === "undefined") {
+        throw new Error("Invalid order ID");
       }
       const result = await orderService.getOrderByNumber(orderId);
-      console.log('Order data received:', JSON.stringify(result, null, 2));
-      console.log('Order keys:', Object.keys(result));
-      console.log('Order totals:', result.totals);
-      console.log('Order items:', result.items);
+      console.log("Order data received:", JSON.stringify(result, null, 2));
+      console.log("Order keys:", Object.keys(result));
+      console.log("Order totals:", result.totals);
+      console.log("Order items:", result.items);
       return result;
     },
-    enabled: !!orderId && orderId !== 'undefined',
+    enabled: !!orderId && orderId !== "undefined",
     retry: false,
   });
 
@@ -43,37 +66,93 @@ export default function TrackOrder() {
     }
   }, [error, toast]);
 
+  const formatMinorAmount = (
+    amountMinor: number | undefined,
+    currency: string | undefined
+  ) => {
+    const curr = currency || "ETB";
+    const amount = (amountMinor ?? 0) / Math.pow(10, getCurrencyDecimals(curr));
+    return formatCurrency(amount, curr);
+  };
+
+  const getDerivedPaymentStatus = (status: string | undefined) => {
+    const normalizedStatus = status?.toUpperCase() || "";
+
+    if (
+      [
+        "PLACED",
+        "CONFIRMED",
+        "PROCESSING",
+        "SHIPPED",
+        "DELIVERED",
+        "CANCELLED",
+      ].includes(normalizedStatus)
+    ) {
+      return "PAID";
+    }
+
+    if (normalizedStatus === "REFUNDED") {
+      return "REFUNDED";
+    }
+
+    return "PENDING";
+  };
+
+  const getOrderReviewPaymentMethod = (order: Order) => {
+    return order.currency?.toUpperCase() === "ETB" ? "chapa" : "stripe";
+  };
+
   const getStatusSteps = (currentStatus: string) => {
     const statuses = [
-      { key: 'pending', label: 'Order Placed', icon: Package },
-      { key: 'processing', label: 'Processing', icon: Clock },
-      { key: 'shipped', label: 'Shipped', icon: Truck },
-      { key: 'delivered', label: 'Delivered', icon: CheckCircle }
+      { key: "placed", label: "Order Placed", icon: Package },
+      { key: "confirmed", label: "Confirmed", icon: CheckCircle },
+      { key: "processing", label: "Processing", icon: Clock },
+      { key: "shipped", label: "Shipped", icon: Truck },
+      { key: "delivered", label: "Delivered", icon: CheckCircle },
     ];
 
-    const currentIndex = statuses.findIndex(s => s.key === currentStatus.toLowerCase());
-    
+    const statusAliases: Record<string, string> = {
+      pending: "placed",
+      placed: "placed",
+      confirmed: "confirmed",
+      processing: "processing",
+      shipped: "shipped",
+      delivered: "delivered",
+    };
+
+    const normalizedStatus =
+      statusAliases[currentStatus?.toLowerCase()] ||
+      currentStatus?.toLowerCase();
+
+    const currentIndex = statuses.findIndex((s) => s.key === normalizedStatus);
+
     return statuses.map((status, index) => ({
       ...status,
       completed: index <= currentIndex,
-      current: index === currentIndex
+      current: index === currentIndex,
     }));
   };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'shipped':
-        return 'bg-purple-100 text-purple-800';
-      case 'delivered':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "placed":
+        return "bg-blue-100 text-blue-800";
+      case "confirmed":
+        return "bg-indigo-100 text-indigo-800";
+      case "processing":
+        return "bg-blue-100 text-blue-800";
+      case "shipped":
+        return "bg-purple-100 text-purple-800";
+      case "delivered":
+        return "bg-green-100 text-green-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      case "refunded":
+        return "bg-orange-100 text-orange-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -99,7 +178,8 @@ export default function TrackOrder() {
               Order not found
             </h2>
             <p className="text-gray-600 mb-8">
-              We couldn't find the order you're looking for. Please check your order number and try again.
+              We couldn't find the order you're looking for. Please check your
+              order number and try again.
             </p>
             <div className="space-x-4">
               <Button asChild variant="outline">
@@ -108,7 +188,10 @@ export default function TrackOrder() {
                   <span>My Orders</span>
                 </a>
               </Button>
-              <Button asChild className="bg-ethiopian-gold hover:bg-amber text-white">
+              <Button
+                asChild
+                className="bg-ethiopian-gold hover:bg-amber text-white"
+              >
                 <a href="/gifts">Continue Shopping</a>
               </Button>
             </div>
@@ -119,6 +202,31 @@ export default function TrackOrder() {
   }
 
   const statusSteps = getStatusSteps(order.status);
+  const paymentStatus = getDerivedPaymentStatus(order.status);
+  const paymentStatusClassName =
+    paymentStatus === "PAID"
+      ? "bg-green-100 text-green-800"
+      : paymentStatus === "REFUNDED"
+      ? "bg-orange-100 text-orange-800"
+      : "bg-yellow-100 text-yellow-800";
+  const shippingAddress = order.shippingAddress as
+    | (typeof order.shippingAddress & { street?: string; zipcode?: string })
+    | undefined;
+  const shippingAddressLine =
+    shippingAddress?.addressLine1 ||
+    shippingAddress?.street ||
+    "Address not available";
+  const postalCode = shippingAddress?.postalCode || shippingAddress?.zipcode;
+  const isPendingOrder = order.status?.toLowerCase() === "pending";
+  const continueCheckoutUrl = `/order-review?orderId=${
+    order.orderId
+  }&paymentMethod=${getOrderReviewPaymentMethod(order)}`;
+  const etaValue =
+    order.eta ||
+    (order as any).expectedDeliveryAt ||
+    (order as any).deliveryInfo?.expectedDeliveryAt;
+  const deliveryPersonInfo =
+    order.deliveryPersonInfo || (order as any)["delivery-person-info"];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -131,7 +239,7 @@ export default function TrackOrder() {
               <span>Back to My Orders</span>
             </a>
           </Button>
-          
+
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-display text-3xl font-bold text-charcoal mb-2">
@@ -142,12 +250,77 @@ export default function TrackOrder() {
               </p>
             </div>
             <div className="text-right">
-              <Badge className={getStatusColor(order.status)} variant="secondary">
-                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-              </Badge>
+              <div className="flex items-center gap-2 justify-end">
+                {isPendingOrder ? (
+                  <Button
+                    asChild
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                  >
+                    <a href={continueCheckoutUrl}>Continue Checkout</a>
+                  </Button>
+                ) : (
+                  <Badge
+                    className={getStatusColor(order.status)}
+                    variant="secondary"
+                  >
+                    {order.status.charAt(0).toUpperCase() +
+                      order.status.slice(1)}
+                  </Badge>
+                )}
+
+                {deliveryPersonInfo && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeliveryContactDialog(true)}
+                  >
+                    Contact Delivery
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        <Dialog
+          open={showDeliveryContactDialog}
+          onOpenChange={setShowDeliveryContactDialog}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delivery Contact</DialogTitle>
+              <DialogDescription>
+                Delivery Con Reach out to the assigned delivery person for this
+                order.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              {deliveryPersonInfo?.fullName && (
+                <div>
+                  <p className="text-gray-500">Name</p>
+                  <p className="font-medium text-gray-900">
+                    {deliveryPersonInfo.fullName}
+                  </p>
+                </div>
+              )}
+              {deliveryPersonInfo?.phone && (
+                <div>
+                  <p className="text-gray-500">Phone</p>
+                  <p className="font-medium text-gray-900">
+                    {deliveryPersonInfo.phone}
+                  </p>
+                </div>
+              )}
+              {deliveryPersonInfo?.email && (
+                <div>
+                  <p className="text-gray-500">Email</p>
+                  <p className="font-medium text-gray-900">
+                    {deliveryPersonInfo.email}
+                  </p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Status Timeline */}
         <Card className="mb-8">
@@ -159,25 +332,35 @@ export default function TrackOrder() {
               {statusSteps.map((step, index) => {
                 const Icon = step.icon;
                 return (
-                  <div key={step.key} className="flex flex-col items-center flex-1">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                      step.completed 
-                        ? 'bg-ethiopian-gold text-white' 
-                        : step.current 
-                        ? 'bg-blue-100 text-blue-600' 
-                        : 'bg-gray-100 text-gray-400'
-                    }`}>
+                  <div
+                    key={step.key}
+                    className="flex flex-col items-center flex-1"
+                  >
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                        step.completed
+                          ? "bg-ethiopian-gold text-white"
+                          : step.current
+                          ? "bg-blue-100 text-blue-600"
+                          : "bg-gray-100 text-gray-400"
+                      }`}
+                    >
                       <Icon size={20} />
                     </div>
-                    <p className={`text-sm font-medium ${
-                      step.completed ? 'text-ethiopian-gold' : 'text-gray-600'
-                    }`}>
+                    <p
+                      className={`text-sm font-medium ${
+                        step.completed ? "text-ethiopian-gold" : "text-gray-600"
+                      }`}
+                    >
                       {step.label}
                     </p>
                     {index < statusSteps.length - 1 && (
-                      <div className={`absolute h-0.5 w-full top-6 left-1/2 transform translate-x-1/2 ${
-                        step.completed ? 'bg-ethiopian-gold' : 'bg-gray-200'
-                      }`} style={{ zIndex: -1 }} />
+                      <div
+                        className={`absolute h-0.5 w-full top-6 left-1/2 transform translate-x-1/2 ${
+                          step.completed ? "bg-ethiopian-gold" : "bg-gray-200"
+                        }`}
+                        style={{ zIndex: -1 }}
+                      />
                     )}
                   </div>
                 );
@@ -201,25 +384,54 @@ export default function TrackOrder() {
                 <div>
                   <p className="font-medium text-gray-900">Order Date</p>
                   <p className="text-gray-600">
-                    {new Date(order.createdAt || Date.now()).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
+                    {new Date(order.createdAt || Date.now()).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
                   </p>
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Payment Method</p>
-                  <p className="text-gray-600 capitalize">{order.paymentMethod || 'Card'}</p>
+                  <p className="text-gray-600 capitalize">
+                    {order.paymentMethod || "Card"}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Shipping Fee</p>
+                  <p className="text-gray-600">
+                    {formatMinorAmount(
+                      order.totals?.shippingMinor,
+                      order.currency
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Discount</p>
+                  <p className="text-gray-600">
+                    {formatMinorAmount(
+                      order.totals?.discountMinor,
+                      order.currency
+                    )}
+                  </p>
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Total Amount</p>
-                  <p className="text-gray-900 font-bold">{order.currency} {((order.totals?.totalMinor || 0) / 100).toFixed(2)}</p>
+                  <p className="text-gray-900 font-bold">
+                    {formatMinorAmount(
+                      order.totals?.totalMinor,
+                      order.currency
+                    )}
+                  </p>
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Payment Status</p>
-                  <Badge className={order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                    {order.paymentStatus ? order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1) : 'Pending'}
+                  <Badge className={paymentStatusClassName}>
+                    {paymentStatus.charAt(0) +
+                      paymentStatus.slice(1).toLowerCase()}
                   </Badge>
                 </div>
               </div>
@@ -237,16 +449,24 @@ export default function TrackOrder() {
             <CardContent className="space-y-4">
               <div>
                 <p className="font-medium text-gray-900">Recipient</p>
-                <p className="text-gray-600">{order.shippingAddress?.fullName || 'Customer'}</p>
+                <p className="text-gray-600">
+                  {order.shippingAddress?.fullName || "Customer"}
+                </p>
               </div>
               <div>
                 <p className="font-medium text-gray-900">Delivery Address</p>
-                <p className="text-gray-600">{order.shippingAddress?.addressLine1}</p>
+                <p className="text-gray-600">{shippingAddressLine}</p>
                 {order.shippingAddress?.addressLine2 && (
-                  <p className="text-gray-600 text-sm">{order.shippingAddress.addressLine2}</p>
+                  <p className="text-gray-600 text-sm">
+                    {order.shippingAddress.addressLine2}
+                  </p>
                 )}
-                <p className="text-gray-600 text-sm">{order.shippingAddress?.city}, {order.shippingAddress?.state}</p>
-                <p className="text-gray-600 text-sm">{order.shippingAddress?.country} {order.shippingAddress?.postalCode}</p>
+                <p className="text-gray-600 text-sm">
+                  {order.shippingAddress?.city}, {order.shippingAddress?.state}
+                </p>
+                <p className="text-gray-600 text-sm">
+                  {order.shippingAddress?.country} {postalCode}
+                </p>
               </div>
               <div>
                 <p className="font-medium text-gray-900">Contact</p>
@@ -256,7 +476,9 @@ export default function TrackOrder() {
                     <span>{order.shippingAddress.phone}</span>
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-sm">No contact information</p>
+                  <p className="text-gray-500 text-sm">
+                    No contact information
+                  </p>
                 )}
                 {order.shippingAddress?.email && (
                   <div className="flex items-center space-x-2 text-gray-600">
@@ -265,15 +487,19 @@ export default function TrackOrder() {
                   </div>
                 )}
               </div>
-              {order.estimatedDeliveryDate && (
+              {etaValue && (
                 <div>
-                  <p className="font-medium text-gray-900">Estimated Delivery</p>
+                  <p className="font-medium text-gray-900">
+                    Estimated Delivery
+                  </p>
                   <p className="text-gray-600">
-                    {new Date(order.estimatedDeliveryDate).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
+                    {new Date(etaValue).toLocaleString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
                     })}
                   </p>
                 </div>
@@ -290,10 +516,16 @@ export default function TrackOrder() {
           <CardContent>
             <div className="space-y-4">
               {(order.lines || order.items)?.map((item: any) => (
-                <div key={item.id || item.productId} className="flex items-center space-x-4 py-2 border-b last:border-b-0">
+                <div
+                  key={item.id || item.productId}
+                  className="flex items-center space-x-4 py-2 border-b last:border-b-0"
+                >
                   <div className="w-16 h-16 flex-shrink-0">
                     <img
-                      src={item.productImage || "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"}
+                      src={
+                        item.productImage ||
+                        "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"
+                      }
                       alt={item.productName || "Product"}
                       className="w-full h-full object-cover rounded"
                     />
@@ -302,14 +534,23 @@ export default function TrackOrder() {
                     <h4 className="font-medium text-gray-900">
                       {item.productName || "Product"}
                     </h4>
-                    <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                    <p className="text-sm text-gray-500">
+                      Quantity: {item.quantity}
+                    </p>
                     {item.skuCode && (
-                      <p className="text-sm text-gray-400">SKU: {item.skuCode}</p>
+                      <p className="text-sm text-gray-400">
+                        SKU: {item.skuCode}
+                      </p>
                     )}
                   </div>
                   <div className="text-right">
                     <p className="font-medium text-gray-900">
-                      {order.currency} {((item.unitAmountMinor || item.totalPrice || 0) * item.quantity / 100).toFixed(2)}
+                      {formatMinorAmount(
+                        item.unitAmountMinor != null
+                          ? item.unitAmountMinor * (item.quantity || 1)
+                          : item.totalPrice || 0,
+                        item.currency || order.currency
+                      )}
                     </p>
                   </div>
                 </div>
@@ -319,48 +560,58 @@ export default function TrackOrder() {
         </Card>
 
         {/* Delivery Status Messages */}
-        {order.status?.toLowerCase() === 'delivered' && !order.deliveryConfirmedAt && (
-          <Card className="mb-8 border-amber-200 bg-amber-50">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-amber-600" />
+        {order.status?.toLowerCase() === "delivered" &&
+          !order.deliveryConfirmedAt && (
+            <Card className="mb-8 border-amber-200 bg-amber-50">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-amber-800">
+                      Delivery Pending Verification
+                    </h3>
+                    <p className="text-sm text-amber-700">
+                      Your order has been delivered and is pending verification
+                      by our team. You will receive an email confirmation once
+                      verified.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-amber-800">Delivery Pending Verification</h3>
-                  <p className="text-sm text-amber-700">
-                    Your order has been delivered and is pending verification by our team.
-                    You will receive an email confirmation once verified.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          )}
 
         {/* Already confirmed message */}
-        {order.status?.toLowerCase() === 'delivered' && order.deliveryConfirmedAt && (
-          <Card className="mb-8 border-green-200 bg-green-50">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
+        {order.status?.toLowerCase() === "delivered" &&
+          order.deliveryConfirmedAt && (
+            <Card className="mb-8 border-green-200 bg-green-50">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-green-800">
+                      Delivery Confirmed
+                    </h3>
+                    <p className="text-sm text-green-600">
+                      Your order was verified and confirmed on{" "}
+                      {new Date(order.deliveryConfirmedAt).toLocaleDateString(
+                        "en-US",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      )}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-green-800">Delivery Confirmed</h3>
-                  <p className="text-sm text-green-600">
-                    Your order was verified and confirmed on{' '}
-                    {new Date(order.deliveryConfirmedAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          )}
       </div>
     </div>
   );

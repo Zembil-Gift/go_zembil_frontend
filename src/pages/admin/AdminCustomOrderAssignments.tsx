@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -11,14 +12,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -26,9 +27,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import { 
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import {
   Gift,
   Eye,
   Loader2,
@@ -39,103 +40,136 @@ import {
   User,
   Calendar,
   ImageIcon,
-  AlertCircle
-} from 'lucide-react';
+  AlertCircle,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   adminDeliveryService,
   AdminDeliveryAssignmentDto,
   OrderReadyForDeliveryDto,
-} from '@/services/deliveryService';
-import { orderService } from '@/services/orderService';
+} from "@/services/deliveryService";
+import { orderService } from "@/services/orderService";
 
 export default function AdminCustomOrderAssignments() {
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showAssignDialog, setShowAssignDialog] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<AdminDeliveryAssignmentDto | null>(null);
-  const [showAssignmentDetailDialog, setShowAssignmentDetailDialog] = useState(false);
-  const [selectedCustomOrderId, setSelectedCustomOrderId] = useState<number | null>(null);
-  const [selectedDeliveryPersonId, setSelectedDeliveryPersonId] = useState<number | null>(null);
-  
+  const [selectedAssignment, setSelectedAssignment] =
+    useState<AdminDeliveryAssignmentDto | null>(null);
+  const [showAssignmentDetailDialog, setShowAssignmentDetailDialog] =
+    useState(false);
+  const [selectedCustomOrderId, setSelectedCustomOrderId] = useState<
+    number | null
+  >(null);
+  const [selectedDeliveryPersonId, setSelectedDeliveryPersonId] = useState<
+    number | null
+  >(null);
+  const [selectedEta, setSelectedEta] = useState<string>("");
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch custom order assignments
   const { data: assignmentsData, isLoading: loadingAssignments } = useQuery({
-    queryKey: ['admin', 'custom-order-assignments', statusFilter],
-    queryFn: () => adminDeliveryService.getCustomOrderAssignments({ 
-      status: statusFilter !== 'all' ? statusFilter : undefined 
-    }),
+    queryKey: ["admin", "custom-order-assignments", statusFilter],
+    queryFn: () =>
+      adminDeliveryService.getCustomOrderAssignments({
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      }),
   });
 
   // Fetch available delivery persons for assignment
   const { data: availablePersonsData } = useQuery({
-    queryKey: ['admin', 'available-delivery-persons'],
+    queryKey: ["admin", "available-delivery-persons"],
     queryFn: () => adminDeliveryService.getAvailableDeliveryPersons(),
     enabled: showAssignDialog,
   });
 
   // Fetch unassigned custom orders (completed without delivery assignment)
   const { data: customOrdersData } = useQuery({
-    queryKey: ['admin', 'custom-orders-ready-for-delivery'],
-    queryFn: () => adminDeliveryService.getCustomOrdersReadyForDelivery({ page: 0, size: 100 }),
+    queryKey: ["admin", "custom-orders-ready-for-delivery"],
+    queryFn: () =>
+      adminDeliveryService.getCustomOrdersReadyForDelivery({
+        page: 0,
+        size: 100,
+      }),
     enabled: showAssignDialog,
   });
 
   // Assign custom order mutation
   const assignMutation = useMutation({
-    mutationFn: (data: { customOrderId: number; deliveryPersonId: number }) => 
-      adminDeliveryService.assignCustomOrderToDeliveryPerson(data),
+    mutationFn: (data: {
+      customOrderId: number;
+      deliveryPersonId: number;
+      expectedDeliveryAt: string;
+    }) => adminDeliveryService.assignCustomOrderToDeliveryPerson(data),
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Custom order assigned to delivery person' });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'custom-order-assignments'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'custom-orders-ready-for-delivery'] });
+      toast({
+        title: "Success",
+        description: "Custom order assigned to delivery person",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "custom-order-assignments"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "custom-orders-ready-for-delivery"],
+      });
       setShowAssignDialog(false);
       setSelectedCustomOrderId(null);
       setSelectedDeliveryPersonId(null);
+      setSelectedEta("");
     },
     onError: (error: any) => {
-      toast({ 
-        title: 'Error', 
-        description: error.response?.data?.message || 'Failed to assign custom order',
-        variant: 'destructive' 
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to assign custom order",
+        variant: "destructive",
       });
     },
   });
 
   // Cancel assignment mutation
   const cancelAssignmentMutation = useMutation({
-    mutationFn: ({ id, reason }: { id: number; reason: string }) => 
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
       adminDeliveryService.cancelAssignment(id, reason),
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Assignment cancelled' });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'custom-order-assignments'] });
+      toast({ title: "Success", description: "Assignment cancelled" });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "custom-order-assignments"],
+      });
     },
   });
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { color: string; label: string }> = {
-      ASSIGNED: { color: 'bg-blue-100 text-blue-800', label: 'Assigned' },
-      ACCEPTED: { color: 'bg-indigo-100 text-indigo-800', label: 'Accepted' },
-      PICKED_UP: { color: 'bg-purple-100 text-purple-800', label: 'Picked Up' },
-      IN_TRANSIT: { color: 'bg-orange-100 text-orange-800', label: 'In Transit' },
-      DELIVERED: { color: 'bg-green-100 text-green-800', label: 'Delivered' },
-      FAILED: { color: 'bg-red-100 text-red-800', label: 'Failed' },
-      RETURNED: { color: 'bg-amber-100 text-amber-800', label: 'Returned' },
-      CANCELLED: { color: 'bg-gray-100 text-gray-800', label: 'Cancelled' },
+      ASSIGNED: { color: "bg-blue-100 text-blue-800", label: "Assigned" },
+      ACCEPTED: { color: "bg-indigo-100 text-indigo-800", label: "Accepted" },
+      PICKED_UP: { color: "bg-purple-100 text-purple-800", label: "Picked Up" },
+      IN_TRANSIT: {
+        color: "bg-orange-100 text-orange-800",
+        label: "In Transit",
+      },
+      DELIVERED: { color: "bg-green-100 text-green-800", label: "Delivered" },
+      FAILED: { color: "bg-red-100 text-red-800", label: "Failed" },
+      RETURNED: { color: "bg-amber-100 text-amber-800", label: "Returned" },
+      CANCELLED: { color: "bg-gray-100 text-gray-800", label: "Cancelled" },
     };
-    const config = statusConfig[status] || { color: 'bg-gray-100 text-gray-800', label: status };
+    const config = statusConfig[status] || {
+      color: "bg-gray-100 text-gray-800",
+      label: status,
+    };
     return <Badge className={config.color}>{config.label}</Badge>;
   };
 
   const assignments = assignmentsData?.content || [];
   const availablePersons = availablePersonsData?.content || [];
-  const unassignedCustomOrders: OrderReadyForDeliveryDto[] = customOrdersData?.content || [];
+  const unassignedCustomOrders: OrderReadyForDeliveryDto[] =
+    customOrdersData?.content || [];
 
   return (
     <div className="space-y-6">
@@ -158,7 +192,9 @@ export default function AdminCustomOrderAssignments() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Waitlist Custom Orders</p>
-                <p className="text-xl font-bold">{unassignedCustomOrders.length}</p>
+                <p className="text-xl font-bold">
+                  {unassignedCustomOrders.length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -172,7 +208,12 @@ export default function AdminCustomOrderAssignments() {
               <div>
                 <p className="text-sm text-gray-500">Active Assignments</p>
                 <p className="text-xl font-bold">
-                  {assignments.filter(a => !['DELIVERED', 'FAILED', 'CANCELLED'].includes(a.status)).length}
+                  {
+                    assignments.filter(
+                      (a) =>
+                        !["DELIVERED", "FAILED", "CANCELLED"].includes(a.status)
+                    ).length
+                  }
                 </p>
               </div>
             </div>
@@ -187,7 +228,7 @@ export default function AdminCustomOrderAssignments() {
               <div>
                 <p className="text-sm text-gray-500">Completed</p>
                 <p className="text-xl font-bold">
-                  {assignments.filter(a => a.status === 'DELIVERED').length}
+                  {assignments.filter((a) => a.status === "DELIVERED").length}
                 </p>
               </div>
             </div>
@@ -227,6 +268,7 @@ export default function AdminCustomOrderAssignments() {
                   <TableHead>Custom Order</TableHead>
                   <TableHead>Delivery Person</TableHead>
                   <TableHead>Customer</TableHead>
+                  <TableHead>ETA</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Assigned At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -237,20 +279,45 @@ export default function AdminCustomOrderAssignments() {
                   <TableRow key={assignment.id}>
                     <TableCell>
                       <div>
-                        <p className="font-medium">#{assignment.customOrderNumber || assignment.orderNumber}</p>
-                        <Badge variant="outline" className="text-xs mt-1 bg-purple-50 text-purple-700">Custom</Badge>
+                        <p className="font-medium">
+                          #
+                          {assignment.customOrderNumber ||
+                            assignment.orderNumber}
+                        </p>
+                        <Badge
+                          variant="outline"
+                          className="text-xs mt-1 bg-purple-50 text-purple-700"
+                        >
+                          Custom
+                        </Badge>
                       </div>
                     </TableCell>
                     <TableCell>{assignment.deliveryPersonName}</TableCell>
                     <TableCell>
                       <div className="text-sm">
                         <p>{assignment.customerName}</p>
-                        <p className="text-gray-500">{assignment.customerPhone}</p>
+                        <p className="text-gray-500">
+                          {assignment.customerPhone}
+                        </p>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {assignment.eta || assignment.expectedDeliveryAt ? (
+                        <div className="text-sm">
+                          {new Date(
+                            assignment.eta ||
+                              assignment.expectedDeliveryAt ||
+                              ""
+                          ).toLocaleString()}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
                     </TableCell>
                     <TableCell>{getStatusBadge(assignment.status)}</TableCell>
                     <TableCell>
-                      {assignment.assignedAt && new Date(assignment.assignedAt).toLocaleDateString()}
+                      {assignment.assignedAt &&
+                        new Date(assignment.assignedAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -260,19 +327,25 @@ export default function AdminCustomOrderAssignments() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => {
-                            setSelectedAssignment(assignment);
-                            setShowAssignmentDetailDialog(true);
-                          }}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedAssignment(assignment);
+                              setShowAssignmentDetailDialog(true);
+                            }}
+                          >
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
-                          {!['DELIVERED', 'CANCELLED'].includes(assignment.status) && (
-                            <DropdownMenuItem 
-                              onClick={() => cancelAssignmentMutation.mutate({ 
-                                id: assignment.id, 
-                                reason: 'Cancelled by admin' 
-                              })}
+                          {!["DELIVERED", "CANCELLED"].includes(
+                            assignment.status
+                          ) && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                cancelAssignmentMutation.mutate({
+                                  id: assignment.id,
+                                  reason: "Cancelled by admin",
+                                })
+                              }
                               className="text-red-600"
                             >
                               <XCircle className="h-4 w-4 mr-2" />
@@ -286,7 +359,10 @@ export default function AdminCustomOrderAssignments() {
                 ))}
                 {assignments.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    <TableCell
+                      colSpan={7}
+                      className="text-center py-8 text-gray-500"
+                    >
                       No custom order assignments found
                     </TableCell>
                   </TableRow>
@@ -309,8 +385,8 @@ export default function AdminCustomOrderAssignments() {
           <div className="space-y-4">
             <div>
               <Label>Select Custom Order</Label>
-              <Select 
-                value={selectedCustomOrderId?.toString() || ''} 
+              <Select
+                value={selectedCustomOrderId?.toString() || ""}
                 onValueChange={(v) => setSelectedCustomOrderId(Number(v))}
               >
                 <SelectTrigger>
@@ -332,11 +408,17 @@ export default function AdminCustomOrderAssignments() {
               {selectedCustomOrderId && (
                 <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
                   {(() => {
-                    const order = unassignedCustomOrders.find(o => o.id === selectedCustomOrderId);
+                    const order = unassignedCustomOrders.find(
+                      (o) => o.id === selectedCustomOrderId
+                    );
                     return order ? (
                       <>
-                        <p><strong>Customer:</strong> {order.customerName}</p>
-                        <p><strong>Phone:</strong> {order.customerPhone || 'N/A'}</p>
+                        <p>
+                          <strong>Customer:</strong> {order.customerName}
+                        </p>
+                        <p>
+                          <strong>Phone:</strong> {order.customerPhone || "N/A"}
+                        </p>
                       </>
                     ) : null;
                   })()}
@@ -345,8 +427,8 @@ export default function AdminCustomOrderAssignments() {
             </div>
             <div>
               <Label>Select Delivery Person</Label>
-              <Select 
-                value={selectedDeliveryPersonId?.toString() || ''} 
+              <Select
+                value={selectedDeliveryPersonId?.toString() || ""}
                 onValueChange={(v) => setSelectedDeliveryPersonId(Number(v))}
               >
                 <SelectTrigger>
@@ -355,8 +437,8 @@ export default function AdminCustomOrderAssignments() {
                 <SelectContent>
                   {availablePersons.map((person) => (
                     <SelectItem key={person.id} value={person.id.toString()}>
-                      {person.firstName} {person.lastName} ({person.employeeId}) 
-                      {person.vehicleType ? ` - ${person.vehicleType}` : ''}
+                      {person.firstName} {person.lastName} ({person.employeeId})
+                      {person.vehicleType ? ` - ${person.vehicleType}` : ""}
                     </SelectItem>
                   ))}
                   {availablePersons.length === 0 && (
@@ -367,23 +449,51 @@ export default function AdminCustomOrderAssignments() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label htmlFor="custom-order-assignment-eta">ETA *</Label>
+              <Input
+                id="custom-order-assignment-eta"
+                type="datetime-local"
+                value={selectedEta}
+                onChange={(e) => setSelectedEta(e.target.value)}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Required: expected delivery date and time.
+              </p>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowAssignDialog(false)}
+            >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={() => {
-                if (selectedCustomOrderId && selectedDeliveryPersonId) {
-                  assignMutation.mutate({ 
-                    customOrderId: selectedCustomOrderId, 
-                    deliveryPersonId: selectedDeliveryPersonId 
+                if (
+                  selectedCustomOrderId &&
+                  selectedDeliveryPersonId &&
+                  selectedEta
+                ) {
+                  assignMutation.mutate({
+                    customOrderId: selectedCustomOrderId,
+                    deliveryPersonId: selectedDeliveryPersonId,
+                    expectedDeliveryAt: new Date(selectedEta).toISOString(),
                   });
                 }
               }}
-              disabled={!selectedCustomOrderId || !selectedDeliveryPersonId || assignMutation.isPending}
+              disabled={
+                !selectedCustomOrderId ||
+                !selectedDeliveryPersonId ||
+                !selectedEta ||
+                assignMutation.isPending
+              }
             >
-              {assignMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {assignMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
               Assign
             </Button>
           </DialogFooter>
@@ -391,7 +501,10 @@ export default function AdminCustomOrderAssignments() {
       </Dialog>
 
       {/* Assignment Detail Dialog */}
-      <Dialog open={showAssignmentDetailDialog} onOpenChange={setShowAssignmentDetailDialog}>
+      <Dialog
+        open={showAssignmentDetailDialog}
+        onOpenChange={setShowAssignmentDetailDialog}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -399,7 +512,9 @@ export default function AdminCustomOrderAssignments() {
               Custom Order Assignment Details
             </DialogTitle>
             <DialogDescription>
-              Custom Order #{selectedAssignment?.customOrderNumber || selectedAssignment?.orderNumber}
+              Custom Order #
+              {selectedAssignment?.customOrderNumber ||
+                selectedAssignment?.orderNumber}
             </DialogDescription>
           </DialogHeader>
           {selectedAssignment && (
@@ -421,11 +536,15 @@ export default function AdminCustomOrderAssignments() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <Label className="text-gray-500">Name</Label>
-                    <p className="font-medium">{selectedAssignment.customerName || 'N/A'}</p>
+                    <p className="font-medium">
+                      {selectedAssignment.customerName || "N/A"}
+                    </p>
                   </div>
                   <div>
                     <Label className="text-gray-500">Phone</Label>
-                    <p className="font-medium">{selectedAssignment.customerPhone || 'N/A'}</p>
+                    <p className="font-medium">
+                      {selectedAssignment.customerPhone || "N/A"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -436,7 +555,9 @@ export default function AdminCustomOrderAssignments() {
                   <Truck className="h-4 w-4" />
                   Delivery Person
                 </h4>
-                <p className="font-medium">{selectedAssignment.deliveryPersonName}</p>
+                <p className="font-medium">
+                  {selectedAssignment.deliveryPersonName}
+                </p>
               </div>
 
               {/* Timeline */}
@@ -448,18 +569,32 @@ export default function AdminCustomOrderAssignments() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <Label className="text-gray-500">Assigned At</Label>
-                    <p>{selectedAssignment.assignedAt ? new Date(selectedAssignment.assignedAt).toLocaleString() : 'N/A'}</p>
+                    <p>
+                      {selectedAssignment.assignedAt
+                        ? new Date(
+                            selectedAssignment.assignedAt
+                          ).toLocaleString()
+                        : "N/A"}
+                    </p>
                   </div>
                   {selectedAssignment.pickedUpAt && (
                     <div>
                       <Label className="text-gray-500">Picked Up At</Label>
-                      <p>{new Date(selectedAssignment.pickedUpAt).toLocaleString()}</p>
+                      <p>
+                        {new Date(
+                          selectedAssignment.pickedUpAt
+                        ).toLocaleString()}
+                      </p>
                     </div>
                   )}
                   {selectedAssignment.deliveredAt && (
                     <div>
                       <Label className="text-gray-500">Delivered At</Label>
-                      <p>{new Date(selectedAssignment.deliveredAt).toLocaleString()}</p>
+                      <p>
+                        {new Date(
+                          selectedAssignment.deliveredAt
+                        ).toLocaleString()}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -469,7 +604,9 @@ export default function AdminCustomOrderAssignments() {
               {selectedAssignment.recipientName && (
                 <div className="bg-green-50 rounded-lg p-4">
                   <Label className="text-gray-500">Received By</Label>
-                  <p className="font-medium text-green-700">{selectedAssignment.recipientName}</p>
+                  <p className="font-medium text-green-700">
+                    {selectedAssignment.recipientName}
+                  </p>
                 </div>
               )}
 
@@ -480,7 +617,9 @@ export default function AdminCustomOrderAssignments() {
                     <AlertCircle className="h-4 w-4" />
                     Failure Reason
                   </Label>
-                  <p className="text-red-700">{selectedAssignment.failureReason}</p>
+                  <p className="text-red-700">
+                    {selectedAssignment.failureReason}
+                  </p>
                 </div>
               )}
 
@@ -508,7 +647,10 @@ export default function AdminCustomOrderAssignments() {
                   </div>
                   {selectedAssignment.pickupUploadedAt && (
                     <p className="text-xs text-gray-500">
-                      Uploaded: {new Date(selectedAssignment.pickupUploadedAt).toLocaleString()}
+                      Uploaded:{" "}
+                      {new Date(
+                        selectedAssignment.pickupUploadedAt
+                      ).toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -530,7 +672,10 @@ export default function AdminCustomOrderAssignments() {
                   </div>
                   {selectedAssignment.proofUploadedAt && (
                     <p className="text-xs text-gray-500">
-                      Uploaded: {new Date(selectedAssignment.proofUploadedAt).toLocaleString()}
+                      Uploaded:{" "}
+                      {new Date(
+                        selectedAssignment.proofUploadedAt
+                      ).toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -541,22 +686,29 @@ export default function AdminCustomOrderAssignments() {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500">Order Total</span>
                   <span className="text-xl font-bold">
-                    {orderService.formatPrice(selectedAssignment.totalAmountMinor, selectedAssignment.currencyCode)}
+                    {orderService.formatPrice(
+                      selectedAssignment.totalAmountMinor,
+                      selectedAssignment.currencyCode
+                    )}
                   </span>
                 </div>
               </div>
 
               {/* No Images Message */}
-              {!selectedAssignment.pickupImageUrl && !selectedAssignment.proofImageUrl && (
-                <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
-                  <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No proof images uploaded yet</p>
-                </div>
-              )}
+              {!selectedAssignment.pickupImageUrl &&
+                !selectedAssignment.proofImageUrl && (
+                  <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
+                    <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No proof images uploaded yet</p>
+                  </div>
+                )}
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAssignmentDetailDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowAssignmentDetailDialog(false)}
+            >
               Close
             </Button>
           </DialogFooter>

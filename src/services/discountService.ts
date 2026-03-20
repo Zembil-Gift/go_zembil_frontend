@@ -1,11 +1,16 @@
-import { apiService } from './apiService';
-import { PageResponse } from './vendorService';
-import { toInstantISOString } from '@/lib/instant';
+import { apiService } from "./apiService";
+import { PageResponse } from "./vendorService";
+import { toInstantISOString } from "@/lib/instant";
 
 // ===== Types =====
 
-export type DiscountType = 'PERCENTAGE' | 'FIXED_AMOUNT';
-export type AppliesTo = 'ORDER_TOTAL' | 'SPECIFIC_PRODUCTS' | 'SPECIFIC_CATEGORIES' | 'SPECIFIC_SERVICES' | 'SPECIFIC_CUSTOM_ORDER_TEMPLATES';
+export type DiscountType = "PERCENTAGE" | "FIXED_AMOUNT";
+export type AppliesTo =
+  | "ORDER_TOTAL"
+  | "SPECIFIC_PRODUCTS"
+  | "SPECIFIC_CATEGORIES"
+  | "SPECIFIC_SERVICES"
+  | "SPECIFIC_CUSTOM_ORDER_TEMPLATES";
 
 export interface DiscountValidationResult {
   applicable: boolean;
@@ -19,10 +24,11 @@ export interface DiscountValidationResult {
 export interface ValidateDiscountParams {
   discountCode: string;
   orderTotalMinor: number;
-  productIds?: number[];
-  categoryIds?: number[];
-  serviceIds?: number[];
-  customOrderTemplateIds?: number[];
+  orderItems: {
+    itemId: number;
+    categoryId?: number | null;
+    itemTotalMinor: number;
+  }[];
 }
 
 export interface DiscountResponse {
@@ -106,23 +112,13 @@ export const discountService = {
 
   // Validate a discount code against the current order/cart
   validateDiscountCode: (params: ValidateDiscountParams) => {
-    const searchParams = new URLSearchParams();
-    searchParams.append('discountCode', params.discountCode);
-    searchParams.append('orderTotalMinor', params.orderTotalMinor.toString());
-    if (params.productIds?.length) {
-      params.productIds.forEach(id => searchParams.append('productIds', id.toString()));
-    }
-    if (params.categoryIds?.length) {
-      params.categoryIds.forEach(id => searchParams.append('categoryIds', id.toString()));
-    }
-    if (params.serviceIds?.length) {
-      params.serviceIds.forEach(id => searchParams.append('serviceIds', id.toString()));
-    }
-    if (params.customOrderTemplateIds?.length) {
-      params.customOrderTemplateIds.forEach(id => searchParams.append('customOrderTemplateIds', id.toString()));
-    }
     return apiService.postRequest<DiscountValidationResult>(
-      `/api/discounts/validate?${searchParams.toString()}`
+      "/api/discounts/validate",
+      {
+        discountCode: params.discountCode,
+        orderTotalMinor: params.orderTotalMinor,
+        orderItems: params.orderItems,
+      }
     );
   },
 
@@ -136,11 +132,13 @@ export const discountService = {
 
   // Get a specific discount
   getVendorDiscount: (discountId: number) =>
-    apiService.getRequest<DiscountResponse>(`/api/vendor/discounts/${discountId}`),
+    apiService.getRequest<DiscountResponse>(
+      `/api/vendor/discounts/${discountId}`
+    ),
 
   // Create a new discount
   createDiscount: (request: CreateDiscountRequest) =>
-    apiService.postRequest<DiscountResponse>('/api/vendor/discounts', {
+    apiService.postRequest<DiscountResponse>("/api/vendor/discounts", {
       ...request,
       validFrom: toInstantISOString(request.validFrom),
       validUntil: toInstantISOString(request.validUntil),
@@ -148,11 +146,14 @@ export const discountService = {
 
   // Update an existing discount
   updateDiscount: (discountId: number, request: CreateDiscountRequest) =>
-    apiService.putRequest<DiscountResponse>(`/api/vendor/discounts/${discountId}`, {
-      ...request,
-      validFrom: toInstantISOString(request.validFrom),
-      validUntil: toInstantISOString(request.validUntil),
-    }),
+    apiService.putRequest<DiscountResponse>(
+      `/api/vendor/discounts/${discountId}`,
+      {
+        ...request,
+        validFrom: toInstantISOString(request.validFrom),
+        validUntil: toInstantISOString(request.validUntil),
+      }
+    ),
 
   // Deactivate (soft delete) a discount
   deactivateDiscount: (discountId: number) =>
@@ -160,15 +161,20 @@ export const discountService = {
 
   // Reactivate a deactivated discount
   reactivateDiscount: (discountId: number) =>
-    apiService.patchRequest<DiscountResponse>(`/api/vendor/discounts/${discountId}/reactivate`, {}),
+    apiService.patchRequest<DiscountResponse>(
+      `/api/vendor/discounts/${discountId}/reactivate`,
+      {}
+    ),
 
   // Get usage history for a discount
   getDiscountUsages: (discountId: number) =>
-    apiService.getRequest<DiscountUsageResponse[]>(`/api/vendor/discounts/${discountId}/usages`),
+    apiService.getRequest<DiscountUsageResponse[]>(
+      `/api/vendor/discounts/${discountId}/usages`
+    ),
 
   // Get allowed appliesTo types for current vendor's type
   getAllowedAppliesToTypes: () =>
-    apiService.getRequest<string[]>('/api/vendor/discounts/allowed-applies-to'),
+    apiService.getRequest<string[]>("/api/vendor/discounts/allowed-applies-to"),
 };
 
 export default discountService;

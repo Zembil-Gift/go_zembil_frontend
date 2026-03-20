@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { 
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import {
   ArrowLeft,
   Calendar,
   MapPin,
@@ -20,109 +20,177 @@ import {
   ChevronRight,
   Tag,
   CheckCircle2,
-  XCircle
-} from 'lucide-react';
+  XCircle,
+} from "lucide-react";
 
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
-import { DiscountBadge } from '@/components/DiscountBadge';
-import { PriceWithDiscount } from '@/components/PriceWithDiscount';
-import PaymentMethodSelector from '@/components/PaymentMethodSelector';
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { DiscountBadge } from "@/components/DiscountBadge";
+import { PriceWithDiscount } from "@/components/PriceWithDiscount";
+import PaymentMethodSelector from "@/components/PaymentMethodSelector";
 
-import { serviceService, AvailabilityConfig } from '@/services/serviceService';
-import { serviceOrderService, CreateServiceOrderRequest } from '@/services/serviceOrderService';
-import { discountService, type DiscountValidationResult } from '@/services/discountService';
-import { formatPrice, calculateDiscountedPrice, getDiscountAmountForDisplay } from '@/lib/currency';
+import { serviceService, AvailabilityConfig } from "@/services/serviceService";
+import {
+  serviceOrderService,
+  CreateServiceOrderRequest,
+} from "@/services/serviceOrderService";
+import {
+  discountService,
+  type DiscountValidationResult,
+} from "@/services/discountService";
+import {
+  formatPrice,
+  calculateDiscountedPrice,
+  getDiscountAmountForDisplay,
+} from "@/lib/currency";
 
 export default function ServiceCheckout() {
   const { serviceId } = useParams<{ serviceId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
+  const selectedPackageId = useMemo(() => {
+    const packageIdParam = searchParams.get("packageId");
+    if (!packageIdParam) return undefined;
+    const parsed = Number(packageIdParam);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+  }, [searchParams]);
+
   // Form state
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactPhone, setContactPhone] = useState('');
-  const [recipientName, setRecipientName] = useState('');
-  const [recipientEmail, setRecipientEmail] = useState('');
-  const [recipientPhone, setRecipientPhone] = useState('');
-  const [giftMessage, setGiftMessage] = useState('');
-  const [discountCode, setDiscountCode] = useState('');
-  const [discountResult, setDiscountResult] = useState<DiscountValidationResult | null>(null);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedSlotIso, setSelectedSlotIso] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [giftMessage, setGiftMessage] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountResult, setDiscountResult] =
+    useState<DiscountValidationResult | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   const [discountError, setDiscountError] = useState<string | null>(null);
-  const [paymentProvider, setPaymentProvider] = useState<'STRIPE' | 'CHAPA'>('STRIPE');
+  const [paymentProvider, setPaymentProvider] = useState<"STRIPE" | "CHAPA">(
+    "STRIPE"
+  );
   const [isProcessing, setIsProcessing] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<{
+    title: string;
+  } | null>(null);
 
-  // Calendar navigation state - track current month
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1);
-  });
+  // Calendar navigation state - backend availability page index (0-based)
+  const [availabilityPage, setAvailabilityPage] = useState(0);
 
   // Fetch service details
-  const { data: service, isLoading } = useQuery({
-    queryKey: ['service', serviceId],
-    queryFn: () => serviceService.getService(Number(serviceId)),
+  const {
+    data: service,
+    isLoading,
+    isFetching: isFetchingServiceMonth,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["service", serviceId, availabilityPage],
+    queryFn: () =>
+      serviceService.getService(Number(serviceId), availabilityPage),
     enabled: !!serviceId,
+    // Keep current month data visible while fetching the next/previous month.
+    placeholderData: (previousData) => previousData,
   });
 
-  // Fetch available dates for the next 30 days
-  const { data: availableDates } = useQuery({
-    queryKey: ['service-available-dates', serviceId],
-    queryFn: () => {
-      const startDate = new Date().toISOString().split('T')[0];
-      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      return serviceService.getAvailableDates(Number(serviceId), startDate, endDate);
-    },
-    enabled: !!serviceId,
-  });
+  const selectedPackage = useMemo(() => {
+    if (!service?.packages?.length) return service?.defaultPackage;
+    if (!selectedPackageId) return service.defaultPackage;
+    return (
+      service.packages.find((pkg) => pkg.id === selectedPackageId) ||
+      service.defaultPackage
+    );
+  }, [service, selectedPackageId]);
 
-  // Fetch available time slots for selected date
-  const { data: availableSlots } = useQuery({
-    queryKey: ['service-available-slots', serviceId, selectedDate],
-    queryFn: () => serviceService.getAvailableSlots(Number(serviceId), selectedDate),
+  // Fetch available time slots (ISO instants) for selected date
+  const {
+    data: availableSlots,
+    refetch: refetchAvailableSlots,
+    isFetching: isFetchingAvailableSlots,
+  } = useQuery({
+    queryKey: [
+      "service-available-slots",
+      serviceId,
+      selectedDate,
+      selectedPackage?.id,
+    ],
+    queryFn: () =>
+      serviceService.getAvailableSlots(Number(serviceId), selectedDate),
     enabled: !!serviceId && !!selectedDate,
   });
 
   // Parse configs
   const availability = useMemo<AvailabilityConfig>(() => {
     if (!service) return {};
-    const config = serviceService.parseAvailabilityConfig(service);
+    const config =
+      selectedPackage?.availabilityConfig ||
+      serviceService.parseAvailabilityConfig(service);
     // Debug: log availability config source
-    console.log('Availability Config Debug:', {
+    console.log("Availability Config Debug:", {
+      selectedPackageId,
+      selectedPackageAvailabilityConfig: selectedPackage?.availabilityConfig,
       serviceAvailabilityConfig: service.availabilityConfig,
-      defaultPackageAvailabilityConfig: service.defaultPackage?.availabilityConfig,
+      defaultPackageAvailabilityConfig:
+        service.defaultPackage?.availabilityConfig,
       parsedConfig: config,
       workingDays: config.workingDays,
     });
     return config;
-  }, [service]);
+  }, [service, selectedPackage, selectedPackageId]);
 
   const displayPriceMajor = useMemo(() => {
-    return service?.defaultPackage?.basePrice ?? service?.basePrice ?? undefined;
-  }, [service]);
+    return selectedPackage?.basePrice ?? service?.basePrice ?? undefined;
+  }, [selectedPackage, service]);
 
   const displayPriceMinor = useMemo(() => {
-    return service?.defaultPackage?.basePriceMinor ?? service?.basePriceMinor ?? 0;
-  }, [service]);
+    return selectedPackage?.basePriceMinor ?? service?.basePriceMinor ?? 0;
+  }, [selectedPackage, service]);
 
   const displayCurrency = useMemo(() => {
-    return service?.defaultPackage?.currency ?? service?.currency ?? 'ETB';
-  }, [service]);
+    return selectedPackage?.currency ?? service?.currency ?? "ETB";
+  }, [selectedPackage, service]);
+
+  const effectiveAvailabilityType = useMemo(() => {
+    return (
+      selectedPackage?.availabilityType ??
+      service?.availabilityType ??
+      "TIME_SLOTS"
+    );
+  }, [selectedPackage, service]);
+
+  const bookingDurationMinutes = useMemo(() => {
+    const duration =
+      selectedPackage?.durationMinutes ?? service?.durationMinutes ?? 60;
+    return duration > 0 ? duration : 60;
+  }, [selectedPackage, service]);
+
+  useEffect(() => {
+    setSelectedDate("");
+    setSelectedSlotIso("");
+    setAvailabilityPage(0);
+  }, [selectedPackageId]);
+
+  useEffect(() => {
+    setSelectedSlotIso("");
+  }, [selectedDate]);
 
   const appliedDiscountCode = useMemo(() => {
     const manualCode = discountCode.trim();
     if (manualCode) return manualCode;
-    return service?.activeDiscount?.code || '';
+    return service?.activeDiscount?.code || "";
   }, [discountCode, service?.activeDiscount?.code]);
 
   // Calculate the manually-validated discount amount in display (major) units
@@ -132,19 +200,63 @@ export default function ServiceCheckout() {
 
   const finalAmount = useMemo(() => {
     if (displayPriceMajor === undefined) return 0;
-    
+
     // If we have a manual discount applied, use its amount (already converted in manualDiscountAmountDisplay)
     if (discountResult?.applicable && manualDiscountAmountDisplay > 0) {
       return Math.max(0, displayPriceMajor - manualDiscountAmountDisplay);
     }
-    
+
     // Fallback to service's active discount - use the centralized utility
     if (service?.activeDiscount) {
-      return calculateDiscountedPrice(displayPriceMajor, displayCurrency, service.activeDiscount);
+      return calculateDiscountedPrice(
+        displayPriceMajor,
+        displayCurrency,
+        service.activeDiscount
+      );
     }
-    
+
     return displayPriceMajor;
-  }, [displayPriceMajor, displayCurrency, discountResult, manualDiscountAmountDisplay, service?.activeDiscount]);
+  }, [
+    displayPriceMajor,
+    displayCurrency,
+    discountResult,
+    manualDiscountAmountDisplay,
+    service?.activeDiscount,
+  ]);
+
+  const hasManualDiscount = useMemo(() => {
+    return !!(discountResult?.applicable && manualDiscountAmountDisplay > 0);
+  }, [discountResult, manualDiscountAmountDisplay]);
+
+  const hasDiscountedTotal = useMemo(() => {
+    if (displayPriceMajor === undefined) return false;
+    return finalAmount < displayPriceMajor;
+  }, [displayPriceMajor, finalAmount]);
+
+  const paymentProviderLabel = useMemo(() => {
+    return paymentProvider === "STRIPE" ? "Stripe" : "Chapa";
+  }, [paymentProvider]);
+
+  const preferredCurrencyCode = useMemo(() => {
+    return (user?.preferredCurrencyCode || "ETB").toUpperCase();
+  }, [user?.preferredCurrencyCode]);
+
+  const allowedPaymentMethods = useMemo(() => {
+    return preferredCurrencyCode === "ETB"
+      ? (["chapa"] as const)
+      : (["stripe"] as const);
+  }, [preferredCurrencyCode]);
+
+  useEffect(() => {
+    if (preferredCurrencyCode === "ETB" && paymentProvider !== "CHAPA") {
+      setPaymentProvider("CHAPA");
+      return;
+    }
+
+    if (preferredCurrencyCode !== "ETB" && paymentProvider !== "STRIPE") {
+      setPaymentProvider("STRIPE");
+    }
+  }, [preferredCurrencyCode, paymentProvider]);
 
   const handleApplyDiscount = useCallback(async () => {
     const code = discountCode.trim();
@@ -165,7 +277,13 @@ export default function ServiceCheckout() {
       const result = await discountService.validateDiscountCode({
         discountCode: code,
         orderTotalMinor: displayPriceMinor,
-        serviceIds: [Number(serviceId)],
+        orderItems: [
+          {
+            itemId: Number(serviceId),
+            categoryId: null,
+            itemTotalMinor: displayPriceMinor,
+          },
+        ],
       });
 
       if (result.applicable) {
@@ -177,7 +295,9 @@ export default function ServiceCheckout() {
         });
       } else {
         setDiscountResult(null);
-        setDiscountError(result.reason || "Discount code is not valid for this service");
+        setDiscountError(
+          result.reason || "Discount code is not valid for this service"
+        );
       }
     } catch (error: any) {
       setDiscountResult(null);
@@ -204,211 +324,133 @@ export default function ServiceCheckout() {
     }
   }, [user]);
 
-  const calendarDates = useMemo(() => {
-    const dates: string[] = [];
-    const today = new Date();
-    const workingDays = availability.workingDays || [0, 1, 2, 3, 4, 5, 6];
-    const blackoutDates = availability.blackoutDates || [];
-    const advanceBookingDays = availability.advanceBookingDays || 60; 
-    
-    // Debug: log what workingDays are being used
-    console.log('Calendar Dates Debug:', {
-      workingDays,
-      availableDatesFromAPI: availableDates,
-      advanceBookingDays,
-    });
-    
-    for (let i = 1; i <= advanceBookingDays; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      const dayOfWeek = date.getDay();
-      // Format date in local timezone (avoid toISOString which uses UTC)
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const dateStr = `${year}-${month}-${day}`;
+  const monthAnchorDate = useMemo(() => {
+    const windowStartDate = service?.availabilitySpotsPage?.windowStartDate;
+    if (!windowStartDate) {
+      const today = new Date();
+      return new Date(today.getFullYear(), today.getMonth(), 1);
+    }
 
-      if (workingDays.includes(dayOfWeek) && !blackoutDates.includes(dateStr)) {
-        dates.push(dateStr);
-      }
+    const [year, month, day] = windowStartDate.split("-").map(Number);
+    if (!year || !month || !day) {
+      const today = new Date();
+      return new Date(today.getFullYear(), today.getMonth(), 1);
     }
-    
-    // If API returns available dates, filter them by workingDays as well
-    if (availableDates && availableDates.length > 0) {
-      const filtered = availableDates.filter(dateStr => {
-        // Parse date in local timezone to avoid day-of-week shifts
-        const [year, month, day] = dateStr.split('-').map(Number);
-        const date = new Date(year, month - 1, day);
-        const dayOfWeek = date.getDay();
-        return workingDays.includes(dayOfWeek) && !blackoutDates.includes(dateStr);
-      });
-      console.log('Using API dates filtered:', filtered.slice(0, 5), '...');
-      return filtered;
-    }
-    
-    console.log('Using local dates:', dates.slice(0, 5), '...');
-    return dates;
-  }, [availability, availableDates]);
+
+    return new Date(year, month - 1, 1);
+  }, [service?.availabilitySpotsPage?.windowStartDate]);
 
   // Generate calendar grid for the current month
   const calendarGrid = useMemo(() => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    
+    const year = monthAnchorDate.getFullYear();
+    const month = monthAnchorDate.getMonth();
+
     // Get first day of month and how many days in month
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
-    
+
     // Create calendar grid (6 weeks x 7 days = 42 cells)
     const grid: (string | null)[] = [];
-    
+
     // Add empty cells for days before month starts
     for (let i = 0; i < startingDayOfWeek; i++) {
       grid.push(null);
     }
-    
+
     // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       // Format date as YYYY-MM-DD in local timezone (avoid toISOString which uses UTC)
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+        day
+      ).padStart(2, "0")}`;
       grid.push(dateStr);
     }
-    
+
     // Fill remaining cells to complete the grid (42 total cells)
     while (grid.length < 42) {
       grid.push(null);
     }
-    
+
     return grid;
-  }, [currentMonth]);
+  }, [monthAnchorDate]);
 
-  // Filter available dates for current month
+  // Backend is the source of truth for which dates are available in this month window.
   const availableDatesInMonth = useMemo(() => {
-    // Format month boundaries in local timezone
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-    const lastDay = new Date(year, month + 1, 0).getDate();
-    const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-    
-    return calendarDates.filter(date => date >= monthStart && date <= monthEnd);
-  }, [calendarDates, currentMonth]);
+    return new Set(
+      (service?.availabilitySpotsPage?.days || []).map((day) => day.date)
+    );
+  }, [service?.availabilitySpotsPage?.days]);
 
-  // Navigation functions - move by month
-  const goToPreviousMonth = () => {
-    const newMonth = new Date(currentMonth);
-    newMonth.setMonth(currentMonth.getMonth() - 1);
-    
-    // Don't go before current month if it would make all dates unavailable
-    const today = new Date();
-    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    
-    if (newMonth >= currentMonthStart) {
-      setCurrentMonth(newMonth);
+  useEffect(() => {
+    if (selectedDate && !availableDatesInMonth.has(selectedDate)) {
+      setSelectedDate("");
+      setSelectedSlotIso("");
     }
+  }, [selectedDate, availableDatesInMonth]);
+
+  // Navigation functions - move by backend-provided availability pages
+  const goToPreviousMonth = () => {
+    setAvailabilityPage((prev) => Math.max(0, prev - 1));
   };
 
   const goToNextMonth = () => {
-    const newMonth = new Date(currentMonth);
-    newMonth.setMonth(currentMonth.getMonth() + 1);
-    
-    // Don't go beyond reasonable booking limit (e.g., 6 months ahead)
-    const maxMonth = new Date();
-    maxMonth.setMonth(maxMonth.getMonth() + 6);
-    
-    if (newMonth <= maxMonth) {
-      setCurrentMonth(newMonth);
+    if (canGoNext) {
+      setAvailabilityPage((prev) => prev + 1);
     }
   };
 
   // Check if navigation buttons should be disabled
-  const canGoPrevious = useMemo(() => {
-    const today = new Date();
-    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const prevMonth = new Date(currentMonth);
-    prevMonth.setMonth(currentMonth.getMonth() - 1);
-    return prevMonth >= currentMonthStart;
-  }, [currentMonth]);
+  const canGoPrevious = availabilityPage > 0;
+  const canGoNext = true;
 
-  const canGoNext = useMemo(() => {
-    const maxMonth = new Date();
-    maxMonth.setMonth(maxMonth.getMonth() + 6);
-    const nextMonth = new Date(currentMonth);
-    nextMonth.setMonth(currentMonth.getMonth() + 1);
-    return nextMonth <= maxMonth;
-  }, [currentMonth]);
+  const slotOptions = useMemo(() => {
+    const unique = Array.from(new Set((availableSlots || []).filter(Boolean)));
+    const sorted = unique
+      .map((iso) => ({
+        iso,
+        timestamp: new Date(iso).getTime(),
+      }))
+      .filter((item) => !Number.isNaN(item.timestamp))
+      .sort((a, b) => a.timestamp - b.timestamp);
 
-  // Generate time slots or time picker based on availability type
-  const timeSlots = useMemo(() => {
-    // For TIME_SLOTS mode, use predefined slots
-    if (service?.availabilityType === "TIME_SLOTS") {
-      if (availableSlots && availableSlots.length > 0) {
-        // If API returns full datetime strings, extract just the time portion (HH:MM)
-        return availableSlots.map(slot => {
-          if (slot.includes('T')) {
-            // Extract time from datetime string like "2025-12-31T09:00:00"
-            const timePart = slot.split('T')[1];
-            return timePart ? timePart.substring(0, 5) : slot; // Get HH:MM
-          }
-          return slot;
-        });
-      }
-      return availability.timeSlots || ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
+    if (effectiveAvailabilityType !== "WORKING_HOURS") {
+      return sorted;
     }
-    
-    // For WORKING_HOURS mode, generate hourly slots within working hours
-    if (service?.availabilityType === "WORKING_HOURS" && availability.workingHoursStart && availability.workingHoursEnd) {
-      const slots: string[] = [];
-      const [startHour, startMin] = availability.workingHoursStart.split(':').map(Number);
-      const [endHour, endMin] = availability.workingHoursEnd.split(':').map(Number);
-      
-      for (let hour = startHour; hour < endHour || (hour === endHour && startMin < endMin); hour++) {
-        const hourStr = hour.toString().padStart(2, '0');
-        slots.push(`${hourStr}:00`);
-        if (hour < endHour) {
-          slots.push(`${hourStr}:30`);
-        }
+
+    const minimumGapMs = Math.max(1, bookingDurationMinutes) * 60 * 1000;
+    const filtered: { iso: string; timestamp: number }[] = [];
+
+    for (const slot of sorted) {
+      const previous = filtered[filtered.length - 1];
+      if (!previous || slot.timestamp - previous.timestamp >= minimumGapMs) {
+        filtered.push(slot);
       }
-      
-      return slots;
     }
-    
-    // Fallback to default slots
-    return ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
-  }, [service?.availabilityType, availability, availableSlots]);
+
+    return filtered;
+  }, [availableSlots, effectiveAvailabilityType, bookingDurationMinutes]);
 
   const handleCheckout = async () => {
     if (!service) return;
+    setCheckoutError(null);
 
     // Validation
-    if (!selectedDate || !selectedTime) {
+    if (!selectedDate || !selectedSlotIso) {
       toast({
-        title: 'Missing Date/Time',
-        description: 'Please select a date and time for your service.',
-        variant: 'destructive',
+        title: "Missing Date/Time",
+        description: "Please select a date and time for your service.",
+        variant: "destructive",
       });
       return;
     }
 
-    // For WORKING_HOURS mode, validate time is within range
-    if (service.availabilityType === "WORKING_HOURS" && availability.workingHoursStart && availability.workingHoursEnd) {
-      if (selectedTime < availability.workingHoursStart || selectedTime > availability.workingHoursEnd) {
-        toast({
-          title: 'Invalid Time',
-          description: `Please select a time between ${formatTime(availability.workingHoursStart)} and ${formatTime(availability.workingHoursEnd)}.`,
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
     if (!contactEmail) {
       toast({
-        title: 'Missing Contact Email',
-        description: 'Please enter your contact email.',
-        variant: 'destructive',
+        title: "Missing Contact Email",
+        description: "Please enter your contact email.",
+        variant: "destructive",
       });
       return;
     }
@@ -416,23 +458,28 @@ export default function ServiceCheckout() {
 
     try {
       // Debug logging
-      console.log('Selected Date:', selectedDate);
-      console.log('Selected Time:', selectedTime);
-      
-      // Ensure date is in YYYY-MM-DD format
-      const dateOnly = selectedDate.includes('T') ? selectedDate.split('T')[0] : selectedDate;
-      // Ensure time is in HH:MM format
-      const timeOnly = selectedTime.includes('T') ? selectedTime.split('T')[1]?.substring(0, 5) || selectedTime : selectedTime;
-      
-      console.log('Date Only:', dateOnly);
-      console.log('Time Only:', timeOnly);
-      
-      // Combine date and time into ISO datetime string
-      const scheduledDateTime = `${dateOnly}T${timeOnly}:00`;
-      console.log('Scheduled DateTime:', scheduledDateTime);
+      console.log("Selected Date:", selectedDate);
+      console.log("Selected Slot ISO:", selectedSlotIso);
+
+      // Use server-returned ISO datetime exactly; do not rebuild from local parts
+      const scheduledDateTime = selectedSlotIso;
+      console.log("Scheduled DateTime:", scheduledDateTime);
+
+      const isAvailable = await serviceService.checkSlotAvailability(
+        service.id,
+        scheduledDateTime
+      );
+      if (!isAvailable) {
+        setCheckoutError({
+          title: "This Time Slot Is No Longer Available",
+        });
+        setIsProcessing(false);
+        return;
+      }
 
       const orderRequest: CreateServiceOrderRequest = {
         serviceId: service.id,
+        packageId: selectedPackage?.id,
         scheduledDateTime,
         contactEmail,
         contactPhone: contactPhone || undefined,
@@ -451,39 +498,47 @@ export default function ServiceCheckout() {
       if (order.discountValidationError && order.discountCode) {
         // Format error message to be more user-friendly
         let errorMessage = order.discountValidationError;
-        if (errorMessage.includes('minimum requirement')) {
-          errorMessage = 'Your order total does not meet the minimum amount required for this discount.';
-        } else if (errorMessage.includes('usage limit')) {
-          errorMessage = 'This discount code has reached its usage limit.';
-        } else if (errorMessage.includes('not valid')) {
-          errorMessage = 'This discount code is not valid for this service.';
-        } else if (errorMessage.includes('expired')) {
-          errorMessage = 'This discount code has expired.';
+        if (errorMessage.includes("minimum requirement")) {
+          errorMessage =
+            "Your order total does not meet the minimum amount required for this discount.";
+        } else if (errorMessage.includes("usage limit")) {
+          errorMessage = "This discount code has reached its usage limit.";
+        } else if (errorMessage.includes("not valid")) {
+          errorMessage = "This discount code is not valid for this service.";
+        } else if (errorMessage.includes("expired")) {
+          errorMessage = "This discount code has expired.";
         }
-        
+
         toast({
-          title: 'Discount Not Applied',
+          title: "Discount Not Applied",
           description: `The discount code "${order.discountCode}" could not be applied: ${errorMessage} Your order will proceed without the discount.`,
-          variant: 'destructive',
+          variant: "destructive",
           duration: 6000, // Show for 6 seconds since it's important info
         });
         // Clear the discount code from UI state since it wasn't applied
-        setDiscountCode('');
+        setDiscountCode("");
         setDiscountResult(null);
         setDiscountError(errorMessage);
       }
 
+      if (paymentProvider === "CHAPA") {
+        navigate(`/payment/chapa?orderId=${order.id}&orderType=service`);
+        return;
+      }
+
       // Initialize payment
-      const paymentInit = await serviceOrderService.initializePayment(order.id, paymentProvider);
+      const paymentInit = await serviceOrderService.initializePayment(
+        order.id,
+        paymentProvider
+      );
 
       // Redirect based on payment provider response
       if (paymentInit.checkoutUrl) {
-        // Chapa or Stripe Checkout - redirect to their hosted page
         // Don't set isProcessing to false as we're navigating away
         window.location.href = paymentInit.checkoutUrl;
         // Component will unmount during redirect, so don't update state after this
         return;
-      } else if (paymentProvider === 'STRIPE' && paymentInit.clientSecret) {
+      } else if (paymentProvider === "STRIPE" && paymentInit.clientSecret) {
         // Stripe Payment Intent - navigate to stripe payment page
         navigate(`/payment/stripe?orderId=${order.id}&orderType=service`, {
           state: {
@@ -499,23 +554,34 @@ export default function ServiceCheckout() {
         // Component will likely unmount during navigation, so return early
         return;
       } else {
-        throw new Error('Payment initialization failed. No checkout URL returned.');
+        throw new Error(
+          "Payment initialization failed. No checkout URL returned."
+        );
       }
     } catch (error: any) {
-      console.error('Checkout error:', error);
-      toast({
-        title: 'Checkout Failed',
-        description: error.message || 'Failed to process your order. Please try again.',
-        variant: 'destructive',
+      console.error("Checkout error:", error);
+      const rawMessage =
+        error?.message || "Failed to process your order. Please try again.";
+      const isSlotConflict = /slot|available|already booked|conflict/i.test(
+        rawMessage
+      );
+
+      setCheckoutError({
+        title: isSlotConflict
+          ? "This Time Slot Is No Longer Available"
+          : "Checkout Could Not Be Completed",
+        description: isSlotConflict
+          ? "Another user may have just booked it. Refresh available times and choose a different slot."
+          : rawMessage,
       });
       setIsProcessing(false);
     }
   };
 
   const formatMonthYear = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric',
+    return date.toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
     });
   };
 
@@ -523,21 +589,25 @@ export default function ServiceCheckout() {
     return new Date(dateStr).getDate();
   };
 
-  const isPastDate = (dateStr: string) => {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    return dateStr < todayStr;
-  };
-
   const formatTime = (timeStr: string) => {
-    const [hours, minutes] = timeStr.split(':');
+    const [hours, minutes] = timeStr.split(":");
     const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const ampm = hour >= 12 ? "PM" : "AM";
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${ampm}`;
   };
 
-  if (isLoading) {
+  const formatSlotTime = (isoDateTime: string) => {
+    const date = new Date(isoDateTime);
+    if (Number.isNaN(date.getTime())) return isoDateTime;
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  if (isLoading && !service) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -548,12 +618,57 @@ export default function ServiceCheckout() {
     );
   }
 
+  if (isError && !service) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "We could not load this service right now. Please try again.";
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-june-bud/10 flex items-center justify-center px-4">
+        <Card className="w-full max-w-xl border-eagle-green/20 shadow-xl">
+          <CardContent className="p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 border border-red-100">
+              <AlertCircle className="h-8 w-8 text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-eagle-green mb-2">
+              Something Went Wrong
+            </h2>
+            <p className="text-sm font-light text-eagle-green/70 mb-6">
+              {errorMessage}
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
+              <Button
+                onClick={() => refetch()}
+                className="bg-eagle-green hover:bg-viridian-green text-white"
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate("/services")}
+                className="border-eagle-green/30 text-eagle-green hover:bg-eagle-green/5"
+              >
+                Back to Services
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!service) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-eagle-green mb-2">Service Not Found</h2>
-          <Button onClick={() => navigate('/services')} className="bg-eagle-green hover:bg-viridian-green text-white">
+          <h2 className="text-2xl font-bold text-eagle-green mb-2">
+            Service Not Found
+          </h2>
+          <Button
+            onClick={() => navigate("/services")}
+            className="bg-eagle-green hover:bg-viridian-green text-white"
+          >
             Browse Services
           </Button>
         </div>
@@ -578,7 +693,7 @@ export default function ServiceCheckout() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Service
           </Button>
-          
+
           <h1 className="text-3xl font-bold text-eagle-green">
             Book Your Service
           </h1>
@@ -590,6 +705,65 @@ export default function ServiceCheckout() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Main Form */}
           <div className="lg:col-span-7 space-y-6">
+            {checkoutError && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card className="border-red-200 bg-gradient-to-br from-red-50 via-white to-red-50/40 shadow-sm">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-full bg-red-100 border border-red-200 flex items-center justify-center flex-shrink-0">
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-base font-bold text-red-800">
+                          {checkoutError.title}
+                        </h3>
+                        <p className="text-sm text-red-700/90 mt-1">
+                          {checkoutError.description}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={async () => {
+                              if (selectedDate) {
+                                await refetchAvailableSlots();
+                              }
+                              setSelectedSlotIso("");
+                              setCheckoutError(null);
+                            }}
+                            className="bg-eagle-green hover:bg-viridian-green text-white"
+                            disabled={isFetchingAvailableSlots}
+                          >
+                            {isFetchingAvailableSlots ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Refreshing...
+                              </>
+                            ) : (
+                              "Refresh Slots"
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCheckoutError(null)}
+                            className="border-red-300 text-red-700 hover:bg-red-50"
+                          >
+                            Dismiss
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
             {/* Service Summary */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -600,8 +774,8 @@ export default function ServiceCheckout() {
                 <CardContent className="p-6">
                   <div className="flex gap-4">
                     {serviceService.getPrimaryImageUrl(service) ? (
-                      <img 
-                        src={serviceService.getPrimaryImageUrl(service)} 
+                      <img
+                        src={serviceService.getPrimaryImageUrl(service)}
                         alt={service.title}
                         className="w-24 h-24 rounded-lg object-cover"
                       />
@@ -624,15 +798,17 @@ export default function ServiceCheckout() {
                         {service.city && (
                           <p className="flex items-center gap-2">
                             <MapPin className="h-4 w-4" />
-                            {service.city}{service.location ? `, ${service.location}` : ''}
+                            {service.city}
+                            {service.location ? `, ${service.location}` : ""}
                           </p>
                         )}
-                        {service.durationMinutes != null && service.durationMinutes > 0 && (
-                          <p className="flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            {service.durationMinutes} minutes
-                          </p>
-                        )}
+                        {service.durationMinutes != null &&
+                          service.durationMinutes > 0 && (
+                            <p className="flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              {service.durationMinutes} minutes
+                            </p>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -653,9 +829,14 @@ export default function ServiceCheckout() {
                     Select Date
                   </CardTitle>
                   <div className="flex items-center justify-between mt-2">
-                    <p className="text-lg font-semibold text-eagle-green">
-                      {formatMonthYear(currentMonth)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-semibold text-eagle-green">
+                        {formatMonthYear(monthAnchorDate)}
+                      </p>
+                      {isFetchingServiceMonth && (
+                        <Loader2 className="h-4 w-4 animate-spin text-eagle-green/60" />
+                      )}
+                    </div>
                     <div className="flex gap-1">
                       <Button
                         variant="outline"
@@ -681,13 +862,18 @@ export default function ServiceCheckout() {
                 <CardContent>
                   {/* Calendar Header - Days of Week */}
                   <div className="grid grid-cols-7 gap-1 mb-2">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                      <div key={day} className="p-2 text-center text-sm font-semibold text-eagle-green/70">
-                        {day}
-                      </div>
-                    ))}
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                      (day) => (
+                        <div
+                          key={day}
+                          className="p-2 text-center text-sm font-semibold text-eagle-green/70"
+                        >
+                          {day}
+                        </div>
+                      )
+                    )}
                   </div>
-                  
+
                   {/* Calendar Grid */}
                   <div className="grid grid-cols-7 gap-1">
                     {calendarGrid.map((dateStr, index) => {
@@ -695,39 +881,44 @@ export default function ServiceCheckout() {
                         // Empty cell for days outside current month
                         return <div key={index} className="p-3 h-12"></div>;
                       }
-                      
-                      const isAvailable = availableDatesInMonth.includes(dateStr);
+
+                      const isAvailable = availableDatesInMonth.has(dateStr);
                       const isSelected = selectedDate === dateStr;
-                      const isPast = isPastDate(dateStr);
-                      
+
                       return (
                         <button
                           key={dateStr}
                           onClick={() => {
-                            if (isAvailable && !isPast) {
+                            if (isAvailable) {
                               setSelectedDate(dateStr);
-                              setSelectedTime(''); // Reset time when date changes
+                              setSelectedSlotIso(""); // Reset time when date changes
                             }
                           }}
-                          disabled={!isAvailable || isPast}
+                          disabled={!isAvailable}
                           className={`p-3 h-12 rounded-lg text-center transition-all duration-200 relative ${
                             isSelected
-                              ? 'bg-eagle-green text-white shadow-lg scale-105'
-                              : isAvailable && !isPast
-                              ? 'bg-gray-100 hover:bg-june-bud/20 text-eagle-green hover:scale-102'
-                              : isPast
-                              ? 'text-gray-300 cursor-not-allowed'
-                              : 'text-gray-400 cursor-not-allowed'
+                              ? "bg-eagle-green text-white shadow-lg scale-105"
+                              : isAvailable
+                              ? "bg-gray-100 hover:bg-june-bud/20 text-eagle-green hover:scale-102"
+                              : "text-gray-400 cursor-not-allowed"
                           }`}
                         >
-                          <span className="font-semibold">{getDayOfMonth(dateStr)}</span>
+                          <span className="font-semibold">
+                            {getDayOfMonth(dateStr)}
+                          </span>
                         </button>
                       );
                     })}
                   </div>
-                  
+
                   {/* Legend */}
                   <div className="mt-4 pt-4 border-t border-gray-200">
+                    {(service?.availabilitySpotsPage?.days?.length || 0) ===
+                      0 && (
+                      <p className="text-sm font-light text-eagle-green/70 text-center mb-3">
+                        No available dates in this month window.
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-4 justify-center text-xs">
                       <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-eagle-green rounded"></div>
@@ -755,61 +946,39 @@ export default function ServiceCheckout() {
                       <Clock className="h-5 w-5" />
                       Select Time
                     </CardTitle>
-                    {service?.availabilityType === "WORKING_HOURS" && availability.workingHoursStart && availability.workingHoursEnd && (
-                      <p className="text-sm font-light text-eagle-green/70">
-                        Available from {formatTime(availability.workingHoursStart)} to {formatTime(availability.workingHoursEnd)}
-                      </p>
-                    )}
+                    {effectiveAvailabilityType === "WORKING_HOURS" &&
+                      availability.workingHoursStart &&
+                      availability.workingHoursEnd && (
+                        <p className="text-sm font-light text-eagle-green/70">
+                          Available from{" "}
+                          {formatTime(availability.workingHoursStart)} to{" "}
+                          {formatTime(availability.workingHoursEnd)}
+                        </p>
+                      )}
                   </CardHeader>
                   <CardContent>
-                    {service?.availabilityType === "WORKING_HOURS" ? (
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-sm font-light mb-2 block">Select or enter your preferred time</Label>
-                          <input
-                            type="time"
-                            value={selectedTime || ''}
-                            onChange={(e) => setSelectedTime(e.target.value)}
-                            min={availability.workingHoursStart}
-                            max={availability.workingHoursEnd}
-                            className="w-full p-3 rounded-lg border border-gray-200 focus:border-eagle-green focus:ring-2 focus:ring-eagle-green/20 outline-none"
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-light text-eagle-green/70 mb-2">Or choose a suggested time:</p>
-                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                            {timeSlots.map((time) => (
-                              <button
-                                key={time}
-                                onClick={() => setSelectedTime(time)}
-                                className={`p-3 rounded-lg text-center transition-colors ${
-                                  selectedTime === time
-                                    ? 'bg-eagle-green text-white'
-                                    : 'bg-gray-100 hover:bg-june-bud/20 text-eagle-green'
-                                }`}
-                              >
-                                <span className="font-bold">{formatTime(time)}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
+                    {slotOptions.length > 0 ? (
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                        {timeSlots.map((time) => (
+                        {slotOptions.map((slot) => (
                           <button
-                            key={time}
-                            onClick={() => setSelectedTime(time)}
+                            key={slot.iso}
+                            onClick={() => setSelectedSlotIso(slot.iso)}
                             className={`p-3 rounded-lg text-center transition-colors ${
-                              selectedTime === time
-                                ? 'bg-eagle-green text-white'
-                                : 'bg-gray-100 hover:bg-june-bud/20 text-eagle-green'
+                              selectedSlotIso === slot.iso
+                                ? "bg-eagle-green text-white"
+                                : "bg-gray-100 hover:bg-june-bud/20 text-eagle-green"
                             }`}
                           >
-                            <span className="font-bold">{formatTime(time)}</span>
+                            <span className="font-bold">
+                              {formatSlotTime(slot.iso)}
+                            </span>
                           </button>
                         ))}
                       </div>
+                    ) : (
+                      <p className="text-sm font-light text-eagle-green/70">
+                        No available time slots for the selected date.
+                      </p>
                     )}
                   </CardContent>
                 </Card>
@@ -835,7 +1004,9 @@ export default function ServiceCheckout() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-light">Recipient Name</Label>
+                      <Label className="text-sm font-light">
+                        Recipient Name
+                      </Label>
                       <div className="relative mt-1">
                         <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                         <Input
@@ -847,7 +1018,9 @@ export default function ServiceCheckout() {
                       </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-light">Recipient Email</Label>
+                      <Label className="text-sm font-light">
+                        Recipient Email
+                      </Label>
                       <div className="relative mt-1">
                         <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                         <Input
@@ -861,7 +1034,9 @@ export default function ServiceCheckout() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-light">Recipient Phone</Label>
+                    <Label className="text-sm font-light">
+                      Recipient Phone
+                    </Label>
                     <div className="relative mt-1">
                       <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                       <Input
@@ -977,7 +1152,11 @@ export default function ServiceCheckout() {
                               Code "{discountCode}" applied
                             </p>
                             <p className="text-xs text-green-600">
-                              You save {formatPrice(manualDiscountAmountDisplay, displayCurrency)}
+                              You save{" "}
+                              {formatPrice(
+                                manualDiscountAmountDisplay,
+                                displayCurrency
+                              )}
                             </p>
                           </div>
                         </div>
@@ -1001,20 +1180,26 @@ export default function ServiceCheckout() {
                             setDiscountCode(e.target.value);
                             setDiscountError(null);
                           }}
-                          onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()}
-                          className={`flex-1 ${discountError ? 'border-red-300' : ''}`}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && handleApplyDiscount()
+                          }
+                          className={`flex-1 ${
+                            discountError ? "border-red-300" : ""
+                          }`}
                           disabled={isValidatingDiscount}
                         />
                         <Button
                           type="button"
                           onClick={handleApplyDiscount}
-                          disabled={isValidatingDiscount || !discountCode.trim()}
+                          disabled={
+                            isValidatingDiscount || !discountCode.trim()
+                          }
                           className="bg-eagle-green hover:bg-eagle-green/90 text-white font-medium min-w-[90px] transition-all"
                         >
                           {isValidatingDiscount ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            'Apply Code'
+                            "Apply Code"
                           )}
                         </Button>
                       </div>
@@ -1024,11 +1209,13 @@ export default function ServiceCheckout() {
                           {discountError}
                         </p>
                       )}
-                      {!discountError && !discountCode.trim() && service?.activeDiscount && (
-                        <p className="text-xs text-eagle-green/60 mt-1">
-                          A service discount will be applied automatically.
-                        </p>
-                      )}
+                      {!discountError &&
+                        !discountCode.trim() &&
+                        service?.activeDiscount && (
+                          <p className="text-xs text-eagle-green/60 mt-1">
+                            A service discount will be applied automatically.
+                          </p>
+                        )}
                     </div>
                   )}
                 </CardContent>
@@ -1052,11 +1239,13 @@ export default function ServiceCheckout() {
                   <PaymentMethodSelector
                     amount={finalAmount}
                     currency={displayCurrency}
+                    allowedMethods={[...allowedPaymentMethods]}
+                    notifyOnSelectionChange
                     onPaymentMethodSelect={(method) => {
-                      if (method === 'stripe') {
-                        setPaymentProvider('STRIPE');
+                      if (method === "stripe") {
+                        setPaymentProvider("STRIPE");
                       } else {
-                        setPaymentProvider('CHAPA');
+                        setPaymentProvider("CHAPA");
                       }
                     }}
                     userLocation={user?.country || "Ethiopia"}
@@ -1083,10 +1272,17 @@ export default function ServiceCheckout() {
                 <CardContent className="p-6 space-y-4">
                   {/* Service */}
                   <div>
-                    <p className="font-bold text-eagle-green">{service.title}</p>
-                    {service.durationMinutes != null && service.durationMinutes > 0 && (
+                    <p className="font-bold text-eagle-green">
+                      {service.title}
+                    </p>
+                    {selectedPackage?.name && (
                       <p className="text-sm font-light text-eagle-green/70">
-                        {service.durationMinutes} minutes
+                        {selectedPackage.name}
+                      </p>
+                    )}
+                    {bookingDurationMinutes > 0 && (
+                      <p className="text-sm font-light text-eagle-green/70">
+                        {bookingDurationMinutes} minutes
                       </p>
                     )}
                   </div>
@@ -1094,23 +1290,29 @@ export default function ServiceCheckout() {
                   <Separator />
 
                   {/* Selected Date/Time */}
-                  {selectedDate && selectedTime ? (
+                  {selectedDate && selectedSlotIso ? (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4 text-viridian-green" />
                         <span className="font-light text-eagle-green">
-                          {new Date(selectedDate).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
+                          {new Date(selectedDate).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
                           })}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="h-4 w-4 text-viridian-green" />
                         <span className="font-light text-eagle-green">
-                          {formatTime(selectedTime)}
+                          {formatSlotTime(selectedSlotIso)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <CreditCard className="h-4 w-4 text-viridian-green" />
+                        <span className="font-light text-eagle-green">
+                          Payment: {paymentProviderLabel}
                         </span>
                       </div>
                     </div>
@@ -1125,10 +1327,10 @@ export default function ServiceCheckout() {
                   {/* Total */}
                   {service.activeDiscount && (
                     <div className="flex justify-center">
-                      <DiscountBadge 
-                        discount={service.activeDiscount} 
-                        variant="compact" 
-                        size="small" 
+                      <DiscountBadge
+                        discount={service.activeDiscount}
+                        variant="compact"
+                        size="small"
                         targetCurrency={displayCurrency}
                       />
                     </div>
@@ -1137,7 +1339,19 @@ export default function ServiceCheckout() {
                     <div className="flex justify-between items-center">
                       <span className="font-light text-eagle-green">Total</span>
                       <div className="font-bold text-eagle-green text-2xl">
-                        {service.activeDiscount ? (
+                        {hasManualDiscount && hasDiscountedTotal ? (
+                          <div className="text-right leading-tight">
+                            <div className="text-sm font-medium text-eagle-green/60 line-through">
+                              {serviceService.formatPrice(
+                                displayPriceMajor ?? 0,
+                                displayCurrency
+                              )}
+                            </div>
+                            <div className="font-bold text-eagle-green text-2xl">
+                              {formatPrice(finalAmount, displayCurrency)}
+                            </div>
+                          </div>
+                        ) : service.activeDiscount ? (
                           <PriceWithDiscount
                             originalPrice={displayPriceMajor || 0}
                             currency={displayCurrency}
@@ -1146,16 +1360,24 @@ export default function ServiceCheckout() {
                             showSavings={false}
                           />
                         ) : (
-                          serviceService.formatPrice(displayPriceMajor ?? 0, displayCurrency)
+                          serviceService.formatPrice(
+                            displayPriceMajor ?? 0,
+                            displayCurrency
+                          )
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <Button 
+                  <Button
                     className="w-full bg-eagle-green hover:bg-viridian-green text-white font-bold h-12"
                     onClick={handleCheckout}
-                    disabled={isProcessing || !selectedDate || !selectedTime || !contactEmail}
+                    disabled={
+                      isProcessing ||
+                      !selectedDate ||
+                      !selectedSlotIso ||
+                      !contactEmail
+                    }
                   >
                     {isProcessing ? (
                       <>
@@ -1171,7 +1393,8 @@ export default function ServiceCheckout() {
                   </Button>
 
                   <p className="text-xs font-light text-eagle-green/60 text-center">
-                    By completing this booking, you agree to our terms of service.
+                    By completing this booking, you agree to our terms of
+                    service.
                   </p>
                 </CardContent>
               </Card>

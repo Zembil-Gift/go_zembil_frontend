@@ -375,14 +375,14 @@ export default function VerifyEmail() {
 
             {/* Help Text */}
             <p className="text-center text-xs text-gray-500 mt-6">
-              Didn't receive the email? Check your spam folder or{" "}
-              <button 
+              Didn't receive the email? Check your spam folder or resend.{" "}
+              {/* <button 
                 onClick={handleResend}
                 disabled={countdown > 0 || resendMutation.isPending}
                 className="text-viridian-green hover:underline disabled:opacity-50"
               >
                 request a new code
-              </button>
+              </button> */}
             </p>
           </CardContent>
         </Card>

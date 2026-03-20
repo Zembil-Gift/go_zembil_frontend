@@ -20,8 +20,26 @@ class CustomOrderService {
   /**
    * Create a new custom order (customer only)
    */
-  async create(data: CreateCustomOrderRequest): Promise<CustomOrder> {
-    return await apiService.postRequest<CustomOrder>('/api/custom-orders', data);
+  async create(
+    data: CreateCustomOrderRequest,
+    files?: Array<{ fieldId: number; file: File }>
+  ): Promise<CustomOrder> {
+    if (!files || files.length === 0) {
+      return await apiService.postRequest<CustomOrder>('/api/custom-orders', data);
+    }
+
+    const formData = new FormData();
+    formData.append(
+      'request',
+      new Blob([JSON.stringify(data)], { type: 'application/json' })
+    );
+
+    files.forEach(({ fieldId, file }) => {
+      formData.append('files', file, file.name);
+      formData.append('fileFieldIds', String(fieldId));
+    });
+
+    return await apiService.postFormData<CustomOrder>('/api/custom-orders', formData);
   }
 
   /**

@@ -18,6 +18,8 @@ build/
 .env.test.local
 .env.production.local
 
+campaign.json
+
 # IDE and editor files
 .vscode/
 .idea/

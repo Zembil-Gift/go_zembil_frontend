@@ -1,5 +1,5 @@
-import { apiService } from './apiService';
-import type { DiscountInfo } from '@/types/discount';
+import { apiService } from "./apiService";
+import type { DiscountInfo } from "@/types/discount";
 
 /**
  * Service types matching the backend ServiceResponse DTO
@@ -29,7 +29,20 @@ export interface AvailabilityConfig {
   workingHoursEnd?: string;
 }
 
-export type AvailabilityType = 'TIME_SLOTS' | 'WORKING_HOURS';
+export interface AvailabilitySpotDay {
+  date: string;
+  availableSpots: string[];
+}
+
+export interface AvailabilitySpotsPage {
+  page: number;
+  monthsPerPage: number;
+  windowStartDate: string;
+  windowEndDate: string;
+  days: AvailabilitySpotDay[];
+}
+
+export type AvailabilityType = "TIME_SLOTS" | "WORKING_HOURS";
 
 export interface PoliciesConfig {
   // Note: rescheduleHours and cancellationPolicy are system-enforced (48h/24h tiers)
@@ -72,14 +85,15 @@ export interface ServiceResponse {
   defaultPackage?: ServicePackageResponse;
   hasPackages?: boolean;
   activeDiscount?: DiscountInfo;
+  availabilitySpotsPage?: AvailabilitySpotsPage;
 }
 
-export type ServicePackageStatus = 
-  | 'PENDING' 
-  | 'APPROVED' 
-  | 'REJECTED' 
-  | 'SUSPENDED' 
-  | 'ARCHIVED';
+export type ServicePackageStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "SUSPENDED"
+  | "ARCHIVED";
 
 export interface ServicePackageAttribute {
   id: number;
@@ -106,10 +120,10 @@ export interface ServicePackageResponse {
   approvedAt?: string;
   maxBookingsPerDay?: number;
   sortOrder: number;
-  basePriceMinor: number;      // Minor units (backward compatibility)
-  vendorPriceMinor?: number;   // Minor units (backward compatibility)
-  basePrice?: number;          // Major units for display (from backend)
-  vendorPrice?: number;        // Major units for display (from backend)
+  basePriceMinor: number; // Minor units (backward compatibility)
+  vendorPriceMinor?: number; // Minor units (backward compatibility)
+  basePrice?: number; // Major units for display (from backend)
+  vendorPrice?: number; // Major units for display (from backend)
   currency: string;
   availabilityType?: AvailabilityType;
   availabilityConfig?: AvailabilityConfig;
@@ -120,12 +134,12 @@ export interface ServicePackageResponse {
   updatedAt?: string;
 }
 
-export type ServiceStatus = 
-  | 'PENDING_APPROVAL' 
-  | 'APPROVED' 
-  | 'REJECTED' 
-  | 'SUSPENDED' 
-  | 'ARCHIVED';
+export type ServiceStatus =
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
+  | "SUSPENDED"
+  | "ARCHIVED";
 
 export interface PagedServiceResponse {
   content: ServiceResponse[];
@@ -156,7 +170,8 @@ export interface CreateServiceRequest {
   currency?: string;
   location?: string;
   city?: string;
-  // Note: availability settings are now at package level, not service level
+  availabilityType?: AvailabilityType;
+  availabilityConfig?: AvailabilityConfig;
   policiesConfig?: PoliciesConfig;
 }
 
@@ -176,8 +191,8 @@ export interface CreateServicePackageRequest {
   name: string;
   description?: string;
   durationMinutes?: number;
-  basePrice: number;  // Vendor price in major units
-  currency?: string;  // 3-letter code, defaults to ETB
+  basePrice: number; // Vendor price in major units
+  currency?: string; // 3-letter code, defaults to ETB
   isDefault?: boolean;
   maxBookingsPerDay?: number;
   sortOrder?: number;
@@ -190,7 +205,7 @@ export interface UpdateServicePackageRequest {
   name?: string;
   description?: string;
   durationMinutes?: number;
-  basePrice?: number;  // Vendor price in major units
+  basePrice?: number; // Vendor price in major units
   currency?: string;
   isDefault?: boolean;
   maxBookingsPerDay?: number;
@@ -207,11 +222,13 @@ class ServiceService {
     const trimmedReason = reason?.trim();
 
     if (!trimmedReason) {
-      throw new Error('Rejection reason is required');
+      throw new Error("Rejection reason is required");
     }
 
     if (trimmedReason.length > this.MAX_REJECTION_REASON_LENGTH) {
-      throw new Error(`Rejection reason must be ${this.MAX_REJECTION_REASON_LENGTH} characters or fewer`);
+      throw new Error(
+        `Rejection reason must be ${this.MAX_REJECTION_REASON_LENGTH} characters or fewer`
+      );
     }
 
     return trimmedReason;
@@ -220,22 +237,24 @@ class ServiceService {
   /**
    * Get all approved services with optional filters (public endpoint)
    */
-  async getServices(params: ServiceFilterParams = {}): Promise<PagedServiceResponse> {
+  async getServices(
+    params: ServiceFilterParams = {}
+  ): Promise<PagedServiceResponse> {
     const queryParams = new URLSearchParams();
-    
-    queryParams.append('page', (params.page ?? 0).toString());
-    queryParams.append('size', (params.size ?? 20).toString());
-    
+
+    queryParams.append("page", (params.page ?? 0).toString());
+    queryParams.append("size", (params.size ?? 20).toString());
+
     if (params.query) {
-      queryParams.append('query', params.query);
+      queryParams.append("query", params.query);
     }
     if (params.city) {
-      queryParams.append('city', params.city);
+      queryParams.append("city", params.city);
     }
     if (params.categoryId) {
-      queryParams.append('categoryId', params.categoryId.toString());
+      queryParams.append("categoryId", params.categoryId.toString());
     }
-    
+
     const url = `/api/services?${queryParams.toString()}`;
     return await apiService.getRequest<PagedServiceResponse>(url);
   }
@@ -243,10 +262,13 @@ class ServiceService {
   /**
    * Get featured services
    */
-  async getFeaturedServices(page: number = 0, size: number = 10): Promise<PagedServiceResponse> {
+  async getFeaturedServices(
+    page: number = 0,
+    size: number = 10
+  ): Promise<PagedServiceResponse> {
     const params = new URLSearchParams();
-    params.append('page', page.toString());
-    params.append('size', size.toString());
+    params.append("page", page.toString());
+    params.append("size", size.toString());
     const url = `/api/services/featured?${params.toString()}`;
     return await apiService.getRequest<PagedServiceResponse>(url);
   }
@@ -254,9 +276,11 @@ class ServiceService {
   /**
    * Get ad service packages
    */
-  async getAdServicePackages(limit: number = 5): Promise<ServicePackageResponse[]> {
+  async getAdServicePackages(
+    limit: number = 5
+  ): Promise<ServicePackageResponse[]> {
     const params = new URLSearchParams();
-    params.append('limit', limit.toString());
+    params.append("limit", limit.toString());
     const url = `/api/packages/ads?${params.toString()}`;
     return await apiService.getRequest<ServicePackageResponse[]>(url);
   }
@@ -264,16 +288,49 @@ class ServiceService {
   /**
    * Get service by ID (public endpoint)
    */
-  async getService(id: number): Promise<ServiceResponse> {
-    return await apiService.getRequest<ServiceResponse>(`/api/services/${id}`);
+  async getService(
+    id: number,
+    availabilityPage?: number
+  ): Promise<ServiceResponse> {
+    const params = new URLSearchParams();
+    if (typeof availabilityPage === "number" && availabilityPage >= 0) {
+      params.append("availabilityPage", availabilityPage.toString());
+    }
+    const queryString = params.toString();
+    const url = queryString
+      ? `/api/services/${id}?${queryString}`
+      : `/api/services/${id}`;
+    return await apiService.getRequest<ServiceResponse>(url);
   }
 
   /**
    * Check if a specific time slot is available
    */
-  async checkSlotAvailability(serviceId: number, dateTime: string): Promise<boolean> {
-    const url = `/api/services/${serviceId}/availability?dateTime=${encodeURIComponent(dateTime)}`;
-    return await apiService.getRequest<boolean>(url);
+  async checkSlotAvailability(
+    serviceId: number,
+    dateTime: string
+  ): Promise<boolean> {
+    const url = `/api/services/${serviceId}/availability?dateTime=${encodeURIComponent(
+      dateTime
+    )}`;
+    const response = await apiService.getRequest<
+      boolean | { available: boolean }
+    >(url);
+    return typeof response === "boolean" ? response : !!response?.available;
+  }
+
+  /**
+   * Check if a specific package slot is available
+   */
+  async checkPackageSlotAvailability(
+    packageId: number,
+    dateTime: string
+  ): Promise<boolean> {
+    const url = `/api/packages/${packageId}/availability/check?dateTime=${encodeURIComponent(
+      dateTime
+    )}`;
+    const response = await apiService.getRequest<{ available: boolean }>(url);
+    return !!response?.available;
   }
 
   /**
@@ -281,15 +338,38 @@ class ServiceService {
    */
   async getAvailableSlots(serviceId: number, date: string): Promise<string[]> {
     const url = `/api/services/${serviceId}/available-slots?date=${date}`;
+    const response = await apiService.getRequest<
+      string[] | { slots: string[] }
+    >(url);
+    return Array.isArray(response) ? response : response?.slots || [];
+  }
+
+  /**
+   * Get available package time slots for a specific date
+   */
+  async getAvailablePackageSlots(
+    packageId: number,
+    date: string
+  ): Promise<string[]> {
+    const url = `/api/packages/${packageId}/availability/slots?date=${date}`;
     return await apiService.getRequest<string[]>(url);
   }
 
   /**
    * Get available dates within a date range
    */
-  async getAvailableDates(serviceId: number, startDate: string, endDate: string): Promise<string[]> {
-    const url = `/api/services/${serviceId}/available-dates?startDate=${startDate}&endDate=${endDate}`;
-    return await apiService.getRequest<string[]>(url);
+  async getAvailableDates(
+    serviceId: number,
+    startDate: string,
+    endDate: string,
+    packageId?: number
+  ): Promise<string[]> {
+    const packageParam = packageId ? `&packageId=${packageId}` : "";
+    const url = `/api/services/${serviceId}/available-dates?startDate=${startDate}&endDate=${endDate}${packageParam}`;
+    const response = await apiService.getRequest<
+      string[] | { dates: string[] }
+    >(url);
+    return Array.isArray(response) ? response : response?.dates || [];
   }
 
   // ==================== Vendor Endpoints ====================
@@ -298,21 +378,26 @@ class ServiceService {
    * Create a new service (vendor only)
    */
   async createService(data: CreateServiceRequest): Promise<ServiceResponse> {
-    return await apiService.postRequest<ServiceResponse>('/api/services', data);
+    return await apiService.postRequest<ServiceResponse>("/api/services", data);
   }
 
   /**
    * Get vendor's own services
    */
-  async getMyServices(status?: ServiceStatus, page: number = 0, size: number = 20, query?: string): Promise<PagedServiceResponse> {
+  async getMyServices(
+    status?: ServiceStatus,
+    page: number = 0,
+    size: number = 20,
+    query?: string
+  ): Promise<PagedServiceResponse> {
     const queryParams = new URLSearchParams();
-    queryParams.append('page', page.toString());
-    queryParams.append('size', size.toString());
+    queryParams.append("page", page.toString());
+    queryParams.append("size", size.toString());
     if (status) {
-      queryParams.append('status', status);
+      queryParams.append("status", status);
     }
     if (query?.trim()) {
-      queryParams.append('query', query.trim());
+      queryParams.append("query", query.trim());
     }
     const url = `/api/services/vendor/me?${queryParams.toString()}`;
     return await apiService.getRequest<PagedServiceResponse>(url);
@@ -322,42 +407,65 @@ class ServiceService {
    * Get vendor's specific service
    */
   async getMyService(serviceId: number): Promise<ServiceResponse> {
-    return await apiService.getRequest<ServiceResponse>(`/api/services/vendor/me/${serviceId}`);
+    return await apiService.getRequest<ServiceResponse>(
+      `/api/services/vendor/me/${serviceId}`
+    );
   }
 
   /**
    * Get service by ID
    */
   async getServiceById(serviceId: number): Promise<ServiceResponse> {
-    return await apiService.getRequest<ServiceResponse>(`/api/services/${serviceId}`);
+    return await apiService.getRequest<ServiceResponse>(
+      `/api/services/${serviceId}`
+    );
   }
 
   /**
    * Get vendor's pending/rejected services
    */
-  async getMyPendingRejectedServices(page: number = 0, size: number = 20): Promise<PagedServiceResponse> {
-    return await apiService.getRequest<PagedServiceResponse>(`/api/services/vendor/me/pending-rejected?page=${page}&size=${size}`);
+  async getMyPendingRejectedServices(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PagedServiceResponse> {
+    return await apiService.getRequest<PagedServiceResponse>(
+      `/api/services/vendor/me/pending-rejected?page=${page}&size=${size}`
+    );
   }
 
   /**
    * Edit a pending/rejected service (vendor only)
    */
-  async editPendingService(id: number, data: UpdateServiceRequest): Promise<ServiceResponse> {
-    return await apiService.putRequest<ServiceResponse>(`/api/services/${id}/edit`, data);
+  async editPendingService(
+    id: number,
+    data: UpdateServiceRequest
+  ): Promise<ServiceResponse> {
+    return await apiService.putRequest<ServiceResponse>(
+      `/api/services/${id}/edit`,
+      data
+    );
   }
 
   /**
    * Update a service (vendor only)
    */
-  async updateService(id: number, data: UpdateServiceRequest): Promise<ServiceResponse> {
-    return await apiService.putRequest<ServiceResponse>(`/api/services/${id}`, data);
+  async updateService(
+    id: number,
+    data: UpdateServiceRequest
+  ): Promise<ServiceResponse> {
+    return await apiService.putRequest<ServiceResponse>(
+      `/api/services/${id}`,
+      data
+    );
   }
 
   /**
    * Archive a service (vendor only)
    */
   async archiveService(id: number): Promise<ServiceResponse> {
-    return await apiService.postRequest<ServiceResponse>(`/api/services/${id}/archive`);
+    return await apiService.postRequest<ServiceResponse>(
+      `/api/services/${id}/archive`
+    );
   }
 
   // ==================== Package Endpoints ====================
@@ -365,43 +473,68 @@ class ServiceService {
   /**
    * Create a new package for a service (vendor only)
    */
-  async createPackage(serviceId: number, data: CreateServicePackageRequest): Promise<ServicePackageResponse> {
-    return await apiService.postRequest<ServicePackageResponse>(`/api/vendor/services/${serviceId}/packages`, data);
+  async createPackage(
+    serviceId: number,
+    data: CreateServicePackageRequest
+  ): Promise<ServicePackageResponse> {
+    return await apiService.postRequest<ServicePackageResponse>(
+      `/api/vendor/services/${serviceId}/packages`,
+      data
+    );
   }
 
   /**
    * Update a package (vendor only)
    */
-  async updatePackage(packageId: number, data: UpdateServicePackageRequest): Promise<ServicePackageResponse> {
-    return await apiService.putRequest<ServicePackageResponse>(`/api/vendor/packages/${packageId}`, data);
+  async updatePackage(
+    packageId: number,
+    data: UpdateServicePackageRequest
+  ): Promise<ServicePackageResponse> {
+    return await apiService.putRequest<ServicePackageResponse>(
+      `/api/vendor/packages/${packageId}`,
+      data
+    );
   }
 
   /**
    * Get vendor's package by ID
    */
   async getVendorPackage(packageId: number): Promise<ServicePackageResponse> {
-    return await apiService.getRequest<ServicePackageResponse>(`/api/vendor/packages/${packageId}`);
+    return await apiService.getRequest<ServicePackageResponse>(
+      `/api/vendor/packages/${packageId}`
+    );
   }
 
   /**
    * Get all packages for a service (vendor)
    */
-  async getVendorServicePackages(serviceId: number): Promise<ServicePackageResponse[]> {
-    return await apiService.getRequest<ServicePackageResponse[]>(`/api/vendor/services/${serviceId}/packages`);
+  async getVendorServicePackages(
+    serviceId: number
+  ): Promise<ServicePackageResponse[]> {
+    return await apiService.getRequest<ServicePackageResponse[]>(
+      `/api/vendor/services/${serviceId}/packages`
+    );
   }
 
   /**
    * Archive a package (vendor only)
    */
   async archivePackage(packageId: number): Promise<ServicePackageResponse> {
-    return await apiService.postRequest<ServicePackageResponse>(`/api/vendor/packages/${packageId}/archive`);
+    return await apiService.postRequest<ServicePackageResponse>(
+      `/api/vendor/packages/${packageId}/archive`
+    );
   }
 
   /**
    * Set a package as default for its service (vendor only)
    */
-  async setDefaultPackage(serviceId: number, packageId: number): Promise<ServicePackageResponse> {
-    return await apiService.postRequest<ServicePackageResponse>(`/api/vendor/services/${serviceId}/packages/${packageId}/set-default`);
+  async setDefaultPackage(
+    serviceId: number,
+    packageId: number
+  ): Promise<ServicePackageResponse> {
+    return await apiService.postRequest<ServicePackageResponse>(
+      `/api/vendor/services/${serviceId}/packages/${packageId}/set-default`
+    );
   }
 
   // ==================== Admin Endpoints ====================
@@ -410,19 +543,19 @@ class ServiceService {
    * Get all services (admin only)
    */
   async getAllServicesAdmin(
-    status?: ServiceStatus, 
-    search?: string, 
-    page: number = 0, 
+    status?: ServiceStatus,
+    search?: string,
+    page: number = 0,
     size: number = 20
   ): Promise<PagedServiceResponse> {
     const queryParams = new URLSearchParams();
-    queryParams.append('page', page.toString());
-    queryParams.append('size', size.toString());
+    queryParams.append("page", page.toString());
+    queryParams.append("size", size.toString());
     if (status) {
-      queryParams.append('status', status);
+      queryParams.append("status", status);
     }
     if (search) {
-      queryParams.append('search', search);
+      queryParams.append("search", search);
     }
     const url = `/api/services/admin/all?${queryParams.toString()}`;
     return await apiService.getRequest<PagedServiceResponse>(url);
@@ -431,7 +564,10 @@ class ServiceService {
   /**
    * Get pending approval services (admin only)
    */
-  async getPendingServices(page: number = 0, size: number = 20): Promise<PagedServiceResponse> {
+  async getPendingServices(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PagedServiceResponse> {
     const url = `/api/services/admin/pending?page=${page}&size=${size}`;
     return await apiService.getRequest<PagedServiceResponse>(url);
   }
@@ -440,7 +576,9 @@ class ServiceService {
    * Approve a service (admin only)
    */
   async approveService(id: number): Promise<ServiceResponse> {
-    return await apiService.postRequest<ServiceResponse>(`/api/services/${id}/approve`);
+    return await apiService.postRequest<ServiceResponse>(
+      `/api/services/${id}/approve`
+    );
   }
 
   /**
@@ -448,21 +586,29 @@ class ServiceService {
    */
   async rejectService(id: number, reason: string): Promise<ServiceResponse> {
     const normalizedReason = this.normalizeRejectionReason(reason);
-    return await apiService.postRequest<ServiceResponse>(`/api/services/${id}/reject?reason=${encodeURIComponent(normalizedReason)}`);
+    return await apiService.postRequest<ServiceResponse>(
+      `/api/services/${id}/reject?reason=${encodeURIComponent(
+        normalizedReason
+      )}`
+    );
   }
 
   /**
    * Suspend a service (admin only)
    */
   async suspendService(id: number, reason: string): Promise<ServiceResponse> {
-    return await apiService.postRequest<ServiceResponse>(`/api/services/${id}/suspend?reason=${encodeURIComponent(reason)}`);
+    return await apiService.postRequest<ServiceResponse>(
+      `/api/services/${id}/suspend?reason=${encodeURIComponent(reason)}`
+    );
   }
 
   /**
    * Unsuspend a service (admin only)
    */
   async unsuspendService(id: number): Promise<ServiceResponse> {
-    return await apiService.postRequest<ServiceResponse>(`/api/services/${id}/unsuspend`);
+    return await apiService.postRequest<ServiceResponse>(
+      `/api/services/${id}/unsuspend`
+    );
   }
 
   // ==================== Utility Methods ====================
@@ -475,7 +621,7 @@ class ServiceService {
       return service.primaryImageUrl;
     }
     if (service.images && service.images.length > 0) {
-      const primary = service.images.find(img => img.isPrimary);
+      const primary = service.images.find((img) => img.isPrimary);
       return primary?.fullUrl || service.images[0]?.fullUrl;
     }
     return undefined;
@@ -490,29 +636,29 @@ class ServiceService {
     if (service.availabilityConfig && service.availabilityConfig.workingDays) {
       return service.availabilityConfig;
     }
-    
+
     // Fall back to default package availability config if available with workingDays
     if (service.defaultPackage?.availabilityConfig?.workingDays) {
       return service.defaultPackage.availabilityConfig;
     }
-    
+
     // If service has availabilityConfig without workingDays, still use it (may have other settings)
     if (service.availabilityConfig) {
       return service.availabilityConfig;
     }
-    
+
     // If default package has availabilityConfig without workingDays, use it
     if (service.defaultPackage?.availabilityConfig) {
       return service.defaultPackage.availabilityConfig;
     }
-    
+
     // Default fallback - all days available
     return {
       workingDays: [0, 1, 2, 3, 4, 5, 6],
       blackoutDates: [],
       advanceBookingDays: 30,
       maxBookingsPerDay: 3,
-      timeSlots: ['09:00', '14:00', '18:00'],
+      timeSlots: ["09:00", "14:00", "18:00"],
     };
   }
 
@@ -534,7 +680,7 @@ class ServiceService {
    * Get system-enforced cancellation policy text
    */
   getSystemCancellationPolicy(): string {
-    return 'Free cancellation up to 48 hours before service. 50% refund for cancellations 24-48 hours before. No refund for cancellations less than 24 hours before service.';
+    return "Free cancellation up to 48 hours before service. 50% refund for cancellations 24-48 hours before. No refund for cancellations less than 24 hours before service.";
   }
 
   /**
@@ -567,15 +713,15 @@ class ServiceService {
   /**
    * Format price for display using backend-provided major units.
    */
-  formatPrice(amount: number, currency: string = 'ETB'): string {
+  formatPrice(amount: number, currency: string = "ETB"): string {
     // Handle null or invalid currency
     let curr = currency;
-    if (!curr || curr === 'null' || curr.trim() === '') {
-      curr = 'USD';
+    if (!curr || curr === "null" || curr.trim() === "") {
+      curr = "USD";
     }
 
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
       currency: curr,
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,

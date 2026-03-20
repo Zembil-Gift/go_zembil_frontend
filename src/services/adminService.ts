@@ -1,4 +1,4 @@
-import { apiService } from './apiService';
+import { apiService } from "./apiService";
 
 export interface RevenueStats {
   todayRevenue: number;
@@ -113,6 +113,21 @@ export interface AdminUserDto {
   isActive: boolean;
 }
 
+export interface UpdateUserInfoRequest {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
+export interface UpdateVendorInfoRequest {
+  businessName?: string;
+  description?: string;
+  businessEmail?: string;
+  businessPhone?: string;
+  city?: string;
+}
+
 // Alias for backwards compatibility
 export type UserResponse = AdminUserDto;
 
@@ -167,7 +182,7 @@ export interface EventResponse {
   location: string;
   city: string;
   bannerImageUrl: string;
-  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
   rejectionReason?: string;
   isFeatured: boolean;
   isActive: boolean;
@@ -202,7 +217,7 @@ export interface EventPriceUpdateRequest {
   currentCustomerPriceMinor?: number;
   newCustomerPriceMinor?: number;
   reason: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: "PENDING" | "APPROVED" | "REJECTED";
   vendorId: number;
   vendorName?: string;
   rejectionReason?: string;
@@ -230,7 +245,7 @@ export interface CreateCategoryRequest {
   slug: string;
   description?: string;
   iconName?: string;
-  type: 'occasion' | 'cultural' | 'emotion' | 'custom' | 'daily';
+  type: "occasion" | "cultural" | "emotion" | "custom" | "daily";
   parentId?: number;
   sortOrder?: number;
 }
@@ -366,7 +381,7 @@ export interface ProductPriceDto {
 export interface ProductPriceUpdateRequestDto {
   id: number;
   productId: number;
-  entityName?: string;  // unified DTO field name used by backend
+  entityName?: string; // unified DTO field name used by backend
   productName?: string;
   productSkuId?: number;
   skuCode?: string;
@@ -377,7 +392,7 @@ export interface ProductPriceUpdateRequestDto {
   currentPrice?: ProductPriceDto;
   newPrice?: ProductPriceDto;
   reason: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: "PENDING" | "APPROVED" | "REJECTED";
   vendorId: number;
   vendorName?: string;
   rejectionReason?: string;
@@ -409,7 +424,7 @@ export interface ServicePriceUpdateRequestDto {
   currentPrice?: ServicePriceDto;
   newPrice?: ServicePriceDto;
   reason: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: "PENDING" | "APPROVED" | "REJECTED";
   vendorId: number;
   vendorName?: string;
   rejectionReason?: string;
@@ -433,7 +448,7 @@ export interface ServiceCategoryChangeRequestDto {
   newSubCategoryName?: string;
   newCategoryName?: string;
   reason?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: "PENDING" | "APPROVED" | "REJECTED";
   reviewedBy?: number;
   reviewedByName?: string;
   reviewedAt?: string;
@@ -444,10 +459,10 @@ export interface ServiceCategoryChangeRequestDto {
 
 export interface CategoryChangeRequestDto {
   id: number;
-  requestType?: 'PRICE_UPDATE' | 'CATEGORY_CHANGE';
+  requestType?: "PRICE_UPDATE" | "CATEGORY_CHANGE";
   productId: number;
-  entityName?: string;      // unified DTO field name used by backend
-  entityImageUrl?: string;  // unified DTO field name used by backend
+  entityName?: string; // unified DTO field name used by backend
+  entityImageUrl?: string; // unified DTO field name used by backend
   productName?: string;
   productCover?: string;
   vendorId: number;
@@ -459,7 +474,7 @@ export interface CategoryChangeRequestDto {
   newSubCategoryName?: string;
   newCategoryName?: string;
   reason?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: "PENDING" | "APPROVED" | "REJECTED";
   reviewedBy?: number;
   reviewedByName?: string;
   reviewedAt?: string;
@@ -523,7 +538,7 @@ export interface AdminOrderDto {
   shippingAddress?: AdminAddressDto;
   billingAddress?: AdminAddressDto;
   recipientName?: string;
-  recipientPhone?: string; 
+  recipientPhone?: string;
   giftMessage?: string;
   createdAt: string;
   updatedAt?: string;
@@ -573,50 +588,72 @@ class AdminService {
     const trimmedReason = reason?.trim();
 
     if (!trimmedReason) {
-      throw new Error('Rejection reason is required');
+      throw new Error("Rejection reason is required");
     }
 
     if (trimmedReason.length > this.MAX_REJECTION_REASON_LENGTH) {
-      throw new Error(`Rejection reason must be ${this.MAX_REJECTION_REASON_LENGTH} characters or fewer`);
+      throw new Error(
+        `Rejection reason must be ${this.MAX_REJECTION_REASON_LENGTH} characters or fewer`
+      );
     }
 
     return trimmedReason;
   }
-  
+
   async getDashboardStats(): Promise<AdminDashboardStats> {
-    return await apiService.getRequest<AdminDashboardStats>('/api/admin/dashboard/stats');
+    return await apiService.getRequest<AdminDashboardStats>(
+      "/api/admin/dashboard/stats"
+    );
   }
 
-  async getRevenueTrends(period: 'daily' | 'weekly' | 'monthly' = 'monthly'): Promise<RevenueTrendDto> {
-    return await apiService.getRequest<RevenueTrendDto>(`/api/admin/dashboard/revenue/trends?period=${period}`);
+  async getRevenueTrends(
+    period: "daily" | "weekly" | "monthly" = "monthly"
+  ): Promise<RevenueTrendDto> {
+    return await apiService.getRequest<RevenueTrendDto>(
+      `/api/admin/dashboard/revenue/trends?period=${period}`
+    );
   }
 
   async getRevenueStats(): Promise<RevenueStats> {
-    return await apiService.getRequest<RevenueStats>('/api/admin/dashboard/stats/revenue');
+    return await apiService.getRequest<RevenueStats>(
+      "/api/admin/dashboard/stats/revenue"
+    );
   }
 
   async getUserStats(): Promise<UserStats> {
-    return await apiService.getRequest<UserStats>('/api/admin/dashboard/stats/users');
+    return await apiService.getRequest<UserStats>(
+      "/api/admin/dashboard/stats/users"
+    );
   }
 
   async getVendorStats(): Promise<VendorStats> {
-    return await apiService.getRequest<VendorStats>('/api/admin/dashboard/stats/vendors');
+    return await apiService.getRequest<VendorStats>(
+      "/api/admin/dashboard/stats/vendors"
+    );
   }
 
   async getProductStats(): Promise<ProductStats> {
-    return await apiService.getRequest<ProductStats>('/api/admin/dashboard/stats/products');
+    return await apiService.getRequest<ProductStats>(
+      "/api/admin/dashboard/stats/products"
+    );
   }
 
   async getEventStats(): Promise<EventStats> {
-    return await apiService.getRequest<EventStats>('/api/admin/dashboard/stats/events');
+    return await apiService.getRequest<EventStats>(
+      "/api/admin/dashboard/stats/events"
+    );
   }
 
   async getOrderStatsOnly(): Promise<OrderStats> {
-    return await apiService.getRequest<OrderStats>('/api/admin/dashboard/stats/orders');
+    return await apiService.getRequest<OrderStats>(
+      "/api/admin/dashboard/stats/orders"
+    );
   }
 
   async getPendingApprovals(): Promise<PendingApprovals> {
-    return await apiService.getRequest<PendingApprovals>('/api/admin/dashboard/stats/pending');
+    return await apiService.getRequest<PendingApprovals>(
+      "/api/admin/dashboard/stats/pending"
+    );
   }
 
   async getStats(): Promise<AdminStats> {
@@ -625,7 +662,8 @@ class AdminService {
       return {
         totalUsers: stats.users.total,
         totalVendors: stats.vendors.total,
-        approvedVendors: stats.vendors.withStripeEnabled + stats.vendors.withChapaEnabled,
+        approvedVendors:
+          stats.vendors.withStripeEnabled + stats.vendors.withChapaEnabled,
         pendingVendors: 0,
         totalOrders: stats.orders.totalProductOrders,
         completedOrders: stats.orders.completedProductOrders,
@@ -634,7 +672,7 @@ class AdminService {
         pendingEvents: stats.events.pending,
       };
     } catch (error) {
-      console.error('Failed to fetch admin stats:', error);
+      console.error("Failed to fetch admin stats:", error);
       return {
         totalUsers: 0,
         totalVendors: 0,
@@ -649,8 +687,11 @@ class AdminService {
     }
   }
 
-  
-  async getUsers(page: number = 0, size: number = 20, search?: string): Promise<PaginatedResponse<AdminUserDto>> {
+  async getUsers(
+    page: number = 0,
+    size: number = 20,
+    search?: string
+  ): Promise<PaginatedResponse<AdminUserDto>> {
     let url = `/api/users?page=${page}&size=${size}`;
     if (search) {
       url += `&search=${encodeURIComponent(search)}`;
@@ -659,35 +700,81 @@ class AdminService {
   }
 
   async getUserById(userId: number): Promise<AdminUserDto> {
-    return await apiService.getRequest<AdminUserDto>(`/api/admin/users/${userId}`);
+    return await apiService.getRequest<AdminUserDto>(
+      `/api/admin/users/${userId}`
+    );
   }
 
-  async getUsersByRole(role: string, page: number = 0, size: number = 20): Promise<PaginatedResponse<AdminUserDto>> {
-    return await apiService.getRequest<PaginatedResponse<AdminUserDto>>(`/api/admin/users/role/${role}?page=${page}&size=${size}`);
+  async getUsersByRole(
+    role: string,
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<AdminUserDto>> {
+    return await apiService.getRequest<PaginatedResponse<AdminUserDto>>(
+      `/api/admin/users/role/${role}?page=${page}&size=${size}`
+    );
+  }
+
+  async updateUserInfo(
+    userId: number,
+    data: UpdateUserInfoRequest
+  ): Promise<AdminUserDto> {
+    return await apiService.putRequest<AdminUserDto>(
+      `/api/users/${userId}`,
+      data
+    );
+  }
+
+  async updateVendorInfoByUserId(
+    userId: number,
+    data: UpdateVendorInfoRequest
+  ): Promise<any> {
+    return await apiService.putRequest(
+      `/api/admin/vendors/users/${userId}`,
+      data
+    );
   }
 
   async updateUserRole(userId: number, role: string): Promise<AdminUserDto> {
-    return await apiService.patchRequest<AdminUserDto>(`/api/admin/users/${userId}/role?newRole=${role}`, {});
+    return await apiService.patchRequest<AdminUserDto>(
+      `/api/admin/users/${userId}/role?newRole=${role}`,
+      {}
+    );
   }
 
-  async toggleUserStatus(userId: number, isActive: boolean): Promise<AdminUserDto> {
-    return await apiService.putRequest<AdminUserDto>(`/api/admin/users/${userId}/status`, { isActive });
+  async toggleUserStatus(
+    userId: number,
+    isActive: boolean
+  ): Promise<AdminUserDto> {
+    return await apiService.putRequest<AdminUserDto>(
+      `/api/admin/users/${userId}/status`,
+      { isActive }
+    );
   }
 
   async deactivateUser(userId: number): Promise<void> {
-    return await apiService.postRequest<void>(`/api/users/${userId}/deactivate`, {});
+    return await apiService.postRequest<void>(
+      `/api/users/${userId}/deactivate`,
+      {}
+    );
   }
 
   async reactivateUser(userId: number): Promise<void> {
-    return await apiService.postRequest<void>(`/api/users/${userId}/reactivate`, {});
+    return await apiService.postRequest<void>(
+      `/api/users/${userId}/reactivate`,
+      {}
+    );
   }
 
   async deleteUser(userId: number): Promise<void> {
     return await apiService.deleteRequest<void>(`/api/users/${userId}`);
   }
 
-  
-  async getVendors(page: number = 0, size: number = 20, search?: string): Promise<PaginatedResponse<VendorResponse>> {
+  async getVendors(
+    page: number = 0,
+    size: number = 20,
+    search?: string
+  ): Promise<PaginatedResponse<VendorResponse>> {
     let url = `/api/admin/vendors?page=${page}&size=${size}`;
     if (search) {
       url += `&search=${encodeURIComponent(search)}`;
@@ -696,20 +783,40 @@ class AdminService {
   }
 
   async getVendorById(vendorId: number): Promise<VendorResponse> {
-    return await apiService.getRequest<VendorResponse>(`/api/admin/vendors/${vendorId}`);
+    return await apiService.getRequest<VendorResponse>(
+      `/api/admin/vendors/${vendorId}`
+    );
+  }
+
+  async getVendorByUserId(userId: number): Promise<any> {
+    return await apiService.getRequest(`/api/admin/vendors/users/${userId}`);
   }
 
   async approveVendor(vendorId: number): Promise<VendorResponse> {
-    return await apiService.postRequest<VendorResponse>(`/api/admin/vendors/${vendorId}/approve`, {});
+    return await apiService.postRequest<VendorResponse>(
+      `/api/admin/vendors/${vendorId}/approve`,
+      {}
+    );
   }
 
-  async declineVendor(vendorId: number, request: DeclineVendorRequest): Promise<void> {
-    return await apiService.postRequest<void>(`/api/admin/vendors/${vendorId}/decline`, request);
+  async declineVendor(
+    vendorId: number,
+    request: DeclineVendorRequest
+  ): Promise<void> {
+    return await apiService.postRequest<void>(
+      `/api/admin/vendors/${vendorId}/decline`,
+      request
+    );
   }
 
-  async getOrders(page: number = 0, size: number = 20, status?: string, search?: string): Promise<PaginatedResponse<AdminOrderDto>> {
+  async getOrders(
+    page: number = 0,
+    size: number = 20,
+    status?: string,
+    search?: string
+  ): Promise<PaginatedResponse<AdminOrderDto>> {
     let url = `/api/admin/orders?page=${page}&size=${size}`;
-    if (status && status !== 'all') {
+    if (status && status !== "all") {
       url += `&status=${status}`;
     }
     if (search) {
@@ -719,19 +826,35 @@ class AdminService {
   }
 
   async getOrderById(orderId: number): Promise<AdminOrderDto> {
-    return await apiService.getRequest<AdminOrderDto>(`/api/admin/orders/${orderId}`);
+    return await apiService.getRequest<AdminOrderDto>(
+      `/api/admin/orders/${orderId}`
+    );
   }
 
   async getOrderByNumber(orderNumber: string): Promise<AdminOrderDto> {
-    return await apiService.getRequest<AdminOrderDto>(`/api/admin/orders/number/${orderNumber}`);
+    return await apiService.getRequest<AdminOrderDto>(
+      `/api/admin/orders/number/${orderNumber}`
+    );
   }
 
-  async getOrdersByStatus(status: string, page: number = 0, size: number = 20): Promise<PaginatedResponse<AdminOrderDto>> {
-    return await apiService.getRequest<PaginatedResponse<AdminOrderDto>>(`/api/admin/orders/status/${status}?page=${page}&size=${size}`);
+  async getOrdersByStatus(
+    status: string,
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<AdminOrderDto>> {
+    return await apiService.getRequest<PaginatedResponse<AdminOrderDto>>(
+      `/api/admin/orders/status/${status}?page=${page}&size=${size}`
+    );
   }
 
-  async updateOrderStatus(orderId: number, status: string): Promise<AdminOrderDto> {
-    return await apiService.patchRequest<AdminOrderDto>(`/api/admin/orders/${orderId}/status`, { status });
+  async updateOrderStatus(
+    orderId: number,
+    status: string
+  ): Promise<AdminOrderDto> {
+    return await apiService.patchRequest<AdminOrderDto>(
+      `/api/admin/orders/${orderId}/status`,
+      { status }
+    );
   }
 
   async cancelOrder(orderId: number, reason?: string): Promise<AdminOrderDto> {
@@ -742,8 +865,10 @@ class AdminService {
     return await apiService.postRequest<AdminOrderDto>(url, {});
   }
 
-
-  async getOrdersPendingDeliveryConfirmation(page: number = 0, size: number = 20): Promise<PaginatedResponse<AdminOrderDto>> {
+  async getOrdersPendingDeliveryConfirmation(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<AdminOrderDto>> {
     return await apiService.getRequest<PaginatedResponse<AdminOrderDto>>(
       `/api/admin/orders/pending-delivery-confirmation?page=${page}&size=${size}`
     );
@@ -756,62 +881,105 @@ class AdminService {
     );
   }
 
-  async rejectOrderDeliveryConfirmation(orderId: number, reason: string): Promise<AdminOrderDto> {
+  async rejectOrderDeliveryConfirmation(
+    orderId: number,
+    reason: string
+  ): Promise<AdminOrderDto> {
     return await apiService.postRequest<AdminOrderDto>(
-      `/api/admin/orders/${orderId}/reject-delivery-confirmation?reason=${encodeURIComponent(reason)}`,
+      `/api/admin/orders/${orderId}/reject-delivery-confirmation?reason=${encodeURIComponent(
+        reason
+      )}`,
       {}
     );
   }
 
   // Custom Order Delivery Confirmation
-  async getCustomOrdersPendingDeliveryConfirmation(page: number = 0, size: number = 20): Promise<PaginatedResponse<AdminOrderDto>> {
+  async getCustomOrdersPendingDeliveryConfirmation(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<AdminOrderDto>> {
     return await apiService.getRequest<PaginatedResponse<AdminOrderDto>>(
       `/api/admin/orders/custom-orders/pending-delivery-confirmation?page=${page}&size=${size}`
     );
   }
 
-  async confirmCustomOrderDelivery(customOrderId: number): Promise<AdminOrderDto> {
+  async confirmCustomOrderDelivery(
+    customOrderId: number
+  ): Promise<AdminOrderDto> {
     return await apiService.postRequest<AdminOrderDto>(
       `/api/admin/orders/custom-orders/${customOrderId}/confirm-delivery`,
       {}
     );
   }
 
-  async rejectCustomOrderDeliveryConfirmation(customOrderId: number, reason: string): Promise<AdminOrderDto> {
+  async rejectCustomOrderDeliveryConfirmation(
+    customOrderId: number,
+    reason: string
+  ): Promise<AdminOrderDto> {
     return await apiService.postRequest<AdminOrderDto>(
-      `/api/admin/orders/custom-orders/${customOrderId}/reject-delivery-confirmation?reason=${encodeURIComponent(reason)}`,
+      `/api/admin/orders/custom-orders/${customOrderId}/reject-delivery-confirmation?reason=${encodeURIComponent(
+        reason
+      )}`,
       {}
     );
   }
 
-  async getEventOrders(page: number = 0, size: number = 20, status?: string, search?: string): Promise<PaginatedResponse<AdminEventOrderDto>> {
+  async getEventOrders(
+    page: number = 0,
+    size: number = 20,
+    status?: string,
+    search?: string
+  ): Promise<PaginatedResponse<AdminEventOrderDto>> {
     let url = `/api/admin/event-orders?page=${page}&size=${size}`;
-    if (status && status !== 'all') {
+    if (status && status !== "all") {
       url += `&status=${status}`;
     }
     if (search) {
       url += `&search=${encodeURIComponent(search)}`;
     }
-    return await apiService.getRequest<PaginatedResponse<AdminEventOrderDto>>(url);
+    return await apiService.getRequest<PaginatedResponse<AdminEventOrderDto>>(
+      url
+    );
   }
 
   async getEventOrderById(orderId: number): Promise<AdminEventOrderDto> {
-    return await apiService.getRequest<AdminEventOrderDto>(`/api/admin/event-orders/${orderId}`);
+    return await apiService.getRequest<AdminEventOrderDto>(
+      `/api/admin/event-orders/${orderId}`
+    );
   }
 
-  async getEventOrderByNumber(orderNumber: string): Promise<AdminEventOrderDto> {
-    return await apiService.getRequest<AdminEventOrderDto>(`/api/admin/event-orders/number/${orderNumber}`);
+  async getEventOrderByNumber(
+    orderNumber: string
+  ): Promise<AdminEventOrderDto> {
+    return await apiService.getRequest<AdminEventOrderDto>(
+      `/api/admin/event-orders/number/${orderNumber}`
+    );
   }
 
-  async getEventOrdersByStatus(status: string, page: number = 0, size: number = 20): Promise<PaginatedResponse<AdminEventOrderDto>> {
-    return await apiService.getRequest<PaginatedResponse<AdminEventOrderDto>>(`/api/admin/event-orders/status/${status}?page=${page}&size=${size}`);
+  async getEventOrdersByStatus(
+    status: string,
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<AdminEventOrderDto>> {
+    return await apiService.getRequest<PaginatedResponse<AdminEventOrderDto>>(
+      `/api/admin/event-orders/status/${status}?page=${page}&size=${size}`
+    );
   }
 
-  async getEventOrdersByEvent(eventId: number, page: number = 0, size: number = 20): Promise<PaginatedResponse<AdminEventOrderDto>> {
-    return await apiService.getRequest<PaginatedResponse<AdminEventOrderDto>>(`/api/admin/event-orders/event/${eventId}?page=${page}&size=${size}`);
+  async getEventOrdersByEvent(
+    eventId: number,
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<AdminEventOrderDto>> {
+    return await apiService.getRequest<PaginatedResponse<AdminEventOrderDto>>(
+      `/api/admin/event-orders/event/${eventId}?page=${page}&size=${size}`
+    );
   }
 
-  async cancelEventOrder(orderId: number, reason?: string): Promise<AdminEventOrderDto> {
+  async cancelEventOrder(
+    orderId: number,
+    reason?: string
+  ): Promise<AdminEventOrderDto> {
     let url = `/api/admin/event-orders/${orderId}/cancel`;
     if (reason) {
       url += `?reason=${encodeURIComponent(reason)}`;
@@ -819,147 +987,254 @@ class AdminService {
     return await apiService.postRequest<AdminEventOrderDto>(url, {});
   }
 
-  
-  async getAllEvents(page: number = 0, size: number = 20, status?: string): Promise<PaginatedResponse<EventResponse>> {
+  async getAllEvents(
+    page: number = 0,
+    size: number = 20,
+    status?: string
+  ): Promise<PaginatedResponse<EventResponse>> {
     let url = `/api/admin/events?page=${page}&size=${size}`;
     if (status) {
       url += `&status=${status}`;
     }
     return await apiService.getRequest<PaginatedResponse<EventResponse>>(url);
   }
-  
-  async getPendingEvents(page: number = 0, size: number = 20): Promise<PaginatedResponse<EventResponse>> {
-    return await apiService.getRequest<PaginatedResponse<EventResponse>>(`/api/admin/events/pending?page=${page}&size=${size}`);
+
+  async getPendingEvents(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<EventResponse>> {
+    return await apiService.getRequest<PaginatedResponse<EventResponse>>(
+      `/api/admin/events/pending?page=${page}&size=${size}`
+    );
   }
 
   async approveEvent(eventId: number): Promise<EventResponse> {
-    return await apiService.postRequest<EventResponse>(`/api/admin/events/${eventId}/approve`, {});
+    return await apiService.postRequest<EventResponse>(
+      `/api/admin/events/${eventId}/approve`,
+      {}
+    );
   }
 
   async rejectEvent(eventId: number, reason: string): Promise<EventResponse> {
     const normalizedReason = this.normalizeRejectionReason(reason);
-    return await apiService.postRequest<EventResponse>(`/api/admin/events/${eventId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
+    return await apiService.postRequest<EventResponse>(
+      `/api/admin/events/${eventId}/reject?reason=${encodeURIComponent(
+        normalizedReason
+      )}`,
+      {}
+    );
   }
 
-  async setEventFeatured(eventId: number, featured: boolean): Promise<EventResponse> {
-    return await apiService.postRequest<EventResponse>(`/api/admin/events/${eventId}/featured?featured=${featured}`, {});
+  async setEventFeatured(
+    eventId: number,
+    featured: boolean
+  ): Promise<EventResponse> {
+    return await apiService.postRequest<EventResponse>(
+      `/api/admin/events/${eventId}/featured?featured=${featured}`,
+      {}
+    );
   }
 
   async setEventAd(eventId: number, isAd: boolean): Promise<EventResponse> {
-    return await apiService.postRequest<EventResponse>(`/api/admin/events/${eventId}/ad?isAd=${isAd}`, {});
+    return await apiService.postRequest<EventResponse>(
+      `/api/admin/events/${eventId}/ad?isAd=${isAd}`,
+      {}
+    );
   }
 
-  async getPriceUpdateRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<EventPriceUpdateRequest>> {
+  async getPriceUpdateRequests(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<EventPriceUpdateRequest>> {
     let url = `/api/admin/vendor-change-requests/entity-type/EVENT?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
-    return await apiService.getRequest<PaginatedResponse<EventPriceUpdateRequest>>(url);
+    return await apiService.getRequest<
+      PaginatedResponse<EventPriceUpdateRequest>
+    >(url);
   }
 
-  async approvePriceUpdate(requestId: number): Promise<EventPriceUpdateRequest> {
-    return await apiService.postRequest<EventPriceUpdateRequest>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
+  async approvePriceUpdate(
+    requestId: number
+  ): Promise<EventPriceUpdateRequest> {
+    return await apiService.postRequest<EventPriceUpdateRequest>(
+      `/api/admin/vendor-change-requests/${requestId}/approve`,
+      {}
+    );
   }
 
-  async rejectPriceUpdate(requestId: number, reason: string): Promise<EventPriceUpdateRequest> {
+  async rejectPriceUpdate(
+    requestId: number,
+    reason: string
+  ): Promise<EventPriceUpdateRequest> {
     const normalizedReason = this.normalizeRejectionReason(reason);
-    return await apiService.postRequest<EventPriceUpdateRequest>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
+    return await apiService.postRequest<EventPriceUpdateRequest>(
+      `/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(
+        normalizedReason
+      )}`,
+      {}
+    );
   }
 
-  
-  async getAllProducts(page: number = 0, size: number = 20, status?: string, search?: string): Promise<PaginatedResponse<any>> {
+  async getAllProducts(
+    page: number = 0,
+    size: number = 20,
+    status?: string,
+    search?: string
+  ): Promise<PaginatedResponse<any>> {
     const params = new URLSearchParams();
-    params.append('page', page.toString());
-    params.append('size', size.toString());
+    params.append("page", page.toString());
+    params.append("size", size.toString());
     if (status) {
-      params.append('status', status);
+      params.append("status", status);
     }
     if (search) {
-      params.append('search', search);
+      params.append("search", search);
     }
-    return await apiService.getRequest<PaginatedResponse<any>>(`/api/admin/products?${params.toString()}`);
+    return await apiService.getRequest<PaginatedResponse<any>>(
+      `/api/admin/products?${params.toString()}`
+    );
   }
-  
-  async getPendingProducts(page: number = 0, size: number = 20): Promise<PaginatedResponse<any>> {
-    return await apiService.getRequest<PaginatedResponse<any>>(`/api/v1/products/pending?page=${page}&size=${size}`);
+
+  async getPendingProducts(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<any>> {
+    return await apiService.getRequest<PaginatedResponse<any>>(
+      `/api/v1/products/pending?page=${page}&size=${size}`
+    );
   }
 
   async approveProduct(productId: number): Promise<any> {
-    return await apiService.putRequest<any>(`/api/v1/products/${productId}/approve`, {});
+    return await apiService.putRequest<any>(
+      `/api/v1/products/${productId}/approve`,
+      {}
+    );
   }
 
   async rejectProduct(productId: number, reason: string): Promise<any> {
     const normalizedReason = this.normalizeRejectionReason(reason);
-    return await apiService.putRequest<any>(`/api/v1/products/${productId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
+    return await apiService.putRequest<any>(
+      `/api/v1/products/${productId}/reject?reason=${encodeURIComponent(
+        normalizedReason
+      )}`,
+      {}
+    );
   }
 
   async setSkuFeatured(skuId: number, featured: boolean): Promise<any> {
-    return await apiService.patchRequest<any>(`/api/admin/products/skus/${skuId}/featured?featured=${featured}`, {});
+    return await apiService.patchRequest<any>(
+      `/api/admin/products/skus/${skuId}/featured?featured=${featured}`,
+      {}
+    );
   }
 
   async setSkuAd(skuId: number, isAd: boolean): Promise<any> {
-    return await apiService.patchRequest<any>(`/api/admin/products/skus/${skuId}/ad?isAd=${isAd}`, {});
+    return await apiService.patchRequest<any>(
+      `/api/admin/products/skus/${skuId}/ad?isAd=${isAd}`,
+      {}
+    );
   }
 
-
-  async setServicePackageFeatured(packageId: number, featured: boolean): Promise<any> {
-    return await apiService.patchRequest<any>(`/api/admin/service-packages/${packageId}/featured?featured=${featured}`, {});
+  async setServicePackageFeatured(
+    packageId: number,
+    featured: boolean
+  ): Promise<any> {
+    return await apiService.patchRequest<any>(
+      `/api/admin/service-packages/${packageId}/featured?featured=${featured}`,
+      {}
+    );
   }
 
   async setServicePackageAd(packageId: number, isAd: boolean): Promise<any> {
-    return await apiService.patchRequest<any>(`/api/admin/service-packages/${packageId}/ad?isAd=${isAd}`, {});
+    return await apiService.patchRequest<any>(
+      `/api/admin/service-packages/${packageId}/ad?isAd=${isAd}`,
+      {}
+    );
   }
 
-  
   async getCategories(): Promise<CategoryResponse[]> {
-    return await apiService.getRequest<CategoryResponse[]>('/api/categories');
+    return await apiService.getRequest<CategoryResponse[]>("/api/categories");
   }
 
   async createCategory(data: CreateCategoryRequest): Promise<CategoryResponse> {
-    return await apiService.postRequest<CategoryResponse>('/api/categories', data);
+    return await apiService.postRequest<CategoryResponse>(
+      "/api/categories",
+      data
+    );
   }
 
-  async updateCategory(categoryId: number, data: Partial<CreateCategoryRequest>): Promise<CategoryResponse> {
-    return await apiService.putRequest<CategoryResponse>(`/api/categories/${categoryId}`, data);
+  async updateCategory(
+    categoryId: number,
+    data: Partial<CreateCategoryRequest>
+  ): Promise<CategoryResponse> {
+    return await apiService.putRequest<CategoryResponse>(
+      `/api/categories/${categoryId}`,
+      data
+    );
   }
 
   async deleteCategory(categoryId: number): Promise<void> {
     return await apiService.deleteRequest(`/api/categories/${categoryId}`);
   }
 
-  
   async getSubCategories(categoryId: number): Promise<SubCategoryResponse[]> {
-    return await apiService.getRequest<SubCategoryResponse[]>(`/api/categories/${categoryId}/sub-categories`);
+    return await apiService.getRequest<SubCategoryResponse[]>(
+      `/api/categories/${categoryId}/sub-categories`
+    );
   }
 
-  async createSubCategory(categoryId: number, data: CreateSubCategoryRequest): Promise<SubCategoryResponse> {
-    return await apiService.postRequest<SubCategoryResponse>(`/api/categories/${categoryId}/sub-categories`, data);
+  async createSubCategory(
+    categoryId: number,
+    data: CreateSubCategoryRequest
+  ): Promise<SubCategoryResponse> {
+    return await apiService.postRequest<SubCategoryResponse>(
+      `/api/categories/${categoryId}/sub-categories`,
+      data
+    );
   }
 
-  async updateSubCategory(subCategoryId: number, data: Partial<CreateSubCategoryRequest>): Promise<SubCategoryResponse> {
-    return await apiService.putRequest<SubCategoryResponse>(`/api/categories/sub-categories/${subCategoryId}`, data);
+  async updateSubCategory(
+    subCategoryId: number,
+    data: Partial<CreateSubCategoryRequest>
+  ): Promise<SubCategoryResponse> {
+    return await apiService.putRequest<SubCategoryResponse>(
+      `/api/categories/sub-categories/${subCategoryId}`,
+      data
+    );
   }
 
   async deleteSubCategory(subCategoryId: number): Promise<void> {
-    return await apiService.deleteRequest(`/api/categories/sub-categories/${subCategoryId}`);
+    return await apiService.deleteRequest(
+      `/api/categories/sub-categories/${subCategoryId}`
+    );
   }
 
   async getTaxZones(country?: string, active?: boolean): Promise<TaxZoneDto[]> {
-    let url = '/api/admin/tax/zones';
+    let url = "/api/admin/tax/zones";
     const params = new URLSearchParams();
-    if (country) params.append('country', country);
-    if (active !== undefined) params.append('active', String(active));
+    if (country) params.append("country", country);
+    if (active !== undefined) params.append("active", String(active));
     if (params.toString()) url += `?${params.toString()}`;
     return await apiService.getRequest<TaxZoneDto[]>(url);
   }
 
   async getTaxZoneById(id: number): Promise<TaxZoneDto> {
-    return await apiService.getRequest<TaxZoneDto>(`/api/admin/tax/zones/${id}`);
+    return await apiService.getRequest<TaxZoneDto>(
+      `/api/admin/tax/zones/${id}`
+    );
   }
 
   async createTaxZone(data: TaxZoneRequest): Promise<TaxZoneDto> {
-    return await apiService.postRequest<TaxZoneDto>('/api/admin/tax/zones', data);
+    return await apiService.postRequest<TaxZoneDto>(
+      "/api/admin/tax/zones",
+      data
+    );
   }
 
   async updateTaxZone(id: number, data: TaxZoneRequest): Promise<TaxZoneDto> {
-    return await apiService.putRequest<TaxZoneDto>(`/api/admin/tax/zones/${id}`, data);
+    return await apiService.putRequest<TaxZoneDto>(
+      `/api/admin/tax/zones/${id}`,
+      data
+    );
   }
 
   async deleteTaxZone(id: number): Promise<void> {
@@ -967,21 +1242,32 @@ class AdminService {
   }
 
   async getTaxCategories(active?: boolean): Promise<TaxCategoryDto[]> {
-    let url = '/api/admin/tax/categories';
+    let url = "/api/admin/tax/categories";
     if (active !== undefined) url += `?active=${active}`;
     return await apiService.getRequest<TaxCategoryDto[]>(url);
   }
 
   async getTaxCategoryById(id: number): Promise<TaxCategoryDto> {
-    return await apiService.getRequest<TaxCategoryDto>(`/api/admin/tax/categories/${id}`);
+    return await apiService.getRequest<TaxCategoryDto>(
+      `/api/admin/tax/categories/${id}`
+    );
   }
 
   async createTaxCategory(data: TaxCategoryRequest): Promise<TaxCategoryDto> {
-    return await apiService.postRequest<TaxCategoryDto>('/api/admin/tax/categories', data);
+    return await apiService.postRequest<TaxCategoryDto>(
+      "/api/admin/tax/categories",
+      data
+    );
   }
 
-  async updateTaxCategory(id: number, data: TaxCategoryRequest): Promise<TaxCategoryDto> {
-    return await apiService.putRequest<TaxCategoryDto>(`/api/admin/tax/categories/${id}`, data);
+  async updateTaxCategory(
+    id: number,
+    data: TaxCategoryRequest
+  ): Promise<TaxCategoryDto> {
+    return await apiService.putRequest<TaxCategoryDto>(
+      `/api/admin/tax/categories/${id}`,
+      data
+    );
   }
 
   async deleteTaxCategory(id: number): Promise<void> {
@@ -989,27 +1275,39 @@ class AdminService {
   }
 
   // ==================== TAX RATE MANAGEMENT ====================
-  
-  async getTaxRates(taxZoneId?: number, taxCategoryId?: number, active?: boolean): Promise<TaxRateDto[]> {
-    let url = '/api/admin/tax/rates';
+
+  async getTaxRates(
+    taxZoneId?: number,
+    taxCategoryId?: number,
+    active?: boolean
+  ): Promise<TaxRateDto[]> {
+    let url = "/api/admin/tax/rates";
     const params = new URLSearchParams();
-    if (taxZoneId) params.append('taxZoneId', String(taxZoneId));
-    if (taxCategoryId) params.append('taxCategoryId', String(taxCategoryId));
-    if (active !== undefined) params.append('active', String(active));
+    if (taxZoneId) params.append("taxZoneId", String(taxZoneId));
+    if (taxCategoryId) params.append("taxCategoryId", String(taxCategoryId));
+    if (active !== undefined) params.append("active", String(active));
     if (params.toString()) url += `?${params.toString()}`;
     return await apiService.getRequest<TaxRateDto[]>(url);
   }
 
   async getTaxRateById(id: number): Promise<TaxRateDto> {
-    return await apiService.getRequest<TaxRateDto>(`/api/admin/tax/rates/${id}`);
+    return await apiService.getRequest<TaxRateDto>(
+      `/api/admin/tax/rates/${id}`
+    );
   }
 
   async createTaxRate(data: TaxRateRequest): Promise<TaxRateDto> {
-    return await apiService.postRequest<TaxRateDto>('/api/admin/tax/rates', data);
+    return await apiService.postRequest<TaxRateDto>(
+      "/api/admin/tax/rates",
+      data
+    );
   }
 
   async updateTaxRate(id: number, data: TaxRateRequest): Promise<TaxRateDto> {
-    return await apiService.putRequest<TaxRateDto>(`/api/admin/tax/rates/${id}`, data);
+    return await apiService.putRequest<TaxRateDto>(
+      `/api/admin/tax/rates/${id}`,
+      data
+    );
   }
 
   async deleteTaxRate(id: number): Promise<void> {
@@ -1017,27 +1315,38 @@ class AdminService {
   }
 
   async getAllCurrencies(): Promise<CurrencyDto[]> {
-    return await apiService.getRequest<CurrencyDto[]>('/api/currencies/all');
+    return await apiService.getRequest<CurrencyDto[]>("/api/currencies/all");
   }
 
   async getActiveCurrencies(): Promise<CurrencyDto[]> {
-    return await apiService.getRequest<CurrencyDto[]>('/api/currencies');
+    return await apiService.getRequest<CurrencyDto[]>("/api/currencies");
   }
 
   async getCurrencyByCode(code: string): Promise<CurrencyDto> {
     return await apiService.getRequest<CurrencyDto>(`/api/currencies/${code}`);
   }
 
-  async saveCurrency(data: Omit<CurrencyDto, 'createdAt' | 'updatedAt'>): Promise<CurrencyDto> {
-    return await apiService.postRequest<CurrencyDto>('/api/currencies', data);
+  async saveCurrency(
+    data: Omit<CurrencyDto, "createdAt" | "updatedAt">
+  ): Promise<CurrencyDto> {
+    return await apiService.postRequest<CurrencyDto>("/api/currencies", data);
   }
 
-  async updateCurrencyStatus(code: string, isActive: boolean): Promise<CurrencyDto> {
-    return await apiService.putRequest<CurrencyDto>(`/api/currencies/${code}/status?isActive=${isActive}`, {});
+  async updateCurrencyStatus(
+    code: string,
+    isActive: boolean
+  ): Promise<CurrencyDto> {
+    return await apiService.putRequest<CurrencyDto>(
+      `/api/currencies/${code}/status?isActive=${isActive}`,
+      {}
+    );
   }
 
   async setDefaultCurrency(code: string): Promise<CurrencyDto> {
-    return await apiService.putRequest<CurrencyDto>(`/api/currencies/${code}/set-default`, {});
+    return await apiService.putRequest<CurrencyDto>(
+      `/api/currencies/${code}/set-default`,
+      {}
+    );
   }
 
   async deleteCurrency(code: string): Promise<void> {
@@ -1045,143 +1354,306 @@ class AdminService {
   }
 
   async getExchangeRates(): Promise<CurrencyRateDto[]> {
-    return await apiService.getRequest<CurrencyRateDto[]>('/api/currencies/rates');
+    return await apiService.getRequest<CurrencyRateDto[]>(
+      "/api/currencies/rates"
+    );
   }
 
-  async saveExchangeRate(data: { baseCurrencyCode: string; targetCurrencyCode: string; rate: number }): Promise<CurrencyRateDto> {
-    return await apiService.postRequest<CurrencyRateDto>('/api/currencies/rates', data);
+  async saveExchangeRate(data: {
+    baseCurrencyCode: string;
+    targetCurrencyCode: string;
+    rate: number;
+  }): Promise<CurrencyRateDto> {
+    return await apiService.postRequest<CurrencyRateDto>(
+      "/api/currencies/rates",
+      data
+    );
   }
 
   async deleteExchangeRate(from: string, to: string): Promise<void> {
-    return await apiService.deleteRequest(`/api/currencies/rates/${from}/${to}`);
+    return await apiService.deleteRequest(
+      `/api/currencies/rates/${from}/${to}`
+    );
   }
 
-  async getProductPriceUpdateRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<ProductPriceUpdateRequestDto>> {
+  async getProductPriceUpdateRequests(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<ProductPriceUpdateRequestDto>> {
     let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
-    return await apiService.getRequest<PaginatedResponse<ProductPriceUpdateRequestDto>>(url);
+    return await apiService.getRequest<
+      PaginatedResponse<ProductPriceUpdateRequestDto>
+    >(url);
   }
 
-  async getProductPriceUpdateRequestById(requestId: number): Promise<ProductPriceUpdateRequestDto> {
-    return await apiService.getRequest<ProductPriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}`);
+  async getProductPriceUpdateRequestById(
+    requestId: number
+  ): Promise<ProductPriceUpdateRequestDto> {
+    return await apiService.getRequest<ProductPriceUpdateRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}`
+    );
   }
 
-  async approveProductPriceUpdate(requestId: number): Promise<ProductPriceUpdateRequestDto> {
-    return await apiService.postRequest<ProductPriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
+  async approveProductPriceUpdate(
+    requestId: number
+  ): Promise<ProductPriceUpdateRequestDto> {
+    return await apiService.postRequest<ProductPriceUpdateRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}/approve`,
+      {}
+    );
   }
 
-  async rejectProductPriceUpdate(requestId: number, reason: string): Promise<ProductPriceUpdateRequestDto> {
+  async rejectProductPriceUpdate(
+    requestId: number,
+    reason: string
+  ): Promise<ProductPriceUpdateRequestDto> {
     const normalizedReason = this.normalizeRejectionReason(reason);
-    return await apiService.postRequest<ProductPriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
+    return await apiService.postRequest<ProductPriceUpdateRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(
+        normalizedReason
+      )}`,
+      {}
+    );
   }
 
-  async getServicePriceUpdateRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<ServicePriceUpdateRequestDto>> {
+  async getServicePriceUpdateRequests(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<ServicePriceUpdateRequestDto>> {
     let url = `/api/admin/vendor-change-requests/entity-type/SERVICE_PACKAGE?requestType=PRICE_UPDATE&page=${page}&size=${size}`;
-    return await apiService.getRequest<PaginatedResponse<ServicePriceUpdateRequestDto>>(url);
+    return await apiService.getRequest<
+      PaginatedResponse<ServicePriceUpdateRequestDto>
+    >(url);
   }
 
-  async getServicePriceUpdateRequestById(requestId: number): Promise<ServicePriceUpdateRequestDto> {
-    return await apiService.getRequest<ServicePriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}`);
+  async getServicePriceUpdateRequestById(
+    requestId: number
+  ): Promise<ServicePriceUpdateRequestDto> {
+    return await apiService.getRequest<ServicePriceUpdateRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}`
+    );
   }
 
-  async approveServicePriceUpdate(requestId: number): Promise<ServicePriceUpdateRequestDto> {
-    return await apiService.postRequest<ServicePriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
+  async approveServicePriceUpdate(
+    requestId: number
+  ): Promise<ServicePriceUpdateRequestDto> {
+    return await apiService.postRequest<ServicePriceUpdateRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}/approve`,
+      {}
+    );
   }
 
-  async rejectServicePriceUpdate(requestId: number, reason: string): Promise<ServicePriceUpdateRequestDto> {
+  async rejectServicePriceUpdate(
+    requestId: number,
+    reason: string
+  ): Promise<ServicePriceUpdateRequestDto> {
     const normalizedReason = this.normalizeRejectionReason(reason);
-    return await apiService.postRequest<ServicePriceUpdateRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
+    return await apiService.postRequest<ServicePriceUpdateRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(
+        normalizedReason
+      )}`,
+      {}
+    );
   }
 
-  async getServiceCategoryChangeRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<ServiceCategoryChangeRequestDto>> {
-    return await apiService.getRequest<PaginatedResponse<ServiceCategoryChangeRequestDto>>(`/api/admin/vendor-change-requests/entity-type/SERVICE?requestType=CATEGORY_CHANGE&page=${page}&size=${size}`);
+  async getServiceCategoryChangeRequests(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<ServiceCategoryChangeRequestDto>> {
+    return await apiService.getRequest<
+      PaginatedResponse<ServiceCategoryChangeRequestDto>
+    >(
+      `/api/admin/vendor-change-requests/entity-type/SERVICE?requestType=CATEGORY_CHANGE&page=${page}&size=${size}`
+    );
   }
 
-  async getServiceCategoryChangeRequestsByStatus(status: string, page: number = 0, size: number = 20): Promise<PaginatedResponse<ServiceCategoryChangeRequestDto>> {
-    return await apiService.getRequest<PaginatedResponse<ServiceCategoryChangeRequestDto>>(`/api/admin/vendor-change-requests/status/${status}?requestType=CATEGORY_CHANGE&page=${page}&size=${size}`);
+  async getServiceCategoryChangeRequestsByStatus(
+    status: string,
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<ServiceCategoryChangeRequestDto>> {
+    return await apiService.getRequest<
+      PaginatedResponse<ServiceCategoryChangeRequestDto>
+    >(
+      `/api/admin/vendor-change-requests/status/${status}?requestType=CATEGORY_CHANGE&page=${page}&size=${size}`
+    );
   }
 
-  async getServiceCategoryChangeRequestById(requestId: number): Promise<ServiceCategoryChangeRequestDto> {
-    return await apiService.getRequest<ServiceCategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}`);
+  async getServiceCategoryChangeRequestById(
+    requestId: number
+  ): Promise<ServiceCategoryChangeRequestDto> {
+    return await apiService.getRequest<ServiceCategoryChangeRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}`
+    );
   }
 
-  async approveServiceCategoryChange(requestId: number): Promise<ServiceCategoryChangeRequestDto> {
-    return await apiService.postRequest<ServiceCategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
+  async approveServiceCategoryChange(
+    requestId: number
+  ): Promise<ServiceCategoryChangeRequestDto> {
+    return await apiService.postRequest<ServiceCategoryChangeRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}/approve`,
+      {}
+    );
   }
 
-  async rejectServiceCategoryChange(requestId: number, reason: string): Promise<ServiceCategoryChangeRequestDto> {
+  async rejectServiceCategoryChange(
+    requestId: number,
+    reason: string
+  ): Promise<ServiceCategoryChangeRequestDto> {
     const normalizedReason = this.normalizeRejectionReason(reason);
-    return await apiService.postRequest<ServiceCategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
+    return await apiService.postRequest<ServiceCategoryChangeRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(
+        normalizedReason
+      )}`,
+      {}
+    );
   }
 
-  async getCategoryChangeRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<CategoryChangeRequestDto>> {
+  async getCategoryChangeRequests(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<CategoryChangeRequestDto>> {
     let url = `/api/admin/vendor-change-requests/entity-type/PRODUCT?requestType=CATEGORY_CHANGE&page=${page}&size=${size}`;
-    return await apiService.getRequest<PaginatedResponse<CategoryChangeRequestDto>>(url);
+    return await apiService.getRequest<
+      PaginatedResponse<CategoryChangeRequestDto>
+    >(url);
   }
 
-  async getCategoryChangeRequestsByStatus(status: string, page: number = 0, size: number = 20): Promise<PaginatedResponse<CategoryChangeRequestDto>> {
-    return await apiService.getRequest<PaginatedResponse<CategoryChangeRequestDto>>(`/api/admin/vendor-change-requests/status/${status}?page=${page}&size=${size}`);
+  async getCategoryChangeRequestsByStatus(
+    status: string,
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<CategoryChangeRequestDto>> {
+    return await apiService.getRequest<
+      PaginatedResponse<CategoryChangeRequestDto>
+    >(
+      `/api/admin/vendor-change-requests/status/${status}?page=${page}&size=${size}`
+    );
   }
 
-  async getCategoryChangeRequestById(requestId: number): Promise<CategoryChangeRequestDto> {
-    return await apiService.getRequest<CategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}`);
+  async getCategoryChangeRequestById(
+    requestId: number
+  ): Promise<CategoryChangeRequestDto> {
+    return await apiService.getRequest<CategoryChangeRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}`
+    );
   }
 
-  async approveCategoryChange(requestId: number): Promise<CategoryChangeRequestDto> {
-    return await apiService.postRequest<CategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
+  async approveCategoryChange(
+    requestId: number
+  ): Promise<CategoryChangeRequestDto> {
+    return await apiService.postRequest<CategoryChangeRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}/approve`,
+      {}
+    );
   }
 
-  async rejectCategoryChange(requestId: number, reason: string): Promise<CategoryChangeRequestDto> {
+  async rejectCategoryChange(
+    requestId: number,
+    reason: string
+  ): Promise<CategoryChangeRequestDto> {
     const normalizedReason = this.normalizeRejectionReason(reason);
-    return await apiService.postRequest<CategoryChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
+    return await apiService.postRequest<CategoryChangeRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(
+        normalizedReason
+      )}`,
+      {}
+    );
   }
 
-    async getUnifiedChangeRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
-    return await apiService.getRequest<PaginatedResponse<UnifiedChangeRequestDto>>(`/api/admin/vendor-change-requests?page=${page}&size=${size}`);
+  async getUnifiedChangeRequests(
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
+    return await apiService.getRequest<
+      PaginatedResponse<UnifiedChangeRequestDto>
+    >(`/api/admin/vendor-change-requests?page=${page}&size=${size}`);
   }
 
-  async getUnifiedChangeRequestsByStatus(status: 'PENDING' | 'APPROVED' | 'REJECTED', page: number = 0, size: number = 20): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
-    return await apiService.getRequest<PaginatedResponse<UnifiedChangeRequestDto>>(`/api/admin/vendor-change-requests/status/${status}?page=${page}&size=${size}`);
+  async getUnifiedChangeRequestsByStatus(
+    status: "PENDING" | "APPROVED" | "REJECTED",
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
+    return await apiService.getRequest<
+      PaginatedResponse<UnifiedChangeRequestDto>
+    >(
+      `/api/admin/vendor-change-requests/status/${status}?page=${page}&size=${size}`
+    );
   }
 
-  async getUnifiedChangeRequestsByEntityType(entityType: 'PRODUCT' | 'EVENT' | 'SERVICE', page: number = 0, size: number = 20): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
-    return await apiService.getRequest<PaginatedResponse<UnifiedChangeRequestDto>>(`/api/admin/vendor-change-requests/entity-type/${entityType}?page=${page}&size=${size}`);
+  async getUnifiedChangeRequestsByEntityType(
+    entityType: "PRODUCT" | "EVENT" | "SERVICE",
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<UnifiedChangeRequestDto>> {
+    return await apiService.getRequest<
+      PaginatedResponse<UnifiedChangeRequestDto>
+    >(
+      `/api/admin/vendor-change-requests/entity-type/${entityType}?page=${page}&size=${size}`
+    );
   }
 
-  async approveUnifiedChangeRequest(requestId: number): Promise<UnifiedChangeRequestDto> {
-    return await apiService.postRequest<UnifiedChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/approve`, {});
+  async approveUnifiedChangeRequest(
+    requestId: number
+  ): Promise<UnifiedChangeRequestDto> {
+    return await apiService.postRequest<UnifiedChangeRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}/approve`,
+      {}
+    );
   }
 
-  async rejectUnifiedChangeRequest(requestId: number, reason: string): Promise<UnifiedChangeRequestDto> {
+  async rejectUnifiedChangeRequest(
+    requestId: number,
+    reason: string
+  ): Promise<UnifiedChangeRequestDto> {
     const normalizedReason = this.normalizeRejectionReason(reason);
-    return await apiService.postRequest<UnifiedChangeRequestDto>(`/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(normalizedReason)}`, {});
+    return await apiService.postRequest<UnifiedChangeRequestDto>(
+      `/api/admin/vendor-change-requests/${requestId}/reject?reason=${encodeURIComponent(
+        normalizedReason
+      )}`,
+      {}
+    );
   }
 
   // ===== Commission Rate Management =====
 
   async getCommissionRates(): Promise<PlatformCommissionRateDto[]> {
-    return await apiService.getRequest<PlatformCommissionRateDto[]>('/api/admin/commission-rates');
+    return await apiService.getRequest<PlatformCommissionRateDto[]>(
+      "/api/admin/commission-rates"
+    );
   }
 
-  async getCommissionRate(vendorType: string): Promise<PlatformCommissionRateDto> {
-    return await apiService.getRequest<PlatformCommissionRateDto>(`/api/admin/commission-rates/${vendorType}`);
+  async getCommissionRate(
+    vendorType: string
+  ): Promise<PlatformCommissionRateDto> {
+    return await apiService.getRequest<PlatformCommissionRateDto>(
+      `/api/admin/commission-rates/${vendorType}`
+    );
   }
 
-  async updateCommissionRate(vendorType: string, data: UpdateCommissionRateRequest): Promise<PlatformCommissionRateDto> {
-    return await apiService.putRequest<PlatformCommissionRateDto>(`/api/admin/commission-rates/${vendorType}`, data);
+  async updateCommissionRate(
+    vendorType: string,
+    data: UpdateCommissionRateRequest
+  ): Promise<PlatformCommissionRateDto> {
+    return await apiService.putRequest<PlatformCommissionRateDto>(
+      `/api/admin/commission-rates/${vendorType}`,
+      data
+    );
   }
 }
 
 // ==================== UNIFIED CHANGE REQUEST TYPES ====================
 export interface UnifiedChangeRequestDto {
   id: number;
-  entityType: 'PRODUCT' | 'EVENT' | 'SERVICE';
+  entityType: "PRODUCT" | "EVENT" | "SERVICE";
   entityId: number;
   entityName?: string;
   entityImageUrl?: string;
-  requestType: 'PRICE_UPDATE' | 'CATEGORY_CHANGE';
+  requestType: "PRICE_UPDATE" | "CATEGORY_CHANGE";
   vendorId: number;
   vendorName?: string;
-  
+
   // For price updates
   currentPriceMinor?: number;
   currentCurrency?: string;
@@ -1191,7 +1663,7 @@ export interface UnifiedChangeRequestDto {
   skuCode?: string;
   ticketTypeId?: number;
   ticketTypeName?: string;
-  
+
   // For category changes
   currentSubCategoryId?: number;
   currentSubCategoryName?: string;
@@ -1199,9 +1671,9 @@ export interface UnifiedChangeRequestDto {
   newSubCategoryId?: number;
   newSubCategoryName?: string;
   newCategoryName?: string;
-  
+
   reason?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: "PENDING" | "APPROVED" | "REJECTED";
   reviewedBy?: number;
   reviewedByName?: string;
   reviewedAt?: string;
@@ -1217,8 +1689,8 @@ export default adminService;
 
 export interface PlatformCommissionRateDto {
   id: number;
-  vendorType: 'PRODUCT' | 'SERVICE' | 'HYBRID';
-  commissionRate: number;       // decimal (e.g., 0.10)
+  vendorType: "PRODUCT" | "SERVICE" | "HYBRID";
+  commissionRate: number; // decimal (e.g., 0.10)
   commissionPercentage: number; // percentage (e.g., 10.0)
   description: string | null;
   active: boolean;

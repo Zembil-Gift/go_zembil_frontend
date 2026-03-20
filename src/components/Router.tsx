@@ -1,5 +1,13 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import React from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+  Outlet,
+} from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import ScrollToTop from "./ScrollToTop";
@@ -30,6 +38,7 @@ import ServiceDetail from "@/pages/service-detail";
 import ServiceCheckout from "@/pages/service-checkout";
 import ServiceConfirmation from "@/pages/service-confirmation";
 import MyServiceOrders from "@/pages/my-service-orders";
+import TrackServiceOrder from "@/pages/track-service-order";
 import MyEventTickets from "@/pages/my-event-tickets";
 import MyOrders from "@/pages/MyOrders";
 import TrackOrder from "@/pages/TrackOrder";
@@ -38,6 +47,8 @@ import ChapaPayment from "@/pages/chapa-payment";
 import TelebirrPayment from "@/pages/telebirr-payment";
 import TelebirrReturn from "@/pages/telebirr-return";
 import PaymentSuccess from "@/pages/payment-success";
+import ServiceOrderSuccess from "@/pages/service-order-success";
+import EventOrderSuccess from "@/pages/event-order-success";
 import Checkout from "@/pages/Checkout";
 import OrderReview from "@/pages/OrderReview";
 import NotFound from "@/pages/not-found";
@@ -142,7 +153,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     const currentPath = location.pathname + location.search;
-    localStorage.setItem('returnTo', currentPath);
+    localStorage.setItem("returnTo", currentPath);
     return <Navigate to="/signin" replace />;
   }
 
@@ -156,7 +167,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const userRole = user?.role?.toUpperCase();
-  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+  const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
 
   React.useEffect(() => {
     if (!isLoading && isAuthenticated && !isAdmin) {
@@ -165,7 +176,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
         description: "You need administrator privileges to access this page.",
         variant: "destructive",
       });
-      navigate('/', { replace: true });
+      navigate("/", { replace: true });
     }
   }, [isLoading, isAuthenticated, isAdmin, toast, navigate]);
 
@@ -182,7 +193,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     const currentPath = location.pathname + location.search;
-    localStorage.setItem('returnTo', currentPath);
+    localStorage.setItem("returnTo", currentPath);
     return <Navigate to="/signin" replace />;
   }
 
@@ -199,7 +210,7 @@ function VendorRoute({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const userRole = user?.role?.toUpperCase();
-  const isVendor = userRole === 'VENDOR';
+  const isVendor = userRole === "VENDOR";
 
   React.useEffect(() => {
     if (!isLoading && isAuthenticated && !isVendor) {
@@ -208,7 +219,7 @@ function VendorRoute({ children }: { children: React.ReactNode }) {
         description: "You need vendor privileges to access this page.",
         variant: "destructive",
       });
-      navigate('/', { replace: true });
+      navigate("/", { replace: true });
     }
   }, [isLoading, isAuthenticated, isVendor, toast, navigate]);
 
@@ -225,7 +236,7 @@ function VendorRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     const currentPath = location.pathname + location.search;
-    localStorage.setItem('returnTo', currentPath);
+    localStorage.setItem("returnTo", currentPath);
     return <Navigate to="/signin" replace />;
   }
 
@@ -243,7 +254,7 @@ function DeliveryRoute({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const userRole = user?.role?.toUpperCase();
-  const isDeliveryPerson = userRole === 'DELIVERY_PERSON';
+  const isDeliveryPerson = userRole === "DELIVERY_PERSON";
 
   React.useEffect(() => {
     if (!isLoading && isAuthenticated && !isDeliveryPerson) {
@@ -252,7 +263,7 @@ function DeliveryRoute({ children }: { children: React.ReactNode }) {
         description: "You need delivery person privileges to access this page.",
         variant: "destructive",
       });
-      navigate('/', { replace: true });
+      navigate("/", { replace: true });
     }
   }, [isLoading, isAuthenticated, isDeliveryPerson, toast, navigate]);
 
@@ -269,7 +280,7 @@ function DeliveryRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     const currentPath = location.pathname + location.search;
-    localStorage.setItem('returnTo', currentPath);
+    localStorage.setItem("returnTo", currentPath);
     return <Navigate to="/signin" replace />;
   }
 
@@ -295,7 +306,7 @@ function HomeRoute() {
   }
 
   const role = user?.role?.toUpperCase();
-  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
 
   if (isAuthenticated && isAdmin) {
     return <Navigate to="/admin" replace />;
@@ -314,7 +325,7 @@ export default function Router() {
           <Route index element={<HomeRoute />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
-          
+
           {/* Auth Routes */}
           <Route path="signin" element={<SignIn />} />
           <Route path="signup" element={<SignUp />} />
@@ -322,7 +333,7 @@ export default function Router() {
           <Route path="vendor-signup" element={<VendorSignup />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="reset-password" element={<ResetPassword />} />
-          
+
           {/* Main Pages */}
           <Route path="gifts" element={<Gifts />} />
           <Route path="gifts/:categorySlug" element={<Gifts />} />
@@ -330,145 +341,270 @@ export default function Router() {
           <Route path="shop/:categorySlug" element={<Shop />} />
           <Route path="shop/category/:subcategorySlug" element={<Shop />} />
           {/* <Route path="search" element={<Search />} /> */}
-          <Route path="gift-experiences" element={<Navigate to="/events" replace />} />
+          <Route
+            path="gift-experiences"
+            element={<Navigate to="/events" replace />}
+          />
           <Route path="occasions" element={<Occasions />} />
-          <Route path="occasions/:categorySlug" element={<OccasionCategory />} />
+          <Route
+            path="occasions/:categorySlug"
+            element={<OccasionCategory />}
+          />
           <Route path="collections" element={<Collections />} />
           <Route path="events" element={<Events />} />
           <Route path="events/:slug" element={<EventDetail />} />
-          <Route path="events/:eventId/checkout" element={<ProtectedRoute><EventCheckout /></ProtectedRoute>} />
+          <Route
+            path="events/:eventId/checkout"
+            element={
+              <ProtectedRoute>
+                <EventCheckout />
+              </ProtectedRoute>
+            }
+          />
           <Route path="services" element={<Services />} />
           <Route path="services/:id" element={<ServiceDetail />} />
-          <Route path="service-checkout/:serviceId" element={<ProtectedRoute><ServiceCheckout /></ProtectedRoute>} />
-          <Route path="service-confirmation/:orderId" element={<ProtectedRoute><ServiceConfirmation /></ProtectedRoute>} />
-          <Route path="service-confirmation" element={<ProtectedRoute><ServiceConfirmation /></ProtectedRoute>} />
-          
+          <Route
+            path="service-checkout/:serviceId"
+            element={
+              <ProtectedRoute>
+                <ServiceCheckout />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="service-confirmation/:orderId"
+            element={
+              <ProtectedRoute>
+                <ServiceConfirmation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="service-confirmation"
+            element={
+              <ProtectedRoute>
+                <ServiceConfirmation />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Campaign Detail / Registration */}
           <Route path="campaigns/:id" element={<CampaignDetailPage />} />
-          
+
           {/* Product Detail */}
           <Route path="product/:id" element={<ProductDetail />} />
-          
+
           {/* Vendor Detail */}
           <Route path="vendor/:id" element={<VendorDetail />} />
-          
-          <Route path="cart" element={<Cart />} />
-          
-          <Route path="checkout" element={
-            <ProtectedRoute>
-              <Checkout />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="order-review" element={
-            <ProtectedRoute>
-              <OrderReview />
-            </ProtectedRoute>
-          } />
-          
-          {/* Protected Routes */}
-          <Route path="wishlist" element={
-            <ProtectedRoute>
-              <Wishlist />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="custom-orders" element={<CustomOrders />} />
-          
-          <Route path="custom-orders/categories" element={<CustomOrderCategories />} />
-          
-          <Route path="custom-orders/category/:categoryId" element={<CustomOrderTemplates />} />
-          
-          <Route path="custom-orders/template/:templateId" element={
-            <ProtectedRoute>
-              <CreateCustomOrder />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="payment/stripe" element={
-            <ProtectedRoute>
-              <StripePayment />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="payment/chapa" element={
-            <ProtectedRoute>
-              <ChapaPayment />
-            </ProtectedRoute>
-          } />
 
-          <Route path="payment/chapa/callback" element={
-            <ProtectedRoute>
-              <PaymentSuccess />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="payment/telebirr" element={
-            <ProtectedRoute>
-              <TelebirrPayment />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="payment/telebirr/return" element={
-            <ProtectedRoute>
-              <TelebirrReturn />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="payment-success" element={
-            <ProtectedRoute>
-              <PaymentSuccess />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="my-tickets" element={
-            <ProtectedRoute>
-              <MyEventTickets />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="my-orders" element={
-            <ProtectedRoute>
-              <MyOrders />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="track/:orderId" element={
-            <ProtectedRoute>
-              <TrackOrder />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="my-service-orders" element={
-            <ProtectedRoute>
-              <MyServiceOrders />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="my-custom-orders" element={
-            <ProtectedRoute>
-              <MyCustomOrders />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="my-custom-orders/:orderId" element={
-            <ProtectedRoute>
-              <CustomerCustomOrderDetail />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
-          
+          <Route path="cart" element={<Cart />} />
+
+          <Route
+            path="checkout"
+            element={
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="order-review"
+            element={
+              <ProtectedRoute>
+                <OrderReview />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected Routes */}
+          <Route
+            path="wishlist"
+            element={
+              <ProtectedRoute>
+                <Wishlist />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="custom-orders" element={<CustomOrders />} />
+
+          <Route
+            path="custom-orders/categories"
+            element={<CustomOrderCategories />}
+          />
+
+          <Route
+            path="custom-orders/category/:categoryId"
+            element={<CustomOrderTemplates />}
+          />
+
+          <Route
+            path="custom-orders/template/:templateId"
+            element={
+              <ProtectedRoute>
+                <CreateCustomOrder />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="payment/stripe"
+            element={
+              <ProtectedRoute>
+                <StripePayment />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="payment/chapa"
+            element={
+              <ProtectedRoute>
+                <ChapaPayment />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="payment/chapa/callback"
+            element={
+              <ProtectedRoute>
+                <PaymentSuccess />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="payment/telebirr"
+            element={
+              <ProtectedRoute>
+                <TelebirrPayment />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="payment/telebirr/return"
+            element={
+              <ProtectedRoute>
+                <TelebirrReturn />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="payment-success"
+            element={
+              <ProtectedRoute>
+                <PaymentSuccess />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="service-order-success"
+            element={
+              <ProtectedRoute>
+                <ServiceOrderSuccess />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="event-order-success"
+            element={
+              <ProtectedRoute>
+                <EventOrderSuccess />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="my-tickets"
+            element={
+              <ProtectedRoute>
+                <MyEventTickets />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="my-orders"
+            element={
+              <ProtectedRoute>
+                <MyOrders />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="track/:orderId"
+            element={
+              <ProtectedRoute>
+                <TrackOrder />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="my-service-orders"
+            element={
+              <ProtectedRoute>
+                <MyServiceOrders />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="my-service-orders/:orderId"
+            element={
+              <ProtectedRoute>
+                <TrackServiceOrder />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="my-custom-orders"
+            element={
+              <ProtectedRoute>
+                <MyCustomOrders />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="my-custom-orders/:orderId"
+            element={
+              <ProtectedRoute>
+                <CustomerCustomOrderDetail />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all route */}
           <Route path="*" element={<NotFound />} />
         </Route>
 
         {/* Vendor Routes - Outside main Layout to avoid navbar */}
-        <Route path="/vendor" element={<VendorRoute><VendorDashboardLayout /></VendorRoute>}>
+        <Route
+          path="/vendor"
+          element={
+            <VendorRoute>
+              <VendorDashboardLayout />
+            </VendorRoute>
+          }
+        >
           <Route index element={<VendorOverview />} />
           <Route path="products" element={<VendorProductsPage />} />
           <Route path="products/new" element={<CreateProduct />} />
@@ -491,25 +627,52 @@ export default function Router() {
           <Route path="discounts/new" element={<CreateDiscount />} />
           <Route path="discounts/:id" element={<VendorDiscountDetail />} />
           <Route path="discounts/:id/edit" element={<EditDiscount />} />
-          <Route path="discounts/:id/usages" element={<VendorDiscountUsages />} />
+          <Route
+            path="discounts/:id/usages"
+            element={<VendorDiscountUsages />}
+          />
           <Route path="campaigns" element={<VendorCampaignsPage />} />
           <Route path="custom-templates" element={<VendorCustomTemplates />} />
-          <Route path="custom-templates/new" element={<CreateCustomTemplate />} />
-          <Route path="custom-templates/:id" element={<VendorCustomTemplateDetail />} />
+          <Route
+            path="custom-templates/new"
+            element={<CreateCustomTemplate />}
+          />
+          <Route
+            path="custom-templates/:id"
+            element={<VendorCustomTemplateDetail />}
+          />
           <Route path="custom-orders" element={<VendorCustomOrders />} />
-          <Route path="custom-orders/:orderId" element={<VendorCustomOrderDetail />} />
+          <Route
+            path="custom-orders/:orderId"
+            element={<VendorCustomOrderDetail />}
+          />
           <Route path="check-in" element={<VendorCheckInPage />} />
           <Route path="payments" element={<VendorPaymentsPage />} />
           <Route path="payments/chapa" element={<ChapaOnboarding />} />
-          <Route path="onboarding/return" element={<StripeOnboardingReturn />} />
-          <Route path="onboarding/refresh" element={<StripeOnboardingRefresh />} />
+          <Route
+            path="onboarding/return"
+            element={<StripeOnboardingReturn />}
+          />
+          <Route
+            path="onboarding/refresh"
+            element={<StripeOnboardingRefresh />}
+          />
           <Route path="requests" element={<VendorRequests />} />
           <Route path="settings" element={<VendorSettingsPage />} />
           <Route path="resubmit" element={<VendorResubmitPage />} />
         </Route>
 
         {/* Admin Routes - Outside main Layout to avoid navbar/footer */}
-        <Route path="/admin" element={<AdminRoute><div className="min-h-screen"><Outlet /></div></AdminRoute>}>
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <div className="min-h-screen">
+                <Outlet />
+              </div>
+            </AdminRoute>
+          }
+        >
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="vendors" element={<AdminVendors />} />
@@ -525,7 +688,10 @@ export default function Router() {
           <Route path="order-assignments" element={<AdminOrderAssignments />} />
           <Route path="delivery-confirmations" element={<AdminDeliveryConfirmations />} /> */}
           <Route path="campaigns" element={<AdminCampaigns />} />
-          <Route path="campaign-participations" element={<AdminCampaignParticipations />} />
+          <Route
+            path="campaign-participations"
+            element={<AdminCampaignParticipations />}
+          />
           <Route path="featured-ads" element={<AdminFeaturedAds />} />
           <Route path="custom-templates" element={<AdminCustomTemplates />} />
           <Route path="custom-orders" element={<AdminCustomOrders />} />
@@ -536,11 +702,21 @@ export default function Router() {
         </Route>
 
         {/* Delivery Person Routes - Outside main Layout to avoid navbar */}
-        <Route path="/delivery" element={<DeliveryRoute><DeliveryLayout /></DeliveryRoute>}>
+        <Route
+          path="/delivery"
+          element={
+            <DeliveryRoute>
+              <DeliveryLayout />
+            </DeliveryRoute>
+          }
+        >
           <Route index element={<DeliveryDashboard />} />
           <Route path="available-orders" element={<AvailableOrders />} />
           <Route path="assignments" element={<DeliveryAssignments />} />
-          <Route path="assignments/:assignmentId" element={<DeliveryAssignmentDetail />} />
+          <Route
+            path="assignments/:assignmentId"
+            element={<DeliveryAssignmentDetail />}
+          />
           <Route path="history" element={<DeliveryHistory />} />
           <Route path="profile" element={<DeliveryProfile />} />
         </Route>
