@@ -14,48 +14,52 @@ import ScrollToTop from "./ScrollToTop";
 import Layout from "./layout/layout";
 
 import Landing from "@/pages/landing";
-import About from "@/pages/about";
-import Contact from "@/pages/contact";
-import SignIn from "@/pages/signin";
-import SignUp from "@/pages/signup";
-import VerifyEmail from "@/pages/verify-email";
 import Gifts from "@/pages/gifts";
 import Shop from "@/pages/shop";
 import Cart from "@/pages/cart";
-import Wishlist from "@/pages/Wishlist";
 import ProductDetail from "@/pages/product-detail";
-import VendorDetail from "@/pages/vendor-detail";
-import CustomOrders from "@/pages/custom-orders";
 // import Search from "@/pages/Search";
-import Occasions from "@/pages/occasions";
-import OccasionCategory from "@/pages/occasion-category";
-import Collections from "@/pages/collections";
-import Events from "@/pages/events";
-import EventDetail from "@/pages/event-detail";
-import EventCheckout from "@/pages/event-checkout";
-import Services from "@/pages/services";
-import ServiceDetail from "@/pages/service-detail";
-import ServiceCheckout from "@/pages/service-checkout";
-import ServiceConfirmation from "@/pages/service-confirmation";
-import MyServiceOrders from "@/pages/my-service-orders";
-import TrackServiceOrder from "@/pages/track-service-order";
-import MyEventTickets from "@/pages/my-event-tickets";
-import MyOrders from "@/pages/MyOrders";
-import TrackOrder from "@/pages/TrackOrder";
-import StripePayment from "@/pages/stripe-payment";
-import ChapaPayment from "@/pages/chapa-payment";
-import TelebirrPayment from "@/pages/telebirr-payment";
-import TelebirrReturn from "@/pages/telebirr-return";
-import PaymentSuccess from "@/pages/payment-success";
-import ServiceOrderSuccess from "@/pages/service-order-success";
-import EventOrderSuccess from "@/pages/event-order-success";
-import Checkout from "@/pages/Checkout";
-import OrderReview from "@/pages/OrderReview";
-import NotFound from "@/pages/not-found";
-import VendorSignup from "@/pages/VendorSignup";
-import ForgotPassword from "@/pages/forgot-password";
-import ResetPassword from "@/pages/reset-password";
-import Profile from "@/pages/Profile";
+const About = React.lazy(() => import("@/pages/about"));
+const Contact = React.lazy(() => import("@/pages/contact"));
+const SignIn = React.lazy(() => import("@/pages/signin"));
+const SignUp = React.lazy(() => import("@/pages/signup"));
+const VerifyEmail = React.lazy(() => import("@/pages/verify-email"));
+const VendorDetail = React.lazy(() => import("@/pages/vendor-detail"));
+const Occasions = React.lazy(() => import("@/pages/occasions"));
+const OccasionCategory = React.lazy(() => import("@/pages/occasion-category"));
+const Collections = React.lazy(() => import("@/pages/collections"));
+const Events = React.lazy(() => import("@/pages/events"));
+const EventDetail = React.lazy(() => import("@/pages/event-detail"));
+const Services = React.lazy(() => import("@/pages/services"));
+const ServiceDetail = React.lazy(() => import("@/pages/service-detail"));
+const NotFound = React.lazy(() => import("@/pages/not-found"));
+const EventCheckout = React.lazy(() => import("@/pages/event-checkout"));
+const ServiceCheckout = React.lazy(() => import("@/pages/service-checkout"));
+const ServiceConfirmation = React.lazy(
+  () => import("@/pages/service-confirmation")
+);
+const MyServiceOrders = React.lazy(() => import("@/pages/my-service-orders"));
+const TrackServiceOrder = React.lazy(
+  () => import("@/pages/track-service-order")
+);
+const MyEventTickets = React.lazy(() => import("@/pages/my-event-tickets"));
+const MyOrders = React.lazy(() => import("@/pages/MyOrders"));
+const TrackOrder = React.lazy(() => import("@/pages/TrackOrder"));
+const StripePayment = React.lazy(() => import("@/pages/stripe-payment"));
+const ChapaPayment = React.lazy(() => import("@/pages/chapa-payment"));
+const TelebirrPayment = React.lazy(() => import("@/pages/telebirr-payment"));
+const TelebirrReturn = React.lazy(() => import("@/pages/telebirr-return"));
+const PaymentSuccess = React.lazy(() => import("@/pages/payment-success"));
+const ServiceOrderSuccess = React.lazy(
+  () => import("@/pages/service-order-success")
+);
+const EventOrderSuccess = React.lazy(() => import("@/pages/event-order-success"));
+const Checkout = React.lazy(() => import("@/pages/Checkout"));
+const OrderReview = React.lazy(() => import("@/pages/OrderReview"));
+const VendorSignup = React.lazy(() => import("@/pages/VendorSignup"));
+const ForgotPassword = React.lazy(() => import("@/pages/forgot-password"));
+const ResetPassword = React.lazy(() => import("@/pages/reset-password"));
+const Profile = React.lazy(() => import("@/pages/Profile"));
 
 const AdminDashboard = React.lazy(() => import("@/pages/admin/AdminDashboard"));
 const AdminUsers = React.lazy(() => import("@/pages/admin/AdminUsers"));
@@ -203,12 +207,22 @@ const VendorDiscountUsages = React.lazy(
 const VendorCampaignsPage = React.lazy(
   () => import("@/pages/vendor/VendorCampaignsPage")
 );
-import CampaignDetailPage from "@/pages/campaign-detail";
-import MyCustomOrders from "@/pages/customer/MyCustomOrders";
-import CustomerCustomOrderDetail from "@/pages/customer/CustomerCustomOrderDetail";
-import CustomOrderCategories from "@/pages/customer/CustomOrderCategories";
-import CustomOrderTemplates from "@/pages/customer/CustomOrderTemplates";
-import CreateCustomOrder from "@/pages/customer/CreateCustomOrder";
+const CampaignDetailPage = React.lazy(() => import("@/pages/campaign-detail"));
+const CustomOrders = React.lazy(() => import("@/pages/custom-orders"));
+const Wishlist = React.lazy(() => import("@/pages/Wishlist"));
+const MyCustomOrders = React.lazy(() => import("@/pages/customer/MyCustomOrders"));
+const CustomerCustomOrderDetail = React.lazy(
+  () => import("@/pages/customer/CustomerCustomOrderDetail")
+);
+const CustomOrderCategories = React.lazy(
+  () => import("@/pages/customer/CustomOrderCategories")
+);
+const CustomOrderTemplates = React.lazy(
+  () => import("@/pages/customer/CustomOrderTemplates")
+);
+const CreateCustomOrder = React.lazy(
+  () => import("@/pages/customer/CreateCustomOrder")
+);
 
 const DeliveryLayout = React.lazy(
   () => import("@/pages/delivery/DeliveryLayout")
@@ -241,6 +255,43 @@ function RouteLoading({ message }: { message: string }) {
       </div>
     </div>
   );
+}
+
+function RoleBasedPrefetch() {
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  React.useEffect(() => {
+    if (isLoading || !isAuthenticated) {
+      return;
+    }
+
+    const role = user?.role?.toUpperCase();
+
+    if (role === "ADMIN" || role === "SUPER_ADMIN") {
+      void Promise.all([
+        import("@/pages/admin/AdminDashboard"),
+        import("@/pages/admin/AdminUsers"),
+      ]);
+      return;
+    }
+
+    if (role === "VENDOR") {
+      void Promise.all([
+        import("@/pages/vendor/VendorDashboardLayout"),
+        import("@/pages/vendor/VendorOverview"),
+      ]);
+      return;
+    }
+
+    if (role === "DELIVERY_PERSON") {
+      void Promise.all([
+        import("@/pages/delivery/DeliveryLayout"),
+        import("@/pages/delivery/DeliveryDashboard"),
+      ]);
+    }
+  }, [isAuthenticated, isLoading, user?.role]);
+
+  return null;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -426,7 +477,9 @@ export default function Router() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <Routes>
+      <RoleBasedPrefetch />
+      <React.Suspense fallback={<RouteLoading message="Loading page..." />}>
+        <Routes>
         <Route path="/" element={<Layout />}>
           {/* Public Routes */}
           <Route index element={<HomeRoute />} />
@@ -845,7 +898,8 @@ export default function Router() {
           <Route path="history" element={<DeliveryHistory />} />
           <Route path="profile" element={<DeliveryProfile />} />
         </Route>
-      </Routes>
+        </Routes>
+      </React.Suspense>
     </BrowserRouter>
   );
 }

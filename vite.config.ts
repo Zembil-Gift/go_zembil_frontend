@@ -46,12 +46,16 @@ export default defineConfig({
             return "vendor-data";
           }
 
-          if (
-            id.includes("recharts") ||
-            id.includes("framer-motion") ||
-            id.includes("embla-carousel")
-          ) {
-            return "vendor-ui-heavy";
+          if (id.includes("recharts")) {
+            return "vendor-charts";
+          }
+
+          if (id.includes("framer-motion")) {
+            return "vendor-motion";
+          }
+
+          if (id.includes("embla-carousel")) {
+            return "vendor-carousel";
           }
 
           if (id.includes("@radix-ui")) {
