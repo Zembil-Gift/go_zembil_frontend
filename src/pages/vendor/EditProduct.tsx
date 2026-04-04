@@ -318,41 +318,56 @@ export default function EditProduct() {
     mutationFn: async (data: ProductEditFormData) => {
       if (!productId) throw new Error("Product ID is required");
 
-      // Use the appropriate endpoint based on product status
-      const isPendingOrRejected = product?.status === 'PENDING' || product?.status === 'REJECTED';
-      
-      // For ACTIVE products, exclude subCategoryId from the payload (category changes require approval)
-      const productPayload: Partial<Product> = {
-        name: data.name,
-        description: data.description || undefined,
-        summary: data.summary || undefined,
-        // Only include subCategoryId for PENDING/REJECTED products (can change directly)
-        ...(isPendingOrRejected && { subCategoryId: data.subCategoryId ? parseInt(data.subCategoryId) : undefined }),
-        isCustomizable: data.isCustomizable,
-        tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
-        occasion: data.occasion || undefined,
-        giftWrappable: data.giftWrappable || false,
-        giftWrapPrice: data.giftWrappable && data.giftWrapPrice ? data.giftWrapPrice : undefined,
-        giftWrapCurrencyCode: data.giftWrappable && data.giftWrapPrice
-          ? (data.giftWrapCurrencyCode || product?.giftWrapCurrencyCode || (product?.productSku?.[0] as any)?.price?.currencyCode || 'ETB')
-          : undefined,
-        // Include SKU updates (excluding price changes)
-        productSku: data.productSku.map((sku, index) => ({
+      // PUT /api/v1/products/vendor/{id} requires each SKU to identify an existing record by id or skuCode.
+      const skuPayload = data.productSku.map((sku, index) => {
+        const normalizedSkuCode = sku.skuCode?.trim() || "";
+        if (!sku.id && !normalizedSkuCode) {
+          throw new Error(`Variant ${index + 1} must include an existing SKU id or skuCode.`);
+        }
+
+        return {
           id: sku.id,
-          skuCode: sku.skuCode || "", // Provide default empty string for required field
-          skuName: sku.skuName, // Add skuName to payload
+          skuCode: normalizedSkuCode,
+          skuName: sku.skuName?.trim(),
           stockQuantity: sku.stockQuantity,
           isDefault: index === 0,
-          attributes: sku.attributes?.filter(attr => attr.name && attr.value) || [],
-          // Note: We don't include price here as it requires a separate request
-        })),
+          attributes:
+            sku.attributes
+              ?.filter((attr) => attr.name?.trim() && attr.value?.trim())
+              .map((attr) => ({
+                name: attr.name.trim(),
+                value: attr.value.trim(),
+              })) || [],
+        };
+      });
+
+      const productPayload: Product = {
+        name: data.name?.trim(),
+        description: data.description?.trim() || undefined,
+        summary: data.summary?.trim() || undefined,
+        subCategoryId: data.subCategoryId ? parseInt(data.subCategoryId, 10) : undefined,
+        tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
+        occasion: data.occasion || undefined,
+        giftWrappable: !!data.giftWrappable,
+        giftWrapPrice: data.giftWrappable && data.giftWrapPrice ? data.giftWrapPrice : undefined,
+        giftWrapCurrencyCode:
+          data.giftWrappable && data.giftWrapPrice
+            ? (data.giftWrapCurrencyCode ||
+              product?.giftWrapCurrencyCode ||
+              (product?.productSku?.[0] as any)?.price?.currencyCode ||
+              "ETB")
+            : undefined,
+        productSku: skuPayload,
       };
 
+      // Use the appropriate endpoint based on product status
+      const isPendingOrRejected = product?.status === 'PENDING' || product?.status === 'REJECTED';
+
       if (isPendingOrRejected) {
-        return vendorService.editPendingProduct(productId, productPayload as Product);
+        return vendorService.editPendingProduct(productId, productPayload);
       } else {
-        // Use updateProductForVendor for ACTIVE products (preserves prices)
-        return vendorService.updateProductForVendor(productId, productPayload as Product);
+        // Use updateProductForVendor with full attribute payload (prices are preserved server-side).
+        return vendorService.updateProductForVendor(productId, productPayload);
       }
     },
     onSuccess: async () => {
@@ -880,7 +895,7 @@ export default function EditProduct() {
                       {/* SKU Code and Stock */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label>SKU Code (optional)</Label>
+                          <Label>SKU Code</Label>
                           <Input
                             placeholder={skuFields.length === 1 ? "e.g., PROD-001" : "e.g., SHIRT-RED-M"}
                             {...form.register(`productSku.${skuIndex}.skuCode`)}
