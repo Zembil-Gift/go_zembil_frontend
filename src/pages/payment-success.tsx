@@ -173,9 +173,32 @@ export default function PaymentSuccess() {
       const status = urlParams.get("status");
 
       if (paymentIntent) {
+        let resolvedOrderNumber: string | undefined;
+
+        if (
+          orderId &&
+          (orderType === "PRODUCT" ||
+            orderType === "SERVICE" ||
+            orderType === "EVENT" ||
+            orderType === "CUSTOM")
+        ) {
+          try {
+            const result =
+              await apiService.getRequest<OrderPaymentStatusResponse>(
+                `/api/orders/${orderId}/payment-status?orderType=${encodeURIComponent(
+                  orderType
+                )}`
+              );
+            resolvedOrderNumber = result.orderNumber;
+          } catch {
+            // Non-blocking: keep success flow even if tracking metadata fetch fails.
+          }
+        }
+
         setPaymentStatus("success");
         setOrderInfo({
           id: orderId,
+          orderNumber: resolvedOrderNumber,
           orderType,
           paymentMethod: "Stripe",
           paymentId: paymentIntent,
@@ -205,7 +228,8 @@ export default function PaymentSuccess() {
           orderId &&
           (orderType === "PRODUCT" ||
             orderType === "SERVICE" ||
-            orderType === "EVENT")
+            orderType === "EVENT" ||
+            orderType === "CUSTOM")
         ) {
           await verifyChapaOrderPayment(orderId, orderType, trxRef);
           return;
@@ -418,6 +442,17 @@ export default function PaymentSuccess() {
                 <a href="/my-tickets">
                   <Ticket className="w-4 h-4 mr-2" />
                   View My Tickets
+                </a>
+              </Button>
+            ) : orderInfo?.id && orderInfo?.orderType === "CUSTOM" ? (
+              // For custom orders, open the custom order detail page
+              <Button
+                asChild
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                <a href={`/my-custom-orders/${orderInfo.id}`}>
+                  <ShoppingBag className="w-4 h-4 mr-2" />
+                  Track Your Order
                 </a>
               </Button>
             ) : orderInfo?.id ? (

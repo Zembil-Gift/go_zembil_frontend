@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StateSelect, COUNTRIES } from "@/components/ui/state-select";
+import { COUNTRIES } from "@/components/ui/state-select";
 import { useNavigate } from "react-router-dom";
 import {
   ShoppingCart,
@@ -99,7 +99,6 @@ export default function Checkout() {
   const {
     shippingInfo,
     billingInfo,
-    sameAsShipping,
     contactPhone,
     contactEmail,
     itemGiftSelections,
@@ -108,7 +107,6 @@ export default function Checkout() {
     shippingCoords: storedShippingCoords,
     setShippingInfo,
     setBillingInfo,
-    setSameAsShipping,
     setContactPhone,
     setContactEmail,
     setItemGiftSelections,
@@ -515,7 +513,6 @@ export default function Checkout() {
               postalCode: billingAddress.postalCode || "0000",
               country: billingAddress.country || "",
             });
-            setSameAsShipping(false);
           }
         }
       } catch (error) {
@@ -573,6 +570,21 @@ export default function Checkout() {
         )} km from the vendor, which exceeds their ${deliveryEstimate?.vendorDeliveryRadiusKm?.toFixed(
           0
         )} km delivery radius. Please choose a closer address.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const isBillingInfoComplete =
+      !!billingInfo.street?.trim() &&
+      !!billingInfo.city?.trim() &&
+      !!billingInfo.postalCode?.trim() &&
+      !!billingInfo.country?.trim();
+
+    if (!isBillingInfoComplete) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all billing address fields.",
         variant: "destructive",
       });
       return;
@@ -677,84 +689,34 @@ export default function Checkout() {
       // Handle billing address
       let billingAddressId: number | undefined;
 
-      if (sameAsShipping) {
-        // Create billing address with same data as shipping
-        const billingPayload: AddressDto = {
-          street: shippingInfo.street,
-          city: shippingInfo.city,
-          state: shippingInfo.state || shippingInfo.city,
-          postalCode: shippingInfo.postalCode || "",
-          country: shippingInfo.country,
-          type: "BILLING",
-          isDefault: false,
-        };
+      const billingPayload: AddressDto = {
+        street: billingInfo.street.trim(),
+        city: billingInfo.city.trim(),
+        state: billingInfo.city.trim(),
+        postalCode: billingInfo.postalCode.trim(),
+        country: billingInfo.country.trim(),
+        type: "BILLING",
+        isDefault: false,
+      };
 
-        if (existingBillingAddressId) {
-          // Update existing billing address with shipping data
-          console.log(
-            "Updating billing address with shipping data:",
-            existingBillingAddressId
-          );
-          const updatedBillingAddress = await apiService.putRequest<AddressDto>(
-            `/api/addresses/${existingBillingAddressId}`,
-            billingPayload
-          );
-          billingAddressId = updatedBillingAddress.id!;
-        } else {
-          // Create new billing address with shipping data
-          console.log("Creating billing address with same data as shipping...");
-          const savedBillingAddress = await apiService.postRequest<AddressDto>(
-            "/api/addresses/type/BILLING",
-            billingPayload
-          );
-          billingAddressId = savedBillingAddress.id;
-          setExistingBillingAddressId(billingAddressId || null);
-        }
-        console.log("Billing address (same as shipping) ID:", billingAddressId);
+      if (existingBillingAddressId) {
+        // Update existing billing address
+        console.log("Updating existing billing address:", existingBillingAddressId);
+        const updatedBillingAddress = await apiService.putRequest<AddressDto>(
+          `/api/addresses/${existingBillingAddressId}`,
+          billingPayload
+        );
+        billingAddressId = updatedBillingAddress.id!;
       } else {
-        // Different billing address - validate and create/update
-        if (!billingInfo.street || !billingInfo.city || !billingInfo.country) {
-          toast({
-            title: "Missing Information",
-            description: "Please fill in all required billing information.",
-            variant: "destructive",
-          });
-          setIsCreatingOrder(false);
-          return;
-        }
-
-        const billingPayload: AddressDto = {
-          street: billingInfo.street,
-          city: billingInfo.city,
-          state: billingInfo.state || billingInfo.city,
-          postalCode: billingInfo.postalCode || "",
-          country: billingInfo.country,
-          type: "BILLING",
-          isDefault: false,
-        };
-
-        if (existingBillingAddressId) {
-          // Update existing billing address
-          console.log(
-            "Updating existing billing address:",
-            existingBillingAddressId
-          );
-          const updatedBillingAddress = await apiService.putRequest<AddressDto>(
-            `/api/addresses/${existingBillingAddressId}`,
-            billingPayload
-          );
-          billingAddressId = updatedBillingAddress.id!;
-        } else {
-          // Create new billing address
-          console.log("Creating new billing address...");
-          const savedBillingAddress = await apiService.postRequest<AddressDto>(
-            "/api/addresses/type/BILLING",
-            billingPayload
-          );
-          billingAddressId = savedBillingAddress.id;
-        }
-        console.log("Billing address ID:", billingAddressId);
+        // Create new billing address
+        console.log("Creating new billing address...");
+        const savedBillingAddress = await apiService.postRequest<AddressDto>(
+          "/api/addresses/type/BILLING",
+          billingPayload
+        );
+        billingAddressId = savedBillingAddress.id;
       }
+      console.log("Billing address ID:", billingAddressId);
 
       // Build per-item gift options from checkout selections
       const itemGiftOptions = cartItems.map((item: CartItem) => {
@@ -772,7 +734,7 @@ export default function Checkout() {
       // Create order with address IDs
       const orderData: CreateOrderRequest = {
         shippingAddressId: shippingAddressId,
-        billingAddressId: billingAddressId, // undefined when sameAsShipping=true, backend will handle this
+        billingAddressId: billingAddressId,
         contactEmail: contactEmail || undefined,
         contactPhone: contactPhone || undefined,
         giftOptions: {
@@ -959,106 +921,74 @@ export default function Checkout() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Billing Address</span>
-                  {!sameAsShipping && existingBillingAddressId && (
+                  {existingBillingAddressId && (
                     <Badge variant="secondary">Saved Billing Address</Badge>
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="sameAsShipping"
-                    checked={sameAsShipping}
-                    onCheckedChange={(checked) =>
-                      setSameAsShipping(checked === true)
-                    }
-                  />
-                  <Label htmlFor="sameAsShipping" className="cursor-pointer">
-                    Same as shipping address
-                  </Label>
-                </div>
+                <div className="grid grid-cols-1 gap-4 pt-1">
+                  <div>
+                    <Label htmlFor="billingStreet">Street Address *</Label>
+                    <Input
+                      id="billingStreet"
+                      name="street"
+                      value={billingInfo.street}
+                      onChange={handleBillingInputChange}
+                      placeholder="Billing street address"
+                      required
+                    />
+                  </div>
 
-                {!sameAsShipping && (
-                  <div className="grid grid-cols-1 gap-4 pt-4 border-t">
+                  <div>
+                    <Label htmlFor="billingCity">City *</Label>
+                    <Input
+                      id="billingCity"
+                      name="city"
+                      value={billingInfo.city}
+                      onChange={handleBillingInputChange}
+                      placeholder="City"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="billingStreet">Street Address *</Label>
+                      <Label htmlFor="billingPostalCode">Postal Code *</Label>
                       <Input
-                        id="billingStreet"
-                        name="street"
-                        value={billingInfo.street}
+                        id="billingPostalCode"
+                        name="postalCode"
+                        value={billingInfo.postalCode}
                         onChange={handleBillingInputChange}
-                        placeholder="Billing street address"
+                        placeholder="Postal code"
                         required
                       />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="billingCity">City *</Label>
-                        <Input
-                          id="billingCity"
-                          name="city"
-                          value={billingInfo.city}
-                          onChange={handleBillingInputChange}
-                          placeholder="City"
-                          required
-                        />
-                      </div>
-                      {billingInfo.country === "United States" && (
-                        <div>
-                          <Label htmlFor="billingState">State *</Label>
-                          <StateSelect
-                            id="billingState"
-                            value={billingInfo.state}
-                            onValueChange={(value) =>
-                              setBillingInfo({ ...billingInfo, state: value })
-                            }
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="billingPostalCode">Postal Code</Label>
-                        <Input
-                          id="billingPostalCode"
-                          name="postalCode"
-                          value={billingInfo.postalCode}
-                          onChange={handleBillingInputChange}
-                          placeholder="Postal code"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="billingCountry">Country *</Label>
-                        <Select
-                          value={billingInfo.country}
-                          onValueChange={(value) => {
-                            setBillingInfo({
-                              ...billingInfo,
-                              country: value,
-                              state: "",
-                            });
-                          }}
-                        >
-                          <SelectTrigger id="billingCountry">
-                            <SelectValue placeholder="Select a country" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {COUNTRIES.map((country) => (
-                              <SelectItem
-                                key={country.value}
-                                value={country.value}
-                              >
-                                {country.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div>
+                      <Label htmlFor="billingCountry">Country *</Label>
+                      <Select
+                        value={billingInfo.country}
+                        onValueChange={(value) => {
+                          setBillingInfo({
+                            ...billingInfo,
+                            country: value,
+                          });
+                        }}
+                      >
+                        <SelectTrigger id="billingCountry">
+                          <SelectValue placeholder="Select a country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRIES.map((country) => (
+                            <SelectItem key={country.value} value={country.value}>
+                              {country.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
 

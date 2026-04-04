@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Html5Qrcode } from "html5-qrcode";
 import { vendorService, TicketValidationResponse, TicketStatus } from "@/services/vendorService";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,13 +31,37 @@ interface TicketScannerProps {
   className?: string;
 }
 
+type Html5QrcodeInstance = {
+  start: (
+    cameraConfig: { facingMode: string },
+    configuration: {
+      fps?: number;
+      qrbox?:
+        | {
+            width: number;
+            height: number;
+          }
+        | ((viewfinderWidth: number, viewfinderHeight: number) => {
+            width: number;
+            height: number;
+          });
+    },
+    qrCodeSuccessCallback: (decodedText: string) => void,
+    qrCodeErrorCallback?: (errorMessage: string) => void,
+  ) => Promise<unknown>;
+  stop: () => Promise<void>;
+};
+
+type Html5QrcodeConstructor = new (elementId: string) => Html5QrcodeInstance;
+
 export function TicketScanner({ className }: TicketScannerProps) {
   const { toast } = useToast();
   const [manualCode, setManualCode] = useState("");
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [validationResult, setValidationResult] = useState<TicketValidationResponse | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerRef = useRef<Html5QrcodeInstance | null>(null);
+  const html5QrcodeCtorRef = useRef<Html5QrcodeConstructor | null>(null);
   const lastScannedCode = useRef<string>("");
   const scanCooldownRef = useRef<boolean>(false);
   const isMountedRef = useRef<boolean>(true);
@@ -104,6 +127,16 @@ export function TicketScanner({ className }: TicketScannerProps) {
     },
   });
 
+  const loadQrScannerLibrary = useCallback(async (): Promise<Html5QrcodeConstructor> => {
+    if (html5QrcodeCtorRef.current) {
+      return html5QrcodeCtorRef.current;
+    }
+
+    const module = await import("html5-qrcode");
+    html5QrcodeCtorRef.current = module.Html5Qrcode as Html5QrcodeConstructor;
+    return html5QrcodeCtorRef.current;
+  }, []);
+
   // Start camera scanner
   const startCamera = useCallback(async () => {
     if (!isMountedRef.current) return;
@@ -139,6 +172,7 @@ export function TicketScanner({ className }: TicketScannerProps) {
         containerRef.current.appendChild(scannerDiv);
       }
 
+      const Html5Qrcode = await loadQrScannerLibrary();
       const html5QrCode = new Html5Qrcode(scannerId);
       scannerRef.current = html5QrCode;
 
@@ -196,7 +230,7 @@ export function TicketScanner({ className }: TicketScannerProps) {
         });
       }
     }
-  }, [validateMutation, toast]);
+  }, [loadQrScannerLibrary, validateMutation, toast]);
 
   // Stop camera scanner
   const stopCamera = useCallback(async () => {

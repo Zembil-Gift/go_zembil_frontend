@@ -14,127 +14,285 @@ import ScrollToTop from "./ScrollToTop";
 import Layout from "./layout/layout";
 
 import Landing from "@/pages/landing";
-import About from "@/pages/about";
-import Contact from "@/pages/contact";
-import SignIn from "@/pages/signin";
-import SignUp from "@/pages/signup";
-import VerifyEmail from "@/pages/verify-email";
 import Gifts from "@/pages/gifts";
 import Shop from "@/pages/shop";
 import Cart from "@/pages/cart";
-import Wishlist from "@/pages/Wishlist";
 import ProductDetail from "@/pages/product-detail";
-import VendorDetail from "@/pages/vendor-detail";
-import CustomOrders from "@/pages/custom-orders";
 // import Search from "@/pages/Search";
-import Occasions from "@/pages/occasions";
-import OccasionCategory from "@/pages/occasion-category";
-import Collections from "@/pages/collections";
-import Events from "@/pages/events";
-import EventDetail from "@/pages/event-detail";
-import EventCheckout from "@/pages/event-checkout";
-import Services from "@/pages/services";
-import ServiceDetail from "@/pages/service-detail";
-import ServiceCheckout from "@/pages/service-checkout";
-import ServiceConfirmation from "@/pages/service-confirmation";
-import MyServiceOrders from "@/pages/my-service-orders";
-import TrackServiceOrder from "@/pages/track-service-order";
-import MyEventTickets from "@/pages/my-event-tickets";
-import MyOrders from "@/pages/MyOrders";
-import TrackOrder from "@/pages/TrackOrder";
-import StripePayment from "@/pages/stripe-payment";
-import ChapaPayment from "@/pages/chapa-payment";
-import TelebirrPayment from "@/pages/telebirr-payment";
-import TelebirrReturn from "@/pages/telebirr-return";
-import PaymentSuccess from "@/pages/payment-success";
-import ServiceOrderSuccess from "@/pages/service-order-success";
-import EventOrderSuccess from "@/pages/event-order-success";
-import Checkout from "@/pages/Checkout";
-import OrderReview from "@/pages/OrderReview";
-import NotFound from "@/pages/not-found";
-import VendorSignup from "@/pages/VendorSignup";
-import ForgotPassword from "@/pages/forgot-password";
-import ResetPassword from "@/pages/reset-password";
-import Profile from "@/pages/Profile";
+const About = React.lazy(() => import("@/pages/about"));
+const Contact = React.lazy(() => import("@/pages/contact"));
+const SignIn = React.lazy(() => import("@/pages/signin"));
+const SignUp = React.lazy(() => import("@/pages/signup"));
+const VerifyEmail = React.lazy(() => import("@/pages/verify-email"));
+const VendorDetail = React.lazy(() => import("@/pages/vendor-detail"));
+const Occasions = React.lazy(() => import("@/pages/occasions"));
+const OccasionCategory = React.lazy(() => import("@/pages/occasion-category"));
+const Collections = React.lazy(() => import("@/pages/collections"));
+const Events = React.lazy(() => import("@/pages/events"));
+const EventDetail = React.lazy(() => import("@/pages/event-detail"));
+const Services = React.lazy(() => import("@/pages/services"));
+const ServiceDetail = React.lazy(() => import("@/pages/service-detail"));
+const NotFound = React.lazy(() => import("@/pages/not-found"));
+const EventCheckout = React.lazy(() => import("@/pages/event-checkout"));
+const ServiceCheckout = React.lazy(() => import("@/pages/service-checkout"));
+const ServiceConfirmation = React.lazy(
+  () => import("@/pages/service-confirmation")
+);
+const MyServiceOrders = React.lazy(() => import("@/pages/my-service-orders"));
+const TrackServiceOrder = React.lazy(
+  () => import("@/pages/track-service-order")
+);
+const MyEventTickets = React.lazy(() => import("@/pages/my-event-tickets"));
+const MyOrders = React.lazy(() => import("@/pages/MyOrders"));
+const TrackOrder = React.lazy(() => import("@/pages/TrackOrder"));
+const StripePayment = React.lazy(() => import("@/pages/stripe-payment"));
+const ChapaPayment = React.lazy(() => import("@/pages/chapa-payment"));
+const TelebirrPayment = React.lazy(() => import("@/pages/telebirr-payment"));
+const TelebirrReturn = React.lazy(() => import("@/pages/telebirr-return"));
+const PaymentSuccess = React.lazy(() => import("@/pages/payment-success"));
+const ServiceOrderSuccess = React.lazy(
+  () => import("@/pages/service-order-success")
+);
+const EventOrderSuccess = React.lazy(() => import("@/pages/event-order-success"));
+const Checkout = React.lazy(() => import("@/pages/Checkout"));
+const OrderReview = React.lazy(() => import("@/pages/OrderReview"));
+const VendorSignup = React.lazy(() => import("@/pages/VendorSignup"));
+const ForgotPassword = React.lazy(() => import("@/pages/forgot-password"));
+const ResetPassword = React.lazy(() => import("@/pages/reset-password"));
+const Profile = React.lazy(() => import("@/pages/Profile"));
 
-import AdminDashboard from "@/pages/admin/AdminDashboard";
-import AdminUsers from "@/pages/admin/AdminUsers";
-import AdminVendors from "@/pages/admin/AdminVendors";
-import AdminEvents from "@/pages/admin/AdminEvents";
-import AdminCategories from "@/pages/admin/AdminCategories";
-import AdminSubcategories from "@/pages/admin/AdminSubcategories";
-import AdminProducts from "@/pages/admin/AdminProducts";
-import AdminServices from "@/pages/admin/AdminServices";
-import AdminTax from "@/pages/admin/AdminTax";
-import AdminCurrency from "@/pages/admin/AdminCurrency";
-import AdminDelivery from "@/pages/admin/AdminDelivery";
+const AdminDashboard = React.lazy(() => import("@/pages/admin/AdminDashboard"));
+const AdminUsers = React.lazy(() => import("@/pages/admin/AdminUsers"));
+const AdminVendors = React.lazy(() => import("@/pages/admin/AdminVendors"));
+const AdminEvents = React.lazy(() => import("@/pages/admin/AdminEvents"));
+const AdminCategories = React.lazy(
+  () => import("@/pages/admin/AdminCategories")
+);
+const AdminSubcategories = React.lazy(
+  () => import("@/pages/admin/AdminSubcategories")
+);
+const AdminProducts = React.lazy(() => import("@/pages/admin/AdminProducts"));
+const AdminServices = React.lazy(() => import("@/pages/admin/AdminServices"));
+const AdminTax = React.lazy(() => import("@/pages/admin/AdminTax"));
+const AdminCurrency = React.lazy(() => import("@/pages/admin/AdminCurrency"));
+const AdminDelivery = React.lazy(() => import("@/pages/admin/AdminDelivery"));
 // import AdminDeliveryPersonnel from "@/pages/admin/AdminDeliveryPersonnel";
 // import AdminOrderAssignments from "@/pages/admin/AdminOrderAssignments";
 // import AdminDeliveryConfirmations from "@/pages/admin/AdminDeliveryConfirmations";
-import AdminFeaturedAds from "@/pages/admin/AdminFeaturedAds";
-import AdminCustomTemplates from "@/pages/admin/AdminCustomTemplates";
-import AdminCustomOrders from "@/pages/admin/AdminCustomOrders";
-import AdminPaymentMethods from "@/pages/admin/AdminPaymentMethods";
-import AdminCampaigns from "@/pages/admin/AdminCampaigns";
-import AdminCampaignParticipations from "@/pages/admin/AdminCampaignParticipations";
-import AdminCommission from "@/pages/admin/AdminCommission";
-import AdminRoles from "@/pages/admin/AdminRoles";
-import AdminPermissions from "@/pages/admin/AdminPermissions";
+const AdminFeaturedAds = React.lazy(
+  () => import("@/pages/admin/AdminFeaturedAds")
+);
+const AdminCustomTemplates = React.lazy(
+  () => import("@/pages/admin/AdminCustomTemplates")
+);
+const AdminCustomOrders = React.lazy(
+  () => import("@/pages/admin/AdminCustomOrders")
+);
+const AdminPaymentMethods = React.lazy(
+  () => import("@/pages/admin/AdminPaymentMethods")
+);
+const AdminCampaigns = React.lazy(() => import("@/pages/admin/AdminCampaigns"));
+const AdminCampaignParticipations = React.lazy(
+  () => import("@/pages/admin/AdminCampaignParticipations")
+);
+const AdminCommission = React.lazy(
+  () => import("@/pages/admin/AdminCommission")
+);
+const AdminRefunds = React.lazy(() => import("@/pages/admin/AdminRefunds"));
+const AdminVendorPayout = React.lazy(
+  () => import("@/pages/admin/AdminVendorPayout")
+);
+const AdminRoles = React.lazy(() => import("@/pages/admin/AdminRoles"));
+const AdminPermissions = React.lazy(
+  () => import("@/pages/admin/AdminPermissions")
+);
 
-import VendorDashboardLayout from "@/pages/vendor/VendorDashboardLayout";
-import VendorOverview from "@/pages/vendor/VendorOverview";
-import VendorProductsPage from "@/pages/vendor/VendorProductsPage";
-import VendorEventsPage from "@/pages/vendor/VendorEventsPage";
-import VendorServicesPage from "@/pages/vendor/VendorServicesPage";
-import VendorPaymentsPage from "@/pages/vendor/VendorPaymentsPage";
-import VendorCheckInPage from "@/pages/vendor/VendorCheckInPage";
-import VendorSettingsPage from "@/pages/vendor/VendorSettingsPage";
-import VendorResubmitPage from "@/pages/vendor/VendorResubmitPage";
-import VendorRequests from "@/pages/vendor/VendorRequests";
-import VendorServiceOrders from "@/pages/vendor/VendorServiceOrders";
-import VendorServiceCalendar from "@/pages/vendor/VendorServiceCalendar";
-import VendorProductOrders from "@/pages/vendor/VendorProductOrders";
-import CreateProduct from "@/pages/vendor/CreateProduct";
-import CreateEvent from "@/pages/vendor/CreateEvent";
-import CreateService from "@/pages/vendor/CreateService";
-import EditProduct from "@/pages/vendor/EditProduct";
-import EditEvent from "@/pages/vendor/EditEvent";
-import EditService from "@/pages/vendor/EditService";
-import ProductPriceUpdate from "@/pages/vendor/ProductPriceUpdate";
-import EventPriceUpdate from "@/pages/vendor/EventPriceUpdate";
-import ChapaOnboarding from "@/pages/vendor/ChapaOnboarding";
-import StripeOnboardingReturn from "@/pages/vendor/StripeOnboardingReturn";
-import StripeOnboardingRefresh from "@/pages/vendor/StripeOnboardingRefresh";
-import VendorCustomTemplates from "@/pages/vendor/VendorCustomTemplates";
-import VendorCustomTemplateDetail from "@/pages/vendor/VendorCustomTemplateDetail";
-import CreateCustomTemplate from "@/pages/vendor/CreateCustomTemplate";
-import VendorCustomOrders from "@/pages/vendor/VendorCustomOrders";
-import VendorCustomOrderDetail from "@/pages/vendor/VendorCustomOrderDetail";
-import VendorProductDetail from "@/pages/vendor/VendorProductDetail";
-import VendorEventDetail from "@/pages/vendor/VendorEventDetail";
-import VendorServiceDetail from "@/pages/vendor/VendorServiceDetail";
-import VendorDiscountsPage from "@/pages/vendor/VendorDiscountsPage";
-import CreateDiscount from "@/pages/vendor/CreateDiscount";
-import VendorDiscountDetail from "@/pages/vendor/VendorDiscountDetail";
-import EditDiscount from "@/pages/vendor/EditDiscount";
-import VendorDiscountUsages from "@/pages/vendor/VendorDiscountUsages";
-import VendorCampaignsPage from "@/pages/vendor/VendorCampaignsPage";
-import CampaignDetailPage from "@/pages/campaign-detail";
-import MyCustomOrders from "@/pages/customer/MyCustomOrders";
-import CustomerCustomOrderDetail from "@/pages/customer/CustomerCustomOrderDetail";
-import CustomOrderCategories from "@/pages/customer/CustomOrderCategories";
-import CustomOrderTemplates from "@/pages/customer/CustomOrderTemplates";
-import CreateCustomOrder from "@/pages/customer/CreateCustomOrder";
+const VendorDashboardLayout = React.lazy(
+  () => import("@/pages/vendor/VendorDashboardLayout")
+);
+const VendorOverview = React.lazy(
+  () => import("@/pages/vendor/VendorOverview")
+);
+const VendorProductsPage = React.lazy(
+  () => import("@/pages/vendor/VendorProductsPage")
+);
+const VendorEventsPage = React.lazy(
+  () => import("@/pages/vendor/VendorEventsPage")
+);
+const VendorServicesPage = React.lazy(
+  () => import("@/pages/vendor/VendorServicesPage")
+);
+const VendorPaymentsPage = React.lazy(
+  () => import("@/pages/vendor/VendorPaymentsPage")
+);
+const VendorCheckInPage = React.lazy(
+  () => import("@/pages/vendor/VendorCheckInPage")
+);
+const VendorSettingsPage = React.lazy(
+  () => import("@/pages/vendor/VendorSettingsPage")
+);
+const VendorResubmitPage = React.lazy(
+  () => import("@/pages/vendor/VendorResubmitPage")
+);
+const VendorRequests = React.lazy(
+  () => import("@/pages/vendor/VendorRequests")
+);
+const VendorServiceOrders = React.lazy(
+  () => import("@/pages/vendor/VendorServiceOrders")
+);
+const VendorServiceCalendar = React.lazy(
+  () => import("@/pages/vendor/VendorServiceCalendar")
+);
+const VendorProductOrders = React.lazy(
+  () => import("@/pages/vendor/VendorProductOrders")
+);
+const CreateProduct = React.lazy(() => import("@/pages/vendor/CreateProduct"));
+const CreateEvent = React.lazy(() => import("@/pages/vendor/CreateEvent"));
+const CreateService = React.lazy(() => import("@/pages/vendor/CreateService"));
+const EditProduct = React.lazy(() => import("@/pages/vendor/EditProduct"));
+const EditEvent = React.lazy(() => import("@/pages/vendor/EditEvent"));
+const EditService = React.lazy(() => import("@/pages/vendor/EditService"));
+const ProductPriceUpdate = React.lazy(
+  () => import("@/pages/vendor/ProductPriceUpdate")
+);
+const EventPriceUpdate = React.lazy(
+  () => import("@/pages/vendor/EventPriceUpdate")
+);
+const ChapaOnboarding = React.lazy(
+  () => import("@/pages/vendor/ChapaOnboarding")
+);
+const StripeOnboardingReturn = React.lazy(
+  () => import("@/pages/vendor/StripeOnboardingReturn")
+);
+const StripeOnboardingRefresh = React.lazy(
+  () => import("@/pages/vendor/StripeOnboardingRefresh")
+);
+const VendorCustomTemplates = React.lazy(
+  () => import("@/pages/vendor/VendorCustomTemplates")
+);
+const VendorCustomTemplateDetail = React.lazy(
+  () => import("@/pages/vendor/VendorCustomTemplateDetail")
+);
+const CreateCustomTemplate = React.lazy(
+  () => import("@/pages/vendor/CreateCustomTemplate")
+);
+const VendorCustomOrders = React.lazy(
+  () => import("@/pages/vendor/VendorCustomOrders")
+);
+const VendorCustomOrderDetail = React.lazy(
+  () => import("@/pages/vendor/VendorCustomOrderDetail")
+);
+const VendorProductDetail = React.lazy(
+  () => import("@/pages/vendor/VendorProductDetail")
+);
+const VendorEventDetail = React.lazy(
+  () => import("@/pages/vendor/VendorEventDetail")
+);
+const VendorServiceDetail = React.lazy(
+  () => import("@/pages/vendor/VendorServiceDetail")
+);
+const VendorDiscountsPage = React.lazy(
+  () => import("@/pages/vendor/VendorDiscountsPage")
+);
+const CreateDiscount = React.lazy(
+  () => import("@/pages/vendor/CreateDiscount")
+);
+const VendorDiscountDetail = React.lazy(
+  () => import("@/pages/vendor/VendorDiscountDetail")
+);
+const EditDiscount = React.lazy(() => import("@/pages/vendor/EditDiscount"));
+const VendorDiscountUsages = React.lazy(
+  () => import("@/pages/vendor/VendorDiscountUsages")
+);
+const VendorCampaignsPage = React.lazy(
+  () => import("@/pages/vendor/VendorCampaignsPage")
+);
+const CampaignDetailPage = React.lazy(() => import("@/pages/campaign-detail"));
+const CustomOrders = React.lazy(() => import("@/pages/custom-orders"));
+const Wishlist = React.lazy(() => import("@/pages/Wishlist"));
+const MyCustomOrders = React.lazy(() => import("@/pages/customer/MyCustomOrders"));
+const CustomerCustomOrderDetail = React.lazy(
+  () => import("@/pages/customer/CustomerCustomOrderDetail")
+);
+const CustomOrderCategories = React.lazy(
+  () => import("@/pages/customer/CustomOrderCategories")
+);
+const CustomOrderTemplates = React.lazy(
+  () => import("@/pages/customer/CustomOrderTemplates")
+);
+const CreateCustomOrder = React.lazy(
+  () => import("@/pages/customer/CreateCustomOrder")
+);
 
-import {
-  DeliveryLayout,
-  DeliveryDashboard,
-  DeliveryAssignments,
-  DeliveryAssignmentDetail,
-  DeliveryHistory,
-  DeliveryProfile,
-  AvailableOrders,
-} from "@/pages/delivery";
+const DeliveryLayout = React.lazy(
+  () => import("@/pages/delivery/DeliveryLayout")
+);
+const DeliveryDashboard = React.lazy(
+  () => import("@/pages/delivery/DeliveryDashboard")
+);
+const DeliveryAssignments = React.lazy(
+  () => import("@/pages/delivery/DeliveryAssignments")
+);
+const DeliveryAssignmentDetail = React.lazy(
+  () => import("@/pages/delivery/DeliveryAssignmentDetail")
+);
+const DeliveryHistory = React.lazy(
+  () => import("@/pages/delivery/DeliveryHistory")
+);
+const DeliveryProfile = React.lazy(
+  () => import("@/pages/delivery/DeliveryProfile")
+);
+const AvailableOrders = React.lazy(
+  () => import("@/pages/delivery/AvailableOrders")
+);
+
+function RouteLoading({ message }: { message: string }) {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-eagle-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-gray-600">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+function RoleBasedPrefetch() {
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  React.useEffect(() => {
+    if (isLoading || !isAuthenticated) {
+      return;
+    }
+
+    const role = user?.role?.toUpperCase();
+
+    if (role === "ADMIN" || role === "SUPER_ADMIN") {
+      void Promise.all([
+        import("@/pages/admin/AdminDashboard"),
+        import("@/pages/admin/AdminUsers"),
+      ]);
+      return;
+    }
+
+    if (role === "VENDOR") {
+      void Promise.all([
+        import("@/pages/vendor/VendorDashboardLayout"),
+        import("@/pages/vendor/VendorOverview"),
+      ]);
+      return;
+    }
+
+    if (role === "DELIVERY_PERSON") {
+      void Promise.all([
+        import("@/pages/delivery/DeliveryLayout"),
+        import("@/pages/delivery/DeliveryDashboard"),
+      ]);
+    }
+  }, [isAuthenticated, isLoading, user?.role]);
+
+  return null;
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -319,7 +477,9 @@ export default function Router() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <Routes>
+      <RoleBasedPrefetch />
+      <React.Suspense fallback={<RouteLoading message="Loading page..." />}>
+        <Routes>
         <Route path="/" element={<Layout />}>
           {/* Public Routes */}
           <Route index element={<HomeRoute />} />
@@ -601,7 +761,13 @@ export default function Router() {
           path="/vendor"
           element={
             <VendorRoute>
-              <VendorDashboardLayout />
+              <React.Suspense
+                fallback={
+                  <RouteLoading message="Loading vendor dashboard..." />
+                }
+              >
+                <VendorDashboardLayout />
+              </React.Suspense>
             </VendorRoute>
           }
         >
@@ -667,9 +833,13 @@ export default function Router() {
           path="/admin"
           element={
             <AdminRoute>
-              <div className="min-h-screen">
-                <Outlet />
-              </div>
+              <React.Suspense
+                fallback={<RouteLoading message="Loading admin dashboard..." />}
+              >
+                <div className="min-h-screen">
+                  <Outlet />
+                </div>
+              </React.Suspense>
             </AdminRoute>
           }
         >
@@ -696,6 +866,8 @@ export default function Router() {
           <Route path="custom-templates" element={<AdminCustomTemplates />} />
           <Route path="custom-orders" element={<AdminCustomOrders />} />
           <Route path="payment-methods" element={<AdminPaymentMethods />} />
+          <Route path="refunds" element={<AdminRefunds />} />
+          <Route path="vendor-payouts" element={<AdminVendorPayout />} />
           <Route path="commission" element={<AdminCommission />} />
           <Route path="roles" element={<AdminRoles />} />
           <Route path="permissions" element={<AdminPermissions />} />
@@ -706,7 +878,13 @@ export default function Router() {
           path="/delivery"
           element={
             <DeliveryRoute>
-              <DeliveryLayout />
+              <React.Suspense
+                fallback={
+                  <RouteLoading message="Loading delivery dashboard..." />
+                }
+              >
+                <DeliveryLayout />
+              </React.Suspense>
             </DeliveryRoute>
           }
         >
@@ -720,7 +898,8 @@ export default function Router() {
           <Route path="history" element={<DeliveryHistory />} />
           <Route path="profile" element={<DeliveryProfile />} />
         </Route>
-      </Routes>
+        </Routes>
+      </React.Suspense>
     </BrowserRouter>
   );
 }
