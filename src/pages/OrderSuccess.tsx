@@ -263,7 +263,9 @@ export default function OrderSuccess() {
           <Button 
             className="bg-ethiopian-gold hover:bg-amber text-white"
             onClick={() => {
-              navigate(`/track/${order.id}`);
+              navigate(
+                `/track/${order.trackingNumber || trackingNumber || order.id}`
+              );
             }}
           >
             <span className="flex items-center space-x-2">

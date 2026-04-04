@@ -353,23 +353,32 @@ export default function ChapaPaymentPage() {
         );
       }
 
-      // Extract amount from order details (in minor units)
+      const normalizedType = (type || "").toLowerCase();
+
+      // Custom-order prices are already provided in ETB major units.
+      // Convert to minor units only for SDK payload consistency.
+      const customAmountMajor =
+        normalizedType === "custom"
+          ? orderDetails?.finalPrice ?? orderDetails?.basePrice ?? 0
+          : 0;
+
+      // Extract amount from order details (in minor units for non-custom types)
       const orderAmountMinor =
-        type === "event"
+        normalizedType === "event"
           ? orderDetails?.totalAmountMinor || 0
-          : type === "service"
+          : normalizedType === "service"
           ? orderDetails?.totalAmountMinor || 0
-          : type === "custom"
-          ? orderDetails?.finalPriceMinor || orderDetails?.basePriceMinor || 0
+          : normalizedType === "custom"
+          ? Math.round(customAmountMajor * 100)
           : orderDetails?.totals?.totalMinor || 0;
       const orderCurrency =
         orderDetails?.currency || orderDetails?.currencyCode || "ETB";
 
       let chapaAmountMinor = orderAmountMinor;
-      let chapaCurrency = orderCurrency;
+      let chapaCurrency = normalizedType === "custom" ? "ETB" : orderCurrency;
 
-      // Chapa should always be initialized with Ethiopian pricing.
-      if (orderCurrency.toUpperCase() !== "ETB") {
+      // Non-custom types may still require conversion to ETB before Chapa initialization.
+      if (normalizedType !== "custom" && orderCurrency.toUpperCase() !== "ETB") {
         try {
           const conversion = await apiService.getRequest<CurrencyConversionDto>(
             `/api/currencies/convert?amount=${encodeURIComponent(
