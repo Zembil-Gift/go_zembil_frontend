@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -6,39 +6,76 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  serviceService, 
-  UpdateServiceRequest, 
+import {
+  serviceService,
+  UpdateServiceRequest,
   ServicePackageResponse,
   CreateServicePackageRequest,
   UpdateServicePackageRequest,
-  AvailabilityType 
+  AvailabilityType,
 } from "@/services/serviceService";
-import { vendorService, VendorProfile, PriceDto } from "@/services/vendorService";
+import {
+  vendorService,
+  VendorProfile,
+  PriceDto,
+} from "@/services/vendorService";
 import { imageService } from "@/services/imageService";
 import { apiService } from "@/services/apiService";
 import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, Briefcase, AlertCircle, Plus, Trash2, Loader2, Camera, Info, 
-  DollarSign, Package, Clock, Calendar, MapPin, Star, Edit2
+import {
+  ArrowLeft,
+  Briefcase,
+  AlertCircle,
+  Plus,
+  Trash2,
+  Loader2,
+  Camera,
+  Info,
+  DollarSign,
+  Package,
+  Clock,
+  Calendar,
+  MapPin,
+  Star,
+  Edit2,
 } from "lucide-react";
 
-const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
+const isEthiopianVendor = (
+  vendorProfile: VendorProfile | undefined
+): boolean => {
   if (!vendorProfile) return false;
-  return vendorProfile.countryCode === 'ET';
+  return vendorProfile.countryCode === "ET";
 };
-
 
 interface Currency {
   id: number;
@@ -58,8 +95,16 @@ const DAYS_OF_WEEK = [
 ];
 
 const ETHIOPIAN_CITIES = [
-  "Addis Ababa", "Dire Dawa", "Mekelle", "Gondar", "Bahir Dar",
-  "Hawassa", "Adama", "Jimma", "Dessie", "Harar"
+  "Addis Ababa",
+  "Dire Dawa",
+  "Mekelle",
+  "Gondar",
+  "Bahir Dar",
+  "Hawassa",
+  "Adama",
+  "Jimma",
+  "Dessie",
+  "Harar",
 ];
 
 // Schema for editing service metadata (not packages)
@@ -77,20 +122,29 @@ type ServiceMetadataFormData = z.infer<typeof serviceMetadataSchema>;
 const packageFormSchema = z.object({
   name: z.string().min(1, "Package name is required").max(255),
   description: z.string().max(5000).optional(),
-  durationMinutes: z.number().min(1, "Duration must be at least 1 minute").optional(),
+  durationMinutes: z
+    .number()
+    .min(1, "Duration must be at least 1 minute")
+    .optional(),
   basePrice: z.number().min(0.01, "Price must be greater than 0"),
   currency: z.string().default("ETB"),
   maxBookingsPerDay: z.number().min(0).default(0),
-  availabilityType: z.enum(["TIME_SLOTS", "WORKING_HOURS"]).default("TIME_SLOTS"),
+  availabilityType: z
+    .enum(["TIME_SLOTS", "WORKING_HOURS"])
+    .default("TIME_SLOTS"),
   workingDays: z.array(z.number()).default([1, 2, 3, 4, 5, 6]),
   timeSlots: z.array(z.string()).default([]),
   workingHoursStart: z.string().default("09:00"),
   workingHoursEnd: z.string().default("18:00"),
   advanceBookingDays: z.number().min(1).default(30),
-  attributes: z.array(z.object({
-    name: z.string().optional(),
-    value: z.string().min(1, "Value is required"),
-  })).default([]),
+  attributes: z
+    .array(
+      z.object({
+        name: z.string().optional(),
+        value: z.string().min(1, "Value is required"),
+      })
+    )
+    .default([]),
 });
 
 type PackageFormData = z.infer<typeof packageFormSchema>;
@@ -101,60 +155,79 @@ export default function EditService() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Dialog states
-  const [showCategoryChangeDialog, setShowCategoryChangeDialog] = useState(false);
-  const [pendingCategoryId, setPendingCategoryId] = useState<string | null>(null);
+  const [showCategoryChangeDialog, setShowCategoryChangeDialog] =
+    useState(false);
+  const [pendingCategoryId, setPendingCategoryId] = useState<string | null>(
+    null
+  );
   const [categoryChangeReason, setCategoryChangeReason] = useState("");
-  
+
   const [showPackagePriceDialog, setShowPackagePriceDialog] = useState(false);
-  const [selectedPackageForPriceChange, setSelectedPackageForPriceChange] = useState<ServicePackageResponse | null>(null);
-  const [pendingPackagePrice, setPendingPackagePrice] = useState<number | null>(null);
+  const [selectedPackageForPriceChange, setSelectedPackageForPriceChange] =
+    useState<ServicePackageResponse | null>(null);
+  const [pendingPackagePrice, setPendingPackagePrice] = useState<number | null>(
+    null
+  );
   const [packagePriceChangeReason, setPackagePriceChangeReason] = useState("");
-  
+
   const [showAddPackageDialog, setShowAddPackageDialog] = useState(false);
   const [showEditPackageDialog, setShowEditPackageDialog] = useState(false);
-  const [editingPackage, setEditingPackage] = useState<ServicePackageResponse | null>(null);
-  
+  const [editingPackage, setEditingPackage] =
+    useState<ServicePackageResponse | null>(null);
+
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [packageNewTimeSlot, setPackageNewTimeSlot] = useState("");
 
-  const isVendor = user?.role?.toUpperCase() === 'VENDOR';
+  const isVendor = user?.role?.toUpperCase() === "VENDOR";
   const serviceId = id ? parseInt(id) : 0;
 
   // Queries
-  const { data: service, isLoading: serviceLoading, refetch: refetchService } = useQuery({
-    queryKey: ['vendor', 'service', serviceId],
+  const {
+    data: service,
+    isLoading: serviceLoading,
+    refetch: refetchService,
+  } = useQuery({
+    queryKey: ["vendor", "service", serviceId],
     queryFn: () => serviceService.getMyService(serviceId),
     enabled: isAuthenticated && isVendor && serviceId > 0,
   });
 
-  const { data: packages = [], isLoading: packagesLoading, refetch: refetchPackages } = useQuery({
-    queryKey: ['vendor', 'service-packages', serviceId],
+  const {
+    data: packages = [],
+    isLoading: packagesLoading,
+    refetch: refetchPackages,
+  } = useQuery({
+    queryKey: ["vendor", "service-packages", serviceId],
     queryFn: () => serviceService.getVendorServicePackages(serviceId),
     enabled: isAuthenticated && isVendor && serviceId > 0,
   });
 
   const { data: currencies = [] } = useQuery({
-    queryKey: ['currencies'],
-    queryFn: () => apiService.getRequest<Currency[]>('/api/currencies'),
+    queryKey: ["currencies"],
+    queryFn: () => apiService.getRequest<Currency[]>("/api/currencies"),
   });
 
   const { data: vendorProfile } = useQuery({
-    queryKey: ['vendor', 'profile'],
+    queryKey: ["vendor", "profile"],
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
   });
 
   const { data: serviceImages = [], refetch: refetchImages } = useQuery({
-    queryKey: ['service-images', serviceId],
+    queryKey: ["service-images", serviceId],
     queryFn: () => imageService.getServiceImages(serviceId),
     enabled: serviceId > 0,
   });
 
-  const availableCurrencies = isEthiopianVendor(vendorProfile)
-    ? currencies.filter(c => c.code === 'ETB')
-    : currencies;
+  const availableCurrencies = useMemo(
+    () =>
+      isEthiopianVendor(vendorProfile)
+        ? currencies.filter((c) => c.code === "ETB")
+        : currencies,
+    [vendorProfile, currencies]
+  );
 
   // Service metadata form
   const metadataForm = useForm<ServiceMetadataFormData>({
@@ -209,7 +282,9 @@ export default function EditService() {
         name: editingPackage.name || "",
         description: editingPackage.description || "",
         durationMinutes: editingPackage.durationMinutes || 60,
-        basePrice: (editingPackage.vendorPriceMinor || editingPackage.basePriceMinor) / 100,
+        basePrice:
+          (editingPackage.vendorPriceMinor || editingPackage.basePriceMinor) /
+          100,
         currency: editingPackage.currency || "ETB",
         maxBookingsPerDay: editingPackage.maxBookingsPerDay || 0,
         availabilityType: editingPackage.availabilityType || "TIME_SLOTS",
@@ -218,7 +293,11 @@ export default function EditService() {
         workingHoursStart: availConfig.workingHoursStart || "09:00",
         workingHoursEnd: availConfig.workingHoursEnd || "18:00",
         advanceBookingDays: availConfig.advanceBookingDays || 30,
-        attributes: editingPackage.attributes?.map(a => ({ name: a.name, value: a.value })) || [],
+        attributes:
+          editingPackage.attributes?.map((a) => ({
+            name: a.name,
+            value: a.value,
+          })) || [],
       });
     }
   }, [editingPackage, showEditPackageDialog, packageForm]);
@@ -226,7 +305,9 @@ export default function EditService() {
   // Reset package form when add dialog opens
   useEffect(() => {
     if (showAddPackageDialog && !editingPackage) {
-      const currency = isEthiopianVendor(vendorProfile) ? "ETB" : (availableCurrencies[0]?.code || "ETB");
+      const currency = isEthiopianVendor(vendorProfile)
+        ? "ETB"
+        : availableCurrencies[0]?.code || "ETB";
       packageForm.reset({
         name: "",
         description: "",
@@ -243,7 +324,13 @@ export default function EditService() {
         attributes: [],
       });
     }
-  }, [showAddPackageDialog, vendorProfile, availableCurrencies, packageForm, editingPackage]);
+  }, [
+    showAddPackageDialog,
+    vendorProfile,
+    availableCurrencies,
+    packageForm,
+    editingPackage,
+  ]);
 
   // Mutations
   const uploadImagesMutation = useMutation({
@@ -252,34 +339,57 @@ export default function EditService() {
       return await imageService.uploadServiceImages(serviceId, files);
     },
     onSuccess: () => {
-      toast({ title: "Images Uploaded", description: "Your images have been uploaded successfully." });
+      toast({
+        title: "Images Uploaded",
+        description: "Your images have been uploaded successfully.",
+      });
       refetchImages();
     },
     onError: (error: any) => {
-      toast({ title: "Upload Failed", description: error.message || "Failed to upload images", variant: "destructive" });
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload images",
+        variant: "destructive",
+      });
     },
     onSettled: () => setIsUploadingImages(false),
   });
 
   const deleteImageMutation = useMutation({
-    mutationFn: (imageId: number) => imageService.deleteServiceImage(serviceId, imageId),
+    mutationFn: (imageId: number) =>
+      imageService.deleteServiceImage(serviceId, imageId),
     onSuccess: () => {
-      toast({ title: "Image Deleted", description: "The image has been removed." });
+      toast({
+        title: "Image Deleted",
+        description: "The image has been removed.",
+      });
       refetchImages();
     },
     onError: (error: any) => {
-      toast({ title: "Delete Failed", description: error.message || "Failed to delete image", variant: "destructive" });
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete image",
+        variant: "destructive",
+      });
     },
   });
 
   const setPrimaryImageMutation = useMutation({
-    mutationFn: (imageId: number) => imageService.setServicePrimaryImage(serviceId, imageId),
+    mutationFn: (imageId: number) =>
+      imageService.setServicePrimaryImage(serviceId, imageId),
     onSuccess: () => {
-      toast({ title: "Primary Image Set", description: "The primary image has been updated." });
+      toast({
+        title: "Primary Image Set",
+        description: "The primary image has been updated.",
+      });
       refetchImages();
     },
     onError: (error: any) => {
-      toast({ title: "Update Failed", description: error.message || "Failed to set primary image", variant: "destructive" });
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to set primary image",
+        variant: "destructive",
+      });
     },
   });
 
@@ -295,54 +405,100 @@ export default function EditService() {
       return await serviceService.updateService(serviceId, request);
     },
     onSuccess: () => {
-      toast({ title: "Service Updated", description: "Your service has been updated successfully." });
+      toast({
+        title: "Service Updated",
+        description: "Your service has been updated successfully.",
+      });
       refetchService();
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'services'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-services'] });
+      queryClient.invalidateQueries({ queryKey: ["vendor", "services"] });
+      queryClient.invalidateQueries({
+        queryKey: ["vendor", "pending-rejected-services"],
+      });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to update service", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update service",
+        variant: "destructive",
+      });
     },
   });
 
   const categoryChangeMutation = useMutation({
-    mutationFn: async ({ categoryId, reason }: { categoryId: number; reason: string }) => {
+    mutationFn: async ({
+      categoryId,
+      reason,
+    }: {
+      categoryId: number;
+      reason: string;
+    }) => {
       return await vendorService.createServiceCategoryChangeRequest(serviceId, {
         newSubCategoryId: categoryId,
         reason,
       });
     },
     onSuccess: () => {
-      toast({ title: "Category Change Request Submitted", description: "Your category change request has been submitted for admin approval." });
+      toast({
+        title: "Category Change Request Submitted",
+        description:
+          "Your category change request has been submitted for admin approval.",
+      });
       setShowCategoryChangeDialog(false);
       setPendingCategoryId(null);
       setCategoryChangeReason("");
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to submit category change request", variant: "destructive" });
+      toast({
+        title: "Error",
+        description:
+          error.message || "Failed to submit category change request",
+        variant: "destructive",
+      });
     },
   });
 
   const packagePriceChangeMutation = useMutation({
-    mutationFn: async ({ packageId, price, currency, reason }: { packageId: number; price: number; currency: string; reason: string }) => {
+    mutationFn: async ({
+      packageId,
+      price,
+      currency,
+      reason,
+    }: {
+      packageId: number;
+      price: number;
+      currency: string;
+      reason: string;
+    }) => {
       const priceDto: PriceDto = {
         currencyCode: currency,
         amount: price,
       };
-      return await vendorService.createServicePackagePriceUpdateRequest(serviceId, packageId, {
-        newPrice: priceDto,
-        reason,
-      });
+      return await vendorService.createServicePackagePriceUpdateRequest(
+        serviceId,
+        packageId,
+        {
+          newPrice: priceDto,
+          reason,
+        }
+      );
     },
     onSuccess: () => {
-      toast({ title: "Price Update Request Submitted", description: "Your price update request has been submitted for admin approval." });
+      toast({
+        title: "Price Update Request Submitted",
+        description:
+          "Your price update request has been submitted for admin approval.",
+      });
       setShowPackagePriceDialog(false);
       setSelectedPackageForPriceChange(null);
       setPendingPackagePrice(null);
       setPackagePriceChangeReason("");
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to submit price update request", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit price update request",
+        variant: "destructive",
+      });
     },
   });
 
@@ -363,29 +519,53 @@ export default function EditService() {
           advanceBookingDays: data.advanceBookingDays,
           ...(data.availabilityType === "TIME_SLOTS"
             ? { timeSlots: data.timeSlots }
-            : { workingHoursStart: data.workingHoursStart, workingHoursEnd: data.workingHoursEnd }),
+            : {
+                workingHoursStart: data.workingHoursStart,
+                workingHoursEnd: data.workingHoursEnd,
+              }),
         },
-        attributes: data.attributes.map((a, i) => ({ name: a.name, value: a.value, sortOrder: i })),
+        attributes: data.attributes.map((a, i) => ({
+          name: a.name,
+          value: a.value,
+          sortOrder: i,
+        })),
       };
       return await serviceService.createPackage(serviceId, request);
     },
     onSuccess: () => {
-      toast({ title: "Package Created", description: "Your service package has been created and submitted for approval." });
+      toast({
+        title: "Package Created",
+        description:
+          "Your service package has been created and submitted for approval.",
+      });
       setShowAddPackageDialog(false);
       refetchPackages();
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to create package", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create package",
+        variant: "destructive",
+      });
     },
   });
 
   const updatePackageMutation = useMutation({
-    mutationFn: async ({ packageId, data }: { packageId: number; data: PackageFormData }) => {
+    mutationFn: async ({
+      packageId,
+      data,
+    }: {
+      packageId: number;
+      data: PackageFormData;
+    }) => {
       // For approved packages, price changes need to go through change request
-      const pkg = packages.find(p => p.id === packageId);
-      const currentPrice = pkg ? (pkg.vendorPriceMinor || pkg.basePriceMinor) / 100 : 0;
-      const priceChanged = pkg?.status === 'APPROVED' && data.basePrice !== currentPrice;
-      
+      const pkg = packages.find((p) => p.id === packageId);
+      const currentPrice = pkg
+        ? (pkg.vendorPriceMinor || pkg.basePriceMinor) / 100
+        : 0;
+      const priceChanged =
+        pkg?.status === "APPROVED" && data.basePrice !== currentPrice;
+
       if (priceChanged) {
         // Open price change dialog instead
         setSelectedPackageForPriceChange(pkg!);
@@ -400,7 +580,10 @@ export default function EditService() {
         description: data.description,
         durationMinutes: data.durationMinutes,
         // Only include price for non-approved packages
-        ...(pkg?.status !== 'APPROVED' && { basePrice: data.basePrice, currency: data.currency }),
+        ...(pkg?.status !== "APPROVED" && {
+          basePrice: data.basePrice,
+          currency: data.currency,
+        }),
         maxBookingsPerDay: data.maxBookingsPerDay,
         availabilityType: data.availabilityType as AvailabilityType,
         availabilityConfig: {
@@ -408,50 +591,83 @@ export default function EditService() {
           advanceBookingDays: data.advanceBookingDays,
           ...(data.availabilityType === "TIME_SLOTS"
             ? { timeSlots: data.timeSlots }
-            : { workingHoursStart: data.workingHoursStart, workingHoursEnd: data.workingHoursEnd }),
+            : {
+                workingHoursStart: data.workingHoursStart,
+                workingHoursEnd: data.workingHoursEnd,
+              }),
         },
-        attributes: data.attributes.map((a, i) => ({ name: a.name, value: a.value, sortOrder: i })),
+        attributes: data.attributes.map((a, i) => ({
+          name: a.name,
+          value: a.value,
+          sortOrder: i,
+        })),
       };
       return await serviceService.updatePackage(packageId, request);
     },
     onSuccess: () => {
-      toast({ title: "Package Updated", description: "Your service package has been updated." });
+      toast({
+        title: "Package Updated",
+        description: "Your service package has been updated.",
+      });
       setShowEditPackageDialog(false);
       setEditingPackage(null);
       refetchPackages();
     },
     onError: (error: any) => {
       if (error.message === "PRICE_CHANGE_NEEDED") return; // Handled separately
-      toast({ title: "Error", description: error.message || "Failed to update package", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update package",
+        variant: "destructive",
+      });
     },
   });
 
   const archivePackageMutation = useMutation({
     mutationFn: (packageId: number) => serviceService.archivePackage(packageId),
     onSuccess: () => {
-      toast({ title: "Package Archived", description: "The package has been archived." });
+      toast({
+        title: "Package Archived",
+        description: "The package has been archived.",
+      });
       refetchPackages();
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to archive package", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to archive package",
+        variant: "destructive",
+      });
     },
   });
 
   const setDefaultPackageMutation = useMutation({
-    mutationFn: (packageId: number) => serviceService.setDefaultPackage(serviceId, packageId),
+    mutationFn: (packageId: number) =>
+      serviceService.setDefaultPackage(serviceId, packageId),
     onSuccess: () => {
-      toast({ title: "Default Package Set", description: "The default package has been updated." });
+      toast({
+        title: "Default Package Set",
+        description: "The default package has been updated.",
+      });
       refetchPackages();
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to set default package", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to set default package",
+        variant: "destructive",
+      });
     },
   });
 
   // Form handlers
   const onMetadataSubmit = (data: ServiceMetadataFormData) => {
     // Check if category changed for approved service
-    if (service?.status === 'APPROVED' && data.categoryId && service.categoryId?.toString() !== data.categoryId) {
+    if (
+      service?.status === "APPROVED" &&
+      data.categoryId &&
+      service.categoryId?.toString() !== data.categoryId
+    ) {
       setPendingCategoryId(data.categoryId);
       setShowCategoryChangeDialog(true);
       return;
@@ -479,14 +695,22 @@ export default function EditService() {
 
   const onPackageSubmit = (data: PackageFormData) => {
     if (data.availabilityType === "TIME_SLOTS" && data.timeSlots.length === 0) {
-      toast({ title: "Validation Error", description: "Please add at least one time slot.", variant: "destructive" });
+      toast({
+        title: "Validation Error",
+        description: "Please add at least one time slot.",
+        variant: "destructive",
+      });
       return;
     }
     if (data.workingDays.length === 0) {
-      toast({ title: "Validation Error", description: "Please select at least one working day.", variant: "destructive" });
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one working day.",
+        variant: "destructive",
+      });
       return;
     }
-    
+
     if (editingPackage) {
       updatePackageMutation.mutate({ packageId: editingPackage.id, data });
     } else {
@@ -498,7 +722,10 @@ export default function EditService() {
   const toggleWorkingDay = (day: number) => {
     const current = packageForm.getValues("workingDays");
     if (current.includes(day)) {
-      packageForm.setValue("workingDays", current.filter(d => d !== day));
+      packageForm.setValue(
+        "workingDays",
+        current.filter((d) => d !== day)
+      );
     } else {
       packageForm.setValue("workingDays", [...current, day].sort());
     }
@@ -507,14 +734,20 @@ export default function EditService() {
   const addTimeSlot = () => {
     const current = packageForm.getValues("timeSlots");
     if (packageNewTimeSlot && !current.includes(packageNewTimeSlot)) {
-      packageForm.setValue("timeSlots", [...current, packageNewTimeSlot].sort());
+      packageForm.setValue(
+        "timeSlots",
+        [...current, packageNewTimeSlot].sort()
+      );
       setPackageNewTimeSlot("");
     }
   };
 
   const removeTimeSlot = (slot: string) => {
     const current = packageForm.getValues("timeSlots");
-    packageForm.setValue("timeSlots", current.filter(s => s !== slot));
+    packageForm.setValue(
+      "timeSlots",
+      current.filter((s) => s !== slot)
+    );
   };
 
   // Loading and access states
@@ -523,7 +756,9 @@ export default function EditService() {
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You need to be a vendor to edit services.</p>
+        <p className="text-gray-600 mb-4">
+          You need to be a vendor to edit services.
+        </p>
         <Button asChild>
           <Link to="/vendor-signup">Become a Vendor</Link>
         </Button>
@@ -543,8 +778,12 @@ export default function EditService() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Service Not Found</h1>
-        <p className="text-gray-600 mb-4">The service you're looking for doesn't exist or you don't have access.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          Service Not Found
+        </h1>
+        <p className="text-gray-600 mb-4">
+          The service you're looking for doesn't exist or you don't have access.
+        </p>
         <Button asChild>
           <Link to="/vendor">Back to Dashboard</Link>
         </Button>
@@ -554,29 +793,36 @@ export default function EditService() {
 
   const getStatusBadge = (status: string) => {
     switch (status?.toUpperCase()) {
-      case 'APPROVED':
+      case "APPROVED":
         return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
-      case 'PENDING_APPROVAL':
-      case 'PENDING':
-        return <Badge className="bg-amber-100 text-amber-800">Pending Approval</Badge>;
-      case 'REJECTED':
+      case "PENDING_APPROVAL":
+      case "PENDING":
+        return (
+          <Badge className="bg-amber-100 text-amber-800">
+            Pending Approval
+          </Badge>
+        );
+      case "REJECTED":
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
-      case 'SUSPENDED':
+      case "SUSPENDED":
         return <Badge className="bg-gray-100 text-gray-800">Suspended</Badge>;
-      case 'ARCHIVED':
+      case "ARCHIVED":
         return <Badge className="bg-gray-100 text-gray-600">Archived</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const formatPrice = (priceMinor: number, currency: string = 'ETB') => {
+  const formatPrice = (priceMinor: number, currency: string = "ETB") => {
     const amount = priceMinor / 100;
-    if (currency === 'ETB') {
-      return `${amount.toLocaleString('en-ET', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ETB`;
+    if (currency === "ETB") {
+      return `${amount.toLocaleString("en-ET", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      })} ETB`;
     }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
       currency: currency,
     }).format(amount);
   };
@@ -600,7 +846,9 @@ export default function EditService() {
               <h1 className="text-2xl font-bold">Edit Service</h1>
               {getStatusBadge(service.status)}
             </div>
-            <p className="text-muted-foreground">Manage your service and packages</p>
+            <p className="text-muted-foreground">
+              Manage your service and packages
+            </p>
           </div>
         </div>
 
@@ -618,13 +866,18 @@ export default function EditService() {
         <Tabs defaultValue="details" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="details">Service Details</TabsTrigger>
-            <TabsTrigger value="packages">Packages ({packages.length})</TabsTrigger>
+            <TabsTrigger value="packages">
+              Packages ({packages.length})
+            </TabsTrigger>
             <TabsTrigger value="images">Images</TabsTrigger>
           </TabsList>
 
           {/* Service Details Tab */}
           <TabsContent value="details">
-            <form onSubmit={metadataForm.handleSubmit(onMetadataSubmit)} className="space-y-6">
+            <form
+              onSubmit={metadataForm.handleSubmit(onMetadataSubmit)}
+              className="space-y-6"
+            >
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -641,7 +894,9 @@ export default function EditService() {
                       {...metadataForm.register("title")}
                     />
                     {metadataForm.formState.errors.title && (
-                      <p className="text-sm text-red-600 mt-1">{metadataForm.formState.errors.title.message}</p>
+                      <p className="text-sm text-red-600 mt-1">
+                        {metadataForm.formState.errors.title.message}
+                      </p>
                     )}
                   </div>
 
@@ -657,11 +912,12 @@ export default function EditService() {
 
                   <div>
                     <Label>Category</Label>
-                    {service.status === 'APPROVED' && (
+                    {service.status === "APPROVED" && (
                       <Alert className="mb-2 border-blue-200 bg-blue-50">
                         <Info className="h-4 w-4 text-blue-600" />
                         <AlertDescription className="text-blue-700 text-sm">
-                          Category changes for approved services require admin approval.
+                          Category changes for approved services require admin
+                          approval.
                         </AlertDescription>
                       </Alert>
                     )}
@@ -696,7 +952,9 @@ export default function EditService() {
                       {...metadataForm.register("location")}
                     />
                     {metadataForm.formState.errors.location && (
-                      <p className="text-sm text-red-600 mt-1">{metadataForm.formState.errors.location.message}</p>
+                      <p className="text-sm text-red-600 mt-1">
+                        {metadataForm.formState.errors.location.message}
+                      </p>
                     )}
                   </div>
 
@@ -706,7 +964,10 @@ export default function EditService() {
                       name="city"
                       control={metadataForm.control}
                       render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select a city" />
                           </SelectTrigger>
@@ -721,15 +982,22 @@ export default function EditService() {
                       )}
                     />
                     {metadataForm.formState.errors.city && (
-                      <p className="text-sm text-red-600 mt-1">{metadataForm.formState.errors.city.message}</p>
+                      <p className="text-sm text-red-600 mt-1">
+                        {metadataForm.formState.errors.city.message}
+                      </p>
                     )}
                   </div>
                 </CardContent>
               </Card>
 
               <div className="flex justify-end">
-                <Button type="submit" disabled={updateServiceMutation.isPending}>
-                  {updateServiceMutation.isPending ? "Saving..." : "Save Service Details"}
+                <Button
+                  type="submit"
+                  disabled={updateServiceMutation.isPending}
+                >
+                  {updateServiceMutation.isPending
+                    ? "Saving..."
+                    : "Save Service Details"}
                 </Button>
               </div>
             </form>
@@ -746,7 +1014,8 @@ export default function EditService() {
                       Service Packages
                     </CardTitle>
                     <CardDescription>
-                      Manage different packages for your service. Each package can have its own pricing, duration, and availability.
+                      Manage different packages for your service. Each package
+                      can have its own pricing, duration, and availability.
                     </CardDescription>
                   </div>
                   <Button onClick={() => setShowAddPackageDialog(true)}>
@@ -759,12 +1028,16 @@ export default function EditService() {
                 {/* VAT Notice */}
                 <Alert className="mb-4 border-amber-200 bg-amber-50">
                   <Info className="h-4 w-4 text-amber-600" />
-                  <AlertTitle className="text-amber-800">Pricing Information</AlertTitle>
+                  <AlertTitle className="text-amber-800">
+                    Pricing Information
+                  </AlertTitle>
                   <AlertDescription className="text-amber-700">
-                    Prices shown are what you'll receive (vendor price). Platform fees are added for customers.
-                    {vendorProfile?.vatStatus === 'VAT_REGISTERED' && (
+                    Prices shown are what you'll receive (vendor price).
+                    Platform fees are added for customers.
+                    {vendorProfile?.vatStatus === "VAT_REGISTERED" && (
                       <span className="block mt-1 font-medium">
-                        As a VAT-registered vendor, VAT will be included in the customer price.
+                        As a VAT-registered vendor, VAT will be included in the
+                        customer price.
                       </span>
                     )}
                   </AlertDescription>
@@ -777,7 +1050,10 @@ export default function EditService() {
                 ) : packages.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No packages yet. Add your first package to start accepting bookings.</p>
+                    <p>
+                      No packages yet. Add your first package to start accepting
+                      bookings.
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -799,19 +1075,25 @@ export default function EditService() {
                               {getStatusBadge(pkg.status)}
                             </div>
                             {pkg.description && (
-                              <p className="text-sm text-muted-foreground mb-2">{pkg.description}</p>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {pkg.description}
+                              </p>
                             )}
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <DollarSign className="h-4 w-4" />
-                                {formatPrice(pkg.vendorPriceMinor || pkg.basePriceMinor, pkg.currency)}
+                                {formatPrice(
+                                  pkg.vendorPriceMinor || pkg.basePriceMinor,
+                                  pkg.currency
+                                )}
                               </span>
-                              {pkg.durationMinutes != null && pkg.durationMinutes > 0 && (
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-4 w-4" />
-                                  {pkg.durationMinutes} min
-                                </span>
-                              )}
+                              {pkg.durationMinutes != null &&
+                                pkg.durationMinutes > 0 && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    {pkg.durationMinutes} min
+                                  </span>
+                                )}
                               {(pkg.maxBookingsPerDay ?? 0) > 0 && (
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-4 w-4" />
@@ -821,11 +1103,13 @@ export default function EditService() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            {!pkg.isDefault && pkg.status === 'APPROVED' && (
+                            {!pkg.isDefault && pkg.status === "APPROVED" && (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setDefaultPackageMutation.mutate(pkg.id)}
+                                onClick={() =>
+                                  setDefaultPackageMutation.mutate(pkg.id)
+                                }
                                 disabled={setDefaultPackageMutation.isPending}
                               >
                                 Set Default
@@ -842,16 +1126,19 @@ export default function EditService() {
                               <Edit2 className="h-4 w-4 mr-1" />
                               Edit
                             </Button>
-                            {packages.length > 1 && pkg.status !== 'APPROVED' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => archivePackageMutation.mutate(pkg.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
+                            {packages.length > 1 &&
+                              pkg.status !== "APPROVED" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    archivePackageMutation.mutate(pkg.id)
+                                  }
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                           </div>
                         </div>
                         {pkg.rejectionReason && (
@@ -879,15 +1166,22 @@ export default function EditService() {
                   Service Images
                 </CardTitle>
                 <CardDescription>
-                  Manage images for your service. The primary image will be shown as the cover.
+                  Manage images for your service. The primary image will be
+                  shown as the cover.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ImageUpload
                   images={serviceImages}
-                  onFilesSelected={(files) => uploadImagesMutation.mutate(files)}
-                  onImageDelete={(imageId) => deleteImageMutation.mutate(imageId)}
-                  onSetPrimary={(imageId) => setPrimaryImageMutation.mutate(imageId)}
+                  onFilesSelected={(files) =>
+                    uploadImagesMutation.mutate(files)
+                  }
+                  onImageDelete={(imageId) =>
+                    deleteImageMutation.mutate(imageId)
+                  }
+                  onSetPrimary={(imageId) =>
+                    setPrimaryImageMutation.mutate(imageId)
+                  }
                   maxImages={10}
                   isUploading={isUploadingImages}
                   disabled={false}
@@ -901,17 +1195,23 @@ export default function EditService() {
         </Tabs>
 
         {/* Category Change Request Dialog */}
-        <Dialog open={showCategoryChangeDialog} onOpenChange={setShowCategoryChangeDialog}>
+        <Dialog
+          open={showCategoryChangeDialog}
+          onOpenChange={setShowCategoryChangeDialog}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Request Category Change</DialogTitle>
               <DialogDescription>
-                This service is already approved. Category changes require admin approval. Please provide a reason for this change.
+                This service is already approved. Category changes require admin
+                approval. Please provide a reason for this change.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="categoryReason">Reason for Category Change *</Label>
+                <Label htmlFor="categoryReason">
+                  Reason for Category Change *
+                </Label>
                 <Textarea
                   id="categoryReason"
                   placeholder="Explain why you want to change the category..."
@@ -934,45 +1234,66 @@ export default function EditService() {
               </Button>
               <Button
                 onClick={handleCategoryChangeSubmit}
-                disabled={!categoryChangeReason.trim() || categoryChangeMutation.isPending}
+                disabled={
+                  !categoryChangeReason.trim() ||
+                  categoryChangeMutation.isPending
+                }
               >
-                {categoryChangeMutation.isPending ? "Submitting..." : "Submit Request"}
+                {categoryChangeMutation.isPending
+                  ? "Submitting..."
+                  : "Submit Request"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
         {/* Package Price Change Request Dialog */}
-        <Dialog open={showPackagePriceDialog} onOpenChange={setShowPackagePriceDialog}>
+        <Dialog
+          open={showPackagePriceDialog}
+          onOpenChange={setShowPackagePriceDialog}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Request Price Update</DialogTitle>
               <DialogDescription>
-                This package is already approved. Price changes require admin approval. Please provide a reason for this change.
+                This package is already approved. Price changes require admin
+                approval. Please provide a reason for this change.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
                 <Label>Package</Label>
-                <Input value={selectedPackageForPriceChange?.name || ''} disabled />
-              </div>
-              <div>
-                <Label>Current Price</Label>
-                <Input 
-                  value={selectedPackageForPriceChange 
-                    ? formatPrice(selectedPackageForPriceChange.vendorPriceMinor || selectedPackageForPriceChange.basePriceMinor, selectedPackageForPriceChange.currency) 
-                    : ''
-                  } 
-                  disabled 
+                <Input
+                  value={selectedPackageForPriceChange?.name || ""}
+                  disabled
                 />
               </div>
               <div>
-                <Label>New Price ({selectedPackageForPriceChange?.currency || 'ETB'})</Label>
+                <Label>Current Price</Label>
+                <Input
+                  value={
+                    selectedPackageForPriceChange
+                      ? formatPrice(
+                          selectedPackageForPriceChange.vendorPriceMinor ||
+                            selectedPackageForPriceChange.basePriceMinor,
+                          selectedPackageForPriceChange.currency
+                        )
+                      : ""
+                  }
+                  disabled
+                />
+              </div>
+              <div>
+                <Label>
+                  New Price ({selectedPackageForPriceChange?.currency || "ETB"})
+                </Label>
                 <Input
                   type="number"
                   step="0.01"
-                  value={pendingPackagePrice || ''}
-                  onChange={(e) => setPendingPackagePrice(parseFloat(e.target.value) || null)}
+                  value={pendingPackagePrice || ""}
+                  onChange={(e) =>
+                    setPendingPackagePrice(parseFloat(e.target.value) || null)
+                  }
                 />
               </div>
               <div>
@@ -1000,17 +1321,23 @@ export default function EditService() {
               </Button>
               <Button
                 onClick={handlePackagePriceChangeSubmit}
-                disabled={!packagePriceChangeReason.trim() || !pendingPackagePrice || packagePriceChangeMutation.isPending}
+                disabled={
+                  !packagePriceChangeReason.trim() ||
+                  !pendingPackagePrice ||
+                  packagePriceChangeMutation.isPending
+                }
               >
-                {packagePriceChangeMutation.isPending ? "Submitting..." : "Submit Request"}
+                {packagePriceChangeMutation.isPending
+                  ? "Submitting..."
+                  : "Submit Request"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
         {/* Add/Edit Package Dialog */}
-        <Dialog 
-          open={showAddPackageDialog || showEditPackageDialog} 
+        <Dialog
+          open={showAddPackageDialog || showEditPackageDialog}
           onOpenChange={(open) => {
             if (!open) {
               setShowAddPackageDialog(false);
@@ -1021,16 +1348,20 @@ export default function EditService() {
         >
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingPackage ? 'Edit Package' : 'Add New Package'}</DialogTitle>
+              <DialogTitle>
+                {editingPackage ? "Edit Package" : "Add New Package"}
+              </DialogTitle>
               <DialogDescription>
-                {editingPackage 
-                  ? 'Update the details of this package. Price changes for approved packages require admin approval.'
-                  : 'Create a new package with its own pricing, duration, and availability settings.'
-                }
+                {editingPackage
+                  ? "Update the details of this package. Price changes for approved packages require admin approval."
+                  : "Create a new package with its own pricing, duration, and availability settings."}
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={packageForm.handleSubmit(onPackageSubmit)} className="space-y-6">
+            <form
+              onSubmit={packageForm.handleSubmit(onPackageSubmit)}
+              className="space-y-6"
+            >
               {/* Package Basic Info */}
               <div className="space-y-4">
                 <div>
@@ -1041,7 +1372,9 @@ export default function EditService() {
                     {...packageForm.register("name")}
                   />
                   {packageForm.formState.errors.name && (
-                    <p className="text-sm text-red-600 mt-1">{packageForm.formState.errors.name.message}</p>
+                    <p className="text-sm text-red-600 mt-1">
+                      {packageForm.formState.errors.name.message}
+                    </p>
                   )}
                 </div>
 
@@ -1064,14 +1397,18 @@ export default function EditService() {
                         <Input
                           type="number"
                           min="1"
-                          value={field.value || ''}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          value={field.value || ""}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
                         />
                       )}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="pkgMaxBookings">Max Bookings/Day (0 = unlimited)</Label>
+                    <Label htmlFor="pkgMaxBookings">
+                      Max Bookings/Day (0 = unlimited)
+                    </Label>
                     <Controller
                       name="maxBookingsPerDay"
                       control={packageForm.control}
@@ -1080,7 +1417,9 @@ export default function EditService() {
                           type="number"
                           min="0"
                           value={field.value || 0}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
                         />
                       )}
                     />
@@ -1093,17 +1432,24 @@ export default function EditService() {
                     <DollarSign className="h-4 w-4" />
                     Pricing
                   </h4>
-                  
-                  {editingPackage?.status === 'APPROVED' && (
+
+                  {editingPackage?.status === "APPROVED" && (
                     <Alert className="mb-3 border-amber-200 bg-amber-50">
                       <Info className="h-4 w-4 text-amber-600" />
                       <AlertDescription className="text-amber-700 text-sm">
-                        Price changes for approved packages require admin approval.
+                        Price changes for approved packages require admin
+                        approval.
                       </AlertDescription>
                     </Alert>
                   )}
 
-                  <div className={isEthiopianVendor(vendorProfile) ? "" : "grid grid-cols-2 gap-4"}>
+                  <div
+                    className={
+                      isEthiopianVendor(vendorProfile)
+                        ? ""
+                        : "grid grid-cols-2 gap-4"
+                    }
+                  >
                     {!isEthiopianVendor(vendorProfile) && (
                       <div>
                         <Label>Currency *</Label>
@@ -1111,13 +1457,19 @@ export default function EditService() {
                           name="currency"
                           control={packageForm.control}
                           render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select currency" />
                               </SelectTrigger>
                               <SelectContent>
                                 {availableCurrencies.map((currency) => (
-                                  <SelectItem key={currency.id} value={currency.code}>
+                                  <SelectItem
+                                    key={currency.id}
+                                    value={currency.code}
+                                  >
                                     {currency.code} - {currency.name}
                                   </SelectItem>
                                 ))}
@@ -1129,7 +1481,8 @@ export default function EditService() {
                     )}
                     <div>
                       <Label htmlFor="pkgPrice">
-                        Your Price {isEthiopianVendor(vendorProfile) ? '(ETB)' : ''} *
+                        Your Price{" "}
+                        {isEthiopianVendor(vendorProfile) ? "(ETB)" : ""} *
                       </Label>
                       <Controller
                         name="basePrice"
@@ -1140,16 +1493,21 @@ export default function EditService() {
                             step="0.01"
                             min="0.01"
                             placeholder="0.00"
-                            value={field.value || ''}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            value={field.value || ""}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value) || 0)
+                            }
                           />
                         )}
                       />
                       {packageForm.formState.errors.basePrice && (
-                        <p className="text-sm text-red-600 mt-1">{packageForm.formState.errors.basePrice.message}</p>
+                        <p className="text-sm text-red-600 mt-1">
+                          {packageForm.formState.errors.basePrice.message}
+                        </p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
-                        This is what you'll receive. Platform fee will be added for customers.
+                        This is what you'll receive. Platform fee will be added
+                        for customers.
                       </p>
                     </div>
                   </div>
@@ -1202,7 +1560,11 @@ export default function EditService() {
                           <Button
                             key={day.value}
                             type="button"
-                            variant={watchedWorkingDays.includes(day.value) ? "default" : "outline"}
+                            variant={
+                              watchedWorkingDays.includes(day.value)
+                                ? "default"
+                                : "outline"
+                            }
                             size="sm"
                             onClick={() => toggleWorkingDay(day.value)}
                           >
@@ -1217,7 +1579,10 @@ export default function EditService() {
                         <Label className="mb-2 block">Time Slots *</Label>
                         <div className="flex flex-wrap gap-2 mb-3">
                           {watchedTimeSlots.map((slot) => (
-                            <div key={slot} className="flex items-center gap-1 bg-gray-100 rounded-md px-3 py-1">
+                            <div
+                              key={slot}
+                              className="flex items-center gap-1 bg-gray-100 rounded-md px-3 py-1"
+                            >
                               <span>{slot}</span>
                               <Button
                                 type="button"
@@ -1235,10 +1600,17 @@ export default function EditService() {
                           <Input
                             type="time"
                             value={packageNewTimeSlot}
-                            onChange={(e) => setPackageNewTimeSlot(e.target.value)}
+                            onChange={(e) =>
+                              setPackageNewTimeSlot(e.target.value)
+                            }
                             className="w-32"
                           />
-                          <Button type="button" variant="outline" size="sm" onClick={addTimeSlot}>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={addTimeSlot}
+                          >
                             <Plus className="h-4 w-4 mr-1" />
                             Add Slot
                           </Button>
@@ -1252,7 +1624,11 @@ export default function EditService() {
                             name="workingHoursStart"
                             control={packageForm.control}
                             render={({ field }) => (
-                              <Input type="time" value={field.value} onChange={field.onChange} />
+                              <Input
+                                type="time"
+                                value={field.value}
+                                onChange={field.onChange}
+                              />
                             )}
                           />
                         </div>
@@ -1262,7 +1638,11 @@ export default function EditService() {
                             name="workingHoursEnd"
                             control={packageForm.control}
                             render={({ field }) => (
-                              <Input type="time" value={field.value} onChange={field.onChange} />
+                              <Input
+                                type="time"
+                                value={field.value}
+                                onChange={field.onChange}
+                              />
                             )}
                           />
                         </div>
@@ -1278,12 +1658,16 @@ export default function EditService() {
                           <Input
                             type="number"
                             min="1"
-                            value={field.value || ''}
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 30)}
+                            value={field.value || ""}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value) || 30)
+                            }
                           />
                         )}
                       />
-                      <p className="text-xs text-muted-foreground mt-1">How far in advance can customers book</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        How far in advance can customers book
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1301,14 +1685,19 @@ export default function EditService() {
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={createPackageMutation.isPending || updatePackageMutation.isPending}
-                >
-                  {createPackageMutation.isPending || updatePackageMutation.isPending
-                    ? "Saving..."
-                    : editingPackage ? "Update Package" : "Create Package"
+                <Button
+                  type="submit"
+                  disabled={
+                    createPackageMutation.isPending ||
+                    updatePackageMutation.isPending
                   }
+                >
+                  {createPackageMutation.isPending ||
+                  updatePackageMutation.isPending
+                    ? "Saving..."
+                    : editingPackage
+                    ? "Update Package"
+                    : "Create Package"}
                 </Button>
               </DialogFooter>
             </form>
