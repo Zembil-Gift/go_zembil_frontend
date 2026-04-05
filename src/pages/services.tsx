@@ -298,7 +298,15 @@ export default function Services() {
     enabled: isInitialized,
   });
 
-  const services = servicesData?.content || [];
+  const services = useMemo(() => {
+    const allServices = servicesData?.content || [];
+
+    return allServices.filter((service) =>
+      service.hasPackages ||
+      !!service.defaultPackage ||
+      (service.packages?.length ?? 0) > 0
+    );
+  }, [servicesData?.content]);
   const totalServices = servicesData?.totalElements || 0;
   const totalPages = servicesData?.totalPages || 0;
 

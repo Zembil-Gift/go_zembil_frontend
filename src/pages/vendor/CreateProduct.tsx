@@ -40,7 +40,7 @@ const attributeSchema = z.object({
 });
 
 const skuSchema = z.object({
-  skuCode: z.string().optional(),
+  skuCode: z.string().min(1, "SKU code is required"),
   skuName: z.string().min(1, "Variant name is required"),
   stockQuantity: z.number().min(0, "Stock cannot be negative"),
   amount: z.number().min(0, "Price must be a valid number"),
@@ -48,9 +48,9 @@ const skuSchema = z.object({
 });
 
 const productSchema = z.object({
-  name: z.string().min(1, "Product name is required").max(255),
-  description: z.string().min(1, "Description is required").max(1000),
-  summary: z.string().min(1, "Summary is required").max(500),
+  name: z.string().trim().min(5, "Product name must be at least 5 characters").max(255),
+  description: z.string().trim().min(50, "Description must be at least 50 characters").max(1000),
+  summary: z.string().trim().min(20, "Short summary must be at least 20 characters").max(500),
   cover: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   subCategoryId: z.string().min(1, "Sub-Category is required"),
   tags: z.array(z.string()).optional(),
@@ -312,7 +312,9 @@ export default function CreateProduct() {
     console.log("Form validation errors:", errors);
     
     const errorMessages: string[] = [];
-    if (errors.name) errorMessages.push("Product name is required");
+    if (errors.name) errorMessages.push(errors.name.message || "Product name is invalid");
+    if (errors.summary) errorMessages.push(errors.summary.message || "Short summary is invalid");
+    if (errors.description) errorMessages.push(errors.description.message || "Description is invalid");
     if (errors.subCategoryId) errorMessages.push("Sub-Category is required");
     if (errors.productSku) {
       let foundSpecificSkuError = false;
@@ -330,6 +332,10 @@ export default function CreateProduct() {
             const variantLabel = `Variant ${index + 1}`;
             if (skuError.skuName) {
               errorMessages.push(`${variantLabel}: ${skuError.skuName.message}`);
+              foundSpecificSkuError = true;
+            }
+            if (skuError.skuCode) {
+              errorMessages.push(`${variantLabel}: ${skuError.skuCode.message}`);
               foundSpecificSkuError = true;
             }
             if (skuError.amount) {
@@ -606,7 +612,7 @@ export default function CreateProduct() {
                         {/* SKU Code and Stock */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label>SKU Code (optional)</Label>
+                            <Label>SKU Code *</Label>
                             <Input
                               placeholder={skuFields.length === 1 ? "e.g., PROD-001" : "e.g., SHIRT-RED-M"}
                               {...form.register(`productSku.${skuIndex}.skuCode`)}
@@ -616,7 +622,7 @@ export default function CreateProduct() {
                                 {form.formState.errors.productSku[skuIndex]?.skuCode?.message}
                               </p>
                             )}
-                            <p className="text-xs text-muted-foreground mt-1">Optional reference code for this variant</p>
+                            <p className="text-xs text-muted-foreground mt-1">Required unique reference code for this variant</p>
                           </div>
                           <div>
                             <Label>Stock Quantity *</Label>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -44,20 +44,46 @@ export default function ServiceDetail() {
     enabled: !!id && isInitialized,
   });
 
+  // Get approved packages for display and selection
+  const availablePackages = useMemo(() => {
+    if (!service?.packages) return [];
+    return service.packages.filter(pkg => pkg.status === 'APPROVED');
+  }, [service]);
+
+  // Auto-select when there is exactly one package
+  useEffect(() => {
+    if (availablePackages.length === 1) {
+      const onlyPackageId = availablePackages[0].id;
+      if (selectedPackageId !== onlyPackageId) {
+        setSelectedPackageId(onlyPackageId);
+      }
+      return;
+    }
+
+    if (selectedPackageId != null && !availablePackages.some((pkg) => pkg.id === selectedPackageId)) {
+      setSelectedPackageId(null);
+    }
+  }, [availablePackages, selectedPackageId]);
+
   // Get the currently selected package
   const selectedPackage = useMemo(() => {
     if (!service) return null;
-    if (selectedPackageId) {
-      return service.packages?.find(pkg => pkg.id === selectedPackageId) || service.defaultPackage;
-    }
-    return service.defaultPackage;
-  }, [service, selectedPackageId]);
 
-  // Get available packages for variants display
-  const availablePackages = useMemo(() => {
-    if (!service?.packages || service.packages.length <= 1) return [];
-    return service.packages.filter(pkg => pkg.status === 'APPROVED');
-  }, [service]);
+    if (selectedPackageId != null) {
+      return (
+        availablePackages.find((pkg) => pkg.id === selectedPackageId) ||
+        service.defaultPackage ||
+        availablePackages[0] ||
+        null
+      );
+    }
+
+    if (availablePackages.length === 1) {
+      return availablePackages[0];
+    }
+
+    return service.defaultPackage || availablePackages[0] || null;
+  }, [service, selectedPackageId, availablePackages]);
 
   const policies = useMemo<PoliciesConfig>(() => {
     if (!service) return {};
@@ -382,7 +408,7 @@ export default function ServiceDetail() {
             </motion.div>
 
             {/* Package Variants */}
-            {availablePackages.length > 1 && (
+            {availablePackages.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -390,7 +416,9 @@ export default function ServiceDetail() {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="font-bold text-eagle-green">Available Packages</CardTitle>
+                    <CardTitle className="font-bold text-eagle-green">
+                      {availablePackages.length === 1 ? 'Package' : 'Available Packages'}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

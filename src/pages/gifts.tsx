@@ -388,10 +388,10 @@ export default function Gifts() {
             </Select>
 
             {/* Advanced Filters Button */}
-            <Button variant="outline" className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white">
+            {/* <Button variant="outline" className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white">
               <SlidersHorizontal size={18} className="mr-2" />
               Filters
-            </Button>
+            </Button> */}
           </div>
 
           {/* Active Filters */}

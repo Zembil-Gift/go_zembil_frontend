@@ -58,8 +58,16 @@ interface Product {
   productSku?: Array<{
     id: number;
     skuCode: string;
+    skuName?: string;
     stockQuantity: number;
     isDefault?: boolean;
+    images?: Array<{
+      id: number;
+      url: string;
+      fullUrl?: string;
+      sortOrder: number;
+      isPrimary?: boolean;
+    }>;
     attributes?: Array<{
       id: number;
       name: string;
@@ -98,6 +106,8 @@ export default function AdminProducts() {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectReasonError, setRejectReasonError] = useState('');
   const [approvingProductId, setApprovingProductId] = useState<number | null>(null);
+  const [showImagePreviewDialog, setShowImagePreviewDialog] = useState(false);
+  const [selectedImagePreview, setSelectedImagePreview] = useState<{ url: string; alt: string } | null>(null);
 
   const extractErrorMessage = (error: any, fallback: string) => {
     const responseData = error?.response?.data;
@@ -897,7 +907,7 @@ export default function AdminProducts() {
 
       {/* View Product Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[96vw] max-w-6xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Product Details</DialogTitle>
             <DialogDescription>
@@ -993,11 +1003,13 @@ export default function AdminProducts() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>SKU Code</TableHead>
+                          <TableHead>Variant Name</TableHead>
                           <TableHead>Attributes</TableHead>
                           <TableHead className="text-right">Customer Price</TableHead>
                           <TableHead className="text-right">Vendor Price</TableHead>
                           <TableHead className="text-right">Platform Fee</TableHead>
                           <TableHead className="text-right">Stock</TableHead>
+                          <TableHead>Images</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1016,6 +1028,9 @@ export default function AdminProducts() {
                                     <Badge variant="outline" className="text-xs">Default</Badge>
                                   )}
                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-gray-700">{sku.skuName || '-'}</span>
                               </TableCell>
                               <TableCell>
                                 {sku.attributes && sku.attributes.length > 0 ? (
@@ -1043,6 +1058,42 @@ export default function AdminProducts() {
                                 <Badge variant={sku.stockQuantity > 0 ? "outline" : "destructive"}>
                                   {sku.stockQuantity}
                                 </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {sku.images && sku.images.length > 0 ? (
+                                  <div className="flex items-center gap-1.5">
+                                    {sku.images.slice(0, 4).map((img) => {
+                                      const imgUrl = getProductImageUrl([img]);
+                                      return (
+                                        <button
+                                          key={img.id}
+                                          type="button"
+                                          className="rounded-md ring-1 ring-gray-200 transition-transform duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-eagle-green"
+                                          onClick={() => {
+                                            setSelectedImagePreview({
+                                              url: imgUrl,
+                                              alt: sku.skuName || sku.skuCode,
+                                            });
+                                            setShowImagePreviewDialog(true);
+                                          }}
+                                        >
+                                          <img
+                                            src={imgUrl}
+                                            alt={sku.skuName || sku.skuCode}
+                                            className="h-8 w-8 rounded-md object-cover cursor-zoom-in"
+                                          />
+                                        </button>
+                                      );
+                                    })}
+                                    {sku.images.length > 4 && (
+                                      <Badge variant="secondary" className="text-[10px]">
+                                        +{sku.images.length - 4}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">-</span>
+                                )}
                               </TableCell>
                             </TableRow>
                           );
@@ -1082,6 +1133,23 @@ export default function AdminProducts() {
               </>
             )}
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showImagePreviewDialog} onOpenChange={setShowImagePreviewDialog}>
+        <DialogContent className="w-[96vw] max-w-7xl max-h-[96vh] p-2 sm:p-4">
+          <DialogHeader>
+            <DialogTitle>Variant Image Preview</DialogTitle>
+          </DialogHeader>
+          {selectedImagePreview && (
+            <div className="w-full h-[82vh] bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center">
+              <img
+                src={selectedImagePreview.url}
+                alt={selectedImagePreview.alt}
+                className="w-full h-full object-contain"
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

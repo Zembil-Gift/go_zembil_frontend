@@ -1,24 +1,41 @@
-import {useEffect, useState} from "react";
-import {Controller, useFieldArray, useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {z} from "zod";
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
-import {Link, useNavigate, useParams} from "react-router-dom";
-import {useAuth} from "@/hooks/useAuth";
-import {useToast} from "@/hooks/use-toast";
-import {CategoryChangeRequest, Product, VendorProfile, vendorService} from "@/services/vendorService";
-import {apiService} from "@/services/apiService";
-import {ImageDto, imageService} from "@/services/imageService";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Input} from "@/components/ui/input";
-import {Textarea} from "@/components/ui/textarea";
-import {Label} from "@/components/ui/label";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {ImageUpload} from "@/components/ImageUpload";
-import {TagInput} from "@/components/TagInput";
-import {SubcategorySearchCombobox} from "@/components/SubcategorySearchCombobox";
+import { useEffect, useState } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import {
+  CategoryChangeRequest,
+  Product,
+  VendorProfile,
+  vendorService,
+} from "@/services/vendorService";
+import { apiService } from "@/services/apiService";
+import { ImageDto, imageService } from "@/services/imageService";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ImageUpload } from "@/components/ImageUpload";
+import { TagInput } from "@/components/TagInput";
+import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
 import {
   AlertCircle,
   AlertTriangle,
@@ -33,9 +50,9 @@ import {
   Package,
   Plus,
   RefreshCw,
-  Trash2
+  Trash2,
 } from "lucide-react";
-import {Alert, AlertDescription, AlertTitle,} from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -46,9 +63,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
+const isEthiopianVendor = (
+  vendorProfile: VendorProfile | undefined
+): boolean => {
   if (!vendorProfile) return false;
-  return vendorProfile.countryCode === 'ET';
+  return vendorProfile.countryCode === "ET";
 };
 
 interface Category {
@@ -87,79 +106,105 @@ const skuSchema = z.object({
   attributes: z.array(attributeSchema).optional(),
 });
 
-const productEditSchema = z.object({
-  name: z.string().min(1, "Product name is required").max(255),
-  description: z.string().max(1000).optional(),
-  summary: z.string().max(500).optional(),
-  subCategoryId: z.string().min(1, "Category is required"),
-  isCustomizable: z.boolean().optional(),
-  tags: z.array(z.string()).optional(),
-  occasion: z.string().optional(),
-  giftWrappable: z.boolean().optional(),
-  giftWrapPrice: z.number().min(0, "Gift wrap price must be positive").optional(),
-  giftWrapCurrencyCode: z.string().optional(),
-  productSku: z.array(skuSchema).min(1, "At least one product SKU is required"),
-}).refine((data) => {
-  // Check for duplicate variant names
-  const variantNames = data.productSku.map(sku => sku.skuName.trim().toLowerCase());
-  const uniqueNames = new Set(variantNames);
-  return uniqueNames.size === variantNames.length;
-}, {
-  message: "Each variant must have a unique name",
-  path: ["productSku"],
-});
+const productEditSchema = z
+  .object({
+    name: z.string().min(1, "Product name is required").max(255),
+    description: z.string().max(1000).optional(),
+    summary: z.string().max(500).optional(),
+    subCategoryId: z.string().min(1, "Category is required"),
+    isCustomizable: z.boolean().optional(),
+    tags: z.array(z.string()).optional(),
+    occasion: z.string().optional(),
+    giftWrappable: z.boolean().optional(),
+    giftWrapPrice: z
+      .number()
+      .min(0, "Gift wrap price must be positive")
+      .optional(),
+    giftWrapCurrencyCode: z.string().optional(),
+    productSku: z
+      .array(skuSchema)
+      .min(1, "At least one product SKU is required"),
+  })
+  .refine(
+    (data) => {
+      // Check for duplicate variant names
+      const variantNames = data.productSku.map((sku) =>
+        sku.skuName.trim().toLowerCase()
+      );
+      const uniqueNames = new Set(variantNames);
+      return uniqueNames.size === variantNames.length;
+    },
+    {
+      message: "Each variant must have a unique name",
+      path: ["productSku"],
+    }
+  );
 
 type ProductEditFormData = z.infer<typeof productEditSchema>;
 
 export default function EditProduct() {
   const { id } = useParams<{ id: string }>();
   const productId = id ? parseInt(id, 10) : null;
-  
+
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  const isVendor = user?.role?.toUpperCase() === 'VENDOR';
+  const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
   // State for SKU images management
-  const [pendingSkuImages, setPendingSkuImages] = useState<Record<number, File[]>>({});
-  const [currentSkuImages, setCurrentSkuImages] = useState<Record<number, ImageDto[]>>({});
+  const [pendingSkuImages, setPendingSkuImages] = useState<
+    Record<number, File[]>
+  >({});
+  const [currentSkuImages, setCurrentSkuImages] = useState<
+    Record<number, ImageDto[]>
+  >({});
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
   // State for category change request
-  const [categoryChangeDialogOpen, setCategoryChangeDialogOpen] = useState(false);
+  const [categoryChangeDialogOpen, setCategoryChangeDialogOpen] =
+    useState(false);
   const [categoryChangeReason, setCategoryChangeReason] = useState("");
-  const [pendingFormData, setPendingFormData] = useState<ProductEditFormData | null>(null);
+  const [pendingFormData, setPendingFormData] =
+    useState<ProductEditFormData | null>(null);
 
   // Fetch product data
-  const { data: product, isLoading: productLoading, error: productError } = useQuery({
-    queryKey: ['product', productId],
+  const {
+    data: product,
+    isLoading: productLoading,
+    error: productError,
+  } = useQuery({
+    queryKey: ["product", productId],
     queryFn: async () => {
-      return await apiService.getRequest<Product>(`/api/v1/products/${productId}`);
+      return await apiService.getRequest<Product>(
+        `/api/v1/products/${productId}`
+      );
     },
     enabled: !!productId && isAuthenticated && isVendor,
   });
 
   // Fetch vendor profile
   const { data: vendorProfile } = useQuery({
-    queryKey: ['vendor', 'profile'],
+    queryKey: ["vendor", "profile"],
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
   });
 
   // Fetch categories
   const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiService.getRequest<Category[]>('/api/categories'),
+    queryKey: ["categories"],
+    queryFn: () => apiService.getRequest<Category[]>("/api/categories"),
   });
 
   // Fetch all subcategories
   const { data: allSubCategories = [] } = useQuery({
-    queryKey: ['all-subcategories', categories],
+    queryKey: ["all-subcategories", categories],
     queryFn: async () => {
       const subCategoriesPromises = categories.map((category) =>
-        apiService.getRequest<SubCategory[]>(`/api/categories/${category.id}/sub-categories`)
+        apiService.getRequest<SubCategory[]>(
+          `/api/categories/${category.id}/sub-categories`
+        )
       );
       const results = await Promise.all(subCategoriesPromises);
       return results.flat();
@@ -169,25 +214,32 @@ export default function EditProduct() {
 
   // Fetch currencies
   const { data: currencies = [] } = useQuery({
-    queryKey: ['currencies'],
-    queryFn: () => apiService.getRequest<Currency[]>('/api/currencies'),
+    queryKey: ["currencies"],
+    queryFn: () => apiService.getRequest<Currency[]>("/api/currencies"),
   });
 
   // Fetch pending category change request for this product
-  const { data: pendingCategoryChangeRequest } = useQuery<CategoryChangeRequest | null>({
-    queryKey: ['pending-category-change', productId],
-    queryFn: async () => {
-      try {
-        return await vendorService.getPendingCategoryChangeRequestForProduct(productId!);
-      } catch {
-        return null;
-      }
-    },
-    enabled: !!productId && isAuthenticated && isVendor && product?.status === 'ACTIVE',
-  });
+  const { data: pendingCategoryChangeRequest } =
+    useQuery<CategoryChangeRequest | null>({
+      queryKey: ["pending-category-change", productId],
+      queryFn: async () => {
+        try {
+          return await vendorService.getPendingCategoryChangeRequestForProduct(
+            productId!
+          );
+        } catch {
+          return null;
+        }
+      },
+      enabled:
+        !!productId &&
+        isAuthenticated &&
+        isVendor &&
+        product?.status === "ACTIVE",
+    });
 
   const availableCurrencies = isEthiopianVendor(vendorProfile)
-    ? currencies.filter(c => c.code === 'ETB')
+    ? currencies.filter((c) => c.code === "ETB")
     : currencies;
 
   const form = useForm<ProductEditFormData>({
@@ -207,39 +259,59 @@ export default function EditProduct() {
     },
   });
 
-  const { fields: skuFields, append: appendSku, remove: removeSku } = useFieldArray({
+  const {
+    fields: skuFields,
+    append: appendSku,
+    remove: removeSku,
+  } = useFieldArray({
     control: form.control,
     name: "productSku",
   });
 
   useEffect(() => {
     if (product && allSubCategories.length > 0) {
-      const skuData = (product.productSku && product.productSku.length > 0)
-        ? product.productSku.map(sku => {
-            const currencyCode = sku.price?.currencyCode || sku.price?.prices?.[0]?.currencyCode || "";
-            const currentPrice = sku.price?.vendorAmount || sku.price?.amount || sku.price?.prices?.[0]?.amount || 0;
-            return {
-              id: sku.id,
-              skuCode: sku.skuCode || "",
-              skuName: sku.skuName || "",
-              stockQuantity: sku.stockQuantity || 0,
-              currencyCode,
-              currentPrice,
-              attributes: sku.attributes?.map(attr => ({
-                id: attr.id,
-                name: attr.name,
-                value: attr.value,
-              })) || [],
-            };
-          })
-        : [{
-            skuCode: "",
-            skuName: "",
-            stockQuantity: 0,
-            currencyCode: isEthiopianVendor(vendorProfile) ? "ETB" : currencies[0]?.code || "",
-            currentPrice: product.price?.vendorAmount || product.price?.prices?.[0]?.amount || 0,
-            attributes: [],
-          }];
+      const skuData =
+        product.productSku && product.productSku.length > 0
+          ? product.productSku.map((sku) => {
+              const currencyCode =
+                sku.price?.currencyCode ||
+                sku.price?.prices?.[0]?.currencyCode ||
+                "";
+              const currentPrice =
+                sku.price?.vendorAmount ||
+                sku.price?.amount ||
+                sku.price?.prices?.[0]?.amount ||
+                0;
+              return {
+                id: sku.id,
+                skuCode: sku.skuCode || "",
+                skuName: sku.skuName || "",
+                stockQuantity: sku.stockQuantity || 0,
+                currencyCode,
+                currentPrice,
+                attributes:
+                  sku.attributes?.map((attr) => ({
+                    id: attr.id,
+                    name: attr.name,
+                    value: attr.value,
+                  })) || [],
+              };
+            })
+          : [
+              {
+                skuCode: "",
+                skuName: "",
+                stockQuantity: 0,
+                currencyCode: isEthiopianVendor(vendorProfile)
+                  ? "ETB"
+                  : currencies[0]?.code || "",
+                currentPrice:
+                  product.price?.vendorAmount ||
+                  product.price?.prices?.[0]?.amount ||
+                  0,
+                attributes: [],
+              },
+            ];
 
       // Load SKU images - use fullUrl from backend
       const skuImagesMap: Record<number, ImageDto[]> = {};
@@ -254,12 +326,16 @@ export default function EditProduct() {
               originalFilename: img.originalFilename || `image-${imgIndex + 1}`,
               altText: img.altText || sku.skuCode || product.name,
               sortOrder: img.sortOrder ?? imgIndex,
-              isPrimary: img.isPrimary ?? (imgIndex === 0),
+              isPrimary: img.isPrimary ?? imgIndex === 0,
               fileSize: img.fileSize || 0,
-              contentType: img.contentType || 'image/jpeg',
+              contentType: img.contentType || "image/jpeg",
               createdAt: img.createdAt || new Date().toISOString(),
             }));
-          } else if (index === 0 && product.images && product.images.length > 0) {
+          } else if (
+            index === 0 &&
+            product.images &&
+            product.images.length > 0
+          ) {
             // Fallback to product-level images for the first/default SKU
             skuImagesMap[index] = product.images.map((img, imgIndex) => ({
               id: img.id || imgIndex + 1,
@@ -268,9 +344,9 @@ export default function EditProduct() {
               originalFilename: img.originalFilename || `image-${imgIndex + 1}`,
               altText: img.altText || product.name,
               sortOrder: img.sortOrder ?? imgIndex,
-              isPrimary: img.isPrimary ?? (imgIndex === 0),
+              isPrimary: img.isPrimary ?? imgIndex === 0,
               fileSize: img.fileSize || 0,
-              contentType: img.contentType || 'image/jpeg',
+              contentType: img.contentType || "image/jpeg",
               createdAt: img.createdAt || new Date().toISOString(),
             }));
           } else {
@@ -286,9 +362,9 @@ export default function EditProduct() {
           originalFilename: img.originalFilename || `image-${imgIndex + 1}`,
           altText: img.altText || product.name,
           sortOrder: img.sortOrder ?? imgIndex,
-          isPrimary: img.isPrimary ?? (imgIndex === 0),
+          isPrimary: img.isPrimary ?? imgIndex === 0,
           fileSize: img.fileSize || 0,
-          contentType: img.contentType || 'image/jpeg',
+          contentType: img.contentType || "image/jpeg",
           createdAt: img.createdAt || new Date().toISOString(),
         }));
       }
@@ -311,61 +387,89 @@ export default function EditProduct() {
   }, [product, vendorProfile, currencies, form, allSubCategories]);
 
   // Check if vendor owns this product (compare with userId, not vendor id)
-  const isProductOwner = product && vendorProfile && product.vendorId === vendorProfile.userId;
+  const isProductOwner =
+    product && vendorProfile && product.vendorId === vendorProfile.userId;
 
   // Update product mutation
   const updateProductMutation = useMutation({
     mutationFn: async (data: ProductEditFormData) => {
       if (!productId) throw new Error("Product ID is required");
 
-      // Use the appropriate endpoint based on product status
-      const isPendingOrRejected = product?.status === 'PENDING' || product?.status === 'REJECTED';
-      
-      // For ACTIVE products, exclude subCategoryId from the payload (category changes require approval)
-      const productPayload: Partial<Product> = {
-        name: data.name,
-        description: data.description || undefined,
-        summary: data.summary || undefined,
-        // Only include subCategoryId for PENDING/REJECTED products (can change directly)
-        ...(isPendingOrRejected && { subCategoryId: data.subCategoryId ? parseInt(data.subCategoryId) : undefined }),
-        isCustomizable: data.isCustomizable,
-        tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
-        occasion: data.occasion || undefined,
-        giftWrappable: data.giftWrappable || false,
-        giftWrapPrice: data.giftWrappable && data.giftWrapPrice ? data.giftWrapPrice : undefined,
-        giftWrapCurrencyCode: data.giftWrappable && data.giftWrapPrice
-          ? (data.giftWrapCurrencyCode || product?.giftWrapCurrencyCode || (product?.productSku?.[0] as any)?.price?.currencyCode || 'ETB')
-          : undefined,
-        // Include SKU updates (excluding price changes)
-        productSku: data.productSku.map((sku, index) => ({
+      // PUT /api/v1/products/vendor/{id} requires each SKU to identify an existing record by id or skuCode.
+      const skuPayload = data.productSku.map((sku, index) => {
+        const normalizedSkuCode = sku.skuCode?.trim() || "";
+        if (!sku.id && !normalizedSkuCode) {
+          throw new Error(
+            `Variant ${index + 1} must include an existing SKU id or skuCode.`
+          );
+        }
+
+        return {
           id: sku.id,
-          skuCode: sku.skuCode || "", // Provide default empty string for required field
-          skuName: sku.skuName, // Add skuName to payload
+          skuCode: normalizedSkuCode,
+          skuName: sku.skuName?.trim(),
           stockQuantity: sku.stockQuantity,
           isDefault: index === 0,
-          attributes: sku.attributes?.filter(attr => attr.name && attr.value) || [],
-          // Note: We don't include price here as it requires a separate request
-        })),
+          attributes:
+            sku.attributes
+              ?.filter((attr) => attr.name?.trim() && attr.value?.trim())
+              .map((attr) => ({
+                name: attr.name.trim(),
+                value: attr.value.trim(),
+              })) || [],
+        };
+      });
+
+      const productPayload: Product = {
+        name: data.name?.trim(),
+        description: data.description?.trim() || undefined,
+        summary: data.summary?.trim() || undefined,
+        subCategoryId: data.subCategoryId
+          ? parseInt(data.subCategoryId, 10)
+          : undefined,
+        tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
+        occasion: data.occasion || undefined,
+        giftWrappable: !!data.giftWrappable,
+        giftWrapPrice:
+          data.giftWrappable && data.giftWrapPrice
+            ? data.giftWrapPrice
+            : undefined,
+        giftWrapCurrencyCode:
+          data.giftWrappable && data.giftWrapPrice
+            ? data.giftWrapCurrencyCode ||
+              product?.giftWrapCurrencyCode ||
+              (product?.productSku?.[0] as any)?.price?.currencyCode ||
+              "ETB"
+            : undefined,
+        productSku: skuPayload,
       };
 
+      // Use the appropriate endpoint based on product status
+      const isPendingOrRejected =
+        product?.status === "PENDING" || product?.status === "REJECTED";
+
       if (isPendingOrRejected) {
-        return vendorService.editPendingProduct(productId, productPayload as Product);
+        return vendorService.editPendingProduct(productId, productPayload);
       } else {
-        // Use updateProductForVendor for ACTIVE products (preserves prices)
-        return vendorService.updateProductForVendor(productId, productPayload as Product);
+        // Use updateProductForVendor with full attribute payload (prices are preserved server-side).
+        return vendorService.updateProductForVendor(productId, productPayload);
       }
     },
     onSuccess: async () => {
       // Upload any pending SKU images
-      const hasAnyPendingImages = Object.values(pendingSkuImages).some(images => images.length > 0);
-      
+      const hasAnyPendingImages = Object.values(pendingSkuImages).some(
+        (images) => images.length > 0
+      );
+
       if (hasAnyPendingImages && product?.productSku) {
         setIsUploadingImages(true);
         try {
-          for (const [skuIndexStr, images] of Object.entries(pendingSkuImages)) {
+          for (const [skuIndexStr, images] of Object.entries(
+            pendingSkuImages
+          )) {
             const skuIndex = parseInt(skuIndexStr, 10);
             const sku = product.productSku[skuIndex];
-            
+
             if (images.length > 0 && sku?.id) {
               await imageService.uploadSkuImages(sku.id, images);
             }
@@ -384,22 +488,28 @@ export default function EditProduct() {
 
       toast({
         title: "Product Updated",
-        description: product?.status === 'PENDING' || product?.status === 'REJECTED'
-          ? "Your product has been updated and resubmitted for review."
-          : "Your product has been updated successfully.",
+        description:
+          product?.status === "PENDING" || product?.status === "REJECTED"
+            ? "Your product has been updated and resubmitted for review."
+            : "Your product has been updated successfully.",
       });
-      
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'products'] });
-      queryClient.invalidateQueries({ queryKey: ['product', productId] });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-products'] });
-      
+
+      queryClient.invalidateQueries({ queryKey: ["vendor", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["product", productId] });
+      queryClient.invalidateQueries({
+        queryKey: ["vendor", "pending-rejected-products"],
+      });
+
       navigate("/vendor");
     },
     onError: (error: any) => {
       setIsUploadingImages(false);
       toast({
         title: "Error",
-        description: error.response?.data?.message || error.message || "Failed to update product",
+        description:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to update product",
         variant: "destructive",
       });
     },
@@ -407,19 +517,31 @@ export default function EditProduct() {
 
   // Category change request mutation
   const categoryChangeMutation = useMutation({
-    mutationFn: async ({ newSubCategoryId, reason }: { newSubCategoryId: number; reason: string }) => {
+    mutationFn: async ({
+      newSubCategoryId,
+      reason,
+    }: {
+      newSubCategoryId: number;
+      reason: string;
+    }) => {
       if (!productId) throw new Error("Product ID is required");
-      return vendorService.createCategoryChangeRequest(productId, { newSubCategoryId, reason });
+      return vendorService.createCategoryChangeRequest(productId, {
+        newSubCategoryId,
+        reason,
+      });
     },
     onSuccess: () => {
       toast({
         title: "Category Change Requested",
-        description: "Your category change request has been submitted for admin approval.",
+        description:
+          "Your category change request has been submitted for admin approval.",
       });
-      queryClient.invalidateQueries({ queryKey: ['pending-category-change', productId] });
+      queryClient.invalidateQueries({
+        queryKey: ["pending-category-change", productId],
+      });
       setCategoryChangeDialogOpen(false);
       setCategoryChangeReason("");
-      
+
       // Now proceed with the rest of the product update if there's pending data
       if (pendingFormData) {
         updateProductMutation.mutate(pendingFormData);
@@ -429,7 +551,10 @@ export default function EditProduct() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.response?.data?.message || error.message || "Failed to submit category change request",
+        description:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to submit category change request",
         variant: "destructive",
       });
     },
@@ -438,7 +563,7 @@ export default function EditProduct() {
   const addSku = () => {
     const defaultCurrency = isEthiopianVendor(vendorProfile)
       ? "ETB"
-      : (availableCurrencies[0]?.code || currencies[0]?.code || "");
+      : availableCurrencies[0]?.code || currencies[0]?.code || "";
 
     appendSku({
       skuCode: "",
@@ -474,11 +599,15 @@ export default function EditProduct() {
       const existingImages = currentSkuImages[i] || [];
       const pendingImages = pendingSkuImages[i] || [];
       const totalImages = existingImages.length + pendingImages.length;
-      
+
       if (totalImages === 0) {
         toast({
           title: "Image Required",
-          description: `Please upload at least one image for ${data.productSku.length === 1 ? 'your product' : `variant #${i + 1} (${data.productSku[i].skuCode || 'unnamed'})`}.`,
+          description: `Please upload at least one image for ${
+            data.productSku.length === 1
+              ? "your product"
+              : `variant #${i + 1} (${data.productSku[i].skuCode || "unnamed"})`
+          }.`,
           variant: "destructive",
         });
         return;
@@ -486,7 +615,7 @@ export default function EditProduct() {
     }
 
     // Check if category changed for ACTIVE products
-    const isActiveProduct = product?.status === 'ACTIVE';
+    const isActiveProduct = product?.status === "ACTIVE";
     const originalSubCategoryId = product?.subCategoryId?.toString();
     const newSubCategoryId = data.subCategoryId;
     const categoryChanged = originalSubCategoryId !== newSubCategoryId;
@@ -502,11 +631,12 @@ export default function EditProduct() {
     if (isActiveProduct && categoryChanged && pendingCategoryChangeRequest) {
       toast({
         title: "Pending Category Change",
-        description: "You already have a pending category change request for this product. Please wait for admin approval or cancel the existing request.",
+        description:
+          "You already have a pending category change request for this product. Please wait for admin approval or cancel the existing request.",
         variant: "destructive",
       });
       // Reset the category dropdown to current value
-      form.setValue('subCategoryId', originalSubCategoryId || '');
+      form.setValue("subCategoryId", originalSubCategoryId || "");
       return;
     }
 
@@ -515,7 +645,7 @@ export default function EditProduct() {
 
   const handleCategoryChangeSubmit = () => {
     if (!pendingFormData || !productId) return;
-    
+
     const newSubCategoryId = parseInt(pendingFormData.subCategoryId);
     categoryChangeMutation.mutate({
       newSubCategoryId,
@@ -525,7 +655,7 @@ export default function EditProduct() {
 
   const onError = (errors: any) => {
     console.log("Form validation errors:", errors);
-    
+
     const errorMessages: string[] = [];
     if (errors.name) errorMessages.push("Product name is required");
     if (errors.subCategoryId) errorMessages.push("Category is required");
@@ -544,11 +674,15 @@ export default function EditProduct() {
           if (skuError) {
             const variantLabel = `Variant ${index + 1}`;
             if (skuError.skuName) {
-              errorMessages.push(`${variantLabel}: ${skuError.skuName.message}`);
+              errorMessages.push(
+                `${variantLabel}: ${skuError.skuName.message}`
+              );
               foundSpecificSkuError = true;
             }
             if (skuError.stockQuantity) {
-              errorMessages.push(`${variantLabel}: ${skuError.stockQuantity.message}`);
+              errorMessages.push(
+                `${variantLabel}: ${skuError.stockQuantity.message}`
+              );
               foundSpecificSkuError = true;
             }
           }
@@ -556,15 +690,18 @@ export default function EditProduct() {
       }
       // Only show generic message if there are SKU errors but we didn't find specific field errors
       if (!foundSpecificSkuError) {
-        errorMessages.push("Please check variant details - ensure all required fields are filled");
+        errorMessages.push(
+          "Please check variant details - ensure all required fields are filled"
+        );
       }
     }
-    
+
     toast({
       title: "Validation Error",
-      description: errorMessages.length > 0 
-        ? errorMessages.join(". ") 
-        : "Please fill in all required fields correctly.",
+      description:
+        errorMessages.length > 0
+          ? errorMessages.join(". ")
+          : "Please fill in all required fields correctly.",
       variant: "destructive",
     });
   };
@@ -574,7 +711,9 @@ export default function EditProduct() {
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You need to be a vendor to edit products.</p>
+        <p className="text-gray-600 mb-4">
+          You need to be a vendor to edit products.
+        </p>
         <Button asChild>
           <Link to="/vendor-signup">Become a Vendor</Link>
         </Button>
@@ -597,8 +736,12 @@ export default function EditProduct() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h1>
-        <p className="text-gray-600 mb-4">The product you're looking for doesn't exist or couldn't be loaded.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          Product Not Found
+        </h1>
+        <p className="text-gray-600 mb-4">
+          The product you're looking for doesn't exist or couldn't be loaded.
+        </p>
         <Button asChild>
           <Link to="/vendor">Back to Dashboard</Link>
         </Button>
@@ -611,7 +754,9 @@ export default function EditProduct() {
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Unauthorized</h1>
-        <p className="text-gray-600 mb-4">You can only edit your own products.</p>
+        <p className="text-gray-600 mb-4">
+          You can only edit your own products.
+        </p>
         <Button asChild>
           <Link to="/vendor">Back to Dashboard</Link>
         </Button>
@@ -621,12 +766,14 @@ export default function EditProduct() {
 
   const getStatusBadge = (status: string) => {
     switch (status?.toUpperCase()) {
-      case 'ACTIVE':
-      case 'APPROVED':
+      case "ACTIVE":
+      case "APPROVED":
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case 'PENDING':
-        return <Badge className="bg-amber-100 text-amber-800">Pending Review</Badge>;
-      case 'REJECTED':
+      case "PENDING":
+        return (
+          <Badge className="bg-amber-100 text-amber-800">Pending Review</Badge>
+        );
+      case "REJECTED":
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
@@ -646,14 +793,16 @@ export default function EditProduct() {
           <div className="flex-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">Edit Product</h1>
-              {getStatusBadge(product.status || '')}
+              {getStatusBadge(product.status || "")}
             </div>
-            <p className="text-muted-foreground">Update your product details (prices require a separate request)</p>
+            <p className="text-muted-foreground">
+              Update your product details (prices require a separate request)
+            </p>
           </div>
         </div>
 
         {/* Status Alerts */}
-        {product.status === 'REJECTED' && product.rejectionReason && (
+        {product.status === "REJECTED" && product.rejectionReason && (
           <Alert variant="destructive" className="mb-6">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Product Rejected</AlertTitle>
@@ -665,12 +814,13 @@ export default function EditProduct() {
           </Alert>
         )}
 
-        {product.status === 'PENDING' && (
+        {product.status === "PENDING" && (
           <Alert className="mb-6 border-amber-200 bg-amber-50">
             <Info className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800">Pending Review</AlertTitle>
             <AlertDescription className="text-amber-700">
-              This product is currently under review. Any changes will require re-approval.
+              This product is currently under review. Any changes will require
+              re-approval.
             </AlertDescription>
           </Alert>
         )}
@@ -680,10 +830,14 @@ export default function EditProduct() {
           <DollarSign className="h-4 w-4 text-blue-600" />
           <AlertTitle className="text-blue-800">Price Updates</AlertTitle>
           <AlertDescription className="text-blue-700">
-            Price changes require admin approval and cannot be made directly here.{' '}
-            <Link to={`/vendor/products/${productId}/price`} className="font-medium underline">
+            Price changes require admin approval and cannot be made directly
+            here.{" "}
+            <Link
+              to={`/vendor/products/${productId}/price`}
+              className="font-medium underline"
+            >
               Request a price update
-            </Link>{' '}
+            </Link>{" "}
             or go to the Requests tab in your dashboard.
           </AlertDescription>
         </Alert>
@@ -692,14 +846,17 @@ export default function EditProduct() {
         {pendingCategoryChangeRequest && (
           <Alert className="mb-6 border-amber-200 bg-amber-50">
             <Clock className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-800">Pending Category Change Request</AlertTitle>
+            <AlertTitle className="text-amber-800">
+              Pending Category Change Request
+            </AlertTitle>
             <AlertDescription className="text-amber-700">
               You have a pending category change request for this product.
               <br />
               <span className="font-medium">Requested Category:</span>{" "}
               {pendingCategoryChangeRequest.newSubCategoryName}
               <br />
-              <span className="font-medium">Reason:</span> {pendingCategoryChangeRequest.reason}
+              <span className="font-medium">Reason:</span>{" "}
+              {pendingCategoryChangeRequest.reason}
               <br />
               <Link to="/vendor?tab=requests" className="font-medium underline">
                 View in Requests
@@ -708,7 +865,10 @@ export default function EditProduct() {
           </Alert>
         )}
 
-        <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
+        <form
+          onSubmit={form.handleSubmit(onSubmit, onError)}
+          className="space-y-6"
+        >
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -726,7 +886,9 @@ export default function EditProduct() {
                   {...form.register("name")}
                 />
                 {form.formState.errors.name && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.name.message}</p>
+                  <p className="text-sm text-red-600 mt-1">
+                    {form.formState.errors.name.message}
+                  </p>
                 )}
               </div>
 
@@ -771,7 +933,9 @@ export default function EditProduct() {
                   )}
                 />
                 {form.formState.errors.subCategoryId && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.subCategoryId.message}</p>
+                  <p className="text-sm text-red-600 mt-1">
+                    {form.formState.errors.subCategoryId.message}
+                  </p>
                 )}
               </div>
 
@@ -825,10 +989,16 @@ export default function EditProduct() {
                     Product Variants (SKUs)
                   </CardTitle>
                   <CardDescription>
-                    Update stock and attributes for your product variants. Price changes require a separate request.
+                    Update stock and attributes for your product variants. Price
+                    changes require a separate request.
                   </CardDescription>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={addSku}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addSku}
+                >
                   <Plus className="h-4 w-4 mr-1" />
                   Add Variant
                 </Button>
@@ -836,9 +1006,14 @@ export default function EditProduct() {
             </CardHeader>
             <CardContent className="space-y-4">
               {skuFields.map((field, skuIndex) => {
-                const attributes = form.watch(`productSku.${skuIndex}.attributes`) || [];
-                const currentPrice = form.watch(`productSku.${skuIndex}.currentPrice`);
-                const currencyCode = form.watch(`productSku.${skuIndex}.currencyCode`);
+                const attributes =
+                  form.watch(`productSku.${skuIndex}.attributes`) || [];
+                const currentPrice = form.watch(
+                  `productSku.${skuIndex}.currentPrice`
+                );
+                const currencyCode = form.watch(
+                  `productSku.${skuIndex}.currencyCode`
+                );
                 const skuId = form.watch(`productSku.${skuIndex}.id`);
 
                 return (
@@ -846,7 +1021,9 @@ export default function EditProduct() {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base">
-                          {skuFields.length === 1 ? "Product SKU" : `Variant #${skuIndex + 1}`}
+                          {skuFields.length === 1
+                            ? "Product SKU"
+                            : `Variant #${skuIndex + 1}`}
                         </CardTitle>
                         {skuFields.length > 1 && (
                           <Button
@@ -866,28 +1043,46 @@ export default function EditProduct() {
                       <div>
                         <Label>Variant Name *</Label>
                         <Input
-                          placeholder={skuFields.length === 1 ? "e.g., Default" : "e.g., Red Medium"}
+                          placeholder={
+                            skuFields.length === 1
+                              ? "e.g., Default"
+                              : "e.g., Red Medium"
+                          }
                           {...form.register(`productSku.${skuIndex}.skuName`)}
                         />
-                        {form.formState.errors.productSku?.[skuIndex]?.skuName && (
+                        {form.formState.errors.productSku?.[skuIndex]
+                          ?.skuName && (
                           <p className="text-sm text-red-600 mt-1">
-                            {form.formState.errors.productSku[skuIndex]?.skuName?.message}
+                            {
+                              form.formState.errors.productSku[skuIndex]
+                                ?.skuName?.message
+                            }
                           </p>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">A unique friendly name for this variant</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          A unique friendly name for this variant
+                        </p>
                       </div>
 
                       {/* SKU Code and Stock */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label>SKU Code (optional)</Label>
+                          <Label>SKU Code</Label>
                           <Input
-                            placeholder={skuFields.length === 1 ? "e.g., PROD-001" : "e.g., SHIRT-RED-M"}
+                            placeholder={
+                              skuFields.length === 1
+                                ? "e.g., PROD-001"
+                                : "e.g., SHIRT-RED-M"
+                            }
                             {...form.register(`productSku.${skuIndex}.skuCode`)}
                           />
-                          {form.formState.errors.productSku?.[skuIndex]?.skuCode && (
+                          {form.formState.errors.productSku?.[skuIndex]
+                            ?.skuCode && (
                             <p className="text-sm text-red-600 mt-1">
-                              {form.formState.errors.productSku[skuIndex]?.skuCode?.message}
+                              {
+                                form.formState.errors.productSku[skuIndex]
+                                  ?.skuCode?.message
+                              }
                             </p>
                           )}
                         </div>
@@ -901,10 +1096,10 @@ export default function EditProduct() {
                                 type="number"
                                 min="0"
                                 placeholder="0"
-                                value={field.value || ''}
+                                value={field.value || ""}
                                 onChange={(e) => {
                                   const value = e.target.value;
-                                  if (value === '') {
+                                  if (value === "") {
                                     field.onChange(0);
                                   } else {
                                     field.onChange(parseInt(value, 10));
@@ -922,14 +1117,16 @@ export default function EditProduct() {
                         <div className="p-3 bg-gray-50 rounded-lg border">
                           <div className="flex items-center justify-between">
                             <div>
-                              <Label className="text-sm text-muted-foreground">Current Price</Label>
+                              <Label className="text-sm text-muted-foreground">
+                                Current Price
+                              </Label>
                               <p className="text-lg font-semibold">
                                 {currencyCode} {currentPrice?.toFixed(2)}
                               </p>
                             </div>
-                            <Button 
-                              type="button" 
-                              variant="outline" 
+                            <Button
+                              type="button"
+                              variant="outline"
                               size="sm"
                               asChild
                             >
@@ -945,7 +1142,9 @@ export default function EditProduct() {
                       {/* Attributes */}
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <Label className="text-sm">Attributes (Size, Color, etc.)</Label>
+                          <Label className="text-sm">
+                            Attributes (Size, Color, etc.)
+                          </Label>
                           <Button
                             type="button"
                             variant="ghost"
@@ -959,27 +1158,37 @@ export default function EditProduct() {
 
                         {attributes.length === 0 && (
                           <p className="text-sm text-muted-foreground italic">
-                            No attributes added. Click "Add Attribute" to add size, color, etc.
+                            No attributes added. Click "Add Attribute" to add
+                            size, color, etc.
                           </p>
                         )}
 
                         {attributes.map((_, attrIndex) => (
-                          <div key={attrIndex} className="flex items-center gap-2">
+                          <div
+                            key={attrIndex}
+                            className="flex items-center gap-2"
+                          >
                             <Input
                               placeholder="Name (e.g., Size)"
-                              {...form.register(`productSku.${skuIndex}.attributes.${attrIndex}.name`)}
+                              {...form.register(
+                                `productSku.${skuIndex}.attributes.${attrIndex}.name`
+                              )}
                               className="flex-1"
                             />
                             <Input
                               placeholder="Value (e.g., Large)"
-                              {...form.register(`productSku.${skuIndex}.attributes.${attrIndex}.value`)}
+                              {...form.register(
+                                `productSku.${skuIndex}.attributes.${attrIndex}.value`
+                              )}
                               className="flex-1"
                             />
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              onClick={() => removeAttribute(skuIndex, attrIndex)}
+                              onClick={() =>
+                                removeAttribute(skuIndex, attrIndex)
+                              }
                               className="text-destructive hover:text-destructive shrink-0"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -992,10 +1201,14 @@ export default function EditProduct() {
                       <div className="space-y-3 border-t pt-4">
                         <div className="flex items-center gap-2">
                           <ImageIcon className="h-4 w-4" />
-                          <Label className="text-sm font-medium">Images *</Label>
+                          <Label className="text-sm font-medium">
+                            Images *
+                          </Label>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Upload images for this {skuFields.length === 1 ? 'product' : 'variant'}. First image will be the cover.
+                          Upload images for this{" "}
+                          {skuFields.length === 1 ? "product" : "variant"}.
+                          First image will be the cover.
                         </p>
                         <ImageUpload
                           images={currentSkuImages[skuIndex] || []}
@@ -1009,13 +1222,17 @@ export default function EditProduct() {
                           isUploading={isUploadingImages}
                           disabled={updateProductMutation.isPending}
                           label=""
-                          helperText={`Upload images for this ${skuFields.length === 1 ? 'product' : 'variant'}.`}
+                          helperText={`Upload images for this ${
+                            skuFields.length === 1 ? "product" : "variant"
+                          }.`}
                         />
-                        {pendingSkuImages[skuIndex] && pendingSkuImages[skuIndex].length > 0 && (
-                          <p className="text-sm text-muted-foreground">
-                            {pendingSkuImages[skuIndex].length} new image(s) will be uploaded
-                          </p>
-                        )}
+                        {pendingSkuImages[skuIndex] &&
+                          pendingSkuImages[skuIndex].length > 0 && (
+                            <p className="text-sm text-muted-foreground">
+                              {pendingSkuImages[skuIndex].length} new image(s)
+                              will be uploaded
+                            </p>
+                          )}
                       </div>
                     </CardContent>
                   </Card>
@@ -1031,7 +1248,9 @@ export default function EditProduct() {
                 <Gift className="h-5 w-5" />
                 Gift Wrapping
               </CardTitle>
-              <CardDescription>Allow customers to add gift wrapping for an additional fee.</CardDescription>
+              <CardDescription>
+                Allow customers to add gift wrapping for an additional fee.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center space-x-2">
@@ -1045,7 +1264,7 @@ export default function EditProduct() {
                       onCheckedChange={(checked) => {
                         field.onChange(checked === true);
                         if (!checked) {
-                          form.setValue('giftWrapPrice', 0);
+                          form.setValue("giftWrapPrice", 0);
                         }
                       }}
                     />
@@ -1059,7 +1278,11 @@ export default function EditProduct() {
               {form.watch("giftWrappable") && (
                 <div>
                   <Label>
-                    Gift Wrapping Fee ({product?.giftWrapCurrencyCode || (product?.productSku?.[0] as any)?.price?.currencyCode || 'ETB'})
+                    Gift Wrapping Fee (
+                    {product?.giftWrapCurrencyCode ||
+                      (product?.productSku?.[0] as any)?.price?.currencyCode ||
+                      "ETB"}
+                    )
                   </Label>
                   <Controller
                     name="giftWrapPrice"
@@ -1070,10 +1293,10 @@ export default function EditProduct() {
                         step="0.01"
                         min="0"
                         placeholder="0.00"
-                        value={field.value || ''}
+                        value={field.value || ""}
                         onChange={(e) => {
                           const value = e.target.value;
-                          if (value === '') {
+                          if (value === "") {
                             field.onChange(0);
                           } else {
                             const numValue = parseFloat(value);
@@ -1087,33 +1310,43 @@ export default function EditProduct() {
                     )}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Additional charge per item for gift wrapping. Set to 0 for free gift wrapping.
+                    Additional charge per item for gift wrapping. Set to 0 for
+                    free gift wrapping.
                   </p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-    
-
           {/* Submit */}
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" asChild>
               <Link to="/vendor">Cancel</Link>
             </Button>
-            <Button 
-              type="submit" 
-              disabled={updateProductMutation.isPending || isUploadingImages || categoryChangeMutation.isPending}
+            <Button
+              type="submit"
+              disabled={
+                updateProductMutation.isPending ||
+                isUploadingImages ||
+                categoryChangeMutation.isPending
+              }
             >
-              {updateProductMutation.isPending || isUploadingImages || categoryChangeMutation.isPending ? (
+              {updateProductMutation.isPending ||
+              isUploadingImages ||
+              categoryChangeMutation.isPending ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  {isUploadingImages ? "Uploading Images..." : categoryChangeMutation.isPending ? "Submitting Category Change..." : "Saving..."}
+                  {isUploadingImages
+                    ? "Uploading Images..."
+                    : categoryChangeMutation.isPending
+                    ? "Submitting Category Change..."
+                    : "Saving..."}
                 </>
+              ) : product.status === "PENDING" ||
+                product.status === "REJECTED" ? (
+                "Save & Resubmit"
               ) : (
-                product.status === 'PENDING' || product.status === 'REJECTED' 
-                  ? "Save & Resubmit" 
-                  : "Save Changes"
+                "Save Changes"
               )}
             </Button>
           </div>
@@ -1121,7 +1354,10 @@ export default function EditProduct() {
       </div>
 
       {/* Category Change Request Dialog */}
-      <Dialog open={categoryChangeDialogOpen} onOpenChange={setCategoryChangeDialogOpen}>
+      <Dialog
+        open={categoryChangeDialogOpen}
+        onOpenChange={setCategoryChangeDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1129,13 +1365,16 @@ export default function EditProduct() {
               Category Change Request
             </DialogTitle>
             <DialogDescription>
-              Since your product is already active, changing its category requires admin approval.
-              Please provide a reason for the category change.
+              Since your product is already active, changing its category
+              requires admin approval. Please provide a reason for the category
+              change.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="categoryChangeReason">Reason for Category Change</Label>
+              <Label htmlFor="categoryChangeReason">
+                Reason for Category Change
+              </Label>
               <Textarea
                 id="categoryChangeReason"
                 placeholder="e.g., The product fits better in the new category because..."
@@ -1148,11 +1387,16 @@ export default function EditProduct() {
               <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
                 <p>
                   <span className="font-medium">Current Category:</span>{" "}
-                  {allSubCategories.find((sc: SubCategory) => sc.id === product?.subCategoryId)?.name || "Unknown"}
+                  {allSubCategories.find(
+                    (sc: SubCategory) => sc.id === product?.subCategoryId
+                  )?.name || "Unknown"}
                 </p>
                 <p>
                   <span className="font-medium">New Category:</span>{" "}
-                  {allSubCategories.find((sc: SubCategory) => sc.id.toString() === pendingFormData.subCategoryId)?.name || "Unknown"}
+                  {allSubCategories.find(
+                    (sc: SubCategory) =>
+                      sc.id.toString() === pendingFormData.subCategoryId
+                  )?.name || "Unknown"}
                 </p>
               </div>
             )}
@@ -1165,14 +1409,19 @@ export default function EditProduct() {
                 setCategoryChangeReason("");
                 setPendingFormData(null);
                 // Reset category to original
-                form.setValue('subCategoryId', product?.subCategoryId?.toString() || '');
+                form.setValue(
+                  "subCategoryId",
+                  product?.subCategoryId?.toString() || ""
+                );
               }}
             >
               Cancel
             </Button>
             <Button
               onClick={handleCategoryChangeSubmit}
-              disabled={categoryChangeMutation.isPending || !categoryChangeReason.trim()}
+              disabled={
+                categoryChangeMutation.isPending || !categoryChangeReason.trim()
+              }
             >
               {categoryChangeMutation.isPending ? (
                 <>
