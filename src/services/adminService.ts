@@ -489,6 +489,78 @@ export interface PaginatedResponse<T> {
   totalPages: number;
   size: number;
   number: number;
+  pageable?: {
+    pageNumber: number;
+    pageSize: number;
+  };
+}
+
+export interface AdminVendorPayoutDto {
+  id: number;
+  vendorId: number;
+  vendorName?: string;
+  status:
+    | "PENDING"
+    | "PROCESSING"
+    | "COMPLETED"
+    | "FAILED"
+    | "SKIPPED"
+    | string;
+  payoutMethod?: string;
+  originalCurrency?: string;
+  netAmount?: number;
+  payoutCurrency?: string;
+  payoutAmount?: number;
+  trackedPlatformFee?: boolean;
+  feeTrackingAmount?: number;
+  feeTrackingCurrency?: string;
+  feeTrackingExchangeRate?: number;
+  destinationAccount?: string | null;
+  providerPayoutId?: string | null;
+  chapaTransferRef?: string | null;
+  transferAttempts?: number;
+  failureReason?: string | null;
+  createdAt?: string;
+  initiatedAt?: string | null;
+  completedAt?: string | null;
+  failedAt?: string | null;
+}
+
+export type AdminRefundStatus =
+  | "REQUESTED"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED";
+
+export interface AdminRefundDto {
+  id: number;
+  status: AdminRefundStatus | string;
+  provider?: string;
+  providerStatus?: string;
+  providerRef?: string;
+  refundReference?: string;
+  amountMinor?: number;
+  currency?: string;
+  reason?: string;
+  failureReason?: string;
+  orderType?: string;
+  orderId?: number;
+  orderNumber?: string;
+  paymentDetailId?: number;
+  requestedAt?: string;
+  lastVerifiedAt?: string;
+  completedAt?: string;
+  failedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AdminRefundSummaryDto {
+  total: number;
+  requested: number;
+  processing: number;
+  completed: number;
+  failed: number;
 }
 
 export interface AdminOrderItemDto {
@@ -1639,6 +1711,117 @@ class AdminService {
     return await apiService.putRequest<PlatformCommissionRateDto>(
       `/api/admin/commission-rates/${vendorType}`,
       data
+    );
+  }
+
+  async getVendorPayouts(params?: {
+    vendorId?: number;
+    status?: string;
+    page?: number;
+    size?: number;
+    sort?: string;
+  }): Promise<PaginatedResponse<AdminVendorPayoutDto>> {
+    const search = new URLSearchParams();
+
+    const page = params?.page ?? 0;
+    const size = params?.size ?? 20;
+    const sort = params?.sort ?? "createdAt,desc";
+
+    search.append("page", String(page));
+    search.append("size", String(size));
+    search.append("sort", sort);
+
+    if (typeof params?.vendorId === "number") {
+      search.append("vendorId", String(params.vendorId));
+    }
+
+    if (params?.status) {
+      search.append("status", params.status);
+    }
+
+    return await apiService.getRequest<PaginatedResponse<AdminVendorPayoutDto>>(
+      `/api/admin/payouts?${search.toString()}`
+    );
+  }
+
+  async restartVendorPayout(payoutId: number): Promise<AdminVendorPayoutDto> {
+    return await apiService.postRequest<AdminVendorPayoutDto>(
+      `/api/admin/payouts/${payoutId}/restart`,
+      {}
+    );
+  }
+
+  async getRefunds(params?: {
+    status?: AdminRefundStatus;
+    provider?: string;
+    page?: number;
+    size?: number;
+    sort?: string;
+  }): Promise<PaginatedResponse<AdminRefundDto>> {
+    const search = new URLSearchParams();
+
+    search.append("page", String(params?.page ?? 0));
+    search.append("size", String(params?.size ?? 20));
+    search.append("sort", params?.sort ?? "requestedAt,desc");
+
+    if (params?.status) {
+      search.append("status", params.status);
+    }
+
+    if (params?.provider?.trim()) {
+      search.append("provider", params.provider.trim());
+    }
+
+    return await apiService.getRequest<PaginatedResponse<AdminRefundDto>>(
+      `/api/admin/refunds?${search.toString()}`
+    );
+  }
+
+  async getRefundById(refundId: number): Promise<AdminRefundDto> {
+    return await apiService.getRequest<AdminRefundDto>(
+      `/api/admin/refunds/${refundId}`
+    );
+  }
+
+  async getRefundSummary(): Promise<AdminRefundSummaryDto> {
+    return await apiService.getRequest<AdminRefundSummaryDto>(
+      "/api/admin/refunds/summary"
+    );
+  }
+
+  async requestOrderRefund(
+    orderId: number,
+    params?: { amount?: number; reason?: string }
+  ): Promise<string> {
+    const search = new URLSearchParams();
+
+    if (typeof params?.amount === "number") {
+      search.append("amount", String(params.amount));
+    }
+
+    if (params?.reason?.trim()) {
+      search.append("reason", params.reason.trim());
+    }
+
+    const query = search.toString();
+    const path = query
+      ? `/api/orders/${orderId}/payments/refund?${query}`
+      : `/api/orders/${orderId}/payments/refund`;
+
+    return await apiService.postRequest<string>(path, {});
+  }
+
+  async reconcileChapaRefunds(): Promise<string> {
+    return await apiService.postRequest<string>(
+      "/api/admin/refunds/reconcile/chapa",
+      {}
+    );
+  }
+
+  async reconcileStripeRefunds(): Promise<string> {
+    return await apiService.postRequest<string>(
+      "/api/admin/refunds/reconcile/stripe",
+      {}
     );
   }
 }
