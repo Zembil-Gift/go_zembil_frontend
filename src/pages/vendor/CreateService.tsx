@@ -575,9 +575,11 @@ export default function CreateService() {
             }/packages`
           );
 
+          const packageImages = pendingPackageImages[pkgIndex] || [];
           const pkgResult = await serviceService.createPackage(
             createdService.id,
-            packageRequest as any
+            packageRequest as any,
+            packageImages.length > 0 ? packageImages : undefined
           );
           console.log(
             `[Package ${pkgIndex + 1}] Created successfully:`,
@@ -612,47 +614,6 @@ export default function CreateService() {
           )}`,
           variant: "destructive",
         });
-      }
-
-      // Upload package images after packages are created
-      // We need to fetch the created packages to get their IDs
-      try {
-        const createdPackages = await apiService.getRequest<any[]>(
-          `/api/vendor/services/${createdService.id}/packages`
-        );
-        if (createdPackages && createdPackages.length > 0) {
-          // Match packages by name and upload images
-          for (let i = 0; i < data.packages.length; i++) {
-            const pkgData = data.packages[i];
-            const images = pendingPackageImages[i];
-            if (images && images.length > 0) {
-              // Find the created package that matches this one (by name)
-              const createdPkg = createdPackages.find(
-                (cp) => cp.name === pkgData.name
-              );
-              if (createdPkg?.id) {
-                try {
-                  await imageService.uploadPackageImages(createdPkg.id, images);
-                } catch (imgError: any) {
-                  console.error(
-                    `Failed to upload images for package "${pkgData.name}":`,
-                    imgError
-                  );
-                  toast({
-                    title: "Warning",
-                    description: `Images for package "${pkgData.name}" failed to upload.`,
-                    variant: "destructive",
-                  });
-                }
-              }
-            }
-          }
-        }
-      } catch (fetchError: any) {
-        console.error(
-          "Failed to fetch created packages for image upload:",
-          fetchError
-        );
       }
 
       return createdService;
