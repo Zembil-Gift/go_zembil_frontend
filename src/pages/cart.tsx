@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   ShoppingBag,
+  Package,
   Plus,
   Minus,
   X,
@@ -50,6 +51,7 @@ export default function Cart() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const {
     cartItems,
+    cartPackageGroups,
     cartCurrency,
     isLoading: cartLoading,
     getTotalItems,
@@ -71,6 +73,9 @@ export default function Cart() {
     string | null
   >(null);
   const [pendingWishlistItemKey, setPendingWishlistItemKey] = useState<
+    string | null
+  >(null);
+  const [pendingPackageGroupId, setPendingPackageGroupId] = useState<
     string | null
   >(null);
   const cartItemOrderRef = useRef<number[]>([]);
@@ -189,6 +194,69 @@ export default function Cart() {
       .map((id) => itemMap.get(id))
       .filter((item): item is CartItem => Boolean(item));
   }, [cartItems]);
+
+  const packageGroupsFromItems = useMemo(() => {
+    const grouped = new Map<
+      string,
+      {
+        packageGroupId: string;
+        packageId?: number;
+        packageName?: string;
+        items: CartItem[];
+      }
+    >();
+
+    for (const item of orderedCartItems) {
+      if (!item.isPackageItem || !item.packageGroupId) continue;
+      if (!grouped.has(item.packageGroupId)) {
+        grouped.set(item.packageGroupId, {
+          packageGroupId: item.packageGroupId,
+          packageId: item.packageId,
+          packageName: item.packageName,
+          items: [],
+        });
+      }
+      grouped.get(item.packageGroupId)!.items.push(item);
+    }
+
+    return Array.from(grouped.values());
+  }, [orderedCartItems]);
+
+  const packageGroups = useMemo(() => {
+    if (cartPackageGroups.length === 0) {
+      return packageGroupsFromItems;
+    }
+
+    const byItemId = new Map(cartItems.map((item) => [item.id, item]));
+
+    return cartPackageGroups
+      .map((group) => {
+        const hydratedItems = group.items
+          .map((groupItem) => byItemId.get(groupItem.id))
+          .filter((item): item is CartItem => Boolean(item));
+
+        return {
+          packageGroupId: group.packageGroupId,
+          packageId: group.packageId,
+          packageName: group.packageName,
+          items: hydratedItems,
+        };
+      })
+      .filter((group) => group.items.length > 0);
+  }, [cartPackageGroups, cartItems, packageGroupsFromItems]);
+
+  const groupedItemIds = useMemo(
+    () =>
+      new Set(
+        packageGroups.flatMap((group) => group.items.map((item) => item.id))
+      ),
+    [packageGroups]
+  );
+
+  const regularCartItems = useMemo(
+    () => orderedCartItems.filter((item) => !groupedItemIds.has(item.id)),
+    [orderedCartItems, groupedItemIds]
+  );
 
   const discountAmountDisplay = useMemo(() => {
     return getDiscountAmountForDisplay(discountResult, cartCurrency);
@@ -529,6 +597,34 @@ export default function Cart() {
     },
   });
 
+  const removePackageGroupMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      const group = packageGroups.find(
+        (entry) => entry.packageGroupId === groupId
+      );
+      if (!group) return;
+      await Promise.all(
+        group.items.map((item) => cartService.removeFromCart(item.id))
+      );
+    },
+    onMutate: (groupId) => setPendingPackageGroupId(groupId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
+      toast({
+        title: "Package removed",
+        description: "Bundle removed from your cart.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove package",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => setPendingPackageGroupId(null),
+  });
+
   const calculateSubtotal = () => {
     return cartSubtotal;
   };
@@ -741,7 +837,91 @@ export default function Cart() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {orderedCartItems.map((item: CartItem) => {
+              {packageGroups.map((group) => {
+                const isGroupPending =
+                  pendingPackageGroupId === group.packageGroupId;
+
+                const packageTotal = group.items.reduce((sum, item) => {
+                  const unit = Number(item.unitPrice || 0);
+                  const discount = item.product?.activeDiscount;
+                  const discountedUnit = discount
+                    ? calculateDiscountedPrice(unit, cartCurrency, discount)
+                    : unit;
+                  return sum + discountedUnit * item.quantity;
+                }, 0);
+
+                return (
+                  <Card
+                    key={group.packageGroupId}
+                    className="overflow-hidden border-eagle-green/20"
+                  >
+                    <CardContent className="p-6 space-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-eagle-green/70">
+                            Package Bundle
+                          </p>
+                          <h3 className="text-xl font-semibold text-charcoal">
+                            {group.packageName ||
+                              `Package #${group.packageId || ""}`}
+                          </h3>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-lg text-charcoal">
+                            {formatPrice(packageTotal, cartCurrency)}
+                          </p>
+                          <Badge
+                            variant="outline"
+                            className="mt-1 text-eagle-green border-eagle-green/30"
+                          >
+                            {group.items.length} item(s)
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 rounded-md border bg-muted/20 p-3">
+                        {group.items.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between gap-3 text-sm"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Package className="h-4 w-4 text-eagle-green/60" />
+                              <span className="truncate">
+                                {item.product?.name ||
+                                  item.productName ||
+                                  `Product #${item.productId}`}
+                              </span>
+                            </div>
+                            <span className="text-gray-500">
+                              Qty {item.quantity}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-end gap-4">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            removePackageGroupMutation.mutate(
+                              group.packageGroupId
+                            )
+                          }
+                          disabled={isGroupPending}
+                          className="text-gray-600 hover:text-red-600"
+                        >
+                          <X size={14} className="mr-1" />
+                          Remove Package
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+
+              {regularCartItems.map((item: CartItem) => {
                 const itemKey = getCartItemKey(item);
                 const isQuantityPending = pendingQuantityItemKey === itemKey;
                 const isRemovePending = pendingRemoveItemKey === itemKey;
