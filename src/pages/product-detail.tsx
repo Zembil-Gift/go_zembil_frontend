@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -82,6 +82,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedSkuId, setSelectedSkuId] = useState<number | null>(null);
+  const [selectedAttribute, setSelectedAttribute] = useState<{ id?: number; name: string; value: string } | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   
   const { toast } = useToast();
@@ -152,27 +153,45 @@ export default function ProductDetail() {
     }
   }, [stockQuantity, quantity]);
 
-  useMemo(() => {
-    if (!product?.productSku) return {};
+  const findBestMatchingSku = useCallback(
+    (attributesToMatch: Record<string, string>) => {
+      if (!product?.productSku || product.productSku.length === 0) return null;
 
-    const attributes: Record<string, Set<string>> = {};
-
-    product.productSku.forEach(sku => {
-      sku.attributes?.forEach(attr => {
-        if (!attributes[attr.name]) {
-          attributes[attr.name] = new Set();
-        }
-        attributes[attr.name].add(attr.value);
+      const matchingSkus = product.productSku.filter((sku) => {
+        const skuAttributes = sku.attributes || [];
+        return Object.entries(attributesToMatch).every(([name, value]) =>
+          skuAttributes.some((attr) => attr.name === name && attr.value === value)
+        );
       });
-    });
 
-    const result: Record<string, string[]> = {};
-    Object.entries(attributes).forEach(([name, values]) => {
-      result[name] = Array.from(values);
-    });
+      if (matchingSkus.length === 0) return null;
 
-    return result;
-  }, [product]);
+      const firstInStock = matchingSkus.find((sku) => (sku.stockQuantity || 0) > 0);
+      return firstInStock || matchingSkus[0];
+    },
+    [product?.productSku]
+  );
+
+  const handleAttributeSelection = (attributeName: string, value: string, id?: number) => {
+    const next = { id, name: attributeName, value };
+    setSelectedAttribute(next);
+
+    const matchedSku = findBestMatchingSku({ [attributeName]: value });
+    if (matchedSku?.id) {
+      setSelectedSkuId(matchedSku.id);
+    }
+  };
+
+  const selectedAttributeOption = useMemo(() => {
+    if (!selectedAttribute) return [] as Array<{ id?: number; name: string; value: string }>;
+    return [selectedAttribute];
+  }, [selectedAttribute]);
+
+  const hasAttributeSelectionUI = useMemo(() => {
+    if (!product?.productSku || product.productSku.length === 0) return false;
+    return product.productSku.some((sku) => (sku.attributes?.length || 0) > 0);
+  }, [product?.productSku]);
+
 // Show product images by default.
   // Only show SKU images when user explicitly selects a variant (for multi-SKU products).
   // For single-SKU products, show SKU images if available (since the SKU IS the product).
@@ -246,11 +265,19 @@ export default function ProductDetail() {
       if (product?.productSku && product.productSku.length > 1 && !selectedSkuId) {
         throw new Error('Please select a variant');
       }
+
+      if (hasAttributeSelectionUI && selectedAttributeOption.length === 0) {
+        throw new Error('Please select an option');
+      }
       
       return await cartService.addToCart({
         productId: Number(productId),
         productSkuId: selectedSku?.id,
         quantity,
+        attributes: selectedAttributeOption.map(({ name, value }) => ({
+          name,
+          value,
+        })),
       });
     },
     onSuccess: () => {
@@ -616,7 +643,7 @@ export default function ProductDetail() {
                 <h3 className="font-semibold text-charcoal">
                   Select Variant <span className="text-red-500">*</span>
                 </h3>
-                
+
                 <div className="grid grid-cols-1 gap-3">
                   {product.productSku.map((sku) => (
                     <button
@@ -647,9 +674,22 @@ export default function ProductDetail() {
                           {sku.attributes && sku.attributes.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-1">
                               {sku.attributes.map((attr, idx) => (
-                                <span key={idx} className="text-xs text-gray-500">
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAttributeSelection(attr.name, attr.value, attr.id);
+                                  }}
+                                  className={cn(
+                                    "text-xs px-2 py-1 rounded-full border transition-all",
+                                    selectedAttribute?.name === attr.name && selectedAttribute?.value === attr.value
+                                      ? "border-viridian-green bg-viridian-green text-white"
+                                      : "border-gray-300 text-gray-600 hover:border-viridian-green"
+                                  )}
+                                >
                                   {attr.name}: <span className="font-medium">{attr.value}</span>
-                                </span>
+                                </button>
                               ))}
                             </div>
                           )}
@@ -671,21 +711,6 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* Single SKU Info */}
-            {product.productSku && product.productSku.length === 1 && selectedSku?.attributes && selectedSku.attributes.length > 0 && (
-              <div className="space-y-2 pt-4 border-t border-gray-200">
-                <h3 className="font-semibold text-charcoal">Product Details</h3>
-                <div className="flex flex-wrap gap-4">
-                  {selectedSku.attributes.map((attr, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">{attr.name}:</span>
-                      <Badge variant="outline">{attr.value}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Description */}
             {product.description && (
               <div>
@@ -693,6 +718,32 @@ export default function ProductDetail() {
                 <p className="text-gray-600 leading-relaxed">{product.description}</p>
               </div>
             )}
+            {/* Single SKU Info */}
+            {product.productSku && product.productSku.length === 1 && selectedSku?.attributes && selectedSku.attributes.length > 0 && (
+              <div className="space-y-2 pt-4 border-t border-gray-200">
+                <h3 className="font-semibold text-charcoal">Options</h3>
+                <div className="flex flex-wrap gap-4">
+                  {selectedSku.attributes.map((attr, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">{attr.name}:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleAttributeSelection(attr.name, attr.value, attr.id)}
+                        className={cn(
+                          "px-2 py-1 rounded-full border text-xs transition-all",
+                          selectedAttribute?.name === attr.name && selectedAttribute?.value === attr.value
+                            ? "border-viridian-green bg-viridian-green text-white"
+                            : "border-gray-300 text-gray-600 hover:border-viridian-green"
+                        )}
+                      >
+                        {attr.value}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
 
             {/* Quantity Selector */}
             <div className="space-y-2">
@@ -753,6 +804,8 @@ export default function ProductDetail() {
                       ? "Out of Stock"
                       : product?.productSku && product.productSku.length > 1 && !selectedSkuId
                         ? "Select a Variant First"
+                        : hasAttributeSelectionUI && selectedAttributeOption.length === 0
+                          ? "Select an Option First"
                         : "Add to Cart"}
                 </Button>
                 <Button
@@ -787,6 +840,15 @@ export default function ProductDetail() {
                     toast({
                       title: "Please select a variant",
                       description: "Choose a product variant before proceeding",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  if (hasAttributeSelectionUI && selectedAttributeOption.length === 0) {
+                    toast({
+                      title: "Please select an option",
+                      description: "Choose one option before proceeding",
                       variant: "destructive",
                     });
                     return;

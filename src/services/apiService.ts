@@ -90,6 +90,22 @@ class ApiService {
   }
 
   /**
+   * PUT request with FormData (for multipart updates)
+   */
+  async putFormData<T>(url: string, formData: FormData): Promise<T> {
+    try {
+      const response: AxiosResponse<T> = await api.put(url, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      this.handleError(error, 'An error occurred while uploading file');
+    }
+  }
+
+  /**
    * Generic PUT request
    */
   async putRequest<T, D = any>(url: string, data?: D): Promise<T> {

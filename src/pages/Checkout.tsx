@@ -437,8 +437,7 @@ export default function Checkout() {
     if (appliedDiscountCode && !discountCode) {
       setDiscountCode(appliedDiscountCode);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appliedDiscountCode]);
+  }, [appliedDiscountCode, discountCode]);
 
   useEffect(() => {
     if (user) {
@@ -701,7 +700,10 @@ export default function Checkout() {
 
       if (existingBillingAddressId) {
         // Update existing billing address
-        console.log("Updating existing billing address:", existingBillingAddressId);
+        console.log(
+          "Updating existing billing address:",
+          existingBillingAddressId
+        );
         const updatedBillingAddress = await apiService.putRequest<AddressDto>(
           `/api/addresses/${existingBillingAddressId}`,
           billingPayload
@@ -731,6 +733,23 @@ export default function Checkout() {
         };
       });
 
+      const itemAttributes = cartItems
+        .map((item: CartItem) => ({
+          productId: item.productId,
+          productSkuId: item.productSkuId || undefined,
+          attributes:
+            (item.selectedAttributes && item.selectedAttributes.length > 0
+              ? item.selectedAttributes
+              : item.productSku?.attributes || []
+            )
+              .slice(0, 1)
+              .map((attr) => ({
+                name: attr.name,
+                value: attr.value,
+              })),
+        }))
+        .filter((item) => item.attributes.length > 0);
+
       // Create order with address IDs
       const orderData: CreateOrderRequest = {
         shippingAddressId: shippingAddressId,
@@ -742,6 +761,7 @@ export default function Checkout() {
           cardMessage: null,
         },
         itemGiftOptions,
+        itemAttributes: itemAttributes.length > 0 ? itemAttributes : undefined,
         discountCode: confirmedDiscountCode,
       };
 
@@ -980,7 +1000,10 @@ export default function Checkout() {
                         </SelectTrigger>
                         <SelectContent>
                           {COUNTRIES.map((country) => (
-                            <SelectItem key={country.value} value={country.value}>
+                            <SelectItem
+                              key={country.value}
+                              value={country.value}
+                            >
                               {country.label}
                             </SelectItem>
                           ))}
