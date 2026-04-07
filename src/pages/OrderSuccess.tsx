@@ -3,7 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Package, Truck, MapPin, Phone, User, Home } from "lucide-react";
+import {
+  CheckCircle,
+  Package,
+  Truck,
+  MapPin,
+  Phone,
+  User,
+  Home,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface OrderItem {
@@ -35,41 +43,50 @@ interface Order {
 
 export default function OrderSuccess() {
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string>('');
-  const [trackingNumber, setTrackingNumber] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [trackingNumber, setTrackingNumber] = useState<string>("");
   const navigate = useNavigate();
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const orderIdFromURL = urlParams.get('orderId');
-    const paymentMethodParam = urlParams.get('paymentMethod') || '';
-    const trackingNumberParam = urlParams.get('trackingNumber') || '';
-    
-    console.log('🔍 OrderSuccess - Extracting URL params:', {
+    const orderIdFromURL = urlParams.get("orderId");
+    const paymentMethodParam = urlParams.get("paymentMethod") || "";
+    const trackingNumberParam = urlParams.get("trackingNumber") || "";
+
+    console.log("🔍 OrderSuccess - Extracting URL params:", {
       fullURL: window.location.href,
       orderIdFromURL,
       paymentMethodParam,
-      trackingNumberParam
+      trackingNumberParam,
     });
-    
+
     // Fallback to localStorage if orderId is missing from URL
-    const orderIdFromStorage = localStorage.getItem('goGerami_currentOrderId');
-    console.log('🔍 OrderSuccess - Checking localStorage fallback:', orderIdFromStorage);
-    
+    const orderIdFromStorage = localStorage.getItem("goGerami_currentOrderId");
+    console.log(
+      "🔍 OrderSuccess - Checking localStorage fallback:",
+      orderIdFromStorage
+    );
+
     // Use URL first, then localStorage fallback
     const finalOrderId = orderIdFromURL || orderIdFromStorage;
-    
+
     if (finalOrderId) {
       setOrderId(finalOrderId);
       setPaymentMethod(paymentMethodParam);
       setTrackingNumber(trackingNumberParam);
-      console.log('✅ OrderSuccess - Set orderId:', finalOrderId);
+      console.log("✅ OrderSuccess - Set orderId:", finalOrderId);
     } else {
-      console.error('❌ OrderSuccess - No orderId found in URL or localStorage');
+      console.error(
+        "❌ OrderSuccess - No orderId found in URL or localStorage"
+      );
     }
   }, []);
 
-  const { data: order, isLoading, error } = useQuery<Order>({
+  const {
+    data: order,
+    isLoading,
+    error,
+  } = useQuery<Order>({
     queryKey: [`/api/orders/${orderId}`],
     enabled: !!orderId,
     retry: false,
@@ -96,11 +113,10 @@ export default function OrderSuccess() {
             </div>
             <h2 className="text-xl font-semibold mb-2">Order Not Found</h2>
             <p className="text-gray-600 mb-6">
-              We couldn't find your order details. Please check your order confirmation email or contact support.
+              We couldn't find your order details. Please check your order
+              confirmation email or contact support.
             </p>
-            <Button onClick={() => navigate('/shop')}>
-              Continue Shopping
-            </Button>
+            <Button onClick={() => navigate("/shop")}>Continue Shopping</Button>
           </CardContent>
         </Card>
       </div>
@@ -115,13 +131,17 @@ export default function OrderSuccess() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
             <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Order Confirmed!
+          </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Thank you for your order! We've received your payment and are preparing your gift for delivery.
+            Thank you for your order! We've received your payment and are
+            preparing your gift for delivery.
           </p>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-block mt-4">
             <p className="text-green-800 font-medium">
-              Order ID: <strong className="font-bold text-green-900">{orderId}</strong>
+              Order ID:{" "}
+              <strong className="font-bold text-green-900">{orderId}</strong>
             </p>
           </div>
         </div>
@@ -140,35 +160,44 @@ export default function OrderSuccess() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="font-medium text-gray-900">Order Number</p>
-                  <p className="text-gray-600">{order.id.slice(0, 8).toUpperCase()}</p>
+                  <p className="text-gray-600">
+                    {order.id.slice(0, 8).toUpperCase()}
+                  </p>
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Tracking Number</p>
-                  <p className="text-gray-600 font-mono">{order.trackingNumber}</p>
+                  <p className="text-gray-600 font-mono">
+                    {order.trackingNumber}
+                  </p>
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Order Date</p>
                   <p className="text-gray-600">
-                    {new Date(order.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
+                    {new Date(order.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
                     })}
                   </p>
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Status</p>
                   <Badge className="bg-blue-100 text-blue-800">
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    {order.status.charAt(0).toUpperCase() +
+                      order.status.slice(1)}
                   </Badge>
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Payment Method</p>
-                  <p className="text-gray-600 capitalize">{paymentMethod || 'Card'}</p>
+                  <p className="text-gray-600 capitalize">
+                    {paymentMethod || "Card"}
+                  </p>
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Total Amount</p>
-                  <p className="text-gray-900 font-semibold">ETB {parseFloat(order.total).toFixed(2)}</p>
+                  <p className="text-gray-900 font-semibold">
+                    ETB {parseFloat(order.total).toFixed(2)}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -201,16 +230,23 @@ export default function OrderSuccess() {
                 <div className="flex items-center space-x-3">
                   <MapPin className="w-4 h-4 text-gray-500" />
                   <div>
-                    <p className="font-medium text-gray-900">Delivery Address</p>
+                    <p className="font-medium text-gray-900">
+                      Delivery Address
+                    </p>
                     <p className="text-gray-600">{order.recipientCity}</p>
-                    <p className="text-gray-600 text-sm">{order.recipientAddress}</p>
+                    <p className="text-gray-600 text-sm">
+                      {order.recipientAddress}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Truck className="w-4 h-4 text-gray-500" />
                   <div>
                     <p className="font-medium text-gray-900">Delivery Type</p>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 capitalize">
+                    <Badge
+                      variant="outline"
+                      className="bg-green-50 text-green-700 border-green-200 capitalize"
+                    >
                       {order.deliveryType}
                     </Badge>
                   </div>
@@ -229,24 +265,34 @@ export default function OrderSuccess() {
             <CardContent>
               <div className="space-y-4">
                 {order.items.map((item) => (
-                  <div key={item.id} className="flex items-center space-x-4 py-2 border-b last:border-b-0">
+                  <div
+                    key={item.id}
+                    className="flex items-center space-x-4 py-2 border-b last:border-b-0"
+                  >
                     <div className="w-16 h-16 flex-shrink-0">
                       <img
-                        src={item.product?.images?.[0] || "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"}
+                        src={
+                          item.product?.images?.[0] ||
+                          "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"
+                        }
                         alt={item.product?.name || "Product"}
                         className="w-full h-full object-cover rounded"
                       />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{item.product?.name || "Product"}</h4>
+                      <h4 className="font-medium text-gray-900">
+                        {item.product?.name || "Product"}
+                      </h4>
                       <p className="text-gray-600">Quantity: {item.quantity}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium text-gray-900">ETB {parseFloat(item.price).toFixed(2)}</p>
+                      <p className="font-medium text-gray-900">
+                        ETB {parseFloat(item.price).toFixed(2)}
+                      </p>
                     </div>
                   </div>
                 ))}
-                
+
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center font-bold text-lg">
                     <span>Total</span>
@@ -260,7 +306,7 @@ export default function OrderSuccess() {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-          <Button 
+          <Button
             className="bg-ethiopian-gold hover:bg-amber text-white"
             onClick={() => {
               navigate(
@@ -274,12 +320,12 @@ export default function OrderSuccess() {
             </span>
           </Button>
 
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="border-gray-300 text-gray-700 hover:bg-gray-50"
             onClick={() => {
-              console.log('🔄 Continue Shopping clicked, navigating to: /shop');
-              navigate('/shop');
+              console.log("🔄 Continue Shopping clicked, navigating to: /shop");
+              navigate("/shop");
             }}
           >
             <span className="flex items-center space-x-2">

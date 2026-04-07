@@ -38,6 +38,7 @@ export default function TrackOrder() {
     error,
   } = useQuery<Order>({
     queryKey: ["order", orderId],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!orderId || orderId === "undefined") {
         throw new Error("Invalid order ID");
@@ -86,12 +87,13 @@ export default function TrackOrder() {
         "SHIPPED",
         "DELIVERED",
         "CANCELLED",
+        "PARTIALLY_CANCELLED",
       ].includes(normalizedStatus)
     ) {
       return "PAID";
     }
 
-    if (normalizedStatus === "REFUNDED") {
+    if (normalizedStatus === "REFUNDED" || normalizedStatus === "PARTIALLY_REFUNDED") {
       return "REFUNDED";
     }
 
@@ -155,6 +157,9 @@ export default function TrackOrder() {
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  const getStatusLabel = (status: string) =>
+    status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
 
   if (isLoading) {
     return (
@@ -227,6 +232,25 @@ export default function TrackOrder() {
     (order as any).deliveryInfo?.expectedDeliveryAt;
   const deliveryPersonInfo =
     order.deliveryPersonInfo || (order as any)["delivery-person-info"];
+  const orderItems = (order.lines && order.lines.length > 0
+    ? order.lines
+    : order.items) as Array<{
+    id?: number;
+    productId?: number;
+    productName?: string;
+    productImage?: string;
+    quantity?: number;
+    skuCode?: string;
+    unitAmountMinor?: number;
+    totalPrice?: number;
+    currency?: string;
+    attributes?: Array<{ name: string; value: string }>;
+  }>;
+  const subOrders = Array.isArray(order.subOrders) ? order.subOrders : [];
+  const hasMultipleSubOrders = subOrders.length > 1;
+  const displayOrderNumber = hasMultipleSubOrders
+    ? order.orderGroupNumber || orderId || order.orderNumber
+    : order.orderNumber || orderId;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -246,7 +270,7 @@ export default function TrackOrder() {
                 Track Your Order
               </h1>
               <p className="text-gray-600">
-                Order #{order.orderNumber || orderId}
+                Order #{displayOrderNumber}
               </p>
             </div>
             <div className="text-right">
@@ -263,8 +287,7 @@ export default function TrackOrder() {
                     className={getStatusColor(order.status)}
                     variant="secondary"
                   >
-                    {order.status.charAt(0).toUpperCase() +
-                      order.status.slice(1)}
+                    {getStatusLabel(order.status)}
                   </Badge>
                 )}
 
@@ -323,51 +346,55 @@ export default function TrackOrder() {
         </Dialog>
 
         {/* Status Timeline */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Order Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              {statusSteps.map((step, index) => {
-                const Icon = step.icon;
-                return (
-                  <div
-                    key={step.key}
-                    className="flex flex-col items-center flex-1"
-                  >
+        {!hasMultipleSubOrders && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Order Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                {statusSteps.map((step, index) => {
+                  const Icon = step.icon;
+                  return (
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                        step.completed
-                          ? "bg-ethiopian-gold text-white"
-                          : step.current
-                          ? "bg-blue-100 text-blue-600"
-                          : "bg-gray-100 text-gray-400"
-                      }`}
+                      key={step.key}
+                      className="flex flex-col items-center flex-1"
                     >
-                      <Icon size={20} />
-                    </div>
-                    <p
-                      className={`text-sm font-medium ${
-                        step.completed ? "text-ethiopian-gold" : "text-gray-600"
-                      }`}
-                    >
-                      {step.label}
-                    </p>
-                    {index < statusSteps.length - 1 && (
                       <div
-                        className={`absolute h-0.5 w-full top-6 left-1/2 transform translate-x-1/2 ${
-                          step.completed ? "bg-ethiopian-gold" : "bg-gray-200"
+                        className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                          step.completed
+                            ? "bg-ethiopian-gold text-white"
+                            : step.current
+                            ? "bg-blue-100 text-blue-600"
+                            : "bg-gray-100 text-gray-400"
                         }`}
-                        style={{ zIndex: -1 }}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                      >
+                        <Icon size={20} />
+                      </div>
+                      <p
+                        className={`text-sm font-medium ${
+                          step.completed
+                            ? "text-ethiopian-gold"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {step.label}
+                      </p>
+                      {index < statusSteps.length - 1 && (
+                        <div
+                          className={`absolute h-0.5 w-full top-6 left-1/2 transform translate-x-1/2 ${
+                            step.completed ? "bg-ethiopian-gold" : "bg-gray-200"
+                          }`}
+                          style={{ zIndex: -1 }}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Order Details Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -434,6 +461,15 @@ export default function TrackOrder() {
                       paymentStatus.slice(1).toLowerCase()}
                   </Badge>
                 </div>
+                {typeof order.refundedAmountMinor === "number" &&
+                  order.refundedAmountMinor > 0 && (
+                  <div>
+                    <p className="font-medium text-orange-600">Refunded</p>
+                    <p className="text-orange-600 font-bold">
+                      {formatMinorAmount(order.refundedAmountMinor, order.currency)}
+                    </p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -508,56 +544,192 @@ export default function TrackOrder() {
           </Card>
         </div>
 
-        {/* Order Items */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Order Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {(order.lines || order.items)?.map((item: any) => (
-                <div
-                  key={item.id || item.productId}
-                  className="flex items-center space-x-4 py-2 border-b last:border-b-0"
-                >
-                  <div className="w-16 h-16 flex-shrink-0">
-                    <img
-                      src={
-                        item.productImage ||
-                        "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"
-                      }
-                      alt={item.productName || "Product"}
-                      className="w-full h-full object-cover rounded"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">
-                      {item.productName || "Product"}
-                    </h4>
-                    <p className="text-sm text-gray-500">
-                      Quantity: {item.quantity}
-                    </p>
-                    {item.skuCode && (
-                      <p className="text-sm text-gray-400">
-                        SKU: {item.skuCode}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-gray-900">
-                      {formatMinorAmount(
-                        item.unitAmountMinor != null
-                          ? item.unitAmountMinor * (item.quantity || 1)
-                          : item.totalPrice || 0,
-                        item.currency || order.currency
+        {hasMultipleSubOrders && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Sub-Orders</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {subOrders.map((subOrder, index) => {
+                  const subOrderItems = Array.isArray(subOrder.lines)
+                    ? subOrder.lines
+                    : [];
+                  const subOrderStatusSteps = getStatusSteps(subOrder.status);
+
+                  return (
+                    <div
+                      key={subOrder.orderId || subOrder.orderNumber || index}
+                      className="py-10 border-b-2 border-gray-100 last:border-b-0"
+                    >
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            Sub-order {index + 1}
+                          </p>
+                          {subOrder.eta && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              ETA: {new Date(subOrder.eta).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                        <Badge className={getStatusColor(subOrder.status)} variant="secondary">
+                          {getStatusLabel(subOrder.status)}
+                        </Badge>
+                      </div>
+
+                      <div className="mb-4">
+                        <p className="text-base font-semibold text-gray-900 mb-3">
+                          Order Status
+                        </p>
+                        <div className="relative flex items-center justify-between">
+                          {subOrderStatusSteps.map((step, stepIndex) => {
+                            const Icon = step.icon;
+                            return (
+                              <div
+                                key={`${subOrder.orderId || subOrder.orderNumber || index}-${step.key}`}
+                                className="flex flex-col items-center flex-1"
+                              >
+                                <div
+                                  className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                                    step.completed
+                                      ? "bg-ethiopian-gold text-white"
+                                      : step.current
+                                      ? "bg-blue-100 text-blue-600"
+                                      : "bg-gray-100 text-gray-400"
+                                  }`}
+                                >
+                                  <Icon size={20} />
+                                </div>
+                                <p
+                                  className={`text-sm font-medium text-center ${
+                                    step.completed
+                                      ? "text-ethiopian-gold"
+                                      : "text-gray-600"
+                                  }`}
+                                >
+                                  {step.label}
+                                </p>
+                                {stepIndex < subOrderStatusSteps.length - 1 && (
+                                  <div
+                                    className={`absolute h-0.5 w-full top-6 left-1/2 transform translate-x-1/2 ${
+                                      step.completed
+                                        ? "bg-ethiopian-gold"
+                                        : "bg-gray-200"
+                                    }`}
+                                    style={{ zIndex: -1 }}
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {subOrder.rejectionReason && (
+                        <p className="text-sm text-red-600 mb-3">
+                          Reason: {subOrder.rejectionReason}
+                        </p>
                       )}
-                    </p>
+
+                      {typeof subOrder.refundedAmountMinor === "number" &&
+                        subOrder.refundedAmountMinor > 0 && (
+                        <div className="mb-3">
+                          <p className="text-sm font-medium text-orange-600">
+                            Refunded Amount: {formatMinorAmount(subOrder.refundedAmountMinor, subOrder.currency || order.currency)}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="space-y-4 pt-6">
+                        {subOrderItems.map((item) => (
+                          <div
+                            key={item.id || item.orderItemId || item.productId}
+                            className="text-sm"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-base font-bold text-gray-900 mb-1">
+                                {item.productName || "Product"}
+                                {item.quantity && item.quantity > 1 ? ` x ${item.quantity}` : ""}
+                              </p>
+                              <ul className="list-disc list-inside text-gray-500 ml-4 space-y-1">
+                                {item.attributes?.map((attr, attrIdx) => (
+                                  <li key={attrIdx}>
+                                    {attr.name}: {attr.value}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Order Items */}
+        {!hasMultipleSubOrders && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Order Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {orderItems?.map((item) => (
+                  <div
+                    key={item.id || item.productId}
+                    className="flex items-center space-x-4 py-2 border-b last:border-b-0"
+                  >
+                    <div className="w-16 h-16 flex-shrink-0">
+                      <img
+                        src={
+                          item.productImage ||
+                          "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"
+                        }
+                        alt={item.productName || "Product"}
+                        className="w-full h-full object-cover rounded"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">
+                        {item.productName || "Product"}
+                      </h4>
+                      <p className="text-sm text-gray-500">
+                        Quantity: {item.quantity}
+                      </p>
+                      {item.skuCode && (
+                        <p className="text-sm text-gray-400">
+                          SKU: {item.skuCode}
+                        </p>
+                      )}
+                      {item.attributes && item.attributes.length > 0 && (
+                        <p className="text-sm text-gray-500">
+                          {item.attributes
+                            .map((attr) => `${attr.name}: ${attr.value}`)
+                            .join(", ")}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-gray-900">
+                        {formatMinorAmount(
+                          item.unitAmountMinor != null
+                            ? item.unitAmountMinor * (item.quantity || 1)
+                            : item.totalPrice || 0,
+                          item.currency || order.currency
+                        )}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Delivery Status Messages */}
         {order.status?.toLowerCase() === "delivered" &&

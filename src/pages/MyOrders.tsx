@@ -10,7 +10,6 @@ import {
   Filter,
   ChevronRight,
   Calendar,
-  Loader2,
   ShoppingBag,
   Truck,
 } from "lucide-react";
@@ -39,6 +38,10 @@ interface OrderItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  isPackageItem?: boolean;
+  packageId?: number;
+  packageName?: string;
+  packageGroupId?: string;
 }
 
 interface ShippingAddress {
@@ -71,6 +74,15 @@ interface OrderTotals {
   salesTaxRate?: number;
 }
 
+interface SubOrder {
+  orderId?: number;
+  orderNumber?: string;
+  status: string;
+  currency?: string;
+  totals?: OrderTotals;
+  totalMinor?: number;
+}
+
 interface Order {
   id?: number;
   orderId?: number;
@@ -96,6 +108,8 @@ interface Order {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  orderGroupNumber?: string;
+  subOrders?: SubOrder[];
 }
 
 interface OrdersPage {
@@ -105,6 +119,13 @@ interface OrdersPage {
   number: number;
   size: number;
 }
+
+type OrderAmountSource = {
+  totals?: OrderTotals;
+  totalMinor?: number;
+  totalAmount?: number;
+  currency?: string;
+};
 
 type OrderStatus =
   | "PENDING"
@@ -139,6 +160,7 @@ function MyOrdersContent() {
     isError,
   } = useQuery({
     queryKey: ["my-orders", statusFilter],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       try {
         // Backend endpoint: GET /api/orders?status={status}&page=0&size=100
@@ -173,15 +195,34 @@ function MyOrdersContent() {
 
   const orders = ordersPage?.content || [];
 
-  const getOrderTotalMajor = (order: Order): number => {
+  const getOrderTotalMajor = (order: OrderAmountSource): number => {
     const totalMinor = order.totals?.totalMinor ?? order.totalMinor;
+    const currency = order.currency || "ETB";
 
     if (typeof totalMinor === "number") {
-      const decimals = getCurrencyDecimals(order.currency);
+      const decimals = getCurrencyDecimals(currency);
       return totalMinor / Math.pow(10, decimals);
     }
 
     return order.totalAmount ?? 0;
+  };
+
+  const getSubOrders = (order: Order): SubOrder[] =>
+    Array.isArray(order.subOrders) ? order.subOrders : [];
+
+  const hasMultipleSubOrders = (order: Order): boolean =>
+    getSubOrders(order).length > 1;
+
+  const getDisplayOrderNumber = (order: Order): string =>
+    order.orderGroupNumber || order.orderNumber;
+
+  const handleOrderClick = (order: Order) => {
+    const groupTrackingNumber = order.orderGroupNumber || order.orderNumber;
+    if (!groupTrackingNumber) {
+      return;
+    }
+
+    navigate(`/track/${groupTrackingNumber}`);
   };
 
   const getStatusIcon = (status: string) => {
@@ -388,65 +429,90 @@ function MyOrdersContent() {
                 >
                   <Card
                     className="hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() =>
-                      order.orderNumber &&
-                      navigate(`/track/${order.orderNumber}`)
-                    }
+                    onClick={() => handleOrderClick(order)}
                   >
                     <CardContent className="p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 bg-eagle-green/10 rounded-full flex items-center justify-center flex-shrink-0">
-                              <ShoppingBag className="h-5 w-5 text-eagle-green" />
-                            </div>
+                      {(() => {
+                        const orderLines = order.lines || order.items || [];
+                        const hasPackageBundle = orderLines.some(
+                          (line) =>
+                            line.isPackageItem ||
+                            !!line.packageGroupId ||
+                            !!line.packageName
+                        );
+
+                        return (
+                          <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-eagle-green text-lg truncate">
-                                {order.orderNumber ||
-                                  `Order #${
-                                    order.orderId ?? order.id ?? index + 1
-                                  }`}
-                              </h3>
-                              <Badge
-                                className={getStatusBadgeColor(order.status)}
-                              >
-                                {getStatusIcon(order.status)}
-                                <span className="ml-1">
-                                  {getStatusText(order.status)}
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 bg-eagle-green/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <ShoppingBag className="h-5 w-5 text-eagle-green" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-semibold text-eagle-green text-lg truncate">
+                                    {getDisplayOrderNumber(order) ||
+                                      `Order #${
+                                        order.orderId ?? order.id ?? index + 1
+                                      }`}
+                                  </h3>
+                                  <Badge
+                                    className={getStatusBadgeColor(
+                                      order.status
+                                    )}
+                                  >
+                                    {getStatusIcon(order.status)}
+                                    <span className="ml-1">
+                                      {getStatusText(order.status)}
+                                    </span>
+                                  </Badge>
+                                  {hasPackageBundle && (
+                                    <Badge variant="outline" className="ml-2">
+                                      Package Bundle
+                                    </Badge>
+                                  )}
+                                  {hasMultipleSubOrders(order) && (
+                                    <Badge variant="outline" className="ml-2">
+                                      {order.subOrders?.length} Sub-Orders
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-4 text-sm text-eagle-green/70 ml-13">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3.5 w-3.5" />
+                                  {new Date(
+                                    order.createdAt
+                                  ).toLocaleDateString()}
                                 </span>
-                              </Badge>
+                                {order.shippingAddress?.fullName && (
+                                  <span>
+                                    To: {order.shippingAddress.fullName}
+                                  </span>
+                                )}
+                                {order.shippingAddress?.city && (
+                                  <span>{order.shippingAddress.city}</span>
+                                )}
+                                {order.trackingCode && (
+                                  <span className="font-mono text-xs">
+                                    {order.trackingCode}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="text-right flex-shrink-0">
+                              <p className="font-bold text-eagle-green text-lg">
+                                {formatCurrency(
+                                  getOrderTotalMajor(order),
+                                  order.currency
+                                )}
+                              </p>
+                              <ChevronRight className="h-5 w-5 text-eagle-green/30 ml-auto mt-2" />
                             </div>
                           </div>
-
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-eagle-green/70 ml-13">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3.5 w-3.5" />
-                              {new Date(order.createdAt).toLocaleDateString()}
-                            </span>
-                            {order.shippingAddress?.fullName && (
-                              <span>To: {order.shippingAddress.fullName}</span>
-                            )}
-                            {order.shippingAddress?.city && (
-                              <span>{order.shippingAddress.city}</span>
-                            )}
-                            {order.trackingCode && (
-                              <span className="font-mono text-xs">
-                                {order.trackingCode}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="text-right flex-shrink-0">
-                          <p className="font-bold text-eagle-green text-lg">
-                            {formatCurrency(
-                              getOrderTotalMajor(order),
-                              order.currency
-                            )}
-                          </p>
-                          <ChevronRight className="h-5 w-5 text-eagle-green/30 ml-auto mt-2" />
-                        </div>
-                      </div>
+                        );
+                      })()}
 
                       {/* Status hints */}
                       {order.status.toUpperCase() === "SHIPPED" &&
@@ -474,6 +540,7 @@ function MyOrdersContent() {
             </div>
           </>
         )}
+
       </div>
     </div>
   );
