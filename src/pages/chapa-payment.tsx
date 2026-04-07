@@ -378,7 +378,10 @@ export default function ChapaPaymentPage() {
       let chapaCurrency = normalizedType === "custom" ? "ETB" : orderCurrency;
 
       // Non-custom types may still require conversion to ETB before Chapa initialization.
-      if (normalizedType !== "custom" && orderCurrency.toUpperCase() !== "ETB") {
+      if (
+        normalizedType !== "custom" &&
+        orderCurrency.toUpperCase() !== "ETB"
+      ) {
         try {
           const conversion = await apiService.getRequest<CurrencyConversionDto>(
             `/api/currencies/convert?amount=${encodeURIComponent(

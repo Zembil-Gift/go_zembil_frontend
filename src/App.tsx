@@ -6,6 +6,7 @@ import { queryClient } from "@/lib/queryClient";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { useGuestCurrencyStore } from "@/stores/currency-store";
+import PwaUpdatePrompt from "@/components/PwaUpdatePrompt";
 
 // Run guest currency detection immediately on module load (before first render)
 // so that the very first API call already includes the X-Currency header.
@@ -19,6 +20,7 @@ export default function App() {
           <TooltipProvider>
             <Router />
             <Toaster />
+            <PwaUpdatePrompt />
           </TooltipProvider>
         </GoogleMapsProvider>
       </AuthProvider>

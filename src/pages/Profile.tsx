@@ -338,9 +338,13 @@ export default function Profile() {
         data
       );
     },
-    onSuccess: (updatedProfile) => {
+    onSuccess: (updatedProfile, submittedPatch) => {
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+
+      const countryWasUpdated =
+        typeof submittedPatch?.country === "string" &&
+        submittedPatch.country !== (profile?.country || "");
 
       // Update local storage with new user data
       const currentUser = localStorage.getItem("user");
@@ -352,8 +356,21 @@ export default function Profile() {
           lastName: updatedProfile.lastName,
           email: updatedProfile.email,
           phoneNumber: updatedProfile.phoneNumber,
+          country: updatedProfile.country,
         };
         localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+
+      if (countryWasUpdated) {
+        toast({
+          title: "Profile Updated",
+          description:
+            "Country updated. Reloading to apply regional backend responses.",
+        });
+        setTimeout(() => {
+          window.location.reload();
+        }, 200);
+        return;
       }
 
       toast({

@@ -10,20 +10,42 @@ import { vendorService, VendorProfile } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService } from "@/services/imageService";
 
-const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
+const isEthiopianVendor = (
+  vendorProfile: VendorProfile | undefined
+): boolean => {
   if (!vendorProfile) return false;
-  return vendorProfile.countryCode === 'ET';
+  return vendorProfile.countryCode === "ET";
 };
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
 import { TagInput } from "@/components/TagInput";
 import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
-import { ArrowLeft, Package, AlertCircle, Plus, Trash2, Info, Gift } from "lucide-react";
+import {
+  ArrowLeft,
+  Package,
+  AlertCircle,
+  Plus,
+  Trash2,
+  Info,
+  Gift,
+} from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -47,27 +69,51 @@ const skuSchema = z.object({
   attributes: z.array(attributeSchema).optional(),
 });
 
-const productSchema = z.object({
-  name: z.string().trim().min(5, "Product name must be at least 5 characters").max(255),
-  description: z.string().trim().min(50, "Description must be at least 50 characters").max(1000),
-  summary: z.string().trim().min(20, "Short summary must be at least 20 characters").max(500),
-  cover: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  subCategoryId: z.string().min(1, "Sub-Category is required"),
-  tags: z.array(z.string()).optional(),
-  occasion: z.string().optional(),
-  currencyCode: z.string().min(1, "Currency is required"),
-  giftWrappable: z.boolean().optional(),
-  giftWrapPrice: z.number().min(0, "Gift wrap price must be positive").optional(),
-  productSku: z.array(skuSchema).min(1, "At least one product SKU is required"),
-}).refine((data) => {
-  // Check for duplicate variant names
-  const variantNames = data.productSku.map(sku => sku.skuName.trim().toLowerCase());
-  const uniqueNames = new Set(variantNames);
-  return uniqueNames.size === variantNames.length;
-}, {
-  message: "Each variant must have a unique name",
-  path: ["productSku"],
-});
+const productSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(5, "Product name must be at least 5 characters")
+      .max(255),
+    description: z
+      .string()
+      .trim()
+      .min(50, "Description must be at least 50 characters")
+      .max(1000),
+    summary: z
+      .string()
+      .trim()
+      .min(20, "Short summary must be at least 20 characters")
+      .max(500),
+    cover: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+    subCategoryId: z.string().min(1, "Sub-Category is required"),
+    tags: z.array(z.string()).optional(),
+    occasion: z.string().optional(),
+    currencyCode: z.string().min(1, "Currency is required"),
+    giftWrappable: z.boolean().optional(),
+    giftWrapPrice: z
+      .number()
+      .min(0, "Gift wrap price must be positive")
+      .optional(),
+    productSku: z
+      .array(skuSchema)
+      .min(1, "At least one product SKU is required"),
+  })
+  .refine(
+    (data) => {
+      // Check for duplicate variant names
+      const variantNames = data.productSku.map((sku) =>
+        sku.skuName.trim().toLowerCase()
+      );
+      const uniqueNames = new Set(variantNames);
+      return uniqueNames.size === variantNames.length;
+    },
+    {
+      message: "Each variant must have a unique name",
+      path: ["productSku"],
+    }
+  );
 
 type ProductFormData = z.infer<typeof productSchema>;
 
@@ -77,24 +123,26 @@ export default function CreateProduct() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const isVendor = user?.role?.toUpperCase() === 'VENDOR';
+  const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
-  const [pendingSkuImages, setPendingSkuImages] = useState<Record<number, File[]>>({});
+  const [pendingSkuImages, setPendingSkuImages] = useState<
+    Record<number, File[]>
+  >({});
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
   const { data: currencies = [] } = useQuery({
-    queryKey: ['currencies'],
-    queryFn: () => apiService.getRequest<Currency[]>('/api/currencies'),
+    queryKey: ["currencies"],
+    queryFn: () => apiService.getRequest<Currency[]>("/api/currencies"),
   });
 
   const { data: vendorProfile } = useQuery({
-    queryKey: ['vendor', 'profile'],
+    queryKey: ["vendor", "profile"],
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
   });
 
   const availableCurrencies = isEthiopianVendor(vendorProfile)
-    ? currencies.filter(c => c.code === 'ETB')
+    ? currencies.filter((c) => c.code === "ETB")
     : currencies;
 
   const form = useForm<ProductFormData>({
@@ -110,17 +158,23 @@ export default function CreateProduct() {
       currencyCode: "ETB", // Will be updated by useEffect when vendorProfile loads
       giftWrappable: false,
       giftWrapPrice: 0,
-      productSku: [{
-        skuCode: "",
-        skuName: "",
-        stockQuantity: 0,
-        amount: 0,
-        attributes: [],
-      }],
+      productSku: [
+        {
+          skuCode: "",
+          skuName: "",
+          stockQuantity: 0,
+          amount: 0,
+          attributes: [],
+        },
+      ],
     },
   });
 
-  const { fields: skuFields, append: appendSku, remove: removeSku } = useFieldArray({
+  const {
+    fields: skuFields,
+    append: appendSku,
+    remove: removeSku,
+  } = useFieldArray({
     control: form.control,
     name: "productSku",
   });
@@ -128,8 +182,10 @@ export default function CreateProduct() {
   // Update currencyCode when vendorProfile and currencies load
   useEffect(() => {
     if (vendorProfile && currencies.length > 0) {
-      const currency = isEthiopianVendor(vendorProfile) ? "ETB" : (currencies[0]?.code || "ETB");
-      form.setValue('currencyCode', currency);
+      const currency = isEthiopianVendor(vendorProfile)
+        ? "ETB"
+        : currencies[0]?.code || "ETB";
+      form.setValue("currencyCode", currency);
     }
   }, [vendorProfile, currencies, form]);
 
@@ -165,7 +221,7 @@ export default function CreateProduct() {
     mutationFn: async (data: ProductFormData) => {
       console.log("=== Creating Product - Mutation Started ===");
       console.log("Form data:", data);
-      
+
       const productPayload: any = {
         name: data.name,
         description: data.description || undefined,
@@ -174,8 +230,14 @@ export default function CreateProduct() {
         tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
         occasion: data.occasion || undefined,
         giftWrappable: data.giftWrappable || false,
-        giftWrapPrice: data.giftWrappable && data.giftWrapPrice ? data.giftWrapPrice : undefined,
-        giftWrapCurrencyCode: data.giftWrappable && data.giftWrapPrice ? data.currencyCode : undefined,
+        giftWrapPrice:
+          data.giftWrappable && data.giftWrapPrice
+            ? data.giftWrapPrice
+            : undefined,
+        giftWrapCurrencyCode:
+          data.giftWrappable && data.giftWrapPrice
+            ? data.currencyCode
+            : undefined,
       };
 
       // SKUs are required - first one is default
@@ -190,17 +252,24 @@ export default function CreateProduct() {
             currencyCode: data.currencyCode,
             amount: sku.amount,
           },
-          attributes: sku.attributes?.filter(attr => attr.name && attr.value) || [],
+          attributes:
+            sku.attributes?.filter((attr) => attr.name && attr.value) || [],
         }));
       }
 
       console.log("Final payload:", JSON.stringify(productPayload, null, 2));
-      
+
       const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
       const validateFileSize = (files: File[], label: string) => {
         for (const file of files) {
           if (file.size > maxFileSize) {
-            throw new Error(`${label}: "${file.name}" exceeds the 10MB file size limit (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+            throw new Error(
+              `${label}: "${file.name}" exceeds the 10MB file size limit (${(
+                file.size /
+                1024 /
+                1024
+              ).toFixed(2)}MB)`
+            );
           }
         }
       };
@@ -213,34 +282,54 @@ export default function CreateProduct() {
 
       const createdProduct = await vendorService.createProduct(productPayload);
 
-      if (createdProduct?.productSku && Object.keys(pendingSkuImages).length > 0) {
+      if (
+        createdProduct?.productSku &&
+        Object.keys(pendingSkuImages).length > 0
+      ) {
         setIsUploadingImages(true);
         try {
-          for (const [skuIndexStr, images] of Object.entries(pendingSkuImages)) {
+          for (const [skuIndexStr, images] of Object.entries(
+            pendingSkuImages
+          )) {
             const skuIndex = parseInt(skuIndexStr, 10);
             const sku = createdProduct.productSku[skuIndex];
-            
+
             if (images.length > 0 && sku?.id) {
-              console.log(`Uploading ${images.length} images for SKU ${sku.id}...`);
+              console.log(
+                `Uploading ${images.length} images for SKU ${sku.id}...`
+              );
               try {
                 await imageService.uploadSkuImages(sku.id, images);
                 console.log(`SKU ${sku.id} images uploaded successfully`);
               } catch (skuImageError: any) {
-                console.error(`Failed to upload images for SKU ${sku.id}:`, skuImageError);
+                console.error(
+                  `Failed to upload images for SKU ${sku.id}:`,
+                  skuImageError
+                );
                 // Rollback: Delete the created product
                 try {
                   if (createdProduct?.id) {
                     await vendorService.deleteProduct(createdProduct.id);
-                    console.log(`Product ${createdProduct.id} rolled back due to image upload failure`);
+                    console.log(
+                      `Product ${createdProduct.id} rolled back due to image upload failure`
+                    );
                   }
                 } catch (deleteError) {
                   console.error("Failed to rollback product:", deleteError);
                 }
-                
-                if (skuImageError?.response?.status === 413 || skuImageError?.response?.data?.error === 'FILE_SIZE_EXCEEDED') {
-                  throw new Error(skuImageError?.response?.data?.message || "File size exceeds the maximum allowed limit");
+
+                if (
+                  skuImageError?.response?.status === 413 ||
+                  skuImageError?.response?.data?.error === "FILE_SIZE_EXCEEDED"
+                ) {
+                  throw new Error(
+                    skuImageError?.response?.data?.message ||
+                      "File size exceeds the maximum allowed limit"
+                  );
                 }
-                throw new Error("Image upload failed. Product creation has been rolled back. Please try again.");
+                throw new Error(
+                  "Image upload failed. Product creation has been rolled back. Please try again."
+                );
               }
             }
           }
@@ -251,17 +340,21 @@ export default function CreateProduct() {
           setIsUploadingImages(false);
         }
       }
-      
+
       return createdProduct;
     },
     onSuccess: () => {
       // Invalidate relevant queries so lists refresh immediately
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'my-products'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'products'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'pending-products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'all-products'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["vendor", "my-products"] });
+      queryClient.invalidateQueries({ queryKey: ["vendor", "products"] });
+      queryClient.invalidateQueries({
+        queryKey: ["vendor", "pending-rejected-products"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "pending-products"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin", "all-products"] });
+
       toast({
         title: "Product Created",
         description: "Your product has been submitted for admin approval.",
@@ -281,40 +374,50 @@ export default function CreateProduct() {
   const onSubmit = (data: ProductFormData) => {
     console.log("Form submitted with data:", data);
     console.log("Product SKUs:", data.productSku);
-    
+
     if (!data.productSku || data.productSku.length === 0) {
       toast({
         title: "Validation Error",
-        description: "At least one product SKU is required. Stock is managed at the SKU level.",
+        description:
+          "At least one product SKU is required. Stock is managed at the SKU level.",
         variant: "destructive",
       });
       return;
     }
-    
+
     for (let i = 0; i < data.productSku.length; i++) {
       const sku = data.productSku[i];
-      
+
       const skuImages = pendingSkuImages[i] || [];
       if (skuImages.length === 0) {
         toast({
           title: "Image Required",
-          description: `Please upload at least one image for ${data.productSku.length === 1 ? 'your product' : `variant #${i + 1} (${sku.skuCode || 'unnamed'})`}.`,
+          description: `Please upload at least one image for ${
+            data.productSku.length === 1
+              ? "your product"
+              : `variant #${i + 1} (${sku.skuCode || "unnamed"})`
+          }.`,
           variant: "destructive",
         });
         return;
       }
     }
-    
+
     createProductMutation.mutate(data);
   };
 
   const onError = (errors: any) => {
     console.log("Form validation errors:", errors);
-    
+
     const errorMessages: string[] = [];
-    if (errors.name) errorMessages.push(errors.name.message || "Product name is invalid");
-    if (errors.summary) errorMessages.push(errors.summary.message || "Short summary is invalid");
-    if (errors.description) errorMessages.push(errors.description.message || "Description is invalid");
+    if (errors.name)
+      errorMessages.push(errors.name.message || "Product name is invalid");
+    if (errors.summary)
+      errorMessages.push(errors.summary.message || "Short summary is invalid");
+    if (errors.description)
+      errorMessages.push(
+        errors.description.message || "Description is invalid"
+      );
     if (errors.subCategoryId) errorMessages.push("Sub-Category is required");
     if (errors.productSku) {
       let foundSpecificSkuError = false;
@@ -331,11 +434,15 @@ export default function CreateProduct() {
           if (skuError) {
             const variantLabel = `Variant ${index + 1}`;
             if (skuError.skuName) {
-              errorMessages.push(`${variantLabel}: ${skuError.skuName.message}`);
+              errorMessages.push(
+                `${variantLabel}: ${skuError.skuName.message}`
+              );
               foundSpecificSkuError = true;
             }
             if (skuError.skuCode) {
-              errorMessages.push(`${variantLabel}: ${skuError.skuCode.message}`);
+              errorMessages.push(
+                `${variantLabel}: ${skuError.skuCode.message}`
+              );
               foundSpecificSkuError = true;
             }
             if (skuError.amount) {
@@ -343,7 +450,9 @@ export default function CreateProduct() {
               foundSpecificSkuError = true;
             }
             if (skuError.stockQuantity) {
-              errorMessages.push(`${variantLabel}: ${skuError.stockQuantity.message}`);
+              errorMessages.push(
+                `${variantLabel}: ${skuError.stockQuantity.message}`
+              );
               foundSpecificSkuError = true;
             }
           }
@@ -351,15 +460,18 @@ export default function CreateProduct() {
       }
       // Only show generic message if there are SKU errors but we didn't find specific field errors
       if (!foundSpecificSkuError) {
-        errorMessages.push("Please check variant details - ensure all required fields are filled");
+        errorMessages.push(
+          "Please check variant details - ensure all required fields are filled"
+        );
       }
     }
-    
+
     toast({
       title: "Validation Error",
-      description: errorMessages.length > 0 
-        ? errorMessages.join(". ") 
-        : "Please fill in all required fields correctly.",
+      description:
+        errorMessages.length > 0
+          ? errorMessages.join(". ")
+          : "Please fill in all required fields correctly.",
       variant: "destructive",
     });
   };
@@ -369,7 +481,9 @@ export default function CreateProduct() {
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You need to be a vendor to create products.</p>
+        <p className="text-gray-600 mb-4">
+          You need to be a vendor to create products.
+        </p>
         <Button asChild>
           <Link to="/vendor-signup">Become a Vendor</Link>
         </Button>
@@ -389,11 +503,16 @@ export default function CreateProduct() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Create Product</h1>
-            <p className="text-muted-foreground">Add a new product to your catalog (requires admin approval)</p>
+            <p className="text-muted-foreground">
+              Add a new product to your catalog (requires admin approval)
+            </p>
           </div>
         </div>
 
-        <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
+        <form
+          onSubmit={form.handleSubmit(onSubmit, onError)}
+          className="space-y-6"
+        >
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -411,7 +530,9 @@ export default function CreateProduct() {
                   {...form.register("name")}
                 />
                 {form.formState.errors.name && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.name.message}</p>
+                  <p className="text-sm text-red-600 mt-1">
+                    {form.formState.errors.name.message}
+                  </p>
                 )}
               </div>
 
@@ -423,7 +544,9 @@ export default function CreateProduct() {
                   {...form.register("summary")}
                 />
                 {form.formState.errors.summary && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.summary.message}</p>
+                  <p className="text-sm text-red-600 mt-1">
+                    {form.formState.errors.summary.message}
+                  </p>
                 )}
               </div>
 
@@ -436,7 +559,9 @@ export default function CreateProduct() {
                   {...form.register("description")}
                 />
                 {form.formState.errors.description && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.description.message}</p>
+                  <p className="text-sm text-red-600 mt-1">
+                    {form.formState.errors.description.message}
+                  </p>
                 )}
               </div>
             </CardContent>
@@ -462,7 +587,9 @@ export default function CreateProduct() {
                   )}
                 />
                 {form.formState.errors.subCategoryId && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.subCategoryId.message}</p>
+                  <p className="text-sm text-red-600 mt-1">
+                    {form.formState.errors.subCategoryId.message}
+                  </p>
                 )}
               </div>
 
@@ -510,18 +637,23 @@ export default function CreateProduct() {
           <Card>
             <CardHeader>
               <CardTitle>Pricing *</CardTitle>
-              <CardDescription>Set the currency and prices for your product variants.</CardDescription>
+              <CardDescription>
+                Set the currency and prices for your product variants.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* VAT Notice */}
               <Alert className="border-blue-200 bg-blue-50">
                 <Info className="h-4 w-4 text-blue-600" />
-                <AlertTitle className="text-blue-800">Pricing Information</AlertTitle>
+                <AlertTitle className="text-blue-800">
+                  Pricing Information
+                </AlertTitle>
                 <AlertDescription className="text-blue-700">
                   Enter your price (what you'll receive).
-                  {vendorProfile?.vatStatus === 'VAT_REGISTERED' && (
+                  {vendorProfile?.vatStatus === "VAT_REGISTERED" && (
                     <span className="block mt-1 font-medium">
-                      As a VAT-registered vendor, VAT will be included in the customer price.
+                      As a VAT-registered vendor, VAT will be included in the
+                      customer price.
                     </span>
                   )}
                 </AlertDescription>
@@ -535,7 +667,10 @@ export default function CreateProduct() {
                     name="currencyCode"
                     control={form.control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select currency" />
                         </SelectTrigger>
@@ -550,7 +685,9 @@ export default function CreateProduct() {
                     )}
                   />
                   {form.formState.errors.currencyCode && (
-                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.currencyCode.message}</p>
+                    <p className="text-sm text-red-600 mt-1">
+                      {form.formState.errors.currencyCode.message}
+                    </p>
                   )}
                 </div>
               ) : null}
@@ -561,23 +698,32 @@ export default function CreateProduct() {
                   <div>
                     <Label className="text-base">Product Variants (SKUs)</Label>
                     <p className="text-sm text-muted-foreground">
-                      Manage stock and pricing for your product. Add multiple variants if you have different sizes, colors, etc.
+                      Manage stock and pricing for your product. Add multiple
+                      variants if you have different sizes, colors, etc.
                     </p>
                   </div>
-                  <Button type="button" variant="outline" size="sm" onClick={addSku}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addSku}
+                  >
                     <Plus className="h-4 w-4 mr-1" />
                     Add Variant
                   </Button>
                 </div>
 
                 {skuFields.map((field, skuIndex) => {
-                  const attributes = form.watch(`productSku.${skuIndex}.attributes`) || [];
+                  const attributes =
+                    form.watch(`productSku.${skuIndex}.attributes`) || [];
                   return (
                     <Card key={field.id} className="border-2">
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-base">
-                            {skuFields.length === 1 ? "Product SKU" : `Variant #${skuIndex + 1}`}
+                            {skuFields.length === 1
+                              ? "Product SKU"
+                              : `Variant #${skuIndex + 1}`}
                           </CardTitle>
                           {/* Only show delete button if more than one SKU exists */}
                           {skuFields.length > 1 && (
@@ -598,15 +744,26 @@ export default function CreateProduct() {
                         <div>
                           <Label>Variant Name *</Label>
                           <Input
-                            placeholder={skuFields.length === 1 ? "e.g., Default" : "e.g., Red Medium"}
+                            placeholder={
+                              skuFields.length === 1
+                                ? "e.g., Default"
+                                : "e.g., Red Medium"
+                            }
                             {...form.register(`productSku.${skuIndex}.skuName`)}
                           />
-                          {form.formState.errors.productSku?.[skuIndex]?.skuName && (
+                          {form.formState.errors.productSku?.[skuIndex]
+                            ?.skuName && (
                             <p className="text-sm text-red-600 mt-1">
-                              {form.formState.errors.productSku[skuIndex]?.skuName?.message}
+                              {
+                                form.formState.errors.productSku[skuIndex]
+                                  ?.skuName?.message
+                              }
                             </p>
                           )}
-                          <p className="text-xs text-muted-foreground mt-1">A friendly name for this variant (e.g., "Red Large T-Shirt")</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            A friendly name for this variant (e.g., "Red Large
+                            T-Shirt")
+                          </p>
                         </div>
 
                         {/* SKU Code and Stock */}
@@ -614,15 +771,27 @@ export default function CreateProduct() {
                           <div>
                             <Label>SKU Code *</Label>
                             <Input
-                              placeholder={skuFields.length === 1 ? "e.g., PROD-001" : "e.g., SHIRT-RED-M"}
-                              {...form.register(`productSku.${skuIndex}.skuCode`)}
+                              placeholder={
+                                skuFields.length === 1
+                                  ? "e.g., PROD-001"
+                                  : "e.g., SHIRT-RED-M"
+                              }
+                              {...form.register(
+                                `productSku.${skuIndex}.skuCode`
+                              )}
                             />
-                            {form.formState.errors.productSku?.[skuIndex]?.skuCode && (
+                            {form.formState.errors.productSku?.[skuIndex]
+                              ?.skuCode && (
                               <p className="text-sm text-red-600 mt-1">
-                                {form.formState.errors.productSku[skuIndex]?.skuCode?.message}
+                                {
+                                  form.formState.errors.productSku[skuIndex]
+                                    ?.skuCode?.message
+                                }
                               </p>
                             )}
-                            <p className="text-xs text-muted-foreground mt-1">Required unique reference code for this variant</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Required unique reference code for this variant
+                            </p>
                           </div>
                           <div>
                             <Label>Stock Quantity *</Label>
@@ -634,10 +803,10 @@ export default function CreateProduct() {
                                   type="number"
                                   min="0"
                                   placeholder="0"
-                                  value={field.value || ''}
+                                  value={field.value || ""}
                                   onChange={(e) => {
                                     const value = e.target.value;
-                                    if (value === '') {
+                                    if (value === "") {
                                       field.onChange(0);
                                     } else {
                                       field.onChange(parseInt(value, 10));
@@ -647,14 +816,20 @@ export default function CreateProduct() {
                                 />
                               )}
                             />
-                            <p className="text-xs text-muted-foreground mt-1">Available units in stock</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Available units in stock
+                            </p>
                           </div>
                         </div>
 
                         {/* SKU Price */}
                         <div>
                           <Label>
-                            {isEthiopianVendor(vendorProfile) ? "Price (ETB) *" : `Price (${form.watch("currencyCode") || "Currency"}) *`}
+                            {isEthiopianVendor(vendorProfile)
+                              ? "Price (ETB) *"
+                              : `Price (${
+                                  form.watch("currencyCode") || "Currency"
+                                }) *`}
                           </Label>
                           <Controller
                             name={`productSku.${skuIndex}.amount`}
@@ -665,17 +840,19 @@ export default function CreateProduct() {
                                 step="0.01"
                                 min="0"
                                 placeholder="0.00"
-                                value={field.value || ''}
+                                value={field.value || ""}
                                 onChange={(e) => {
                                   const value = e.target.value;
-                                  if (value === '') {
+                                  if (value === "") {
                                     field.onChange(0);
                                   } else {
                                     // Use Math.round to avoid floating point precision issues
                                     const numValue = parseFloat(value);
                                     if (!isNaN(numValue)) {
                                       // Round to 2 decimal places using Math.round to avoid floating point errors
-                                      field.onChange(Math.round(numValue * 100) / 100);
+                                      field.onChange(
+                                        Math.round(numValue * 100) / 100
+                                      );
                                     }
                                   }
                                 }}
@@ -684,14 +861,17 @@ export default function CreateProduct() {
                             )}
                           />
                           <p className="text-xs text-muted-foreground mt-1">
-                            This is what you'll receive. Platform fee will be added for customers.
+                            This is what you'll receive. Platform fee will be
+                            added for customers.
                           </p>
                         </div>
 
                         {/* Attributes */}
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <Label className="text-sm">Attributes (Size, Color, etc.)</Label>
+                            <Label className="text-sm">
+                              Attributes (Size, Color, etc.)
+                            </Label>
                             <Button
                               type="button"
                               variant="ghost"
@@ -705,27 +885,37 @@ export default function CreateProduct() {
 
                           {attributes.length === 0 && (
                             <p className="text-sm text-muted-foreground italic">
-                              No attributes added. Click "Add Attribute" to add size, color, etc.
+                              No attributes added. Click "Add Attribute" to add
+                              size, color, etc.
                             </p>
                           )}
 
                           {attributes.map((_, attrIndex) => (
-                            <div key={attrIndex} className="flex items-center gap-2">
+                            <div
+                              key={attrIndex}
+                              className="flex items-center gap-2"
+                            >
                               <Input
                                 placeholder="Name (e.g., Size)"
-                                {...form.register(`productSku.${skuIndex}.attributes.${attrIndex}.name`)}
+                                {...form.register(
+                                  `productSku.${skuIndex}.attributes.${attrIndex}.name`
+                                )}
                                 className="flex-1"
                               />
                               <Input
                                 placeholder="Value (e.g., Large)"
-                                {...form.register(`productSku.${skuIndex}.attributes.${attrIndex}.value`)}
+                                {...form.register(
+                                  `productSku.${skuIndex}.attributes.${attrIndex}.value`
+                                )}
                                 className="flex-1"
                               />
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => removeAttribute(skuIndex, attrIndex)}
+                                onClick={() =>
+                                  removeAttribute(skuIndex, attrIndex)
+                                }
                                 className="text-destructive hover:text-destructive shrink-0"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -738,35 +928,42 @@ export default function CreateProduct() {
                         <div className="space-y-3">
                           <Label className="text-sm">Images *</Label>
                           <p className="text-xs text-muted-foreground">
-                            Upload images for this {skuFields.length === 1 ? 'product' : 'variant'}. The first image will be the cover.
+                            Upload images for this{" "}
+                            {skuFields.length === 1 ? "product" : "variant"}.
+                            The first image will be the cover.
                           </p>
                           <ImageUpload
                             images={[]}
                             onFilesSelected={(files) => {
                               setPendingSkuImages((prev) => ({
                                 ...prev,
-                                [skuIndex]: [...(prev[skuIndex] || []), ...files],
+                                [skuIndex]: [
+                                  ...(prev[skuIndex] || []),
+                                  ...files,
+                                ],
                               }));
                             }}
                             maxImages={10}
                             isUploading={isUploadingImages}
                             disabled={createProductMutation.isPending}
                             label=""
-                            helperText={`Upload images for this ${skuFields.length === 1 ? 'product' : 'variant'}. First image will be the cover.`}
+                            helperText={`Upload images for this ${
+                              skuFields.length === 1 ? "product" : "variant"
+                            }. First image will be the cover.`}
                           />
-                          {pendingSkuImages[skuIndex] && pendingSkuImages[skuIndex].length > 0 && (
-                            <p className="text-sm text-muted-foreground">
-                              {pendingSkuImages[skuIndex].length} image(s) will be uploaded
-                            </p>
-                          )}
+                          {pendingSkuImages[skuIndex] &&
+                            pendingSkuImages[skuIndex].length > 0 && (
+                              <p className="text-sm text-muted-foreground">
+                                {pendingSkuImages[skuIndex].length} image(s)
+                                will be uploaded
+                              </p>
+                            )}
                         </div>
                       </CardContent>
                     </Card>
                   );
                 })}
               </div>
-
-
             </CardContent>
           </Card>
 
@@ -777,7 +974,9 @@ export default function CreateProduct() {
                 <Gift className="h-5 w-5" />
                 Gift Wrapping
               </CardTitle>
-              <CardDescription>Allow customers to add gift wrapping for an additional fee.</CardDescription>
+              <CardDescription>
+                Allow customers to add gift wrapping for an additional fee.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center space-x-2">
@@ -791,7 +990,7 @@ export default function CreateProduct() {
                       onCheckedChange={(checked) => {
                         field.onChange(checked === true);
                         if (!checked) {
-                          form.setValue('giftWrapPrice', 0);
+                          form.setValue("giftWrapPrice", 0);
                         }
                       }}
                     />
@@ -805,7 +1004,8 @@ export default function CreateProduct() {
               {form.watch("giftWrappable") && (
                 <div>
                   <Label>
-                    Gift Wrapping Fee ({form.watch("currencyCode") || "Currency"})
+                    Gift Wrapping Fee (
+                    {form.watch("currencyCode") || "Currency"})
                   </Label>
                   <Controller
                     name="giftWrapPrice"
@@ -816,10 +1016,10 @@ export default function CreateProduct() {
                         step="0.01"
                         min="0"
                         placeholder="0.00"
-                        value={field.value || ''}
+                        value={field.value || ""}
                         onChange={(e) => {
                           const value = e.target.value;
-                          if (value === '') {
+                          if (value === "") {
                             field.onChange(0);
                           } else {
                             const numValue = parseFloat(value);
@@ -833,7 +1033,8 @@ export default function CreateProduct() {
                     )}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Additional charge per item for gift wrapping. Set to 0 for free gift wrapping.
+                    Additional charge per item for gift wrapping. Set to 0 for
+                    free gift wrapping.
                   </p>
                 </div>
               )}
@@ -846,7 +1047,9 @@ export default function CreateProduct() {
               <Link to="/vendor">Cancel</Link>
             </Button>
             <Button type="submit" disabled={createProductMutation.isPending}>
-              {createProductMutation.isPending ? "Creating..." : "Create Product"}
+              {createProductMutation.isPending
+                ? "Creating..."
+                : "Create Product"}
             </Button>
           </div>
         </form>
