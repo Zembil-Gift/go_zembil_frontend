@@ -3,6 +3,7 @@ import App from "./App";
 import "./index.css";
 import "./i18n"; // Initialize i18n
 import { LanguageProvider } from "./contexts/LanguageContext";
+import "leaflet/dist/leaflet.css";
 
 const root = document.getElementById("root");
 if (root) {
