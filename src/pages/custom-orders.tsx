@@ -1,7 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { 
-  Palette, Camera, Heart, Star, CheckCircle, ArrowRight, Sparkles, Gift, Crown, Coffee,
-  Shirt, Wrench, Music, Package, Users, Zap, ChevronDown, Info
+  Palette, CheckCircle, ArrowRight, Sparkles, Gift, Package, Users, Zap, ChevronDown, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,34 +8,12 @@ import { Link } from "react-router-dom";
 import FadeIn from "@/components/animations/FadeIn";
 import { useQuery } from "@tanstack/react-query";
 import { customOrderTemplateService } from "@/services/customOrderTemplateService";
-import type { CategoryWithTemplateCount } from "@/types/customOrders";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { Search as SearchIcon, X } from "lucide-react";
 import { TemplateCard } from "./customer/CustomOrderTemplates";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
-
-
-// Category icon mapping based on name
-const getCategoryIcon = (categoryName: string) => {
-  if (!categoryName) return Package;
-  const name = categoryName.toLowerCase();
-  if (name.includes('art') || name.includes('paint') || name.includes('portrait')) return Palette;
-  if (name.includes('embroid') || name.includes('cloth') || name.includes('shirt') || name.includes('fashion')) return Shirt;
-  if (name.includes('wood') || name.includes('craft') || name.includes('tool')) return Wrench;
-  if (name.includes('jewel') || name.includes('accessori')) return Star;
-  if (name.includes('ceramic') || name.includes('pottery')) return Palette;
-  if (name.includes('basket') || name.includes('gift')) return Gift;
-  if (name.includes('song') || name.includes('music')) return Music;
-  if (name.includes('photo') || name.includes('album') || name.includes('camera')) return Camera;
-  if (name.includes('letter') || name.includes('love') || name.includes('heart')) return Heart;
-  if (name.includes('leather')) return Sparkles;
-  if (name.includes('crown') || name.includes('traditional')) return Crown;
-  if (name.includes('coffee')) return Coffee;
-  if (name.includes('handmade') || name.includes('sparkle')) return Sparkles;
-  return Package;
-};
 
 function CustomOrdersContent() {
   const { isInitialized } = useAuth();
@@ -80,12 +57,14 @@ function CustomOrdersContent() {
     enabled: debouncedSearchTerm.length > 0 && isInitialized,
   });
 
-  // Fetch categories with template counts from API (wait for auth so template prices have correct currency)
-  const { data: categories, isLoading: isCategoriesLoading } = useQuery({
-    queryKey: ['custom-order-categories', activeCurrency],
-    queryFn: () => customOrderTemplateService.getCategoriesWithTemplates(),
+  // Fetch approved templates for default browse section
+  const { data: approvedTemplatesData, isLoading: isApprovedTemplatesLoading } = useQuery({
+    queryKey: ['custom-order-templates-approved', activeCurrency],
+    queryFn: () => customOrderTemplateService.getApproved(0, 20),
     enabled: isInitialized,
   });
+
+  const approvedTemplates = approvedTemplatesData?.content || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
@@ -139,6 +118,7 @@ function CustomOrdersContent() {
               <X className="h-5 w-5 text-eagle-green/40" />
             </button>
           )}
+        
         </div>
       </div>
 
@@ -195,10 +175,10 @@ function CustomOrdersContent() {
 
       {/* Features Section - Collapsible */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        <FadeIn delay={0.2}>
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+        {/* <FadeIn delay={0.2}> */}
+          {/* <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
             {/* Toggle Header */}
-            <button
+            {/* <button
               onClick={() => setIsFeaturesExpanded(!isFeaturesExpanded)}
               className="w-full p-6 lg:p-8 flex items-center justify-between hover:bg-light-cream/30 transition-colors duration-200 group"
             >
@@ -221,10 +201,10 @@ function CustomOrdersContent() {
               >
                 <ChevronDown className="h-6 w-6 text-eagle-green" />
               </motion.div>
-            </button>
+            </button>  */}
 
             {/* Collapsible Content */}
-            <AnimatePresence>
+            {/* <AnimatePresence>
               {isFeaturesExpanded && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
@@ -281,15 +261,15 @@ function CustomOrdersContent() {
                   </div>
                 </motion.div>
               )}
-            </AnimatePresence>
-          </div>
-        </FadeIn>
+            </AnimatePresence> */}
+          {/* </div>
+        </FadeIn> */}
 
         {/* How It Works Section - Collapsible */}
-        <FadeIn delay={0.5}>
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        {/* <FadeIn delay={0.5}>
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden"> */}
             {/* Toggle Header */}
-            <button
+            {/* <button
               onClick={() => setIsGuideExpanded(!isGuideExpanded)}
               className="w-full p-6 lg:p-8 flex items-center justify-between hover:bg-light-cream/30 transition-colors duration-200 group"
             >
@@ -312,10 +292,10 @@ function CustomOrdersContent() {
               >
                 <ChevronDown className="h-6 w-6 text-eagle-green" />
               </motion.div>
-            </button>
+            </button> */}
 
             {/* Collapsible Content */}
-            <AnimatePresence>
+            {/* <AnimatePresence>
               {isGuideExpanded && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
@@ -343,8 +323,8 @@ function CustomOrdersContent() {
                           step: 3, 
                           title: "Pay", 
                           description: "Chat with the vendor to finalize details and pricing, then pay securely",
-                          icon: CheckCircle
-                        },
+                          icon: CheckCircle */}
+                        {/* },
                         { 
                           step: 4, 
                           title: "Receive Creation", 
@@ -373,97 +353,49 @@ function CustomOrdersContent() {
                           <p className="font--light text-eagle-green/70 text-sm leading-relaxed">
                             {item.description}
                           </p>
-                        </motion.div>
-                      ))}
+                        </motion.div> */}
+                      {/* ))}
                     </div>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-        </FadeIn>
+        </FadeIn> */}
 
-        {/* Popular Categories Preview */}
+        {/* Approved Templates Preview */}
         <FadeIn delay={0.7}>
           <div className="mt-16">
             <div className="text-center mb-12">
               <h2 className="text-3xl lg:text-4xl font--bold text-eagle-green mb-4">
-                Browse Categories
+                  Browse Templates
               </h2>
               <p className="text-lg font--light text-eagle-green/70">
-                Discover custom order templates from our talented vendors
+                  Discover approved custom order templates from our talented vendors
               </p>
             </div>
 
-            {isCategoriesLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-                {[...Array(8)].map((_, index) => (
-                  <Card key={index} className="border-0 shadow-md bg-white rounded-xl">
-                    <CardContent className="p-4 text-center">
-                      <Skeleton className="w-12 h-12 rounded-xl mx-auto mb-3" />
-                      <Skeleton className="h-4 w-24 mx-auto mb-2" />
-                      <Skeleton className="h-3 w-16 mx-auto" />
-                    </CardContent>
-                  </Card>
-                ))}
+              {isApprovedTemplatesLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-white rounded-2xl h-[400px] animate-pulse shadow-sm border border-eagle-green/5" />
+                  ))}
               </div>
-            ) : categories && categories.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 py-2 px-2 mb-8">
-                {categories.map((category: CategoryWithTemplateCount, index: number) => {
-                  const IconComponent = getCategoryIcon(category.categoryName);
-                  return (
-                    <motion.div
-                      key={category.categoryId}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.8 + index * 0.05 }}
-                      whileHover={{ scale: 1.05 }}
-                      className="group"
-                    >
-                      <Link to={`/custom-orders/category/${category.categoryId}`}>
-                        <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white rounded-xl cursor-pointer">
-                          <CardContent className="p-4 text-center">
-                            <div className="w-12 h-12 bg-gradient-to-br from-june-bud/20 to-viridian-green/10 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:from-june-bud/30 group-hover:to-viridian-green/20 transition-colors">
-                              <IconComponent className="h-6 w-6 text-eagle-green" />
-                            </div>
-                            <h3 className="font--bold text-eagle-green text-sm mb-1">
-                              {category.categoryName}
-                            </h3>
-                            <p className="text-xs font--light text-eagle-green/60">
-                              {category.templateCount} {category.templateCount === 1 ? 'template' : 'templates'}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
+              ) : approvedTemplates.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                  {approvedTemplates.map((template) => (
+                    <TemplateCard key={template.id} template={template} />
+                  ))}
               </div>
             ) : (
               <div className="text-center py-12">
                 <Package className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
                 <p className="text-lg font--light text-eagle-green/70">
-                  No categories available yet. Check back soon!
+                    No approved templates available yet. Check back soon!
                 </p>
               </div>
             )}
 
-            <div className="text-center">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/custom-orders/categories">
-                  <Button 
-                    size="lg" 
-                    className="bg-eagle-green hover:bg-viridian-green text-white font--bold px-8 py-3 h-auto rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                  >
-                    <span>View All Categories</span>
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              </motion.div>
-            </div>
           </div>
         </FadeIn>
       </section>

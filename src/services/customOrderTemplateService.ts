@@ -61,6 +61,14 @@ class CustomOrderTemplateService {
     return await apiService.getRequest<CategoryWithTemplateCount[]>('/api/custom-order-templates/categories');
   }
 
+  async getApproved(page: number = 0, size: number = 20): Promise<PagedCustomOrderTemplateResponse> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('size', size.toString());
+    const url = `/api/custom-order-templates/approved?${params.toString()}`;
+    return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
+  }
+
   async create(data: CreateCustomOrderTemplateRequest): Promise<CustomOrderTemplate> {
     return await apiService.postRequest<CustomOrderTemplate>('/api/custom-order-templates', data);
   }
