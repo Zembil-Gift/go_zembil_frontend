@@ -53,7 +53,9 @@ const PaymentSuccess = React.lazy(() => import("@/pages/payment-success"));
 const ServiceOrderSuccess = React.lazy(
   () => import("@/pages/service-order-success")
 );
-const EventOrderSuccess = React.lazy(() => import("@/pages/event-order-success"));
+const EventOrderSuccess = React.lazy(
+  () => import("@/pages/event-order-success")
+);
 const Checkout = React.lazy(() => import("@/pages/Checkout"));
 const OrderReview = React.lazy(() => import("@/pages/OrderReview"));
 const VendorSignup = React.lazy(() => import("@/pages/VendorSignup"));
@@ -146,6 +148,14 @@ const VendorServiceCalendar = React.lazy(
 const VendorProductOrders = React.lazy(
   () => import("@/pages/vendor/VendorProductOrders")
 );
+const VendorPackagesPage = React.lazy(
+  () => import("@/pages/vendor/VendorPackagesPage")
+);
+const VendorPackageOrders = React.lazy(
+  () => import("@/pages/vendor/VendorPackageOrders")
+);
+const Packages = React.lazy(() => import("@/pages/packages"));
+const PackageDetail = React.lazy(() => import("@/pages/package-detail"));
 const CreateProduct = React.lazy(() => import("@/pages/vendor/CreateProduct"));
 const CreateEvent = React.lazy(() => import("@/pages/vendor/CreateEvent"));
 const CreateService = React.lazy(() => import("@/pages/vendor/CreateService"));
@@ -210,7 +220,9 @@ const VendorCampaignsPage = React.lazy(
 const CampaignDetailPage = React.lazy(() => import("@/pages/campaign-detail"));
 const CustomOrders = React.lazy(() => import("@/pages/custom-orders"));
 const Wishlist = React.lazy(() => import("@/pages/Wishlist"));
-const MyCustomOrders = React.lazy(() => import("@/pages/customer/MyCustomOrders"));
+const MyCustomOrders = React.lazy(
+  () => import("@/pages/customer/MyCustomOrders")
+);
 const CustomerCustomOrderDetail = React.lazy(
   () => import("@/pages/customer/CustomerCustomOrderDetail")
 );
@@ -252,6 +264,36 @@ function RouteLoading({ message }: { message: string }) {
       <div className="text-center">
         <div className="w-16 h-16 border-4 border-eagle-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
         <p className="text-gray-600">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+function OfflineFallback() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="max-w-lg w-full bg-white border border-gray-200 rounded-xl shadow-sm p-8 text-center">
+        <h1 className="text-2xl font-bold text-eagle-green mb-3">
+          You are offline
+        </h1>
+        <p className="text-gray-600 mb-6">
+          This page needs a network connection. Please reconnect and try again.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            type="button"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-eagle-green px-4 text-sm font-medium text-white hover:bg-viridian-green"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+          <a
+            href="/"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-eagle-green/30 px-4 text-sm font-medium text-eagle-green hover:bg-eagle-green/5"
+          >
+            Go Home
+          </a>
+        </div>
       </div>
     </div>
   );
@@ -480,424 +522,438 @@ export default function Router() {
       <RoleBasedPrefetch />
       <React.Suspense fallback={<RouteLoading message="Loading page..." />}>
         <Routes>
-        <Route path="/" element={<Layout />}>
-          {/* Public Routes */}
-          <Route index element={<HomeRoute />} />
-          <Route path="about" element={<About />} />
-          <Route path="contact" element={<Contact />} />
+          <Route path="/" element={<Layout />}>
+            {/* Public Routes */}
+            <Route index element={<HomeRoute />} />
+            <Route path="about" element={<About />} />
+            <Route path="contact" element={<Contact />} />
 
-          {/* Auth Routes */}
-          <Route path="signin" element={<SignIn />} />
-          <Route path="signup" element={<SignUp />} />
-          <Route path="verify-email" element={<VerifyEmail />} />
-          <Route path="vendor-signup" element={<VendorSignup />} />
-          <Route path="forgot-password" element={<ForgotPassword />} />
-          <Route path="reset-password" element={<ResetPassword />} />
+            {/* Auth Routes */}
+            <Route path="signin" element={<SignIn />} />
+            <Route path="signup" element={<SignUp />} />
+            <Route path="verify-email" element={<VerifyEmail />} />
+            <Route path="vendor-signup" element={<VendorSignup />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
 
-          {/* Main Pages */}
-          <Route path="gifts" element={<Gifts />} />
-          <Route path="gifts/:categorySlug" element={<Gifts />} />
-          <Route path="shop" element={<Shop />} />
-          <Route path="shop/:categorySlug" element={<Shop />} />
-          <Route path="shop/category/:subcategorySlug" element={<Shop />} />
-          {/* <Route path="search" element={<Search />} /> */}
+            {/* Main Pages */}
+            <Route path="gifts" element={<Gifts />} />
+            <Route path="gifts/:categorySlug" element={<Gifts />} />
+            <Route path="shop" element={<Shop />} />
+            <Route path="shop/:categorySlug" element={<Shop />} />
+            <Route path="shop/category/:subcategorySlug" element={<Shop />} />
+            <Route path="packages" element={<Packages />} />
+            <Route path="packages/:packageId" element={<PackageDetail />} />
+            {/* <Route path="search" element={<Search />} /> */}
+            <Route
+              path="gift-experiences"
+              element={<Navigate to="/events" replace />}
+            />
+            <Route path="occasions" element={<Occasions />} />
+            <Route
+              path="occasions/:categorySlug"
+              element={<OccasionCategory />}
+            />
+            <Route path="collections" element={<Collections />} />
+            <Route path="events" element={<Events />} />
+            <Route path="events/:slug" element={<EventDetail />} />
+            <Route
+              path="events/:eventId/checkout"
+              element={
+                <ProtectedRoute>
+                  <EventCheckout />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="services" element={<Services />} />
+            <Route path="services/:id" element={<ServiceDetail />} />
+            <Route
+              path="service-checkout/:serviceId"
+              element={
+                <ProtectedRoute>
+                  <ServiceCheckout />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="service-confirmation/:orderId"
+              element={
+                <ProtectedRoute>
+                  <ServiceConfirmation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="service-confirmation"
+              element={
+                <ProtectedRoute>
+                  <ServiceConfirmation />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Campaign Detail / Registration */}
+            <Route path="campaigns/:id" element={<CampaignDetailPage />} />
+
+            {/* Product Detail */}
+            <Route path="product/:id" element={<ProductDetail />} />
+
+            {/* Vendor Detail */}
+            <Route path="vendor/:id" element={<VendorDetail />} />
+
+            <Route path="cart" element={<Cart />} />
+
+            <Route
+              path="checkout"
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="order-review"
+              element={
+                <ProtectedRoute>
+                  <OrderReview />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Protected Routes */}
+            <Route
+              path="wishlist"
+              element={
+                <ProtectedRoute>
+                  <Wishlist />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="custom-orders" element={<CustomOrders />} />
+
+            <Route
+              path="custom-orders/categories"
+              element={<CustomOrderCategories />}
+            />
+
+            <Route
+              path="custom-orders/category/:categoryId"
+              element={<CustomOrderTemplates />}
+            />
+
+            <Route
+              path="custom-orders/template/:templateId"
+              element={
+                <ProtectedRoute>
+                  <CreateCustomOrder />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="payment/stripe"
+              element={
+                <ProtectedRoute>
+                  <StripePayment />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="payment/chapa"
+              element={
+                <ProtectedRoute>
+                  <ChapaPayment />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="payment/chapa/callback"
+              element={
+                <ProtectedRoute>
+                  <PaymentSuccess />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="payment/telebirr"
+              element={
+                <ProtectedRoute>
+                  <TelebirrPayment />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="payment/telebirr/return"
+              element={
+                <ProtectedRoute>
+                  <TelebirrReturn />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="payment-success"
+              element={
+                <ProtectedRoute>
+                  <PaymentSuccess />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="service-order-success"
+              element={
+                <ProtectedRoute>
+                  <ServiceOrderSuccess />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="event-order-success"
+              element={
+                <ProtectedRoute>
+                  <EventOrderSuccess />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="my-tickets"
+              element={
+                <ProtectedRoute>
+                  <MyEventTickets />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="my-orders"
+              element={
+                <ProtectedRoute>
+                  <MyOrders />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="track/:orderId"
+              element={
+                <ProtectedRoute>
+                  <TrackOrder />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="my-service-orders"
+              element={
+                <ProtectedRoute>
+                  <MyServiceOrders />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="my-service-orders/:orderId"
+              element={
+                <ProtectedRoute>
+                  <TrackServiceOrder />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="my-custom-orders"
+              element={
+                <ProtectedRoute>
+                  <MyCustomOrders />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="my-custom-orders/:orderId"
+              element={
+                <ProtectedRoute>
+                  <CustomerCustomOrderDetail />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="offline" element={<OfflineFallback />} />
+
+            {/* Catch all route */}
+            <Route path="*" element={<NotFound />} />
+          </Route>
+
+          {/* Vendor Routes - Outside main Layout to avoid navbar */}
           <Route
-            path="gift-experiences"
-            element={<Navigate to="/events" replace />}
-          />
-          <Route path="occasions" element={<Occasions />} />
-          <Route
-            path="occasions/:categorySlug"
-            element={<OccasionCategory />}
-          />
-          <Route path="collections" element={<Collections />} />
-          <Route path="events" element={<Events />} />
-          <Route path="events/:slug" element={<EventDetail />} />
-          <Route
-            path="events/:eventId/checkout"
+            path="/vendor"
             element={
-              <ProtectedRoute>
-                <EventCheckout />
-              </ProtectedRoute>
+              <VendorRoute>
+                <React.Suspense
+                  fallback={
+                    <RouteLoading message="Loading vendor dashboard..." />
+                  }
+                >
+                  <VendorDashboardLayout />
+                </React.Suspense>
+              </VendorRoute>
             }
-          />
-          <Route path="services" element={<Services />} />
-          <Route path="services/:id" element={<ServiceDetail />} />
+          >
+            <Route index element={<VendorOverview />} />
+            <Route path="products" element={<VendorProductsPage />} />
+            <Route path="products/new" element={<CreateProduct />} />
+            <Route path="products/:id" element={<VendorProductDetail />} />
+            <Route path="products/:id/edit" element={<EditProduct />} />
+            <Route path="products/:id/price" element={<ProductPriceUpdate />} />
+            <Route path="events" element={<VendorEventsPage />} />
+            <Route path="events/new" element={<CreateEvent />} />
+            <Route path="events/:id" element={<VendorEventDetail />} />
+            <Route path="events/:id/edit" element={<EditEvent />} />
+            <Route path="events/:id/price" element={<EventPriceUpdate />} />
+            <Route path="services" element={<VendorServicesPage />} />
+            <Route path="services/new" element={<CreateService />} />
+            <Route path="services/:id" element={<VendorServiceDetail />} />
+            <Route path="services/:id/edit" element={<EditService />} />
+            <Route path="service-orders" element={<VendorServiceOrders />} />
+            <Route
+              path="service-calendar"
+              element={<VendorServiceCalendar />}
+            />
+            <Route path="product-orders" element={<VendorProductOrders />} />
+            <Route path="packages" element={<VendorPackagesPage />} />
+            <Route path="package-orders" element={<VendorPackageOrders />} />
+            <Route path="discounts" element={<VendorDiscountsPage />} />
+            <Route path="discounts/new" element={<CreateDiscount />} />
+            <Route path="discounts/:id" element={<VendorDiscountDetail />} />
+            <Route path="discounts/:id/edit" element={<EditDiscount />} />
+            <Route
+              path="discounts/:id/usages"
+              element={<VendorDiscountUsages />}
+            />
+            <Route path="campaigns" element={<VendorCampaignsPage />} />
+            <Route
+              path="custom-templates"
+              element={<VendorCustomTemplates />}
+            />
+            <Route
+              path="custom-templates/new"
+              element={<CreateCustomTemplate />}
+            />
+            <Route
+              path="custom-templates/:id"
+              element={<VendorCustomTemplateDetail />}
+            />
+            <Route path="custom-orders" element={<VendorCustomOrders />} />
+            <Route
+              path="custom-orders/:orderId"
+              element={<VendorCustomOrderDetail />}
+            />
+            <Route path="check-in" element={<VendorCheckInPage />} />
+            <Route path="payments" element={<VendorPaymentsPage />} />
+            <Route path="payments/chapa" element={<ChapaOnboarding />} />
+            <Route
+              path="onboarding/return"
+              element={<StripeOnboardingReturn />}
+            />
+            <Route
+              path="onboarding/refresh"
+              element={<StripeOnboardingRefresh />}
+            />
+            <Route path="requests" element={<VendorRequests />} />
+            <Route path="settings" element={<VendorSettingsPage />} />
+            <Route path="resubmit" element={<VendorResubmitPage />} />
+          </Route>
+
+          {/* Admin Routes - Outside main Layout to avoid navbar/footer */}
           <Route
-            path="service-checkout/:serviceId"
+            path="/admin"
             element={
-              <ProtectedRoute>
-                <ServiceCheckout />
-              </ProtectedRoute>
+              <AdminRoute>
+                <React.Suspense
+                  fallback={
+                    <RouteLoading message="Loading admin dashboard..." />
+                  }
+                >
+                  <div className="min-h-screen">
+                    <Outlet />
+                  </div>
+                </React.Suspense>
+              </AdminRoute>
             }
-          />
-          <Route
-            path="service-confirmation/:orderId"
-            element={
-              <ProtectedRoute>
-                <ServiceConfirmation />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="service-confirmation"
-            element={
-              <ProtectedRoute>
-                <ServiceConfirmation />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Campaign Detail / Registration */}
-          <Route path="campaigns/:id" element={<CampaignDetailPage />} />
-
-          {/* Product Detail */}
-          <Route path="product/:id" element={<ProductDetail />} />
-
-          {/* Vendor Detail */}
-          <Route path="vendor/:id" element={<VendorDetail />} />
-
-          <Route path="cart" element={<Cart />} />
-
-          <Route
-            path="checkout"
-            element={
-              <ProtectedRoute>
-                <Checkout />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="order-review"
-            element={
-              <ProtectedRoute>
-                <OrderReview />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Protected Routes */}
-          <Route
-            path="wishlist"
-            element={
-              <ProtectedRoute>
-                <Wishlist />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route path="custom-orders" element={<CustomOrders />} />
-
-          <Route
-            path="custom-orders/categories"
-            element={<CustomOrderCategories />}
-          />
-
-          <Route
-            path="custom-orders/category/:categoryId"
-            element={<CustomOrderTemplates />}
-          />
-
-          <Route
-            path="custom-orders/template/:templateId"
-            element={
-              <ProtectedRoute>
-                <CreateCustomOrder />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="payment/stripe"
-            element={
-              <ProtectedRoute>
-                <StripePayment />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="payment/chapa"
-            element={
-              <ProtectedRoute>
-                <ChapaPayment />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="payment/chapa/callback"
-            element={
-              <ProtectedRoute>
-                <PaymentSuccess />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="payment/telebirr"
-            element={
-              <ProtectedRoute>
-                <TelebirrPayment />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="payment/telebirr/return"
-            element={
-              <ProtectedRoute>
-                <TelebirrReturn />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="payment-success"
-            element={
-              <ProtectedRoute>
-                <PaymentSuccess />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="service-order-success"
-            element={
-              <ProtectedRoute>
-                <ServiceOrderSuccess />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="event-order-success"
-            element={
-              <ProtectedRoute>
-                <EventOrderSuccess />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="my-tickets"
-            element={
-              <ProtectedRoute>
-                <MyEventTickets />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="my-orders"
-            element={
-              <ProtectedRoute>
-                <MyOrders />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="track/:orderId"
-            element={
-              <ProtectedRoute>
-                <TrackOrder />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="my-service-orders"
-            element={
-              <ProtectedRoute>
-                <MyServiceOrders />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="my-service-orders/:orderId"
-            element={
-              <ProtectedRoute>
-                <TrackServiceOrder />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="my-custom-orders"
-            element={
-              <ProtectedRoute>
-                <MyCustomOrders />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="my-custom-orders/:orderId"
-            element={
-              <ProtectedRoute>
-                <CustomerCustomOrderDetail />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Catch all route */}
-          <Route path="*" element={<NotFound />} />
-        </Route>
-
-        {/* Vendor Routes - Outside main Layout to avoid navbar */}
-        <Route
-          path="/vendor"
-          element={
-            <VendorRoute>
-              <React.Suspense
-                fallback={
-                  <RouteLoading message="Loading vendor dashboard..." />
-                }
-              >
-                <VendorDashboardLayout />
-              </React.Suspense>
-            </VendorRoute>
-          }
-        >
-          <Route index element={<VendorOverview />} />
-          <Route path="products" element={<VendorProductsPage />} />
-          <Route path="products/new" element={<CreateProduct />} />
-          <Route path="products/:id" element={<VendorProductDetail />} />
-          <Route path="products/:id/edit" element={<EditProduct />} />
-          <Route path="products/:id/price" element={<ProductPriceUpdate />} />
-          <Route path="events" element={<VendorEventsPage />} />
-          <Route path="events/new" element={<CreateEvent />} />
-          <Route path="events/:id" element={<VendorEventDetail />} />
-          <Route path="events/:id/edit" element={<EditEvent />} />
-          <Route path="events/:id/price" element={<EventPriceUpdate />} />
-          <Route path="services" element={<VendorServicesPage />} />
-          <Route path="services/new" element={<CreateService />} />
-          <Route path="services/:id" element={<VendorServiceDetail />} />
-          <Route path="services/:id/edit" element={<EditService />} />
-          <Route path="service-orders" element={<VendorServiceOrders />} />
-          <Route path="service-calendar" element={<VendorServiceCalendar />} />
-          <Route path="product-orders" element={<VendorProductOrders />} />
-          <Route path="discounts" element={<VendorDiscountsPage />} />
-          <Route path="discounts/new" element={<CreateDiscount />} />
-          <Route path="discounts/:id" element={<VendorDiscountDetail />} />
-          <Route path="discounts/:id/edit" element={<EditDiscount />} />
-          <Route
-            path="discounts/:id/usages"
-            element={<VendorDiscountUsages />}
-          />
-          <Route path="campaigns" element={<VendorCampaignsPage />} />
-          <Route path="custom-templates" element={<VendorCustomTemplates />} />
-          <Route
-            path="custom-templates/new"
-            element={<CreateCustomTemplate />}
-          />
-          <Route
-            path="custom-templates/:id"
-            element={<VendorCustomTemplateDetail />}
-          />
-          <Route path="custom-orders" element={<VendorCustomOrders />} />
-          <Route
-            path="custom-orders/:orderId"
-            element={<VendorCustomOrderDetail />}
-          />
-          <Route path="check-in" element={<VendorCheckInPage />} />
-          <Route path="payments" element={<VendorPaymentsPage />} />
-          <Route path="payments/chapa" element={<ChapaOnboarding />} />
-          <Route
-            path="onboarding/return"
-            element={<StripeOnboardingReturn />}
-          />
-          <Route
-            path="onboarding/refresh"
-            element={<StripeOnboardingRefresh />}
-          />
-          <Route path="requests" element={<VendorRequests />} />
-          <Route path="settings" element={<VendorSettingsPage />} />
-          <Route path="resubmit" element={<VendorResubmitPage />} />
-        </Route>
-
-        {/* Admin Routes - Outside main Layout to avoid navbar/footer */}
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <React.Suspense
-                fallback={<RouteLoading message="Loading admin dashboard..." />}
-              >
-                <div className="min-h-screen">
-                  <Outlet />
-                </div>
-              </React.Suspense>
-            </AdminRoute>
-          }
-        >
-          <Route index element={<AdminDashboard />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="vendors" element={<AdminVendors />} />
-          <Route path="products" element={<AdminProducts />} />
-          <Route path="services" element={<AdminServices />} />
-          <Route path="events" element={<AdminEvents />} />
-          <Route path="categories" element={<AdminCategories />} />
-          <Route path="subcategories" element={<AdminSubcategories />} />
-          <Route path="tax" element={<AdminTax />} />
-          <Route path="currency" element={<AdminCurrency />} />
-          <Route path="delivery" element={<AdminDelivery />} />
-          {/* <Route path="delivery-personnel" element={<AdminDeliveryPersonnel />} />
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="vendors" element={<AdminVendors />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="services" element={<AdminServices />} />
+            <Route path="events" element={<AdminEvents />} />
+            <Route path="categories" element={<AdminCategories />} />
+            <Route path="subcategories" element={<AdminSubcategories />} />
+            <Route path="tax" element={<AdminTax />} />
+            <Route path="currency" element={<AdminCurrency />} />
+            <Route path="delivery" element={<AdminDelivery />} />
+            {/* <Route path="delivery-personnel" element={<AdminDeliveryPersonnel />} />
           <Route path="order-assignments" element={<AdminOrderAssignments />} />
           <Route path="delivery-confirmations" element={<AdminDeliveryConfirmations />} /> */}
-          <Route path="campaigns" element={<AdminCampaigns />} />
-          <Route
-            path="campaign-participations"
-            element={<AdminCampaignParticipations />}
-          />
-          <Route path="featured-ads" element={<AdminFeaturedAds />} />
-          <Route path="custom-templates" element={<AdminCustomTemplates />} />
-          <Route path="custom-orders" element={<AdminCustomOrders />} />
-          <Route path="payment-methods" element={<AdminPaymentMethods />} />
-          <Route path="refunds" element={<AdminRefunds />} />
-          <Route path="vendor-payouts" element={<AdminVendorPayout />} />
-          <Route path="commission" element={<AdminCommission />} />
-          <Route path="roles" element={<AdminRoles />} />
-          <Route path="permissions" element={<AdminPermissions />} />
-        </Route>
+            <Route path="campaigns" element={<AdminCampaigns />} />
+            <Route
+              path="campaign-participations"
+              element={<AdminCampaignParticipations />}
+            />
+            <Route path="featured-ads" element={<AdminFeaturedAds />} />
+            <Route path="custom-templates" element={<AdminCustomTemplates />} />
+            <Route path="custom-orders" element={<AdminCustomOrders />} />
+            <Route path="payment-methods" element={<AdminPaymentMethods />} />
+            <Route path="refunds" element={<AdminRefunds />} />
+            <Route path="vendor-payouts" element={<AdminVendorPayout />} />
+            <Route path="commission" element={<AdminCommission />} />
+            <Route path="roles" element={<AdminRoles />} />
+            <Route path="permissions" element={<AdminPermissions />} />
+          </Route>
 
-        {/* Delivery Person Routes - Outside main Layout to avoid navbar */}
-        <Route
-          path="/delivery"
-          element={
-            <DeliveryRoute>
-              <React.Suspense
-                fallback={
-                  <RouteLoading message="Loading delivery dashboard..." />
-                }
-              >
-                <DeliveryLayout />
-              </React.Suspense>
-            </DeliveryRoute>
-          }
-        >
-          <Route index element={<DeliveryDashboard />} />
-          <Route path="available-orders" element={<AvailableOrders />} />
-          <Route path="assignments" element={<DeliveryAssignments />} />
+          {/* Delivery Person Routes - Outside main Layout to avoid navbar */}
           <Route
-            path="assignments/:assignmentId"
-            element={<DeliveryAssignmentDetail />}
-          />
-          <Route path="history" element={<DeliveryHistory />} />
-          <Route path="profile" element={<DeliveryProfile />} />
-        </Route>
+            path="/delivery"
+            element={
+              <DeliveryRoute>
+                <React.Suspense
+                  fallback={
+                    <RouteLoading message="Loading delivery dashboard..." />
+                  }
+                >
+                  <DeliveryLayout />
+                </React.Suspense>
+              </DeliveryRoute>
+            }
+          >
+            <Route index element={<DeliveryDashboard />} />
+            <Route path="available-orders" element={<AvailableOrders />} />
+            <Route path="assignments" element={<DeliveryAssignments />} />
+            <Route
+              path="assignments/:assignmentId"
+              element={<DeliveryAssignmentDetail />}
+            />
+            <Route path="history" element={<DeliveryHistory />} />
+            <Route path="profile" element={<DeliveryProfile />} />
+          </Route>
         </Routes>
       </React.Suspense>
     </BrowserRouter>
