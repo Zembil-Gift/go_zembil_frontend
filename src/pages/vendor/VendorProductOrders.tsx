@@ -1123,6 +1123,13 @@ export default function VendorProductOrders() {
                                   item.currency
                                 )}
                               </p>
+                              {item.attributes && item.attributes.length > 0 && (
+                                <p className="text-xs text-eagle-green/60 mt-1">
+                                  {item.attributes
+                                    .map((attr) => `${attr.name}: ${attr.value}`)
+                                    .join(", ")}
+                                </p>
+                              )}
                             </div>
                           </div>
                           <div className="text-left sm:text-right flex-shrink-0">
