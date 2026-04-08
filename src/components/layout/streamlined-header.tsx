@@ -88,6 +88,7 @@ export default function StreamlinedHeader() {
   const navigation = [
     { name: t("navigation.home"), href: "/" },
     { name: t("navigation.shop"), href: "/shop" },
+    { name: "Packages", href: "/packages" },
     { name: t("navigation.services"), href: "/services" },
     { name: t("navigation.events"), href: "/events" },
     { name: t("navigation.custom"), href: "/custom-orders" },
@@ -135,7 +136,7 @@ export default function StreamlinedHeader() {
             ))}
 
             {/* Categories Dropdown */}
-            <CategoryDropdown />
+            {/* <CategoryDropdown /> */}
           </nav>
 
           {/* Right Side Actions */}

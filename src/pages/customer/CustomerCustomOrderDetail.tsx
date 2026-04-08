@@ -1240,7 +1240,7 @@ function CustomerCustomOrderDetailContent() {
                         Pay with Chapa
                       </Button>
                     )}
-                    {availablePaymentMethods.includes("telebirr") && (
+                    {/* {availablePaymentMethods.includes("telebirr") && (
                       <Button
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                         onClick={() => handlePayment("telebirr")}
@@ -1253,7 +1253,7 @@ function CustomerCustomOrderDetailContent() {
                         )}
                         Pay with Telebirr
                       </Button>
-                    )}
+                    )} */}
                     {availablePaymentMethods.includes("stripe") && (
                       <Button
                         variant="outline"

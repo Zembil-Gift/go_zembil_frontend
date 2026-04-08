@@ -84,6 +84,7 @@ export default function ServiceCheckout() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutError, setCheckoutError] = useState<{
     title: string;
+    description: string;
   } | null>(null);
 
   // Calendar navigation state - backend availability page index (0-based)
@@ -472,6 +473,8 @@ export default function ServiceCheckout() {
       if (!isAvailable) {
         setCheckoutError({
           title: "This Time Slot Is No Longer Available",
+          description:
+            "Another user may have just booked it. Refresh available times and choose a different slot.",
         });
         setIsProcessing(false);
         return;

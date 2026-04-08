@@ -290,6 +290,13 @@ const vendorSignupSchema = z
       path: ["vatStatus"],
       message: "VAT status is required for Ethiopian vendors",
     }
+  )
+  .refine(
+    (data) => data.latitude !== undefined && data.longitude !== undefined,
+    {
+      path: ["latitude"],
+      message: "Please pick your business location on the map",
+    }
   );
 
 type VendorSignupForm = z.infer<typeof vendorSignupSchema>;
@@ -721,6 +728,8 @@ export default function VendorSignup() {
       "businessPhone",
       "city",
       "country",
+      "latitude",
+      "longitude",
       "vendorCategoryId",
       "vendorType",
     ] as const;
@@ -1414,7 +1423,7 @@ export default function VendorSignup() {
                 </div>
 
                 {/* Business Location Map Picker */}
-                <div className="space-y-2 pt-2">
+                <div id="latitude" className="space-y-2 pt-2">
                   <Label className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-emerald-600" />
                     Business Location
@@ -1470,6 +1479,11 @@ export default function VendorSignup() {
                   {form.watch("formattedAddress") && (
                     <p className="text-xs text-emerald-700 bg-emerald-50 rounded-md px-3 py-2 mt-1">
                       📍 {form.watch("formattedAddress")}
+                    </p>
+                  )}
+                  {form.formState.errors.latitude && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {form.formState.errors.latitude.message}
                     </p>
                   )}
                 </div>

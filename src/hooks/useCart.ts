@@ -6,16 +6,23 @@ import { cartService, CartItem } from "@/services/cartService";
 
 export function useCart() {
   const { isAuthenticated } = useAuth();
-  const { isOpen, openCart, closeCart, toggleCart, appliedDiscountCode, setAppliedDiscountCode } = useCartStore();
+  const {
+    isOpen,
+    openCart,
+    closeCart,
+    toggleCart,
+    appliedDiscountCode,
+    setAppliedDiscountCode,
+  } = useCartStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const {
-    data: cartData, 
-    isLoading, 
+    data: cartData,
+    isLoading,
     error,
     refetch,
-    isFetching 
+    isFetching,
   } = useQuery({
     queryKey: ["cart", "items"],
     queryFn: async () => {
@@ -29,22 +36,23 @@ export function useCart() {
     retry: false,
     enabled: isAuthenticated, // Only fetch when authenticated
     staleTime: 0, // Always consider data stale
-    refetchOnMount: 'always', // Always refetch on mount
+    refetchOnMount: "always", // Always refetch on mount
     refetchOnWindowFocus: true,
   });
 
   // Extract items and currency from cart data
   const cartItems = cartData?.items || [];
-  const cartCurrency = cartData?.currency || 'ETB';
+  const cartPackageGroups = cartData?.packageGroups || [];
+  const cartCurrency = cartData?.currency || "ETB";
 
-  console.log('Cart query state:', { 
-    cartItems, 
+  console.log("Cart query state:", {
+    cartItems,
     cartCurrency,
-    isLoading, 
-    error, 
+    isLoading,
+    error,
     isFetching,
     itemCount: cartItems?.length,
-    queryEnabled: isAuthenticated 
+    queryEnabled: isAuthenticated,
   });
 
   // Calculate total items with error handling
@@ -53,12 +61,45 @@ export function useCart() {
       if (!isAuthenticated || !Array.isArray(cartItems)) {
         return 0;
       }
+
+      if (Array.isArray(cartPackageGroups) && cartPackageGroups.length > 0) {
+        const cartItemById = new Map(cartItems.map((item) => [item.id, item]));
+        const packageCount = cartPackageGroups.reduce((total, group) => {
+          const groupQuantity = Math.max(
+            1,
+            Math.min(
+              ...group.items.map((item) => {
+                const sourceItem = cartItemById.get(item.id);
+                const ratio = Math.max(1, sourceItem?.requiredQuantity || 1);
+                return Math.max(1, Math.floor((item.quantity || 1) / ratio));
+              })
+            )
+          );
+          return total + groupQuantity;
+        }, 0);
+
+        const groupedItemIds = new Set(
+          cartPackageGroups.flatMap((group) =>
+            group.items.map((item) => item.id)
+          )
+        );
+
+        const regularItemsCount = cartItems
+          .filter((item) => !groupedItemIds.has(item.id))
+          .reduce((total: number, item: CartItem) => {
+            const quantity = Number(item.quantity) || 0;
+            return total + quantity;
+          }, 0);
+
+        return packageCount + regularItemsCount;
+      }
+
       return cartItems.reduce((total: number, item: CartItem) => {
         const quantity = Number(item.quantity) || 0;
         return total + quantity;
       }, 0);
     } catch (error) {
-      console.warn('Error calculating cart total:', error);
+      console.warn("Error calculating cart total:", error);
       return 0;
     }
   };
@@ -71,20 +112,26 @@ export function useCart() {
       }
       return cartItems.reduce((total: number, item: CartItem) => {
         // Use totalPrice from API if available, otherwise calculate from unitPrice
-        const itemTotal = Number(item.totalPrice) || (Number(item.unitPrice || 0) * Number(item.quantity || 0));
+        const itemTotal =
+          Number(item.totalPrice) ||
+          Number(item.unitPrice || 0) * Number(item.quantity || 0);
         return total + itemTotal;
       }, 0);
     } catch (error) {
-      console.warn('Error calculating cart total price:', error);
+      console.warn("Error calculating cart total price:", error);
       return 0;
     }
   };
 
   // Add item to cart mutation
   const addToCartMutation = useMutation({
-    mutationFn: async ({ productId, quantity = 1, productSkuId }: { 
-      productId: number; 
-      quantity?: number; 
+    mutationFn: async ({
+      productId,
+      quantity = 1,
+      productSkuId,
+    }: {
+      productId: number;
+      quantity?: number;
       productSkuId?: number;
     }) => {
       return await cartService.addToCart({ productId, quantity, productSkuId });
@@ -100,6 +147,36 @@ export function useCart() {
       toast({
         title: "Error",
         description: "Failed to add item to cart. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addPackageToCartMutation = useMutation({
+    mutationFn: async ({
+      packageId,
+      skuSelections,
+    }: {
+      packageId: number;
+      skuSelections: { packageItemId: number; productSkuId: number }[];
+    }) => {
+      return await cartService.addPackageToCart({
+        packageId,
+        skuSelections,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
+      toast({
+        title: "Added to cart",
+        description: "Package has been added to your cart",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description:
+          error?.message || "Failed to add package to cart. Please try again.",
         variant: "destructive",
       });
     },
@@ -170,15 +247,16 @@ export function useCart() {
   return {
     // Cart data
     cartItems,
+    cartPackageGroups,
     cartCurrency,
     isLoading,
     error,
     refetch,
-    
+
     // Cart calculations
     getTotalItems,
     getTotalPrice,
-    
+
     // Cart state
     isOpen,
     openCart,
@@ -186,19 +264,21 @@ export function useCart() {
     toggleCart,
     appliedDiscountCode,
     setAppliedDiscountCode,
-    
+
     // Cart mutations
     addToCart: addToCartMutation.mutate,
+    addPackageToCart: addPackageToCartMutation.mutate,
     updateQuantity: updateQuantityMutation.mutate,
     removeItem: removeItemMutation.mutate,
     clearCart: clearCartMutation.mutate,
-    
+
     // Loading states
     isAddingToCart: addToCartMutation.isPending,
+    isAddingPackageToCart: addPackageToCartMutation.isPending,
     isUpdatingQuantity: updateQuantityMutation.isPending,
     isRemovingItem: removeItemMutation.isPending,
     isClearingCart: clearCartMutation.isPending,
-    
+
     // Authentication state
     isAuthenticated,
   };

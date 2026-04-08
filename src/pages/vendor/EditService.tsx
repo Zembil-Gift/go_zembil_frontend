@@ -21,6 +21,7 @@ import {
 } from "@/services/vendorService";
 import { imageService } from "@/services/imageService";
 import { apiService } from "@/services/apiService";
+import imageCompression from "browser-image-compression";
 import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
 import {
   Dialog,
@@ -178,7 +179,10 @@ export default function EditService() {
     useState<ServicePackageResponse | null>(null);
 
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [isUploadingPackageImages, setIsUploadingPackageImages] =
+    useState(false);
   const [packageNewTimeSlot, setPackageNewTimeSlot] = useState("");
+  const [pendingPackageImages, setPendingPackageImages] = useState<File[]>([]);
 
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
   const serviceId = id ? parseInt(id) : 0;
@@ -220,6 +224,8 @@ export default function EditService() {
     queryFn: () => imageService.getServiceImages(serviceId),
     enabled: serviceId > 0,
   });
+
+  const [clearPackageImages, setClearPackageImages] = useState(false);
 
   const availableCurrencies = useMemo(
     () =>
@@ -299,6 +305,8 @@ export default function EditService() {
             value: a.value,
           })) || [],
       });
+      setPendingPackageImages([]);
+      setClearPackageImages(false);
     }
   }, [editingPackage, showEditPackageDialog, packageForm]);
 
@@ -323,6 +331,8 @@ export default function EditService() {
         advanceBookingDays: 30,
         attributes: [],
       });
+      setPendingPackageImages([]);
+      setClearPackageImages(false);
     }
   }, [
     showAddPackageDialog,
@@ -331,6 +341,60 @@ export default function EditService() {
     packageForm,
     editingPackage,
   ]);
+
+  useEffect(() => {
+    if (!showAddPackageDialog && !showEditPackageDialog) {
+      setPendingPackageImages([]);
+      setClearPackageImages(false);
+    }
+  }, [showAddPackageDialog, showEditPackageDialog]);
+
+  const compressSelectedImage = async (file: File): Promise<File> => {
+    if (!file.type.startsWith("image/") || file.type.includes("gif")) {
+      return file;
+    }
+
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      fileType: "image/webp",
+      initialQuality: 0.8,
+    };
+
+    try {
+      const compressedBlob = await imageCompression(file, options);
+      const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+      return new File([compressedBlob], newName, {
+        type: "image/webp",
+        lastModified: Date.now(),
+      });
+    } catch {
+      return file;
+    }
+  };
+
+  const addPendingPackageImages = async (files: File[]) => {
+    const processedFiles: File[] = [];
+
+    for (const file of files) {
+      const maxFileSize = 10 * 1024 * 1024;
+      if (file.size > maxFileSize) {
+        toast({
+          title: "Validation Error",
+          description: `Image \"${file.name}\" exceeds the 10MB file size limit`,
+          variant: "destructive",
+        });
+        continue;
+      }
+
+      processedFiles.push(await compressSelectedImage(file));
+    }
+
+    if (processedFiles.length > 0) {
+      setPendingPackageImages((prev) => [...prev, ...processedFiles]);
+    }
+  };
 
   // Mutations
   const uploadImagesMutation = useMutation({
@@ -530,7 +594,17 @@ export default function EditService() {
           sortOrder: i,
         })),
       };
-      return await serviceService.createPackage(serviceId, request);
+
+      setIsUploadingPackageImages(true);
+      try {
+        return await serviceService.createPackage(
+          serviceId,
+          request,
+          pendingPackageImages.length > 0 ? pendingPackageImages : undefined
+        );
+      } finally {
+        setIsUploadingPackageImages(false);
+      }
     },
     onSuccess: () => {
       toast({
@@ -538,6 +612,8 @@ export default function EditService() {
         description:
           "Your service package has been created and submitted for approval.",
       });
+      setPendingPackageImages([]);
+      setClearPackageImages(false);
       setShowAddPackageDialog(false);
       refetchPackages();
     },
@@ -602,13 +678,27 @@ export default function EditService() {
           sortOrder: i,
         })),
       };
-      return await serviceService.updatePackage(packageId, request);
+
+      setIsUploadingPackageImages(true);
+      try {
+        const imagePayload = clearPackageImages
+          ? []
+          : pendingPackageImages.length > 0
+          ? pendingPackageImages
+          : undefined;
+
+        return await serviceService.updatePackage(packageId, request, imagePayload);
+      } finally {
+        setIsUploadingPackageImages(false);
+      }
     },
     onSuccess: () => {
       toast({
         title: "Package Updated",
         description: "Your service package has been updated.",
       });
+      setPendingPackageImages([]);
+      setClearPackageImages(false);
       setShowEditPackageDialog(false);
       setEditingPackage(null);
       refetchPackages();
@@ -1671,6 +1761,126 @@ export default function EditService() {
                     </div>
                   </div>
                 </div>
+
+                {/* Package Images */}
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Camera className="h-4 w-4" />
+                    Package Images
+                  </h4>
+
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {editingPackage
+                      ? "Choose new images to replace existing package images, or clear all images."
+                      : "Add package images now. Images are previewed here and uploaded after creating the package."}
+                  </p>
+
+                  {editingPackage &&
+                    (editingPackage.images?.length ?? 0) > 0 &&
+                    !clearPackageImages && (
+                      <div className="mb-3">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Current images ({editingPackage.images?.length || 0})
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {editingPackage.images?.map((image) => (
+                            <div key={image.id} className="relative">
+                              <img
+                                src={image.fullUrl || image.url}
+                                alt={image.altText || image.originalFilename || "Package image"}
+                                className="w-16 h-16 object-cover rounded-md border"
+                              />
+                              {image.isPrimary && (
+                                <Badge className="absolute -top-2 -left-2 text-[10px] px-1.5 py-0.5 bg-primary text-primary-foreground">
+                                  Primary
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {editingPackage && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setClearPackageImages((prev) => !prev);
+                          if (!clearPackageImages) {
+                            setPendingPackageImages([]);
+                          }
+                        }}
+                      >
+                        {clearPackageImages ? "Keep Existing Images" : "Clear Existing Images"}
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      id="new-package-images"
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length > 0) {
+                          setClearPackageImages(false);
+                          await addPendingPackageImages(files);
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() =>
+                        document.getElementById("new-package-images")?.click()
+                      }
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      {editingPackage ? "Add Replacement Images" : "Add Images"}
+                    </Button>
+                  </div>
+
+                  {pendingPackageImages.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-sm text-muted-foreground">
+                        {pendingPackageImages.length} image(s) ready to upload
+                        {editingPackage ? " (will replace current images)" : ""}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {pendingPackageImages.map((file, index) => (
+                          <div
+                            key={`${file.name}-${index}`}
+                            className="relative group"
+                          >
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={file.name}
+                              className="w-16 h-16 object-cover rounded-md border"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPendingPackageImages((prev) =>
+                                  prev.filter((_, i) => i !== index)
+                                )
+                              }
+                              className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <DialogFooter>
@@ -1689,11 +1899,13 @@ export default function EditService() {
                   type="submit"
                   disabled={
                     createPackageMutation.isPending ||
-                    updatePackageMutation.isPending
+                    updatePackageMutation.isPending ||
+                    isUploadingPackageImages
                   }
                 >
                   {createPackageMutation.isPending ||
-                  updatePackageMutation.isPending
+                  updatePackageMutation.isPending ||
+                  isUploadingPackageImages
                     ? "Saving..."
                     : editingPackage
                     ? "Update Package"

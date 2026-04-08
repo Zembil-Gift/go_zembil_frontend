@@ -88,13 +88,19 @@
     "@types/node": "^24.3.0",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
+    "@typescript-eslint/eslint-plugin": "^8.58.0",
+    "@typescript-eslint/parser": "^8.58.0",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
     "postcss": "^8.4.47",
     "rollup-plugin-visualizer": "^7.0.1",
     "sharp": "^0.34.4",
     "tailwindcss": "^3.4.17",
     "typescript": "5.6.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vite-plugin-pwa": "^1.2.0"
   }
 }

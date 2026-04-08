@@ -15,19 +15,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Search, 
+import {
+  Search,
   ChevronRight,
-  Sparkles, 
-  X, 
+  Sparkles,
+  X,
   Filter,
   MapPin,
   Clock,
   Calendar,
   Image as ImageIcon,
-  Users
+  Users,
 } from "lucide-react";
-import { serviceService, ServiceResponse, PagedServiceResponse } from "@/services/serviceService";
+import {
+  serviceService,
+  ServiceResponse,
+  PagedServiceResponse,
+} from "@/services/serviceService";
 import { categoryService } from "@/services/categoryService";
 import PageNavigator from "@/components/PageNavigator";
 import { reviewService } from "@/services/reviewService";
@@ -45,30 +49,39 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
   const [secondaryImageLoaded, setSecondaryImageLoaded] = useState(false);
   const [primaryImageError, setPrimaryImageError] = useState(false);
   const [secondaryImageError, setSecondaryImageError] = useState(false);
-  
+
   // Get images sorted by sortOrder - prefer default package images if available
   const sortedImages = useMemo(() => {
     // First check if default package has images
-    if (service.defaultPackage?.images && service.defaultPackage.images.length > 0) {
-      return [...service.defaultPackage.images].sort((a, b) => a.sortOrder - b.sortOrder);
+    if (
+      service.defaultPackage?.images &&
+      service.defaultPackage.images.length > 0
+    ) {
+      return [...service.defaultPackage.images].sort(
+        (a, b) => a.sortOrder - b.sortOrder
+      );
     }
     // Fall back to service images
     if (!service.images || service.images.length === 0) return [];
     return [...service.images].sort((a, b) => a.sortOrder - b.sortOrder);
   }, [service.images, service.defaultPackage]);
-  
-  const primaryImage = sortedImages[0]?.fullUrl || service.defaultPackage?.primaryImageUrl || serviceService.getPrimaryImageUrl(service);
+
+  const primaryImage =
+    sortedImages[0]?.fullUrl ||
+    service.defaultPackage?.primaryImageUrl ||
+    serviceService.getPrimaryImageUrl(service);
   const secondaryImage = sortedImages[1]?.fullUrl || null;
   const hasSecondImage = !!secondaryImage && !secondaryImageError;
 
   // Get price from default package if available, otherwise use base price
   // Prefer backend-calculated major units (basePrice) over minor units
-  const displayPriceMajor = service.defaultPackage?.basePrice ?? service.basePrice;
+  const displayPriceMajor =
+    service.defaultPackage?.basePrice ?? service.basePrice;
   const displayCurrency = service.defaultPackage?.currency ?? service.currency;
 
   // Fetch service rating summary
   const { data: ratingSummary } = useQuery({
-    queryKey: ['service-rating-summary', service.id],
+    queryKey: ["service-rating-summary", service.id],
     queryFn: () => reviewService.getServiceRatingSummary(service.id),
     enabled: !!service.id,
   });
@@ -80,25 +93,28 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Card 
+      <Card
         className="group overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-md cursor-pointer"
         onClick={() => navigate(`/services/${service.id}`)}
       >
         <CardContent className="p-0">
           <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
             {!primaryImageLoaded && !primaryImageError && primaryImage && (
-              <div className="absolute inset-0 bg-gradient-to-r from-june-bud/10 via-white to-june-bud/10 animate-shimmer"
-                style={{ backgroundSize: '200% 100%' }}
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-june-bud/10 via-white to-june-bud/10 animate-shimmer"
+                style={{ backgroundSize: "200% 100%" }}
               />
             )}
 
             {primaryImage ? (
               <img
-                src={primaryImageError ? '/placeholder-service.jpg' : primaryImage}
+                src={
+                  primaryImageError ? "/placeholder-service.jpg" : primaryImage
+                }
                 alt={service.title}
                 className={`w-full h-full object-cover transition-all duration-500 ease-out
-                  ${primaryImageLoaded ? 'opacity-100' : 'opacity-0'}
-                  ${isHovered && hasSecondImage ? 'opacity-0' : 'opacity-100'}
+                  ${primaryImageLoaded ? "opacity-100" : "opacity-0"}
+                  ${isHovered && hasSecondImage ? "opacity-0" : "opacity-100"}
                 `}
                 onLoad={() => setPrimaryImageLoaded(true)}
                 onError={() => {
@@ -119,8 +135,12 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
                 src={secondaryImageError ? primaryImage! : secondaryImage}
                 alt={`${service.title} - alternate view`}
                 className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ease-out
-                  ${secondaryImageLoaded ? '' : 'opacity-0'}
-                  ${isHovered && hasSecondImage ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}
+                  ${secondaryImageLoaded ? "" : "opacity-0"}
+                  ${
+                    isHovered && hasSecondImage
+                      ? "opacity-100 scale-105"
+                      : "opacity-0 scale-100"
+                  }
                 `}
                 onLoad={() => setSecondaryImageLoaded(true)}
                 onError={() => {
@@ -132,17 +152,20 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
             )}
 
             {/* Gradient overlay on hover */}
-            <div className={`absolute inset-0 bg-gradient-to-t from-eagle-green/60 via-transparent to-transparent
-              transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+            <div
+              className={`absolute inset-0 bg-gradient-to-t from-eagle-green/60 via-transparent to-transparent
+              transition-opacity duration-500 ${
+                isHovered ? "opacity-100" : "opacity-0"
+              }`}
             />
 
             {/* Discount Badge */}
             {service.activeDiscount && (
               <div className="absolute top-3 left-3">
-                <DiscountBadge 
-                  discount={service.activeDiscount} 
-                  variant="compact" 
-                  size="small" 
+                <DiscountBadge
+                  discount={service.activeDiscount}
+                  variant="compact"
+                  size="small"
                   targetCurrency={displayCurrency}
                 />
               </div>
@@ -162,12 +185,14 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
                 </div>
               ) : (
                 <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
-                  From {serviceService.formatPrice(displayPriceMajor ?? 0, displayCurrency)}
+                  From{" "}
+                  {serviceService.formatPrice(
+                    displayPriceMajor ?? 0,
+                    displayCurrency
+                  )}
                 </Badge>
               )}
             </div>
-
-  
           </div>
 
           {/* Content */}
@@ -193,8 +218,8 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
 
             {/* Rating */}
             <div className="mb-2">
-              <CompactRating 
-                rating={ratingSummary?.averageRating || 0} 
+              <CompactRating
+                rating={ratingSummary?.averageRating || 0}
                 reviewCount={ratingSummary?.totalReviews || 0}
                 size="sm"
               />
@@ -208,19 +233,22 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
                   <span>{service.city}</span>
                 </div>
               )}
-              {service.durationMinutes != null && service.durationMinutes > 0 && (
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span>{service.durationMinutes} min</span>
-                </div>
-              )}
+              {service.durationMinutes != null &&
+                service.durationMinutes > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>{service.durationMinutes} min</span>
+                  </div>
+                )}
             </div>
 
             {/* Vendor */}
             {service.vendorName && (
               <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                 <Users className="h-4 w-4 text-viridian-green" />
-                <span className="text-sm text-eagle-green/70">by {service.vendorName}</span>
+                <span className="text-sm text-eagle-green/70">
+                  by {service.vendorName}
+                </span>
               </div>
             )}
           </div>
@@ -232,12 +260,12 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
 
 // City options for filtering
 const CITY_OPTIONS = [
-  { value: 'all', label: 'All Locations' },
-  { value: 'Addis Ababa', label: 'Addis Ababa' },
-  { value: 'Mekelle', label: 'Mekelle' },
-  { value: 'Dire Dawa', label: 'Dire Dawa' },
-  { value: 'Hawassa', label: 'Hawassa' },
-  { value: 'Bahir Dar', label: 'Bahir Dar' },
+  { value: "all", label: "All Locations" },
+  { value: "Addis Ababa", label: "Addis Ababa" },
+  { value: "Mekelle", label: "Mekelle" },
+  { value: "Dire Dawa", label: "Dire Dawa" },
+  { value: "Hawassa", label: "Hawassa" },
+  { value: "Bahir Dar", label: "Bahir Dar" },
 ];
 
 export default function Services() {
@@ -248,19 +276,19 @@ export default function Services() {
 
   // Parse URL parameters
   const urlParams = new URLSearchParams(location.search);
-  const categoryIdParam = urlParams.get('categoryId');
-  const cityParam = urlParams.get('city') || '';
-  const searchParam = urlParams.get('search') || '';
+  const categoryIdParam = urlParams.get("categoryId");
+  const cityParam = urlParams.get("city") || "";
+  const searchParam = urlParams.get("search") || "";
 
-  const [viewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode] = useState<"grid" | "list">("grid");
   const [searchTerm, setSearchTerm] = useState(searchParam);
   const [debouncedSearch, setDebouncedSearch] = useState(searchParam);
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage] = useState(12);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(
-    categoryIdParam ? parseInt(categoryIdParam) : undefined
-  );
-  const [selectedCity, setSelectedCity] = useState(cityParam || 'all');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<
+    number | undefined
+  >(categoryIdParam ? parseInt(categoryIdParam) : undefined);
+  const [selectedCity, setSelectedCity] = useState(cityParam || "all");
 
   // Debounce search
   useEffect(() => {
@@ -273,63 +301,82 @@ export default function Services() {
 
   // Fetch categories for filtering
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['categories'],
+    queryKey: ["categories"],
     queryFn: () => categoryService.getCategories(),
     staleTime: 5 * 60 * 1000,
   });
 
   // Fetch services with filters (wait for auth so currency is correct)
-  const { data: servicesData, isLoading: servicesLoading, isFetching } = useQuery<PagedServiceResponse>({
-    queryKey: ['services', {
-      page: currentPage,
-      size: itemsPerPage,
-      query: debouncedSearch,
-      city: selectedCity,
-      categoryId: selectedCategoryId,
-      currency: activeCurrency,
-    }],
-    queryFn: () => serviceService.getServices({
-      page: currentPage,
-      size: itemsPerPage,
-      query: debouncedSearch || undefined,
-      city: selectedCity === 'all' ? undefined : selectedCity || undefined,
-      categoryId: selectedCategoryId,
-    }),
+  const {
+    data: servicesData,
+    isLoading: servicesLoading,
+    isFetching,
+  } = useQuery<PagedServiceResponse>({
+    queryKey: [
+      "services",
+      {
+        page: currentPage,
+        size: itemsPerPage,
+        query: debouncedSearch,
+        city: selectedCity,
+        categoryId: selectedCategoryId,
+        currency: activeCurrency,
+      },
+    ],
+    queryFn: () =>
+      serviceService.getServices({
+        page: currentPage,
+        size: itemsPerPage,
+        query: debouncedSearch || undefined,
+        city: selectedCity === "all" ? undefined : selectedCity || undefined,
+        categoryId: selectedCategoryId,
+      }),
     enabled: isInitialized,
   });
 
   const services = useMemo(() => {
     const allServices = servicesData?.content || [];
 
-    return allServices.filter((service) =>
-      service.hasPackages ||
-      !!service.defaultPackage ||
-      (service.packages?.length ?? 0) > 0
+    return allServices.filter(
+      (service) =>
+        service.hasPackages ||
+        !!service.defaultPackage ||
+        (service.packages?.length ?? 0) > 0
     );
   }, [servicesData?.content]);
   const totalServices = servicesData?.totalElements || 0;
   const totalPages = servicesData?.totalPages || 0;
 
   // Get current category
-  const currentCategory = useMemo(() =>
-    categories.find(c => c.id === selectedCategoryId),
+  const currentCategory = useMemo(
+    () => categories.find((c) => c.id === selectedCategoryId),
     [categories, selectedCategoryId]
   );
 
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
-    if (selectedCategoryId) params.set('categoryId', selectedCategoryId.toString());
-    if (selectedCity && selectedCity !== 'all') params.set('city', selectedCity);
-    if (debouncedSearch) params.set('search', debouncedSearch);
+    if (selectedCategoryId)
+      params.set("categoryId", selectedCategoryId.toString());
+    if (selectedCity && selectedCity !== "all")
+      params.set("city", selectedCity);
+    if (debouncedSearch) params.set("search", debouncedSearch);
 
     const newSearch = params.toString();
-    const currentSearch = location.search.replace('?', '');
+    const currentSearch = location.search.replace("?", "");
 
     if (newSearch !== currentSearch) {
-      navigate(`/services${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+      navigate(`/services${newSearch ? `?${newSearch}` : ""}`, {
+        replace: true,
+      });
     }
-  }, [selectedCategoryId, selectedCity, debouncedSearch, navigate, location.search]);
+  }, [
+    selectedCategoryId,
+    selectedCity,
+    debouncedSearch,
+    navigate,
+    location.search,
+  ]);
 
   // Handle category selection
   const handleCategorySelect = (categoryId: number) => {
@@ -343,15 +390,18 @@ export default function Services() {
 
   // Clear all filters
   const handleClearFilters = () => {
-    setSearchTerm('');
-    setDebouncedSearch('');
+    setSearchTerm("");
+    setDebouncedSearch("");
     setSelectedCategoryId(undefined);
-    setSelectedCity('all');
+    setSelectedCity("all");
     setCurrentPage(0);
   };
 
   const isLoading = servicesLoading || categoriesLoading;
-  const hasFilters = selectedCategoryId || (selectedCity && selectedCity !== 'all') || debouncedSearch;
+  const hasFilters =
+    selectedCategoryId ||
+    (selectedCity && selectedCity !== "all") ||
+    debouncedSearch;
 
   // Loading state
   if (isLoading && !isFetching) {
@@ -369,7 +419,10 @@ export default function Services() {
           {/* Category pills skeleton */}
           <div className="flex flex-wrap gap-3 mb-8">
             {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-12 w-36 rounded-full bg-june-bud/20" />
+              <Skeleton
+                key={i}
+                className="h-12 w-36 rounded-full bg-june-bud/20"
+              />
             ))}
           </div>
 
@@ -385,7 +438,10 @@ export default function Services() {
           {/* Services grid skeleton */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
-              <Card key={i} className="group overflow-hidden border-0 shadow-md bg-white rounded-md">
+              <Card
+                key={i}
+                className="group overflow-hidden border-0 shadow-md bg-white rounded-md"
+              >
                 <CardContent className="p-0">
                   <Skeleton className="h-48 w-full bg-june-bud/10" />
                   <div className="p-4">
@@ -428,7 +484,9 @@ export default function Services() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-viridian-green" />
-              <span className="font-bold text-eagle-green">Browse by Category</span>
+              <span className="font-bold text-eagle-green">
+                Browse by Category
+              </span>
             </div>
             <div className="flex overflow-x-auto scrollbar-hide gap-3 py-2 -mx-4 px-4 sm:mx-0 sm:px-2 sm:flex-wrap">
               {categories.map((category, index) => {
@@ -446,9 +504,10 @@ export default function Services() {
                       onClick={() => handleCategorySelect(category.id)}
                       className={`
                         flex items-center gap-2 px-5 py-3 h-12 rounded-full transition-all duration-300
-                        ${isActive
-                          ? "bg-gradient-to-r from-eagle-green to-viridian-green text-white border-0 shadow-lg shadow-eagle-green/25 scale-105"
-                          : "bg-white border-2 border-eagle-green/20 text-eagle-green hover:border-viridian-green hover:bg-viridian-green/5 hover:text-viridian-green hover:scale-105"
+                        ${
+                          isActive
+                            ? "bg-gradient-to-r from-eagle-green to-viridian-green text-white border-0 shadow-lg shadow-eagle-green/25 scale-105"
+                            : "bg-white border-2 border-eagle-green/20 text-eagle-green hover:border-viridian-green hover:bg-viridian-green/5 hover:text-viridian-green hover:scale-105"
                         }
                       `}
                       aria-pressed={isActive}
@@ -489,13 +548,25 @@ export default function Services() {
                   <MapPin className="h-5 w-5 text-viridian-green" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-white border border-eagle-green/10 shadow-xl rounded-xl p-1">
-                <div className="px-2 py-1.5 text-xs font-bold text-eagle-green/40 uppercase tracking-wider">Locations</div>
+              <DropdownMenuContent
+                align="end"
+                className="w-56 bg-white border border-eagle-green/10 shadow-xl rounded-xl p-1"
+              >
+                <div className="px-2 py-1.5 text-xs font-bold text-eagle-green/40 uppercase tracking-wider">
+                  Locations
+                </div>
                 {CITY_OPTIONS.map((city) => (
                   <DropdownMenuItem
                     key={city.value}
-                    onClick={() => { setSelectedCity(city.value); setCurrentPage(0); }}
-                    className={`rounded-lg cursor-pointer ${selectedCity === city.value ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}
+                    onClick={() => {
+                      setSelectedCity(city.value);
+                      setCurrentPage(0);
+                    }}
+                    className={`rounded-lg cursor-pointer ${
+                      selectedCity === city.value
+                        ? "bg-june-bud/20 text-eagle-green font-medium"
+                        : "text-eagle-green/70 hover:bg-june-bud/10"
+                    }`}
                   >
                     {city.label}
                   </DropdownMenuItem>
@@ -542,14 +613,14 @@ export default function Services() {
                 </>
               )}
 
-              {selectedCity && selectedCity !== 'all' && (
+              {selectedCity && selectedCity !== "all" && (
                 <>
                   <ChevronRight className="h-3 w-3 text-eagle-green/30" />
                   <Badge className="flex items-center gap-1.5 bg-viridian-green/20 text-viridian-green border border-viridian-green/30 px-3 py-1 rounded-full font-medium">
                     <MapPin className="h-3 w-3" />
                     {selectedCity}
                     <button
-                      onClick={() => setSelectedCity('all')}
+                      onClick={() => setSelectedCity("all")}
                       className="ml-1 hover:bg-viridian-green/20 rounded-full p-0.5 transition-colors"
                     >
                       <X className="h-3 w-3" />
@@ -565,8 +636,8 @@ export default function Services() {
                     "{debouncedSearch}"
                     <button
                       onClick={() => {
-                        setSearchTerm('');
-                        setDebouncedSearch('');
+                        setSearchTerm("");
+                        setDebouncedSearch("");
                       }}
                       className="ml-1 hover:bg-june-bud/30 rounded-full p-0.5 transition-colors"
                     >
@@ -598,7 +669,17 @@ export default function Services() {
                   Loading...
                 </span>
               ) : (
-                <>Showing <span className="font-bold text-eagle-green">{services.length}</span> of <span className="font-bold text-eagle-green">{totalServices}</span> services</>
+                <>
+                  Showing{" "}
+                  <span className="font-bold text-eagle-green">
+                    {services.length}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-bold text-eagle-green">
+                    {totalServices}
+                  </span>{" "}
+                  services
+                </>
               )}
             </p>
           </div>
@@ -613,7 +694,9 @@ export default function Services() {
                 <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-june-bud/20 to-viridian-green/10 rounded-3xl flex items-center justify-center">
                   <Calendar className="h-12 w-12 text-eagle-green/40" />
                 </div>
-                <h3 className="text-2xl font-bold text-eagle-green mb-3">No services found</h3>
+                <h3 className="text-2xl font-bold text-eagle-green mb-3">
+                  No services found
+                </h3>
                 <p className="font-light text-eagle-green/60 mb-8 leading-relaxed">
                   {hasFilters
                     ? "We couldn't find any services matching your criteria. Try adjusting your search or filters."
@@ -632,10 +715,13 @@ export default function Services() {
             </motion.div>
           ) : (
             <>
-              <div className={`grid gap-6 ${viewMode === 'grid'
-                ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                : 'grid-cols-1'
-                }`}>
+              <div
+                className={`grid gap-6 ${
+                  viewMode === "grid"
+                    ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                    : "grid-cols-1"
+                }`}
+              >
                 {services.map((service, index) => (
                   <motion.div
                     key={service.id}

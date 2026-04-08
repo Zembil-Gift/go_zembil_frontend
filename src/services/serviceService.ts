@@ -218,6 +218,28 @@ export interface UpdateServicePackageRequest {
 class ServiceService {
   private readonly MAX_REJECTION_REASON_LENGTH = 1000;
 
+  private buildPackageFormData(
+    request: CreateServicePackageRequest | UpdateServicePackageRequest,
+    images?: File[]
+  ): FormData {
+    const formData = new FormData();
+    formData.append(
+      "request",
+      new Blob([JSON.stringify(request)], { type: "application/json" })
+    );
+
+    if (images !== undefined) {
+      if (images.length === 0) {
+        // Backend contract: empty images array clears existing images
+        formData.append("images", new Blob([], { type: "application/octet-stream" }), "");
+      } else {
+        images.forEach((file) => formData.append("images", file));
+      }
+    }
+
+    return formData;
+  }
+
   private normalizeRejectionReason(reason: string): string {
     const trimmedReason = reason?.trim();
 
@@ -475,11 +497,13 @@ class ServiceService {
    */
   async createPackage(
     serviceId: number,
-    data: CreateServicePackageRequest
+    data: CreateServicePackageRequest,
+    images?: File[]
   ): Promise<ServicePackageResponse> {
-    return await apiService.postRequest<ServicePackageResponse>(
+    const formData = this.buildPackageFormData(data, images);
+    return await apiService.postFormData<ServicePackageResponse>(
       `/api/vendor/services/${serviceId}/packages`,
-      data
+      formData
     );
   }
 
@@ -488,11 +512,13 @@ class ServiceService {
    */
   async updatePackage(
     packageId: number,
-    data: UpdateServicePackageRequest
+    data: UpdateServicePackageRequest,
+    images?: File[]
   ): Promise<ServicePackageResponse> {
-    return await apiService.putRequest<ServicePackageResponse>(
+    const formData = this.buildPackageFormData(data, images);
+    return await apiService.putFormData<ServicePackageResponse>(
       `/api/vendor/packages/${packageId}`,
-      data
+      formData
     );
   }
 

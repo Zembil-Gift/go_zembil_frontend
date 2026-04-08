@@ -10,12 +10,65 @@ export interface OrderItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  skuId?: number;
+  skuCode?: string;
+  attributes?: Array<{
+    name: string;
+    value: string;
+  }>;
+}
+
+export interface OrderLine {
+  id?: number;
+  orderItemId?: number;
+  productId: number;
+  skuId?: number;
+  skuCode?: string;
+  productName?: string;
+  productImage?: string;
+  quantity: number;
+  unitAmountMinor?: number;
+  totalAmountMinor?: number;
+  totalPrice?: number;
+  currency?: string;
+  attributes?: Array<{
+    name: string;
+    value: string;
+  }>;
+}
+
+export interface SubOrder {
+  orderId?: number;
+  orderNumber?: string;
+  status: string;
+  currency?: string;
+  refundedAmountMinor?: number;
+  refundableRemainingMinor?: number;
+  totals?: {
+    totalMinor?: number;
+    subtotalMinor?: number;
+    [key: string]: any;
+  };
+  lines?: OrderLine[];
+  eta?: string | null;
+  deliveryConfirmedAt?: string | null;
+  rejectionReason?: string | null;
+  rejectedAt?: string | null;
+  rejectedBy?: number | string | null;
+  deliveryPersonInfo?: {
+    fullName?: string;
+    phone?: string;
+    email?: string;
+  };
 }
 
 export interface Order {
   orderId: number;
   userId: string;
   orderNumber: string;
+  orderGroupNumber?: string;
+  refundedAmountMinor?: number;
+  refundableRemainingMinor?: number;
   status:
     | "pending"
     | "confirmed"
@@ -72,7 +125,8 @@ export interface Order {
     subtotalMinor?: number;
     [key: string]: any;
   };
-  lines?: any[];
+  subOrders?: SubOrder[];
+  lines?: OrderLine[];
   createdAt: string;
   updatedAt: string;
 }
@@ -87,6 +141,14 @@ export interface CreateOrderRequest {
     cardMessage?: string | null;
   };
   itemGiftOptions?: ItemGiftOption[];
+  itemAttributes?: Array<{
+    productId: number;
+    productSkuId?: number;
+    attributes: Array<{
+      name: string;
+      value: string;
+    }>;
+  }>;
   discountCode?: string | null;
 }
 
@@ -155,6 +217,10 @@ export interface VendorOrderItem {
   productImage?: string;
   skuId?: number;
   skuCode?: string;
+  attributes?: Array<{
+    name: string;
+    value: string;
+  }>;
   quantity: number;
   unitAmountMinor: number;
   totalAmountMinor: number;
