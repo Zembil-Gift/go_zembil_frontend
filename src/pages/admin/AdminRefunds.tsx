@@ -51,6 +51,8 @@ const STATUS_FILTERS: Array<"ALL" | AdminRefundStatus> = [
   "COMPLETED",
   "FAILED",
 ];
+const PROVIDER_FILTERS = ["ALL", "CHAPA", "STRIPE"] as const;
+type ProviderFilter = (typeof PROVIDER_FILTERS)[number];
 
 const summaryCardStyles: Record<keyof AdminRefundSummaryDto, string> = {
   total: "bg-slate-100 text-slate-900",
@@ -68,7 +70,7 @@ export default function AdminRefunds() {
   const [statusFilter, setStatusFilter] = useState<"ALL" | AdminRefundStatus>(
     "ALL"
   );
-  const [providerFilter, setProviderFilter] = useState("CHAPA");
+  const [providerFilter, setProviderFilter] = useState<ProviderFilter>("ALL");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   const [selectedRefundId, setSelectedRefundId] = useState<number | null>(null);
@@ -96,7 +98,7 @@ export default function AdminRefunds() {
     queryFn: () =>
       adminService.getRefunds({
         status: statusFilter === "ALL" ? undefined : statusFilter,
-        provider: providerFilter.trim() || undefined,
+        provider: providerFilter === "ALL" ? undefined : providerFilter,
         page,
         size: PAGE_SIZE,
         sort: `requestedAt,${sortDirection}`,
@@ -226,10 +228,10 @@ export default function AdminRefunds() {
                 />
                 Refresh
               </Button>
-              {/* <Button
+              <Button
                 onClick={() => reconcileMutation.mutate()}
                 disabled={reconcileMutation.isPending}
-                className="bg-eagle-green hover:bg-eagle-green/90"
+                className="bg-eagle-green text-white hover:bg-eagle-green/90"
               >
                 {reconcileMutation.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -241,7 +243,7 @@ export default function AdminRefunds() {
               <Button
                 onClick={() => reconcileStripeMutation.mutate()}
                 disabled={reconcileStripeMutation.isPending}
-                className="bg-indigo-600 hover:bg-indigo-700"
+                className="bg-indigo-600 text-white hover:bg-indigo-700"
               >
                 {reconcileStripeMutation.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -249,7 +251,7 @@ export default function AdminRefunds() {
                   <RotateCw className="h-4 w-4 mr-2" />
                 )}
                 Reconcile Stripe
-              </Button> */}
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -309,15 +311,21 @@ export default function AdminRefunds() {
                 >
                   Provider
                 </label>
-                <Input
+                <select
                   id="refund-provider-filter"
-                  placeholder="CHAPA"
                   value={providerFilter}
                   onChange={(e) => {
-                    setProviderFilter(e.target.value);
+                    setProviderFilter(e.target.value as ProviderFilter);
                     setPage(0);
                   }}
-                />
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                >
+                  {PROVIDER_FILTERS.map((provider) => (
+                    <option key={provider} value={provider}>
+                      {provider === "ALL" ? "All" : provider}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <Button
@@ -337,7 +345,7 @@ export default function AdminRefunds() {
                 variant="ghost"
                 onClick={() => {
                   setStatusFilter("ALL");
-                  setProviderFilter("CHAPA");
+                  setProviderFilter("ALL");
                   setSortDirection("desc");
                   setPage(0);
                 }}
