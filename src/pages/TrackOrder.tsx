@@ -93,7 +93,10 @@ export default function TrackOrder() {
       return "PAID";
     }
 
-    if (normalizedStatus === "REFUNDED" || normalizedStatus === "PARTIALLY_REFUNDED") {
+    if (
+      normalizedStatus === "REFUNDED" ||
+      normalizedStatus === "PARTIALLY_REFUNDED"
+    ) {
       return "REFUNDED";
     }
 
@@ -232,9 +235,9 @@ export default function TrackOrder() {
     (order as any).deliveryInfo?.expectedDeliveryAt;
   const deliveryPersonInfo =
     order.deliveryPersonInfo || (order as any)["delivery-person-info"];
-  const orderItems = (order.lines && order.lines.length > 0
-    ? order.lines
-    : order.items) as Array<{
+  const orderItems = (
+    order.lines && order.lines.length > 0 ? order.lines : order.items
+  ) as Array<{
     id?: number;
     productId?: number;
     productName?: string;
@@ -248,6 +251,9 @@ export default function TrackOrder() {
   }>;
   const subOrders = Array.isArray(order.subOrders) ? order.subOrders : [];
   const hasMultipleSubOrders = subOrders.length > 1;
+  const hasOrderItemAttributes = orderItems.some(
+    (item) => Array.isArray(item.attributes) && item.attributes.length > 0
+  );
   const displayOrderNumber = hasMultipleSubOrders
     ? order.orderGroupNumber || orderId || order.orderNumber
     : order.orderNumber || orderId;
@@ -269,9 +275,7 @@ export default function TrackOrder() {
               <h1 className="font-display text-3xl font-bold text-charcoal mb-2">
                 Track Your Order
               </h1>
-              <p className="text-gray-600">
-                Order #{displayOrderNumber}
-              </p>
+              <p className="text-gray-600">Order #{displayOrderNumber}</p>
             </div>
             <div className="text-right">
               <div className="flex items-center gap-2 justify-end">
@@ -463,13 +467,16 @@ export default function TrackOrder() {
                 </div>
                 {typeof order.refundedAmountMinor === "number" &&
                   order.refundedAmountMinor > 0 && (
-                  <div>
-                    <p className="font-medium text-orange-600">Refunded</p>
-                    <p className="text-orange-600 font-bold">
-                      {formatMinorAmount(order.refundedAmountMinor, order.currency)}
-                    </p>
-                  </div>
-                )}
+                    <div>
+                      <p className="font-medium text-orange-600">Refunded</p>
+                      <p className="text-orange-600 font-bold">
+                        {formatMinorAmount(
+                          order.refundedAmountMinor,
+                          order.currency
+                        )}
+                      </p>
+                    </div>
+                  )}
               </div>
             </CardContent>
           </Card>
@@ -555,7 +562,23 @@ export default function TrackOrder() {
                   const subOrderItems = Array.isArray(subOrder.lines)
                     ? subOrder.lines
                     : [];
+                  const hasSubOrderAttributes = subOrderItems.some(
+                    (item) =>
+                      Array.isArray(item.attributes) &&
+                      item.attributes.length > 0
+                  );
                   const subOrderStatusSteps = getStatusSteps(subOrder.status);
+                  const primaryProductName =
+                    subOrderItems.find((item) => item.productName)
+                      ?.productName || "Product";
+                  const remainingItemCount = Math.max(
+                    subOrderItems.length - 1,
+                    0
+                  );
+                  const subOrderTitle =
+                    remainingItemCount > 0
+                      ? `${primaryProductName} +${remainingItemCount} more`
+                      : primaryProductName;
 
                   return (
                     <div
@@ -565,7 +588,7 @@ export default function TrackOrder() {
                       <div className="flex items-center justify-between gap-3 mb-3">
                         <div>
                           <p className="font-semibold text-gray-900">
-                            Sub-order {index + 1}
+                            {subOrderTitle}
                           </p>
                           {subOrder.eta && (
                             <p className="text-sm text-gray-500 mt-1">
@@ -573,7 +596,10 @@ export default function TrackOrder() {
                             </p>
                           )}
                         </div>
-                        <Badge className={getStatusColor(subOrder.status)} variant="secondary">
+                        <Badge
+                          className={getStatusColor(subOrder.status)}
+                          variant="secondary"
+                        >
                           {getStatusLabel(subOrder.status)}
                         </Badge>
                       </div>
@@ -587,7 +613,11 @@ export default function TrackOrder() {
                             const Icon = step.icon;
                             return (
                               <div
-                                key={`${subOrder.orderId || subOrder.orderNumber || index}-${step.key}`}
+                                key={`${
+                                  subOrder.orderId ||
+                                  subOrder.orderNumber ||
+                                  index
+                                }-${step.key}`}
                                 className="flex flex-col items-center flex-1"
                               >
                                 <div
@@ -634,34 +664,83 @@ export default function TrackOrder() {
 
                       {typeof subOrder.refundedAmountMinor === "number" &&
                         subOrder.refundedAmountMinor > 0 && (
-                        <div className="mb-3">
-                          <p className="text-sm font-medium text-orange-600">
-                            Refunded Amount: {formatMinorAmount(subOrder.refundedAmountMinor, subOrder.currency || order.currency)}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="space-y-4 pt-6">
-                        {subOrderItems.map((item) => (
-                          <div
-                            key={item.id || item.orderItemId || item.productId}
-                            className="text-sm"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-base font-bold text-gray-900 mb-1">
-                                {item.productName || "Product"}
-                                {item.quantity && item.quantity > 1 ? ` x ${item.quantity}` : ""}
-                              </p>
-                              <ul className="list-disc list-inside text-gray-500 ml-4 space-y-1">
-                                {item.attributes?.map((attr, attrIdx) => (
-                                  <li key={attrIdx}>
-                                    {attr.name}: {attr.value}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
+                          <div className="mb-3">
+                            <p className="text-sm font-medium text-orange-600">
+                              Refunded Amount:{" "}
+                              {formatMinorAmount(
+                                subOrder.refundedAmountMinor,
+                                subOrder.currency || order.currency
+                              )}
+                            </p>
                           </div>
-                        ))}
+                        )}
+
+                      <div className="pt-6">
+                        <div className="rounded-lg border border-gray-200 overflow-hidden">
+                          <div className="grid grid-cols-12 gap-3 bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                            <div
+                              className={
+                                hasSubOrderAttributes
+                                  ? "col-span-5"
+                                  : "col-span-8"
+                              }
+                            >
+                              Product
+                            </div>
+                            <div
+                              className={
+                                hasSubOrderAttributes
+                                  ? "col-span-2"
+                                  : "col-span-4"
+                              }
+                            >
+                              Quantity
+                            </div>
+                            {hasSubOrderAttributes && (
+                              <div className="col-span-5">Attributes</div>
+                            )}
+                          </div>
+
+                          {subOrderItems.map((item) => (
+                            <div
+                              key={
+                                item.id || item.orderItemId || item.productId
+                              }
+                              className="grid grid-cols-12 gap-3 px-4 py-3 border-t border-gray-100 text-sm"
+                            >
+                              <div
+                                className={`font-semibold text-gray-900 break-words ${
+                                  hasSubOrderAttributes
+                                    ? "col-span-5"
+                                    : "col-span-8"
+                                }`}
+                              >
+                                {item.productName || "Product"}
+                              </div>
+                              <div
+                                className={`font-medium text-gray-700 ${
+                                  hasSubOrderAttributes
+                                    ? "col-span-2"
+                                    : "col-span-4"
+                                }`}
+                              >
+                                {item.quantity || 1}
+                              </div>
+                              {hasSubOrderAttributes && (
+                                <div className="col-span-5 text-gray-600 break-words">
+                                  {item.attributes && item.attributes.length > 0
+                                    ? item.attributes
+                                        .map(
+                                          (attr) =>
+                                            `${attr.name}: ${attr.value}`
+                                        )
+                                        .join(", ")
+                                    : "-"}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   );
@@ -678,52 +757,55 @@ export default function TrackOrder() {
               <CardTitle>Order Items</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <div className="grid grid-cols-12 gap-3 bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                  <div
+                    className={
+                      hasOrderItemAttributes ? "col-span-5" : "col-span-8"
+                    }
+                  >
+                    Product
+                  </div>
+                  <div
+                    className={
+                      hasOrderItemAttributes ? "col-span-2" : "col-span-4"
+                    }
+                  >
+                    Quantity
+                  </div>
+                  {hasOrderItemAttributes && (
+                    <div className="col-span-5">Attributes</div>
+                  )}
+                </div>
+
                 {orderItems?.map((item) => (
                   <div
                     key={item.id || item.productId}
-                    className="flex items-center space-x-4 py-2 border-b last:border-b-0"
+                    className="grid grid-cols-12 gap-3 px-4 py-3 border-t border-gray-100 text-sm"
                   >
-                    <div className="w-16 h-16 flex-shrink-0">
-                      <img
-                        src={
-                          item.productImage ||
-                          "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"
-                        }
-                        alt={item.productName || "Product"}
-                        className="w-full h-full object-cover rounded"
-                      />
+                    <div
+                      className={`font-semibold text-gray-900 break-words ${
+                        hasOrderItemAttributes ? "col-span-5" : "col-span-8"
+                      }`}
+                    >
+                      {item.productName || "Product"}
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">
-                        {item.productName || "Product"}
-                      </h4>
-                      <p className="text-sm text-gray-500">
-                        Quantity: {item.quantity}
-                      </p>
-                      {item.skuCode && (
-                        <p className="text-sm text-gray-400">
-                          SKU: {item.skuCode}
-                        </p>
-                      )}
-                      {item.attributes && item.attributes.length > 0 && (
-                        <p className="text-sm text-gray-500">
-                          {item.attributes
-                            .map((attr) => `${attr.name}: ${attr.value}`)
-                            .join(", ")}
-                        </p>
-                      )}
+                    <div
+                      className={`font-medium text-gray-700 ${
+                        hasOrderItemAttributes ? "col-span-2" : "col-span-4"
+                      }`}
+                    >
+                      {item.quantity || 1}
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">
-                        {formatMinorAmount(
-                          item.unitAmountMinor != null
-                            ? item.unitAmountMinor * (item.quantity || 1)
-                            : item.totalPrice || 0,
-                          item.currency || order.currency
-                        )}
-                      </p>
-                    </div>
+                    {hasOrderItemAttributes && (
+                      <div className="col-span-5 text-gray-600 break-words">
+                        {item.attributes && item.attributes.length > 0
+                          ? item.attributes
+                              .map((attr) => `${attr.name}: ${attr.value}`)
+                              .join(", ")
+                          : "-"}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
