@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,12 +41,15 @@ import {
   Navigation,
   AlertTriangle,
   Image as ImageIcon,
-  Upload,
   X,
 } from "lucide-react";
 import { deliveryService, DeliveryStatus } from "@/services/deliveryService";
 import { imageService } from "@/services/imageService";
-import { AuthenticatedImage, useAuthenticatedImageViewer } from "@/components/AuthenticatedImage";
+import {
+  AuthenticatedImage,
+  useAuthenticatedImageViewer,
+} from "@/components/AuthenticatedImage";
+import imageCompression from "browser-image-compression";
 
 export default function DeliveryAssignmentDetail() {
   const { assignmentId } = useParams<{ assignmentId: string }>();
@@ -54,25 +57,43 @@ export default function DeliveryAssignmentDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { openImage } = useAuthenticatedImageViewer();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const pickupFileInputRef = useRef<HTMLInputElement>(null);
-  const pickupCameraInputRef = useRef<HTMLInputElement>(null);
+  const deliveryVideoRef = useRef<HTMLVideoElement>(null);
+  const pickupVideoRef = useRef<HTMLVideoElement>(null);
+  const deliveryStreamRef = useRef<MediaStream | null>(null);
+  const pickupStreamRef = useRef<MediaStream | null>(null);
 
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showFailDialog, setShowFailDialog] = useState(false);
   const [showPickupProofDialog, setShowPickupProofDialog] = useState(false);
   const [_proofImageUrl, setProofImageUrl] = useState("");
-  const [proofImagePreview, setProofImagePreview] = useState<string | null>(null);
+  const [proofImagePreview, setProofImagePreview] = useState<string | null>(
+    null
+  );
   const [proofImageFile, setProofImageFile] = useState<File | null>(null);
-  const [pickupImagePreview, setPickupImagePreview] = useState<string | null>(null);
+  const [pickupImagePreview, setPickupImagePreview] = useState<string | null>(
+    null
+  );
   const [pickupImageFile, setPickupImageFile] = useState<File | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingPickupImage, setIsUploadingPickupImage] = useState(false);
+  const [isStartingDeliveryCamera, setIsStartingDeliveryCamera] =
+    useState(false);
+  const [isStartingPickupCamera, setIsStartingPickupCamera] = useState(false);
+  const [isDeliveryCameraReady, setIsDeliveryCameraReady] = useState(false);
+  const [isPickupCameraReady, setIsPickupCameraReady] = useState(false);
   const [pickupNotes, setPickupNotes] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [notes, setNotes] = useState("");
   const [failureReason, setFailureReason] = useState("");
+
+  const compressCapturedImage = async (file: File): Promise<File> => {
+    return imageCompression(file, {
+      maxSizeMB: 1.2,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      initialQuality: 0.8,
+    });
+  };
 
   const { data: assignment, isLoading } = useQuery({
     queryKey: ["delivery", "assignment", assignmentId],
@@ -84,11 +105,18 @@ export default function DeliveryAssignmentDetail() {
   const acceptMutation = useMutation({
     mutationFn: () => deliveryService.acceptAssignment(Number(assignmentId)),
     onSuccess: () => {
-      toast({ title: "Assignment Accepted", description: "You have accepted this delivery" });
+      toast({
+        title: "Assignment Accepted",
+        description: "You have accepted this delivery",
+      });
       queryClient.invalidateQueries({ queryKey: ["delivery"] });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to accept assignment", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to accept assignment",
+        variant: "destructive",
+      });
     },
   });
 
@@ -97,25 +125,43 @@ export default function DeliveryAssignmentDetail() {
     mutationFn: (status: DeliveryStatus) =>
       deliveryService.updateDeliveryStatus(Number(assignmentId), { status }),
     onSuccess: (data) => {
-      toast({ title: "Status Updated", description: `Delivery is now ${data.status}` });
+      toast({
+        title: "Status Updated",
+        description: `Delivery is now ${data.status}`,
+      });
       queryClient.invalidateQueries({ queryKey: ["delivery"] });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to update status",
+        variant: "destructive",
+      });
     },
   });
 
   // Fail delivery mutation
   const failMutation = useMutation({
-    mutationFn: () => deliveryService.reportDeliveryFailure(Number(assignmentId), failureReason),
+    mutationFn: () =>
+      deliveryService.reportDeliveryFailure(
+        Number(assignmentId),
+        failureReason
+      ),
     onSuccess: () => {
-      toast({ title: "Delivery Failed", description: "The delivery failure has been reported" });
+      toast({
+        title: "Delivery Failed",
+        description: "The delivery failure has been reported",
+      });
       queryClient.invalidateQueries({ queryKey: ["delivery"] });
       setShowFailDialog(false);
       navigate("/delivery/assignments");
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to report failure", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to report failure",
+        variant: "destructive",
+      });
     },
   });
 
@@ -156,67 +202,147 @@ export default function DeliveryAssignmentDetail() {
     return labels[currentStatus] || "";
   };
 
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast({ title: "Invalid File", description: "Please select an image file", variant: "destructive" });
-        return;
-      }
-      
-      if (file.size > 10 * 1024 * 1024) {
-        toast({ title: "File Too Large", description: "Image must be less than 10MB", variant: "destructive" });
-        return;
-      }
+  const stopCamera = (
+    streamRef: React.MutableRefObject<MediaStream | null>,
+    videoRef: React.RefObject<HTMLVideoElement>,
+    setCameraReady: (ready: boolean) => void
+  ) => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraReady(false);
+  };
 
-      setProofImageFile(file);
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProofImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      
-      toast({ title: "Image Selected", description: "Delivery proof image ready for upload" });
+  const startCamera = async (
+    streamRef: React.MutableRefObject<MediaStream | null>,
+    videoRef: React.RefObject<HTMLVideoElement>,
+    setStarting: (loading: boolean) => void,
+    setCameraReady: (ready: boolean) => void
+  ) => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast({
+        title: "Camera Not Supported",
+        description: "Your browser does not support direct camera access.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setStarting(true);
+    try {
+      stopCamera(streamRef, videoRef, setCameraReady);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+        },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setCameraReady(true);
+    } catch {
+      toast({
+        title: "Camera Access Failed",
+        description: "Please allow camera permission and try again.",
+        variant: "destructive",
+      });
+      setCameraReady(false);
+    } finally {
+      setStarting(false);
     }
   };
 
-  // Handle pickup image selection
-  const handlePickupImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast({ title: "Invalid File", description: "Please select an image file", variant: "destructive" });
-        return;
-      }
-      
-      if (file.size > 10 * 1024 * 1024) {
-        toast({ title: "File Too Large", description: "Image must be less than 10MB", variant: "destructive" });
-        return;
-      }
-
-      setPickupImageFile(file);
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPickupImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      
-      toast({ title: "Image Selected", description: "Pickup proof image ready for upload" });
+  const captureFromCamera = async (
+    videoRef: React.RefObject<HTMLVideoElement>,
+    streamRef: React.MutableRefObject<MediaStream | null>,
+    setCameraReady: (ready: boolean) => void,
+    setImageFile: (file: File | null) => void,
+    setImagePreview: (preview: string | null) => void,
+    successDescription: string
+  ) => {
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+      toast({
+        title: "Camera Not Ready",
+        description: "Please wait for camera preview and try again.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      toast({
+        title: "Capture Failed",
+        description: "Could not capture camera frame.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/jpeg", 0.9);
+    });
+
+    if (!blob) {
+      toast({
+        title: "Capture Failed",
+        description: "Could not generate image from camera frame.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    let processedFile = new File([blob], `capture-${Date.now()}.jpg`, {
+      type: "image/jpeg",
+    });
+
+    try {
+      processedFile = await compressCapturedImage(processedFile);
+    } catch {
+      toast({
+        title: "Compression Skipped",
+        description: "Could not compress image, using original capture.",
+      });
+    }
+
+    setImageFile(processedFile);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(processedFile);
+
+    stopCamera(streamRef, videoRef, setCameraReady);
+    toast({ title: "Photo Captured", description: successDescription });
   };
 
   // Upload pickup proof image and save
   const handleUploadPickupProof = async () => {
     if (!pickupImageFile) {
-      toast({ title: "Image Required", description: "Please capture or select a pickup proof image", variant: "destructive" });
+      toast({
+        title: "Image Required",
+        description: "Please capture or select a pickup proof image",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsUploadingPickupImage(true);
     try {
-      const uploadedImage = await imageService.uploadDeliveryPickupImage(Number(assignmentId), pickupImageFile);
+      const uploadedImage = await imageService.uploadDeliveryPickupImage(
+        Number(assignmentId),
+        pickupImageFile
+      );
       const imageUrl = uploadedImage.url;
 
       await deliveryService.uploadPickupProof(Number(assignmentId), {
@@ -224,15 +350,19 @@ export default function DeliveryAssignmentDetail() {
         notes: pickupNotes || undefined,
       });
 
-      toast({ title: "Pickup Proof Uploaded!", description: "You can now mark the order as picked up" });
+      toast({
+        title: "Pickup Proof Uploaded!",
+        description: "You can now mark the order as picked up",
+      });
       queryClient.invalidateQueries({ queryKey: ["delivery"] });
       setShowPickupProofDialog(false);
       handleClearPickupImage();
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.response?.data?.message || "Failed to upload pickup proof",
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to upload pickup proof",
+        variant: "destructive",
       });
     } finally {
       setIsUploadingPickupImage(false);
@@ -241,22 +371,28 @@ export default function DeliveryAssignmentDetail() {
 
   // Clear pickup image
   const handleClearPickupImage = () => {
+    stopCamera(pickupStreamRef, pickupVideoRef, setIsPickupCameraReady);
     setPickupImageFile(null);
     setPickupImagePreview(null);
     setPickupNotes("");
-    if (pickupFileInputRef.current) pickupFileInputRef.current.value = "";
-    if (pickupCameraInputRef.current) pickupCameraInputRef.current.value = "";
   };
 
   const handleCompleteDelivery = async () => {
     if (!proofImageFile) {
-      toast({ title: "Image Required", description: "Please capture or select a proof image", variant: "destructive" });
+      toast({
+        title: "Image Required",
+        description: "Please capture or select a proof image",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsUploadingImage(true);
     try {
-      const uploadedImage = await imageService.uploadDeliveryProofImage(Number(assignmentId), proofImageFile);
+      const uploadedImage = await imageService.uploadDeliveryProofImage(
+        Number(assignmentId),
+        proofImageFile
+      );
       const imageUrl = uploadedImage.url;
 
       await deliveryService.completeDelivery(Number(assignmentId), {
@@ -265,15 +401,19 @@ export default function DeliveryAssignmentDetail() {
         notes,
       });
 
-      toast({ title: "Delivery Completed!", description: "The delivery has been marked as completed" });
+      toast({
+        title: "Delivery Completed!",
+        description: "The delivery has been marked as completed",
+      });
       queryClient.invalidateQueries({ queryKey: ["delivery"] });
       setShowCompleteDialog(false);
       navigate("/delivery/assignments");
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.response?.data?.message || "Failed to complete delivery",
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to complete delivery",
+        variant: "destructive",
       });
     } finally {
       setIsUploadingImage(false);
@@ -282,12 +422,40 @@ export default function DeliveryAssignmentDetail() {
 
   // Clear selected image
   const handleClearImage = () => {
+    stopCamera(deliveryStreamRef, deliveryVideoRef, setIsDeliveryCameraReady);
     setProofImageFile(null);
     setProofImagePreview(null);
     setProofImageUrl("");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    if (cameraInputRef.current) cameraInputRef.current.value = "";
   };
+
+  useEffect(() => {
+    if (showCompleteDialog && !proofImagePreview) {
+      void startCamera(
+        deliveryStreamRef,
+        deliveryVideoRef,
+        setIsStartingDeliveryCamera,
+        setIsDeliveryCameraReady
+      );
+    }
+  }, [showCompleteDialog, proofImagePreview]);
+
+  useEffect(() => {
+    if (showPickupProofDialog && !pickupImagePreview) {
+      void startCamera(
+        pickupStreamRef,
+        pickupVideoRef,
+        setIsStartingPickupCamera,
+        setIsPickupCameraReady
+      );
+    }
+  }, [showPickupProofDialog, pickupImagePreview]);
+
+  useEffect(() => {
+    return () => {
+      stopCamera(deliveryStreamRef, deliveryVideoRef, setIsDeliveryCameraReady);
+      stopCamera(pickupStreamRef, pickupVideoRef, setIsPickupCameraReady);
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -310,7 +478,9 @@ export default function DeliveryAssignmentDetail() {
     );
   }
 
-  const isTerminalStatus = ["DELIVERED", "FAILED", "CANCELLED"].includes(assignment.status);
+  const isTerminalStatus = ["DELIVERED", "FAILED", "CANCELLED"].includes(
+    assignment.status
+  );
   const nextStatus = getNextStatus(assignment.status);
 
   return (
@@ -322,7 +492,8 @@ export default function DeliveryAssignmentDetail() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold">
-            {assignment.orderType === 'CUSTOM' ? 'Custom ' : ''}Order #{assignment.customOrderNumber || assignment.orderNumber}
+            {assignment.orderType === "CUSTOM" ? "Custom " : ""}Order #
+            {assignment.customOrderNumber || assignment.orderNumber}
           </h1>
           <Badge className={getStatusColor(assignment.status)}>
             {assignment.status.replace("_", " ")}
@@ -343,19 +514,22 @@ export default function DeliveryAssignmentDetail() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-gray-500">Name</Label>
-                  <p className="font-medium">{assignment.customerName || "N/A"}</p>
+                  <p className="font-medium">
+                    {assignment.customerName || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-gray-500">Phone</Label>
                   <div className="flex items-center gap-2">
-                    <p className="font-medium">{assignment.customerPhone || "N/A"}</p>
+                    <p className="font-medium">
+                      {assignment.customerPhone || "N/A"}
+                    </p>
                     {assignment.customerPhone && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                      >
-                        <a href={`tel:${assignment.customerPhone}`} title="Call customer">
+                      <Button variant="outline" size="sm" asChild>
+                        <a
+                          href={`tel:${assignment.customerPhone}`}
+                          title="Call customer"
+                        >
                           <Phone className="h-4 w-4" />
                           <span className="sr-only">Call customer</span>
                         </a>
@@ -375,14 +549,19 @@ export default function DeliveryAssignmentDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-lg font-medium">{assignment.shippingAddress || "N/A"}</p>
+              <p className="text-lg font-medium">
+                {assignment.shippingAddress || "N/A"}
+              </p>
               <p className="text-gray-500">{assignment.shippingCity || ""}</p>
               <Button
                 variant="outline"
                 className="mt-4"
                 onClick={() => {
                   const address = `${assignment.shippingAddress}, ${assignment.shippingCity}`;
-                  window.open(`https://maps.google.com/?q=${encodeURIComponent(address)}`, "_blank");
+                  window.open(
+                    `https://maps.google.com/?q=${encodeURIComponent(address)}`,
+                    "_blank"
+                  );
                 }}
               >
                 <Navigation className="mr-2 h-4 w-4" />
@@ -405,7 +584,9 @@ export default function DeliveryAssignmentDetail() {
                   <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                   <div>
                     <p className="font-medium">Assigned</p>
-                    <p className="text-sm text-gray-500">{formatDate(assignment.assignedAt)}</p>
+                    <p className="text-sm text-gray-500">
+                      {formatDate(assignment.assignedAt)}
+                    </p>
                   </div>
                 </div>
                 {assignment.pickedUpAt && (
@@ -413,7 +594,9 @@ export default function DeliveryAssignmentDetail() {
                     <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
                     <div>
                       <p className="font-medium">Picked Up</p>
-                      <p className="text-sm text-gray-500">{formatDate(assignment.pickedUpAt)}</p>
+                      <p className="text-sm text-gray-500">
+                        {formatDate(assignment.pickedUpAt)}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -422,7 +605,9 @@ export default function DeliveryAssignmentDetail() {
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                     <div>
                       <p className="font-medium">Delivered</p>
-                      <p className="text-sm text-gray-500">{formatDate(assignment.deliveredAt)}</p>
+                      <p className="text-sm text-gray-500">
+                        {formatDate(assignment.deliveredAt)}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -444,7 +629,7 @@ export default function DeliveryAssignmentDetail() {
                   src={assignment.pickupImageUrl}
                   alt="Pickup proof"
                   className="max-w-full rounded-lg cursor-pointer hover:opacity-90"
-                  onClick={() => openImage(assignment.pickupImageUrl ?? '')}
+                  onClick={() => openImage(assignment.pickupImageUrl ?? "")}
                 />
                 {assignment.pickupUploadedAt && (
                   <p className="text-sm text-gray-500 mt-2">
@@ -469,7 +654,7 @@ export default function DeliveryAssignmentDetail() {
                   src={assignment.proofImageUrl}
                   alt="Delivery proof"
                   className="max-w-full rounded-lg cursor-pointer hover:opacity-90"
-                  onClick={() => openImage(assignment.proofImageUrl ?? '')}
+                  onClick={() => openImage(assignment.proofImageUrl ?? "")}
                 />
                 <p className="text-sm text-gray-500 mt-2">
                   Recipient: {assignment.recipientName || "N/A"}
@@ -523,39 +708,42 @@ export default function DeliveryAssignmentDetail() {
                 )}
 
                 {/* Pickup Proof Button - shown when ACCEPTED and no pickup proof yet */}
-                {assignment.status === "ACCEPTED" && !assignment.pickupImageUrl && (
-                  <Button
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                    onClick={() => setShowPickupProofDialog(true)}
-                  >
-                    <Camera className="mr-2 h-4 w-4" />
-                    Upload Pickup Photo
-                  </Button>
-                )}
+                {assignment.status === "ACCEPTED" &&
+                  !assignment.pickupImageUrl && (
+                    <Button
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                      onClick={() => setShowPickupProofDialog(true)}
+                    >
+                      <Camera className="mr-2 h-4 w-4" />
+                      Upload Pickup Photo
+                    </Button>
+                  )}
 
                 {/* Show pickup proof status */}
-                {assignment.status === "ACCEPTED" && assignment.pickupImageUrl && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-2 rounded">
-                    <CheckCircle className="h-4 w-4" />
-                    Pickup photo uploaded
-                  </div>
-                )}
+                {assignment.status === "ACCEPTED" &&
+                  assignment.pickupImageUrl && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-2 rounded">
+                      <CheckCircle className="h-4 w-4" />
+                      Pickup photo uploaded
+                    </div>
+                  )}
 
                 {/* Modified: Only show Mark as Picked Up if pickup proof is uploaded */}
-                {assignment.status === "ACCEPTED" && assignment.pickupImageUrl && (
-                  <Button
-                    className="w-full"
-                    onClick={() => updateStatusMutation.mutate("PICKED_UP")}
-                    disabled={updateStatusMutation.isPending}
-                  >
-                    {updateStatusMutation.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Truck className="mr-2 h-4 w-4" />
-                    )}
-                    Mark as Picked Up
-                  </Button>
-                )}
+                {assignment.status === "ACCEPTED" &&
+                  assignment.pickupImageUrl && (
+                    <Button
+                      className="w-full"
+                      onClick={() => updateStatusMutation.mutate("PICKED_UP")}
+                      disabled={updateStatusMutation.isPending}
+                    >
+                      {updateStatusMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Truck className="mr-2 h-4 w-4" />
+                      )}
+                      Mark as Picked Up
+                    </Button>
+                  )}
 
                 {/* Other status transitions (PICKED_UP -> IN_TRANSIT, IN_TRANSIT -> ARRIVED) */}
                 {nextStatus && assignment.status !== "ACCEPTED" && (
@@ -583,7 +771,9 @@ export default function DeliveryAssignmentDetail() {
                   </Button>
                 )}
 
-                {!["ASSIGNED", "DELIVERED", "FAILED", "CANCELLED"].includes(assignment.status) && (
+                {!["ASSIGNED", "DELIVERED", "FAILED", "CANCELLED"].includes(
+                  assignment.status
+                ) && (
                   <Button
                     variant="destructive"
                     className="w-full"
@@ -626,14 +816,17 @@ export default function DeliveryAssignmentDetail() {
         </div>
       </div>
 
-      <Dialog open={showCompleteDialog} onOpenChange={(open) => {
-        setShowCompleteDialog(open);
-        if (!open) {
-          handleClearImage();
-          setRecipientName("");
-          setNotes("");
-        }
-      }}>
+      <Dialog
+        open={showCompleteDialog}
+        onOpenChange={(open) => {
+          setShowCompleteDialog(open);
+          if (!open) {
+            handleClearImage();
+            setRecipientName("");
+            setNotes("");
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Complete Delivery</DialogTitle>
@@ -651,30 +844,11 @@ export default function DeliveryAssignmentDetail() {
               />
             </div>
             <div>
-              <Label htmlFor="camera-input">Delivery Proof Photo <span className="text-red-500">*</span></Label>
-              
-              {/* Hidden file inputs */}
-              <input
-                id="camera-input"
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleImageSelect}
-                aria-label="Take photo with camera"
-              />
-              <input
-                id="file-input"
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageSelect}
-                aria-label="Choose image file"
-              />
+              <Label htmlFor="camera-input">
+                Delivery Proof Photo <span className="text-red-500">*</span>
+              </Label>
 
-              {/* Image Preview or Capture Buttons */}
+              {/* Image Preview or Camera View */}
               {proofImagePreview ? (
                 <div className="mt-2 relative">
                   <img
@@ -691,27 +865,73 @@ export default function DeliveryAssignmentDetail() {
                   >
                     <X className="h-4 w-4" />
                   </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="absolute bottom-2 right-2"
+                    onClick={() => {
+                      setProofImageFile(null);
+                      setProofImagePreview(null);
+                      void startCamera(
+                        deliveryStreamRef,
+                        deliveryVideoRef,
+                        setIsStartingDeliveryCamera,
+                        setIsDeliveryCameraReady
+                      );
+                    }}
+                  >
+                    Retake
+                  </Button>
                 </div>
               ) : (
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-24 flex flex-col gap-2"
-                    onClick={() => cameraInputRef.current?.click()}
-                  >
-                    <Camera className="h-8 w-8" />
-                    <span className="text-sm">Take Photo</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-24 flex flex-col gap-2"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="h-8 w-8" />
-                    <span className="text-sm">Choose File</span>
-                  </Button>
+                <div className="mt-2 space-y-2">
+                  <div className="rounded-lg border bg-black/90 overflow-hidden">
+                    <video
+                      ref={deliveryVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-64 object-cover"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        void startCamera(
+                          deliveryStreamRef,
+                          deliveryVideoRef,
+                          setIsStartingDeliveryCamera,
+                          setIsDeliveryCameraReady
+                        );
+                      }}
+                      disabled={isStartingDeliveryCamera}
+                    >
+                      {isStartingDeliveryCamera ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Camera className="mr-2 h-4 w-4" />
+                      )}
+                      Start Camera
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        void captureFromCamera(
+                          deliveryVideoRef,
+                          deliveryStreamRef,
+                          setIsDeliveryCameraReady,
+                          setProofImageFile,
+                          setProofImagePreview,
+                          "Delivery proof image is ready for upload"
+                        );
+                      }}
+                      disabled={!isDeliveryCameraReady}
+                    >
+                      Capture Photo
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -725,7 +945,10 @@ export default function DeliveryAssignmentDetail() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCompleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowCompleteDialog(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -733,7 +956,9 @@ export default function DeliveryAssignmentDetail() {
               onClick={handleCompleteDelivery}
               disabled={!proofImageFile || isUploadingImage}
             >
-              {isUploadingImage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isUploadingImage && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {isUploadingImage ? "Uploading..." : "Complete Delivery"}
             </Button>
           </DialogFooter>
@@ -770,45 +995,30 @@ export default function DeliveryAssignmentDetail() {
       </AlertDialog>
 
       {/* Pickup Proof Dialog */}
-      <Dialog open={showPickupProofDialog} onOpenChange={(open) => {
-        setShowPickupProofDialog(open);
-        if (!open) {
-          handleClearPickupImage();
-        }
-      }}>
+      <Dialog
+        open={showPickupProofDialog}
+        onOpenChange={(open) => {
+          setShowPickupProofDialog(open);
+          if (!open) {
+            handleClearPickupImage();
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Upload Pickup Proof</DialogTitle>
             <DialogDescription>
-              Take a photo of the product when you receive it. This serves as evidence of the product's condition before delivery.
+              Take a photo of the product when you receive it. This serves as
+              evidence of the product's condition before delivery.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="pickup-camera-input">Product Photo <span className="text-red-500">*</span></Label>
-              
-              {/* Hidden file inputs */}
-              <input
-                id="pickup-camera-input"
-                ref={pickupCameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handlePickupImageSelect}
-                aria-label="Take photo with camera"
-              />
-              <input
-                id="pickup-file-input"
-                ref={pickupFileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePickupImageSelect}
-                aria-label="Choose image file"
-              />
+              <Label htmlFor="pickup-camera-input">
+                Product Photo <span className="text-red-500">*</span>
+              </Label>
 
-              {/* Image Preview or Capture Buttons */}
+              {/* Image Preview or Camera View */}
               {pickupImagePreview ? (
                 <div className="mt-2 relative">
                   <img
@@ -825,27 +1035,73 @@ export default function DeliveryAssignmentDetail() {
                   >
                     <X className="h-4 w-4" />
                   </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="absolute bottom-2 right-2"
+                    onClick={() => {
+                      setPickupImageFile(null);
+                      setPickupImagePreview(null);
+                      void startCamera(
+                        pickupStreamRef,
+                        pickupVideoRef,
+                        setIsStartingPickupCamera,
+                        setIsPickupCameraReady
+                      );
+                    }}
+                  >
+                    Retake
+                  </Button>
                 </div>
               ) : (
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-24 flex flex-col gap-2"
-                    onClick={() => pickupCameraInputRef.current?.click()}
-                  >
-                    <Camera className="h-8 w-8" />
-                    <span className="text-sm">Take Photo</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-24 flex flex-col gap-2"
-                    onClick={() => pickupFileInputRef.current?.click()}
-                  >
-                    <Upload className="h-8 w-8" />
-                    <span className="text-sm">Choose File</span>
-                  </Button>
+                <div className="mt-2 space-y-2">
+                  <div className="rounded-lg border bg-black/90 overflow-hidden">
+                    <video
+                      ref={pickupVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-64 object-cover"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        void startCamera(
+                          pickupStreamRef,
+                          pickupVideoRef,
+                          setIsStartingPickupCamera,
+                          setIsPickupCameraReady
+                        );
+                      }}
+                      disabled={isStartingPickupCamera}
+                    >
+                      {isStartingPickupCamera ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Camera className="mr-2 h-4 w-4" />
+                      )}
+                      Start Camera
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        void captureFromCamera(
+                          pickupVideoRef,
+                          pickupStreamRef,
+                          setIsPickupCameraReady,
+                          setPickupImageFile,
+                          setPickupImagePreview,
+                          "Pickup proof image is ready for upload"
+                        );
+                      }}
+                      disabled={!isPickupCameraReady}
+                    >
+                      Capture Photo
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -859,7 +1115,10 @@ export default function DeliveryAssignmentDetail() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPickupProofDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowPickupProofDialog(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -867,7 +1126,9 @@ export default function DeliveryAssignmentDetail() {
               onClick={handleUploadPickupProof}
               disabled={!pickupImageFile || isUploadingPickupImage}
             >
-              {isUploadingPickupImage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isUploadingPickupImage && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {isUploadingPickupImage ? "Uploading..." : "Upload Pickup Proof"}
             </Button>
           </DialogFooter>

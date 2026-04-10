@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import AdminLayout from "@/components/admin/AdminLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -12,14 +12,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -27,9 +27,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import { 
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import {
   Loader2,
   Eye,
   Truck,
@@ -39,10 +39,13 @@ import {
   User,
   Store,
   FileText,
-} from 'lucide-react';
-import { customOrderService } from '@/services/customOrderService';
-import { adminDeliveryService, DeliveryPersonDto } from '@/services/deliveryService';
-import type { CustomOrder } from '@/types/customOrders';
+} from "lucide-react";
+import { customOrderService } from "@/services/customOrderService";
+import {
+  adminDeliveryService,
+  DeliveryPersonDto,
+} from "@/services/deliveryService";
+import type { CustomOrder } from "@/types/customOrders";
 
 export default function AdminCustomOrders() {
   const queryClient = useQueryClient();
@@ -50,11 +53,12 @@ export default function AdminCustomOrders() {
   const [selectedOrder, setSelectedOrder] = useState<CustomOrder | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
-  const [selectedDeliveryPersonId, setSelectedDeliveryPersonId] = useState<string>('');
+  const [selectedDeliveryPersonId, setSelectedDeliveryPersonId] =
+    useState<string>("");
 
   // Fetch completed orders ready for delivery
   const { data: ordersData, isLoading } = useQuery({
-    queryKey: ['admin', 'custom-orders-for-delivery'],
+    queryKey: ["admin", "custom-orders-for-delivery"],
     queryFn: () => customOrderService.getCompletedForDelivery(0, 100),
   });
 
@@ -62,30 +66,51 @@ export default function AdminCustomOrders() {
 
   // Fetch available delivery persons
   const { data: deliveryPersonsData } = useQuery({
-    queryKey: ['admin', 'available-delivery-persons'],
+    queryKey: ["admin", "available-delivery-persons"],
     queryFn: () => adminDeliveryService.getAvailableDeliveryPersons(),
     enabled: showAssignDialog,
   });
 
-  const availableDeliveryPersons: DeliveryPersonDto[] = deliveryPersonsData?.content || [];
+  const availableDeliveryPersons: DeliveryPersonDto[] =
+    deliveryPersonsData?.content || [];
+
+  const canAssignDelivery = (order: CustomOrder): boolean => {
+    const hasAssignedDeliveryPerson =
+      !!order.assignedDeliveryPersonId || !!order.assignedDeliveryPersonName;
+    return order.status === "COMPLETED" && !hasAssignedDeliveryPerson;
+  };
 
   // Assign delivery mutation
   const assignDeliveryMutation = useMutation({
-    mutationFn: ({ orderId, deliveryPersonId }: { orderId: number; deliveryPersonId: number }) =>
-      customOrderService.assignDelivery(orderId, deliveryPersonId),
+    mutationFn: ({
+      orderId,
+      deliveryPersonId,
+    }: {
+      orderId: number;
+      deliveryPersonId: number;
+    }) =>
+      adminDeliveryService.assignCustomOrderToDeliveryPerson({
+        customOrderId: orderId,
+        deliveryPersonId,
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'custom-orders-for-delivery'] });
-      toast({ title: 'Success', description: 'Delivery person assigned successfully' });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "custom-orders-for-delivery"],
+      });
+      toast({
+        title: "Success",
+        description: "Delivery person assigned successfully",
+      });
       setShowAssignDialog(false);
       setShowViewDialog(false);
       setSelectedOrder(null);
-      setSelectedDeliveryPersonId('');
+      setSelectedDeliveryPersonId("");
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to assign delivery person',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Failed to assign delivery person",
+        variant: "destructive",
       });
     },
   });
@@ -93,15 +118,26 @@ export default function AdminCustomOrders() {
   const handleAssignDelivery = () => {
     if (!selectedOrder || !selectedDeliveryPersonId) {
       toast({
-        title: 'Selection Required',
-        description: 'Please select a delivery person.',
-        variant: 'destructive',
+        title: "Selection Required",
+        description: "Please select a delivery person.",
+        variant: "destructive",
       });
       return;
     }
+
+    if (!canAssignDelivery(selectedOrder)) {
+      toast({
+        title: "Cannot Assign Delivery",
+        description:
+          "This order is no longer eligible for delivery assignment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     assignDeliveryMutation.mutate({
       orderId: selectedOrder.id,
-      deliveryPersonId: parseInt(selectedDeliveryPersonId),
+      deliveryPersonId: parseInt(selectedDeliveryPersonId, 10),
     });
   };
 
@@ -150,8 +186,12 @@ export default function AdminCustomOrders() {
             ) : completedOrders.length === 0 ? (
               <div className="text-center py-12">
                 <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No orders ready for delivery</h3>
-                <p className="text-gray-500">All completed orders have been assigned</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No orders ready for delivery
+                </h3>
+                <p className="text-gray-500">
+                  All completed orders have been assigned
+                </p>
               </div>
             ) : (
               <Table>
@@ -178,7 +218,9 @@ export default function AdminCustomOrders() {
                           <User className="h-4 w-4 text-gray-400" />
                           <div>
                             <p className="font-medium">{order.customerName}</p>
-                            <p className="text-sm text-gray-500">{order.customerEmail}</p>
+                            <p className="text-sm text-gray-500">
+                              {order.customerEmail}
+                            </p>
                           </div>
                         </div>
                       </TableCell>
@@ -206,8 +248,10 @@ export default function AdminCustomOrders() {
                       <TableCell>{getStatusBadge(order.status)}</TableCell>
                       <TableCell>
                         {order.statusHistory
-                          .filter((h) => h.status === 'COMPLETED')
-                          .map((h) => new Date(h.createdAt).toLocaleDateString())[0] || '—'}
+                          .filter((h) => h.status === "COMPLETED")
+                          .map((h) =>
+                            new Date(h.createdAt).toLocaleDateString()
+                          )[0] || "—"}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -221,17 +265,19 @@ export default function AdminCustomOrders() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowAssignDialog(true);
-                            }}
-                            className="bg-eagle-green hover:bg-eagle-green/90 text-white"
-                          >
-                            <Truck className="h-4 w-4 mr-1" />
-                            Assign
-                          </Button>
+                          {canAssignDelivery(order) && (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setShowAssignDialog(true);
+                              }}
+                              className="bg-eagle-green hover:bg-eagle-green/90 text-white"
+                            >
+                              <Truck className="h-4 w-4 mr-1" />
+                              Assign
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -263,22 +309,30 @@ export default function AdminCustomOrders() {
                 </div>
                 <div>
                   <Label className="text-sm text-gray-500">Status</Label>
-                  <div className="mt-1">{getStatusBadge(selectedOrder.status)}</div>
+                  <div className="mt-1">
+                    {getStatusBadge(selectedOrder.status)}
+                  </div>
                 </div>
               </div>
 
               {/* Customer Info */}
               <div>
-                <Label className="text-sm text-gray-500 mb-2 block">Customer</Label>
+                <Label className="text-sm text-gray-500 mb-2 block">
+                  Customer
+                </Label>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="font-medium">{selectedOrder.customerName}</p>
-                  <p className="text-sm text-gray-600">{selectedOrder.customerEmail}</p>
+                  <p className="text-sm text-gray-600">
+                    {selectedOrder.customerEmail}
+                  </p>
                 </div>
               </div>
 
               {/* Vendor Info */}
               <div>
-                <Label className="text-sm text-gray-500 mb-2 block">Vendor</Label>
+                <Label className="text-sm text-gray-500 mb-2 block">
+                  Vendor
+                </Label>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="font-medium">{selectedOrder.vendorName}</p>
                 </div>
@@ -310,7 +364,9 @@ export default function AdminCustomOrders() {
                   <div className="border rounded-lg divide-y">
                     {selectedOrder.values.map((value) => (
                       <div key={value.id} className="p-3">
-                        <p className="text-sm text-gray-500">{value.fieldName}</p>
+                        <p className="text-sm text-gray-500">
+                          {value.fieldName}
+                        </p>
                         <p className="font-medium">
                           {value.textValue ||
                             value.numberValue?.toString() ||
@@ -324,7 +380,7 @@ export default function AdminCustomOrders() {
                                 View File
                               </a>
                             )) ||
-                            '—'}
+                            "—"}
                         </p>
                       </div>
                     ))}
@@ -335,22 +391,37 @@ export default function AdminCustomOrders() {
               {/* Additional Description */}
               {selectedOrder.additionalDescription && (
                 <div>
-                  <Label className="text-sm text-gray-500">Additional Notes</Label>
-                  <p className="text-gray-700 mt-1">{selectedOrder.additionalDescription}</p>
+                  <Label className="text-sm text-gray-500">
+                    Additional Notes
+                  </Label>
+                  <p className="text-gray-700 mt-1">
+                    {selectedOrder.additionalDescription}
+                  </p>
                 </div>
               )}
 
               {/* Status History */}
               <div>
-                <Label className="text-sm text-gray-500 mb-2 block">Status History</Label>
+                <Label className="text-sm text-gray-500 mb-2 block">
+                  Status History
+                </Label>
                 <div className="border rounded-lg divide-y max-h-40 overflow-y-auto">
                   {selectedOrder.statusHistory
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .sort(
+                      (a, b) =>
+                        new Date(b.createdAt).getTime() -
+                        new Date(a.createdAt).getTime()
+                    )
                     .map((history) => (
-                      <div key={history.id} className="p-3 flex items-center justify-between">
+                      <div
+                        key={history.id}
+                        className="p-3 flex items-center justify-between"
+                      >
                         <div className="flex items-center gap-2">
                           {getStatusBadge(history.status)}
-                          <span className="text-sm text-gray-500">by {history.changedBy}</span>
+                          <span className="text-sm text-gray-500">
+                            by {history.changedBy}
+                          </span>
                         </div>
                         <span className="text-sm text-gray-500">
                           {new Date(history.createdAt).toLocaleString()}
@@ -366,16 +437,18 @@ export default function AdminCustomOrders() {
             <Button variant="outline" onClick={() => setShowViewDialog(false)}>
               Close
             </Button>
-            <Button
-              onClick={() => {
-                setShowViewDialog(false);
-                setShowAssignDialog(true);
-              }}
-              className="bg-eagle-green hover:bg-eagle-green/90 text-white"
-            >
-              <Truck className="h-4 w-4 mr-2" />
-              Assign Delivery
-            </Button>
+            {selectedOrder && canAssignDelivery(selectedOrder) && (
+              <Button
+                onClick={() => {
+                  setShowViewDialog(false);
+                  setShowAssignDialog(true);
+                }}
+                className="bg-eagle-green hover:bg-eagle-green/90 text-white"
+              >
+                <Truck className="h-4 w-4 mr-2" />
+                Assign Delivery
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -386,7 +459,8 @@ export default function AdminCustomOrders() {
           <DialogHeader>
             <DialogTitle>Assign Delivery Person</DialogTitle>
             <DialogDescription>
-              Select a delivery person to assign to order #{selectedOrder?.orderNumber}
+              Select a delivery person to assign to order #
+              {selectedOrder?.orderNumber}
             </DialogDescription>
           </DialogHeader>
 
@@ -413,7 +487,9 @@ export default function AdminCustomOrders() {
                             {person.firstName} {person.lastName}
                           </span>
                           {person.vehicleType && (
-                            <span className="text-gray-500">({person.vehicleType})</span>
+                            <span className="text-gray-500">
+                              ({person.vehicleType})
+                            </span>
                           )}
                         </div>
                       </SelectItem>
@@ -445,14 +521,19 @@ export default function AdminCustomOrders() {
               variant="outline"
               onClick={() => {
                 setShowAssignDialog(false);
-                setSelectedDeliveryPersonId('');
+                setSelectedDeliveryPersonId("");
               }}
             >
               Cancel
             </Button>
             <Button
               onClick={handleAssignDelivery}
-              disabled={assignDeliveryMutation.isPending || !selectedDeliveryPersonId}
+              disabled={
+                assignDeliveryMutation.isPending ||
+                !selectedDeliveryPersonId ||
+                !selectedOrder ||
+                !canAssignDelivery(selectedOrder)
+              }
               className="bg-eagle-green hover:bg-eagle-green/90 text-white"
             >
               {assignDeliveryMutation.isPending && (

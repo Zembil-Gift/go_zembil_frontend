@@ -231,7 +231,11 @@ class ServiceService {
     if (images !== undefined) {
       if (images.length === 0) {
         // Backend contract: empty images array clears existing images
-        formData.append("images", new Blob([], { type: "application/octet-stream" }), "");
+        formData.append(
+          "images",
+          new Blob([], { type: "application/octet-stream" }),
+          ""
+        );
       } else {
         images.forEach((file) => formData.append("images", file));
       }
@@ -487,6 +491,24 @@ class ServiceService {
   async archiveService(id: number): Promise<ServiceResponse> {
     return await apiService.postRequest<ServiceResponse>(
       `/api/services/${id}/archive`
+    );
+  }
+
+  /**
+   * Deactivate a service (vendor only)
+   */
+  async deactivateService(serviceId: number): Promise<ServiceResponse> {
+    return await apiService.postRequest<ServiceResponse>(
+      `/api/services/${serviceId}/deactivate`
+    );
+  }
+
+  /**
+   * Reactivate a service (vendor only)
+   */
+  async reactivateService(serviceId: number): Promise<ServiceResponse> {
+    return await apiService.postRequest<ServiceResponse>(
+      `/api/services/${serviceId}/reactivate`
     );
   }
 

@@ -3,72 +3,79 @@ import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { vendorService, VendorProfile, EventResponse } from "@/services/vendorService";
+import {
+  vendorService,
+  VendorProfile,
+  EventResponse,
+} from "@/services/vendorService";
 import { getEventImageUrl } from "@/utils/imageUtils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Calendar,
-  Plus,
-  Edit,
-  RotateCcw,
-  Search,
-  XCircle,
-} from "lucide-react";
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Calendar, Plus, Edit, RotateCcw, Search, XCircle } from "lucide-react";
 
 export default function VendorEventsPage() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  const isVendor = user?.role?.toUpperCase() === 'VENDOR';
+
+  const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // State for cancel dialog
-  const [cancelEventDialog, setCancelEventDialog] = useState<{ open: boolean; eventId: number | null; eventTitle: string }>({
-    open: false, eventId: null, eventTitle: ''
+  // State for deactivate dialog
+  const [deactivateEventDialog, setDeactivateEventDialog] = useState<{
+    open: boolean;
+    eventId: number | null;
+    eventTitle: string;
+  }>({
+    open: false,
+    eventId: null,
+    eventTitle: "",
   });
-  const [cancelReason, setCancelReason] = useState('');
 
   // Fetch vendor profile
   const { data: vendorProfile } = useQuery<VendorProfile>({
-    queryKey: ['vendor', 'profile'],
+    queryKey: ["vendor", "profile"],
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
   });
 
   // Fetch vendor events
   const { data: eventsData, isLoading } = useQuery({
-    queryKey: ['vendor', 'events'],
+    queryKey: ["vendor", "events"],
     queryFn: () => vendorService.getMyEvents(),
     enabled: isAuthenticated && isVendor,
   });
 
-  // Event cancellation mutation
-  const cancelEventMutation = useMutation({
-    mutationFn: ({ eventId, reason }: { eventId: number; reason: string }) => 
-      vendorService.cancelEvent(eventId, reason),
+  // Event deactivation mutation
+  const deactivateEventMutation = useMutation({
+    mutationFn: (eventId: number) => vendorService.deactivateEvent(eventId),
     onSuccess: () => {
-      toast({ title: "Event cancelled", description: "Your event has been cancelled." });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'events'] });
-      setCancelEventDialog({ open: false, eventId: null, eventTitle: '' });
-      setCancelReason('');
+      toast({
+        title: "Event deactivated",
+        description:
+          "Your event has been deactivated and hidden from customers.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["vendor", "events"] });
+      setDeactivateEventDialog({ open: false, eventId: null, eventTitle: "" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to deactivate event.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -76,41 +83,51 @@ export default function VendorEventsPage() {
   const reactivateEventMutation = useMutation({
     mutationFn: (eventId: number) => vendorService.reactivateEvent(eventId),
     onSuccess: () => {
-      toast({ title: "Event reactivated", description: "Your event has been reactivated and is now visible." });
-      queryClient.invalidateQueries({ queryKey: ['vendor', 'events'] });
+      toast({
+        title: "Event reactivated",
+        description: "Your event has been reactivated and is now visible.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["vendor", "events"] });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to reactivate event.",
+        variant: "destructive",
+      });
     },
   });
 
   const events: EventResponse[] = eventsData?.content || [];
 
-  const filteredEvents = events.filter((event) =>
-    event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (event.city && event.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (event.location && event.location.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredEvents = events.filter(
+    (event) =>
+      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (event.city &&
+        event.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (event.location &&
+        event.location.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const getStatusBadge = (status: string) => {
     switch (status?.toUpperCase()) {
-      case 'ACTIVE':
-      case 'APPROVED':
-      case 'ENABLED':
+      case "ACTIVE":
+      case "APPROVED":
+      case "ENABLED":
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case 'PENDING':
-      case 'PENDING_APPROVAL':
+      case "PENDING":
+      case "PENDING_APPROVAL":
         return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
-      case 'REJECTED':
-      case 'DISABLED':
+      case "REJECTED":
+      case "DISABLED":
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
-      case 'DRAFT':
+      case "DRAFT":
         return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
-      case 'INACTIVE':
+      case "INACTIVE":
         return <Badge className="bg-slate-100 text-slate-800">Inactive</Badge>;
-      case 'CANCELLED':
+      case "CANCELLED":
         return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
-      case 'COMPLETED':
+      case "COMPLETED":
         return <Badge className="bg-blue-100 text-blue-800">Completed</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
@@ -130,7 +147,9 @@ export default function VendorEventsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div>
           <h2 className="text-xl font-semibold">My Events</h2>
-          <p className="text-sm text-muted-foreground">Manage your hosted events</p>
+          <p className="text-sm text-muted-foreground">
+            Manage your hosted events
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-full sm:w-64">
@@ -150,7 +169,11 @@ export default function VendorEventsPage() {
               </Link>
             </Button>
           ) : (
-            <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+            <Button
+              variant="outline"
+              className="opacity-50 cursor-not-allowed"
+              disabled
+            >
               <Plus className="h-4 w-4 mr-2 text-gray-400" />
               <span className="text-gray-400">Create Event</span>
             </Button>
@@ -166,10 +189,12 @@ export default function VendorEventsPage() {
               {searchQuery ? "No events match your search" : "No events yet"}
             </h3>
             <p className="text-muted-foreground mb-4">
-              {searchQuery ? "Try a different search term" : "Start by creating your first event"}
+              {searchQuery
+                ? "Try a different search term"
+                : "Start by creating your first event"}
             </p>
-            {!searchQuery && (
-              vendorProfile?.isApproved ? (
+            {!searchQuery &&
+              (vendorProfile?.isApproved ? (
                 <Button asChild>
                   <Link to="/vendor/events/new">
                     <Plus className="h-4 w-4 mr-2" />
@@ -177,12 +202,15 @@ export default function VendorEventsPage() {
                   </Link>
                 </Button>
               ) : (
-                <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
+                <Button
+                  variant="outline"
+                  className="opacity-50 cursor-not-allowed"
+                  disabled
+                >
                   <Plus className="h-4 w-4 mr-2 text-gray-400" />
                   <span className="text-gray-400">Create Event</span>
                 </Button>
-              )
-            )}
+              ))}
           </CardContent>
         </Card>
       ) : (
@@ -191,18 +219,26 @@ export default function VendorEventsPage() {
             <Card key={event.id}>
               <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4">
                 <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
-                  <img 
-                    src={getEventImageUrl(event.images, event.bannerImageUrl)} 
-                    alt={event.title} 
+                  <img
+                    src={getEventImageUrl(event.images, event.bannerImageUrl)}
+                    alt={event.title}
                     className="h-16 w-24 rounded object-cover flex-shrink-0"
-                    onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
+                    onError={(e) => {
+                      e.currentTarget.classList.add("hidden");
+                      const fallback = e.currentTarget.nextElementSibling;
+                      if (fallback) fallback.classList.remove("hidden");
+                    }}
                   />
                   <div className="h-16 w-24 rounded bg-gray-200 hidden items-center justify-center">
                     <Calendar className="h-8 w-8 text-gray-400" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-medium truncate sm:whitespace-normal">{event.title}</h3>
-                    <p className="text-sm text-muted-foreground">{event.location}</p>
+                    <h3 className="font-medium truncate sm:whitespace-normal">
+                      {event.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {event.location}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(event.eventDate).toLocaleDateString()}
                     </p>
@@ -225,9 +261,11 @@ export default function VendorEventsPage() {
                     </Link>
                   </Button>
                   <Button asChild variant="outline" size="sm">
-                    <Link to={`/vendor/events/${event.id}/price`}>Update Price</Link>
+                    <Link to={`/vendor/events/${event.id}/price`}>
+                      Update Price
+                    </Link>
                   </Button>
-                  {event.status?.toUpperCase() === 'CANCELLED' ? (
+                  {event.status?.toUpperCase() === "CANCELLED" ? (
                     <Button
                       variant="outline"
                       size="sm"
@@ -238,19 +276,22 @@ export default function VendorEventsPage() {
                       <RotateCcw className="h-4 w-4 mr-1" />
                       Reactivate
                     </Button>
-                  ) : event.status?.toUpperCase() === 'APPROVED' || event.status?.toUpperCase() === 'PENDING_APPROVAL' ? (
+                  ) : event.status?.toUpperCase() === "APPROVED" ? (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCancelEventDialog({ 
-                        open: true, 
-                        eventId: event.id, 
-                        eventTitle: event.title 
-                      })}
+                      onClick={() =>
+                        setDeactivateEventDialog({
+                          open: true,
+                          eventId: event.id,
+                          eventTitle: event.title,
+                        })
+                      }
+                      disabled={deactivateEventMutation.isPending}
                       className="text-red-600 hover:text-red-700"
                     >
                       <XCircle className="h-4 w-4 mr-1" />
-                      Cancel
+                      Deactivate
                     </Button>
                   ) : null}
                 </div>
@@ -260,53 +301,48 @@ export default function VendorEventsPage() {
         </div>
       )}
 
-      {/* Cancel Event Dialog */}
-      <Dialog open={cancelEventDialog.open} onOpenChange={(open) => {
-        if (!open) {
-          setCancelEventDialog({ open: false, eventId: null, eventTitle: '' });
-          setCancelReason('');
-        }
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Cancel Event</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to cancel "{cancelEventDialog.eventTitle}"? 
-              Please provide a reason for cancellation.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="cancel-reason">Cancellation Reason</Label>
-            <Textarea
-              id="cancel-reason"
-              placeholder="Enter the reason for cancelling this event..."
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              className="mt-2"
-              rows={4}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setCancelEventDialog({ open: false, eventId: null, eventTitle: '' });
-              setCancelReason('');
-            }}>
-              Go Back
-            </Button>
+      {/* Deactivate Event Dialog */}
+      <AlertDialog
+        open={deactivateEventDialog.open}
+        onOpenChange={(open) => {
+          if (!open && !deactivateEventMutation.isPending) {
+            setDeactivateEventDialog({
+              open: false,
+              eventId: null,
+              eventTitle: "",
+            });
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate Event</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate "
+              {deactivateEventDialog.eventTitle}"? This will hide the event from
+              customers. You can reactivate it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deactivateEventMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
             <Button
               variant="destructive"
               onClick={() => {
-                if (cancelEventDialog.eventId && cancelReason.trim()) {
-                  cancelEventMutation.mutate({ eventId: cancelEventDialog.eventId, reason: cancelReason });
+                if (deactivateEventDialog.eventId) {
+                  deactivateEventMutation.mutate(deactivateEventDialog.eventId);
                 }
               }}
-              disabled={!cancelReason.trim() || cancelEventMutation.isPending}
+              disabled={deactivateEventMutation.isPending}
             >
-              {cancelEventMutation.isPending ? 'Cancelling...' : 'Cancel Event'}
+              {deactivateEventMutation.isPending
+                ? "Deactivating..."
+                : "Deactivate"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

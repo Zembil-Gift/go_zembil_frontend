@@ -859,6 +859,12 @@ export const vendorService = {
       {}
     ),
 
+  deactivateEvent: (eventId: number) =>
+    apiService.postRequest<EventResponse>(
+      `/api/vendor/events/${eventId}/deactivate`,
+      {}
+    ),
+
   reactivateEvent: (eventId: number) =>
     apiService.postRequest<EventResponse>(
       `/api/vendor/events/${eventId}/reactivate`,
