@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import { useLogin } from "../hooks/useLogin";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import OAuth2Buttons from "@/components/auth/OAuth2Buttons";
 import authService from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const signinSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -40,33 +42,43 @@ export default function SignIn() {
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const { toast } = useToast();
+  const { refreshUser } = useAuth();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const redirectWithRefresh = (path: string) => {
-    window.location.assign(path);
+  const triggerPostLoginDataRefresh = async () => {
+    try {
+      await refreshUser();
+    } catch {
+      // no-op
+    }
+
+    await queryClient.invalidateQueries();
   };
 
-  const finishSigninWithRefresh = (rawRole?: string | null) => {
+  const finishSigninNavigation = async (rawRole?: string | null) => {
     const userRole = rawRole?.toUpperCase();
     localStorage.removeItem("returnTo");
 
+    await triggerPostLoginDataRefresh();
+
     if (userRole === "VENDOR") {
-      redirectWithRefresh("/vendor");
+      navigate("/vendor", { replace: true });
       return;
     }
 
     if (userRole === "DELIVERY_PERSON") {
-      redirectWithRefresh("/delivery");
+      navigate("/delivery", { replace: true });
       return;
     }
 
     if (!NON_ADMIN_LOGIN_ROLES.has(userRole ?? "")) {
-      redirectWithRefresh("/admin");
+      navigate("/admin", { replace: true });
       return;
     }
 
-    redirectWithRefresh(getReturnUrl());
+    navigate(getReturnUrl(), { replace: true });
   };
 
   // Get return URL from query params or localStorage
@@ -123,7 +135,7 @@ export default function SignIn() {
         description: "Welcome to goGerami!",
       });
 
-      finishSigninWithRefresh(result.user?.role);
+      await finishSigninNavigation(result.user?.role);
     } catch (err: any) {
       console.error("Login error:", err);
 
@@ -298,13 +310,19 @@ export default function SignIn() {
 
             <OAuth2Buttons
               disabled={signinMutation.isPending}
-              onSuccess={() => {
-                const userRole = localStorage.getItem("user")
-                  ? JSON.parse(
-                      localStorage.getItem("user")!
-                    ).role?.toUpperCase()
-                  : null;
-                finishSigninWithRefresh(userRole);
+              onSuccess={async () => {
+                let userRole: string | null = null;
+                const storedUser = localStorage.getItem("user");
+
+                if (storedUser) {
+                  try {
+                    userRole = JSON.parse(storedUser).role ?? null;
+                  } catch {
+                    userRole = null;
+                  }
+                }
+
+                await finishSigninNavigation(userRole);
               }}
             />
 
