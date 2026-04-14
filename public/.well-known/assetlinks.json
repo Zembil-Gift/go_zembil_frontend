@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.gogerami.twa",
+      "sha256_cert_fingerprints": [
+        "31:F5:EA:08:0D:B7:CA:C1:D2:03:CB:EB:F9:BD:7D:74:4F:6D:96:55:5C:4F:AD:B0:9E:A7:15:CF:08:EF:1B:74"
+      ]
+    }
+  }
+]
