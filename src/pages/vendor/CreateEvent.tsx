@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -71,7 +72,7 @@ const ticketTypeSchema = z.object({
 
 const eventSchema = z.object({
   title: z.string().min(1, "Event title is required").max(255),
-  description: z.string().min(10, "Description must be at least 10 characters"),
+  description: z.string().min(25, "Description must be at least 25 characters"),
   summary: z.string().min(1, "Summary is required").max(500),
   startDateTime: z.string().min(1, "Start date/time is required"),
   endDateTime: z.string().min(1, "End date/time is required"),
@@ -235,6 +236,8 @@ export default function CreateEvent() {
   const [isDraftInitialized, setIsDraftInitialized] = useState(false);
   const [showDraftDecision, setShowDraftDecision] = useState(false);
   const [storedDraft, setStoredDraft] = useState<EventDraft | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [hasConfirmedEventSubmit, setHasConfirmedEventSubmit] = useState(false);
 
   const { data: currencies = [] } = useQuery({
     queryKey: ["currencies"],
@@ -297,19 +300,40 @@ export default function CreateEvent() {
   }, []);
 
   useEffect(() => {
-    if (!isDraftInitialized || showDraftDecision) return;
+    if (!isDraftInitialized || showDraftDecision || isCancelling) return;
 
     const subscription = form.watch(() => {
       saveEventDraft(form.getValues(), currentStep, pendingImages.length > 0);
     });
 
     return () => subscription.unsubscribe();
-  }, [form, currentStep, isDraftInitialized, showDraftDecision, pendingImages]);
+  }, [
+    form,
+    currentStep,
+    isDraftInitialized,
+    showDraftDecision,
+    isCancelling,
+    pendingImages,
+  ]);
 
   useEffect(() => {
-    if (!isDraftInitialized || showDraftDecision) return;
+    if (!isDraftInitialized || showDraftDecision || isCancelling) return;
     saveEventDraft(form.getValues(), currentStep, pendingImages.length > 0);
-  }, [currentStep, form, isDraftInitialized, showDraftDecision, pendingImages]);
+  }, [
+    currentStep,
+    form,
+    isDraftInitialized,
+    showDraftDecision,
+    isCancelling,
+    pendingImages,
+  ]);
+
+  const handleCancel = () => {
+    setIsCancelling(true);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(EVENT_DRAFT_STORAGE_KEY);
+    }
+  };
 
   const handleStartNewDraft = () => {
     if (typeof window !== "undefined") {
@@ -318,6 +342,7 @@ export default function CreateEvent() {
 
     setPendingImages([]);
     setCurrentStep(1);
+    setHasConfirmedEventSubmit(false);
     form.reset(DEFAULT_EVENT_VALUES);
     setStoredDraft(null);
     setShowDraftDecision(false);
@@ -333,6 +358,7 @@ export default function CreateEvent() {
 
     form.reset({ ...DEFAULT_EVENT_VALUES, ...storedDraft.formData });
     setCurrentStep(clampEventStep(storedDraft.currentStep));
+    setHasConfirmedEventSubmit(false);
     setShowDraftDecision(false);
     setIsDraftInitialized(true);
 
@@ -360,6 +386,15 @@ export default function CreateEvent() {
       toast({
         title: "Validation Error",
         description: "Please complete required fields before continuing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (currentStep === 1 && pendingImages.length === 0) {
+      toast({
+        title: "Image Required",
+        description: "Please upload at least one image before continuing.",
         variant: "destructive",
       });
       return;
@@ -448,11 +483,31 @@ export default function CreateEvent() {
   const onSubmit = (data: EventFormData) => {
     console.log("Event form submitted with data:", data);
 
+    if (currentStep < EVENT_TOTAL_STEPS) {
+      setCurrentStep(EVENT_TOTAL_STEPS);
+      toast({
+        title: "Review Required",
+        description:
+          "Please review the final step and confirm submission before creating your event.",
+      });
+      return;
+    }
+
     if (pendingImages.length === 0) {
       toast({
         title: "Image Required",
         description:
           "Please upload at least one event image before creating the event.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!hasConfirmedEventSubmit) {
+      toast({
+        title: "Confirmation Required",
+        description:
+          "Please confirm that you're ready to submit this event before creating it.",
         variant: "destructive",
       });
       return;
@@ -924,9 +979,34 @@ export default function CreateEvent() {
             )}
 
             {/* Submit */}
+            {currentStep === EVENT_TOTAL_STEPS && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="event-submit-confirmation"
+                      checked={hasConfirmedEventSubmit}
+                      onCheckedChange={(checked) =>
+                        setHasConfirmedEventSubmit(checked === true)
+                      }
+                    />
+                    <Label
+                      htmlFor="event-submit-confirmation"
+                      className="leading-relaxed cursor-pointer"
+                    >
+                      I have reviewed this event and I am ready to submit it for
+                      admin approval.
+                    </Label>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="flex justify-end gap-4">
               <Button type="button" variant="outline" asChild>
-                <Link to="/vendor">Cancel</Link>
+                <Link to="/vendor" onClick={handleCancel}>
+                  Cancel
+                </Link>
               </Button>
 
               {currentStep > 1 && (
@@ -946,7 +1026,12 @@ export default function CreateEvent() {
                   Next
                 </Button>
               ) : (
-                <Button type="submit" disabled={createEventMutation.isPending}>
+                <Button
+                  type="submit"
+                  disabled={
+                    createEventMutation.isPending || !hasConfirmedEventSubmit
+                  }
+                >
                   {createEventMutation.isPending
                     ? "Creating..."
                     : "Create Event"}

@@ -76,7 +76,10 @@ const customizationFieldSchema = z.object({
 // Template schema
 const templateSchema = z.object({
   name: z.string().min(1, "Template name is required").max(255),
-  description: z.string().min(1, "Description is required").max(5000),
+  description: z
+    .string()
+    .min(25, "Description must be at least 25 characters")
+    .max(5000),
   basePrice: z.number().min(0.01, "Base price must be greater than 0"),
   currency: z.string().min(3, "Currency is required").max(3),
   categoryId: z.number().optional(),
@@ -216,6 +219,9 @@ export default function CreateCustomTemplate() {
   const [isDraftInitialized, setIsDraftInitialized] = useState(false);
   const [showDraftDecision, setShowDraftDecision] = useState(false);
   const [storedDraft, setStoredDraft] = useState<TemplateDraft | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [hasConfirmedTemplateSubmit, setHasConfirmedTemplateSubmit] =
+    useState(false);
 
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
@@ -271,7 +277,7 @@ export default function CreateCustomTemplate() {
   }, []);
 
   useEffect(() => {
-    if (!isDraftInitialized || showDraftDecision) return;
+    if (!isDraftInitialized || showDraftDecision || isCancelling) return;
 
     const subscription = form.watch(() => {
       saveTemplateDraft(
@@ -282,12 +288,33 @@ export default function CreateCustomTemplate() {
     });
 
     return () => subscription.unsubscribe();
-  }, [form, currentStep, isDraftInitialized, showDraftDecision, pendingImages]);
+  }, [
+    form,
+    currentStep,
+    isDraftInitialized,
+    showDraftDecision,
+    isCancelling,
+    pendingImages,
+  ]);
 
   useEffect(() => {
-    if (!isDraftInitialized || showDraftDecision) return;
+    if (!isDraftInitialized || showDraftDecision || isCancelling) return;
     saveTemplateDraft(form.getValues(), currentStep, pendingImages.length > 0);
-  }, [currentStep, form, isDraftInitialized, showDraftDecision, pendingImages]);
+  }, [
+    currentStep,
+    form,
+    isDraftInitialized,
+    showDraftDecision,
+    isCancelling,
+    pendingImages,
+  ]);
+
+  const handleCancel = () => {
+    setIsCancelling(true);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(TEMPLATE_DRAFT_STORAGE_KEY);
+    }
+  };
 
   const handleStartNewDraft = () => {
     if (typeof window !== "undefined") {
@@ -321,6 +348,16 @@ export default function CreateCustomTemplate() {
   };
 
   const handleNextStep = async () => {
+    if (currentStep === 2 && pendingImages.length === 0) {
+      toast({
+        title: "Image Required",
+        description:
+          "Please upload at least one template image before continuing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const fieldsByStep: Record<number, Array<keyof TemplateFormData>> = {
       1: ["name", "description"],
       2: ["basePrice", "currency"],
@@ -442,6 +479,35 @@ export default function CreateCustomTemplate() {
   });
 
   const onSubmit = (data: TemplateFormData) => {
+    if (currentStep < TEMPLATE_TOTAL_STEPS) {
+      toast({
+        title: "Complete The Form",
+        description: "Please continue to the final step and submit from there.",
+      });
+      setCurrentStep(TEMPLATE_TOTAL_STEPS);
+      return;
+    }
+
+    if (pendingImages.length === 0) {
+      toast({
+        title: "Image Required",
+        description:
+          "Please upload at least one template image before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!hasConfirmedTemplateSubmit) {
+      toast({
+        title: "Confirmation Required",
+        description:
+          "Please confirm you have reviewed the template details before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validation
     if (data.fields.length === 0) {
       toast({
@@ -487,6 +553,12 @@ export default function CreateCustomTemplate() {
       variant: "destructive",
     });
   };
+
+  useEffect(() => {
+    if (currentStep !== TEMPLATE_TOTAL_STEPS) {
+      setHasConfirmedTemplateSubmit(false);
+    }
+  }, [currentStep]);
 
   if (!isAuthenticated || !isVendor) {
     return (
@@ -1008,6 +1080,25 @@ export default function CreateCustomTemplate() {
                       {form.formState.errors.fields.message}
                     </p>
                   )}
+
+                  <div className="flex items-center space-x-2 pt-2 border-t">
+                    <input
+                      id="template-submit-confirmation"
+                      type="checkbox"
+                      checked={hasConfirmedTemplateSubmit}
+                      onChange={(e) =>
+                        setHasConfirmedTemplateSubmit(e.target.checked)
+                      }
+                      className="rounded border-gray-300"
+                    />
+                    <Label
+                      htmlFor="template-submit-confirmation"
+                      className="cursor-pointer"
+                    >
+                      I have reviewed all details and want to submit this
+                      template.
+                    </Label>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -1098,7 +1189,9 @@ export default function CreateCustomTemplate() {
               </div>
               <div className="flex gap-4">
                 <Button type="button" variant="outline" asChild>
-                  <Link to="/vendor/custom-templates">Cancel</Link>
+                  <Link to="/vendor/custom-templates" onClick={handleCancel}>
+                    Cancel
+                  </Link>
                 </Button>
                 {currentStep > 1 && (
                   <Button
@@ -1119,7 +1212,9 @@ export default function CreateCustomTemplate() {
                   <Button
                     type="submit"
                     disabled={
-                      createTemplateMutation.isPending || isUploadingImages
+                      createTemplateMutation.isPending ||
+                      isUploadingImages ||
+                      !hasConfirmedTemplateSubmit
                     }
                   >
                     {isUploadingImages

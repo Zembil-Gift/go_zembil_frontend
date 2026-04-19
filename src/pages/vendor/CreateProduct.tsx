@@ -306,6 +306,9 @@ export default function CreateProduct() {
   const [isDraftInitialized, setIsDraftInitialized] = useState(false);
   const [showDraftDecision, setShowDraftDecision] = useState(false);
   const [storedDraft, setStoredDraft] = useState<ProductDraft | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [hasConfirmedProductSubmit, setHasConfirmedProductSubmit] =
+    useState(false);
 
   const { data: currencies = [] } = useQuery({
     queryKey: ["currencies"],
@@ -380,7 +383,7 @@ export default function CreateProduct() {
   }, [vendorProfile, currencies, form]);
 
   useEffect(() => {
-    if (!isDraftInitialized || showDraftDecision) return;
+    if (!isDraftInitialized || showDraftDecision || isCancelling) return;
 
     const hasPendingImages = Object.values(pendingSkuImages).some(
       (images) => images.length > 0
@@ -396,11 +399,12 @@ export default function CreateProduct() {
     currentStep,
     isDraftInitialized,
     showDraftDecision,
+    isCancelling,
     pendingSkuImages,
   ]);
 
   useEffect(() => {
-    if (!isDraftInitialized || showDraftDecision) return;
+    if (!isDraftInitialized || showDraftDecision || isCancelling) return;
 
     const hasPendingImages = Object.values(pendingSkuImages).some(
       (images) => images.length > 0
@@ -412,8 +416,16 @@ export default function CreateProduct() {
     form,
     isDraftInitialized,
     showDraftDecision,
+    isCancelling,
     pendingSkuImages,
   ]);
+
+  const handleCancel = () => {
+    setIsCancelling(true);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(PRODUCT_DRAFT_STORAGE_KEY);
+    }
+  };
 
   useEffect(() => {
     if (!Array.isArray(watchedSkus) || watchedSkus.length === 0) return;
@@ -459,6 +471,7 @@ export default function CreateProduct() {
 
     setPendingSkuImages({});
     setCurrentStep(1);
+    setHasConfirmedProductSubmit(false);
     form.reset(DEFAULT_PRODUCT_VALUES);
     setStoredDraft(null);
     setShowDraftDecision(false);
@@ -480,6 +493,7 @@ export default function CreateProduct() {
     form.reset(normalizeDraftFormData(storedDraft.formData));
     const restoredStep = clampStep(storedDraft.currentStep);
     setCurrentStep(restoredStep);
+    setHasConfirmedProductSubmit(false);
     setShowDraftDecision(false);
     setIsDraftInitialized(true);
 
@@ -676,9 +690,30 @@ export default function CreateProduct() {
     },
   });
 
+  const getFirstSkuWithoutImageIndex = (data: ProductFormData) => {
+    for (let i = 0; i < data.productSku.length; i++) {
+      const skuImages = pendingSkuImages[i] || [];
+      if (skuImages.length === 0) {
+        return i;
+      }
+    }
+
+    return -1;
+  };
+
   const onSubmit = (data: ProductFormData) => {
     console.log("Form submitted with data:", data);
     console.log("Product SKUs:", data.productSku);
+
+    if (currentStep < TOTAL_STEPS) {
+      setCurrentStep(TOTAL_STEPS);
+      toast({
+        title: "Review Required",
+        description:
+          "Please review the final step and confirm submission before creating your product.",
+      });
+      return;
+    }
 
     if (!data.productSku || data.productSku.length === 0) {
       toast({
@@ -690,22 +725,31 @@ export default function CreateProduct() {
       return;
     }
 
-    for (let i = 0; i < data.productSku.length; i++) {
-      const sku = data.productSku[i];
+    const missingImageIndex = getFirstSkuWithoutImageIndex(data);
+    if (missingImageIndex !== -1) {
+      const missingSku = data.productSku[missingImageIndex];
+      toast({
+        title: "Image Required",
+        description: `Please upload at least one image for ${
+          data.productSku.length === 1
+            ? "your product"
+            : `variant #${missingImageIndex + 1} (${
+                missingSku.skuCode || "unnamed"
+              })`
+        }.`,
+        variant: "destructive",
+      });
+      return;
+    }
 
-      const skuImages = pendingSkuImages[i] || [];
-      if (skuImages.length === 0) {
-        toast({
-          title: "Image Required",
-          description: `Please upload at least one image for ${
-            data.productSku.length === 1
-              ? "your product"
-              : `variant #${i + 1} (${sku.skuCode || "unnamed"})`
-          }.`,
-          variant: "destructive",
-        });
-        return;
-      }
+    if (!hasConfirmedProductSubmit) {
+      toast({
+        title: "Confirmation Required",
+        description:
+          "Please confirm that you're ready to submit this product before creating it.",
+        variant: "destructive",
+      });
+      return;
     }
 
     createProductMutation.mutate(data);
@@ -813,6 +857,25 @@ export default function CreateProduct() {
         variant: "destructive",
       });
       return;
+    }
+
+    if (currentStep === 3) {
+      const missingImageIndex = getFirstSkuWithoutImageIndex(form.getValues());
+      if (missingImageIndex !== -1) {
+        const missingSku = form.getValues(`productSku.${missingImageIndex}`);
+        toast({
+          title: "Image Required",
+          description: `Please upload at least one image for ${
+            skuFields.length === 1
+              ? "your product"
+              : `variant #${missingImageIndex + 1} (${
+                  missingSku?.skuCode || "unnamed"
+                })`
+          } before continuing.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setCurrentStep((prev) => clampStep(prev + 1));
@@ -1458,9 +1521,34 @@ export default function CreateProduct() {
             )}
 
             {/* Step Actions */}
+            {currentStep === TOTAL_STEPS && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="product-submit-confirmation"
+                      checked={hasConfirmedProductSubmit}
+                      onCheckedChange={(checked) =>
+                        setHasConfirmedProductSubmit(checked === true)
+                      }
+                    />
+                    <Label
+                      htmlFor="product-submit-confirmation"
+                      className="leading-relaxed cursor-pointer"
+                    >
+                      I have reviewed this product and I am ready to submit it
+                      for admin approval.
+                    </Label>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="flex flex-wrap justify-end gap-4">
               <Button type="button" variant="outline" asChild>
-                <Link to="/vendor">Cancel</Link>
+                <Link to="/vendor" onClick={handleCancel}>
+                  Cancel
+                </Link>
               </Button>
 
               {currentStep > 1 && (
@@ -1480,7 +1568,10 @@ export default function CreateProduct() {
               ) : (
                 <Button
                   type="submit"
-                  disabled={createProductMutation.isPending}
+                  disabled={
+                    createProductMutation.isPending ||
+                    !hasConfirmedProductSubmit
+                  }
                 >
                   {createProductMutation.isPending
                     ? "Creating..."

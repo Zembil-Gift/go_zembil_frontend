@@ -225,7 +225,10 @@ const packageSchema = z
 
 const serviceSchema = z.object({
   title: z.string().min(1, "Service title is required").max(255),
-  description: z.string().min(1, "Description is required").max(5000),
+  description: z
+    .string()
+    .min(25, "Description must be at least 25 characters")
+    .max(5000),
   location: z.string().min(1, "Location is required").max(500),
   city: z.string().min(1, "City is required").max(100),
   categoryId: z.string().optional(),
@@ -392,6 +395,7 @@ export default function CreateService() {
   const [showDraftDecision, setShowDraftDecision] = useState(false);
   const [storedDraft, setStoredDraft] = useState<ServiceDraft | null>(null);
   const [hasReviewedPolicies, setHasReviewedPolicies] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
@@ -447,7 +451,7 @@ export default function CreateService() {
   }, []);
 
   useEffect(() => {
-    if (!isDraftInitialized || showDraftDecision) return;
+    if (!isDraftInitialized || showDraftDecision || isCancelling) return;
 
     const hasPendingPackageImages = Object.values(pendingPackageImages).some(
       (images) => images.length > 0
@@ -468,12 +472,13 @@ export default function CreateService() {
     currentStep,
     isDraftInitialized,
     showDraftDecision,
+    isCancelling,
     pendingImages,
     pendingPackageImages,
   ]);
 
   useEffect(() => {
-    if (!isDraftInitialized || showDraftDecision) return;
+    if (!isDraftInitialized || showDraftDecision || isCancelling) return;
 
     const hasPendingPackageImages = Object.values(pendingPackageImages).some(
       (images) => images.length > 0
@@ -490,9 +495,17 @@ export default function CreateService() {
     form,
     isDraftInitialized,
     showDraftDecision,
+    isCancelling,
     pendingImages,
     pendingPackageImages,
   ]);
+
+  const handleCancel = () => {
+    setIsCancelling(true);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(SERVICE_DRAFT_STORAGE_KEY);
+    }
+  };
 
   const handleStartNewDraft = () => {
     if (typeof window !== "undefined") {
@@ -534,6 +547,16 @@ export default function CreateService() {
   }, [currentStep]);
 
   const handleNextStep = async () => {
+    if (currentStep === 2 && pendingImages.length === 0) {
+      toast({
+        title: "Image Required",
+        description:
+          "Please upload at least one service image before continuing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const fieldsByStep: Record<number, Array<keyof ServiceFormData>> = {
       1: ["title", "description"],
       2: ["location", "city"],
@@ -918,6 +941,17 @@ export default function CreateService() {
           "Please confirm you have read the policies before submitting.",
         variant: "destructive",
       });
+      return;
+    }
+
+    if (pendingImages.length === 0) {
+      toast({
+        title: "Image Required",
+        description:
+          "Please upload at least one service image before submitting.",
+        variant: "destructive",
+      });
+      setCurrentStep(2);
       return;
     }
 
@@ -1926,7 +1960,9 @@ export default function CreateService() {
               </div>
               <div className="flex gap-4">
                 <Button type="button" variant="outline" asChild>
-                  <Link to="/vendor">Cancel</Link>
+                  <Link to="/vendor" onClick={handleCancel}>
+                    Cancel
+                  </Link>
                 </Button>
                 {currentStep > 1 && (
                   <Button
