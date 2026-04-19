@@ -4,7 +4,6 @@ import { Toaster } from "@/components/ui/toaster";
 import Router from "@/components/Router";
 import { queryClient } from "@/lib/queryClient";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import { useGuestCurrencyStore } from "@/stores/currency-store";
 import PwaUpdatePrompt from "@/components/PwaUpdatePrompt";
 
@@ -16,13 +15,11 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <GoogleMapsProvider>
-          <TooltipProvider>
-            <Router />
-            <Toaster />
-            <PwaUpdatePrompt />
-          </TooltipProvider>
-        </GoogleMapsProvider>
+        <TooltipProvider>
+          <Router />
+          <Toaster />
+          <PwaUpdatePrompt />
+        </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
