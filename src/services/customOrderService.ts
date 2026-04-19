@@ -1,20 +1,19 @@
-import { apiService } from './apiService';
-import { formatCurrency } from '@/lib/currency';
+import { apiService } from "./apiService";
+import { formatCurrency } from "@/lib/currency";
 import type {
   CustomOrder,
   CreateCustomOrderRequest,
   ProposePriceRequest,
   PaymentInitResponse,
   PagedCustomOrderResponse,
-  CustomOrderStatus
-} from '../types/customOrders';
+  CustomOrderStatus,
+} from "../types/customOrders";
 
 /**
  * Service for managing custom orders
  * Handles order lifecycle from submission through delivery
  */
 class CustomOrderService {
-  
   // ==================== Customer Endpoints ====================
 
   /**
@@ -25,21 +24,27 @@ class CustomOrderService {
     files?: Array<{ fieldId: number; file: File }>
   ): Promise<CustomOrder> {
     if (!files || files.length === 0) {
-      return await apiService.postRequest<CustomOrder>('/api/custom-orders', data);
+      return await apiService.postRequest<CustomOrder>(
+        "/api/custom-orders",
+        data
+      );
     }
 
     const formData = new FormData();
     formData.append(
-      'request',
-      new Blob([JSON.stringify(data)], { type: 'application/json' })
+      "request",
+      new Blob([JSON.stringify(data)], { type: "application/json" })
     );
 
     files.forEach(({ fieldId, file }) => {
-      formData.append('files', file, file.name);
-      formData.append('fileFieldIds', String(fieldId));
+      formData.append("files", file, file.name);
+      formData.append("fileFieldIds", String(fieldId));
     });
 
-    return await apiService.postFormData<CustomOrder>('/api/custom-orders', formData);
+    return await apiService.postFormData<CustomOrder>(
+      "/api/custom-orders",
+      formData
+    );
   }
 
   /**
@@ -49,17 +54,17 @@ class CustomOrderService {
    * @param status - Optional status filter
    */
   async getByCustomer(
-    page: number = 0, 
+    page: number = 0,
     size: number = 20,
     status?: CustomOrderStatus
   ): Promise<PagedCustomOrderResponse> {
     const queryParams = new URLSearchParams();
-    queryParams.append('page', page.toString());
-    queryParams.append('size', size.toString());
+    queryParams.append("page", page.toString());
+    queryParams.append("size", size.toString());
     if (status) {
-      queryParams.append('status', status);
+      queryParams.append("status", status);
     }
-    
+
     const url = `/api/custom-orders/customer?${queryParams.toString()}`;
     return await apiService.getRequest<PagedCustomOrderResponse>(url);
   }
@@ -68,22 +73,33 @@ class CustomOrderService {
    * Accept proposed price (customer only)
    */
   async acceptPrice(orderId: number): Promise<CustomOrder> {
-    return await apiService.postRequest<CustomOrder>(`/api/custom-orders/${orderId}/accept-price`);
+    return await apiService.postRequest<CustomOrder>(
+      `/api/custom-orders/${orderId}/accept-price`
+    );
   }
 
   /**
    * Reject proposed price (customer only)
    */
   async rejectPrice(orderId: number): Promise<CustomOrder> {
-    return await apiService.postRequest<CustomOrder>(`/api/custom-orders/${orderId}/reject-price`);
+    return await apiService.postRequest<CustomOrder>(
+      `/api/custom-orders/${orderId}/reject-price`
+    );
   }
 
   /**
    * Initialize payment (customer only)
    * Note: provider is sent as a query parameter, not in request body
    */
-  async initPayment(orderId: number, provider: string): Promise<PaymentInitResponse> {
-    return await apiService.postRequest<PaymentInitResponse>(`/api/custom-orders/${orderId}/payment/init?provider=${encodeURIComponent(provider)}`);
+  async initPayment(
+    orderId: number,
+    provider: string
+  ): Promise<PaymentInitResponse> {
+    return await apiService.postRequest<PaymentInitResponse>(
+      `/api/custom-orders/${orderId}/payment/init?provider=${encodeURIComponent(
+        provider
+      )}`
+    );
   }
 
   // ==================== Vendor Endpoints ====================
@@ -92,17 +108,17 @@ class CustomOrderService {
    * Get vendor's orders
    */
   async getByVendor(
-    page: number = 0, 
+    page: number = 0,
     size: number = 20,
     status?: CustomOrderStatus
   ): Promise<PagedCustomOrderResponse> {
     const queryParams = new URLSearchParams();
-    queryParams.append('page', page.toString());
-    queryParams.append('size', size.toString());
+    queryParams.append("page", page.toString());
+    queryParams.append("size", size.toString());
     if (status) {
-      queryParams.append('status', status);
+      queryParams.append("status", status);
     }
-    
+
     const url = `/api/custom-orders/vendor?${queryParams.toString()}`;
     return await apiService.getRequest<PagedCustomOrderResponse>(url);
   }
@@ -112,23 +128,34 @@ class CustomOrderService {
    * Price is in major units (e.g., 3000 for 3000 USD) in the vendor's currency.
    * Backend converts to platform default currency for storage.
    */
-  async proposePrice(orderId: number, finalPrice: number, currencyCode?: string): Promise<CustomOrder> {
+  async proposePrice(
+    orderId: number,
+    finalPrice: number,
+    currencyCode?: string
+  ): Promise<CustomOrder> {
     const data: ProposePriceRequest = { finalPrice, currencyCode };
-    return await apiService.postRequest<CustomOrder>(`/api/custom-orders/${orderId}/propose-price`, data);
+    return await apiService.postRequest<CustomOrder>(
+      `/api/custom-orders/${orderId}/propose-price`,
+      data
+    );
   }
 
   /**
    * Mark order as in progress (vendor only)
    */
   async markInProgress(orderId: number): Promise<CustomOrder> {
-    return await apiService.postRequest<CustomOrder>(`/api/custom-orders/${orderId}/in-progress`);
+    return await apiService.postRequest<CustomOrder>(
+      `/api/custom-orders/${orderId}/in-progress`
+    );
   }
 
   /**
    * Mark order as completed (vendor only)
    */
   async markCompleted(orderId: number): Promise<CustomOrder> {
-    return await apiService.postRequest<CustomOrder>(`/api/custom-orders/${orderId}/complete`);
+    return await apiService.postRequest<CustomOrder>(
+      `/api/custom-orders/${orderId}/complete`
+    );
   }
 
   // ==================== Admin Endpoints ====================
@@ -137,7 +164,7 @@ class CustomOrderService {
    * Get completed orders ready for delivery assignment (admin only)
    */
   async getCompletedForDelivery(
-    page: number = 0, 
+    page: number = 0,
     size: number = 20
   ): Promise<PagedCustomOrderResponse> {
     const url = `/api/custom-orders/completed-for-delivery?page=${page}&size=${size}`;
@@ -147,9 +174,15 @@ class CustomOrderService {
   /**
    * Assign delivery person (admin only)
    */
-  async assignDelivery(orderId: number, deliveryPersonId: number): Promise<CustomOrder> {
+  async assignDelivery(
+    orderId: number,
+    deliveryPersonId: number
+  ): Promise<CustomOrder> {
     const data = { deliveryPersonId };
-    return await apiService.postRequest<CustomOrder>(`/api/custom-orders/${orderId}/assign-delivery`, data);
+    return await apiService.postRequest<CustomOrder>(
+      `/api/custom-orders/${orderId}/assign-delivery`,
+      data
+    );
   }
 
   // ==================== Delivery Person Endpoints ====================
@@ -158,7 +191,9 @@ class CustomOrderService {
    * Mark order as delivered (delivery person only)
    */
   async markDelivered(orderId: number): Promise<CustomOrder> {
-    return await apiService.postRequest<CustomOrder>(`/api/custom-orders/${orderId}/delivered`);
+    return await apiService.postRequest<CustomOrder>(
+      `/api/custom-orders/${orderId}/delivered`
+    );
   }
 
   // ==================== Shared Endpoints ====================
@@ -168,7 +203,9 @@ class CustomOrderService {
    * @param orderId - The order ID
    */
   async getById(orderId: number): Promise<CustomOrder> {
-    return await apiService.getRequest<CustomOrder>(`/api/custom-orders/${orderId}`);
+    return await apiService.getRequest<CustomOrder>(
+      `/api/custom-orders/${orderId}`
+    );
   }
 
   /**
@@ -177,7 +214,9 @@ class CustomOrderService {
    * @param orderId - The order ID
    */
   async getByIdForVendor(orderId: number): Promise<CustomOrder> {
-    return await apiService.getRequest<CustomOrder>(`/api/custom-orders/vendor/${orderId}`);
+    return await apiService.getRequest<CustomOrder>(
+      `/api/custom-orders/vendor/${orderId}`
+    );
   }
 
   /**
@@ -185,7 +224,10 @@ class CustomOrderService {
    */
   async cancel(orderId: number, reason?: string): Promise<CustomOrder> {
     const data = reason ? { reason } : {};
-    return await apiService.postRequest<CustomOrder>(`/api/custom-orders/${orderId}/cancel`, data);
+    return await apiService.postRequest<CustomOrder>(
+      `/api/custom-orders/${orderId}/cancel`,
+      data
+    );
   }
 
   // ==================== Payment Callback (System) ====================
@@ -194,9 +236,15 @@ class CustomOrderService {
    * Complete payment callback (system endpoint)
    * Note: This is typically called by payment providers, not directly by frontend
    */
-  async completePayment(orderId: number, paymentReference: string): Promise<CustomOrder> {
+  async completePayment(
+    orderId: number,
+    paymentReference: string
+  ): Promise<CustomOrder> {
     const data = { paymentReference };
-    return await apiService.postRequest<CustomOrder>(`/api/custom-orders/${orderId}/payment/complete`, data);
+    return await apiService.postRequest<CustomOrder>(
+      `/api/custom-orders/${orderId}/payment/complete`,
+      data
+    );
   }
 
   // ==================== Utility Methods ====================
@@ -204,7 +252,7 @@ class CustomOrderService {
   /**
    * Format price for display using backend-provided major units.
    */
-  formatPrice(amount: number, currency: string = 'ETB'): string {
+  formatPrice(amount: number, currency: string = "ETB"): string {
     return formatCurrency(amount, currency);
   }
 
@@ -227,26 +275,26 @@ class CustomOrderService {
    */
   getStatusBadgeColor(status: CustomOrderStatus): string {
     switch (status) {
-      case 'SUBMITTED':
-        return 'bg-blue-100 text-blue-800';
-      case 'PRICE_PROPOSED':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'CONFIRMED':
-        return 'bg-purple-100 text-purple-800';
-      case 'PAID':
-        return 'bg-green-100 text-green-800';
-      case 'IN_PROGRESS':
-        return 'bg-orange-100 text-orange-800';
-      case 'COMPLETED':
-        return 'bg-teal-100 text-teal-800';
-      case 'OUT_FOR_DELIVERY':
-        return 'bg-indigo-100 text-indigo-800';
-      case 'DELIVERED':
-        return 'bg-green-100 text-green-800';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800';
+      case "SUBMITTED":
+        return "bg-blue-100 text-blue-800";
+      case "PRICE_PROPOSED":
+        return "bg-yellow-100 text-yellow-800";
+      case "CONFIRMED":
+        return "bg-purple-100 text-purple-800";
+      case "PAID":
+        return "bg-green-100 text-green-800";
+      case "IN_PROGRESS":
+        return "bg-orange-100 text-orange-800";
+      case "COMPLETED":
+        return "bg-teal-100 text-teal-800";
+      case "OUT_FOR_DELIVERY":
+        return "bg-indigo-100 text-indigo-800";
+      case "DELIVERED":
+        return "bg-green-100 text-green-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   }
 
@@ -255,24 +303,24 @@ class CustomOrderService {
    */
   getStatusText(status: CustomOrderStatus): string {
     switch (status) {
-      case 'SUBMITTED':
-        return 'Submitted';
-      case 'PRICE_PROPOSED':
-        return 'Price Proposed';
-      case 'CONFIRMED':
-        return 'Confirmed';
-      case 'PAID':
-        return 'Paid';
-      case 'IN_PROGRESS':
-        return 'In Progress';
-      case 'COMPLETED':
-        return 'Completed';
-      case 'OUT_FOR_DELIVERY':
-        return 'Out for Delivery';
-      case 'DELIVERED':
-        return 'Delivered';
-      case 'CANCELLED':
-        return 'Cancelled';
+      case "SUBMITTED":
+        return "Submitted";
+      case "PRICE_PROPOSED":
+        return "Price Proposed";
+      case "CONFIRMED":
+        return "Confirmed";
+      case "PAID":
+        return "Paid";
+      case "IN_PROGRESS":
+        return "In Progress";
+      case "COMPLETED":
+        return "Completed";
+      case "OUT_FOR_DELIVERY":
+        return "Out for Delivery";
+      case "DELIVERED":
+        return "Delivered";
+      case "CANCELLED":
+        return "Cancelled";
       default:
         return status;
     }
@@ -282,63 +330,65 @@ class CustomOrderService {
    * Check if order can be cancelled by customer
    */
   canCustomerCancel(status: CustomOrderStatus): boolean {
-    return ['SUBMITTED', 'PRICE_PROPOSED', 'CONFIRMED'].includes(status);
+    return ["SUBMITTED", "PRICE_PROPOSED", "CONFIRMED"].includes(status);
   }
 
   /**
    * Check if order can be cancelled by vendor
    */
   canVendorCancel(status: CustomOrderStatus): boolean {
-    return ['SUBMITTED', 'PRICE_PROPOSED', 'CONFIRMED', 'PAID'].includes(status);
+    return ["SUBMITTED", "PRICE_PROPOSED", "CONFIRMED", "PAID"].includes(
+      status
+    );
   }
 
   /**
    * Check if customer can accept/reject price
    */
   canCustomerRespondToPrice(status: CustomOrderStatus): boolean {
-    return status === 'PRICE_PROPOSED';
+    return status === "PRICE_PROPOSED";
   }
 
   /**
    * Check if vendor can propose price
    */
   canVendorProposePrice(status: CustomOrderStatus): boolean {
-    return ['SUBMITTED', 'PRICE_PROPOSED'].includes(status);
+    return ["SUBMITTED", "PRICE_PROPOSED"].includes(status);
   }
 
   /**
    * Check if customer can pay
    */
   canCustomerPay(status: CustomOrderStatus): boolean {
-    return status === 'CONFIRMED';
+    return status === "CONFIRMED";
   }
 
   /**
    * Check if vendor can mark in progress
    */
   canVendorMarkInProgress(status: CustomOrderStatus): boolean {
-    return status === 'PAID';
+    return status === "PAID";
   }
 
   /**
    * Check if vendor can mark completed
    */
   canVendorMarkCompleted(status: CustomOrderStatus): boolean {
-    return status === 'IN_PROGRESS';
+    return status === "IN_PROGRESS";
   }
 
   /**
    * Check if admin can assign delivery
    */
   canAdminAssignDelivery(status: CustomOrderStatus): boolean {
-    return status === 'COMPLETED';
+    return status === "COMPLETED";
   }
 
   /**
    * Check if delivery person can mark delivered
    */
   canDeliveryPersonMarkDelivered(status: CustomOrderStatus): boolean {
-    return status === 'OUT_FOR_DELIVERY';
+    return status === "OUT_FOR_DELIVERY";
   }
 
   /**
@@ -348,42 +398,42 @@ class CustomOrderService {
     const actions: string[] = [];
 
     switch (userRole) {
-      case 'CUSTOMER':
+      case "CUSTOMER":
         if (this.canCustomerRespondToPrice(order.status)) {
-          actions.push('accept_price', 'reject_price');
+          actions.push("accept_price", "reject_price");
         }
         if (this.canCustomerPay(order.status)) {
-          actions.push('pay');
+          actions.push("pay");
         }
         if (this.canCustomerCancel(order.status)) {
-          actions.push('cancel');
+          actions.push("cancel");
         }
         break;
 
-      case 'VENDOR':
+      case "VENDOR":
         if (this.canVendorProposePrice(order.status)) {
-          actions.push('propose_price');
+          actions.push("propose_price");
         }
         if (this.canVendorMarkInProgress(order.status)) {
-          actions.push('mark_in_progress');
+          actions.push("mark_in_progress");
         }
         if (this.canVendorMarkCompleted(order.status)) {
-          actions.push('mark_completed');
+          actions.push("mark_completed");
         }
         if (this.canVendorCancel(order.status)) {
-          actions.push('cancel');
+          actions.push("cancel");
         }
         break;
 
-      case 'ADMIN':
+      case "ADMIN":
         if (this.canAdminAssignDelivery(order.status)) {
-          actions.push('assign_delivery');
+          actions.push("assign_delivery");
         }
         break;
 
-      case 'DELIVERY_PERSON':
+      case "DELIVERY_PERSON":
         if (this.canDeliveryPersonMarkDelivered(order.status)) {
-          actions.push('mark_delivered');
+          actions.push("mark_delivered");
         }
         break;
     }
@@ -398,11 +448,15 @@ class CustomOrderService {
     const errors: string[] = [];
 
     if (!data.templateId) {
-      errors.push('Template ID is required');
+      errors.push("Template ID is required");
+    }
+
+    if (!data.shippingAddressId) {
+      errors.push("Shipping address ID is required");
     }
 
     if (!data.values || data.values.length === 0) {
-      errors.push('At least one field value is required');
+      errors.push("At least one field value is required");
     }
 
     // Validate field values
@@ -410,14 +464,17 @@ class CustomOrderService {
       if (!value.fieldId) {
         errors.push(`Value ${index + 1}: Field ID is required`);
       }
-      
+
       // Check that at least one value type is provided
-      const hasValue = value.textValue || 
-                      value.numberValue !== undefined || 
-                      value.fileUrl;
-      
+      const hasValue =
+        value.textValue || value.numberValue !== undefined || value.fileUrl;
+
       if (!hasValue) {
-        errors.push(`Value ${index + 1}: At least one value (text, number, or file) must be provided`);
+        errors.push(
+          `Value ${
+            index + 1
+          }: At least one value (text, number, or file) must be provided`
+        );
       }
     });
 
@@ -428,8 +485,9 @@ class CustomOrderService {
    * Sort status history by creation date (newest first)
    */
   sortStatusHistoryByDate(history: any[]): any[] {
-    return [...history].sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return [...history].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }
 
@@ -437,8 +495,9 @@ class CustomOrderService {
    * Sort price history by creation date (newest first)
    */
   sortPriceHistoryByDate(history: any[]): any[] {
-    return [...history].sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return [...history].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }
 }

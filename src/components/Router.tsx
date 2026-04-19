@@ -235,6 +235,9 @@ const CustomOrderTemplates = React.lazy(
 const CreateCustomOrder = React.lazy(
   () => import("@/pages/customer/CreateCustomOrder")
 );
+const CustomOrderShipping = React.lazy(
+  () => import("@/pages/customer/CustomOrderShipping")
+);
 
 const DeliveryLayout = React.lazy(
   () => import("@/pages/delivery/DeliveryLayout")
@@ -648,6 +651,15 @@ export default function Router() {
               element={
                 <ProtectedRoute>
                   <CreateCustomOrder />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="custom-orders/template/:templateId/shipping"
+              element={
+                <ProtectedRoute>
+                  <CustomOrderShipping />
                 </ProtectedRoute>
               }
             />

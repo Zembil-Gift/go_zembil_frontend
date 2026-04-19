@@ -62,7 +62,6 @@ const navItems = [
     label: "Custom Templates",
     icon: FileText,
   },
-  { href: "/admin/custom-orders", label: "Custom Orders", icon: ShoppingBag },
   { href: "/admin/featured-ads", label: "Featured & Ads", icon: Star },
   { href: "/admin/campaigns", label: "Campaigns", icon: Megaphone },
   {
@@ -73,6 +72,7 @@ const navItems = [
   { href: "/admin/categories", label: "Categories", icon: Tag },
   { href: "/admin/subcategories", label: "Subcategories", icon: Layers },
   { href: "/admin/delivery", label: "Delivery", icon: Truck },
+  { href: "/admin/custom-orders", label: "Custom Orders Delivery", icon: ShoppingBag },
   { href: "/admin/tax", label: "Tax Management", icon: Receipt },
   { href: "/admin/currency", label: "Currency", icon: DollarSign },
   {

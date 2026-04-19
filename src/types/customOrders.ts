@@ -1,24 +1,23 @@
-import type { DiscountInfo } from '@/types/discount';
+import type { DiscountInfo } from "@/types/discount";
 
-export type CustomizationFieldType = 'TEXT' | 'NUMBER' | 'IMAGE' | 'VIDEO';
+export type CustomizationFieldType = "TEXT" | "NUMBER" | "IMAGE" | "VIDEO";
 
-export type CustomOrderTemplateStatus = 
-  | 'PENDING_APPROVAL' 
-  | 'APPROVED' 
-  | 'REJECTED' 
-  | 'ARCHIVED';
+export type CustomOrderTemplateStatus =
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
+  | "ARCHIVED";
 
-export type CustomOrderStatus = 
-  | 'SUBMITTED' 
-  | 'PRICE_PROPOSED' 
-  | 'CONFIRMED' 
-  | 'PAID' 
-  | 'IN_PROGRESS' 
-  | 'COMPLETED' 
-  | 'OUT_FOR_DELIVERY' 
-  | 'DELIVERED' 
-  | 'CANCELLED';
-
+export type CustomOrderStatus =
+  | "SUBMITTED"
+  | "PRICE_PROPOSED"
+  | "CONFIRMED"
+  | "PAID"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "OUT_FOR_DELIVERY"
+  | "DELIVERED"
+  | "CANCELLED";
 
 export interface CustomOrderTemplateField {
   id: number;
@@ -58,7 +57,7 @@ export interface CustomOrderTemplate {
   description?: string;
   basePriceMinor: number;
   vendorPriceMinor?: number;
-  currencyCode: string;   // Backend sends 'currencyCode' not 'currency'
+  currencyCode: string; // Backend sends 'currencyCode' not 'currency'
   currencyId?: number;
   price?: CustomOrderTemplatePrice;
   categoryId?: number;
@@ -99,7 +98,7 @@ export interface CustomOrderValue {
   textValue?: string;
   numberValue?: number;
   fileUrl?: string;
-  fullFileUrl?: string;  // Full resolved URL from FileStorageService
+  fullFileUrl?: string; // Full resolved URL from FileStorageService
   originalFilename?: string;
 }
 
@@ -115,8 +114,8 @@ export interface CustomOrderStatusHistory {
 export interface CustomOrderPriceHistory {
   id: number;
   priceMinor: number;
-  price?: number;           // Major units for display
-  currencyCode?: string;    // Currency code
+  price?: number; // Major units for display
+  currencyCode?: string; // Currency code
   setById?: number;
   setByName?: string;
   setByRole?: string;
@@ -146,6 +145,10 @@ export interface CustomOrder {
   finalPrice?: number;
   baseVendorPrice?: number;
   finalVendorPrice?: number;
+  shippingMinor?: number;
+  shipping?: number;
+  totalMinor?: number;
+  total?: number;
   /** @deprecated Use currencyCode instead - this field may not be populated */
   currency?: string;
   currencyCode: string;
@@ -158,13 +161,23 @@ export interface CustomOrder {
   assignedDeliveryPersonId?: number;
   assignedDeliveryPersonName?: string;
   deliveredAt?: string;
+  shippingAddress?: {
+    addressId?: number;
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipcode?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    type?: "SHIPPING" | "BILLING";
+  };
   values: CustomOrderValue[];
   statusHistory: CustomOrderStatusHistory[];
   priceHistory: CustomOrderPriceHistory[];
   createdAt: string;
   updatedAt: string;
 }
-
 
 export interface OrderChatMessage {
   id: number;
@@ -178,7 +191,6 @@ export interface OrderChatMessage {
   sentAt: string;
   isRead: boolean;
 }
-
 
 export interface CreateCustomOrderTemplateRequest {
   name: string;
@@ -216,6 +228,7 @@ export interface UpdateCustomOrderTemplateRequest {
 
 export interface CreateCustomOrderRequest {
   templateId: number;
+  shippingAddressId: number;
   discountCode?: string;
   additionalDescription?: string;
   fileFieldIds?: number[];
@@ -226,6 +239,20 @@ export interface CreateCustomOrderRequest {
     fileUrl?: string | null;
     originalFilename?: string | null;
   }[];
+}
+
+export interface CreateCustomOrderDraftState {
+  templateId: number;
+  discountCode?: string;
+  additionalDescription?: string;
+  values: {
+    fieldId: number;
+    textValue?: string | null;
+    numberValue?: number | null;
+    fileUrl?: string | null;
+    originalFilename?: string | null;
+  }[];
+  files: Array<{ fieldId: number; file: File }>;
 }
 
 export interface ProposePriceRequest {
@@ -246,7 +273,6 @@ export interface PaymentInitResponse {
   checkoutUrl?: string;
 }
 
-
 export interface PagedResponse<T> {
   content: T[];
   totalElements: number;
@@ -258,10 +284,10 @@ export interface PagedResponse<T> {
   empty: boolean;
 }
 
-export type PagedCustomOrderTemplateResponse = PagedResponse<CustomOrderTemplate>;
+export type PagedCustomOrderTemplateResponse =
+  PagedResponse<CustomOrderTemplate>;
 export type PagedCustomOrderResponse = PagedResponse<CustomOrder>;
 export type PagedOrderChatMessageResponse = PagedResponse<OrderChatMessage>;
-
 
 export interface CustomOrderTemplateFilters {
   page?: number;
