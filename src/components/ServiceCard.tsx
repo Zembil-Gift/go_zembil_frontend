@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { MapPin, Clock, Users, ImageIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,63 +22,73 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
   const [secondaryImageLoaded, setSecondaryImageLoaded] = useState(false);
   const [primaryImageError, setPrimaryImageError] = useState(false);
   const [secondaryImageError, setSecondaryImageError] = useState(false);
-  
+
   // Get images sorted by sortOrder - prefer default package images if available
   const sortedImages = useMemo(() => {
     // First check if default package has images
-    if (service.defaultPackage?.images && service.defaultPackage.images.length > 0) {
-      return [...service.defaultPackage.images].sort((a, b) => a.sortOrder - b.sortOrder);
+    if (
+      service.defaultPackage?.images &&
+      service.defaultPackage.images.length > 0
+    ) {
+      return [...service.defaultPackage.images].sort(
+        (a, b) => a.sortOrder - b.sortOrder
+      );
     }
     // Fall back to service images
     if (!service.images || service.images.length === 0) return [];
     return [...service.images].sort((a, b) => a.sortOrder - b.sortOrder);
   }, [service.images, service.defaultPackage]);
-  
-  const primaryImage = sortedImages[0]?.fullUrl || service.defaultPackage?.primaryImageUrl || serviceService.getPrimaryImageUrl(service);
+
+  const primaryImage =
+    sortedImages[0]?.fullUrl ||
+    service.defaultPackage?.primaryImageUrl ||
+    serviceService.getPrimaryImageUrl(service);
   const secondaryImage = sortedImages[1]?.fullUrl || null;
   const hasSecondImage = !!secondaryImage && !secondaryImageError;
 
   // Get price from default package if available, otherwise use base price
   // Prefer backend-calculated major units (basePrice) over minor units
-  const displayPriceMajor = service.defaultPackage?.basePrice ?? service.basePrice;
-  const displayPriceMinor = service.defaultPackage?.basePriceMinor ?? service.basePriceMinor;
+  const displayPriceMajor =
+    service.defaultPackage?.basePrice ?? service.basePrice;
+  const displayPriceMinor =
+    service.defaultPackage?.basePriceMinor ?? service.basePriceMinor;
   const displayCurrency = service.defaultPackage?.currency ?? service.currency;
 
   // Fetch service rating summary
   const { data: ratingSummary } = useQuery({
-    queryKey: ['service-rating-summary', service.id],
+    queryKey: ["service-rating-summary", service.id],
     queryFn: () => reviewService.getServiceRatingSummary(service.id),
     enabled: !!service.id,
   });
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{ y: -4 }}
+    <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      className="transition-transform duration-200 hover:-translate-y-1"
     >
-      <Card 
+      <Card
         className="group overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-md cursor-pointer"
         onClick={() => navigate(`/services/${service.id}`)}
       >
         <CardContent className="p-0">
           <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
             {!primaryImageLoaded && !primaryImageError && primaryImage && (
-              <div className="absolute inset-0 bg-gradient-to-r from-june-bud/10 via-white to-june-bud/10 animate-shimmer"
-                style={{ backgroundSize: '200% 100%' }}
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-june-bud/10 via-white to-june-bud/10 animate-shimmer"
+                style={{ backgroundSize: "200% 100%" }}
               />
             )}
 
             {primaryImage ? (
               <img
-                src={primaryImageError ? '/placeholder-service.jpg' : primaryImage}
+                src={
+                  primaryImageError ? "/placeholder-service.jpg" : primaryImage
+                }
                 alt={service.title}
                 className={`w-full h-full object-cover transition-all duration-500 ease-out
-                  ${primaryImageLoaded ? 'opacity-100' : 'opacity-0'}
-                  ${isHovered && hasSecondImage ? 'opacity-0' : 'opacity-100'}
+                  ${primaryImageLoaded ? "opacity-100" : "opacity-0"}
+                  ${isHovered && hasSecondImage ? "opacity-0" : "opacity-100"}
                 `}
                 onLoad={() => setPrimaryImageLoaded(true)}
                 onError={() => {
@@ -100,8 +109,12 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
                 src={secondaryImageError ? primaryImage! : secondaryImage}
                 alt={`${service.title} - alternate view`}
                 className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ease-out
-                  ${secondaryImageLoaded ? '' : 'opacity-0'}
-                  ${isHovered && hasSecondImage ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}
+                  ${secondaryImageLoaded ? "" : "opacity-0"}
+                  ${
+                    isHovered && hasSecondImage
+                      ? "opacity-100 scale-105"
+                      : "opacity-0 scale-100"
+                  }
                 `}
                 onLoad={() => setSecondaryImageLoaded(true)}
                 onError={() => {
@@ -113,8 +126,11 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
             )}
 
             {/* Gradient overlay on hover */}
-            <div className={`absolute inset-0 bg-gradient-to-t from-eagle-green/60 via-transparent to-transparent
-              transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+            <div
+              className={`absolute inset-0 bg-gradient-to-t from-eagle-green/60 via-transparent to-transparent
+              transition-opacity duration-500 ${
+                isHovered ? "opacity-100" : "opacity-0"
+              }`}
             />
 
             {/* Discount Badge */}
@@ -143,7 +159,11 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
                 </div>
               ) : (
                 <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
-                  From {serviceService.formatPrice(displayPriceMajor ?? 0, displayCurrency)}
+                  From{" "}
+                  {serviceService.formatPrice(
+                    displayPriceMajor ?? 0,
+                    displayCurrency
+                  )}
                 </Badge>
               )}
             </div>
@@ -172,8 +192,8 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
 
             {/* Rating */}
             <div className="mb-2">
-              <CompactRating 
-                rating={ratingSummary?.averageRating || 0} 
+              <CompactRating
+                rating={ratingSummary?.averageRating || 0}
                 reviewCount={ratingSummary?.totalReviews || 0}
                 size="sm"
               />
@@ -187,24 +207,27 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
                   <span>{service.city}</span>
                 </div>
               )}
-              {service.durationMinutes != null && service.durationMinutes > 0 && (
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span>{service.durationMinutes} min</span>
-                </div>
-              )}
+              {service.durationMinutes != null &&
+                service.durationMinutes > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>{service.durationMinutes} min</span>
+                  </div>
+                )}
             </div>
 
             {/* Vendor */}
             {service.vendorName && (
               <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                 <Users className="h-4 w-4 text-viridian-green" />
-                <span className="text-sm text-eagle-green/70">by {service.vendorName}</span>
+                <span className="text-sm text-eagle-green/70">
+                  by {service.vendorName}
+                </span>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 }

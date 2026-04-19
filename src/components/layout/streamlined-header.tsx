@@ -517,6 +517,7 @@ export default function StreamlinedHeader() {
                 ))}
 
                 {/* Categories - Collapsed by default on mobile */}
+                {/*
                 <div className="px-2 py-2 border-t border-gray-100 mt-2 pt-3">
                   <button
                     type="button"
@@ -539,6 +540,7 @@ export default function StreamlinedHeader() {
                     </div>
                   )}
                 </div>
+                */}
               </nav>
 
               {/* Actions */}
