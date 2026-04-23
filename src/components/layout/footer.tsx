@@ -98,13 +98,12 @@ export default function Footer() {
           <p className="text-gray-400 text-sm mb-4 md:mb-0">
             {t('footer.copyright')}
           </p>
-          {/*<div className="flex space-x-6 text-sm">*/}
-          {/*  <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors duration-200">{t('footer.privacyPolicy')}</Link>*/}
-          {/*  <Link to="/terms" className="text-gray-400 hover:text-white transition-colors duration-200">{t('footer.termsOfService')}</Link>*/}
-          {/*  <Link to="/vendor-partnership" className="text-gray-400 hover:text-white transition-colors duration-200">{t('footer.vendorPartnership')}</Link>*/}
-          {/*</div>*/}
+          <div className="flex space-x-6 text-sm">
+            <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors duration-200">{t('footer.privacyPolicy')}</Link>
+            <Link to="/terms" className="text-gray-400 hover:text-white transition-colors duration-200">{t('footer.termsOfService')}</Link>
+          </div>
         </div>
       </div>
     </footer>
   );
-} 
+}
