@@ -75,7 +75,11 @@ import {
   MapPin,
 } from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
-import { LocationPicker, type LocationData } from "@/components/maps";
+import {
+  GoogleMapsProvider,
+  LocationPicker,
+  type LocationData,
+} from "@/components/maps";
 
 interface CertificateResponse {
   certificateCode: string;
@@ -1433,49 +1437,51 @@ export default function VendorSignup() {
                     delivery pricing and connects you with nearby customers.
                     Your country and city will be auto-detected.
                   </p>
-                  <LocationPicker
-                    latitude={form.watch("latitude")}
-                    longitude={form.watch("longitude")}
-                    onLocationSelect={(location: LocationData) => {
-                      form.setValue("latitude", location.latitude, {
-                        shouldValidate: true,
-                      });
-                      form.setValue("longitude", location.longitude, {
-                        shouldValidate: true,
-                      });
-                      form.setValue("placeId", location.placeId);
-                      form.setValue(
-                        "formattedAddress",
-                        location.formattedAddress
-                      );
-                      form.setValue("streetAddress", location.streetAddress);
-
-                      // Auto-populate city from map if empty or different
-                      if (location.city) {
-                        form.setValue("city", location.city, {
+                  <GoogleMapsProvider>
+                    <LocationPicker
+                      latitude={form.watch("latitude")}
+                      longitude={form.watch("longitude")}
+                      onLocationSelect={(location: LocationData) => {
+                        form.setValue("latitude", location.latitude, {
                           shouldValidate: true,
                         });
-                      }
-
-                      // Auto-match country from map to supported countries
-                      if (location.country) {
-                        const matchedCountry = SUPPORTED_COUNTRIES.find(
-                          (c) =>
-                            c.value.toLowerCase() ===
-                              location.country.toLowerCase() ||
-                            c.label.toLowerCase() ===
-                              location.country.toLowerCase()
+                        form.setValue("longitude", location.longitude, {
+                          shouldValidate: true,
+                        });
+                        form.setValue("placeId", location.placeId);
+                        form.setValue(
+                          "formattedAddress",
+                          location.formattedAddress
                         );
-                        if (matchedCountry) {
-                          form.setValue("country", matchedCountry.value, {
+                        form.setValue("streetAddress", location.streetAddress);
+
+                        // Auto-populate city from map if empty or different
+                        if (location.city) {
+                          form.setValue("city", location.city, {
                             shouldValidate: true,
                           });
                         }
-                      }
-                    }}
-                    height="300px"
-                    placeholder="Search for your business location..."
-                  />
+
+                        // Auto-match country from map to supported countries
+                        if (location.country) {
+                          const matchedCountry = SUPPORTED_COUNTRIES.find(
+                            (c) =>
+                              c.value.toLowerCase() ===
+                                location.country.toLowerCase() ||
+                              c.label.toLowerCase() ===
+                                location.country.toLowerCase()
+                          );
+                          if (matchedCountry) {
+                            form.setValue("country", matchedCountry.value, {
+                              shouldValidate: true,
+                            });
+                          }
+                        }
+                      }}
+                      height="300px"
+                      placeholder="Search for your business location..."
+                    />
+                  </GoogleMapsProvider>
                   {form.watch("formattedAddress") && (
                     <p className="text-xs text-emerald-700 bg-emerald-50 rounded-md px-3 py-2 mt-1">
                       📍 {form.watch("formattedAddress")}

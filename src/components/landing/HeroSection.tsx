@@ -2,48 +2,55 @@ import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import FadeIn from "@/components/animations/FadeIn";
 
 interface HeroSectionProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
 }
 
-export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionProps) {
+export default function HeroSection({
+  searchTerm,
+  onSearchChange,
+}: HeroSectionProps) {
   const { t } = useTranslation();
 
   return (
     <section className="relative bg-gradient-to-br from-eagle-green to-viridian-green text-white">
       {/* Ethiopian cultural pattern overlay */}
       <div className="absolute inset-0 opacity-10">
-        <div className="w-full h-full" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 10L40 30L30 50L20 30L30 10Z' fill='currentColor'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'repeat'
-        }}></div>
+        <div
+          className="w-full h-full"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 10L40 30L30 50L20 30L30 10Z' fill='currentColor'/%3E%3C/svg%3E")`,
+            backgroundRepeat: "repeat",
+          }}
+        ></div>
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-48 sm:pb-56 lg:pb-64">
         <div className="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
           {/* Content */}
           <div className="mb-12 lg:mb-0">
-            <FadeIn delay={0.2} duration={0.8}>
+            <div className="opacity-100 translate-y-0 transition-all duration-700">
               <h1 className="font-bold text-4xl sm:text-5xl lg:text-6xl leading-tight mb-6">
-                {t('homepage.hero.title')}
-                <span className="text-yellow block">{t('homepage.hero.subtitle')}</span>
+                {t("homepage.hero.title")}
+                <span className="text-yellow block">
+                  {t("homepage.hero.subtitle")}
+                </span>
               </h1>
-            </FadeIn>
-            <FadeIn delay={0.4} duration={0.8}>
+            </div>
+            <div className="opacity-100 translate-y-0 transition-all duration-700 delay-100">
               <p className="font-light text-xl sm:text-2xl mb-8 leading-relaxed opacity-90">
-                {t('homepage.hero.description')}
+                {t("homepage.hero.description")}
               </p>
-            </FadeIn>
+            </div>
 
             {/* Search Bar */}
-            <FadeIn delay={0.6} duration={0.8}>
+            <div className="opacity-100 translate-y-0 transition-all duration-700 delay-150">
               <div className="bg-white rounded-xl p-2 flex items-center shadow-xl max-w-md">
                 <Input
                   type="text"
-                  placeholder={t('homepage.hero.searchPlaceholder')}
+                  placeholder={t("homepage.hero.searchPlaceholder")}
                   value={searchTerm}
                   onChange={(e) => onSearchChange(e.target.value)}
                   className="flex-1 px-4 py-3 text-charcoal placeholder-gray-500 bg-transparent border-none outline-none"
@@ -52,7 +59,7 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
                   <Search size={16} />
                 </Button>
               </div>
-            </FadeIn>
+            </div>
 
             {/* Quick Stats */}
             {/* <div className="flex items-center space-x-8 mt-8 text-sm">
@@ -68,7 +75,7 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
           </div>
 
           {/* Hero Image - Hidden on mobile */}
-          <FadeIn delay={0.6} duration={0.8}>
+          <div className="opacity-100 translate-y-0 transition-all duration-700 delay-200">
             <div className="relative w-full h-full hidden lg:block">
               <img
                 src="/attached_assets/landing_page_img.png"
@@ -76,7 +83,7 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
                 className="w-full h-full object-cover"
               />
             </div>
-          </FadeIn>
+          </div>
         </div>
       </div>
 
@@ -98,4 +105,4 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
       </div>
     </section>
   );
-} 
+}

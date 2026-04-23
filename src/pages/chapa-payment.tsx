@@ -359,7 +359,10 @@ export default function ChapaPaymentPage() {
       // Convert to minor units only for SDK payload consistency.
       const customAmountMajor =
         normalizedType === "custom"
-          ? orderDetails?.finalPrice ?? orderDetails?.basePrice ?? 0
+          ? orderDetails?.total ??
+            orderDetails?.finalPrice ??
+            orderDetails?.basePrice ??
+            0
           : 0;
 
       // Extract amount from order details (in minor units for non-custom types)
@@ -369,7 +372,7 @@ export default function ChapaPaymentPage() {
           : normalizedType === "service"
           ? orderDetails?.totalAmountMinor || 0
           : normalizedType === "custom"
-          ? Math.round(customAmountMajor * 100)
+          ? orderDetails?.totalMinor || Math.round(customAmountMajor * 100)
           : orderDetails?.totals?.totalMinor || 0;
       const orderCurrency =
         orderDetails?.currency || orderDetails?.currencyCode || "ETB";

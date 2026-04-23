@@ -11,6 +11,8 @@ dist/
 build/
 *.tsbuildinfo
 
+stats.html
+
 # Environment variables
 .env
 .env.local

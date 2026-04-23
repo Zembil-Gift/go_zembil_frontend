@@ -53,6 +53,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/protected-route";
 import { getPaymentMethodsForCountry } from "@/lib/countryConfig";
+import { CustomReviewsSection } from "@/components/reviews";
 
 import { customOrderService } from "@/services/customOrderService";
 import { orderChatService } from "@/services/orderChatService";
@@ -123,6 +124,18 @@ function CustomerCustomOrderDetailContent() {
   // Helper to get the order currency (backend sends currencyCode)
   const getOrderCurrency = (order: any): string => {
     return order?.currencyCode || order?.currency || fallbackCurrency;
+  };
+
+  const getMajorFromMinor = (minor: number, currency: string): number => {
+    try {
+      const fractionDigits = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+      }).resolvedOptions().maximumFractionDigits;
+      return minor / Math.pow(10, fractionDigits ?? 2);
+    } catch {
+      return minor / 100;
+    }
   };
 
   // Fetch order details - wait for auth so currency is correct
@@ -339,7 +352,9 @@ function CustomerCustomOrderDetailContent() {
             clientSecret: paymentInit.clientSecret,
             publishableKey: paymentInit.publishableKey,
             amount:
-              order?.finalPriceMinor != null
+              order?.totalMinor != null
+                ? order.totalMinor
+                : order?.finalPriceMinor != null
                 ? order.finalPriceMinor
                 : order?.basePriceMinor || 0,
             currency: getOrderCurrency(order).toLowerCase(),
@@ -489,6 +504,22 @@ function CustomerCustomOrderDetailContent() {
   const canCancel = customOrderService.canCustomerCancel(order.status);
   const statusBadgeColor = customOrderService.getStatusBadgeColor(order.status);
   const statusText = customOrderService.getStatusText(order.status);
+  const currencyCode = getOrderCurrency(order);
+
+  const shippingAmount =
+    order.shipping ??
+    (typeof order.shippingMinor === "number"
+      ? getMajorFromMinor(order.shippingMinor, currencyCode)
+      : 0);
+
+  const finalPriceAmount =
+    order.finalPrice != null ? order.finalPrice : order.basePrice ?? 0;
+
+  const totalAmount =
+    order.total ??
+    (typeof order.totalMinor === "number"
+      ? getMajorFromMinor(order.totalMinor, currencyCode)
+      : finalPriceAmount + shippingAmount);
 
   // Get the appropriate timeline based on negotiability
   const timeline = isNonNegotiable
@@ -679,6 +710,12 @@ function CustomerCustomOrderDetailContent() {
               className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
             >
               History
+            </TabsTrigger>
+            <TabsTrigger
+              value="reviews"
+              className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
+            >
+              Reviews
             </TabsTrigger>
           </TabsList>
 
@@ -1054,6 +1091,13 @@ function CustomerCustomOrderDetailContent() {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              <TabsContent value="reviews" className="space-y-6">
+                <CustomReviewsSection
+                  customOrderId={orderIdNum}
+                  title="Customer Review"
+                />
+              </TabsContent>
             </div>
 
             {/* Right Column - Sidebar */}
@@ -1098,7 +1142,7 @@ function CustomerCustomOrderDetailContent() {
                     <span className="text-eagle-green">
                       {customOrderService.formatPrice(
                         order.basePrice ?? 0,
-                        getOrderCurrency(order)
+                        currencyCode
                       )}
                     </span>
                   </div>
@@ -1108,20 +1152,27 @@ function CustomerCustomOrderDetailContent() {
                       <span className="font-bold text-eagle-green">
                         {customOrderService.formatPrice(
                           order.finalPrice ?? 0,
-                          getOrderCurrency(order)
+                          currencyCode
                         )}
                       </span>
                     </div>
                   )}
+                  <div className="flex justify-between">
+                    <span className="text-eagle-green/70">Shipping</span>
+                    <span className="text-eagle-green">
+                      {customOrderService.formatPrice(
+                        shippingAmount,
+                        currencyCode
+                      )}
+                    </span>
+                  </div>
                   <Separator />
                   <div className="flex justify-between">
                     <span className="font-medium text-eagle-green">Total</span>
                     <span className="font-bold text-eagle-green text-lg">
                       {customOrderService.formatPrice(
-                        order.finalPrice != null
-                          ? order.finalPrice
-                          : order.basePrice ?? 0,
-                        getOrderCurrency(order)
+                        totalAmount,
+                        currencyCode
                       )}
                     </span>
                   </div>
@@ -1157,7 +1208,7 @@ function CustomerCustomOrderDetailContent() {
                       <p className="text-sm text-amber-700">Proposed Price</p>
                       <p className="text-3xl font-bold text-amber-900">
                         {customOrderService.formatPrice(
-                          order.finalPrice ?? 0,
+                          order.total ?? 0,
                           getOrderCurrency(order)
                         )}
                       </p>
@@ -1219,10 +1270,8 @@ function CustomerCustomOrderDetailContent() {
                       <p className="text-sm text-green-700">Amount Due</p>
                       <p className="text-3xl font-bold text-green-900">
                         {customOrderService.formatPrice(
-                          order.finalPrice != null
-                            ? order.finalPrice
-                            : order.basePrice ?? 0,
-                          getOrderCurrency(order)
+                          totalAmount,
+                          currencyCode
                         )}
                       </p>
                     </div>

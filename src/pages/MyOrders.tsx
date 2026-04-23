@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -25,10 +25,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/protected-route";
 import { formatCurrency, getCurrencyDecimals } from "@/lib/currency";
 import apiService from "@/services/apiService";
+import { ProductReviewForm } from "@/components/reviews";
+import { reviewService } from "@/services/reviewService";
 
 interface OrderItem {
   id: number;
@@ -152,6 +160,11 @@ function MyOrdersContent() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [statusFilter, setStatusFilter] = useState<OrderStatus>("ALL");
+  const [selectedReviewTarget, setSelectedReviewTarget] = useState<{
+    productId: number;
+    orderId: number;
+    productName: string;
+  } | null>(null);
 
   // Fetch customer's product orders
   const {
@@ -194,6 +207,45 @@ function MyOrdersContent() {
   });
 
   const orders = ordersPage?.content || [];
+
+  const reviewCandidates = useMemo(() => {
+    return orders
+      .flatMap((order) => {
+        const orderId = order.orderId ?? order.id;
+        const isDelivered = order.status.toUpperCase() === "DELIVERED";
+        if (!orderId || !isDelivered) return [];
+
+        const lines = order.lines || order.items || [];
+        return lines
+          .filter((line) => typeof line.productId === "number")
+          .map((line) => ({
+            key: `${orderId}-${line.productId}`,
+            orderId,
+            productId: line.productId,
+          }));
+      })
+      .filter(
+        (candidate, index, all) =>
+          all.findIndex((item) => item.key === candidate.key) === index
+      );
+  }, [orders]);
+
+  const canReviewResults = useQueries({
+    queries: reviewCandidates.map((candidate) => ({
+      queryKey: ["can-review-product", candidate.productId],
+      queryFn: () => reviewService.canReviewProduct(candidate.productId),
+      enabled: isAuthenticated,
+      staleTime: 2 * 60 * 1000,
+    })),
+  });
+
+  const canReviewByCandidate = useMemo(() => {
+    const resultMap = new Map<string, boolean>();
+    reviewCandidates.forEach((candidate, index) => {
+      resultMap.set(candidate.key, Boolean(canReviewResults[index]?.data));
+    });
+    return resultMap;
+  }, [reviewCandidates, canReviewResults]);
 
   const getOrderTotalMajor = (order: OrderAmountSource): number => {
     const totalMinor = order.totals?.totalMinor ?? order.totalMinor;
@@ -531,6 +583,41 @@ function MyOrdersContent() {
                             <CheckCircle className="h-4 w-4" />
                             Order delivered successfully
                           </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {(order.lines || order.items || [])
+                              .filter(
+                                (line) => typeof line.productId === "number"
+                              )
+                              .map((line) => {
+                                const orderId = order.orderId ?? order.id;
+                                if (!orderId) return null;
+
+                                const candidateKey = `${orderId}-${line.productId}`;
+                                const canReview =
+                                  canReviewByCandidate.get(candidateKey);
+                                if (!canReview) return null;
+
+                                return (
+                                  <Button
+                                    key={candidateKey}
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-eagle-green/30 text-eagle-green hover:bg-eagle-green hover:text-white"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      setSelectedReviewTarget({
+                                        productId: line.productId,
+                                        orderId,
+                                        productName:
+                                          line.productName || "Product",
+                                      });
+                                    }}
+                                  >
+                                    Review {line.productName || "Product"}
+                                  </Button>
+                                );
+                              })}
+                          </div>
                         </div>
                       )}
                     </CardContent>
@@ -541,6 +628,32 @@ function MyOrdersContent() {
           </>
         )}
 
+        <Dialog
+          open={Boolean(selectedReviewTarget)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedReviewTarget(null);
+            }
+          }}
+        >
+          <DialogContent className="max-w-xl bg-white">
+            {selectedReviewTarget && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>
+                    Add Review for {selectedReviewTarget.productName}
+                  </DialogTitle>
+                </DialogHeader>
+                <ProductReviewForm
+                  productId={selectedReviewTarget.productId}
+                  orderId={selectedReviewTarget.orderId}
+                  onSuccess={() => setSelectedReviewTarget(null)}
+                  onCancel={() => setSelectedReviewTarget(null)}
+                />
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

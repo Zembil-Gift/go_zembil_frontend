@@ -97,6 +97,9 @@ const AdminCampaigns = React.lazy(() => import("@/pages/admin/AdminCampaigns"));
 const AdminCampaignParticipations = React.lazy(
   () => import("@/pages/admin/AdminCampaignParticipations")
 );
+const AdminBroadcasts = React.lazy(
+  () => import("@/pages/admin/AdminBroadcasts")
+);
 const AdminCommission = React.lazy(
   () => import("@/pages/admin/AdminCommission")
 );
@@ -234,6 +237,9 @@ const CustomOrderTemplates = React.lazy(
 );
 const CreateCustomOrder = React.lazy(
   () => import("@/pages/customer/CreateCustomOrder")
+);
+const CustomOrderShipping = React.lazy(
+  () => import("@/pages/customer/CustomOrderShipping")
 );
 
 const DeliveryLayout = React.lazy(
@@ -653,6 +659,15 @@ export default function Router() {
             />
 
             <Route
+              path="custom-orders/template/:templateId/shipping"
+              element={
+                <ProtectedRoute>
+                  <CustomOrderShipping />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="payment/stripe"
               element={
                 <ProtectedRoute>
@@ -914,6 +929,7 @@ export default function Router() {
           <Route path="order-assignments" element={<AdminOrderAssignments />} />
           <Route path="delivery-confirmations" element={<AdminDeliveryConfirmations />} /> */}
             <Route path="campaigns" element={<AdminCampaigns />} />
+            <Route path="broadcasts" element={<AdminBroadcasts />} />
             <Route
               path="campaign-participations"
               element={<AdminCampaignParticipations />}

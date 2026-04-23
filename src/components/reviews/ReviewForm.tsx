@@ -1,19 +1,20 @@
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { RatingInput } from './StarRating';
-import { 
-  reviewService, 
-  CreateProductReviewRequest, 
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { RatingInput } from "./StarRating";
+import {
+  reviewService,
+  CreateProductReviewRequest,
   CreateVendorReviewRequest,
   CreateEventReviewRequest,
-  CreateServiceReviewRequest 
-} from '@/services/reviewService';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+  CreateServiceReviewRequest,
+  CreateCustomReviewRequest,
+} from "@/services/reviewService";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
 
 interface ProductReviewFormProps {
   productId: number;
@@ -23,27 +24,41 @@ interface ProductReviewFormProps {
   compact?: boolean;
 }
 
-export function ProductReviewForm({ productId, orderId, onSuccess, onCancel, compact = false }: ProductReviewFormProps) {
+export function ProductReviewForm({
+  productId,
+  orderId,
+  onSuccess,
+  onCancel,
+  compact = false,
+}: ProductReviewFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
-  const [title, setTitle] = useState('');
-  const [comment, setComment] = useState('');
+  const [title, setTitle] = useState("");
+  const [comment, setComment] = useState("");
   const [showDetails, setShowDetails] = useState(!compact);
 
   const mutation = useMutation({
-    mutationFn: (request: CreateProductReviewRequest) => reviewService.createProductReview(request),
+    mutationFn: (request: CreateProductReviewRequest) =>
+      reviewService.createProductReview(request),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['product-reviews', productId] });
-      queryClient.invalidateQueries({ queryKey: ['product-rating-summary', productId] });
-      toast({ title: 'Review submitted!', description: 'Thank you for your feedback.' });
+      queryClient.invalidateQueries({
+        queryKey: ["product-reviews", productId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["product-rating-summary", productId],
+      });
+      toast({
+        title: "Review submitted!",
+        description: "Thank you for your feedback.",
+      });
       onSuccess?.();
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to submit review',
-        variant: 'destructive',
+        title: "Error",
+        description: error.response?.data?.message || "Failed to submit review",
+        variant: "destructive",
       });
     },
   });
@@ -51,7 +66,7 @@ export function ProductReviewForm({ productId, orderId, onSuccess, onCancel, com
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      toast({ title: 'Please select a rating', variant: 'destructive' });
+      toast({ title: "Please select a rating", variant: "destructive" });
       return;
     }
     mutation.mutate({
@@ -124,8 +139,10 @@ export function ProductReviewForm({ productId, orderId, onSuccess, onCancel, com
           disabled={mutation.isPending || rating === 0}
           className="bg-viridian-green hover:bg-viridian-green/90"
         >
-          {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {showDetails ? 'Submit Review' : 'Submit Rating'}
+          {mutation.isPending && (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          )}
+          {showDetails ? "Submit Review" : "Submit Rating"}
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
@@ -145,28 +162,40 @@ interface VendorReviewFormProps {
   compact?: boolean;
 }
 
-export function VendorReviewForm({ vendorId, orderId, onSuccess, onCancel, compact = false }: VendorReviewFormProps) {
+export function VendorReviewForm({
+  vendorId,
+  orderId,
+  onSuccess,
+  onCancel,
+  compact = false,
+}: VendorReviewFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
-  const [title, setTitle] = useState('');
-  const [comment, setComment] = useState('');
+  const [title, setTitle] = useState("");
+  const [comment, setComment] = useState("");
   const [showDetails, setShowDetails] = useState(!compact);
 
   const mutation = useMutation({
-    mutationFn: (request: CreateVendorReviewRequest) => reviewService.createVendorReview(request),
+    mutationFn: (request: CreateVendorReviewRequest) =>
+      reviewService.createVendorReview(request),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vendor-reviews', vendorId] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-rating-summary', vendorId] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-profile', vendorId] });
-      toast({ title: 'Review submitted!', description: 'Thank you for your feedback.' });
+      queryClient.invalidateQueries({ queryKey: ["vendor-reviews", vendorId] });
+      queryClient.invalidateQueries({
+        queryKey: ["vendor-rating-summary", vendorId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["vendor-profile", vendorId] });
+      toast({
+        title: "Review submitted!",
+        description: "Thank you for your feedback.",
+      });
       onSuccess?.();
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to submit review',
-        variant: 'destructive',
+        title: "Error",
+        description: error.response?.data?.message || "Failed to submit review",
+        variant: "destructive",
       });
     },
   });
@@ -174,7 +203,7 @@ export function VendorReviewForm({ vendorId, orderId, onSuccess, onCancel, compa
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      toast({ title: 'Please select a rating', variant: 'destructive' });
+      toast({ title: "Please select a rating", variant: "destructive" });
       return;
     }
     mutation.mutate({
@@ -247,8 +276,10 @@ export function VendorReviewForm({ vendorId, orderId, onSuccess, onCancel, compa
           disabled={mutation.isPending || rating === 0}
           className="bg-viridian-green hover:bg-viridian-green/90"
         >
-          {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {showDetails ? 'Submit Review' : 'Submit Rating'}
+          {mutation.isPending && (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          )}
+          {showDetails ? "Submit Review" : "Submit Rating"}
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
@@ -270,27 +301,39 @@ interface EventReviewFormProps {
   compact?: boolean;
 }
 
-export function EventReviewForm({ eventId, eventOrderId, onSuccess, onCancel, compact = false }: EventReviewFormProps) {
+export function EventReviewForm({
+  eventId,
+  eventOrderId,
+  onSuccess,
+  onCancel,
+  compact = false,
+}: EventReviewFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
-  const [title, setTitle] = useState('');
-  const [comment, setComment] = useState('');
+  const [title, setTitle] = useState("");
+  const [comment, setComment] = useState("");
   const [showDetails, setShowDetails] = useState(!compact);
 
   const mutation = useMutation({
-    mutationFn: (request: CreateEventReviewRequest) => reviewService.createEventReview(request),
+    mutationFn: (request: CreateEventReviewRequest) =>
+      reviewService.createEventReview(request),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['event-reviews', eventId] });
-      queryClient.invalidateQueries({ queryKey: ['event-rating-summary', eventId] });
-      toast({ title: 'Review submitted!', description: 'Thank you for your feedback.' });
+      queryClient.invalidateQueries({ queryKey: ["event-reviews", eventId] });
+      queryClient.invalidateQueries({
+        queryKey: ["event-rating-summary", eventId],
+      });
+      toast({
+        title: "Review submitted!",
+        description: "Thank you for your feedback.",
+      });
       onSuccess?.();
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to submit review',
-        variant: 'destructive',
+        title: "Error",
+        description: error.response?.data?.message || "Failed to submit review",
+        variant: "destructive",
       });
     },
   });
@@ -298,7 +341,7 @@ export function EventReviewForm({ eventId, eventOrderId, onSuccess, onCancel, co
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      toast({ title: 'Please select a rating', variant: 'destructive' });
+      toast({ title: "Please select a rating", variant: "destructive" });
       return;
     }
     mutation.mutate({
@@ -371,8 +414,10 @@ export function EventReviewForm({ eventId, eventOrderId, onSuccess, onCancel, co
           disabled={mutation.isPending || rating === 0}
           className="bg-viridian-green hover:bg-viridian-green/90"
         >
-          {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {showDetails ? 'Submit Review' : 'Submit Rating'}
+          {mutation.isPending && (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          )}
+          {showDetails ? "Submit Review" : "Submit Rating"}
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
@@ -394,27 +439,41 @@ interface ServiceReviewFormProps {
   compact?: boolean;
 }
 
-export function ServiceReviewForm({ serviceId, serviceOrderId, onSuccess, onCancel, compact = false }: ServiceReviewFormProps) {
+export function ServiceReviewForm({
+  serviceId,
+  serviceOrderId,
+  onSuccess,
+  onCancel,
+  compact = false,
+}: ServiceReviewFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
-  const [title, setTitle] = useState('');
-  const [comment, setComment] = useState('');
+  const [title, setTitle] = useState("");
+  const [comment, setComment] = useState("");
   const [showDetails, setShowDetails] = useState(!compact);
 
   const mutation = useMutation({
-    mutationFn: (request: CreateServiceReviewRequest) => reviewService.createServiceReview(request),
+    mutationFn: (request: CreateServiceReviewRequest) =>
+      reviewService.createServiceReview(request),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['service-reviews', serviceId] });
-      queryClient.invalidateQueries({ queryKey: ['service-rating-summary', serviceId] });
-      toast({ title: 'Review submitted!', description: 'Thank you for your feedback.' });
+      queryClient.invalidateQueries({
+        queryKey: ["service-reviews", serviceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["service-rating-summary", serviceId],
+      });
+      toast({
+        title: "Review submitted!",
+        description: "Thank you for your feedback.",
+      });
       onSuccess?.();
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to submit review',
-        variant: 'destructive',
+        title: "Error",
+        description: error.response?.data?.message || "Failed to submit review",
+        variant: "destructive",
       });
     },
   });
@@ -422,7 +481,7 @@ export function ServiceReviewForm({ serviceId, serviceOrderId, onSuccess, onCanc
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      toast({ title: 'Please select a rating', variant: 'destructive' });
+      toast({ title: "Please select a rating", variant: "destructive" });
       return;
     }
     mutation.mutate({
@@ -495,8 +554,146 @@ export function ServiceReviewForm({ serviceId, serviceOrderId, onSuccess, onCanc
           disabled={mutation.isPending || rating === 0}
           className="bg-viridian-green hover:bg-viridian-green/90"
         >
-          {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {showDetails ? 'Submit Review' : 'Submit Rating'}
+          {mutation.isPending && (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          )}
+          {showDetails ? "Submit Review" : "Submit Rating"}
+        </Button>
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
+      </div>
+    </form>
+  );
+}
+
+interface CustomReviewFormProps {
+  customOrderId: number;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+  compact?: boolean;
+}
+
+export function CustomReviewForm({
+  customOrderId,
+  onSuccess,
+  onCancel,
+  compact = false,
+}: CustomReviewFormProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [rating, setRating] = useState(0);
+  const [title, setTitle] = useState("");
+  const [comment, setComment] = useState("");
+  const [showDetails, setShowDetails] = useState(!compact);
+
+  const mutation = useMutation({
+    mutationFn: (request: CreateCustomReviewRequest) =>
+      reviewService.createCustomReview(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["custom-reviews", customOrderId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["can-review-custom", customOrderId],
+      });
+      toast({
+        title: "Review submitted!",
+        description: "Thank you for your feedback.",
+      });
+      onSuccess?.();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to submit review",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (rating === 0) {
+      toast({ title: "Please select a rating", variant: "destructive" });
+      return;
+    }
+
+    mutation.mutate({
+      customOrderId,
+      rating,
+      title: title.trim() || undefined,
+      comment: comment.trim() || undefined,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label className="mb-2 block">Your Rating *</Label>
+        <RatingInput value={rating} onChange={setRating} />
+      </div>
+
+      {compact && !showDetails && (
+        <button
+          type="button"
+          onClick={() => setShowDetails(true)}
+          className="text-sm text-viridian-green hover:underline flex items-center gap-1"
+        >
+          Add written review (optional)
+          <ChevronDown className="h-4 w-4" />
+        </button>
+      )}
+
+      {showDetails && (
+        <>
+          {compact && (
+            <button
+              type="button"
+              onClick={() => setShowDetails(false)}
+              className="text-sm text-gray-500 hover:underline flex items-center gap-1"
+            >
+              Hide written review
+              <ChevronUp className="h-4 w-4" />
+            </button>
+          )}
+          <div>
+            <Label htmlFor="custom-title">Review Title (optional)</Label>
+            <Input
+              id="custom-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Summarize your experience"
+              maxLength={200}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="custom-comment">Your Review (optional)</Label>
+            <Textarea
+              id="custom-comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Share your experience with this custom order..."
+              rows={4}
+              maxLength={2000}
+            />
+          </div>
+        </>
+      )}
+
+      <div className="flex gap-3">
+        <Button
+          type="submit"
+          disabled={mutation.isPending || rating === 0}
+          className="bg-viridian-green hover:bg-viridian-green/90"
+        >
+          {mutation.isPending && (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          )}
+          {showDetails ? "Submit Review" : "Submit Rating"}
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>

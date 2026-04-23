@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -41,7 +41,6 @@ import { DiscountBadge } from "@/components/DiscountBadge";
 import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 
 import { customOrderTemplateService } from "@/services/customOrderTemplateService";
-import { customOrderService } from "@/services/customOrderService";
 import {
   discountService,
   type DiscountValidationResult,
@@ -49,7 +48,7 @@ import {
 import { formatPrice, getDiscountAmountForDisplay } from "@/lib/currency";
 import type {
   CustomOrderTemplateField,
-  CreateCustomOrderRequest,
+  CreateCustomOrderDraftState,
 } from "@/types/customOrders";
 import { getAllTemplateImages } from "@/utils/imageUtils";
 import imageCompression from "browser-image-compression";
@@ -85,7 +84,6 @@ function CreateCustomOrderContent() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, user, isInitialized } = useAuth();
-  const queryClient = useQueryClient();
 
   const templateIdNum = templateId ? parseInt(templateId) : 0;
 
@@ -220,48 +218,6 @@ function CreateCustomOrderContent() {
     setDiscountError(null);
     setDiscountCode("");
   }, []);
-
-  // Create order mutation
-  const createOrderMutation = useMutation({
-    mutationFn: ({
-      data,
-      files,
-    }: {
-      data: CreateCustomOrderRequest;
-      files: Array<{ fieldId: number; file: File }>;
-    }) => customOrderService.create(data, files),
-    onSuccess: (order) => {
-      // Invalidate relevant queries so lists refresh immediately
-      queryClient.invalidateQueries({ queryKey: ["my-custom-orders"] });
-      queryClient.invalidateQueries({ queryKey: ["vendor", "custom-orders"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "custom-orders"] });
-
-      const isNonNegotiable = template?.negotiable === false;
-
-      if (isNonNegotiable) {
-        toast({
-          title: "Order Created!",
-          description: `Your order #${order.orderNumber} is ready for payment.`,
-        });
-        // For non-negotiable orders, redirect to order detail which will show payment options
-        navigate(`/my-custom-orders/${order.id}?action=pay`);
-      } else {
-        toast({
-          title: "Order Submitted!",
-          description: `Your custom order #${order.orderNumber} has been submitted successfully.`,
-        });
-        navigate(`/my-custom-orders/${order.id}`);
-      }
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Submission Failed",
-        description:
-          error.message || "Failed to submit order. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
 
   // Handle text/number field change
   const handleFieldChange = (
@@ -473,7 +429,7 @@ function CreateCustomOrderContent() {
     return true;
   };
 
-  // Handle form submission
+  // Handle step-1 submission and continue to shipping page
   const handleSubmit = () => {
     const isFormValid = validateForm();
     const isDescriptionValid = validateDescription();
@@ -522,18 +478,21 @@ function CreateCustomOrderContent() {
       return base;
     });
 
-    const request: CreateCustomOrderRequest = {
-      templateId: templateIdNum,
-      discountCode: appliedDiscountCode || undefined,
-      additionalDescription: additionalDescription.trim() || undefined,
-      values: requestValues,
-    };
-
     const files = values
       .filter((v) => !!v.file)
       .map((v) => ({ fieldId: v.fieldId, file: v.file as File }));
 
-    createOrderMutation.mutate({ data: request, files });
+    const draft: CreateCustomOrderDraftState = {
+      templateId: templateIdNum,
+      values: requestValues,
+      discountCode: appliedDiscountCode || undefined,
+      additionalDescription: additionalDescription.trim() || undefined,
+      files,
+    };
+
+    navigate(`/custom-orders/template/${templateIdNum}/shipping`, {
+      state: draft,
+    });
   };
 
   // Render field input based on type
@@ -1044,27 +1003,16 @@ function CreateCustomOrderContent() {
                   <div className="pt-4">
                     <Button
                       onClick={handleSubmit}
-                      disabled={createOrderMutation.isPending}
+                      disabled={false}
                       className="w-full bg-eagle-green hover:bg-viridian-green text-white h-12"
                     >
-                      {createOrderMutation.isPending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          {template.negotiable === false
-                            ? "Place Order & Pay"
-                            : "Submit Order"}
-                        </>
-                      )}
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Submit
+                      </>
                     </Button>
                     <p className="text-xs text-eagle-green/60 text-center mt-2">
-                      {template.negotiable === false
-                        ? "You will be redirected to payment after submission"
-                        : "The vendor will review your order and propose a final price"}
+                      Next: add shipping details and pin delivery location.
                     </p>
                   </div>
                 </CardContent>

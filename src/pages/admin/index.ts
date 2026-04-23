@@ -11,6 +11,7 @@ export { default as AdminFeaturedAds } from "./AdminFeaturedAds";
 export { default as AdminServices } from "./AdminServices";
 export { default as AdminCustomTemplates } from "./AdminCustomTemplates";
 export { default as AdminCustomOrders } from "./AdminCustomOrders";
+export { default as AdminBroadcasts } from "./AdminBroadcasts";
 export { default as AdminCommission } from "./AdminCommission";
 export { default as AdminRefunds } from "./AdminRefunds";
 export { default as AdminRoles } from "./AdminRoles";

@@ -1,6 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -42,6 +47,8 @@ import {
   ServiceOrderStatus,
 } from "@/services/serviceOrderService";
 import { serviceService } from "@/services/serviceService";
+import { reviewService } from "@/services/reviewService";
+import { ServiceReviewForm } from "@/components/reviews";
 
 export default function MyServiceOrders() {
   const navigate = useNavigate();
@@ -61,6 +68,8 @@ export default function MyServiceOrders() {
   const [retryingPaymentOrderId, setRetryingPaymentOrderId] = useState<
     number | null
   >(null);
+  const [selectedReviewOrder, setSelectedReviewOrder] =
+    useState<ServiceOrderResponse | null>(null);
 
   // Fetch user's service orders
   const {
@@ -73,6 +82,36 @@ export default function MyServiceOrders() {
   });
 
   const orders = ordersData?.content || [];
+
+  const reviewCandidates = useMemo(() => {
+    return orders
+      .filter(
+        (order: ServiceOrderResponse) =>
+          order.status === "COMPLETED" &&
+          order.paymentStatus === "PAID" &&
+          typeof order.service?.id === "number"
+      )
+      .map((order: ServiceOrderResponse) => ({
+        orderId: order.id,
+        serviceId: order.service!.id,
+      }));
+  }, [orders]);
+
+  const canReviewResults = useQueries({
+    queries: reviewCandidates.map((candidate) => ({
+      queryKey: ["can-review-service", candidate.serviceId],
+      queryFn: () => reviewService.canReviewService(candidate.serviceId),
+      staleTime: 2 * 60 * 1000,
+    })),
+  });
+
+  const canReviewByOrderId = useMemo(() => {
+    const resultMap = new Map<number, boolean>();
+    reviewCandidates.forEach((candidate, index) => {
+      resultMap.set(candidate.orderId, Boolean(canReviewResults[index]?.data));
+    });
+    return resultMap;
+  }, [reviewCandidates, canReviewResults]);
 
   // Cancel order mutation
   const cancelMutation = useMutation({
@@ -299,6 +338,7 @@ export default function MyServiceOrders() {
       order.status
     );
     const canContinueCheckout = isPendingPayment && isPayableStatus;
+    const canAddReview = Boolean(canReviewByOrderId.get(order.id));
 
     return (
       <motion.div
@@ -408,7 +448,10 @@ export default function MyServiceOrders() {
             )} */}
 
             {/* Quick Actions */}
-            {(canContinueCheckout || canReschedule || hasPendingReschedule) && (
+            {(canContinueCheckout ||
+              canReschedule ||
+              hasPendingReschedule ||
+              canAddReview) && (
               <div className="mt-3 pt-3 border-t border-eagle-green/10 flex gap-2 flex-wrap">
                 {canContinueCheckout && (
                   <Button
@@ -458,6 +501,19 @@ export default function MyServiceOrders() {
                   >
                     <CalendarClock className="h-4 w-4 mr-1" />
                     Reschedule
+                  </Button>
+                )}
+                {canAddReview && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-eagle-green/30 text-eagle-green hover:bg-eagle-green hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedReviewOrder(order);
+                    }}
+                  >
+                    Add Review
                   </Button>
                 )}
               </div>
@@ -539,6 +595,36 @@ export default function MyServiceOrders() {
             )}
           </div>
         )}
+
+        <Dialog
+          open={Boolean(selectedReviewOrder)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedReviewOrder(null);
+            }
+          }}
+        >
+          <DialogContent className="max-w-xl bg-white">
+            {selectedReviewOrder && selectedReviewOrder.service?.id && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>
+                    Add Review for {selectedReviewOrder.service.title}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Share feedback for this completed booking.
+                  </DialogDescription>
+                </DialogHeader>
+                <ServiceReviewForm
+                  serviceId={selectedReviewOrder.service.id}
+                  serviceOrderId={selectedReviewOrder.id}
+                  onSuccess={() => setSelectedReviewOrder(null)}
+                  onCancel={() => setSelectedReviewOrder(null)}
+                />
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Order Detail Modal */}
         <Dialog

@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { MapPin, Clock, Calendar, ChevronRight, Ticket } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,37 +16,34 @@ interface EventCardProps {
 
 export default function EventCard({ event, index = 0 }: EventCardProps) {
   const navigate = useNavigate();
-  const minPrice = event.ticketTypes?.length > 0 
-    ? Math.min(...event.ticketTypes.map(t => t.priceMinor)) 
-    : 0;
-  const currency = event.ticketTypes?.[0]?.currency || 'ETB';
+  const minPrice =
+    event.ticketTypes?.length > 0
+      ? Math.min(...event.ticketTypes.map((t) => t.priceMinor))
+      : 0;
+  const currency = event.ticketTypes?.[0]?.currency || "ETB";
 
   // Fetch event rating summary
   const { data: ratingSummary } = useQuery({
-    queryKey: ['event-rating-summary', event.id],
+    queryKey: ["event-rating-summary", event.id],
     queryFn: () => reviewService.getEventRatingSummary(event.id),
     enabled: !!event.id,
   });
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
+    return date.toLocaleString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     });
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-    >
-      <Card 
+    <div>
+      <Card
         className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-eagle-green/10 overflow-hidden"
         onClick={() => navigate(`/events/${event.id}`)}
       >
@@ -57,13 +53,16 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
             alt={event.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             loading="lazy"
-            onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+              e.currentTarget.nextElementSibling?.classList.remove("hidden");
+            }}
           />
           <div className="w-full h-full bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center hidden">
             <Calendar className="h-16 w-16 text-white/50" />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          
+
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-wrap gap-1">
             {event.isFeatured && (
@@ -96,14 +95,14 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
         <CardContent className="p-4">
           <div className="mb-2">
             <span className="text-sm font-light text-viridian-green">
-              {event.categoryName || 'Event'}
+              {event.categoryName || "Event"}
             </span>
           </div>
-          
+
           <h3 className="font-bold text-eagle-green text-lg mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">
             {event.title}
           </h3>
-          
+
           <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-2">
             <MapPin className="h-4 w-4" />
             <span className="font-light">{event.location}</span>
@@ -116,8 +115,8 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
 
           {/* Rating */}
           <div className="mb-3">
-            <CompactRating 
-              rating={ratingSummary?.averageRating || 0} 
+            <CompactRating
+              rating={ratingSummary?.averageRating || 0}
               reviewCount={ratingSummary?.totalReviews || 0}
               size="sm"
             />
@@ -132,6 +131,6 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
           </div>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 }

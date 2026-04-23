@@ -352,7 +352,10 @@ export default function StripePaymentPage() {
         type === "event"
           ? orderDetails?.totalAmountMinor || 0
           : type === "custom"
-          ? orderDetails?.finalPriceMinor || orderDetails?.basePriceMinor || 0
+          ? orderDetails?.totalMinor ||
+            orderDetails?.finalPriceMinor ||
+            orderDetails?.basePriceMinor ||
+            0
           : orderDetails?.totals?.totalMinor || 0;
       const orderCurrency =
         orderDetails?.currency || orderDetails?.currencyCode || "USD";

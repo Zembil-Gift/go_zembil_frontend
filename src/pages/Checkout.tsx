@@ -53,7 +53,11 @@ import {
   type PaymentMethod,
 } from "@/lib/countryConfig";
 import { paymentMethodConfigService } from "@/services/paymentMethodConfigService";
-import { LocationPicker, type LocationData } from "@/components/maps";
+import {
+  GoogleMapsProvider,
+  LocationPicker,
+  type LocationData,
+} from "@/components/maps";
 import { useCheckoutStore } from "@/stores/checkout-store";
 
 interface CurrencyConversionDto {
@@ -737,16 +741,16 @@ export default function Checkout() {
         .map((item: CartItem) => ({
           productId: item.productId,
           productSkuId: item.productSkuId || undefined,
-          attributes:
-            (item.selectedAttributes && item.selectedAttributes.length > 0
-              ? item.selectedAttributes
-              : item.productSku?.attributes || []
-            )
-              .slice(0, 1)
-              .map((attr) => ({
-                name: attr.name,
-                value: attr.value,
-              })),
+          attributes: (item.selectedAttributes &&
+          item.selectedAttributes.length > 0
+            ? item.selectedAttributes
+            : item.productSku?.attributes || []
+          )
+            .slice(0, 1)
+            .map((attr) => ({
+              name: attr.name,
+              value: attr.value,
+            })),
         }))
         .filter((item) => item.attributes.length > 0);
 
@@ -894,31 +898,33 @@ export default function Checkout() {
                     Click on the map or use search to pin your exact delivery
                     location
                   </p>
-                  <LocationPicker
-                    latitude={shippingCoords.latitude}
-                    longitude={shippingCoords.longitude}
-                    onLocationSelect={(loc: LocationData) => {
-                      setShippingInfo({
-                        street: loc.streetAddress || loc.formattedAddress,
-                        city: loc.city || loc.state,
-                        state: loc.state,
-                        postalCode: loc.postalCode,
-                        country: loc.country,
-                      });
-                      setShippingCoords({
-                        latitude: loc.latitude,
-                        longitude: loc.longitude,
-                        placeId: loc.placeId,
-                        formattedAddress: loc.formattedAddress,
-                      });
-                      // Fetch delivery fee estimate for the selected location
-                      if (loc.latitude && loc.longitude) {
-                        fetchDeliveryEstimate(loc.latitude, loc.longitude);
-                      }
-                    }}
-                    height="320px"
-                    placeholder="Search your delivery address..."
-                  />
+                  <GoogleMapsProvider>
+                    <LocationPicker
+                      latitude={shippingCoords.latitude}
+                      longitude={shippingCoords.longitude}
+                      onLocationSelect={(loc: LocationData) => {
+                        setShippingInfo({
+                          street: loc.streetAddress || loc.formattedAddress,
+                          city: loc.city || loc.state,
+                          state: loc.state,
+                          postalCode: loc.postalCode,
+                          country: loc.country,
+                        });
+                        setShippingCoords({
+                          latitude: loc.latitude,
+                          longitude: loc.longitude,
+                          placeId: loc.placeId,
+                          formattedAddress: loc.formattedAddress,
+                        });
+                        // Fetch delivery fee estimate for the selected location
+                        if (loc.latitude && loc.longitude) {
+                          fetchDeliveryEstimate(loc.latitude, loc.longitude);
+                        }
+                      }}
+                      height="320px"
+                      placeholder="Search your delivery address..."
+                    />
+                  </GoogleMapsProvider>
                   {shippingCoords.formattedAddress && (
                     <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
