@@ -67,6 +67,8 @@ export interface Order {
   userId: string;
   orderNumber: string;
   orderGroupNumber?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   refundedAmountMinor?: number;
   refundableRemainingMinor?: number;
   status:

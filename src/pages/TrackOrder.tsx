@@ -235,6 +235,8 @@ export default function TrackOrder() {
     (order as any).deliveryInfo?.expectedDeliveryAt;
   const deliveryPersonInfo =
     order.deliveryPersonInfo || (order as any)["delivery-person-info"];
+  const contactPhone = order.contactPhone || order.shippingAddress?.phone;
+  const contactEmail = order.contactEmail || order.shippingAddress?.email;
   const orderItems = (
     order.lines && order.lines.length > 0 ? order.lines : order.items
   ) as Array<{
@@ -513,20 +515,20 @@ export default function TrackOrder() {
               </div>
               <div>
                 <p className="font-medium text-gray-900">Contact</p>
-                {order.shippingAddress?.phone ? (
+                {contactPhone ? (
                   <div className="flex items-center space-x-2 text-gray-600">
                     <Phone size={14} />
-                    <span>{order.shippingAddress.phone}</span>
+                    <span>{contactPhone}</span>
                   </div>
                 ) : (
                   <p className="text-gray-500 text-sm">
                     No contact information
                   </p>
                 )}
-                {order.shippingAddress?.email && (
+                {contactEmail && (
                   <div className="flex items-center space-x-2 text-gray-600">
                     <Mail size={14} />
-                    <span>{order.shippingAddress.email}</span>
+                    <span>{contactEmail}</span>
                   </div>
                 )}
               </div>
