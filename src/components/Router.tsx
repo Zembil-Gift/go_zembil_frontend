@@ -97,6 +97,9 @@ const AdminCampaigns = React.lazy(() => import("@/pages/admin/AdminCampaigns"));
 const AdminCampaignParticipations = React.lazy(
   () => import("@/pages/admin/AdminCampaignParticipations")
 );
+const AdminBroadcasts = React.lazy(
+  () => import("@/pages/admin/AdminBroadcasts")
+);
 const AdminCommission = React.lazy(
   () => import("@/pages/admin/AdminCommission")
 );
@@ -926,6 +929,7 @@ export default function Router() {
           <Route path="order-assignments" element={<AdminOrderAssignments />} />
           <Route path="delivery-confirmations" element={<AdminDeliveryConfirmations />} /> */}
             <Route path="campaigns" element={<AdminCampaigns />} />
+            <Route path="broadcasts" element={<AdminBroadcasts />} />
             <Route
               path="campaign-participations"
               element={<AdminCampaignParticipations />}

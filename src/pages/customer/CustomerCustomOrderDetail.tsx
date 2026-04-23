@@ -53,6 +53,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/protected-route";
 import { getPaymentMethodsForCountry } from "@/lib/countryConfig";
+import { CustomReviewsSection } from "@/components/reviews";
 
 import { customOrderService } from "@/services/customOrderService";
 import { orderChatService } from "@/services/orderChatService";
@@ -710,6 +711,12 @@ function CustomerCustomOrderDetailContent() {
             >
               History
             </TabsTrigger>
+            <TabsTrigger
+              value="reviews"
+              className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
+            >
+              Reviews
+            </TabsTrigger>
           </TabsList>
 
           {/* Two Column Layout */}
@@ -1083,6 +1090,13 @@ function CustomerCustomOrderDetailContent() {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="reviews" className="space-y-6">
+                <CustomReviewsSection
+                  customOrderId={orderIdNum}
+                  title="Customer Review"
+                />
               </TabsContent>
             </div>
 

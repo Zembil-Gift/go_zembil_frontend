@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -32,6 +32,8 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { paymentMethodConfigService } from "@/services/paymentMethodConfigService";
+import { reviewService } from "@/services/reviewService";
+import { EventReviewForm } from "@/components/reviews";
 
 import {
   eventOrderService,
@@ -52,6 +54,8 @@ export default function MyEventTickets() {
   const [processingOrderId, setProcessingOrderId] = useState<number | null>(
     null
   );
+  const [selectedReviewOrder, setSelectedReviewOrder] =
+    useState<EventOrderResponse | null>(null);
 
   const preferredCurrencyCode = useMemo(() => {
     return (user?.preferredCurrencyCode || "ETB").toUpperCase();
@@ -106,6 +110,34 @@ export default function MyEventTickets() {
   const pendingOrders = orders.filter(
     (order: EventOrderResponse) => order.paymentStatus === "PENDING"
   );
+
+  const reviewableEventIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          pastOrders
+            .filter((order) => order.paymentStatus === "PAID")
+            .map((order) => order.eventId)
+        )
+      ),
+    [pastOrders]
+  );
+
+  const canReviewResults = useQueries({
+    queries: reviewableEventIds.map((eventId) => ({
+      queryKey: ["can-review-event", eventId],
+      queryFn: () => reviewService.canReviewEvent(eventId),
+      staleTime: 2 * 60 * 1000,
+    })),
+  });
+
+  const canReviewByEventId = useMemo(() => {
+    const resultMap = new Map<number, boolean>();
+    reviewableEventIds.forEach((eventId, index) => {
+      resultMap.set(eventId, Boolean(canReviewResults[index]?.data));
+    });
+    return resultMap;
+  }, [reviewableEventIds, canReviewResults]);
 
   const handleContinueCheckout = async (order: EventOrderResponse) => {
     const existingProvider = order.paymentProvider?.toLowerCase();
@@ -227,9 +259,11 @@ export default function MyEventTickets() {
   const OrderCard = ({
     order,
     showContinueCheckout = false,
+    showAddReview = false,
   }: {
     order: EventOrderResponse;
     showContinueCheckout?: boolean;
+    showAddReview?: boolean;
   }) => (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -284,26 +318,42 @@ export default function MyEventTickets() {
                 </span>
               </div>
 
-              {showContinueCheckout && (
-                <div className="mt-3">
-                  <Button
-                    size="sm"
-                    className="bg-eagle-green hover:bg-viridian-green text-white"
-                    disabled={processingOrderId === order.id}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleContinueCheckout(order);
-                    }}
-                  >
-                    {processingOrderId === order.id ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Initializing...
-                      </>
-                    ) : (
-                      "Continue Checkout"
-                    )}
-                  </Button>
+              {(showContinueCheckout || showAddReview) && (
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
+                  {showContinueCheckout && (
+                    <Button
+                      size="sm"
+                      className="bg-eagle-green hover:bg-viridian-green text-white"
+                      disabled={processingOrderId === order.id}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleContinueCheckout(order);
+                      }}
+                    >
+                      {processingOrderId === order.id ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Initializing...
+                        </>
+                      ) : (
+                        "Continue Checkout"
+                      )}
+                    </Button>
+                  )}
+
+                  {showAddReview && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-eagle-green/30 text-eagle-green hover:bg-eagle-green hover:text-white"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedReviewOrder(order);
+                      }}
+                    >
+                      Add Review
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -410,7 +460,13 @@ export default function MyEventTickets() {
                 <EmptyState message="No past events yet." />
               ) : (
                 pastOrders.map((order: EventOrderResponse) => (
-                  <OrderCard key={order.id} order={order} />
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    showAddReview={Boolean(
+                      canReviewByEventId.get(order.eventId)
+                    )}
+                  />
                 ))
               )}
             </TabsContent>
@@ -430,6 +486,33 @@ export default function MyEventTickets() {
             </TabsContent>
           </Tabs>
         )}
+
+        <Dialog
+          open={Boolean(selectedReviewOrder)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedReviewOrder(null);
+            }
+          }}
+        >
+          <DialogContent className="max-w-xl bg-white">
+            {selectedReviewOrder && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>
+                    Add Review for {selectedReviewOrder.eventTitle}
+                  </DialogTitle>
+                </DialogHeader>
+                <EventReviewForm
+                  eventId={selectedReviewOrder.eventId}
+                  eventOrderId={selectedReviewOrder.id}
+                  onSuccess={() => setSelectedReviewOrder(null)}
+                  onCancel={() => setSelectedReviewOrder(null)}
+                />
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Order Detail Modal */}
         <Dialog

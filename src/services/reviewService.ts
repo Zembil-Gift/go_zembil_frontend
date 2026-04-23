@@ -1,4 +1,4 @@
-import { apiService } from './apiService';
+import { apiService } from "./apiService";
 
 export interface ReviewerInfo {
   userId: number;
@@ -16,10 +16,11 @@ export interface Review {
   eventTitle?: string;
   serviceId?: number;
   serviceTitle?: string;
+  customOrderId?: number;
   rating: number;
   title?: string;
   comment?: string;
-  reviewType: 'PRODUCT' | 'VENDOR' | 'EVENT' | 'SERVICE';
+  reviewType: "PRODUCT" | "VENDOR" | "EVENT" | "SERVICE" | "CUSTOM";
   isVerifiedPurchase: boolean;
   helpfulCount: number;
   vendorResponse?: string;
@@ -81,6 +82,13 @@ export interface CreateServiceReviewRequest {
   comment?: string;
 }
 
+export interface CreateCustomReviewRequest {
+  customOrderId: number;
+  rating: number;
+  title?: string;
+  comment?: string;
+}
+
 export interface UpdateReviewRequest {
   rating?: number;
   title?: string;
@@ -104,92 +112,168 @@ export interface PagedReviewResponse {
 
 class ReviewService {
   // Product reviews
-  async createProductReview(request: CreateProductReviewRequest): Promise<Review> {
-    return apiService.postRequest<Review>('/api/v1/reviews/products', request);
+  async createProductReview(
+    request: CreateProductReviewRequest
+  ): Promise<Review> {
+    return apiService.postRequest<Review>("/api/v1/reviews/products", request);
   }
 
-  async getProductReviews(productId: number, page = 0, size = 10): Promise<PagedReviewResponse> {
+  async getProductReviews(
+    productId: number,
+    page = 0,
+    size = 10
+  ): Promise<PagedReviewResponse> {
     return apiService.getRequest<PagedReviewResponse>(
       `/api/v1/reviews/products/${productId}?page=${page}&size=${size}`
     );
   }
 
   async getProductRatingSummary(productId: number): Promise<RatingSummary> {
-    return apiService.getRequest<RatingSummary>(`/api/v1/reviews/products/${productId}/summary`);
+    return apiService.getRequest<RatingSummary>(
+      `/api/v1/reviews/products/${productId}/summary`
+    );
   }
 
   async canReviewProduct(productId: number): Promise<boolean> {
-    return apiService.getRequest<boolean>(`/api/v1/reviews/products/${productId}/can-review`);
+    return apiService.getRequest<boolean>(
+      `/api/v1/reviews/products/${productId}/can-review`
+    );
   }
 
   // Vendor reviews
-  async createVendorReview(request: CreateVendorReviewRequest): Promise<Review> {
-    return apiService.postRequest<Review>('/api/v1/reviews/vendors', request);
+  async createVendorReview(
+    request: CreateVendorReviewRequest
+  ): Promise<Review> {
+    return apiService.postRequest<Review>("/api/v1/reviews/vendors", request);
   }
 
-  async getVendorReviews(vendorId: number, page = 0, size = 10): Promise<PagedReviewResponse> {
+  async getVendorReviews(
+    vendorId: number,
+    page = 0,
+    size = 10
+  ): Promise<PagedReviewResponse> {
     return apiService.getRequest<PagedReviewResponse>(
       `/api/v1/reviews/vendors/${vendorId}?page=${page}&size=${size}`
     );
   }
 
   async getVendorRatingSummary(vendorId: number): Promise<RatingSummary> {
-    return apiService.getRequest<RatingSummary>(`/api/v1/reviews/vendors/${vendorId}/summary`);
+    return apiService.getRequest<RatingSummary>(
+      `/api/v1/reviews/vendors/${vendorId}/summary`
+    );
   }
 
   async getVendorPublicProfile(vendorId: number): Promise<VendorPublicProfile> {
-    return apiService.getRequest<VendorPublicProfile>(`/api/v1/reviews/vendors/${vendorId}/profile`);
+    return apiService.getRequest<VendorPublicProfile>(
+      `/api/v1/reviews/vendors/${vendorId}/profile`
+    );
   }
 
-  async getVendorPublicProfileByUserId(userId: number): Promise<VendorPublicProfile> {
-    return apiService.getRequest<VendorPublicProfile>(`/api/v1/reviews/vendors/by-user/${userId}/profile`);
+  async getVendorPublicProfileByUserId(
+    userId: number
+  ): Promise<VendorPublicProfile> {
+    return apiService.getRequest<VendorPublicProfile>(
+      `/api/v1/reviews/vendors/by-user/${userId}/profile`
+    );
   }
 
   async canReviewVendor(vendorId: number): Promise<boolean> {
-    return apiService.getRequest<boolean>(`/api/v1/reviews/vendors/${vendorId}/can-review`);
+    return apiService.getRequest<boolean>(
+      `/api/v1/reviews/vendors/${vendorId}/can-review`
+    );
   }
 
   // Event reviews
   async createEventReview(request: CreateEventReviewRequest): Promise<Review> {
-    return apiService.postRequest<Review>('/api/v1/reviews/events', request);
+    return apiService.postRequest<Review>("/api/v1/reviews/events", request);
   }
 
-  async getEventReviews(eventId: number, page = 0, size = 10): Promise<PagedReviewResponse> {
+  async getEventReviews(
+    eventId: number,
+    page = 0,
+    size = 10
+  ): Promise<PagedReviewResponse> {
     return apiService.getRequest<PagedReviewResponse>(
       `/api/v1/reviews/events/${eventId}?page=${page}&size=${size}`
     );
   }
 
   async getEventRatingSummary(eventId: number): Promise<RatingSummary> {
-    return apiService.getRequest<RatingSummary>(`/api/v1/reviews/events/${eventId}/summary`);
+    return apiService.getRequest<RatingSummary>(
+      `/api/v1/reviews/events/${eventId}/summary`
+    );
   }
 
   async canReviewEvent(eventId: number): Promise<boolean> {
-    return apiService.getRequest<boolean>(`/api/v1/reviews/events/${eventId}/can-review`);
+    return apiService.getRequest<boolean>(
+      `/api/v1/reviews/events/${eventId}/can-review`
+    );
   }
 
   // Service reviews
-  async createServiceReview(request: CreateServiceReviewRequest): Promise<Review> {
-    return apiService.postRequest<Review>('/api/v1/reviews/services', request);
+  async createServiceReview(
+    request: CreateServiceReviewRequest
+  ): Promise<Review> {
+    return apiService.postRequest<Review>("/api/v1/reviews/services", request);
   }
 
-  async getServiceReviews(serviceId: number, page = 0, size = 10): Promise<PagedReviewResponse> {
+  async getServiceReviews(
+    serviceId: number,
+    page = 0,
+    size = 10
+  ): Promise<PagedReviewResponse> {
     return apiService.getRequest<PagedReviewResponse>(
       `/api/v1/reviews/services/${serviceId}?page=${page}&size=${size}`
     );
   }
 
   async getServiceRatingSummary(serviceId: number): Promise<RatingSummary> {
-    return apiService.getRequest<RatingSummary>(`/api/v1/reviews/services/${serviceId}/summary`);
+    return apiService.getRequest<RatingSummary>(
+      `/api/v1/reviews/services/${serviceId}/summary`
+    );
   }
 
   async canReviewService(serviceId: number): Promise<boolean> {
-    return apiService.getRequest<boolean>(`/api/v1/reviews/services/${serviceId}/can-review`);
+    return apiService.getRequest<boolean>(
+      `/api/v1/reviews/services/${serviceId}/can-review`
+    );
+  }
+
+  // Custom order reviews
+  async createCustomReview(
+    request: CreateCustomReviewRequest
+  ): Promise<Review> {
+    return apiService.postRequest<Review>(
+      "/api/v1/reviews/custom-orders",
+      request
+    );
+  }
+
+  async getCustomReviews(
+    customOrderId: number,
+    page = 0,
+    size = 10
+  ): Promise<PagedReviewResponse> {
+    return apiService.getRequest<PagedReviewResponse>(
+      `/api/v1/reviews/custom-orders/${customOrderId}?page=${page}&size=${size}`
+    );
+  }
+
+  async canReviewCustom(customOrderId: number): Promise<boolean> {
+    return apiService.getRequest<boolean>(
+      `/api/v1/reviews/custom-orders/${customOrderId}/can-review`
+    );
   }
 
   // Common operations
-  async updateReview(reviewId: number, request: UpdateReviewRequest): Promise<Review> {
-    return apiService.putRequest<Review>(`/api/v1/reviews/${reviewId}`, request);
+  async updateReview(
+    reviewId: number,
+    request: UpdateReviewRequest
+  ): Promise<Review> {
+    return apiService.putRequest<Review>(
+      `/api/v1/reviews/${reviewId}`,
+      request
+    );
   }
 
   async deleteReview(reviewId: number): Promise<void> {
@@ -207,8 +291,14 @@ class ReviewService {
   }
 
   // Vendor operations
-  async addVendorResponse(reviewId: number, request: VendorResponseRequest): Promise<Review> {
-    return apiService.postRequest<Review>(`/api/v1/reviews/${reviewId}/vendor-response`, request);
+  async addVendorResponse(
+    reviewId: number,
+    request: VendorResponseRequest
+  ): Promise<Review> {
+    return apiService.postRequest<Review>(
+      `/api/v1/reviews/${reviewId}/vendor-response`,
+      request
+    );
   }
 }
 

@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import {
   ArrowLeft,
   MapPin,
   Calendar,
@@ -15,32 +15,32 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  ZoomIn
-} from 'lucide-react';
+  ZoomIn,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
-import { getEventImageUrl } from '@/utils/imageUtils';
-import { VendorCard, EventReviewsSection } from '@/components/reviews';
-import { reviewService } from '@/services/reviewService';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { getEventImageUrl } from "@/utils/imageUtils";
+import { VendorCard, EventReviewsSection } from "@/components/reviews";
+import { reviewService } from "@/services/reviewService";
 
-import { 
-  Event, 
+import {
+  Event,
   TicketType as EventTicketType,
   EVENT_CATEGORIES,
-} from '@/types/events';
-import { eventsService } from '@/services/eventsService';
-import { 
-  eventOrderService, 
-  EventResponse, 
+} from "@/types/events";
+import { eventsService } from "@/services/eventsService";
+import {
+  eventOrderService,
+  EventResponse,
   TicketPurchaseItem,
-  TicketType
-} from '@/services/eventOrderService';
-import { useAuth } from '@/hooks/useAuth';
-import { useActiveCurrency } from '@/hooks/useActiveCurrency';
+  TicketType,
+} from "@/services/eventOrderService";
+import { useAuth } from "@/hooks/useAuth";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 
 export default function EventDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -48,10 +48,12 @@ export default function EventDetail() {
   const { toast } = useToast();
   const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
-  
+
   // Ticket selection state - map of ticketTypeId to array of recipient info
-  const [selectedTickets, setSelectedTickets] = useState<Map<number, TicketPurchaseItem[]>>(new Map());
-  
+  const [selectedTickets, setSelectedTickets] = useState<
+    Map<number, TicketPurchaseItem[]>
+  >(new Map());
+
   // Image gallery state
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -61,15 +63,15 @@ export default function EventDetail() {
 
   // Fetch real event from API (by ID) - wait for auth so currency is correct
   const { data: apiEvent, isLoading: apiLoading } = useQuery({
-    queryKey: ['api-event', slug, activeCurrency],
+    queryKey: ["api-event", slug, activeCurrency],
     queryFn: () => eventOrderService.getEvent(Number(slug!)),
     enabled: !!slug && isNumericId && isInitialized,
   });
 
   // Fetch mock event by slug (fallback)
   const { data: mockEvent, isLoading: mockLoading } = useQuery({
-    queryKey: ['event', slug],
-    queryFn: () => slug ? eventsService.getEventBySlug(slug) : null,
+    queryKey: ["event", slug],
+    queryFn: () => (slug ? eventsService.getEventBySlug(slug) : null),
     enabled: !!slug && !isNumericId,
   });
 
@@ -80,8 +82,9 @@ export default function EventDetail() {
   // Fetch vendor profile for API events
   const vendorId = isAPIEvent ? (apiEvent as EventResponse)?.vendorId : null;
   const { data: vendorProfile } = useQuery({
-    queryKey: ['vendor-profile', vendorId],
-    queryFn: () => vendorId ? reviewService.getVendorPublicProfile(vendorId) : null,
+    queryKey: ["vendor-profile", vendorId],
+    queryFn: () =>
+      vendorId ? reviewService.getVendorPublicProfile(vendorId) : null,
     enabled: !!vendorId,
   });
 
@@ -93,7 +96,7 @@ export default function EventDetail() {
   // Helper to get total tickets
   const getTotalTickets = () => {
     let total = 0;
-    selectedTickets.forEach(tickets => total += tickets.length);
+    selectedTickets.forEach((tickets) => (total += tickets.length));
     return total;
   };
 
@@ -102,7 +105,9 @@ export default function EventDetail() {
     if (!isAPIEvent || !apiEvent || !apiEvent.ticketTypes) return 0;
     let total = 0;
     selectedTickets.forEach((tickets, ticketTypeId) => {
-      const ticketType = apiEvent.ticketTypes.find(t => t.id === ticketTypeId);
+      const ticketType = apiEvent.ticketTypes.find(
+        (t) => t.id === ticketTypeId
+      );
       if (ticketType) {
         total += ticketType.priceMinor * tickets.length;
       }
@@ -112,17 +117,20 @@ export default function EventDetail() {
 
   // Add ticket for a type
   const addTicket = (ticketTypeId: number) => {
-    const ticketType = apiEvent?.ticketTypes?.find(t => t.id === ticketTypeId);
+    const ticketType = apiEvent?.ticketTypes?.find(
+      (t) => t.id === ticketTypeId
+    );
     if (!ticketType || ticketType.availableCount === 0) return;
-    
+
     const currentTickets = selectedTickets.get(ticketTypeId) || [];
-    if (currentTickets.length >= Math.min(ticketType.availableCount, 10)) return;
+    if (currentTickets.length >= Math.min(ticketType.availableCount, 10))
+      return;
 
     const newTicket: TicketPurchaseItem = {
       ticketTypeId,
-      recipientName: '',
-      recipientEmail: '',
-      recipientPhone: '',
+      recipientName: "",
+      recipientEmail: "",
+      recipientPhone: "",
     };
 
     const newMap = new Map(selectedTickets);
@@ -147,9 +155,9 @@ export default function EventDetail() {
   const handleProceedToCheckout = () => {
     if (!isAPIEvent || getTotalTickets() === 0) {
       toast({
-        title: 'No tickets selected',
-        description: 'Please select at least one ticket to proceed.',
-        variant: 'destructive',
+        title: "No tickets selected",
+        description: "Please select at least one ticket to proceed.",
+        variant: "destructive",
       });
       return;
     }
@@ -164,38 +172,45 @@ export default function EventDetail() {
 
   const formatEventDate = (dateString: string, timezone?: string) => {
     const date = new Date(dateString);
-    const tz = timezone || 'Africa/Addis_Ababa';
+    const tz = timezone || "Africa/Addis_Ababa";
     const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
-    const eventTime = date.toLocaleString('en-US', {
+
+    const eventTime = date.toLocaleString("en-US", {
       timeZone: tz,
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     });
 
-    const userTime = userTimeZone !== tz ? 
-      date.toLocaleString('en-US', {
-        timeZone: userTimeZone,
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      }) : null;
+    const userTime =
+      userTimeZone !== tz
+        ? date.toLocaleString("en-US", {
+            timeZone: userTimeZone,
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          })
+        : null;
 
     return { eventTime, userTime };
   };
 
   const getBadgeColor = (badge: string) => {
     switch (badge) {
-      case 'new': return 'bg-yellow/20 text-eagle-green border-yellow';
-      case 'limited': return 'bg-yellow/20 text-eagle-green border-yellow/50';
-      case 'popular': return 'bg-viridian-green/20 text-viridian-green border-viridian-green/50';
-      case 'refundable': return 'bg-june-bud/20 text-eagle-green border-june-bud';
-      default: return 'bg-gray-100 text-gray-700 border-gray-300';
+      case "new":
+        return "bg-yellow/20 text-eagle-green border-yellow";
+      case "limited":
+        return "bg-yellow/20 text-eagle-green border-yellow/50";
+      case "popular":
+        return "bg-viridian-green/20 text-viridian-green border-viridian-green/50";
+      case "refundable":
+        return "bg-june-bud/20 text-eagle-green border-june-bud";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-300";
     }
   };
 
@@ -204,7 +219,9 @@ export default function EventDetail() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-eagle-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="font-light text-eagle-green">Loading event details...</p>
+          <p className="font-light text-eagle-green">
+            Loading event details...
+          </p>
         </div>
       </div>
     );
@@ -214,9 +231,16 @@ export default function EventDetail() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-eagle-green mb-2">Event Not Found</h2>
-          <p className="font-light text-eagle-green/70 mb-4">The event you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate('/events')} className="bg-eagle-green hover:bg-viridian-green text-white">
+          <h2 className="text-2xl font-bold text-eagle-green mb-2">
+            Event Not Found
+          </h2>
+          <p className="font-light text-eagle-green/70 mb-4">
+            The event you're looking for doesn't exist.
+          </p>
+          <Button
+            onClick={() => navigate("/events")}
+            className="bg-eagle-green hover:bg-viridian-green text-white"
+          >
             Browse All Events
           </Button>
         </div>
@@ -225,35 +249,59 @@ export default function EventDetail() {
   }
 
   // Adapt data based on source (API vs Mock)
-  const eventTitle = isAPIEvent ? (apiEvent as EventResponse).title : (mockEvent as Event).title;
-  const eventDescription = isAPIEvent ? (apiEvent as EventResponse).description : (mockEvent as Event).description;
-  const eventLocation = isAPIEvent ? (apiEvent as EventResponse).location : (mockEvent as Event).venue;
-  const eventCity = isAPIEvent ? (apiEvent as EventResponse).city : (mockEvent as Event).city;
-  const eventDate = isAPIEvent ? (apiEvent as EventResponse).eventDate : (mockEvent as Event).startDate;
-  const eventEndDate = isAPIEvent ? (apiEvent as EventResponse).eventEndDate : (mockEvent as Event).endDate;
-  const eventBanner = isAPIEvent 
-    ? getEventImageUrl((apiEvent as EventResponse).images, (apiEvent as EventResponse).bannerImageUrl) 
+  const eventTitle = isAPIEvent
+    ? (apiEvent as EventResponse).title
+    : (mockEvent as Event).title;
+  const eventDescription = isAPIEvent
+    ? (apiEvent as EventResponse).description
+    : (mockEvent as Event).description;
+  const eventLocation = isAPIEvent
+    ? (apiEvent as EventResponse).location
+    : (mockEvent as Event).venue;
+  const eventCity = isAPIEvent
+    ? (apiEvent as EventResponse).city
+    : (mockEvent as Event).city;
+  const eventDate = isAPIEvent
+    ? (apiEvent as EventResponse).eventDate
+    : (mockEvent as Event).startDate;
+  const eventEndDate = isAPIEvent
+    ? (apiEvent as EventResponse).eventEndDate
+    : (mockEvent as Event).endDate;
+  const eventBanner = isAPIEvent
+    ? getEventImageUrl(
+        (apiEvent as EventResponse).images,
+        (apiEvent as EventResponse).bannerImageUrl
+      )
     : (mockEvent as Event).poster;
-  const eventTimezone = isAPIEvent ? 'Africa/Addis_Ababa' : (mockEvent as Event).timezone;
-  const baseCurrency = isAPIEvent 
-    ? ((apiEvent as EventResponse).ticketTypes?.[0]?.currency || 'ETB')
+  const eventTimezone = isAPIEvent
+    ? "Africa/Addis_Ababa"
+    : (mockEvent as Event).timezone;
+  const baseCurrency = isAPIEvent
+    ? (apiEvent as EventResponse).ticketTypes?.[0]?.currency || "ETB"
     : (mockEvent as Event).baseCurrency;
-  const ticketTypes = isAPIEvent 
-    ? (apiEvent as EventResponse).ticketTypes 
+  const ticketTypes = isAPIEvent
+    ? (apiEvent as EventResponse).ticketTypes
     : (mockEvent as Event).ticketTypes;
-  const minPrice = isAPIEvent && ticketTypes?.length > 0
-    ? Math.min(...(ticketTypes as TicketType[]).map(t => t.priceMinor))
-    : ticketTypes?.length > 0 
-      ? Math.min(...(ticketTypes as EventTicketType[]).map(t => t.price)) * 100  // Convert to minor units
+  const minPrice =
+    isAPIEvent && ticketTypes?.length > 0
+      ? Math.min(...(ticketTypes as TicketType[]).map((t) => t.priceMinor))
+      : ticketTypes?.length > 0
+      ? Math.min(...(ticketTypes as EventTicketType[]).map((t) => t.price)) *
+        100 // Convert to minor units
       : 0;
 
   const { eventTime, userTime } = formatEventDate(eventDate, eventTimezone);
-  const endDateFormatted = eventEndDate ? formatEventDate(eventEndDate, eventTimezone) : null;
+  const endDateFormatted = eventEndDate
+    ? formatEventDate(eventEndDate, eventTimezone)
+    : null;
 
   const apiImages = isAPIEvent ? (apiEvent as EventResponse).images : undefined;
-  const eventImages: string[] = apiImages && apiImages.length > 0
-    ? apiImages.map(img => getEventImageUrl([img], ''))
-    : eventBanner ? [eventBanner] : [];
+  const eventImages: string[] =
+    apiImages && apiImages.length > 0
+      ? apiImages.map((img) => getEventImageUrl([img], ""))
+      : eventBanner
+      ? [eventBanner]
+      : [];
 
   const nextImage = () => {
     if (eventImages.length === 0) return;
@@ -262,7 +310,9 @@ export default function EventDetail() {
 
   const prevImage = () => {
     if (eventImages.length === 0) return;
-    setSelectedImageIndex((prev) => (prev - 1 + eventImages.length) % eventImages.length);
+    setSelectedImageIndex(
+      (prev) => (prev - 1 + eventImages.length) % eventImages.length
+    );
   };
 
   const openLightbox = (index: number) => {
@@ -288,24 +338,30 @@ export default function EventDetail() {
             >
               <X className="h-8 w-8" />
             </button>
-            
+
             {eventImages.length > 1 && (
               <>
                 <button
-                  onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prevImage();
+                  }}
                   className="absolute left-4 text-white hover:text-gray-300 z-50 p-2 bg-black/50 rounded-full"
                 >
                   <ChevronLeft className="h-8 w-8" />
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nextImage();
+                  }}
                   className="absolute right-4 text-white hover:text-gray-300 z-50 p-2 bg-black/50 rounded-full"
                 >
                   <ChevronRight className="h-8 w-8" />
                 </button>
               </>
             )}
-            
+
             <motion.img
               key={selectedImageIndex}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -316,7 +372,7 @@ export default function EventDetail() {
               className="max-h-[90vh] max-w-[90vw] object-contain"
               onClick={(e) => e.stopPropagation()}
             />
-            
+
             {eventImages.length > 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-light">
                 {selectedImageIndex + 1} / {eventImages.length}
@@ -330,7 +386,7 @@ export default function EventDetail() {
         {/* Back Button */}
         <Button
           variant="ghost"
-          onClick={() => navigate('/events')}
+          onClick={() => navigate("/events")}
           className="mb-6 text-eagle-green hover:text-viridian-green hover:bg-june-bud/10"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -347,9 +403,11 @@ export default function EventDetail() {
               transition={{ duration: 0.6 }}
             >
               {/* Main Image */}
-              <div 
+              <div
                 className="relative aspect-[3/2] rounded-2xl overflow-hidden mb-4 cursor-pointer group"
-                onClick={() => eventImages.length > 0 && openLightbox(selectedImageIndex)}
+                onClick={() =>
+                  eventImages.length > 0 && openLightbox(selectedImageIndex)
+                }
               >
                 {eventImages.length > 0 ? (
                   <>
@@ -368,25 +426,31 @@ export default function EventDetail() {
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                
+
                 {/* Navigation arrows for main image */}
                 {eventImages.length > 1 && (
                   <>
                     <button
-                      onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        prevImage();
+                      }}
                       className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
                     >
                       <ChevronLeft className="h-5 w-5 text-eagle-green" />
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        nextImage();
+                      }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
                     >
                       <ChevronRight className="h-5 w-5 text-eagle-green" />
                     </button>
                   </>
                 )}
-                
+
                 {/* Badges */}
                 {isAPIEvent && (apiEvent as EventResponse).isFeatured && (
                   <div className="absolute top-4 left-4">
@@ -395,13 +459,17 @@ export default function EventDetail() {
                     </Badge>
                   </div>
                 )}
-                {!isAPIEvent && (mockEvent as Event).badges?.map(badge => (
-                  <div key={badge} className="absolute top-4 left-4 flex flex-wrap gap-2">
-                    <Badge className={`font-bold ${getBadgeColor(badge)}`}>
-                      {badge.charAt(0).toUpperCase() + badge.slice(1)}
-                    </Badge>
-                  </div>
-                ))}
+                {!isAPIEvent &&
+                  (mockEvent as Event).badges?.map((badge) => (
+                    <div
+                      key={badge}
+                      className="absolute top-4 left-4 flex flex-wrap gap-2"
+                    >
+                      <Badge className={`font-bold ${getBadgeColor(badge)}`}>
+                        {badge.charAt(0).toUpperCase() + badge.slice(1)}
+                      </Badge>
+                    </div>
+                  ))}
 
                 {/* Location */}
                 <div className="absolute top-4 right-4">
@@ -413,10 +481,11 @@ export default function EventDetail() {
                 {/* Price */}
                 <div className="absolute bottom-4 right-4">
                   <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
-                    From {eventOrderService.formatCurrency(minPrice, baseCurrency)}
+                    From{" "}
+                    {eventOrderService.formatCurrency(minPrice, baseCurrency)}
                   </Badge>
                 </div>
-                
+
                 {/* Image counter */}
                 {eventImages.length > 1 && (
                   <div className="absolute bottom-4 left-4">
@@ -435,9 +504,9 @@ export default function EventDetail() {
                       key={index}
                       onClick={() => setSelectedImageIndex(index)}
                       className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                        index === selectedImageIndex 
-                          ? 'border-eagle-green ring-2 ring-eagle-green/30' 
-                          : 'border-transparent hover:border-gray-300'
+                        index === selectedImageIndex
+                          ? "border-eagle-green ring-2 ring-eagle-green/30"
+                          : "border-transparent hover:border-gray-300"
                       }`}
                     >
                       <img
@@ -453,8 +522,11 @@ export default function EventDetail() {
               <div className="space-y-4">
                 <div>
                   <span className="text-sm font-light text-viridian-green">
-                    {isAPIEvent ? (apiEvent as EventResponse).categoryName || 'Event' : 
-                      EVENT_CATEGORIES.find(c => c.id === (mockEvent as Event).categoryId)?.name || 'Event'}
+                    {isAPIEvent
+                      ? (apiEvent as EventResponse).categoryName || "Event"
+                      : EVENT_CATEGORIES.find(
+                          (c) => c.id === (mockEvent as Event).categoryId
+                        )?.name || "Event"}
                   </span>
                   <h1 className="text-3xl lg:text-4xl font-bold text-eagle-green mt-1">
                     {eventTitle}
@@ -466,12 +538,10 @@ export default function EventDetail() {
                     <Calendar className="h-4 w-4 text-viridian-green" />
                     <span className="font-light text-eagle-green">
                       {eventTime}
-                      {endDateFormatted && (
-                        <> — {endDateFormatted.eventTime}</>
-                      )}
+                      {endDateFormatted && <> — {endDateFormatted.eventTime}</>}
                     </span>
                   </div>
-                  
+
                   {userTime && (
                     <>
                       <Separator orientation="vertical" className="h-4" />
@@ -491,14 +561,18 @@ export default function EventDetail() {
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-4 w-4 text-viridian-green" />
-                    <span className="font-light text-eagle-green">{eventLocation}</span>
+                    <span className="font-light text-eagle-green">
+                      {eventLocation}
+                    </span>
                   </div>
-                  
+
                   <Separator orientation="vertical" className="h-4" />
-                  
+
                   <div className="flex items-center gap-1">
                     <Globe className="h-4 w-4 text-viridian-green" />
-                    <span className="font-light text-eagle-green">{eventTimezone}</span>
+                    <span className="font-light text-eagle-green">
+                      {eventTimezone}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -512,7 +586,9 @@ export default function EventDetail() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="font-bold text-eagle-green">About This Event</CardTitle>
+                  <CardTitle className="font-bold text-eagle-green">
+                    About This Event
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="font-light text-eagle-green/80 leading-relaxed">
@@ -529,19 +605,10 @@ export default function EventDetail() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
-                <h3 className="font-bold text-eagle-green mb-3">Event Organizer</h3>
+                <h3 className="font-bold text-eagle-green mb-3">
+                  Event Organizer
+                </h3>
                 <VendorCard vendor={vendorProfile} />
-              </motion.div>
-            )}
-
-            {/* Event Reviews Section */}
-            {isAPIEvent && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.35 }}
-              >
-                <EventReviewsSection eventId={Number(slug)} />
               </motion.div>
             )}
 
@@ -561,79 +628,109 @@ export default function EventDetail() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {((apiEvent as EventResponse).ticketTypes || []).map((ticket) => {
-                        const availability = eventOrderService.getAvailabilityStatus(ticket);
-                        const count = getTicketCount(ticket.id);
-                        
-                        return (
-                          <div 
-                            key={ticket.id} 
-                            className={`p-4 rounded-lg border transition-all ${
-                              count > 0 
-                                ? 'border-eagle-green bg-june-bud/10' 
-                                : 'border-gray-200'
-                            } ${!availability.available ? 'opacity-60' : ''}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-bold text-eagle-green">{ticket.name}</h4>
-                                  {!availability.available ? (
-                                    <Badge variant="secondary">Sold Out</Badge>
-                                  ) : ticket.availableCount <= 10 && (
-                                    <Badge className="bg-yellow/20 text-eagle-green border-yellow">
-                                      {availability.message}
-                                    </Badge>
+                      {((apiEvent as EventResponse).ticketTypes || []).map(
+                        (ticket) => {
+                          const availability =
+                            eventOrderService.getAvailabilityStatus(ticket);
+                          const count = getTicketCount(ticket.id);
+
+                          return (
+                            <div
+                              key={ticket.id}
+                              className={`p-4 rounded-lg border transition-all ${
+                                count > 0
+                                  ? "border-eagle-green bg-june-bud/10"
+                                  : "border-gray-200"
+                              } ${!availability.available ? "opacity-60" : ""}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-bold text-eagle-green">
+                                      {ticket.name}
+                                    </h4>
+                                    {!availability.available ? (
+                                      <Badge variant="secondary">
+                                        Sold Out
+                                      </Badge>
+                                    ) : (
+                                      ticket.availableCount <= 10 && (
+                                        <Badge className="bg-yellow/20 text-eagle-green border-yellow">
+                                          {availability.message}
+                                        </Badge>
+                                      )
+                                    )}
+                                  </div>
+                                  {ticket.description && (
+                                    <p className="font-light text-eagle-green/70 text-sm mt-1">
+                                      {ticket.description}
+                                    </p>
                                   )}
                                 </div>
-                                {ticket.description && (
-                                  <p className="font-light text-eagle-green/70 text-sm mt-1">
-                                    {ticket.description}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <div className="text-right">
-                                  <p className="font-bold text-eagle-green text-lg">
-                                    {eventOrderService.formatCurrency(ticket.priceMinor, ticket.currency)}
-                                  </p>
-                                  <p className="font-light text-eagle-green/70 text-sm">
-                                    {ticket.availableCount} available
-                                  </p>
-                                </div>
-                                
-                                {/* Quantity controls */}
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8 border-eagle-green"
-                                    onClick={() => removeTicket(ticket.id)}
-                                    disabled={count === 0}
-                                  >
-                                    <Minus className="h-4 w-4" />
-                                  </Button>
-                                  <span className="w-8 text-center font-bold text-eagle-green">
-                                    {count}
-                                  </span>
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8 border-eagle-green"
-                                    onClick={() => addTicket(ticket.id)}
-                                    disabled={!availability.available || count >= Math.min(ticket.availableCount, 10)}
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                  </Button>
+                                <div className="flex items-center gap-4">
+                                  <div className="text-right">
+                                    <p className="font-bold text-eagle-green text-lg">
+                                      {eventOrderService.formatCurrency(
+                                        ticket.priceMinor,
+                                        ticket.currency
+                                      )}
+                                    </p>
+                                    <p className="font-light text-eagle-green/70 text-sm">
+                                      {ticket.availableCount} available
+                                    </p>
+                                  </div>
+
+                                  {/* Quantity controls */}
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-8 w-8 border-eagle-green"
+                                      onClick={() => removeTicket(ticket.id)}
+                                      disabled={count === 0}
+                                    >
+                                      <Minus className="h-4 w-4" />
+                                    </Button>
+                                    <span className="w-8 text-center font-bold text-eagle-green">
+                                      {count}
+                                    </span>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-8 w-8 border-eagle-green"
+                                      onClick={() => addTicket(ticket.id)}
+                                      disabled={
+                                        !availability.available ||
+                                        count >=
+                                          Math.min(ticket.availableCount, 10)
+                                      }
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        }
+                      )}
                     </div>
                   </CardContent>
                 </Card>
+              </motion.div>
+            )}
+
+            {/* Event Reviews Section */}
+            {isAPIEvent && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.45 }}
+              >
+                <EventReviewsSection
+                  eventId={Number(slug)}
+                  allowWriteReview={false}
+                />
               </motion.div>
             )}
           </div>
@@ -661,20 +758,31 @@ export default function EventDetail() {
                       <>
                         {/* Selected tickets summary */}
                         <div className="space-y-2">
-                          {Array.from(selectedTickets.entries()).map(([ticketTypeId, tickets]) => {
-                            const ticketType = (apiEvent as EventResponse).ticketTypes?.find(t => t.id === ticketTypeId);
-                            if (!ticketType || tickets.length === 0) return null;
-                            return (
-                              <div key={ticketTypeId} className="flex justify-between text-sm">
-                                <span className="font-light text-eagle-green">
-                                  {ticketType.name} × {tickets.length}
-                                </span>
-                                <span className="font-bold text-eagle-green">
-                                  {eventOrderService.formatCurrency(ticketType.priceMinor * tickets.length, ticketType.currency)}
-                                </span>
-                              </div>
-                            );
-                          })}
+                          {Array.from(selectedTickets.entries()).map(
+                            ([ticketTypeId, tickets]) => {
+                              const ticketType = (
+                                apiEvent as EventResponse
+                              ).ticketTypes?.find((t) => t.id === ticketTypeId);
+                              if (!ticketType || tickets.length === 0)
+                                return null;
+                              return (
+                                <div
+                                  key={ticketTypeId}
+                                  className="flex justify-between text-sm"
+                                >
+                                  <span className="font-light text-eagle-green">
+                                    {ticketType.name} × {tickets.length}
+                                  </span>
+                                  <span className="font-bold text-eagle-green">
+                                    {eventOrderService.formatCurrency(
+                                      ticketType.priceMinor * tickets.length,
+                                      ticketType.currency
+                                    )}
+                                  </span>
+                                </div>
+                              );
+                            }
+                          )}
                         </div>
 
                         <Separator />
@@ -682,14 +790,19 @@ export default function EventDetail() {
                         {/* Total */}
                         <div className="bg-june-bud/10 rounded-lg p-4">
                           <div className="flex justify-between items-center">
-                            <span className="font-light text-eagle-green">Total ({getTotalTickets()} tickets)</span>
+                            <span className="font-light text-eagle-green">
+                              Total ({getTotalTickets()} tickets)
+                            </span>
                             <span className="font-bold text-eagle-green text-xl">
-                              {eventOrderService.formatCurrency(getTotalPrice(), baseCurrency)}
+                              {eventOrderService.formatCurrency(
+                                getTotalPrice(),
+                                baseCurrency
+                              )}
                             </span>
                           </div>
                         </div>
 
-                        <Button 
+                        <Button
                           className="w-full bg-eagle-green hover:bg-viridian-green text-white font-bold h-12"
                           onClick={handleProceedToCheckout}
                         >

@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
+import VendorBroadcastNotifications from "@/components/vendor/VendorBroadcastNotifications";
 
 // Helper function to check if vendor is Ethiopian
 export const isEthiopianVendor = (
@@ -384,6 +385,7 @@ export default function VendorDashboardLayout() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <VendorBroadcastNotifications className="text-white hover:bg-white/10" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -556,6 +558,10 @@ export default function VendorDashboardLayout() {
         <main
           className={cn(isCustomOrderDetailPage ? "p-0" : "p-4 sm:p-6 lg:p-8")}
         >
+          <div className="hidden lg:flex justify-end mb-4">
+            <VendorBroadcastNotifications className="text-eagle-green hover:bg-eagle-green/10" />
+          </div>
+
           {/* Vendor Approval Status Banner */}
           {vendorProfile && !isVendorApproved && (
             <div
