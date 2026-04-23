@@ -21,6 +21,8 @@ import ProductDetail from "@/pages/product-detail";
 // import Search from "@/pages/Search";
 const About = React.lazy(() => import("@/pages/about"));
 const Contact = React.lazy(() => import("@/pages/contact"));
+const Privacy = React.lazy(() => import("@/pages/privacy"));
+const Terms = React.lazy(() => import("@/pages/terms"));
 const SignIn = React.lazy(() => import("@/pages/signin"));
 const SignUp = React.lazy(() => import("@/pages/signup"));
 const VerifyEmail = React.lazy(() => import("@/pages/verify-email"));
@@ -533,6 +535,8 @@ export default function Router() {
             <Route index element={<HomeRoute />} />
             <Route path="about" element={<About />} />
             <Route path="contact" element={<Contact />} />
+            <Route path="privacy" element={<Privacy />} />
+            <Route path="terms" element={<Terms />} />
 
             {/* Auth Routes */}
             <Route path="signin" element={<SignIn />} />
