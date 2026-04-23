@@ -376,7 +376,7 @@ export default function TrackOrder() {
                         <Icon size={20} />
                       </div>
                       <p
-                        className={`text-sm font-medium ${
+                        className={`text-[11px] sm:text-sm font-medium text-center leading-tight px-1 whitespace-normal break-words ${
                           step.completed
                             ? "text-ethiopian-gold"
                             : "text-gray-600"
@@ -632,7 +632,7 @@ export default function TrackOrder() {
                                   <Icon size={20} />
                                 </div>
                                 <p
-                                  className={`text-sm font-medium text-center ${
+                                  className={`text-[11px] sm:text-sm font-medium text-center leading-tight px-1 whitespace-normal break-words ${
                                     step.completed
                                       ? "text-ethiopian-gold"
                                       : "text-gray-600"
