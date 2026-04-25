@@ -14,6 +14,7 @@ import {
   ProductPackageResponse,
 } from "@/services/packageService";
 import { formatPrice, getCurrencyDecimals } from "@/lib/currency";
+import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 
 const ITEMS_PER_PAGE = 12;
 const IN_MEMORY_FETCH_SIZE = 500;
@@ -138,6 +139,27 @@ export default function PackagesPage() {
   const totalFilteredPages = Math.max(
     1,
     Math.ceil(filteredPackages.length / ITEMS_PER_PAGE)
+  );
+
+  useSearchAnalytics(
+    {
+      searchTerm: search,
+      pageName: "Packages",
+      pageType: "PACKAGE_LIST",
+      searchSource: "PAGE_SEARCH_BAR",
+      resultCount: filteredPackages.length,
+      context: {
+        filters: {
+          subCategoryId,
+        },
+        routeParams: {
+          subCategoryId,
+        },
+      },
+    },
+    {
+      enabled: !isFetching,
+    }
   );
 
   return (

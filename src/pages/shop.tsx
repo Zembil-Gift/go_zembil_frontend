@@ -7,7 +7,10 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import FadeIn from "@/components/animations/FadeIn";
 import SlideIn from "@/components/animations/SlideIn";
-import { ProductGridStagger, ProductGridItem } from "@/components/animations/StaggerAnimations";
+import {
+  ProductGridStagger,
+  ProductGridItem,
+} from "@/components/animations/StaggerAnimations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,14 +21,29 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, ChevronRight, Package, Sparkles, Gift, X, Filter, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Search,
+  ChevronRight,
+  Package,
+  Sparkles,
+  Gift,
+  X,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import GiftItemCard from "@/components/gift-card";
-import { productService, Product, PagedProductResponse } from "@/services/productService";
+import {
+  productService,
+  Product,
+  PagedProductResponse,
+} from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
 import { getAllProductImages } from "@/utils/imageUtils";
 import { getIconByName } from "@/components/admin/IconPicker";
 import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
 import PageNavigator from "@/components/PageNavigator";
+import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 
 export default function Shop() {
   return <ShopContent />;
@@ -39,22 +57,22 @@ function ShopContent() {
 
   // Parse URL parameters
   const urlParams = new URLSearchParams(location.search);
-  const categoryIdParam = urlParams.get('categoryId');
-  const subCategoryIdParam = urlParams.get('subCategoryId');
-  const searchParam = urlParams.get('search') || '';
+  const categoryIdParam = urlParams.get("categoryId");
+  const subCategoryIdParam = urlParams.get("subCategoryId");
+  const searchParam = urlParams.get("search") || "";
 
-  const [viewMode] = useState<'grid' | 'list'>('grid');
-  const [sortBy, setSortBy] = useState('newest');
+  const [viewMode] = useState<"grid" | "list">("grid");
+  const [sortBy, setSortBy] = useState("newest");
   const [searchTerm, setSearchTerm] = useState(searchParam);
   const [debouncedSearch, setDebouncedSearch] = useState(searchParam);
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage] = useState(12);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(
-    categoryIdParam ? parseInt(categoryIdParam) : undefined
-  );
-  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<number | undefined>(
-    subCategoryIdParam ? parseInt(subCategoryIdParam) : undefined
-  );
+  const [selectedCategoryId, setSelectedCategoryId] = useState<
+    number | undefined
+  >(categoryIdParam ? parseInt(categoryIdParam) : undefined);
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<
+    number | undefined
+  >(subCategoryIdParam ? parseInt(subCategoryIdParam) : undefined);
   const [showAllSubCategories, setShowAllSubCategories] = useState(false);
 
   // Reset showAllSubCategories when category changes
@@ -72,48 +90,61 @@ function ShopContent() {
 
   // Fetch categories from backend
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['categories'],
+    queryKey: ["categories"],
     queryFn: () => categoryService.getCategories(),
     staleTime: 5 * 60 * 1000,
   });
 
   // Fetch subcategories when a category is selected
-  const { data: subCategories = [], isLoading: subCategoriesLoading } = useQuery({
-    queryKey: ['subCategories', selectedCategoryId],
-    queryFn: () => selectedCategoryId ? categoryService.getSubCategories(selectedCategoryId) : Promise.resolve([]),
-    enabled: !!selectedCategoryId,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: subCategories = [], isLoading: subCategoriesLoading } =
+    useQuery({
+      queryKey: ["subCategories", selectedCategoryId],
+      queryFn: () =>
+        selectedCategoryId
+          ? categoryService.getSubCategories(selectedCategoryId)
+          : Promise.resolve([]),
+      enabled: !!selectedCategoryId,
+      staleTime: 5 * 60 * 1000,
+    });
 
   // Get current category and subcategory objects
-  const currentCategory = useMemo(() =>
-    categories.find(c => c.id === selectedCategoryId),
+  const currentCategory = useMemo(
+    () => categories.find((c) => c.id === selectedCategoryId),
     [categories, selectedCategoryId]
   );
 
-  const currentSubCategory = useMemo(() =>
-    subCategories.find(s => s.id === selectedSubCategoryId),
+  const currentSubCategory = useMemo(
+    () => subCategories.find((s) => s.id === selectedSubCategoryId),
     [subCategories, selectedSubCategoryId]
   );
 
   // Fetch products with filters (wait for auth so currency is correct)
-  const { data: productsData, isLoading: productsLoading, isFetching } = useQuery<PagedProductResponse>({
-    queryKey: ['products', 'filtered', {
-      page: currentPage,
-      size: itemsPerPage,
-      search: debouncedSearch,
-      categoryId: selectedCategoryId,
-      subCategoryId: selectedSubCategoryId,
-      sortBy,
-      currency: activeCurrency,
-    }],
-    queryFn: () => productService.getFilteredProducts({
-      page: currentPage,
-      size: itemsPerPage,
-      search: debouncedSearch || undefined,
-      categoryId: selectedCategoryId,
-      subCategoryId: selectedSubCategoryId,
-    }),
+  const {
+    data: productsData,
+    isLoading: productsLoading,
+    isFetching,
+  } = useQuery<PagedProductResponse>({
+    queryKey: [
+      "products",
+      "filtered",
+      {
+        page: currentPage,
+        size: itemsPerPage,
+        search: debouncedSearch,
+        categoryId: selectedCategoryId,
+        subCategoryId: selectedSubCategoryId,
+        sortBy,
+        currency: activeCurrency,
+      },
+    ],
+    queryFn: () =>
+      productService.getFilteredProducts({
+        page: currentPage,
+        size: itemsPerPage,
+        search: debouncedSearch || undefined,
+        categoryId: selectedCategoryId,
+        subCategoryId: selectedSubCategoryId,
+      }),
     enabled: isInitialized,
   });
 
@@ -124,17 +155,25 @@ function ShopContent() {
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
-    if (selectedCategoryId) params.set('categoryId', selectedCategoryId.toString());
-    if (selectedSubCategoryId) params.set('subCategoryId', selectedSubCategoryId.toString());
-    if (debouncedSearch) params.set('search', debouncedSearch);
+    if (selectedCategoryId)
+      params.set("categoryId", selectedCategoryId.toString());
+    if (selectedSubCategoryId)
+      params.set("subCategoryId", selectedSubCategoryId.toString());
+    if (debouncedSearch) params.set("search", debouncedSearch);
 
     const newSearch = params.toString();
-    const currentSearch = location.search.replace('?', '');
+    const currentSearch = location.search.replace("?", "");
 
     if (newSearch !== currentSearch) {
-      navigate(`/shop${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+      navigate(`/shop${newSearch ? `?${newSearch}` : ""}`, { replace: true });
     }
-  }, [selectedCategoryId, selectedSubCategoryId, debouncedSearch, navigate, location.search]);
+  }, [
+    selectedCategoryId,
+    selectedSubCategoryId,
+    debouncedSearch,
+    navigate,
+    location.search,
+  ]);
 
   // Handle category selection
   const handleCategorySelect = (categoryId: number) => {
@@ -160,8 +199,8 @@ function ShopContent() {
 
   // Clear all filters
   const handleClearFilters = () => {
-    setSearchTerm('');
-    setDebouncedSearch('');
+    setSearchTerm("");
+    setDebouncedSearch("");
     setSelectedCategoryId(undefined);
     setSelectedSubCategoryId(undefined);
     setCurrentPage(0);
@@ -170,11 +209,36 @@ function ShopContent() {
   const displayProducts = products.map((product: Product) => ({
     ...product,
     images: getAllProductImages(product.images),
-    price: product.price || (product.productSku?.[0]?.price) || 0,
+    price: product.price || product.productSku?.[0]?.price || 0,
   }));
 
   const isLoading = productsLoading || categoriesLoading;
-  const hasFilters = selectedCategoryId || selectedSubCategoryId || debouncedSearch;
+  const hasFilters =
+    selectedCategoryId || selectedSubCategoryId || debouncedSearch;
+
+  useSearchAnalytics(
+    {
+      searchTerm: debouncedSearch,
+      pageName: "Shop",
+      pageType: "PRODUCT_LIST",
+      searchSource: "PAGE_SEARCH_BAR",
+      resultCount: totalProducts,
+      context: {
+        filters: {
+          categoryId: selectedCategoryId,
+          subCategoryId: selectedSubCategoryId,
+        },
+        sort: sortBy,
+        routeParams: {
+          categoryId: categoryIdParam,
+          subCategoryId: subCategoryIdParam,
+        },
+      },
+    },
+    {
+      enabled: !isFetching,
+    }
+  );
 
   // Loading state
   if (isLoading && !isFetching) {
@@ -192,7 +256,10 @@ function ShopContent() {
           {/* Category pills skeleton */}
           <div className="flex flex-wrap gap-3 mb-8">
             {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-12 w-36 rounded-full bg-june-bud/20" />
+              <Skeleton
+                key={i}
+                className="h-12 w-36 rounded-full bg-june-bud/20"
+              />
             ))}
           </div>
 
@@ -208,7 +275,10 @@ function ShopContent() {
           {/* Products grid skeleton */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
-              <Card key={i} className="group overflow-hidden border-0 shadow-md bg-white rounded-2xl">
+              <Card
+                key={i}
+                className="group overflow-hidden border-0 shadow-md bg-white rounded-2xl"
+              >
                 <CardContent className="p-0">
                   <Skeleton className="h-56 w-full bg-june-bud/10" />
                   <div className="p-4">
@@ -249,7 +319,9 @@ function ShopContent() {
         <FadeIn delay={0.2}>
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
-              <span className="font-bold text-xl text-eagle-green">Browse by Category</span>
+              <span className="font-bold text-xl text-eagle-green">
+                Browse by Category
+              </span>
             </div>
             <div className="flex overflow-x-auto scrollbar-hide gap-3 py-2 -mx-4 px-4 sm:mx-0 sm:px-2 sm:flex-wrap">
               {categories.map((category, index) => {
@@ -268,14 +340,19 @@ function ShopContent() {
                       onClick={() => handleCategorySelect(category.id)}
                       className={`
                         flex items-center gap-2 px-5 py-3 h-12 rounded-full transition-all duration-300
-                        ${isActive
-                          ? "bg-gradient-to-r from-eagle-green to-viridian-green text-white border-0 shadow-lg shadow-eagle-green/25 scale-105"
-                          : "bg-white border-2 border-eagle-green/20 text-eagle-green hover:border-viridian-green hover:bg-viridian-green/5 hover:text-viridian-green hover:scale-105"
+                        ${
+                          isActive
+                            ? "bg-gradient-to-r from-eagle-green to-viridian-green text-white border-0 shadow-lg shadow-eagle-green/25 scale-105"
+                            : "bg-white border-2 border-eagle-green/20 text-eagle-green hover:border-viridian-green hover:bg-viridian-green/5 hover:text-viridian-green hover:scale-105"
                         }
                       `}
                       aria-pressed={isActive}
                     >
-                      <Icon className={`h-5 w-5 transition-transform duration-300 ${isActive ? 'text-june-bud' : ''}`} />
+                      <Icon
+                        className={`h-5 w-5 transition-transform duration-300 ${
+                          isActive ? "text-june-bud" : ""
+                        }`}
+                      />
                       <span className="font-bold">{category.name}</span>
                     </Button>
                   </motion.div>
@@ -297,8 +374,12 @@ function ShopContent() {
               <h2 className="text-lg font-bold text-eagle-green flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-june-bud/20 to-viridian-green/10 rounded-xl">
                   {(() => {
-                    const CategoryIcon = getIconByName(currentCategory.iconName);
-                    return <CategoryIcon className="h-5 w-5 text-viridian-green" />;
+                    const CategoryIcon = getIconByName(
+                      currentCategory.iconName
+                    );
+                    return (
+                      <CategoryIcon className="h-5 w-5 text-viridian-green" />
+                    );
                   })()}
                 </div>
                 <span>{currentCategory.name} Categories</span>
@@ -319,13 +400,19 @@ function ShopContent() {
             {subCategoriesLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {[...Array(6)].map((_, i) => (
-                  <Skeleton key={i} className="h-24 rounded-2xl bg-june-bud/10" />
+                  <Skeleton
+                    key={i}
+                    className="h-24 rounded-2xl bg-june-bud/10"
+                  />
                 ))}
               </div>
             ) : (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 py-2 px-2">
-                  {(showAllSubCategories ? subCategories : subCategories.slice(0, 5)).map((subcategory, index) => {
+                  {(showAllSubCategories
+                    ? subCategories
+                    : subCategories.slice(0, 5)
+                  ).map((subcategory, index) => {
                     const Icon = getIconByName(subcategory.iconName);
                     const isSelected = selectedSubCategoryId === subcategory.id;
 
@@ -338,27 +425,48 @@ function ShopContent() {
                       >
                         <Button
                           variant="ghost"
-                          onClick={() => handleSubCategorySelect(subcategory.id)}
+                          onClick={() =>
+                            handleSubCategorySelect(subcategory.id)
+                          }
                           className={`
                             flex flex-col items-center gap-2 p-4 h-24 w-full rounded-2xl transition-all duration-300 border-2
-                            ${isSelected
-                              ? "bg-gradient-to-br from-viridian-green/10 to-june-bud/10 border-viridian-green text-eagle-green shadow-lg scale-105"
-                              : "bg-white/50 border-transparent text-eagle-green/70 hover:border-june-bud/30 hover:bg-june-bud/5 hover:scale-102"
+                            ${
+                              isSelected
+                                ? "bg-gradient-to-br from-viridian-green/10 to-june-bud/10 border-viridian-green text-eagle-green shadow-lg scale-105"
+                                : "bg-white/50 border-transparent text-eagle-green/70 hover:border-june-bud/30 hover:bg-june-bud/5 hover:scale-102"
                             }
                           `}
                           aria-pressed={isSelected}
                         >
-                          <div className={`p-2 rounded-xl transition-all duration-300 ${isSelected ? 'bg-viridian-green/20' : 'bg-eagle-green/5'}`}>
-                            <Icon className={`h-6 w-6 ${isSelected ? 'text-viridian-green' : 'text-eagle-green/60'}`} />
+                          <div
+                            className={`p-2 rounded-xl transition-all duration-300 ${
+                              isSelected
+                                ? "bg-viridian-green/20"
+                                : "bg-eagle-green/5"
+                            }`}
+                          >
+                            <Icon
+                              className={`h-6 w-6 ${
+                                isSelected
+                                  ? "text-viridian-green"
+                                  : "text-eagle-green/60"
+                              }`}
+                            />
                           </div>
-                          <span className={`text-xs font-bold text-center leading-tight ${isSelected ? 'text-eagle-green' : 'text-eagle-green/70'}`}>
+                          <span
+                            className={`text-xs font-bold text-center leading-tight ${
+                              isSelected
+                                ? "text-eagle-green"
+                                : "text-eagle-green/70"
+                            }`}
+                          >
                             {subcategory.name}
                           </span>
                         </Button>
                       </motion.div>
                     );
                   })}
-                  
+
                   {!showAllSubCategories && subCategories.length > 5 && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.9 }}
@@ -425,21 +533,61 @@ function ShopContent() {
                   <Filter className="h-5 w-5 text-viridian-green" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-white border border-eagle-green/10 shadow-xl rounded-xl p-1">
-                <div className="px-2 py-1.5 text-xs font-bold text-eagle-green/40 uppercase tracking-wider">Sort by</div>
-                <DropdownMenuItem onClick={() => setSortBy('newest')} className={`rounded-lg cursor-pointer ${sortBy === 'newest' ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}>
+              <DropdownMenuContent
+                align="end"
+                className="w-56 bg-white border border-eagle-green/10 shadow-xl rounded-xl p-1"
+              >
+                <div className="px-2 py-1.5 text-xs font-bold text-eagle-green/40 uppercase tracking-wider">
+                  Sort by
+                </div>
+                <DropdownMenuItem
+                  onClick={() => setSortBy("newest")}
+                  className={`rounded-lg cursor-pointer ${
+                    sortBy === "newest"
+                      ? "bg-june-bud/20 text-eagle-green font-medium"
+                      : "text-eagle-green/70 hover:bg-june-bud/10"
+                  }`}
+                >
                   Newest First
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy('popular')} className={`rounded-lg cursor-pointer ${sortBy === 'popular' ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}>
+                <DropdownMenuItem
+                  onClick={() => setSortBy("popular")}
+                  className={`rounded-lg cursor-pointer ${
+                    sortBy === "popular"
+                      ? "bg-june-bud/20 text-eagle-green font-medium"
+                      : "text-eagle-green/70 hover:bg-june-bud/10"
+                  }`}
+                >
                   Most Popular
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy('price-low')} className={`rounded-lg cursor-pointer ${sortBy === 'price-low' ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}>
+                <DropdownMenuItem
+                  onClick={() => setSortBy("price-low")}
+                  className={`rounded-lg cursor-pointer ${
+                    sortBy === "price-low"
+                      ? "bg-june-bud/20 text-eagle-green font-medium"
+                      : "text-eagle-green/70 hover:bg-june-bud/10"
+                  }`}
+                >
                   Price: Low to High
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy('price-high')} className={`rounded-lg cursor-pointer ${sortBy === 'price-high' ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}>
+                <DropdownMenuItem
+                  onClick={() => setSortBy("price-high")}
+                  className={`rounded-lg cursor-pointer ${
+                    sortBy === "price-high"
+                      ? "bg-june-bud/20 text-eagle-green font-medium"
+                      : "text-eagle-green/70 hover:bg-june-bud/10"
+                  }`}
+                >
                   Price: High to Low
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy('rating')} className={`rounded-lg cursor-pointer ${sortBy === 'rating' ? 'bg-june-bud/20 text-eagle-green font-medium' : 'text-eagle-green/70 hover:bg-june-bud/10'}`}>
+                <DropdownMenuItem
+                  onClick={() => setSortBy("rating")}
+                  className={`rounded-lg cursor-pointer ${
+                    sortBy === "rating"
+                      ? "bg-june-bud/20 text-eagle-green font-medium"
+                      : "text-eagle-green/70 hover:bg-june-bud/10"
+                  }`}
+                >
                   Highest Rated
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -510,8 +658,8 @@ function ShopContent() {
                     "{debouncedSearch}"
                     <button
                       onClick={() => {
-                        setSearchTerm('');
-                        setDebouncedSearch('');
+                        setSearchTerm("");
+                        setDebouncedSearch("");
                       }}
                       className="ml-1 hover:bg-june-bud/30 rounded-full p-0.5 transition-colors"
                     >
@@ -543,7 +691,17 @@ function ShopContent() {
                   Loading...
                 </span>
               ) : (
-                <>Showing <span className="font-bold text-eagle-green">{displayProducts.length}</span> of <span className="font-bold text-eagle-green">{totalProducts}</span> products</>
+                <>
+                  Showing{" "}
+                  <span className="font-bold text-eagle-green">
+                    {displayProducts.length}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-bold text-eagle-green">
+                    {totalProducts}
+                  </span>{" "}
+                  products
+                </>
               )}
             </p>
           </div>
@@ -558,7 +716,9 @@ function ShopContent() {
                 <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-june-bud/20 to-viridian-green/10 rounded-3xl flex items-center justify-center">
                   <Package className="h-12 w-12 text-eagle-green/40" />
                 </div>
-                <h3 className="text-2xl font-bold text-eagle-green mb-3">No products found</h3>
+                <h3 className="text-2xl font-bold text-eagle-green mb-3">
+                  No products found
+                </h3>
                 <p className="font-light text-eagle-green/60 mb-8 leading-relaxed">
                   {hasFilters
                     ? "We couldn't find any gifts matching your criteria. Try adjusting your search or filters."
@@ -577,10 +737,13 @@ function ShopContent() {
             </motion.div>
           ) : (
             <>
-              <ProductGridStagger className={`grid gap-6 ${viewMode === 'grid'
-                ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                : 'grid-cols-1'
-                }`}>
+              <ProductGridStagger
+                className={`grid gap-6 ${
+                  viewMode === "grid"
+                    ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                    : "grid-cols-1"
+                }`}
+              >
                 {displayProducts.map((product) => (
                   <ProductGridItem key={product.id}>
                     <GiftItemCard product={product} />

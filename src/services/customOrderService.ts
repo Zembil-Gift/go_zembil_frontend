@@ -2,6 +2,7 @@ import { apiService } from "./apiService";
 import { formatCurrency } from "@/lib/currency";
 import type {
   CustomOrder,
+  CustomerOngoingCustomOrdersResponse,
   CreateCustomOrderRequest,
   ProposePriceRequest,
   PaymentInitResponse,
@@ -67,6 +68,28 @@ class CustomOrderService {
 
     const url = `/api/custom-orders/customer?${queryParams.toString()}`;
     return await apiService.getRequest<PagedCustomOrderResponse>(url);
+  }
+
+  /**
+   * Get customer ongoing custom orders, optionally filtered by template.
+   */
+  async getCustomerOngoingOrders(
+    templateId?: number
+  ): Promise<CustomerOngoingCustomOrdersResponse> {
+    const queryParams = new URLSearchParams();
+
+    if (typeof templateId === "number" && !Number.isNaN(templateId)) {
+      queryParams.append("templateId", templateId.toString());
+    }
+
+    const query = queryParams.toString();
+    const url = query
+      ? `/api/custom-orders/customer/ongoing?${query}`
+      : "/api/custom-orders/customer/ongoing";
+
+    return await apiService.getRequest<CustomerOngoingCustomOrdersResponse>(
+      url
+    );
   }
 
   /**

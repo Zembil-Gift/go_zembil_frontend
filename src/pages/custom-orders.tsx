@@ -24,6 +24,7 @@ import { Search as SearchIcon, X } from "lucide-react";
 import { TemplateCard } from "./customer/CustomOrderTemplates";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
+import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 
 function CustomOrdersContent() {
   const { isInitialized } = useAuth();
@@ -92,6 +93,19 @@ function CustomOrdersContent() {
     });
 
   const approvedTemplates = approvedTemplatesData?.content || [];
+
+  useSearchAnalytics(
+    {
+      searchTerm: debouncedSearchTerm,
+      pageName: "CustomOrders",
+      pageType: "CUSTOM_ORDER_LIST",
+      searchSource: "PAGE_SEARCH_BAR",
+      resultCount: searchResults?.content?.length || 0,
+    },
+    {
+      enabled: !isSearching,
+    }
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">

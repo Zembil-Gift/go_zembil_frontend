@@ -273,6 +273,39 @@ export interface PaymentInitResponse {
   checkoutUrl?: string;
 }
 
+export interface OngoingCustomOrderSummary {
+  orderId: number;
+  orderNumber: string;
+  templateId: number | null;
+  templateName: string | null;
+  vendorId: number | null;
+  vendorBusinessName: string | null;
+  status:
+    | "SUBMITTED"
+    | "PRICE_PROPOSED"
+    | "CONFIRMED"
+    | "PAID"
+    | "IN_PROGRESS"
+    | "COMPLETED"
+    | "OUT_FOR_DELIVERY";
+  paymentStatus: "PENDING" | "PAID" | "FAILED" | "REFUNDED" | null;
+  currencyCode: string;
+  basePriceMinor: number | null;
+  finalPriceMinor: number | null;
+  totalMinor: number | null;
+  initiatedAt: string;
+  updatedAt: string;
+  paidAt: string | null;
+  deliveredAt: string | null;
+}
+
+export interface CustomerOngoingCustomOrdersResponse {
+  hasOngoingOrders: boolean;
+  totalOngoingOrders: number;
+  templateIdFilter: number | null;
+  ongoingOrders: OngoingCustomOrderSummary[];
+}
+
 export interface PagedResponse<T> {
   content: T[];
   totalElements: number;

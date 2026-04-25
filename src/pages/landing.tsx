@@ -39,6 +39,7 @@ import EventCard from "@/components/EventCard";
 import ServiceCard from "@/components/ServiceCard";
 import SectionTransition from "@/components/landing/SectionTransition";
 import CampaignBanner from "@/components/landing/CampaignBanner";
+import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 // import TestimonialsSection from "@/components/landing/TestimonialsSection";
 
 export default function Landing() {
@@ -129,6 +130,24 @@ export default function Landing() {
       total: productsCount + servicesCount + eventsCount + templatesCount,
     };
   }, [combinedSearchResults]);
+
+  useSearchAnalytics(
+    {
+      searchTerm: normalizedSearch,
+      pageName: "Landing",
+      pageType: "LANDING_SEARCH",
+      searchSource: "HERO_SEARCH_BAR",
+      resultCount: searchCounts.total,
+      context: {
+        filters: {
+          activeCategory,
+        },
+      },
+    },
+    {
+      enabled: !isSearchingCombined,
+    }
+  );
 
   // Fetch featured products (wait for auth so currency is correct)
   const {

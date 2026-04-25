@@ -50,6 +50,7 @@ import {
 import { eventOrderService, EventResponse } from "@/services/eventOrderService";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
+import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 
 // Helper function for badge colors
 export default function Events() {
@@ -152,6 +153,31 @@ export default function Events() {
     });
     setEventsPage(0);
   };
+
+  useSearchAnalytics(
+    {
+      searchTerm: eventFilters.q || "",
+      pageName: "Events",
+      pageType: "EVENT_LIST",
+      searchSource: "PAGE_SEARCH_BAR",
+      resultCount: realEventsData?.totalElements || displayEvents.length,
+      context: {
+        filters: {
+          country: eventFilters.country,
+          city: eventFilters.city,
+          category: eventFilters.category,
+          dateFrom: eventFilters.dateFrom,
+          dateTo: eventFilters.dateTo,
+          priceMin: eventFilters.priceMin,
+          priceMax: eventFilters.priceMax,
+        },
+        sort: eventFilters.sort,
+      },
+    },
+    {
+      enabled: !eventsFetching,
+    }
+  );
   return (
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
       {/* Simplified Hero Section */}
