@@ -25,6 +25,7 @@ import {
   CreditCard,
   Megaphone,
   Bell,
+  Search,
   Percent,
   Wallet,
   Undo2,
@@ -66,6 +67,11 @@ const navItems = [
   { href: "/admin/featured-ads", label: "Featured & Ads", icon: Star },
   { href: "/admin/campaigns", label: "Campaigns", icon: Megaphone },
   { href: "/admin/broadcasts", label: "Broadcasts", icon: Bell },
+  {
+    href: "/admin/search-analytics",
+    label: "Search Analytics",
+    icon: Search,
+  },
   {
     href: "/admin/campaign-participations",
     label: "Campaign Participations",

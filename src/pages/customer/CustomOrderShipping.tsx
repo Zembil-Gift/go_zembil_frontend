@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Loader2, MapPin, Package } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle,
+  Loader2,
+  MapPin,
+  Package,
+  X,
+} from "lucide-react";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -58,6 +67,8 @@ export default function CustomOrderShipping() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
   const [isAddressDirty, setIsAddressDirty] = useState(false);
+  const [isOngoingNoticeDismissed, setIsOngoingNoticeDismissed] =
+    useState(false);
   const [existingShippingAddressId, setExistingShippingAddressId] = useState<
     number | null
   >(null);
@@ -83,6 +94,20 @@ export default function CustomOrderShipping() {
     queryFn: () => customOrderTemplateService.getById(templateIdNum),
     enabled: templateIdNum > 0,
   });
+
+  const { data: ongoingOrders } = useQuery({
+    queryKey: ["customer-ongoing-custom-orders", templateIdNum],
+    queryFn: () => customOrderService.getCustomerOngoingOrders(templateIdNum),
+    enabled: Boolean(draft && templateIdNum > 0),
+    staleTime: 60 * 1000,
+  });
+
+  const hasOngoingTemplateOrders = Boolean(
+    ongoingOrders?.hasOngoingOrders && ongoingOrders.totalOngoingOrders > 0
+  );
+  const templateOngoingOrders = hasOngoingTemplateOrders
+    ? ongoingOrders!.ongoingOrders
+    : [];
 
   useEffect(() => {
     if (!draft || !templateIdNum || draft.templateId !== templateIdNum) {
@@ -291,6 +316,51 @@ export default function CustomOrderShipping() {
           </CardHeader>
 
           <CardContent className="space-y-5">
+            {hasOngoingTemplateOrders && !isOngoingNoticeDismissed && (
+              <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+                <AlertTriangle className="h-4 w-4 text-amber-700" />
+                <button
+                  type="button"
+                  aria-label="Dismiss ongoing orders notification"
+                  onClick={() => setIsOngoingNoticeDismissed(true)}
+                  className="absolute right-3 top-3 rounded-md p-1 text-amber-700 hover:bg-amber-100 hover:text-amber-900"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <AlertTitle className="text-amber-900">
+                  You Already Have Ongoing Orders For This Template
+                </AlertTitle>
+                <AlertDescription className="space-y-2 text-amber-800">
+                  <p>
+                    You currently have {ongoingOrders?.totalOngoingOrders}{" "}
+                    ongoing order(s). Please review before creating another one.
+                  </p>
+                  <div className="space-y-2">
+                    {templateOngoingOrders.map((order) => (
+                      <div
+                        key={order.orderId}
+                        className="flex items-center justify-between rounded-md border border-amber-200 bg-amber-100/50 px-3 py-2"
+                      >
+                        <p className="text-sm font-medium text-amber-900">
+                          {order.orderNumber} -{" "}
+                          {customOrderService.getStatusText(order.status)}
+                        </p>
+                        <button
+                          type="button"
+                          className="text-sm font-medium underline underline-offset-2 hover:text-amber-900"
+                          onClick={() =>
+                            navigate(`/my-custom-orders/${order.orderId}`)
+                          }
+                        >
+                          View Order
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="street">Street *</Label>

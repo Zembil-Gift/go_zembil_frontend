@@ -1,8 +1,18 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Palette, CheckCircle, ArrowRight, Sparkles, Gift, Package, Users, Zap, ChevronDown, Info
+import {
+  Palette,
+  CheckCircle,
+  ArrowRight,
+  Sparkles,
+  Gift,
+  Package,
+  Users,
+  Zap,
+  ChevronDown,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import FadeIn from "@/components/animations/FadeIn";
@@ -14,6 +24,7 @@ import { Search as SearchIcon, X } from "lucide-react";
 import { TemplateCard } from "./customer/CustomOrderTemplates";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
+import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 
 function CustomOrdersContent() {
   const { isInitialized } = useAuth();
@@ -21,27 +32,33 @@ function CustomOrdersContent() {
 
   // State for "Why Choose" section visibility with localStorage persistence
   const [isFeaturesExpanded, setIsFeaturesExpanded] = useState(() => {
-    const saved = localStorage.getItem('custom-orders-features-expanded');
-    return saved === null ? false : saved === 'true'; // Default to collapsed
+    const saved = localStorage.getItem("custom-orders-features-expanded");
+    return saved === null ? false : saved === "true"; // Default to collapsed
   });
 
   // State for "How It Works" guide visibility with localStorage persistence
   const [isGuideExpanded, setIsGuideExpanded] = useState(() => {
-    const saved = localStorage.getItem('custom-orders-guide-expanded');
-    return saved === null ? false : saved === 'true'; // Default to expanded on first visit
+    const saved = localStorage.getItem("custom-orders-guide-expanded");
+    return saved === null ? false : saved === "true"; // Default to expanded on first visit
   });
 
   useEffect(() => {
-    localStorage.setItem('custom-orders-features-expanded', isFeaturesExpanded.toString());
+    localStorage.setItem(
+      "custom-orders-features-expanded",
+      isFeaturesExpanded.toString()
+    );
   }, [isFeaturesExpanded]);
 
   useEffect(() => {
-    localStorage.setItem('custom-orders-guide-expanded', isGuideExpanded.toString());
+    localStorage.setItem(
+      "custom-orders-guide-expanded",
+      isGuideExpanded.toString()
+    );
   }, [isGuideExpanded]);
 
   // Search state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
   // Handle debouncing
   useEffect(() => {
@@ -52,19 +69,43 @@ function CustomOrdersContent() {
   }, [searchTerm]);
 
   const { data: searchResults, isLoading: isSearching } = useQuery({
-    queryKey: ['custom-order-templates-search', debouncedSearchTerm, activeCurrency],
-    queryFn: () => customOrderTemplateService.searchTemplates(debouncedSearchTerm, undefined, 0, 20),
+    queryKey: [
+      "custom-order-templates-search",
+      debouncedSearchTerm,
+      activeCurrency,
+    ],
+    queryFn: () =>
+      customOrderTemplateService.searchTemplates(
+        debouncedSearchTerm,
+        undefined,
+        0,
+        20
+      ),
     enabled: debouncedSearchTerm.length > 0 && isInitialized,
   });
 
   // Fetch approved templates for default browse section
-  const { data: approvedTemplatesData, isLoading: isApprovedTemplatesLoading } = useQuery({
-    queryKey: ['custom-order-templates-approved', activeCurrency],
-    queryFn: () => customOrderTemplateService.getApproved(0, 20),
-    enabled: isInitialized,
-  });
+  const { data: approvedTemplatesData, isLoading: isApprovedTemplatesLoading } =
+    useQuery({
+      queryKey: ["custom-order-templates-approved", activeCurrency],
+      queryFn: () => customOrderTemplateService.getApproved(0, 20),
+      enabled: isInitialized,
+    });
 
   const approvedTemplates = approvedTemplatesData?.content || [];
+
+  useSearchAnalytics(
+    {
+      searchTerm: debouncedSearchTerm,
+      pageName: "CustomOrders",
+      pageType: "CUSTOM_ORDER_LIST",
+      searchSource: "PAGE_SEARCH_BAR",
+      resultCount: searchResults?.content?.length || 0,
+    },
+    {
+      enabled: !isSearching,
+    }
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
@@ -80,12 +121,13 @@ function CustomOrdersContent() {
                   </h1>
                 </div>
                 <p className="text-sm lg:text-base font--light text-white/80 max-w-2xl">
-                  Commission unique, personalized pieces from talented Ethiopian artists
+                  Commission unique, personalized pieces from talented Ethiopian
+                  artists
                 </p>
               </div>
               <Link to="/custom-orders/categories" className="hidden md:block">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-june-bud hover:bg-june-bud/90 text-eagle-green font--bold px-6 py-3 h-auto rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <span>Browse Categories</span>
@@ -98,27 +140,30 @@ function CustomOrdersContent() {
       </section>
 
       {/* Search Bar Section */}
-      <div className="max-w-3xl mx-auto px-4 -mt-6 relative z-30">
-        <div className="bg-white rounded-2xl shadow-xl p-2 flex items-center gap-2 border border-eagle-green/10">
-          <div className="pl-4">
-            <SearchIcon className="h-5 w-5 text-eagle-green/40" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-30">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-eagle-green/20 to-viridian-green/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative bg-white rounded-2xl shadow-lg shadow-eagle-green/5 border border-eagle-green/10 overflow-hidden">
+              <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-eagle-green/40 h-5 w-5" />
+              <Input
+                type="text"
+                placeholder="Search custom order templates, artists, or categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-12 pr-12 h-14 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 font-light text-eagle-green placeholder:text-eagle-green/40 w-full"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-light-cream rounded-xl transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="h-5 w-5 text-eagle-green/40" />
+                </button>
+              )}
+            </div>
           </div>
-          <input
-            type="text"
-            placeholder="Search custom order templates, artists, or categories..."
-            className="flex-1 py-3 px-2 outline-none text-eagle-green placeholder:text-eagle-green/30 font--light"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="p-2 hover:bg-light-cream rounded-xl transition-colors"
-            >
-              <X className="h-5 w-5 text-eagle-green/40" />
-            </button>
-          )}
-        
         </div>
       </div>
 
@@ -133,10 +178,14 @@ function CustomOrdersContent() {
           >
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font--bold text-eagle-green">
-                {isSearching ? 'Searching...' : `Found ${searchResults?.content?.length || 0} templates for "${debouncedSearchTerm}"`}
+                {isSearching
+                  ? "Searching..."
+                  : `Found ${
+                      searchResults?.content?.length || 0
+                    } templates for "${debouncedSearchTerm}"`}
               </h2>
-              <button 
-                onClick={() => setSearchTerm('')}
+              <button
+                onClick={() => setSearchTerm("")}
                 className="text-eagle-green/60 hover:text-eagle-green text-sm flex items-center gap-1"
               >
                 Clear search
@@ -147,7 +196,10 @@ function CustomOrdersContent() {
             {isSearching ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-white rounded-2xl h-[400px] animate-pulse shadow-sm border border-eagle-green/5" />
+                  <div
+                    key={i}
+                    className="bg-white rounded-2xl h-[400px] animate-pulse shadow-sm border border-eagle-green/5"
+                  />
                 ))}
               </div>
             ) : searchResults?.content && searchResults.content.length > 0 ? (
@@ -161,13 +213,20 @@ function CustomOrdersContent() {
                 <div className="bg-light-cream w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
                   <SearchIcon className="h-10 w-10 text-eagle-green/20" />
                 </div>
-                <h3 className="text-xl font--bold text-eagle-green mb-2">No templates found</h3>
-                <p className="text-eagle-green/60">Try adjusting your search terms or browse our categories below.</p>
+                <h3 className="text-xl font--bold text-eagle-green mb-2">
+                  No templates found
+                </h3>
+                <p className="text-eagle-green/60">
+                  Try adjusting your search terms or browse our categories
+                  below.
+                </p>
               </div>
             )}
-            
+
             <div className="mt-12 border-t border-eagle-green/10 pt-12">
-              <h3 className="text-xl font-bold text-eagle-green mb-6 text-center">Otherwise, browse by category</h3>
+              <h3 className="text-xl font-bold text-eagle-green mb-6 text-center">
+                Otherwise, browse by category
+              </h3>
             </div>
           </motion.section>
         )}
@@ -176,9 +235,9 @@ function CustomOrdersContent() {
       {/* Features Section - Collapsible */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* <FadeIn delay={0.2}> */}
-          {/* <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+        {/* <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
             {/* Toggle Header */}
-            {/* <button
+        {/* <button
               onClick={() => setIsFeaturesExpanded(!isFeaturesExpanded)}
               className="w-full p-6 lg:p-8 flex items-center justify-between hover:bg-light-cream/30 transition-colors duration-200 group"
             >
@@ -203,8 +262,8 @@ function CustomOrdersContent() {
               </motion.div>
             </button>  */}
 
-            {/* Collapsible Content */}
-            {/* <AnimatePresence>
+        {/* Collapsible Content */}
+        {/* <AnimatePresence>
               {isFeaturesExpanded && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
@@ -262,14 +321,14 @@ function CustomOrdersContent() {
                 </motion.div>
               )}
             </AnimatePresence> */}
-          {/* </div>
+        {/* </div>
         </FadeIn> */}
 
         {/* How It Works Section - Collapsible */}
         {/* <FadeIn delay={0.5}>
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden"> */}
-            {/* Toggle Header */}
-            {/* <button
+        {/* Toggle Header */}
+        {/* <button
               onClick={() => setIsGuideExpanded(!isGuideExpanded)}
               className="w-full p-6 lg:p-8 flex items-center justify-between hover:bg-light-cream/30 transition-colors duration-200 group"
             >
@@ -294,8 +353,8 @@ function CustomOrdersContent() {
               </motion.div>
             </button> */}
 
-            {/* Collapsible Content */}
-            {/* <AnimatePresence>
+        {/* Collapsible Content */}
+        {/* <AnimatePresence>
               {isGuideExpanded && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
@@ -324,7 +383,7 @@ function CustomOrdersContent() {
                           title: "Pay", 
                           description: "Chat with the vendor to finalize details and pricing, then pay securely",
                           icon: CheckCircle */}
-                        {/* },
+        {/* },
                         { 
                           step: 4, 
                           title: "Receive Creation", 
@@ -354,7 +413,7 @@ function CustomOrdersContent() {
                             {item.description}
                           </p>
                         </motion.div> */}
-                      {/* ))}
+        {/* ))}
                     </div>
                   </div>
                 </motion.div>
@@ -368,34 +427,37 @@ function CustomOrdersContent() {
           <div className="mt-16">
             <div className="text-center mb-12">
               <h2 className="text-3xl lg:text-4xl font--bold text-eagle-green mb-4">
-                  Browse Templates
+                Browse Templates
               </h2>
               <p className="text-lg font--light text-eagle-green/70">
-                  Discover approved custom order templates from our talented vendors
+                Discover approved custom order templates from our talented
+                vendors
               </p>
             </div>
 
-              {isApprovedTemplatesLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-white rounded-2xl h-[400px] animate-pulse shadow-sm border border-eagle-green/5" />
-                  ))}
+            {isApprovedTemplatesLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-white rounded-2xl h-[400px] animate-pulse shadow-sm border border-eagle-green/5"
+                  />
+                ))}
               </div>
-              ) : approvedTemplates.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                  {approvedTemplates.map((template) => (
-                    <TemplateCard key={template.id} template={template} />
-                  ))}
+            ) : approvedTemplates.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                {approvedTemplates.map((template) => (
+                  <TemplateCard key={template.id} template={template} />
+                ))}
               </div>
             ) : (
               <div className="text-center py-12">
                 <Package className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
                 <p className="text-lg font--light text-eagle-green/70">
-                    No approved templates available yet. Check back soon!
+                  No approved templates available yet. Check back soon!
                 </p>
               </div>
             )}
-
           </div>
         </FadeIn>
       </section>

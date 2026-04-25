@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Gift, Package as PackageIcon } from "lucide-react";
@@ -14,8 +14,10 @@ import {
   ProductPackageResponse,
 } from "@/services/packageService";
 import { formatPrice, getCurrencyDecimals } from "@/lib/currency";
+import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 
 const ITEMS_PER_PAGE = 12;
+const IN_MEMORY_FETCH_SIZE = 500;
 
 const toMajor = (minor?: number, currency?: string): number => {
   if (typeof minor !== "number") return 0;
@@ -72,7 +74,10 @@ const isPackageSelectable = (pkg: ProductPackageResponse): boolean => {
     const requiredQuantity = Math.max(1, item.requiredQuantity || 1);
     return (item.availableSkus || []).some((sku) => {
       const stock = sku.stockQty ?? sku.quantity ?? 0;
-      return (sku.status || "").toUpperCase() === "ACTIVE" && stock >= requiredQuantity;
+      return (
+        (sku.status || "").toUpperCase() === "ACTIVE" &&
+        stock >= requiredQuantity
+      );
     });
   });
 };
@@ -91,12 +96,12 @@ export default function PackagesPage() {
     queryKey: [
       "packages",
       "browse",
-      { page, size: ITEMS_PER_PAGE, subCategoryId },
+      { subCategoryId, size: IN_MEMORY_FETCH_SIZE },
     ],
     queryFn: () =>
       packageService.browsePackages({
-        page,
-        size: ITEMS_PER_PAGE,
+        page: 0,
+        size: IN_MEMORY_FETCH_SIZE,
         subCategoryId,
       }),
   });
@@ -122,6 +127,41 @@ export default function PackagesPage() {
     });
   }, [visiblePackages, search]);
 
+  useEffect(() => {
+    setPage(0);
+  }, [search, subCategoryId]);
+
+  const paginatedPackages = useMemo(() => {
+    const start = page * ITEMS_PER_PAGE;
+    return filteredPackages.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredPackages, page]);
+
+  const totalFilteredPages = Math.max(
+    1,
+    Math.ceil(filteredPackages.length / ITEMS_PER_PAGE)
+  );
+
+  useSearchAnalytics(
+    {
+      searchTerm: search,
+      pageName: "Packages",
+      pageType: "PACKAGE_LIST",
+      searchSource: "PAGE_SEARCH_BAR",
+      resultCount: filteredPackages.length,
+      context: {
+        filters: {
+          subCategoryId,
+        },
+        routeParams: {
+          subCategoryId,
+        },
+      },
+    },
+    {
+      enabled: !isFetching,
+    }
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
       <section className="bg-eagle-green">
@@ -140,14 +180,19 @@ export default function PackagesPage() {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6 relative max-w-xl">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            placeholder="Search packages..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex items-center gap-3 mb-8">
+          <div className="flex-1 relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-eagle-green/20 to-viridian-green/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative bg-white rounded-2xl shadow-lg shadow-eagle-green/5 border border-eagle-green/10 overflow-hidden">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-eagle-green/40 h-5 w-5" />
+              <Input
+                placeholder="Search packages..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-12 pr-4 h-14 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 font-light text-eagle-green placeholder:text-eagle-green/40 w-full"
+              />
+            </div>
+          </div>
         </div>
 
         {isLoading && (
@@ -182,7 +227,7 @@ export default function PackagesPage() {
         {!isLoading && filteredPackages.length > 0 && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPackages.map((pkg) => {
+              {paginatedPackages.map((pkg) => {
                 const cover = getPackageCover(pkg);
                 const estimatedPrice = getEstimatedPackagePrice(pkg);
                 const isActive = (pkg.status || "").toUpperCase() === "ACTIVE";
@@ -257,10 +302,10 @@ export default function PackagesPage() {
 
             <PageNavigator
               currentPage={page}
-              totalPages={data?.totalPages || 0}
+              totalPages={totalFilteredPages}
               onPageChange={setPage}
               isLoading={isFetching}
-              totalItems={data?.totalElements}
+              totalItems={filteredPackages.length}
               itemsPerPage={ITEMS_PER_PAGE}
             />
           </>

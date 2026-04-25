@@ -40,6 +40,7 @@ import { DiscountBadge } from "@/components/DiscountBadge";
 import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
+import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 
 // Service Card Component with hover image effect
 function ServiceCard({ service }: { service: ServiceResponse }) {
@@ -402,6 +403,29 @@ export default function Services() {
     selectedCategoryId ||
     (selectedCity && selectedCity !== "all") ||
     debouncedSearch;
+
+  useSearchAnalytics(
+    {
+      searchTerm: debouncedSearch,
+      pageName: "Services",
+      pageType: "SERVICE_LIST",
+      searchSource: "PAGE_SEARCH_BAR",
+      resultCount: totalServices,
+      context: {
+        filters: {
+          categoryId: selectedCategoryId,
+          city: selectedCity === "all" ? undefined : selectedCity,
+        },
+        routeParams: {
+          categoryId: categoryIdParam,
+          city: cityParam || undefined,
+        },
+      },
+    },
+    {
+      enabled: !isFetching,
+    }
+  );
 
   // Loading state
   if (isLoading && !isFetching) {

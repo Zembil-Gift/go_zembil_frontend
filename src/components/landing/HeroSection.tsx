@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -6,11 +7,15 @@ import { Input } from "@/components/ui/input";
 interface HeroSectionProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
+  onSearchSubmit?: () => void;
+  resultsPanel?: ReactNode;
 }
 
 export default function HeroSection({
   searchTerm,
   onSearchChange,
+  onSearchSubmit,
+  resultsPanel,
 }: HeroSectionProps) {
   const { t } = useTranslation();
 
@@ -53,12 +58,26 @@ export default function HeroSection({
                   placeholder={t("homepage.hero.searchPlaceholder")}
                   value={searchTerm}
                   onChange={(e) => onSearchChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      onSearchSubmit?.();
+                    }
+                  }}
                   className="flex-1 px-4 py-3 text-charcoal placeholder-gray-500 bg-transparent border-none outline-none"
                 />
-                <Button className="bg-june-bud hover:bg-viridian-green text-white px-6 py-3 rounded-lg">
+                <Button
+                  type="button"
+                  onClick={onSearchSubmit}
+                  className="bg-june-bud hover:bg-viridian-green text-white px-6 py-3 rounded-lg"
+                >
                   <Search size={16} />
                 </Button>
               </div>
+
+              {resultsPanel ? (
+                <div className="mt-4 max-w-md">{resultsPanel}</div>
+              ) : null}
             </div>
 
             {/* Quick Stats */}
