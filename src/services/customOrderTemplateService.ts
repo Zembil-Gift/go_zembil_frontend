@@ -126,11 +126,13 @@ class CustomOrderTemplateService {
 
   async getPending(
     page: number = 0,
-    size: number = 20
+    size: number = 20,
+    sort?: string
   ): Promise<PagedCustomOrderTemplateResponse> {
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("size", size.toString());
+    if (sort) params.append("sort", sort);
     const url = `/api/custom-order-templates/pending?${params.toString()}`;
     return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
   }
@@ -138,7 +140,8 @@ class CustomOrderTemplateService {
   async getAll(
     page: number = 0,
     size: number = 20,
-    status?: string
+    status?: string,
+    sort?: string
   ): Promise<PagedCustomOrderTemplateResponse> {
     const params = new URLSearchParams();
     params.append("page", page.toString());
@@ -146,6 +149,7 @@ class CustomOrderTemplateService {
     if (status) {
       params.append("status", status);
     }
+    if (sort) params.append("sort", sort);
     const url = `/api/custom-order-templates/all?${params.toString()}`;
     return await apiService.getRequest<PagedCustomOrderTemplateResponse>(url);
   }

@@ -42,6 +42,7 @@ import {
 } from "@/services/adminService";
 import { useToast } from "@/hooks/use-toast";
 import { getProductImageUrl } from "@/utils/imageUtils";
+import FilterBar from "@/components/FilterBar";
 
 interface Product {
   id: number;
@@ -118,6 +119,11 @@ export default function AdminProducts() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    page: 0,
+    size: 20,
+    sort: "createdAt,desc",
+  });
   const [activeTab, setActiveTab] = useState("all");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
@@ -158,16 +164,18 @@ export default function AdminProducts() {
 
   // Fetch all products
   const { data: allProductsData, isLoading: allProductsLoading } = useQuery({
-    queryKey: ["admin", "all-products", searchTerm],
+    queryKey: ["admin", "all-products", filters, searchTerm],
     queryFn: async () => {
       const response = await adminService.getAllProducts(
-        0,
-        100,
+        filters.page,
+        filters.size,
         undefined,
-        searchTerm
+        searchTerm || undefined,
+        filters.sort
       );
       return response.content || [];
     },
+    keepPreviousData: true,
   });
 
   // Fetch pending products
@@ -549,6 +557,12 @@ export default function AdminProducts() {
       title="Product Management"
       description="Manage products and price update requests"
     >
+      <FilterBar
+        apiEndpoint="/api/admin/products"
+        alphabeticalProperty="name"
+        dateProperty="createdAt"
+        onFilterChange={(f) => setFilters(f)}
+      />
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}

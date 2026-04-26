@@ -89,6 +89,7 @@ const AdminFeaturedAds = React.lazy(
 const AdminCustomTemplates = React.lazy(
   () => import("@/pages/admin/AdminCustomTemplates")
 );
+const AdminOrders = React.lazy(() => import("@/pages/admin/AdminOrders"));
 const AdminCustomOrders = React.lazy(
   () => import("@/pages/admin/AdminCustomOrders")
 );
@@ -944,6 +945,7 @@ export default function Router() {
             />
             <Route path="featured-ads" element={<AdminFeaturedAds />} />
             <Route path="custom-templates" element={<AdminCustomTemplates />} />
+            <Route path="orders" element={<AdminOrders />} />
             <Route path="custom-orders" element={<AdminCustomOrders />} />
             <Route path="payment-methods" element={<AdminPaymentMethods />} />
             <Route path="refunds" element={<AdminRefunds />} />
