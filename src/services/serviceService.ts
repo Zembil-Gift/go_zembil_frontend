@@ -594,7 +594,8 @@ class ServiceService {
     status?: ServiceStatus,
     search?: string,
     page: number = 0,
-    size: number = 20
+    size: number = 20,
+    sort?: string
   ): Promise<PagedServiceResponse> {
     const queryParams = new URLSearchParams();
     queryParams.append("page", page.toString());
@@ -604,6 +605,9 @@ class ServiceService {
     }
     if (search) {
       queryParams.append("search", search);
+    }
+    if (sort) {
+      queryParams.append("sort", sort);
     }
     const url = `/api/services/admin/all?${queryParams.toString()}`;
     return await apiService.getRequest<PagedServiceResponse>(url);

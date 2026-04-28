@@ -10,6 +10,7 @@ export { default as AdminDelivery } from "./AdminDelivery";
 export { default as AdminFeaturedAds } from "./AdminFeaturedAds";
 export { default as AdminServices } from "./AdminServices";
 export { default as AdminCustomTemplates } from "./AdminCustomTemplates";
+export { default as AdminOrders } from "./AdminOrders";
 export { default as AdminCustomOrders } from "./AdminCustomOrders";
 export { default as AdminBroadcasts } from "./AdminBroadcasts";
 export { default as AdminCommission } from "./AdminCommission";

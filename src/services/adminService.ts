@@ -653,8 +653,152 @@ export interface AdminEventOrderDto {
   updatedAt?: string;
 }
 
+export type AdminOrderSortDirection = "asc" | "desc";
+
+export interface AdminCommonOrderQueryParams {
+  page?: number;
+  size?: number;
+  currency?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  minTotal?: number;
+  maxTotal?: number;
+  search?: string;
+  sortBy?: string;
+  sortDir?: AdminOrderSortDirection;
+}
+
+export interface AdminProductOrdersQueryParams
+  extends AdminCommonOrderQueryParams {
+  status?: string;
+  deliveryType?: string;
+  paymentStatus?: string;
+  deliveryConfirmed?: boolean;
+}
+
+export interface AdminEventOrdersQueryParams
+  extends AdminCommonOrderQueryParams {
+  paymentStatus?: string;
+  orderStatus?: string;
+  eventId?: number;
+  vendorId?: number;
+  paidFrom?: string;
+  paidTo?: string;
+}
+
+export interface AdminServiceOrdersQueryParams
+  extends AdminCommonOrderQueryParams {
+  status?: string;
+  paymentStatus?: string;
+  vendorId?: number;
+  serviceId?: number;
+  scheduledFrom?: string;
+  scheduledTo?: string;
+  paidFrom?: string;
+  paidTo?: string;
+}
+
+export interface AdminPackageOrdersQueryParams
+  extends AdminCommonOrderQueryParams {
+  packageId?: number;
+  vendorUserId?: number;
+  customerId?: number;
+  orderStatus?: string;
+}
+
+export interface AdminCustomOrdersQueryParams
+  extends AdminCommonOrderQueryParams {
+  status?: string;
+  paymentStatus?: string;
+  vendorId?: number;
+  templateId?: number;
+  deliveryConfirmed?: boolean;
+}
+
+export interface AdminProductOrderListItem {
+  orderId: number;
+  orderNumber: string;
+  status: string;
+  orderType?: string;
+  totalAmount: number;
+  currency: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  createdAt: string;
+  deliveryType?: string;
+  deliveryConfirmedAt?: string;
+  paymentStatus?: string;
+}
+
+export interface AdminEventOrderListItem {
+  eventOrderId: number;
+  orderNumber: string;
+  orderStatus: string;
+  paymentStatus: string;
+  totalAmount: number;
+  currency: string;
+  eventId: number;
+  eventTitle: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  paidAt?: string;
+  createdAt: string;
+}
+
+export interface AdminServiceOrderListItem {
+  serviceOrderId: number;
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  totalAmountMinor: number;
+  currency: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  vendorId: number;
+  vendorName: string;
+  serviceId: number;
+  serviceTitle: string;
+  scheduledDateTime?: string;
+  paidAt?: string;
+  createdAt: string;
+}
+
+export interface AdminPackageOrderListItem {
+  packageSaleId: number;
+  packageId: number;
+  packageName: string;
+  vendorUserId: number;
+  vendorName: string;
+  orderId: number;
+  orderNumber: string;
+  orderStatus: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  packageQuantity: number;
+  itemCount: number;
+  totalPriceMinor: number;
+  currency: string;
+  createdAt: string;
+}
+
 class AdminService {
   private readonly MAX_REJECTION_REASON_LENGTH = 1000;
+
+  private appendOrderQueryParams(
+    search: URLSearchParams,
+    params: Record<string, string | number | boolean | undefined>
+  ): void {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") {
+        return;
+      }
+      search.append(key, String(value));
+    });
+  }
 
   private normalizeRejectionReason(reason: string): string {
     const trimmedReason = reason?.trim();
@@ -845,13 +989,17 @@ class AdminService {
   async getVendors(
     page: number = 0,
     size: number = 20,
-    search?: string
+    search?: string,
+    sort?: string
   ): Promise<PaginatedResponse<VendorResponse>> {
-    let url = `/api/admin/vendors?page=${page}&size=${size}`;
-    if (search) {
-      url += `&search=${encodeURIComponent(search)}`;
-    }
-    return await apiService.getRequest<PaginatedResponse<VendorResponse>>(url);
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("size", size.toString());
+    if (search) params.append("search", search);
+    if (sort) params.append("sort", sort);
+    return await apiService.getRequest<PaginatedResponse<VendorResponse>>(
+      `/api/admin/vendors?${params.toString()}`
+    );
   }
 
   async getVendorById(vendorId: number): Promise<VendorResponse> {
@@ -1059,16 +1207,157 @@ class AdminService {
     return await apiService.postRequest<AdminEventOrderDto>(url, {});
   }
 
+  async getAdminProductOrders(
+    params: AdminProductOrdersQueryParams = {}
+  ): Promise<PaginatedResponse<AdminProductOrderListItem>> {
+    const search = new URLSearchParams();
+    this.appendOrderQueryParams(search, {
+      page: params.page ?? 0,
+      size: params.size ?? 20,
+      status: params.status,
+      deliveryType: params.deliveryType,
+      paymentStatus: params.paymentStatus,
+      deliveryConfirmed: params.deliveryConfirmed,
+      currency: params.currency,
+      createdFrom: params.createdFrom,
+      createdTo: params.createdTo,
+      minTotal: params.minTotal,
+      maxTotal: params.maxTotal,
+      search: params.search,
+      sortBy: params.sortBy ?? "createdAt",
+      sortDir: params.sortDir ?? "desc",
+    });
+
+    return await apiService.getRequest<
+      PaginatedResponse<AdminProductOrderListItem>
+    >(`/api/admin/orders?${search.toString()}`);
+  }
+
+  async getAdminCustomOrders(
+    params: AdminCustomOrdersQueryParams = {}
+  ): Promise<PaginatedResponse<AdminProductOrderListItem>> {
+    const search = new URLSearchParams();
+    this.appendOrderQueryParams(search, {
+      page: params.page ?? 0,
+      size: params.size ?? 20,
+      status: params.status,
+      paymentStatus: params.paymentStatus,
+      vendorId: params.vendorId,
+      templateId: params.templateId,
+      deliveryConfirmed: params.deliveryConfirmed,
+      currency: params.currency,
+      createdFrom: params.createdFrom,
+      createdTo: params.createdTo,
+      minTotal: params.minTotal,
+      maxTotal: params.maxTotal,
+      search: params.search,
+      sortBy: params.sortBy ?? "createdAt",
+      sortDir: params.sortDir ?? "desc",
+    });
+
+    return await apiService.getRequest<
+      PaginatedResponse<AdminProductOrderListItem>
+    >(`/api/admin/custom-orders?${search.toString()}`);
+  }
+
+  async getAdminEventOrders(
+    params: AdminEventOrdersQueryParams = {}
+  ): Promise<PaginatedResponse<AdminEventOrderListItem>> {
+    const search = new URLSearchParams();
+    this.appendOrderQueryParams(search, {
+      page: params.page ?? 0,
+      size: params.size ?? 20,
+      paymentStatus: params.paymentStatus,
+      orderStatus: params.orderStatus,
+      eventId: params.eventId,
+      vendorId: params.vendorId,
+      currency: params.currency,
+      createdFrom: params.createdFrom,
+      createdTo: params.createdTo,
+      paidFrom: params.paidFrom,
+      paidTo: params.paidTo,
+      minTotal: params.minTotal,
+      maxTotal: params.maxTotal,
+      search: params.search,
+      sortBy: params.sortBy ?? "createdAt",
+      sortDir: params.sortDir ?? "desc",
+    });
+
+    return await apiService.getRequest<
+      PaginatedResponse<AdminEventOrderListItem>
+    >(`/api/admin/event-orders?${search.toString()}`);
+  }
+
+  async getAdminServiceOrders(
+    params: AdminServiceOrdersQueryParams = {}
+  ): Promise<PaginatedResponse<AdminServiceOrderListItem>> {
+    const search = new URLSearchParams();
+    this.appendOrderQueryParams(search, {
+      page: params.page ?? 0,
+      size: params.size ?? 20,
+      status: params.status,
+      paymentStatus: params.paymentStatus,
+      vendorId: params.vendorId,
+      serviceId: params.serviceId,
+      currency: params.currency,
+      createdFrom: params.createdFrom,
+      createdTo: params.createdTo,
+      scheduledFrom: params.scheduledFrom,
+      scheduledTo: params.scheduledTo,
+      paidFrom: params.paidFrom,
+      paidTo: params.paidTo,
+      minTotal: params.minTotal,
+      maxTotal: params.maxTotal,
+      search: params.search,
+      sortBy: params.sortBy ?? "createdAt",
+      sortDir: params.sortDir ?? "desc",
+    });
+
+    return await apiService.getRequest<
+      PaginatedResponse<AdminServiceOrderListItem>
+    >(`/api/admin/service-orders?${search.toString()}`);
+  }
+
+  async getAdminPackageOrders(
+    params: AdminPackageOrdersQueryParams = {}
+  ): Promise<PaginatedResponse<AdminPackageOrderListItem>> {
+    const search = new URLSearchParams();
+    this.appendOrderQueryParams(search, {
+      page: params.page ?? 0,
+      size: params.size ?? 20,
+      packageId: params.packageId,
+      vendorUserId: params.vendorUserId,
+      customerId: params.customerId,
+      orderStatus: params.orderStatus,
+      currency: params.currency,
+      createdFrom: params.createdFrom,
+      createdTo: params.createdTo,
+      minTotal: params.minTotal,
+      maxTotal: params.maxTotal,
+      search: params.search,
+      sortBy: params.sortBy ?? "createdAt",
+      sortDir: params.sortDir ?? "desc",
+    });
+
+    return await apiService.getRequest<
+      PaginatedResponse<AdminPackageOrderListItem>
+    >(`/api/admin/package-orders?${search.toString()}`);
+  }
+
   async getAllEvents(
     page: number = 0,
     size: number = 20,
-    status?: string
+    status?: string,
+    sort?: string
   ): Promise<PaginatedResponse<EventResponse>> {
-    let url = `/api/admin/events?page=${page}&size=${size}`;
-    if (status) {
-      url += `&status=${status}`;
-    }
-    return await apiService.getRequest<PaginatedResponse<EventResponse>>(url);
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("size", size.toString());
+    if (status) params.append("status", status);
+    if (sort) params.append("sort", sort);
+    return await apiService.getRequest<PaginatedResponse<EventResponse>>(
+      `/api/admin/events?${params.toString()}`
+    );
   }
 
   async getPendingEvents(
@@ -1150,7 +1439,8 @@ class AdminService {
     page: number = 0,
     size: number = 20,
     status?: string,
-    search?: string
+    search?: string,
+    sort?: string
   ): Promise<PaginatedResponse<any>> {
     const params = new URLSearchParams();
     params.append("page", page.toString());
@@ -1160,6 +1450,9 @@ class AdminService {
     }
     if (search) {
       params.append("search", search);
+    }
+    if (sort) {
+      params.append("sort", sort);
     }
     return await apiService.getRequest<PaginatedResponse<any>>(
       `/api/admin/products?${params.toString()}`
