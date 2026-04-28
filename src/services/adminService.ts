@@ -706,6 +706,15 @@ export interface AdminPackageOrdersQueryParams
   orderStatus?: string;
 }
 
+export interface AdminCustomOrdersQueryParams
+  extends AdminCommonOrderQueryParams {
+  status?: string;
+  paymentStatus?: string;
+  vendorId?: number;
+  templateId?: number;
+  deliveryConfirmed?: boolean;
+}
+
 export interface AdminProductOrderListItem {
   orderId: number;
   orderNumber: string;
@@ -1222,6 +1231,33 @@ class AdminService {
     return await apiService.getRequest<
       PaginatedResponse<AdminProductOrderListItem>
     >(`/api/admin/orders?${search.toString()}`);
+  }
+
+  async getAdminCustomOrders(
+    params: AdminCustomOrdersQueryParams = {}
+  ): Promise<PaginatedResponse<AdminProductOrderListItem>> {
+    const search = new URLSearchParams();
+    this.appendOrderQueryParams(search, {
+      page: params.page ?? 0,
+      size: params.size ?? 20,
+      status: params.status,
+      paymentStatus: params.paymentStatus,
+      vendorId: params.vendorId,
+      templateId: params.templateId,
+      deliveryConfirmed: params.deliveryConfirmed,
+      currency: params.currency,
+      createdFrom: params.createdFrom,
+      createdTo: params.createdTo,
+      minTotal: params.minTotal,
+      maxTotal: params.maxTotal,
+      search: params.search,
+      sortBy: params.sortBy ?? "createdAt",
+      sortDir: params.sortDir ?? "desc",
+    });
+
+    return await apiService.getRequest<
+      PaginatedResponse<AdminProductOrderListItem>
+    >(`/api/admin/custom-orders?${search.toString()}`);
   }
 
   async getAdminEventOrders(

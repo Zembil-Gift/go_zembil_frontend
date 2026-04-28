@@ -573,6 +573,9 @@ export default function TrackOrder() {
                   const primaryProductName =
                     subOrderItems.find((item) => item.productName)
                       ?.productName || "Product";
+                  const primaryProductId =
+                    subOrderItems.find((item) => item.productName)
+                      ?.productId;
                   const remainingItemCount = Math.max(
                     subOrderItems.length - 1,
                     0
@@ -590,7 +593,16 @@ export default function TrackOrder() {
                       <div className="flex items-center justify-between gap-3 mb-3">
                         <div>
                           <p className="font-semibold text-gray-900">
-                            {subOrderTitle}
+                            {primaryProductId ? (
+                              <a
+                                href={`/product/${primaryProductId}`}
+                                className="text-ethiopian-gold hover:underline"
+                              >
+                                {subOrderTitle}
+                              </a>
+                            ) : (
+                              subOrderTitle
+                            )}
                           </p>
                           {subOrder.eta && (
                             <p className="text-sm text-gray-500 mt-1">
@@ -717,7 +729,12 @@ export default function TrackOrder() {
                                     : "col-span-8"
                                 }`}
                               >
-                                {item.productName || "Product"}
+                                <a
+                                  href={`/product/${item.productId}`}
+                                  className="text-ethiopian-gold hover:underline"
+                                >
+                                  {item.productName || "Product"}
+                                </a>
                               </div>
                               <div
                                 className={`font-medium text-gray-700 ${
@@ -790,7 +807,12 @@ export default function TrackOrder() {
                         hasOrderItemAttributes ? "col-span-5" : "col-span-8"
                       }`}
                     >
-                      {item.productName || "Product"}
+                      <a
+                        href={`/product/${item.productId}`}
+                        className="text-ethiopian-gold hover:underline"
+                      >
+                        {item.productName || "Product"}
+                      </a>
                     </div>
                     <div
                       className={`font-medium text-gray-700 ${

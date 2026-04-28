@@ -68,6 +68,7 @@ interface OrderFilterState {
   packageId: string;
   vendorUserId: string;
   customerId: string;
+  templateId: string;
 }
 
 interface SectionConfig {
@@ -144,6 +145,7 @@ const DEFAULT_FILTERS: OrderFilterState = {
   packageId: "",
   vendorUserId: "",
   customerId: "",
+  templateId: "",
 };
 
 const SECTION_DEFAULTS: Record<OrderSection, OrderFilterState> = {
@@ -166,16 +168,13 @@ const SORT_FIELDS_BY_SECTION: Record<OrderSection, string[]> = {
   products: [
     "createdAt",
     "totalAmount",
-    "status",
-    "paymentStatus",
     "orderNumber",
   ],
   events: [
     "createdAt",
     "totalAmount",
-    "orderStatus",
-    "paymentStatus",
-    "paidAt",
+  
+    // "paidAt",
   ],
   services: [
     "createdAt",
@@ -187,8 +186,7 @@ const SORT_FIELDS_BY_SECTION: Record<OrderSection, string[]> = {
   custom: [
     "createdAt",
     "totalAmount",
-    "status",
-    "paymentStatus",
+  
     "orderNumber",
   ],
   packages: [
@@ -352,23 +350,26 @@ export default function AdminOrders() {
         });
       }
 
+      if (activeSection === "custom") {
+        return await adminService.getAdminCustomOrders({
+          ...commonParams,
+          status: currentFilters.status || undefined,
+          paymentStatus: currentFilters.paymentStatus || undefined,
+          vendorId: toOptionalNumber(currentFilters.vendorId),
+          templateId: toOptionalNumber(currentFilters.templateId),
+          deliveryConfirmed:
+            currentFilters.deliveryConfirmed === ""
+              ? undefined
+              : currentFilters.deliveryConfirmed === "true",
+        });
+      }
       const productResponse = await adminService.getAdminProductOrders({
         ...commonParams,
         status: currentFilters.status || undefined,
         paymentStatus: currentFilters.paymentStatus || undefined,
       });
 
-      const customOnly = productResponse.content.filter(
-        (order) => order.orderType?.toUpperCase() === "CUSTOM"
-      );
-
-      return {
-        ...productResponse,
-        content: customOnly,
-        totalElements: customOnly.length,
-        totalPages: 1,
-        number: 0,
-      };
+      return productResponse;
     },
     placeholderData: keepPreviousData,
   });
@@ -584,7 +585,7 @@ export default function AdminOrders() {
               </Select>
             )}
 
-            {activeSection === "products" && (
+            {/* {activeSection === "products" && (
               <Select
                 value={currentFilters.deliveryType || "all"}
                 onValueChange={(value) =>
@@ -603,9 +604,9 @@ export default function AdminOrders() {
                   <SelectItem value="DELIVERY">DELIVERY</SelectItem>
                 </SelectContent>
               </Select>
-            )}
+            )} */}
 
-            {activeSection === "products" && (
+            {/* {activeSection === "products" && (
               <Select
                 value={
                   currentFilters.deliveryConfirmed === ""
@@ -628,7 +629,7 @@ export default function AdminOrders() {
                   <SelectItem value="false">Not Confirmed</SelectItem>
                 </SelectContent>
               </Select>
-            )}
+            )} */}
 
             {(activeSection === "events" || activeSection === "packages") && (
               <Select
@@ -687,7 +688,7 @@ export default function AdminOrders() {
               />
             )}
 
-            {activeSection === "services" && (
+            {/* {activeSection === "services" && (
               <Input
                 type="datetime-local"
                 value={currentFilters.scheduledFrom}
@@ -705,9 +706,9 @@ export default function AdminOrders() {
                   updateCurrentFilter("scheduledTo", event.target.value)
                 }
               />
-            )}
+            )} */}
 
-            {(activeSection === "events" || activeSection === "services") && (
+            {/* {(activeSection === "events" || activeSection === "services") && (
               <Input
                 type="datetime-local"
                 value={currentFilters.paidFrom}
@@ -725,7 +726,7 @@ export default function AdminOrders() {
                   updateCurrentFilter("paidTo", event.target.value)
                 }
               />
-            )}
+            )} */}
 
             {activeSection === "packages" && (
               <Input
@@ -769,8 +770,8 @@ export default function AdminOrders() {
 
           {isCustomSection && (
             <p className="text-xs text-muted-foreground">
-              Custom uses the product orders endpoint and shows only items where
-              orderType is CUSTOM.
+              Custom orders use the dedicated custom orders endpoint and support
+              template filtering.
             </p>
           )}
         </CardContent>
@@ -808,6 +809,8 @@ export default function AdminOrders() {
                       <TableHead>Status</TableHead>
                       <TableHead>Payment</TableHead>
                       <TableHead>Customer</TableHead>
+                      <TableHead>Vendor</TableHead>
+                      <TableHead>Contact</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead>Details</TableHead>
                       <TableHead>Created</TableHead>
@@ -817,7 +820,7 @@ export default function AdminOrders() {
                     {rows.length === 0 && (
                       <TableRow>
                         <TableCell
-                          colSpan={7}
+                          colSpan={9}
                           className="py-8 text-center text-muted-foreground"
                         >
                           No orders found for the selected filters.
@@ -858,6 +861,38 @@ export default function AdminOrders() {
                                 {order.customerEmail}
                               </p>
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const v = (order as any).vendors?.[0];
+                              const store = v?.storeName || (order as any).storeName;
+                              const name = v?.vendorName || (order as any).vendorName;
+                              if (!store && !name) return "-";
+                              return (
+                                <div className="text-sm">
+                                  {store && <p>{store}</p>}
+                                  {name && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {name}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const v = (order as any).vendors?.[0];
+                              const email = v?.vendorEmail || (order as any).vendorEmail;
+                              const phone = v?.vendorPhone || (order as any).vendorPhone;
+                              if (!email && !phone) return "-";
+                              return (
+                                <div className="text-xs text-muted-foreground">
+                                  {email && <p>{email}</p>}
+                                  {phone && <p>{phone}</p>}
+                                </div>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell>
                             {formatCurrency(order.totalAmount, order.currency)}
@@ -907,6 +942,38 @@ export default function AdminOrders() {
                                 {order.customerEmail}
                               </p>
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const v = (order as any).vendors?.[0];
+                              const store = v?.storeName || (order as any).storeName;
+                              const name = v?.vendorName || (order as any).vendorName;
+                              if (!store && !name) return "-";
+                              return (
+                                <div className="text-sm">
+                                  {store && <p>{store}</p>}
+                                  {name && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {name}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const v = (order as any).vendors?.[0];
+                              const email = v?.vendorEmail || (order as any).vendorEmail;
+                              const phone = v?.vendorPhone || (order as any).vendorPhone;
+                              if (!email && !phone) return "-";
+                              return (
+                                <div className="text-xs text-muted-foreground">
+                                  {email && <p>{email}</p>}
+                                  {phone && <p>{phone}</p>}
+                                </div>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell>
                             {formatCurrency(order.totalAmount, order.currency)}
@@ -961,6 +1028,38 @@ export default function AdminOrders() {
                             </div>
                           </TableCell>
                           <TableCell>
+                            {(() => {
+                              const v = (order as any).vendors?.[0];
+                              const store = v?.storeName || (order as any).storeName;
+                              const name = v?.vendorName || (order as any).vendorName;
+                              if (!store && !name) return "-";
+                              return (
+                                <div className="text-sm">
+                                  {store && <p>{store}</p>}
+                                  {name && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {name}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const v = (order as any).vendors?.[0];
+                              const email = v?.vendorEmail || (order as any).vendorEmail;
+                              const phone = v?.vendorPhone || (order as any).vendorPhone;
+                              if (!email && !phone) return "-";
+                              return (
+                                <div className="text-xs text-muted-foreground">
+                                  {email && <p>{email}</p>}
+                                  {phone && <p>{phone}</p>}
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+                          <TableCell>
                             {formatCurrency(order.totalAmount, order.currency)}
                           </TableCell>
                           <TableCell>
@@ -1010,16 +1109,45 @@ export default function AdminOrders() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {formatCurrency(
-                              order.totalAmountMinor / 100,
-                              order.currency
-                            )}
+                            {(() => {
+                              const v = (order as any).vendors?.[0];
+                              const store = v?.storeName || (order as any).storeName;
+                              const name = v?.vendorName || (order as any).vendorName;
+                              if (!store && !name) return "-";
+                              return (
+                                <div className="text-sm">
+                                  {store && <p>{store}</p>}
+                                  {name && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {name}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const v = (order as any).vendors?.[0];
+                              const email = v?.vendorEmail || (order as any).vendorEmail;
+                              const phone = v?.vendorPhone || (order as any).vendorPhone;
+                              if (!email && !phone) return "-";
+                              return (
+                                <div className="text-xs text-muted-foreground">
+                                  {email && <p>{email}</p>}
+                                  {phone && <p>{phone}</p>}
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(order.totalAmountMinor / 100, order.currency)}
                           </TableCell>
                           <TableCell>
                             <div className="text-xs text-muted-foreground">
                               <p>Service: {order.serviceTitle}</p>
                               <p>
-                                Scheduled:{" "}
+                                Scheduled: {" "}
                                 {formatDateTime(order.scheduledDateTime)}
                               </p>
                             </div>
@@ -1061,10 +1189,39 @@ export default function AdminOrders() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {formatCurrency(
-                              order.totalPriceMinor / 100,
-                              order.currency
-                            )}
+                            {(() => {
+                              const v = (order as any).vendors?.[0];
+                              const store = v?.storeName || (order as any).storeName;
+                              const name = v?.vendorName || (order as any).vendorName;
+                              if (!store && !name) return "-";
+                              return (
+                                <div className="text-sm">
+                                  {store && <p>{store}</p>}
+                                  {name && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {name}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const v = (order as any).vendors?.[0];
+                              const email = v?.vendorEmail || (order as any).vendorEmail;
+                              const phone = v?.vendorPhone || (order as any).vendorPhone;
+                              if (!email && !phone) return "-";
+                              return (
+                                <div className="text-xs text-muted-foreground">
+                                  {email && <p>{email}</p>}
+                                  {phone && <p>{phone}</p>}
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(order.totalPriceMinor / 100, order.currency)}
                           </TableCell>
                           <TableCell>
                             <div className="text-xs text-muted-foreground">
