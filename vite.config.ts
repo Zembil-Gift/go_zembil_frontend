@@ -16,6 +16,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,json,webmanifest,woff2}"],
         globIgnores: ["**/attached_assets/**", "**/videos/**", "stats.html"],
+        navigateFallbackDenylist: [/^\/\.well-known(?:\/|$)/],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
