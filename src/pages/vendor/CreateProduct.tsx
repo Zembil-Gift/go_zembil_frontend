@@ -1238,9 +1238,9 @@ export default function CreateProduct() {
                               </p>
                             </div>
 
-                            {/* SKU Code and Stock */}
+                            {/* SKU Code*/}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
+                              {/* <div>
                                 <Label>SKU Code *</Label>
                                 <Controller
                                   name={`productSku.${skuIndex}.skuCode`}
@@ -1266,7 +1266,52 @@ export default function CreateProduct() {
                                 <p className="text-xs text-muted-foreground mt-1">
                                   Auto-generated from product and variant names
                                 </p>
+                              </div> */}
+
+                              {/* SKU Price */}
+                              <div>
+                                <Label>
+                                  {isEthiopianVendor(vendorProfile)
+                                    ? "Price (ETB) *"
+                                    : `Price (${
+                                        form.watch("currencyCode") || "Currency"
+                                      }) *`}
+                                </Label>
+                                <Controller
+                                  name={`productSku.${skuIndex}.amount`}
+                                  control={form.control}
+                                  render={({ field }) => (
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      placeholder="0.00"
+                                      value={field.value || ""}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value === "") {
+                                          field.onChange(0);
+                                        } else {
+                                          // Use Math.round to avoid floating point precision issues
+                                          const numValue = parseFloat(value);
+                                          if (!isNaN(numValue)) {
+                                            // Round to 2 decimal places using Math.round to avoid floating point errors
+                                            field.onChange(
+                                              Math.round(numValue * 100) / 100
+                                            );
+                                          }
+                                        }
+                                      }}
+                                      onBlur={field.onBlur}
+                                    />
+                                  )}
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  This is what you'll receive. Platform fee will
+                                  be added for customers.
+                                </p>
                               </div>
+                              {/* Stock */}
                               <div>
                                 <Label>Stock Quantity *</Label>
                                 <Controller
@@ -1294,50 +1339,6 @@ export default function CreateProduct() {
                                   Available units in stock
                                 </p>
                               </div>
-                            </div>
-
-                            {/* SKU Price */}
-                            <div>
-                              <Label>
-                                {isEthiopianVendor(vendorProfile)
-                                  ? "Price (ETB) *"
-                                  : `Price (${
-                                      form.watch("currencyCode") || "Currency"
-                                    }) *`}
-                              </Label>
-                              <Controller
-                                name={`productSku.${skuIndex}.amount`}
-                                control={form.control}
-                                render={({ field }) => (
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    placeholder="0.00"
-                                    value={field.value || ""}
-                                    onChange={(e) => {
-                                      const value = e.target.value;
-                                      if (value === "") {
-                                        field.onChange(0);
-                                      } else {
-                                        // Use Math.round to avoid floating point precision issues
-                                        const numValue = parseFloat(value);
-                                        if (!isNaN(numValue)) {
-                                          // Round to 2 decimal places using Math.round to avoid floating point errors
-                                          field.onChange(
-                                            Math.round(numValue * 100) / 100
-                                          );
-                                        }
-                                      }
-                                    }}
-                                    onBlur={field.onBlur}
-                                  />
-                                )}
-                              />
-                              <p className="text-xs text-muted-foreground mt-1">
-                                This is what you'll receive. Platform fee will
-                                be added for customers.
-                              </p>
                             </div>
 
                             {/* Attributes */}
