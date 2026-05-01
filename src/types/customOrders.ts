@@ -125,6 +125,7 @@ export interface CustomOrderPriceHistory {
 
 export interface CustomOrder {
   id: number;
+  cancellable?: boolean;
   orderNumber: string;
   templateId: number;
   templateName: string;

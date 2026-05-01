@@ -1,8 +1,18 @@
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -24,13 +34,16 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { formatCurrency, getCurrencyDecimals } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import orderService, { Order } from "@/services/orderService";
+import orderService, { Order, SubOrder } from "@/services/orderService";
 
 export default function TrackOrder() {
   const { orderId } = useParams<{ orderId: string }>();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showDeliveryContactDialog, setShowDeliveryContactDialog] =
     useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const CANCEL_REASON = "Customer requested cancellation";
 
   const {
     data: order,
@@ -66,6 +79,51 @@ export default function TrackOrder() {
       }, 500);
     }
   }, [error, toast]);
+
+  const cancelOrderMutation = useMutation({
+    mutationFn: async () => {
+      if (!order) {
+        throw new Error("Order not loaded");
+      }
+
+      const subOrders = Array.isArray(order.subOrders) ? order.subOrders : [];
+      if (subOrders.length > 0) {
+        const cancellableSubOrders = subOrders.filter(
+          (subOrder): subOrder is SubOrder & { orderId: number } =>
+            subOrder.cancellable === true && typeof subOrder.orderId === "number"
+        );
+
+        if (cancellableSubOrders.length === 0) {
+          throw new Error("No cancellable sub-orders found");
+        }
+
+        await Promise.all(
+          cancellableSubOrders.map((subOrder) =>
+            orderService.cancelOrder(subOrder.orderId, CANCEL_REASON)
+          )
+        );
+        return;
+      }
+
+      await orderService.cancelOrder(order.orderId, CANCEL_REASON);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Order cancelled",
+        description: "Cancellation submitted and refund processing has started.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+      setCancelDialogOpen(false);
+    },
+    onError: (mutationError: Error) => {
+      toast({
+        title: "Failed to cancel order",
+        description: mutationError.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const formatMinorAmount = (
     amountMinor: number | undefined,
@@ -252,6 +310,13 @@ export default function TrackOrder() {
     attributes?: Array<{ name: string; value: string }>;
   }>;
   const subOrders = Array.isArray(order.subOrders) ? order.subOrders : [];
+  const cancellableSubOrders = subOrders.filter(
+    (subOrder): subOrder is SubOrder & { orderId: number } =>
+      subOrder.cancellable === true && typeof subOrder.orderId === "number"
+  );
+  const canCancelSingleOrder = subOrders.length === 0 && order.cancellable === true;
+  const canCancelSubOrders = subOrders.length > 0 && cancellableSubOrders.length > 0;
+  const showCancelAction = canCancelSingleOrder || canCancelSubOrders;
   const hasMultipleSubOrders = subOrders.length > 1;
   const hasOrderItemAttributes = orderItems.some(
     (item) => Array.isArray(item.attributes) && item.attributes.length > 0
@@ -890,7 +955,45 @@ export default function TrackOrder() {
               </CardContent>
             </Card>
           )}
+
+        {showCancelAction && (
+          <Card className="mb-8">
+            <CardContent className="pt-6">
+              <Button
+                variant="outline"
+                className="w-full border-red-300 text-red-600 hover:bg-red-50"
+                onClick={() => setCancelDialogOpen(true)}
+                disabled={cancelOrderMutation.isPending}
+              >
+                Cancel Order
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              {canCancelSubOrders
+                ? `This will cancel ${cancellableSubOrders.length} cancellable sub-order(s) and start refund processing.`
+                : "This will cancel the order and start refund processing."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Order</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => cancelOrderMutation.mutate()}
+              disabled={cancelOrderMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {cancelOrderMutation.isPending ? "Cancelling..." : "Cancel Order"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

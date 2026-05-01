@@ -40,6 +40,7 @@ export interface OrderLine {
 export interface SubOrder {
   orderId?: number;
   orderNumber?: string;
+  cancellable?: boolean;
   status: string;
   currency?: string;
   refundedAmountMinor?: number;
@@ -131,6 +132,7 @@ export interface Order {
   lines?: OrderLine[];
   createdAt: string;
   updatedAt: string;
+  cancellable?: boolean;
 }
 
 export interface CreateOrderRequest {
