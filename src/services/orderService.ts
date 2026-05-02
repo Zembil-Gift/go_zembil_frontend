@@ -7,6 +7,7 @@ export interface OrderItem {
   productId: number;
   productName: string;
   productImage: string;
+  productImageUrls?: string[];
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -26,6 +27,7 @@ export interface OrderLine {
   skuCode?: string;
   productName?: string;
   productImage?: string;
+  productImageUrls?: string[];
   quantity: number;
   unitAmountMinor?: number;
   totalAmountMinor?: number;

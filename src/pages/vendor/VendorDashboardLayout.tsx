@@ -43,7 +43,7 @@ import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
 import VendorBroadcastNotifications from "@/components/vendor/VendorBroadcastNotifications";
 
 // Helper function to check if vendor is Ethiopian
-export const isEthiopianVendor = (
+const isEthiopianVendor = (
   vendorProfile: VendorProfile | undefined
 ): boolean => {
   if (!vendorProfile) return false;
