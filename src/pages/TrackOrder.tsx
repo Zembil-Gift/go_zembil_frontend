@@ -267,8 +267,11 @@ export default function TrackOrder() {
     );
   }
 
-  const statusSteps = getStatusSteps(order.status);
-  const paymentStatus = getDerivedPaymentStatus(order.status);
+  const subOrders = Array.isArray(order.subOrders) ? order.subOrders : [];
+  const effectiveOrderStatus =
+    subOrders[0]?.status || order.status || "PENDING";
+  const statusSteps = getStatusSteps(effectiveOrderStatus);
+  const paymentStatus = getDerivedPaymentStatus(effectiveOrderStatus);
   const paymentStatusClassName =
     paymentStatus === "PAID"
       ? "bg-green-100 text-green-800"
@@ -283,7 +286,7 @@ export default function TrackOrder() {
     shippingAddress?.street ||
     "Address not available";
   const postalCode = shippingAddress?.postalCode || shippingAddress?.zipcode;
-  const isPendingOrder = order.status?.toLowerCase() === "pending";
+  const isPendingOrder = effectiveOrderStatus.toLowerCase() === "pending";
   const continueCheckoutUrl = `/order-review?orderId=${
     order.orderId
   }&paymentMethod=${getOrderReviewPaymentMethod(order)}`;
@@ -311,7 +314,6 @@ export default function TrackOrder() {
     currency?: string;
     attributes?: Array<{ name: string; value: string }>;
   }>;
-  const subOrders = Array.isArray(order.subOrders) ? order.subOrders : [];
   const cancellableSubOrders = subOrders.filter(
     (subOrder): subOrder is SubOrder & { orderId: number } =>
       subOrder.cancellable === true && typeof subOrder.orderId === "number"
@@ -411,10 +413,10 @@ export default function TrackOrder() {
                   </Button>
                 ) : (
                   <Badge
-                    className={getStatusColor(order.status)}
+                    className={getStatusColor(effectiveOrderStatus)}
                     variant="secondary"
                   >
-                    {getStatusLabel(order.status)}
+                    {getStatusLabel(effectiveOrderStatus)}
                   </Badge>
                 )}
 
@@ -979,7 +981,7 @@ export default function TrackOrder() {
         )}
 
         {/* Delivery Status Messages */}
-        {order.status?.toLowerCase() === "delivered" &&
+        {effectiveOrderStatus.toLowerCase() === "delivered" &&
           !order.deliveryConfirmedAt && (
             <Card className="mb-8 border-amber-200 bg-amber-50">
               <CardContent className="p-6">
@@ -1003,7 +1005,7 @@ export default function TrackOrder() {
           )}
 
         {/* Already confirmed message */}
-        {order.status?.toLowerCase() === "delivered" &&
+        {effectiveOrderStatus.toLowerCase() === "delivered" &&
           order.deliveryConfirmedAt && (
             <Card className="mb-8 border-green-200 bg-green-50">
               <CardContent className="p-6">
