@@ -515,6 +515,75 @@ export default function EditProduct() {
     },
   });
 
+  const deleteSkuImageMutation = useMutation({
+    mutationFn: async ({
+      skuId,
+      imageId,
+    }: {
+      skuId: number;
+      imageId: number;
+      skuIndex: number;
+    }) => {
+      await imageService.deleteSkuImage(skuId, imageId);
+    },
+    onSuccess: (_, { skuIndex, imageId }) => {
+      setCurrentSkuImages((prev) => ({
+        ...prev,
+        [skuIndex]: (prev[skuIndex] || []).filter((img) => img.id !== imageId),
+      }));
+      toast({
+        title: "Image Deleted",
+        description: "The image has been removed.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["product", productId] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to delete image",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const setSkuPrimaryImageMutation = useMutation({
+    mutationFn: async ({
+      skuId,
+      imageId,
+    }: {
+      skuId: number;
+      imageId: number;
+      skuIndex: number;
+    }) => imageService.setSkuPrimaryImage(skuId, imageId),
+    onSuccess: (_, { skuIndex, imageId }) => {
+      setCurrentSkuImages((prev) => ({
+        ...prev,
+        [skuIndex]: (prev[skuIndex] || []).map((img) => ({
+          ...img,
+          isPrimary: img.id === imageId,
+        })),
+      }));
+      toast({
+        title: "Primary Image Set",
+        description: "The primary image has been updated.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["product", productId] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to set primary image",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Category change request mutation
   const categoryChangeMutation = useMutation({
     mutationFn: async ({
@@ -1066,7 +1135,7 @@ export default function EditProduct() {
 
                       {/* SKU Code and Stock */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
+                        {/* <div>
                           <Label>SKU Code</Label>
                           <Input
                             placeholder={
@@ -1085,7 +1154,7 @@ export default function EditProduct() {
                               }
                             </p>
                           )}
-                        </div>
+                        </div> */}
                         <div>
                           <Label>Stock Quantity *</Label>
                           <Controller
@@ -1218,9 +1287,45 @@ export default function EditProduct() {
                               [skuIndex]: [...(prev[skuIndex] || []), ...files],
                             }));
                           }}
+                          onImageDelete={(imageId) => {
+                            if (!skuId) {
+                              toast({
+                                title: "Save Required",
+                                description:
+                                  "Please save this variant before deleting images.",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            deleteSkuImageMutation.mutate({
+                              skuId,
+                              imageId,
+                              skuIndex,
+                            });
+                          }}
+                          onSetPrimary={(imageId) => {
+                            if (!skuId) {
+                              toast({
+                                title: "Save Required",
+                                description:
+                                  "Please save this variant before setting a primary image.",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            setSkuPrimaryImageMutation.mutate({
+                              skuId,
+                              imageId,
+                              skuIndex,
+                            });
+                          }}
                           maxImages={10}
                           isUploading={isUploadingImages}
-                          disabled={updateProductMutation.isPending}
+                          disabled={
+                            updateProductMutation.isPending ||
+                            deleteSkuImageMutation.isPending ||
+                            setSkuPrimaryImageMutation.isPending
+                          }
                           label=""
                           helperText={`Upload images for this ${
                             skuFields.length === 1 ? "product" : "variant"
