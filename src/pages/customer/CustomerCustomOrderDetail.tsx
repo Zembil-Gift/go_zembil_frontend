@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -62,6 +61,8 @@ import type {
   CustomOrderValue,
   CustomOrderStatus,
 } from "@/types/customOrders";
+
+const CUSTOMER_CANCEL_REASON = "Customer requested cancellation";
 
 // Status timeline configuration - full timeline for negotiable orders
 const STATUS_TIMELINE: {
@@ -109,7 +110,6 @@ function CustomerCustomOrderDetailContent() {
 
   const [activeTab, setActiveTab] = useState("details");
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
   const [chatMessage, setChatMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -215,17 +215,20 @@ function CustomerCustomOrderDetailContent() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: (reason: string) =>
-      customOrderService.cancel(orderIdNum, reason),
+    mutationFn: () => {
+      if (!order?.id) {
+        throw new Error("Order not loaded");
+      }
+      return customOrderService.cancel(order.id, CUSTOMER_CANCEL_REASON);
+    },
     onSuccess: () => {
       toast({
         title: "Order Cancelled",
-        description: "Your order has been cancelled.",
+        description: "Your order was cancelled and refund processing has started.",
       });
       queryClient.invalidateQueries({ queryKey: ["custom-order", orderIdNum] });
       queryClient.invalidateQueries({ queryKey: ["my-custom-orders"] });
       setCancelDialogOpen(false);
-      setCancelReason("");
     },
     onError: (error: Error) => {
       toast({
@@ -501,7 +504,7 @@ function CustomerCustomOrderDetailContent() {
     !isNonNegotiable &&
     customOrderService.canCustomerRespondToPrice(order.status);
   const canPay = customOrderService.canCustomerPay(order.status);
-  const canCancel = customOrderService.canCustomerCancel(order.status);
+  const canCancel = order.cancellable === true;
   const statusBadgeColor = customOrderService.getStatusBadgeColor(order.status);
   const statusText = customOrderService.getStatusText(order.status);
   const currencyCode = getOrderCurrency(order);
@@ -1350,17 +1353,10 @@ function CustomerCustomOrderDetailContent() {
               undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="py-4">
-            <Textarea
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="Please provide a reason for cancellation (optional)..."
-            />
-          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep Order</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => cancelMutation.mutate(cancelReason)}
+              onClick={() => cancelMutation.mutate()}
               disabled={cancelMutation.isPending}
               className="bg-red-600 hover:bg-red-700"
             >

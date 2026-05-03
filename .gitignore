@@ -12,7 +12,10 @@ build/
 *.tsbuildinfo
 
 stats.html
+code.html
 
+api-mapping.json
+api-mapping/
 # Environment variables
 .env
 .env.local

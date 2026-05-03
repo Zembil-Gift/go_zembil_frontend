@@ -132,11 +132,11 @@ export const imageService = {
   },
 
   async deleteSkuImage(skuId: number, imageId: number): Promise<void> {
-    await api.delete(`/api/images/skus/${skuId}/${imageId}`);
+    await api.delete(`/api/images/skus/images/${imageId}`);
   },
 
   async setSkuPrimaryImage(skuId: number, imageId: number): Promise<ImageDto> {
-    const response = await api.put<ImageDto>(`/api/images/skus/${skuId}/${imageId}/primary`);
+    const response = await api.put<ImageDto>(`/api/images/skus/${skuId}/images/${imageId}/primary`);
     return response.data;
   },
 

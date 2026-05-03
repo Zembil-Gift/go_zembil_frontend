@@ -895,22 +895,25 @@ export default function VendorProductOrders() {
                         Order Awaiting Your Approval
                       </h4>
                       <p className="text-sm text-purple-700 mb-4">
-                        This order has been placed and paid. Please review and
-                        accept or reject the order.
+                        {selectedOrder.paymentStatus === "PENDING"
+                          ? "This order is placed but payment is still pending. Accept will be available after payment is completed."
+                          : "This order has been placed and paid. Please review and accept or reject the order."}
                       </p>
                       <div className="flex flex-col sm:flex-row gap-3">
-                        <Button
-                          onClick={() =>
-                            acceptOrderMutation.mutate(selectedOrder.orderId)
-                          }
-                          disabled={acceptOrderMutation.isPending}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          {acceptOrderMutation.isPending
-                            ? "Accepting..."
-                            : "Accept Order"}
-                        </Button>
+                        {selectedOrder.paymentStatus !== "PENDING" && (
+                          <Button
+                            onClick={() =>
+                              acceptOrderMutation.mutate(selectedOrder.orderId)
+                            }
+                            disabled={acceptOrderMutation.isPending}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            {acceptOrderMutation.isPending
+                              ? "Accepting..."
+                              : "Accept Order"}
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           onClick={() => {

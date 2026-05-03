@@ -1,8 +1,18 @@
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -24,13 +34,16 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { formatCurrency, getCurrencyDecimals } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import orderService, { Order } from "@/services/orderService";
+import orderService, { Order, SubOrder } from "@/services/orderService";
 
 export default function TrackOrder() {
   const { orderId } = useParams<{ orderId: string }>();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showDeliveryContactDialog, setShowDeliveryContactDialog] =
     useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const CANCEL_REASON = "Customer requested cancellation";
 
   const {
     data: order,
@@ -66,6 +79,51 @@ export default function TrackOrder() {
       }, 500);
     }
   }, [error, toast]);
+
+  const cancelOrderMutation = useMutation({
+    mutationFn: async () => {
+      if (!order) {
+        throw new Error("Order not loaded");
+      }
+
+      const subOrders = Array.isArray(order.subOrders) ? order.subOrders : [];
+      if (subOrders.length > 0) {
+        const cancellableSubOrders = subOrders.filter(
+          (subOrder): subOrder is SubOrder & { orderId: number } =>
+            subOrder.cancellable === true && typeof subOrder.orderId === "number"
+        );
+
+        if (cancellableSubOrders.length === 0) {
+          throw new Error("No cancellable sub-orders found");
+        }
+
+        await Promise.all(
+          cancellableSubOrders.map((subOrder) =>
+            orderService.cancelOrder(subOrder.orderId, CANCEL_REASON)
+          )
+        );
+        return;
+      }
+
+      await orderService.cancelOrder(order.orderId, CANCEL_REASON);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Order cancelled",
+        description: "Cancellation submitted and refund processing has started.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+      setCancelDialogOpen(false);
+    },
+    onError: (mutationError: Error) => {
+      toast({
+        title: "Failed to cancel order",
+        description: mutationError.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const formatMinorAmount = (
     amountMinor: number | undefined,
@@ -209,8 +267,11 @@ export default function TrackOrder() {
     );
   }
 
-  const statusSteps = getStatusSteps(order.status);
-  const paymentStatus = getDerivedPaymentStatus(order.status);
+  const subOrders = Array.isArray(order.subOrders) ? order.subOrders : [];
+  const effectiveOrderStatus =
+    subOrders[0]?.status || order.status || "PENDING";
+  const statusSteps = getStatusSteps(effectiveOrderStatus);
+  const paymentStatus = getDerivedPaymentStatus(effectiveOrderStatus);
   const paymentStatusClassName =
     paymentStatus === "PAID"
       ? "bg-green-100 text-green-800"
@@ -225,7 +286,7 @@ export default function TrackOrder() {
     shippingAddress?.street ||
     "Address not available";
   const postalCode = shippingAddress?.postalCode || shippingAddress?.zipcode;
-  const isPendingOrder = order.status?.toLowerCase() === "pending";
+  const isPendingOrder = effectiveOrderStatus.toLowerCase() === "pending";
   const continueCheckoutUrl = `/order-review?orderId=${
     order.orderId
   }&paymentMethod=${getOrderReviewPaymentMethod(order)}`;
@@ -244,21 +305,83 @@ export default function TrackOrder() {
     productId?: number;
     productName?: string;
     productImage?: string;
+    productImageUrls?: string[];
     quantity?: number;
     skuCode?: string;
     unitAmountMinor?: number;
+    totalAmountMinor?: number;
     totalPrice?: number;
     currency?: string;
     attributes?: Array<{ name: string; value: string }>;
   }>;
-  const subOrders = Array.isArray(order.subOrders) ? order.subOrders : [];
-  const hasMultipleSubOrders = subOrders.length > 1;
-  const hasOrderItemAttributes = orderItems.some(
-    (item) => Array.isArray(item.attributes) && item.attributes.length > 0
+  const cancellableSubOrders = subOrders.filter(
+    (subOrder): subOrder is SubOrder & { orderId: number } =>
+      subOrder.cancellable === true && typeof subOrder.orderId === "number"
   );
+  const canCancelSingleOrder = subOrders.length === 0 && order.cancellable === true;
+  const canCancelSubOrders = subOrders.length > 0 && cancellableSubOrders.length > 0;
+  const showCancelAction = canCancelSingleOrder || canCancelSubOrders;
+  const hasMultipleSubOrders = subOrders.length > 1;
   const displayOrderNumber = hasMultipleSubOrders
     ? order.orderGroupNumber || orderId || order.orderNumber
     : order.orderNumber || orderId;
+  const getItemImageUrl = (item: {
+    productImage?: string;
+    productImageUrls?: string[];
+  }) => {
+    if (Array.isArray(item.productImageUrls) && item.productImageUrls.length > 0) {
+      return item.productImageUrls[0];
+    }
+    return item.productImage;
+  };
+  const getItemCurrency = (
+    itemCurrency: string | undefined,
+    fallbackCurrency: string | undefined
+  ) => itemCurrency || fallbackCurrency || order.currency;
+  const getItemUnitAmountMinor = (
+    item: {
+      unitAmountMinor?: number;
+      totalPrice?: number;
+      quantity?: number;
+      currency?: string;
+    },
+    fallbackCurrency?: string
+  ) => {
+    if (typeof item.unitAmountMinor === "number") {
+      return item.unitAmountMinor;
+    }
+
+    if (typeof item.totalPrice === "number") {
+      const curr = getItemCurrency(item.currency, fallbackCurrency);
+      const decimals = getCurrencyDecimals(curr);
+      const quantity = item.quantity || 1;
+      return Math.round((item.totalPrice * Math.pow(10, decimals)) / quantity);
+    }
+
+    return 0;
+  };
+  const getItemTotalAmountMinor = (
+    item: {
+      totalAmountMinor?: number;
+      totalPrice?: number;
+      quantity?: number;
+      currency?: string;
+      unitAmountMinor?: number;
+    },
+    fallbackCurrency?: string
+  ) => {
+    if (typeof item.totalAmountMinor === "number") {
+      return item.totalAmountMinor;
+    }
+
+    if (typeof item.totalPrice === "number") {
+      const curr = getItemCurrency(item.currency, fallbackCurrency);
+      const decimals = getCurrencyDecimals(curr);
+      return Math.round(item.totalPrice * Math.pow(10, decimals));
+    }
+
+    return getItemUnitAmountMinor(item, fallbackCurrency) * (item.quantity || 1);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -290,10 +413,10 @@ export default function TrackOrder() {
                   </Button>
                 ) : (
                   <Badge
-                    className={getStatusColor(order.status)}
+                    className={getStatusColor(effectiveOrderStatus)}
                     variant="secondary"
                   >
-                    {getStatusLabel(order.status)}
+                    {getStatusLabel(effectiveOrderStatus)}
                   </Badge>
                 )}
 
@@ -564,11 +687,6 @@ export default function TrackOrder() {
                   const subOrderItems = Array.isArray(subOrder.lines)
                     ? subOrder.lines
                     : [];
-                  const hasSubOrderAttributes = subOrderItems.some(
-                    (item) =>
-                      Array.isArray(item.attributes) &&
-                      item.attributes.length > 0
-                  );
                   const subOrderStatusSteps = getStatusSteps(subOrder.status);
                   const primaryProductName =
                     subOrderItems.find((item) => item.productName)
@@ -692,27 +810,14 @@ export default function TrackOrder() {
                       <div className="pt-6">
                         <div className="rounded-lg border border-gray-200 overflow-hidden">
                           <div className="grid grid-cols-12 gap-3 bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">
-                            <div
-                              className={
-                                hasSubOrderAttributes
-                                  ? "col-span-5"
-                                  : "col-span-8"
-                              }
-                            >
+                            <div className="col-span-6">
                               Product
                             </div>
-                            <div
-                              className={
-                                hasSubOrderAttributes
-                                  ? "col-span-2"
-                                  : "col-span-4"
-                              }
-                            >
+                            <div className="col-span-2 text-center">
                               Quantity
                             </div>
-                            {hasSubOrderAttributes && (
-                              <div className="col-span-5">Attributes</div>
-                            )}
+                            <div className="col-span-2 text-right">Unit Price</div>
+                            <div className="col-span-2 text-right">Total</div>
                           </div>
 
                           {subOrderItems.map((item) => (
@@ -722,41 +827,64 @@ export default function TrackOrder() {
                               }
                               className="grid grid-cols-12 gap-3 px-4 py-3 border-t border-gray-100 text-sm"
                             >
-                              <div
-                                className={`font-semibold text-gray-900 break-words ${
-                                  hasSubOrderAttributes
-                                    ? "col-span-5"
-                                    : "col-span-8"
-                                }`}
-                              >
-                                <a
-                                  href={`/product/${item.productId}`}
-                                  className="text-ethiopian-gold hover:underline"
-                                >
-                                  {item.productName || "Product"}
-                                </a>
+                              <div className="col-span-6">
+                                <div className="flex items-center gap-4">
+                                  <div className="h-20 w-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                    {getItemImageUrl(item) ? (
+                                      <img
+                                        src={getItemImageUrl(item)}
+                                        alt={item.productName || "Product"}
+                                        className="h-full w-full object-cover transition-transform duration-300 ease-out hover:scale-110"
+                                        loading="lazy"
+                                      />
+                                    ) : null}
+                                  </div>
+                                  <div className="min-w-0 pl-1">
+                                    {item.productId ? (
+                                      <a
+                                        href={`/product/${item.productId}`}
+                                        className="font-semibold text-ethiopian-gold hover:underline break-words"
+                                      >
+                                        {item.productName || "Product"}
+                                      </a>
+                                    ) : (
+                                      <p className="font-semibold text-gray-900 break-words">
+                                        {item.productName || "Product"}
+                                      </p>
+                                    )}
+                                    {item.skuCode && (
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        SKU: {item.skuCode}
+                                      </p>
+                                    )}
+                                    {Array.isArray(item.attributes) &&
+                                      item.attributes.length > 0 && (
+                                        <p className="text-xs text-gray-500 mt-1 break-words">
+                                          {item.attributes
+                                            .map(
+                                              (attr) => `${attr.name}: ${attr.value}`
+                                            )
+                                            .join(", ")}
+                                        </p>
+                                      )}
+                                  </div>
+                                </div>
                               </div>
-                              <div
-                                className={`font-medium text-gray-700 ${
-                                  hasSubOrderAttributes
-                                    ? "col-span-2"
-                                    : "col-span-4"
-                                }`}
-                              >
+                              <div className="col-span-2 text-center font-medium text-gray-700">
                                 {item.quantity || 1}
                               </div>
-                              {hasSubOrderAttributes && (
-                                <div className="col-span-5 text-gray-600 break-words">
-                                  {item.attributes && item.attributes.length > 0
-                                    ? item.attributes
-                                        .map(
-                                          (attr) =>
-                                            `${attr.name}: ${attr.value}`
-                                        )
-                                        .join(", ")
-                                    : "-"}
-                                </div>
-                              )}
+                              <div className="col-span-2 text-right font-medium text-gray-700">
+                                {formatMinorAmount(
+                                  getItemUnitAmountMinor(item, subOrder.currency),
+                                  getItemCurrency(item.currency, subOrder.currency)
+                                )}
+                              </div>
+                              <div className="col-span-2 text-right font-semibold text-gray-900">
+                                {formatMinorAmount(
+                                  getItemTotalAmountMinor(item, subOrder.currency),
+                                  getItemCurrency(item.currency, subOrder.currency)
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -778,23 +906,10 @@ export default function TrackOrder() {
             <CardContent>
               <div className="rounded-lg border border-gray-200 overflow-hidden">
                 <div className="grid grid-cols-12 gap-3 bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">
-                  <div
-                    className={
-                      hasOrderItemAttributes ? "col-span-5" : "col-span-8"
-                    }
-                  >
-                    Product
-                  </div>
-                  <div
-                    className={
-                      hasOrderItemAttributes ? "col-span-2" : "col-span-4"
-                    }
-                  >
-                    Quantity
-                  </div>
-                  {hasOrderItemAttributes && (
-                    <div className="col-span-5">Attributes</div>
-                  )}
+                  <div className="col-span-6">Product</div>
+                  <div className="col-span-2 text-center">Quantity</div>
+                  <div className="col-span-2 text-right">Unit Price</div>
+                  <div className="col-span-2 text-right">Total</div>
                 </div>
 
                 {orderItems?.map((item) => (
@@ -802,34 +917,62 @@ export default function TrackOrder() {
                     key={item.id || item.productId}
                     className="grid grid-cols-12 gap-3 px-4 py-3 border-t border-gray-100 text-sm"
                   >
-                    <div
-                      className={`font-semibold text-gray-900 break-words ${
-                        hasOrderItemAttributes ? "col-span-5" : "col-span-8"
-                      }`}
-                    >
-                      <a
-                        href={`/product/${item.productId}`}
-                        className="text-ethiopian-gold hover:underline"
-                      >
-                        {item.productName || "Product"}
-                      </a>
+                    <div className="col-span-6">
+                      <div className="flex items-center gap-4">
+                        <div className="h-20 w-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          {getItemImageUrl(item) ? (
+                            <img
+                              src={getItemImageUrl(item)}
+                              alt={item.productName || "Product"}
+                              className="h-full w-full object-cover transition-transform duration-300 ease-out hover:scale-110"
+                              loading="lazy"
+                            />
+                          ) : null}
+                        </div>
+                        <div className="min-w-0 pl-1">
+                          {item.productId ? (
+                            <a
+                              href={`/product/${item.productId}`}
+                              className="font-semibold text-ethiopian-gold hover:underline break-words"
+                            >
+                              {item.productName || "Product"}
+                            </a>
+                          ) : (
+                            <p className="font-semibold text-gray-900 break-words">
+                              {item.productName || "Product"}
+                            </p>
+                          )}
+                          {item.skuCode && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              SKU: {item.skuCode}
+                            </p>
+                          )}
+                          {Array.isArray(item.attributes) &&
+                            item.attributes.length > 0 && (
+                              <p className="text-xs text-gray-500 mt-1 break-words">
+                                {item.attributes
+                                  .map((attr) => `${attr.name}: ${attr.value}`)
+                                  .join(", ")}
+                              </p>
+                            )}
+                        </div>
+                      </div>
                     </div>
-                    <div
-                      className={`font-medium text-gray-700 ${
-                        hasOrderItemAttributes ? "col-span-2" : "col-span-4"
-                      }`}
-                    >
+                    <div className="col-span-2 text-center font-medium text-gray-700">
                       {item.quantity || 1}
                     </div>
-                    {hasOrderItemAttributes && (
-                      <div className="col-span-5 text-gray-600 break-words">
-                        {item.attributes && item.attributes.length > 0
-                          ? item.attributes
-                              .map((attr) => `${attr.name}: ${attr.value}`)
-                              .join(", ")
-                          : "-"}
-                      </div>
-                    )}
+                    <div className="col-span-2 text-right font-medium text-gray-700">
+                      {formatMinorAmount(
+                        getItemUnitAmountMinor(item, order.currency),
+                        getItemCurrency(item.currency, order.currency)
+                      )}
+                    </div>
+                    <div className="col-span-2 text-right font-semibold text-gray-900">
+                      {formatMinorAmount(
+                        getItemTotalAmountMinor(item, order.currency),
+                        getItemCurrency(item.currency, order.currency)
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -838,7 +981,7 @@ export default function TrackOrder() {
         )}
 
         {/* Delivery Status Messages */}
-        {order.status?.toLowerCase() === "delivered" &&
+        {effectiveOrderStatus.toLowerCase() === "delivered" &&
           !order.deliveryConfirmedAt && (
             <Card className="mb-8 border-amber-200 bg-amber-50">
               <CardContent className="p-6">
@@ -862,7 +1005,7 @@ export default function TrackOrder() {
           )}
 
         {/* Already confirmed message */}
-        {order.status?.toLowerCase() === "delivered" &&
+        {effectiveOrderStatus.toLowerCase() === "delivered" &&
           order.deliveryConfirmedAt && (
             <Card className="mb-8 border-green-200 bg-green-50">
               <CardContent className="p-6">
@@ -890,7 +1033,45 @@ export default function TrackOrder() {
               </CardContent>
             </Card>
           )}
+
+        {showCancelAction && (
+          <Card className="mb-8">
+            <CardContent className="pt-6">
+              <Button
+                variant="outline"
+                className="w-full border-red-300 text-red-600 hover:bg-red-50"
+                onClick={() => setCancelDialogOpen(true)}
+                disabled={cancelOrderMutation.isPending}
+              >
+                Cancel Order
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              {canCancelSubOrders
+                ? `This will cancel ${cancellableSubOrders.length} cancellable sub-order(s) and start refund processing.`
+                : "This will cancel the order and start refund processing."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Order</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => cancelOrderMutation.mutate()}
+              disabled={cancelOrderMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {cancelOrderMutation.isPending ? "Cancelling..." : "Cancel Order"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -240,6 +240,10 @@ export default function TrackServiceOrder() {
 
   const canCancelOrder = useMemo(() => {
     if (!order) return false;
+    const normalizedStatus = String(order.status).toUpperCase();
+    if (normalizedStatus === "PENDING" || order.paymentStatus === "PENDING") {
+      return false;
+    }
     return serviceOrderService.canCancelOrder(order);
   }, [order]);
 
@@ -287,6 +291,12 @@ export default function TrackServiceOrder() {
   const paymentStatusDisplay = serviceOrderService.getPaymentStatusDisplay(
     order.paymentStatus
   );
+  const cancellationByLabel = order.cancellationInfo?.cancelledBy
+    ? order.cancellationInfo.cancelledBy
+        .toLowerCase()
+        .replace("_", " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+    : "Unknown";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -527,6 +537,33 @@ export default function TrackServiceOrder() {
             <CardTitle>Cancellation & Refund</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {order.cancellationInfo && (
+              <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+                <p className="text-sm font-semibold text-orange-800 mb-2">
+                  Cancellation Details
+                </p>
+                <div className="space-y-1 text-sm text-orange-900">
+                  <p>
+                    <span className="font-medium">Cancelled by:</span>{" "}
+                    {cancellationByLabel}
+                  </p>
+                  <p>
+                    <span className="font-medium">Reason:</span>{" "}
+                    {order.cancellationInfo.reason || "No reason provided"}
+                  </p>
+                  <p>
+                    <span className="font-medium">Refund amount:</span>{" "}
+                    {typeof order.cancellationInfo.refundAmountMinor === "number"
+                      ? serviceOrderService.formatPrice(
+                          order.cancellationInfo.refundAmountMinor,
+                          order.currency
+                        )
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {order.refundEligibility ? (
               <>
                 <div className="rounded-lg bg-june-bud/10 p-4">
