@@ -395,18 +395,14 @@ export default function EditProduct() {
     mutationFn: async (data: ProductEditFormData) => {
       if (!productId) throw new Error("Product ID is required");
 
-      // PUT /api/v1/products/vendor/{id} requires each SKU to identify an existing record by id or skuCode.
+      // Existing variants keep their skuCode; newly added variants send empty skuCode.
       const skuPayload = data.productSku.map((sku, index) => {
         const normalizedSkuCode = sku.skuCode?.trim() || "";
-        if (!sku.id && !normalizedSkuCode) {
-          throw new Error(
-            `Variant ${index + 1} must include an existing SKU id or skuCode.`
-          );
-        }
+        const isNewVariant = !sku.id;
 
         return {
           id: sku.id,
-          skuCode: normalizedSkuCode,
+          skuCode: isNewVariant ? "" : normalizedSkuCode,
           skuName: sku.skuName?.trim(),
           stockQuantity: sku.stockQuantity,
           isDefault: index === 0,
