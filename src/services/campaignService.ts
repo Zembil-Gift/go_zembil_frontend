@@ -31,8 +31,8 @@ export type RewardType =
   | "FREE_DELIVERY"
   | "GIFT_VOUCHER";
 export type RewardDurationType =
-  | "FIXED_PERIOD"
-  | "CAMPAIGN_WINDOW"
+  // | "FIXED_PERIOD"
+  // | "CAMPAIGN_WINDOW"
   | "ONE_TIME";
 export type ParticipationStatus =
   | "PENDING"
@@ -420,8 +420,8 @@ export const USER_REWARD_TYPES: RewardType[] = [
 ];
 
 export const REWARD_DURATION_LABELS: Record<RewardDurationType, string> = {
-  FIXED_PERIOD: "Fixed Period (days)",
-  CAMPAIGN_WINDOW: "Campaign Duration",
+  // FIXED_PERIOD: "Fixed Period (days)",
+  // CAMPAIGN_WINDOW: "Campaign Duration",
   ONE_TIME: "One-Time",
 };
 
