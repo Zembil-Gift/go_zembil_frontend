@@ -48,7 +48,7 @@ import {
   Loader2,
   Trash2,
 } from 'lucide-react';
-import { adminService } from '@/services/adminService';
+import { adminService, CreateCategoryRequest } from '@/services/adminService';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Category name is required'),
@@ -86,7 +86,7 @@ export default function AdminCategories() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: CategoryForm) => adminService.createCategory(data),
+    mutationFn: (data: CreateCategoryRequest) => adminService.createCategory(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast({ title: 'Success', description: 'Category created successfully' });
@@ -103,7 +103,7 @@ export default function AdminCategories() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<CategoryForm> }) => 
+    mutationFn: ({ id, data }: { id: number; data: Partial<CreateCategoryRequest> }) => 
       adminService.updateCategory(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -149,10 +149,18 @@ export default function AdminCategories() {
   };
 
   const onSubmit = (data: CategoryForm) => {
+    const payload = {
+      name: data.name,
+      slug: data.slug,
+      description: data.description,
+      iconName: data.iconName,
+      sortOrder: data.sortOrder,
+      color: getTypeColorValue(data.type),
+    };
     if (editingCategory) {
-      updateMutation.mutate({ id: editingCategory.id, data });
+      updateMutation.mutate({ id: editingCategory.id, data: payload });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(payload);
     }
   };
 
@@ -190,6 +198,17 @@ export default function AdminCategories() {
       case 'custom': return 'bg-blue-100 text-blue-800';
       case 'daily': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getTypeColorValue = (type: string) => {
+    switch (type) {
+      case 'occasion': return 'purple';
+      case 'cultural': return 'amber';
+      case 'emotion': return 'pink';
+      case 'custom': return 'blue';
+      case 'daily': return 'green';
+      default: return 'gray';
     }
   };
 
