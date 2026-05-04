@@ -245,7 +245,7 @@ export interface CreateCategoryRequest {
   slug: string;
   description?: string;
   iconName?: string;
-  type: "occasion" | "cultural" | "emotion" | "custom" | "daily";
+  color?: string;
   parentId?: number;
   sortOrder?: number;
 }
