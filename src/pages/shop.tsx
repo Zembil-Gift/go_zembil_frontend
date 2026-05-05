@@ -273,7 +273,7 @@ function ShopContent() {
           </div>
 
           {/* Products grid skeleton */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
               <Card
                 key={i}
@@ -740,7 +740,7 @@ function ShopContent() {
               <ProductGridStagger
                 className={`grid gap-6 ${
                   viewMode === "grid"
-                    ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                    ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
                     : "grid-cols-1"
                 }`}
               >
