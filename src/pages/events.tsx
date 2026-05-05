@@ -373,7 +373,7 @@ export default function Events() {
                 transition={{ duration: 0.3 }}
                 className="mt-4 pt-4 border-t border-june-bud/20"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Event Category */}
                   <Select
                     value={eventFilters.category || "all"}
@@ -435,7 +435,7 @@ export default function Events() {
         {/* Events Content */}
         <div className="space-y-6">
           {isEventsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(6)].map((_, i) => (
                 <Card key={i} className="overflow-hidden">
                   <Skeleton className="h-48 w-full bg-june-bud/20" />
@@ -465,7 +465,7 @@ export default function Events() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {realEventsData?.content?.map((event, index) => (
                   <RealEventCard key={event.id} event={event} index={index} />
                 ))}

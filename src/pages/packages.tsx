@@ -196,7 +196,7 @@ export default function PackagesPage() {
         </div>
 
         {isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, idx) => (
               <Card key={idx} className="overflow-hidden">
                 <Skeleton className="h-48 w-full" />
@@ -226,7 +226,7 @@ export default function PackagesPage() {
 
         {!isLoading && filteredPackages.length > 0 && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedPackages.map((pkg) => {
                 const cover = getPackageCover(pkg);
                 const estimatedPrice = getEstimatedPackagePrice(pkg);
