@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useCategories } from "@/hooks/useCategories";
 import {
   vendorService,
   Product,
@@ -46,9 +47,11 @@ import {
   Trash2,
   RotateCcw,
   XCircle,
+  X,
   Pencil,
   ChevronDown,
   ChevronUp,
+  Eye,
 } from "lucide-react";
 
 interface PackageItemForm {
@@ -63,6 +66,7 @@ interface PackageFormState {
   name: string;
   summary: string;
   description: string;
+  subCategoryId: string;
   giftWrappable: boolean;
   giftWrapPrice: string;
   items: PackageItemForm[];
@@ -72,6 +76,7 @@ const createInitialForm = (): PackageFormState => ({
   name: "",
   summary: "",
   description: "",
+  subCategoryId: "",
   giftWrappable: false,
   giftWrapPrice: "",
   items: [
@@ -105,10 +110,15 @@ export default function VendorPackagesPage() {
     open: boolean;
     pkg?: ProductPackageResponse;
   }>({ open: false });
+  const [viewDialog, setViewDialog] = useState<{
+    open: boolean;
+    pkg?: ProductPackageResponse;
+  }>({ open: false });
   const [formState, setFormState] = useState<PackageFormState>(
     createInitialForm()
   );
   const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
+  const [existingImagesToDelete, setExistingImagesToDelete] = useState<string[]>([]);
   const [skuVisibilityByItem, setSkuVisibilityByItem] = useState<
     Record<number, boolean>
   >({});
@@ -127,6 +137,8 @@ export default function VendorPackagesPage() {
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
   });
+
+  const { data: categoriesData } = useCategories();
 
   const vendorCurrency = useMemo(
     () => resolveVendorCurrency(vendorProfile),
@@ -174,6 +186,9 @@ export default function VendorPackagesPage() {
         name: formState.name.trim(),
         summary: formState.summary.trim() || undefined,
         description: formState.description.trim() || undefined,
+        subCategoryId: formState.subCategoryId
+          ? Number(formState.subCategoryId)
+          : undefined,
         images: selectedImageFiles.length > 0 ? selectedImageFiles : undefined,
         giftWrappable: formState.giftWrappable,
         giftWrapPrice:
@@ -212,12 +227,25 @@ export default function VendorPackagesPage() {
   });
 
   const updatePackageMutation = useMutation({
-    mutationFn: () =>
-      packageService.updatePackage(formState.id!, {
+    mutationFn: () => {
+      const hasNewImages = selectedImageFiles.length > 0;
+      const hasDeletedOldImages = existingImagesToDelete.length > 0;
+      
+      let images: File[] | undefined;
+      if (hasNewImages) {
+        images = selectedImageFiles;
+      } else if (hasDeletedOldImages) {
+        images = [];
+      }
+      
+      return packageService.updatePackage(formState.id!, {
         name: formState.name.trim() || undefined,
         summary: formState.summary.trim() || undefined,
         description: formState.description.trim() || undefined,
-        images: selectedImageFiles.length > 0 ? selectedImageFiles : undefined,
+        subCategoryId: formState.subCategoryId
+          ? Number(formState.subCategoryId)
+          : undefined,
+        images,
         giftWrappable: formState.giftWrappable,
         giftWrapPrice:
           formState.giftWrappable && formState.giftWrapPrice
@@ -235,7 +263,8 @@ export default function VendorPackagesPage() {
             displayOrder: index,
             description: item.description.trim() || undefined,
           })),
-      }),
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Package updated",
@@ -245,6 +274,7 @@ export default function VendorPackagesPage() {
       setPackageFormOpen(false);
       setFormState(createInitialForm());
       setSelectedImageFiles([]);
+      setExistingImagesToDelete([]);
     },
     onError: (error: any) => {
       toast({
@@ -301,16 +331,18 @@ export default function VendorPackagesPage() {
   const openCreateDialog = () => {
     setFormState(createInitialForm());
     setSelectedImageFiles([]);
+    setExistingImagesToDelete([]);
     setSkuVisibilityByItem({});
     setPackageFormOpen(true);
   };
 
-  const openEditDialog = (pkg: ProductPackageResponse) => {
+const openEditDialog = (pkg: ProductPackageResponse) => {
     setFormState({
       id: pkg.id,
       name: pkg.name,
       summary: pkg.summary || "",
       description: pkg.description || "",
+      subCategoryId: pkg.subCategoryId?.toString() || "",
       giftWrappable: !!pkg.giftWrappable,
       giftWrapPrice:
         typeof pkg.giftWrapPrice === "number"
@@ -327,7 +359,8 @@ export default function VendorPackagesPage() {
           description: item.description || "",
         })) || [],
     });
-      setSelectedImageFiles([]);
+    setSelectedImageFiles([]);
+    setExistingImagesToDelete([]);
     setSkuVisibilityByItem({});
     setPackageFormOpen(true);
   };
@@ -503,6 +536,14 @@ export default function VendorPackagesPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => setViewDialog({ open: true, pkg })}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    View
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => openEditDialog(pkg)}
                   >
                     <Pencil className="h-4 w-4 mr-1" />
@@ -599,6 +640,29 @@ export default function VendorPackagesPage() {
                   }
                 />
               </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="subCategory">Subcategory</Label>
+                <select
+                  id="subCategory"
+                  value={formState.subCategoryId}
+                  onChange={(e) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      subCategoryId: e.target.value,
+                    }))
+                  }
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="">Select subcategory (optional)</option>
+                  {categoriesData?.map((category) =>
+                    category.subcategories?.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {category.name} &gt; {sub.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
               <div className="sm:col-span-2 rounded-md border p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <Checkbox
@@ -645,9 +709,50 @@ export default function VendorPackagesPage() {
 
               <div className="space-y-2 sm:col-span-2">
                 <Label className="text-sm">Images</Label>
-                <p className="text-xs text-muted-foreground">
-                  Upload package images. If files are selected during update, current images will be replaced.
-                </p>
+                {!formState.id && (
+                  <p className="text-xs text-muted-foreground">
+                    Upload package images. The first image will appear as cover.
+                  </p>
+                )}
+                {formState.id && packagesData?.content && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Current images. Select images to delete, then add new ones to replace.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {packagesData.content
+                        .find((p) => p.id === formState.id)?.images?.filter(
+                          (img) => !existingImagesToDelete.includes(img)
+                        )
+                        .map((img, idx) => (
+                          <div key={idx} className="relative">
+                            <img
+                              src={img}
+                              alt={`Package image ${idx + 1}`}
+                              className="w-20 h-20 object-cover rounded-md border"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExistingImagesToDelete((prev) => [
+                                  ...prev,
+                                  img,
+                                ])
+                              }
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                    </div>
+                    {existingImagesToDelete.length > 0 && (
+                      <p className="text-xs text-amber-600">
+                        {existingImagesToDelete.length} image(s) will be deleted
+                      </p>
+                    )}
+                  </div>
+                )}
                 <ImageUpload
                   images={[]}
                   onFilesSelected={(files) => {
@@ -658,16 +763,39 @@ export default function VendorPackagesPage() {
                     createPackageMutation.isPending || updatePackageMutation.isPending
                   }
                   label=""
-                  helperText="Upload images for this package. The first image will appear as cover."
+                  helperText={
+                    formState.id
+                      ? "Add new images to replace deleted ones"
+                      : "Upload images for this package"
+                  }
                 />
                 {selectedImageFiles.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {selectedImageFiles.length} image(s) will be uploaded.
-                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedImageFiles.map((file, idx) => (
+                      <div key={idx} className="relative">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          className="w-20 h-20 object-cover rounded-md border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedImageFiles((prev) =>
+                              prev.filter((_, i) => i !== idx)
+                            )
+                          }
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
-                {formState.id && selectedImageFiles.length === 0 && (
+                {selectedImageFiles.length > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    Leave empty to keep existing package images.
+                    {selectedImageFiles.length} new image(s) will be uploaded.
                   </p>
                 )}
               </div>
@@ -838,7 +966,15 @@ export default function VendorPackagesPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPackageFormOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPackageFormOpen(false);
+                setFormState(createInitialForm());
+                setSelectedImageFiles([]);
+                setExistingImagesToDelete([]);
+              }}
+            >
               Cancel
             </Button>
             <Button
@@ -849,6 +985,91 @@ export default function VendorPackagesPage() {
               }
             >
               {formState.id ? "Save Changes" : "Create Package"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={viewDialog.open} onOpenChange={(open) => setViewDialog((prev) => ({ ...prev, open }))}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Package Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {viewDialog.pkg?.images && viewDialog.pkg.images.length > 0 && (
+              <div className="space-y-2">
+                <Label>Images</Label>
+                <div className="flex flex-wrap gap-2">
+                  {viewDialog.pkg.images.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img}
+                      alt={`Package image ${idx + 1}`}
+                      className="w-24 h-24 object-cover rounded-md border"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <Label className="text-muted-foreground">Name</Label>
+                <p className="font-medium">{viewDialog.pkg?.name}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Status</Label>
+                <p>{getStatusBadge(viewDialog.pkg?.status || "")}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-muted-foreground">Summary</Label>
+                <p>{viewDialog.pkg?.summary || "-"}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-muted-foreground">Description</Label>
+                <p className="whitespace-pre-wrap">{viewDialog.pkg?.description || "-"}</p>
+              </div>
+              {viewDialog.pkg?.subCategoryName && (
+                <div>
+                  <Label className="text-muted-foreground">Subcategory</Label>
+                  <p>{viewDialog.pkg?.subCategoryName}</p>
+                </div>
+              )}
+              {viewDialog.pkg?.giftWrappable && (
+                <div>
+                  <Label className="text-muted-foreground">Gift Wrap</Label>
+                  <p>
+                    {viewDialog.pkg?.giftWrapPrice
+                      ? `${viewDialog.pkg.giftWrapCurrency} ${viewDialog.pkg.giftWrapPrice}`
+                      : "Enabled"}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Items ({viewDialog.pkg?.items?.length || 0})</Label>
+              <div className="border rounded-md divide-y">
+                {viewDialog.pkg?.items?.map((item, idx) => (
+                  <div key={item.id || idx} className="p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium">{item.productName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Required: {item.requiredQuantity}
+                          {item.description && ` • ${item.description}`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDialog({ open: false })}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
