@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { motion } from "framer-motion";
@@ -42,7 +42,6 @@ import { categoryService } from "@/services/categoryService";
 import { getAllProductImages } from "@/utils/imageUtils";
 import { getIconByName } from "@/components/admin/IconPicker";
 import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
-import PageNavigator from "@/components/PageNavigator";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 
 export default function Shop() {
@@ -65,7 +64,6 @@ function ShopContent() {
   const [sortBy, setSortBy] = useState("newest");
   const [searchTerm, setSearchTerm] = useState(searchParam);
   const [debouncedSearch, setDebouncedSearch] = useState(searchParam);
-  const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage] = useState(12);
   const [selectedCategoryId, setSelectedCategoryId] = useState<
     number | undefined
@@ -74,6 +72,7 @@ function ShopContent() {
     number | undefined
   >(subCategoryIdParam ? parseInt(subCategoryIdParam) : undefined);
   const [showAllSubCategories, setShowAllSubCategories] = useState(false);
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
 
   // Reset showAllSubCategories when category changes
   useEffect(() => {
@@ -83,7 +82,6 @@ function ShopContent() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setCurrentPage(0);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchTerm]);
@@ -123,12 +121,14 @@ function ShopContent() {
     data: productsData,
     isLoading: productsLoading,
     isFetching,
-  } = useQuery<PagedProductResponse>({
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery<PagedProductResponse>({
     queryKey: [
       "products",
       "filtered",
       {
-        page: currentPage,
         size: itemsPerPage,
         search: debouncedSearch,
         categoryId: selectedCategoryId,
@@ -137,20 +137,25 @@ function ShopContent() {
         currency: activeCurrency,
       },
     ],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       productService.getFilteredProducts({
-        page: currentPage,
+        page: pageParam as number,
         size: itemsPerPage,
         search: debouncedSearch || undefined,
         categoryId: selectedCategoryId,
         subCategoryId: selectedSubCategoryId,
       }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.last ? undefined : lastPage.number + 1,
     enabled: isInitialized,
   });
 
-  const products = productsData?.content || [];
-  const totalProducts = productsData?.totalElements || 0;
-  const totalPages = productsData?.totalPages || 0;
+  const products = useMemo(
+    () => productsData?.pages.flatMap((page) => page.content) || [],
+    [productsData]
+  );
+  const totalProducts = productsData?.pages[0]?.totalElements || 0;
 
   // Update URL when filters change
   useEffect(() => {
@@ -184,7 +189,6 @@ function ShopContent() {
       setSelectedCategoryId(categoryId);
       setSelectedSubCategoryId(undefined);
     }
-    setCurrentPage(0);
   };
 
   // Handle subcategory selection
@@ -194,7 +198,6 @@ function ShopContent() {
     } else {
       setSelectedSubCategoryId(subCategoryId);
     }
-    setCurrentPage(0);
   };
 
   // Clear all filters
@@ -203,7 +206,6 @@ function ShopContent() {
     setDebouncedSearch("");
     setSelectedCategoryId(undefined);
     setSelectedSubCategoryId(undefined);
-    setCurrentPage(0);
   };
 
   const displayProducts = products.map((product: Product) => ({
@@ -215,6 +217,25 @@ function ShopContent() {
   const isLoading = productsLoading || categoriesLoading;
   const hasFilters =
     selectedCategoryId || selectedSubCategoryId || debouncedSearch;
+
+  useEffect(() => {
+    if (!hasNextPage) return;
+
+    const triggerElement = loadMoreTriggerRef.current;
+    if (!triggerElement) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: "300px 0px" }
+    );
+
+    observer.observe(triggerElement);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   useSearchAnalytics(
     {
@@ -241,7 +262,7 @@ function ShopContent() {
   );
 
   // Loading state
-  if (isLoading && !isFetching) {
+  if (isLoading && products.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
         {/* Hero skeleton */}
@@ -753,14 +774,20 @@ function ShopContent() {
 
               {/* Pagination */}
               <div className="mt-12">
-                <PageNavigator
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                  isLoading={isFetching}
-                  totalItems={totalProducts}
-                  itemsPerPage={itemsPerPage}
-                />
+                <div ref={loadMoreTriggerRef} className="h-4" />
+                {isFetchingNextPage && (
+                  <div className="flex items-center justify-center py-6">
+                    <span className="inline-block w-4 h-4 border-2 border-viridian-green/30 border-t-viridian-green rounded-full animate-spin mr-2"></span>
+                    <span className="text-sm text-eagle-green/70">
+                      Loading more products...
+                    </span>
+                  </div>
+                )}
+                {!hasNextPage && displayProducts.length > 0 && (
+                  <div className="text-center py-6 text-sm text-eagle-green/60">
+                    You've seen all available products.
+                  </div>
+                )}
               </div>
             </>
           )}

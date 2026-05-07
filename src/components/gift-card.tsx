@@ -268,17 +268,17 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                                 showSavings={false}
                             />
                         ) : (
-                            <div className="flex items-baseline gap-1.5">
-                                <div className="flex items-baseline gap-0.5">
-                                    <span className="text-xl font-bold text-eagle-green">
-                                        {priceParts.symbol}{priceParts.whole}
-                                    </span>
-                                    {priceParts.decimal && (
-                                        <span className="text-sm font-bold text-eagle-green/70">
-                                            .{priceParts.decimal}
+<div className="flex items-baseline gap-1.5">
+                                    <div className="flex items-baseline gap-0.5">
+                                        <span className="text-sm sm:text-base lg:text-xl font-bold text-eagle-green break-all leading-tight">
+                                            {priceParts.symbol}{priceParts.whole}
                                         </span>
-                                    )}
-                                </div>
+                                        {priceParts.decimal && (
+                                            <span className="text-xs sm:text-xs font-bold text-eagle-green/70">
+                                                .{priceParts.decimal}
+                                            </span>
+                                        )}
+                                    </div>
                                 {hasDiscount && formattedOriginalPrice && (
                                     <span className="text-sm font-light text-eagle-green/50 line-through">
                                         {formattedOriginalPrice}

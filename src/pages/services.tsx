@@ -175,7 +175,7 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
             {/* Price Badge */}
             <div className="absolute bottom-3 right-3">
               {service.activeDiscount ? (
-                <div className="bg-white/95 px-3 py-1.5 rounded-lg backdrop-blur-sm shadow-md">
+                <div className="bg-white/95 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg backdrop-blur-sm shadow-md">
                   <PriceWithDiscount
                     originalPrice={displayPriceMajor || 0}
                     currency={displayCurrency}
@@ -185,7 +185,7 @@ function ServiceCard({ service }: { service: ServiceResponse }) {
                   />
                 </div>
               ) : (
-                <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
+                <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm text-xs sm:text-sm">
                   From{" "}
                   {serviceService.formatPrice(
                     displayPriceMajor ?? 0,

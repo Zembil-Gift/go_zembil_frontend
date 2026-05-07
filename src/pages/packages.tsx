@@ -281,7 +281,7 @@ export default function PackagesPage() {
                       </div>
 
                       <div className="flex items-center justify-between pt-1">
-                        <p className="text-lg font-bold text-eagle-green">
+                        <p className="text-sm sm:text-base lg:text-lg font-bold text-eagle-green break-all leading-tight">
                           {formatPrice(
                             estimatedPrice.amount,
                             estimatedPrice.currency

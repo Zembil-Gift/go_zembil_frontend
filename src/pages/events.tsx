@@ -576,7 +576,7 @@ function RealEventCard({
 
           {/* Price */}
           <div className="absolute bottom-3 right-3">
-            <Badge className="bg-eagle-green text-white border-none font-bold">
+            <Badge className="bg-eagle-green text-white border-none font-bold text-xs sm:text-sm">
               From {formatPrice(minPrice / 100, currency)}
             </Badge>
           </div>

@@ -115,12 +115,12 @@ export default function CategoryCarousel({
 
   // Subcategory selection handler
   const handleSubcategoryClick = (subcategorySlug: string) => {
-    // Navigate to shop with category and subcategory
+    // Navigate to packages with category and subcategory
     const urlParams = buildUrlParams({
       category: selectedCategory,
       sub: subcategorySlug,
     });
-    navigate(`/shop?${urlParams}`);
+    navigate(`/packages?${urlParams}`);
   };
 
   // Update scroll button states

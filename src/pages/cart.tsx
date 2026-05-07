@@ -867,7 +867,7 @@ export default function Cart() {
                           </h3>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-lg text-charcoal">
+                          <p className="font-bold text-base sm:text-lg text-charcoal break-all leading-tight">
                             {formatPrice(packageTotal, cartCurrency)}
                           </p>
                           <Badge
@@ -990,12 +990,12 @@ export default function Cart() {
 
                                 return (
                                   <div className="mt-1">
-                                    <p className="text-ethiopian-gold font-bold text-lg">
+                                      {/* <p className="text-ethiopian-gold font-bold text-lg">
                                       {formatPrice(
                                         discountedUnitPrice,
                                         cartCurrency
                                       )}
-                                    </p>
+                                    </p> */}
                                     {hasDiscount && (
                                       <p className="text-xs text-gray-500 line-through">
                                         {formatPrice(
@@ -1105,7 +1105,7 @@ export default function Cart() {
 
                                 return (
                                   <div>
-                                    <p className="font-bold text-lg text-charcoal">
+                                    <p className="font-bold text-base sm:text-lg text-charcoal break-all leading-tight">
                                       {formatPrice(itemTotal, cartCurrency)}
                                     </p>
                                     {hasDiscount && (
@@ -1143,7 +1143,7 @@ export default function Cart() {
                       <span className="text-gray-600">
                         Subtotal ({getTotalItems()} items)
                       </span>
-                      <span className="font-medium">
+                      <span className="font-medium break-all">
                         {formatPrice(cartSubtotal, cartCurrency)}
                       </span>
                     </div>
@@ -1313,9 +1313,9 @@ export default function Cart() {
                     <Separator />
 
                     {/* Total */}
-                    <div className="flex justify-between text-lg font-bold">
+                    <div className="flex justify-between text-base sm:text-lg font-bold">
                       <span>Estimated Total</span>
-                      <span className="text-ethiopian-gold">
+                      <span className="text-ethiopian-gold break-all leading-tight">
                         {formatPrice(estimatedTotal, cartCurrency)}
                       </span>
                     </div>
