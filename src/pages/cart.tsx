@@ -603,9 +603,9 @@ export default function Cart() {
         (entry) => entry.packageGroupId === groupId
       );
       if (!group) return;
-      await Promise.all(
-        group.items.map((item) => cartService.removeFromCart(item.id))
-      );
+      for (const item of group.items) {
+        await cartService.removeFromCart(item.id);
+      }
     },
     onMutate: (groupId) => setPendingPackageGroupId(groupId),
     onSuccess: async () => {
@@ -855,7 +855,7 @@ export default function Cart() {
                     key={group.packageGroupId}
                     className="overflow-hidden border-eagle-green/20"
                   >
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="p-4 md:p-6 space-y-4">
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <p className="text-xs uppercase tracking-wide text-eagle-green/70">
@@ -866,17 +866,12 @@ export default function Cart() {
                               `Package #${group.packageId || ""}`}
                           </h3>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-base sm:text-lg text-charcoal break-all leading-tight">
-                            {formatPrice(packageTotal, cartCurrency)}
-                          </p>
-                          <Badge
-                            variant="outline"
-                            className="mt-1 text-eagle-green border-eagle-green/30"
-                          >
-                            {group.items.length} item(s)
-                          </Badge>
-                        </div>
+                        <Badge
+                          variant="outline"
+                          className="text-eagle-green border-eagle-green/30"
+                        >
+                          {group.items.length} item(s)
+                        </Badge>
                       </div>
 
                       <div className="space-y-2 rounded-md border bg-muted/20 p-3">
@@ -900,36 +895,44 @@ export default function Cart() {
                         ))}
                       </div>
 
-                      <div className="flex items-center justify-end gap-4">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            removePackageGroupMutation.mutate(
-                              group.packageGroupId
-                            )
-                          }
-                          disabled={isGroupPending}
-                          className="text-gray-600 hover:text-red-600"
-                        >
-                          <X size={14} className="mr-1" />
-                          Remove Package
-                        </Button>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              removePackageGroupMutation.mutate(
+                                group.packageGroupId
+                              )
+                            }
+                            disabled={isGroupPending}
+                            className="text-gray-600 hover:text-red-600 md:bg-transparent md:hover:bg-transparent bg-red-50 text-red-600 hover:bg-red-100 rounded-md px-3"
+                          >
+                            <X size={14} className="mr-1" />
+                            <span className="md:hidden">Remove</span>
+                            <span className="hidden md:inline">Remove Package</span>
+                          </Button>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-base sm:text-lg text-charcoal break-all leading-tight">
+                            {formatPrice(packageTotal, cartCurrency)}
+                          </p>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 );
               })}
 
-              {regularCartItems.map((item: CartItem) => {
+{regularCartItems.map((item: CartItem) => {
                 const itemKey = getCartItemKey(item);
                 const isQuantityPending = pendingQuantityItemKey === itemKey;
                 const isRemovePending = pendingRemoveItemKey === itemKey;
                 const isWishlistPending = pendingWishlistItemKey === itemKey;
 
                 return (
-                  <Card key={itemKey} className="overflow-hidden">
-                    <CardContent className="p-6">
+                  <Card key={itemKey} className="overflow-hidden md:overflow-hidden">
+                    <CardContent className="p-4 md:p-6">
                       {(() => {
                         const stockQuantity = getItemStockQuantity(item);
                         const isAtMaxStock =
@@ -937,190 +940,305 @@ export default function Cart() {
                           item.quantity >= stockQuantity;
 
                         return (
-                          <div className="flex items-center space-x-4">
-                            {/* Product Image */}
-                            <div className="relative w-24 h-24 flex-shrink-0">
-                              {getProductImageUrl(
-                                item.product?.images,
-                                item.product?.cover || item.productImage
-                              ) ? (
-                                <img
-                                  src={getProductImageUrl(
+                          <>
+                            {/* Mobile Layout */}
+                            <div className="flex flex-col gap-4 md:hidden">
+                              <div className="flex gap-4">
+                                {/* Product Image */}
+                                <div className="relative w-24 h-24 flex-shrink-0">
+                                  {getProductImageUrl(
                                     item.product?.images,
                                     item.product?.cover || item.productImage
+                                  ) ? (
+                                    <img
+                                      src={getProductImageUrl(
+                                        item.product?.images,
+                                        item.product?.cover || item.productImage
+                                      )}
+                                      alt={
+                                        item.productName ||
+                                        item.product?.name ||
+                                        "Product"
+                                      }
+                                      className="w-full h-full object-cover rounded-lg"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                                      <div className="text-center text-gray-400">
+                                        <p className="text-xs">No image</p>
+                                      </div>
+                                    </div>
                                   )}
-                                  alt={
-                                    item.productName ||
-                                    item.product?.name ||
-                                    "Product"
-                                  }
-                                  className="w-full h-full object-cover rounded-lg"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
-                                  <div className="text-center text-gray-400">
-                                    <p className="text-xs">No image</p>
+                                </div>
+
+                                {/* Product Details */}
+                                <div className="flex-1 flex flex-col justify-between">
+                                  <div>
+                                    <Link to={`/product/${item.productId}`}>
+                                      <h3 className="text-lg font-bold leading-tight text-slate-900 hover:text-ethiopian-gold transition-colors line-clamp-2">
+                                        {item.product?.name ||
+                                          `Product #${item.productId}`}
+                                      </h3>
+                                    </Link>
+                                    <p className="text-sm text-slate-600 font-medium">
+                                      {item.productName}
+                                    </p>
+                                    {/* Delivery Info */}
+                                    <div className="flex items-center gap-1.5 mt-1 text-slate-500">
+                                      <Truck size={16} />
+                                      <span className="text-xs">
+                                        {item.product?.deliveryDays || 3}{" "}
+                                        days delivery
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Price & Controls Row */}
+                                  <div className="flex items-center justify-between mt-3">
+                                    {/* Quantity Selector */}
+                                    <div className="flex items-center gap-3">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                          handleQuantityChange(
+                                            item,
+                                            item.quantity - 1
+                                          )
+                                        }
+                                        disabled={isQuantityPending}
+                                        className="w-8 h-8 p-0 text-lg font-medium bg-gray-100 border-gray-200"
+                                      >
+                                        <Minus size={14} />
+                                      </Button>
+                                      <span className="font-semibold text-sm">
+                                        {item.quantity}
+                                      </span>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                          handleQuantityChange(
+                                            item,
+                                            item.quantity + 1
+                                          )
+                                        }
+                                        disabled={
+                                          isQuantityPending || isAtMaxStock
+                                        }
+                                        className="w-8 h-8 p-0 text-lg font-medium bg-gray-100 border-gray-200"
+                                      >
+                                        <Plus size={14} />
+                                      </Button>
+                                    </div>
+
+                                    {/* Price Display */}
+                                    <div className="text-right">
+                                      {(() => {
+                                        const baseUnitPrice = Number(
+                                          item.unitPrice || 0
+                                        );
+                                        const discount =
+                                          item.product?.activeDiscount;
+                                        const discountedUnitPrice = discount
+                                          ? calculateDiscountedPrice(
+                                              baseUnitPrice,
+                                              cartCurrency,
+                                              discount
+                                            )
+                                          : baseUnitPrice;
+                                        const itemTotal =
+                                          discountedUnitPrice * item.quantity;
+
+                                        return (
+                                          <span className="text-base sm:text-lg font-bold text-slate-900">
+                                            {formatPrice(itemTotal, cartCurrency)}
+                                          </span>
+                                        );
+                                      })()}
+                                    </div>
                                   </div>
                                 </div>
-                              )}
-                            </div>
-
-                            {/* Product Details */}
-                            <div className="flex-1 min-w-0">
-                              <Link to={`/product/${item.productId}`}>
-                                <h3 className="font-semibold text-lg text-charcoal hover:text-ethiopian-gold transition-colors line-clamp-2">
-                                  {item.product?.name ||
-                                    `Product #${item.productId}`}
-                                </h3>
-                              </Link>
-                              {(() => {
-                                const baseUnitPrice = Number(
-                                  item.unitPrice || 0
-                                );
-                                const discount = item.product?.activeDiscount;
-                                const discountedUnitPrice = discount
-                                  ? calculateDiscountedPrice(
-                                      baseUnitPrice,
-                                      cartCurrency,
-                                      discount
-                                    )
-                                  : baseUnitPrice;
-                                const hasDiscount =
-                                  discountedUnitPrice < baseUnitPrice;
-
-                                return (
-                                  <div className="mt-1">
-                                      {/* <p className="text-ethiopian-gold font-bold text-lg">
-                                      {formatPrice(
-                                        discountedUnitPrice,
-                                        cartCurrency
-                                      )}
-                                    </p> */}
-                                    {hasDiscount && (
-                                      <p className="text-xs text-gray-500 line-through">
-                                        {formatPrice(
-                                          baseUnitPrice,
-                                          cartCurrency
-                                        )}
-                                      </p>
-                                    )}
-                                  </div>
-                                );
-                              })()}
-
-                              {/* Delivery Info */}
-                              <div className="flex items-center mt-2 text-sm text-gray-500">
-                                <Truck size={14} className="mr-1" />
-                                <span>
-                                  {item.product?.deliveryDays || 3} days
-                                  delivery
-                                </span>
                               </div>
 
-                              {/* Actions */}
-                              <div className="flex items-center space-x-4 mt-4">
-                                {/* Quantity Controls */}
-                                <div className="flex items-center space-x-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                      handleQuantityChange(
-                                        item,
-                                        item.quantity - 1
-                                      )
-                                    }
-                                    disabled={isQuantityPending}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Minus size={14} />
-                                  </Button>
-                                  <span className="text-sm font-medium w-8 text-center">
-                                    {item.quantity}
-                                  </span>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                      handleQuantityChange(
-                                        item,
-                                        item.quantity + 1
-                                      )
-                                    }
-                                    disabled={isQuantityPending || isAtMaxStock}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Plus size={14} />
-                                  </Button>
-                                </div>
-
-                                {/* Move to Wishlist */}
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleMoveToWishlist(item)}
-                                  disabled={isWishlistPending}
-                                  className="text-gray-600 hover:text-ethiopian-gold"
-                                >
-                                  <Heart size={14} className="mr-1" />
-                                  Save for later
-                                </Button>
-
-                                {/* Remove */}
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
+                              {/* Footer Actions */}
+                              <div className="flex items-center justify-start gap-4 pt-2">
+                                {/* Remove Button */}
+                                <button
                                   onClick={() =>
                                     removeItemMutation.mutate(item.id)
                                   }
                                   disabled={isRemovePending}
-                                  className="text-gray-600 hover:text-red-600"
+                                  className="px-6 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-80 bg-rose-50 text-rose-600"
                                 >
-                                  <X size={14} className="mr-1" />
+                                  <X className="h-4 w-4" />
                                   Remove
-                                </Button>
+                                </button>
                               </div>
                             </div>
 
-                            {/* Item Total */}
-                            <div className="text-right">
-                              {(() => {
-                                const baseUnitPrice = Number(
-                                  item.unitPrice || 0
-                                );
-                                const discount = item.product?.activeDiscount;
-                                const discountedUnitPrice = discount
-                                  ? calculateDiscountedPrice(
-                                      baseUnitPrice,
-                                      cartCurrency,
-                                      discount
-                                    )
-                                  : baseUnitPrice;
-                                const itemTotal =
-                                  discountedUnitPrice * item.quantity;
-                                const originalLineTotal =
-                                  baseUnitPrice * item.quantity;
-                                const hasDiscount =
-                                  itemTotal < originalLineTotal;
-
-                                return (
-                                  <div>
-                                    <p className="font-bold text-base sm:text-lg text-charcoal break-all leading-tight">
-                                      {formatPrice(itemTotal, cartCurrency)}
-                                    </p>
-                                    {hasDiscount && (
-                                      <p className="text-xs text-gray-500 line-through">
-                                        {formatPrice(
-                                          originalLineTotal,
-                                          cartCurrency
-                                        )}
-                                      </p>
+                            {/* Desktop Layout */}
+                            <div className="hidden md:flex items-center space-x-4">
+                              {/* Product Image */}
+                              <div className="relative w-24 h-24 flex-shrink-0">
+                                {getProductImageUrl(
+                                  item.product?.images,
+                                  item.product?.cover || item.productImage
+                                ) ? (
+                                  <img
+                                    src={getProductImageUrl(
+                                      item.product?.images,
+                                      item.product?.cover || item.productImage
                                     )}
+                                    alt={
+                                      item.productName ||
+                                      item.product?.name ||
+                                      "Product"
+                                    }
+                                    className="w-full h-full object-cover rounded-lg"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <div className="text-center text-gray-400">
+                                      <p className="text-xs">No image</p>
+                                    </div>
                                   </div>
-                                );
-                              })()}
+                                )}
+                              </div>
+
+                              {/* Product Details */}
+                              <div className="flex-1 min-w-0">
+                                <Link to={`/product/${item.productId}`}>
+                                  <h3 className="font-semibold text-lg text-charcoal hover:text-ethiopian-gold transition-colors line-clamp-2">
+                                    {item.product?.name ||
+                                      `Product #${item.productId}`}
+                                  </h3>
+                                </Link>
+                                {(() => {
+                                  const baseUnitPrice = Number(item.unitPrice || 0);
+                                  const discount = item.product?.activeDiscount;
+                                  const discountedUnitPrice = discount
+                                    ? calculateDiscountedPrice(
+                                        baseUnitPrice,
+                                        cartCurrency,
+                                        discount
+                                      )
+                                    : baseUnitPrice;
+                                  const hasDiscount =
+                                    discountedUnitPrice < baseUnitPrice;
+
+                                  return (
+                                    <div className="mt-1">
+                                      {hasDiscount && (
+                                        <p className="text-xs text-gray-500 line-through">
+                                          {formatPrice(baseUnitPrice, cartCurrency)}
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+
+                                {/* Delivery Info */}
+                                <div className="flex items-center mt-2 text-sm text-gray-500">
+                                  <Truck size={14} className="mr-1" />
+                                  <span>
+                                    {item.product?.deliveryDays || 3} days
+                                    delivery
+                                  </span>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex flex-wrap items-center gap-2 md:space-x-4 mt-4">
+                                  {/* Quantity Controls */}
+                                  <div className="flex items-center space-x-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() =>
+                                        handleQuantityChange(
+                                          item,
+                                          item.quantity - 1
+                                        )
+                                      }
+                                      disabled={isQuantityPending}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Minus size={14} />
+                                    </Button>
+                                    <span className="text-sm font-medium w-8 text-center">
+                                      {item.quantity}
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() =>
+                                        handleQuantityChange(
+                                          item,
+                                          item.quantity + 1
+                                        )
+                                      }
+                                      disabled={isQuantityPending || isAtMaxStock}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Plus size={14} />
+                                    </Button>
+                                  </div>
+
+                                  {/* Remove */}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      removeItemMutation.mutate(item.id)
+                                    }
+                                    disabled={isRemovePending}
+                                    className="text-gray-600 hover:text-red-600 md:bg-transparent md:hover:bg-transparent bg-red-50 text-red-600 hover:bg-red-100 rounded-md px-3"
+                                  >
+                                    <X size={14} className="mr-1" />
+                                    <span className="md:hidden">Remove</span>
+                                    <span className="hidden md:inline">Remove</span>
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Item Total */}
+                              <div className="text-right">
+                                {(() => {
+                                  const baseUnitPrice = Number(item.unitPrice || 0);
+                                  const discount = item.product?.activeDiscount;
+                                  const discountedUnitPrice = discount
+                                    ? calculateDiscountedPrice(
+                                        baseUnitPrice,
+                                        cartCurrency,
+                                        discount
+                                      )
+                                    : baseUnitPrice;
+                                  const itemTotal =
+                                    discountedUnitPrice * item.quantity;
+                                  const originalLineTotal =
+                                    baseUnitPrice * item.quantity;
+                                  const hasDiscount =
+                                    itemTotal < originalLineTotal;
+
+                                  return (
+                                    <div>
+                                      <p className="font-bold text-base sm:text-lg text-charcoal break-all leading-tight">
+                                        {formatPrice(itemTotal, cartCurrency)}
+                                      </p>
+                                      {hasDiscount && (
+                                        <p className="text-xs text-gray-500 line-through">
+                                          {formatPrice(
+                                            originalLineTotal,
+                                            cartCurrency
+                                          )}
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
                             </div>
-                          </div>
+                          </>
                         );
                       })()}
                     </CardContent>

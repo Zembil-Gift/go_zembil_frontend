@@ -547,43 +547,41 @@ export default function PackageDetailPage() {
               </ul>
             </div>
 
-            <div className="grid gap-4 pt-6 mt-6 border-t border-slate-100">
-              <div className="rounded-xl border border-eagle-green/20 p-5 bg-gradient-to-r from-eagle-green/5 to-transparent space-y-1 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-eagle-green/60 uppercase tracking-widest mb-1.5">
-                    Estimated total
-                  </p>
-                  <p className="text-3xl font-bold text-eagle-green tracking-tight">
-                    {formatPrice(
-                      packageEstimatedTotal.amount,
-                      packageEstimatedTotal.currency
-                    )}
-                  </p>
-                  {packageDetail.giftWrappable && packageDetail.giftWrapPrice ? (
-                    <p className="text-xs font-medium text-eagle-green/70 flex items-center gap-1.5 mt-2.5">
-                      <Gift className="h-4 w-4 text-eagle-green" />
-                      Includes available gift wrap option
-                    </p>
-                  ) : null}
+
+            <div className="pt-6 mt-6 border-t border-slate-100">
+              <div className="rounded-xl border border-eagle-green/20 p-4 md:p-5 bg-gradient-to-r from-eagle-green/5 to-transparent shadow-sm flex flex-row items-center justify-between gap-4">
+                <div data-purpose="total-display">
+                  <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">
+                    Estimated Total
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xl md:text-2xl font-extrabold text-eagle-green tracking-tight">
+                      {formatPrice(
+                        packageEstimatedTotal.amount,
+                        packageEstimatedTotal.currency
+                      )}
+                    </span>
+                  </div>
                 </div>
+
+                <button
+                  data-purpose="add-to-cart-button"
+                  className="btn-transition bg-eagle-green hover:bg-viridian-green text-white font-bold py-2 px-4 md:py-3 md:px-8 rounded-lg md:rounded-xl shadow-md hover:shadow-lg active:scale-[0.98] text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  disabled={!canAddToCart || addToCartMutation.isPending}
+                  onClick={() => addToCartMutation.mutate()}
+                >
+                  {addToCartMutation.isPending ? (
+                    <span className="flex items-center justify-center gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Adding Package...
+                    </span>
+                  ) : (
+                    "Add Package to Cart"
+                  )}
+                </button>
               </div>
             </div>
-
-            <Button
-              size="lg"
-              className="w-full bg-eagle-green hover:bg-viridian-green text-white font-medium text-base rounded-xl h-12 shadow-sm hover:shadow-md transition-all active:scale-[0.99]"
-              disabled={!canAddToCart || addToCartMutation.isPending}
-              onClick={() => addToCartMutation.mutate()}
-            >
-              {addToCartMutation.isPending ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                  Adding Package...
-                </>
-              ) : (
-                "Add Package to Cart"
-              )}
-            </Button>
+            
           </CardContent>
         </Card>
       </div>

@@ -51,7 +51,7 @@ export default function AdminEvents() {
   const [rejectDialog, setRejectDialog] = useState<{
     open: boolean;
     eventId?: number;
-    type: "event" | "price";
+    type: "event" | "event-revert" | "price";
   }>({
     open: false,
     type: "event",
@@ -140,14 +140,24 @@ export default function AdminEvents() {
 
   // Reject event mutation
   const rejectEventMutation = useMutation({
-    mutationFn: ({ eventId, reason }: { eventId: number; reason: string }) =>
-      adminService.rejectEvent(eventId, reason),
-    onSuccess: () => {
+    mutationFn: ({
+      eventId,
+      reason,
+      action,
+    }: {
+      eventId: number;
+      reason: string;
+      action: "reject" | "revert";
+    }) => adminService.rejectEvent(eventId, reason),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "all-events"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "pending-events"] });
       toast({
-        title: "Event Rejected",
-        description: "The event has been rejected.",
+        title: variables.action === "revert" ? "Event Declined" : "Event Rejected",
+        description:
+          variables.action === "revert"
+            ? "The approved event has been reverted to declined."
+            : "The event has been rejected.",
       });
       setRejectDialog({ open: false, type: "event" });
       setRejectReason("");
@@ -244,10 +254,14 @@ export default function AdminEvents() {
       return;
     }
 
-    if (rejectDialog.type === "event" && rejectDialog.eventId) {
+    if (
+      (rejectDialog.type === "event" || rejectDialog.type === "event-revert") &&
+      rejectDialog.eventId
+    ) {
       rejectEventMutation.mutate({
         eventId: rejectDialog.eventId,
         reason: rejectReason,
+        action: rejectDialog.type === "event-revert" ? "revert" : "reject",
       });
     } else if (rejectDialog.type === "price" && rejectDialog.eventId) {
       rejectPriceUpdateMutation.mutate({
@@ -282,6 +296,9 @@ export default function AdminEvents() {
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
   };
+
+  const isEventApproved = (status: string) =>
+    status === "APPROVED" || status === "ACTIVE";
 
   return (
     <AdminLayout
@@ -483,6 +500,21 @@ export default function AdminEvents() {
                                   <X className="h-4 w-4" />
                                 </Button>
                               </>
+                            )}
+                            {isEventApproved(event.status) && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() =>
+                                  setRejectDialog({
+                                    open: true,
+                                    eventId: event.id,
+                                    type: "event-revert",
+                                  })
+                                }
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
                         </TableCell>
@@ -993,6 +1025,21 @@ export default function AdminEvents() {
                 </Button>
               </>
             )}
+            {selectedEvent && isEventApproved(selectedEvent.status) && (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setShowViewDialog(false);
+                  setRejectDialog({
+                    open: true,
+                    eventId: selectedEvent.id,
+                    type: "event-revert",
+                  });
+                }}
+              >
+                Revert to Declined
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1006,11 +1053,16 @@ export default function AdminEvents() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-red-500" />
-              Reject {rejectDialog.type === "event" ? "Event" : "Price Update"}
+              {rejectDialog.type === "event"
+                ? "Reject Event"
+                : rejectDialog.type === "event-revert"
+                ? "Revert Event to Declined"
+                : "Reject Price Update"}
             </DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejection. This will be sent to the
-              vendor.
+              {rejectDialog.type === "event-revert"
+                ? "Please provide a reason for reverting this approved event to declined. This will be sent to the vendor."
+                : "Please provide a reason for rejection. This will be sent to the vendor."}
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -1042,7 +1094,9 @@ export default function AdminEvents() {
                 rejectPriceUpdateMutation.isPending) && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              Reject
+              {rejectDialog.type === "event-revert"
+                ? "Revert to Declined"
+                : "Reject"}
             </Button>
           </DialogFooter>
         </DialogContent>

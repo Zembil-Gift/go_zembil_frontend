@@ -72,7 +72,7 @@ export default function AdminServices() {
   const [rejectDialog, setRejectDialog] = useState<{
     open: boolean;
     serviceId?: number;
-    type: "reject" | "suspend" | "price" | "category" | "package";
+    type: "reject" | "revert" | "suspend" | "price" | "category" | "package";
   }>({
     open: false,
     type: "reject",
@@ -234,16 +234,24 @@ export default function AdminServices() {
     mutationFn: ({
       serviceId,
       reason,
+      action,
     }: {
       serviceId: number;
       reason: string;
+      action: "reject" | "revert";
     }) => serviceService.rejectService(serviceId, reason),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "all-services"] });
       queryClient.invalidateQueries({
         queryKey: ["admin", "pending-services"],
       });
-      toast({ title: "Success", description: "Service rejected" });
+      toast({
+        title: "Success",
+        description:
+          variables.action === "revert"
+            ? "Service reverted to declined"
+            : "Service rejected",
+      });
       setRejectDialog({ open: false, type: "reject" });
       setRejectReason("");
       setSelectedService(null);
@@ -425,10 +433,14 @@ export default function AdminServices() {
       return;
     }
 
-    if (rejectDialog.type === "reject" && rejectDialog.serviceId) {
+    if (
+      (rejectDialog.type === "reject" || rejectDialog.type === "revert") &&
+      rejectDialog.serviceId
+    ) {
       rejectServiceMutation.mutate({
         serviceId: rejectDialog.serviceId,
         reason: rejectReason,
+        action: rejectDialog.type === "revert" ? "revert" : "reject",
       });
     } else if (rejectDialog.type === "suspend" && rejectDialog.serviceId) {
       suspendServiceMutation.mutate({
@@ -674,20 +686,35 @@ export default function AdminServices() {
                                 </>
                               )}
                               {service.status === "APPROVED" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-orange-600 hover:text-orange-700"
-                                  onClick={() =>
-                                    setRejectDialog({
-                                      open: true,
-                                      serviceId: service.id,
-                                      type: "suspend",
-                                    })
-                                  }
-                                >
-                                  <Ban className="h-4 w-4" />
-                                </Button>
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() =>
+                                      setRejectDialog({
+                                        open: true,
+                                        serviceId: service.id,
+                                        type: "revert",
+                                      })
+                                    }
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-orange-600 hover:text-orange-700"
+                                    onClick={() =>
+                                      setRejectDialog({
+                                        open: true,
+                                        serviceId: service.id,
+                                        type: "suspend",
+                                      })
+                                    }
+                                  >
+                                    <Ban className="h-4 w-4" />
+                                  </Button>
+                                </>
                               )}
                               {service.status === "SUSPENDED" && (
                                 <Button
@@ -1578,21 +1605,37 @@ export default function AdminServices() {
               </>
             )}
             {selectedService?.status === "APPROVED" && (
-              <Button
-                variant="outline"
-                className="text-orange-600 hover:text-orange-700"
-                onClick={() => {
-                  setShowViewDialog(false);
-                  setRejectDialog({
-                    open: true,
-                    serviceId: selectedService.id,
-                    type: "suspend",
-                  });
-                }}
-              >
-                <Ban className="h-4 w-4 mr-2" />
-                Suspend
-              </Button>
+              <>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setShowViewDialog(false);
+                    setRejectDialog({
+                      open: true,
+                      serviceId: selectedService.id,
+                      type: "revert",
+                    });
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Revert to Declined
+                </Button>
+                <Button
+                  variant="outline"
+                  className="text-orange-600 hover:text-orange-700"
+                  onClick={() => {
+                    setShowViewDialog(false);
+                    setRejectDialog({
+                      open: true,
+                      serviceId: selectedService.id,
+                      type: "suspend",
+                    });
+                  }}
+                >
+                  <Ban className="h-4 w-4 mr-2" />
+                  Suspend
+                </Button>
+              </>
             )}
             {selectedService?.status === "SUSPENDED" && (
               <Button
@@ -1627,6 +1670,8 @@ export default function AdminServices() {
               <AlertTriangle className="h-5 w-5 text-red-500" />
               {rejectDialog.type === "reject"
                 ? "Reject Service"
+                : rejectDialog.type === "revert"
+                ? "Revert Service to Declined"
                 : rejectDialog.type === "suspend"
                 ? "Suspend Service"
                 : rejectDialog.type === "package"
@@ -1636,6 +1681,8 @@ export default function AdminServices() {
             <DialogDescription>
               {rejectDialog.type === "reject"
                 ? "Please provide a reason for rejecting this service. The vendor will be notified."
+                : rejectDialog.type === "revert"
+                ? "Please provide a reason for reverting this approved listing to declined. The vendor will be notified."
                 : rejectDialog.type === "suspend"
                 ? "Please provide a reason for suspending this service. The vendor will be notified."
                 : rejectDialog.type === "package"
@@ -1648,6 +1695,8 @@ export default function AdminServices() {
               placeholder={
                 rejectDialog.type === "reject"
                   ? "Enter rejection reason..."
+                  : rejectDialog.type === "revert"
+                  ? "Enter decline reason..."
                   : rejectDialog.type === "suspend"
                   ? "Enter suspension reason..."
                   : rejectDialog.type === "package"
@@ -1691,6 +1740,8 @@ export default function AdminServices() {
               )}
               {rejectDialog.type === "reject"
                 ? "Reject"
+                : rejectDialog.type === "revert"
+                ? "Revert to Declined"
                 : rejectDialog.type === "suspend"
                 ? "Suspend"
                 : rejectDialog.type === "package"

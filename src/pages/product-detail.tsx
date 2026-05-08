@@ -97,54 +97,73 @@ export default function ProductDetail() {
     enabled: !!productId && isInitialized,
   });
 
+  const selectableSkus = useMemo(() => {
+    if (!product?.productSku) return [];
+    return product.productSku.filter((sku) => sku.price != null);
+  }, [product?.productSku]);
+
+  const truncateBreadcrumbText = useCallback((value?: string, maxLength: number = 12) => {
+    if (!value) return "";
+    if (value.length <= maxLength) return value;
+    return `${value.slice(0, maxLength)}...`;
+  }, []);
+
   // Auto-select first available SKU when product loads
   useEffect(() => {
-    if (product?.productSku && product.productSku.length > 0 && selectedSkuId === null) {
+    if (selectableSkus.length > 0 && selectedSkuId === null) {
       // Find first SKU with stock, or just the first SKU if none have stock
-      const firstAvailableSku = product.productSku.find(sku => (sku.stockQuantity || 0) > 0);
-      const skuToSelect = firstAvailableSku || product.productSku[0];
+      const firstAvailableSku = selectableSkus.find(sku => (sku.stockQuantity || 0) > 0);
+      const skuToSelect = firstAvailableSku || selectableSkus[0];
       if (skuToSelect?.id) {
         setSelectedSkuId(skuToSelect.id);
       }
     }
-  }, [product, selectedSkuId]);
+  }, [selectableSkus, selectedSkuId]);
+
+  useEffect(() => {
+    if (selectedSkuId === null) return;
+    const selectedStillSelectable = selectableSkus.some((sku) => sku.id === selectedSkuId);
+    if (!selectedStillSelectable) {
+      setSelectedSkuId(null);
+    }
+  }, [selectableSkus, selectedSkuId]);
 
   const selectedSku = useMemo(() => {
-    if (!product?.productSku || product.productSku.length === 0) return null;
+    if (selectableSkus.length === 0) return null;
     
     if (selectedSkuId) {
-      return product.productSku.find(sku => sku.id === selectedSkuId) || null;
+      return selectableSkus.find(sku => sku.id === selectedSkuId) || null;
     }
     
     // Auto-select if there's only ONE SKU (it's the base product, not a variant choice)
-    if (product.productSku.length === 1) {
-      return product.productSku[0];
+    if (selectableSkus.length === 1) {
+      return selectableSkus[0];
     }
     
     // For multiple SKUs, don't auto-select - let user choose
     return null;
-  }, [product, selectedSkuId]);
+  }, [selectableSkus, selectedSkuId]);
 
   const currentPrice = useMemo(() => {
     if (selectedSku?.price) return extractPriceAmount(selectedSku.price);
-    if (product?.productSku?.[0]?.price) return extractPriceAmount(product.productSku[0].price);
+    if (selectableSkus[0]?.price) return extractPriceAmount(selectableSkus[0].price);
     return extractPriceAmount(product?.price);
-  }, [selectedSku, product]);
+  }, [selectedSku, selectableSkus, product]);
 
   const currencyCode = useMemo(() => {
     if (selectedSku?.price?.currencyCode) return selectedSku.price.currencyCode;
-    if (product?.productSku?.[0]?.price?.currencyCode) return product.productSku[0].price.currencyCode;
+    if (selectableSkus[0]?.price?.currencyCode) return selectableSkus[0].price.currencyCode;
     return getPriceCurrency(product?.price);
-  }, [selectedSku, product]);
+  }, [selectedSku, selectableSkus, product]);
 
   const stockQuantity = useMemo(() => {
     // For multi-SKU products, only show stock when a variant is selected
-    const isMultiSku = product?.productSku && product.productSku.length > 1;
+    const isMultiSku = selectableSkus.length > 1;
     if (isMultiSku && !selectedSkuId) return null;
     
     if (selectedSku?.stockQuantity !== undefined) return selectedSku.stockQuantity;
     return product?.stockQuantity || 0;
-  }, [selectedSku, selectedSkuId, product]);
+  }, [selectedSku, selectedSkuId, selectableSkus.length, product]);
 
   // Ensure quantity does not exceed stock
   useEffect(() => {
@@ -155,9 +174,9 @@ export default function ProductDetail() {
 
   const findBestMatchingSku = useCallback(
     (attributesToMatch: Record<string, string>) => {
-      if (!product?.productSku || product.productSku.length === 0) return null;
+      if (selectableSkus.length === 0) return null;
 
-      const matchingSkus = product.productSku.filter((sku) => {
+      const matchingSkus = selectableSkus.filter((sku) => {
         const skuAttributes = sku.attributes || [];
         return Object.entries(attributesToMatch).every(([name, value]) =>
           skuAttributes.some((attr) => attr.name === name && attr.value === value)
@@ -169,7 +188,7 @@ export default function ProductDetail() {
       const firstInStock = matchingSkus.find((sku) => (sku.stockQuantity || 0) > 0);
       return firstInStock || matchingSkus[0];
     },
-    [product?.productSku]
+    [selectableSkus]
   );
 
   const handleAttributeSelection = (attributeName: string, value: string, id?: number) => {
@@ -188,15 +207,15 @@ export default function ProductDetail() {
   }, [selectedAttribute]);
 
   const hasAttributeSelectionUI = useMemo(() => {
-    if (!product?.productSku || product.productSku.length === 0) return false;
-    return product.productSku.some((sku) => (sku.attributes?.length || 0) > 0);
-  }, [product?.productSku]);
+    if (selectableSkus.length === 0) return false;
+    return selectableSkus.some((sku) => (sku.attributes?.length || 0) > 0);
+  }, [selectableSkus]);
 
 // Show product images by default.
   // Only show SKU images when user explicitly selects a variant (for multi-SKU products).
   // For single-SKU products, show SKU images if available (since the SKU IS the product).
   const images = useMemo(() => {
-    const isMultiSku = product?.productSku && product.productSku.length > 1;
+    const isMultiSku = selectableSkus.length > 1;
     const userSelectedVariant = selectedSkuId !== null;
     
     // Show SKU images if: single SKU product OR user explicitly selected a variant
@@ -207,7 +226,7 @@ export default function ProductDetail() {
     }
     
     return getAllProductImages(product?.images);
-  }, [selectedSkuId, selectedSku, product?.productSku, product?.images]);
+  }, [selectedSkuId, selectedSku, selectableSkus.length, product?.images]);
   
   // Use images if available, otherwise empty array (no fallback)
   const displayImages = useMemo(() => {
@@ -262,7 +281,7 @@ export default function ProductDetail() {
       }
 
       // Require variant selection for products with multiple SKUs
-      if (product?.productSku && product.productSku.length > 1 && !selectedSkuId) {
+      if (selectableSkus.length > 1 && !selectedSku) {
         throw new Error('Please select a variant');
       }
 
@@ -450,23 +469,27 @@ export default function ProductDetail() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
-        <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-8">
-          <Link to="/" className="hover:text-viridian-green">Home</Link>
+        <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-8 min-w-0">
+          <Link to="/" className="hover:text-viridian-green shrink-0">Home</Link>
           <span>/</span>
-          <Link to="/gifts" className="hover:text-viridian-green">Gifts</Link>
+          <Link to="/gifts" className="hover:text-viridian-green shrink-0">Gifts</Link>
           {product.subCategoryName && (
             <>
               <span>/</span>
               <Link 
                 to={`/gifts?category=${product.subCategorySlug || product.subCategoryId}`} 
-                className="hover:text-viridian-green"
+                className="hover:text-viridian-green max-w-[120px] sm:max-w-none truncate"
               >
-                {product.subCategoryName}
+                <span className="sm:hidden">{truncateBreadcrumbText(product.subCategoryName)}</span>
+                <span className="hidden sm:inline">{product.subCategoryName}</span>
               </Link>
             </>
           )}
           <span>/</span>
-          <span className="text-charcoal font-medium">{product.name}</span>
+          <span className="text-charcoal font-medium max-w-[120px] sm:max-w-none truncate">
+            <span className="sm:hidden">{truncateBreadcrumbText(product.name)}</span>
+            <span className="hidden sm:inline">{product.name}</span>
+          </span>
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -638,14 +661,14 @@ export default function ProductDetail() {
               )}
             </div>
 
-            {product.productSku && product.productSku.length > 1 && (
+            {selectableSkus.length > 1 && (
               <div className="space-y-4 pt-4 border-t border-gray-200">
                 <h3 className="font-semibold text-charcoal">
                   Select Variant <span className="text-red-500">*</span>
                 </h3>
 
                 <div className="grid grid-cols-1 gap-3">
-                  {product.productSku.map((sku) => (
+                  {selectableSkus.map((sku) => (
                     <button
                       key={sku.id}
                       onClick={() => setSelectedSkuId(sku.id || null)}
@@ -800,10 +823,10 @@ export default function ProductDetail() {
                 >
                   {addToCartMutation.isPending 
                     ? "Adding..." 
-                    : stockQuantity === 0 
-                      ? "Out of Stock"
-                      : product?.productSku && product.productSku.length > 1 && !selectedSkuId
-                        ? "Select a Variant First"
+                      : stockQuantity === 0 
+                        ? "Out of Stock"
+                        : selectableSkus.length > 1 && !selectedSku
+                          ? "Select a Variant First"
                         : hasAttributeSelectionUI && selectedAttributeOption.length === 0
                           ? "Select an Option First"
                         : "Add to Cart"}
@@ -836,7 +859,7 @@ export default function ProductDetail() {
               <Button
                 onClick={async () => {
                   // Check variant selection first for multi-SKU products
-                  if (product?.productSku && product.productSku.length > 1 && !selectedSkuId) {
+                  if (selectableSkus.length > 1 && !selectedSku) {
                     toast({
                       title: "Please select a variant",
                       description: "Choose a product variant before proceeding",
