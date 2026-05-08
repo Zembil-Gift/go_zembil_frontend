@@ -451,20 +451,20 @@ export default function EditProduct() {
         return vendorService.updateProductForVendor(productId, productPayload);
       }
     },
-    onSuccess: async () => {
-      // Upload any pending SKU images
+    onSuccess: async (updatedProduct) => {
+      // Upload any pending SKU images using the NEW product data from response
       const hasAnyPendingImages = Object.values(pendingSkuImages).some(
         (images) => images.length > 0
       );
 
-      if (hasAnyPendingImages && product?.productSku) {
+      if (hasAnyPendingImages && updatedProduct?.productSku) {
         setIsUploadingImages(true);
         try {
           for (const [skuIndexStr, images] of Object.entries(
             pendingSkuImages
           )) {
             const skuIndex = parseInt(skuIndexStr, 10);
-            const sku = product.productSku[skuIndex];
+            const sku = updatedProduct.productSku[skuIndex];
 
             if (images.length > 0 && sku?.id) {
               await imageService.uploadSkuImages(sku.id, images);
@@ -495,6 +495,9 @@ export default function EditProduct() {
       queryClient.invalidateQueries({
         queryKey: ["vendor", "pending-rejected-products"],
       });
+
+      // Clear pending images after successful upload
+      setPendingSkuImages({});
 
       navigate("/vendor");
     },

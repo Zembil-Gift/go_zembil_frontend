@@ -60,6 +60,9 @@ export default function AdminCustomTemplates() {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [rejectAction, setRejectAction] = useState<"reject" | "revert">(
+    "reject"
+  );
   const [activeTab, setActiveTab] = useState("pending");
   const [filters, setFilters] = useState({
     page: 0,
@@ -144,21 +147,30 @@ export default function AdminCustomTemplates() {
     mutationFn: ({
       templateId,
       reason,
+      action,
     }: {
       templateId: number;
       reason: string;
+      action: "reject" | "revert";
     }) => customOrderTemplateService.reject(templateId, reason),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["admin", "pending-custom-templates"],
       });
       queryClient.invalidateQueries({
         queryKey: ["admin", "all-custom-templates"],
       });
-      toast({ title: "Success", description: "Template rejected" });
+      toast({
+        title: "Success",
+        description:
+          variables.action === "revert"
+            ? "Template reverted to declined"
+            : "Template rejected",
+      });
       setShowRejectDialog(false);
       setShowViewDialog(false);
       setRejectReason("");
+      setRejectAction("reject");
       setSelectedTemplate(null);
     },
     onError: (error: any) => {
@@ -183,8 +195,18 @@ export default function AdminCustomTemplates() {
       rejectMutation.mutate({
         templateId: selectedTemplate.id,
         reason: rejectReason,
+        action: rejectAction,
       });
     }
+  };
+
+  const openRejectDialog = (
+    template: CustomOrderTemplate,
+    action: "reject" | "revert"
+  ) => {
+    setSelectedTemplate(template);
+    setRejectAction(action);
+    setShowRejectDialog(true);
   };
 
   const getFieldTypeIcon = (fieldType: string) => {
@@ -343,10 +365,7 @@ export default function AdminCustomTemplates() {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => {
-                                setSelectedTemplate(template);
-                                setShowRejectDialog(true);
-                              }}
+                              onClick={() => openRejectDialog(template, "reject")}
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -447,16 +466,29 @@ export default function AdminCustomTemplates() {
                           {new Date(template.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedTemplate(template);
-                              setShowViewDialog(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedTemplate(template);
+                                setShowViewDialog(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {template.status === "APPROVED" && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() =>
+                                  openRejectDialog(template, "revert")
+                                }
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -611,41 +643,71 @@ export default function AdminCustomTemplates() {
             <Button variant="outline" onClick={() => setShowViewDialog(false)}>
               Close
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                setShowViewDialog(false);
-                setShowRejectDialog(true);
-              }}
-            >
-              <X className="h-4 w-4 mr-2" />
-              Reject
-            </Button>
-            <Button
-              onClick={() =>
-                selectedTemplate && approveMutation.mutate(selectedTemplate.id)
-              }
-              disabled={approveMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {approveMutation.isPending && (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              )}
-              <Check className="h-4 w-4 mr-2" />
-              Approve
-            </Button>
+            {selectedTemplate?.status === "PENDING_APPROVAL" && (
+              <>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setShowViewDialog(false);
+                    openRejectDialog(selectedTemplate, "reject");
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Reject
+                </Button>
+                <Button
+                  onClick={() =>
+                    selectedTemplate && approveMutation.mutate(selectedTemplate.id)
+                  }
+                  disabled={approveMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {approveMutation.isPending && (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )}
+                  <Check className="h-4 w-4 mr-2" />
+                  Approve
+                </Button>
+              </>
+            )}
+            {selectedTemplate?.status === "APPROVED" && (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setShowViewDialog(false);
+                  openRejectDialog(selectedTemplate, "revert");
+                }}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Revert to Declined
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Reject Dialog */}
-      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+      <Dialog
+        open={showRejectDialog}
+        onOpenChange={(open) => {
+          setShowRejectDialog(open);
+          if (!open) {
+            setRejectReason("");
+            setRejectAction("reject");
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Template</DialogTitle>
+            <DialogTitle>
+              {rejectAction === "revert"
+                ? "Revert Template to Declined"
+                : "Reject Template"}
+            </DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting this template. The vendor
-              will be notified.
+              {rejectAction === "revert"
+                ? "Please provide a reason for reverting this approved listing to declined. The vendor will be notified."
+                : "Please provide a reason for rejecting this template. The vendor will be notified."}
             </DialogDescription>
           </DialogHeader>
 
@@ -671,6 +733,7 @@ export default function AdminCustomTemplates() {
               onClick={() => {
                 setShowRejectDialog(false);
                 setRejectReason("");
+                setRejectAction("reject");
               }}
             >
               Cancel
@@ -683,7 +746,9 @@ export default function AdminCustomTemplates() {
               {rejectMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              Reject Template
+              {rejectAction === "revert"
+                ? "Revert to Declined"
+                : "Reject Template"}
             </Button>
           </DialogFooter>
         </DialogContent>

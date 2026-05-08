@@ -62,7 +62,14 @@ interface Product {
     contentType?: string;
     createdAt?: string;
   }>;
-  status: "PENDING" | "ACTIVE" | "REJECTED" | "DRAFT" | "INACTIVE" | "ARCHIVED";
+  status:
+    | "PENDING"
+    | "ACTIVE"
+    | "APPROVED"
+    | "REJECTED"
+    | "DRAFT"
+    | "INACTIVE"
+    | "ARCHIVED";
   vendorId: number;
   vendorName?: string;
   categoryName?: string;
@@ -130,7 +137,7 @@ export default function AdminProducts() {
   const [rejectDialog, setRejectDialog] = useState<{
     open: boolean;
     productId?: number;
-    type: "product" | "price" | "category-change";
+    type: "product" | "product-revert" | "price" | "category-change";
   }>({
     open: false,
     type: "product",
@@ -289,16 +296,24 @@ export default function AdminProducts() {
     mutationFn: ({
       productId,
       reason,
+      action,
     }: {
       productId: number;
       reason: string;
+      action: "reject" | "revert";
     }) => adminService.rejectProduct(productId, reason),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "all-products"] });
       queryClient.invalidateQueries({
         queryKey: ["admin", "pending-products"],
       });
-      toast({ title: "Success", description: "Product rejected" });
+      toast({
+        title: "Success",
+        description:
+          variables.action === "revert"
+            ? "Product reverted to declined"
+            : "Product rejected",
+      });
       setRejectDialog({ open: false, type: "product" });
       setRejectReason("");
       setRejectReasonError("");
@@ -443,10 +458,14 @@ export default function AdminProducts() {
 
     setRejectReasonError("");
 
-    if (rejectDialog.type === "product" && rejectDialog.productId) {
+    if (
+      (rejectDialog.type === "product" || rejectDialog.type === "product-revert") &&
+      rejectDialog.productId
+    ) {
       rejectProductMutation.mutate({
         productId: rejectDialog.productId,
         reason: trimmedReason,
+        action: rejectDialog.type === "product-revert" ? "revert" : "reject",
       });
     } else if (rejectDialog.type === "price" && rejectDialog.productId) {
       rejectProductPriceUpdateMutation.mutate({
@@ -551,6 +570,9 @@ export default function AdminProducts() {
     const badge = badges[status] || badges["DRAFT"];
     return <Badge className={badge.color}>{badge.label}</Badge>;
   };
+
+  const isProductApproved = (status: Product["status"]) =>
+    status === "ACTIVE" || status === "APPROVED";
 
   return (
     <AdminLayout
@@ -769,6 +791,21 @@ export default function AdminProducts() {
                                     <X className="h-4 w-4" />
                                   </Button>
                                 </>
+                              )}
+                              {isProductApproved(product.status) && (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() =>
+                                    setRejectDialog({
+                                      open: true,
+                                      productId: product.id,
+                                      type: "product-revert",
+                                    })
+                                  }
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
                               )}
                             </div>
                           </TableCell>
@@ -1543,6 +1580,21 @@ export default function AdminProducts() {
                 </Button>
               </>
             )}
+            {selectedProduct && isProductApproved(selectedProduct.status) && (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setShowViewDialog(false);
+                  setRejectDialog({
+                    open: true,
+                    productId: selectedProduct.id,
+                    type: "product-revert",
+                  });
+                }}
+              >
+                Revert to Declined
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1576,16 +1628,18 @@ export default function AdminProducts() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-500" />
-              Reject{" "}
               {rejectDialog.type === "product"
-                ? "Product"
+                ? "Reject Product"
+                : rejectDialog.type === "product-revert"
+                ? "Revert Product to Declined"
                 : rejectDialog.type === "price"
-                ? "Price Update"
-                : "Category Change"}
+                ? "Reject Price Update"
+                : "Reject Category Change"}
             </DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejection. This will be sent to the
-              vendor.
+              {rejectDialog.type === "product-revert"
+                ? "Please provide a reason for reverting this approved listing to declined. This will be sent to the vendor."
+                : "Please provide a reason for rejection. This will be sent to the vendor."}
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -1650,7 +1704,9 @@ export default function AdminProducts() {
                 rejectCategoryChangeMutation.isPending) && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              Reject
+              {rejectDialog.type === "product-revert"
+                ? "Revert to Declined"
+                : "Reject"}
             </Button>
           </DialogFooter>
         </DialogContent>

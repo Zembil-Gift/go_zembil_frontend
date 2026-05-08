@@ -1477,11 +1477,9 @@ class AdminService {
 
   async rejectProduct(productId: number, reason: string): Promise<any> {
     const normalizedReason = this.normalizeRejectionReason(reason);
-    return await apiService.putRequest<any>(
-      `/api/v1/products/${productId}/reject?reason=${encodeURIComponent(
-        normalizedReason
-      )}`,
-      {}
+    return await apiService.patchRequest<any>(
+      `/api/admin/products/${productId}/reject`,
+      { reason: normalizedReason }
     );
   }
 
