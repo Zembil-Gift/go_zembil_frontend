@@ -1514,6 +1514,23 @@ class AdminService {
     );
   }
 
+  async setProductPackageFeatured(
+    packageId: number,
+    featured: boolean
+  ): Promise<any> {
+    return await apiService.patchRequest<any>(
+      `/api/admin/packages/${packageId}/featured?featured=${featured}`,
+      {}
+    );
+  }
+
+  async setProductPackageAd(packageId: number, isAd: boolean): Promise<any> {
+    return await apiService.patchRequest<any>(
+      `/api/admin/packages/${packageId}/ad?isAd=${isAd}`,
+      {}
+    );
+  }
+
   async getCategories(): Promise<CategoryResponse[]> {
     return await apiService.getRequest<CategoryResponse[]>("/api/categories");
   }

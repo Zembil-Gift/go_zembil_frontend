@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { parseUrlParams, buildUrlParams } from "@shared/categories.ts";
+import { parseUrlParams } from "@shared/categories.ts";
 import { useCategories, SubCategoryResponse } from "@/hooks/useCategories";
 import { getIconByName } from "./iconMapping";
 
@@ -114,13 +114,20 @@ export default function CategoryCarousel({
   };
 
   // Subcategory selection handler
-  const handleSubcategoryClick = (subcategorySlug: string) => {
-    // Navigate to packages with category and subcategory
-    const urlParams = buildUrlParams({
-      category: selectedCategory,
-      sub: subcategorySlug,
-    });
-    navigate(`/packages?${urlParams}`);
+  const handleSubcategoryClick = (subcategory: SubCategoryResponse) => {
+    const selectedCategoryData = categories?.find(
+      (cat) => cat.slug === selectedCategory
+    );
+    const params = new URLSearchParams();
+
+    if (selectedCategoryData?.id) {
+      params.set("categoryId", String(selectedCategoryData.id));
+    }
+    if (subcategory.id) {
+      params.set("subCategoryId", String(subcategory.id));
+    }
+
+    navigate(`/packages${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
   // Update scroll button states
@@ -175,7 +182,12 @@ export default function CategoryCarousel({
       case "Enter":
       case " ":
         event.preventDefault();
-        handleSubcategoryClick(slug);
+        const selectedSubcategory = currentSubcategories.find(
+          (item) => item.slug === slug
+        );
+        if (selectedSubcategory) {
+          handleSubcategoryClick(selectedSubcategory);
+        }
         break;
     }
   };
@@ -352,7 +364,7 @@ export default function CategoryCarousel({
                     <button
                       key={item.slug || index}
                       data-card-index={index}
-                      onClick={() => handleSubcategoryClick(item.slug)}
+                       onClick={() => handleSubcategoryClick(item)}
                       onKeyDown={(e) => handleKeyDown(e, index, item.slug)}
                       className={`flex-shrink-0 w-60 sm:w-72 h-40 sm:h-48 group cursor-pointer transform transition-all duration-300 hover:scale-102 focus:outline-none focus:ring-2 focus:ring-yellow/40 focus:ring-offset-2 rounded-2xl ${
                         isSelected ? "scale-102 ring-2 ring-yellow/60" : ""

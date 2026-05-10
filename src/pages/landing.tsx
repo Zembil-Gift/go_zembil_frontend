@@ -18,6 +18,10 @@ import {
   ServicePackageResponse,
   ServiceResponse,
 } from "@/services/serviceService";
+import {
+  packageService,
+  ProductPackageResponse,
+} from "@/services/packageService";
 import { customOrderTemplateService } from "@/services/customOrderTemplateService";
 import type { CustomOrderTemplate } from "@/types/customOrders";
 import { useAuth } from "@/contexts/AuthContext";
@@ -198,6 +202,21 @@ export default function Landing() {
     enabled: isInitialized,
   });
 
+  // Fetch featured product packages
+  const { data: featuredProductPackagesResponse } = useQuery({
+    queryKey: ["packages", "featured", activeCurrency],
+    queryFn: async () => {
+      try {
+        return await packageService.getFeaturedPackages(0, 8);
+      } catch (err) {
+        throw err;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+    enabled: isInitialized,
+  });
+
   // Fetch ads (products, events, or services) — wait for auth so product currency is correct
   const { data: adProducts } = useQuery({
     queryKey: ["products", "ads", activeCurrency],
@@ -232,6 +251,20 @@ export default function Landing() {
     queryFn: async () => {
       try {
         return await serviceService.getAdServicePackages(2);
+      } catch (err) {
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+    enabled: isInitialized,
+  });
+
+  const { data: adPackages } = useQuery({
+    queryKey: ["packages", "ads", activeCurrency],
+    queryFn: async () => {
+      try {
+        return await packageService.getAdPackages(2);
       } catch (err) {
         return [];
       }
@@ -281,7 +314,7 @@ export default function Landing() {
   // Combine all ads into a single array for display
   const allAds = React.useMemo(() => {
     const ads: Array<{
-      type: "product" | "event" | "service";
+      type: "product" | "event" | "service" | "package";
       data: any;
       id: string | number;
     }> = [];
@@ -316,8 +349,23 @@ export default function Landing() {
       });
     }
 
+    if (adPackages && adPackages.length > 0) {
+      adPackages.forEach((pkg: ProductPackageResponse) => {
+        ads.push({
+          type: "package",
+          data: pkg,
+          id: pkg.id,
+        });
+      });
+    }
+
     return ads;
-  }, [adProducts, adEvents, adServices]);
+  }, [adProducts, adEvents, adServices, adPackages]);
+
+  const trendingPackages = React.useMemo(
+    () => featuredProductPackagesResponse?.content || [],
+    [featuredProductPackagesResponse]
+  );
 
   return (
     <div className="min-h-screen bg-light-cream">
@@ -688,6 +736,56 @@ export default function Landing() {
                           </div>
                         </a>
                       )}
+                      {ad.type === "package" && (
+                        <a
+                          href={`/packages/${ad.data.id}`}
+                          className="flex flex-col h-full"
+                        >
+                          {(() => {
+                            const packageData = ad.data as ProductPackageResponse;
+                            const packageImage =
+                              packageData.images?.[0] ||
+                              packageData.items?.find((item) => item.productImage)
+                                ?.productImage;
+                            return (
+                              <>
+                                <div className="relative h-64 overflow-hidden">
+                                  <div className="absolute top-4 left-4 z-20">
+                                    <span className="px-3 py-1 text-[10px] font-bold tracking-widest text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
+                                      Package
+                                    </span>
+                                  </div>
+                                  <img
+                                    src={packageImage || "/placeholder-product.jpg"}
+                                    alt={packageData.name}
+                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
+                                </div>
+                                <div className="p-6 flex-1 flex flex-col relative">
+                                  <h3 className="font-bold text-xl mb-2 text-gray-900 leading-tight group-hover:text-ethiopian-gold transition-colors line-clamp-2">
+                                    {packageData.name}
+                                  </h3>
+                                  <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-end">
+                                    <div className="text-ethiopian-gold">
+                                      <PriceWithDiscount
+                                        originalPrice={
+                                          (packageData.startingFromPriceMinor || 0) / 100
+                                        }
+                                        currency={packageData.displayCurrency || "ETB"}
+                                        size="medium"
+                                      />
+                                    </div>
+                                    <span className="text-xs font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">
+                                      View &rarr;
+                                    </span>
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -730,8 +828,60 @@ export default function Landing() {
         />
       ) : null}
 
+      {/* Trending Packages Section */}
+      {trendingPackages.length > 0 && (
+        <section className="py-20 bg-white relative">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col items-center mb-12">
+              <h2 className="text-4xl font-extrabold text-charcoal mb-4">
+                Trending Packages
+              </h2>
+              <div className="w-16 h-1 bg-ethiopian-gold rounded-full"></div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {trendingPackages.map((pkg: ProductPackageResponse) => {
+                const packageImage =
+                  pkg.images?.[0] ||
+                  pkg.items?.find((item) => item.productImage)?.productImage;
+
+                return (
+                  <a
+                    key={pkg.id}
+                    href={`/packages/${pkg.id}`}
+                    className="group block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300"
+                  >
+                    <div className="h-48 bg-gray-100 overflow-hidden">
+                      {packageImage ? (
+                        <img
+                          src={packageImage}
+                          alt={pkg.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <ExternalLink className="h-8 w-8" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-charcoal line-clamp-2 mb-1">
+                        {pkg.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 line-clamp-1">
+                        {pkg.vendorName || "Zembil"}
+                      </p>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Transition: Products to Events */}
-      {trendingGifts.length > 0 &&
+      {(trendingGifts.length > 0 || trendingPackages.length > 0) &&
         featuredEventsResponse?.content &&
         featuredEventsResponse.content.length > 0 && (
           <SectionTransition

@@ -72,6 +72,8 @@ export interface ProductPackageResponse {
   description?: string;
   images?: string[];
   status: string;
+  isFeatured?: boolean;
+  isAd?: boolean;
   subCategoryId?: number;
   subCategoryName?: string;
   giftWrappable?: boolean;
@@ -185,6 +187,7 @@ export const packageService = {
   },
 
   browsePackages: (params?: {
+    categoryId?: number;
     subCategoryId?: number;
     page?: number;
     size?: number;
@@ -192,6 +195,9 @@ export const packageService = {
     const query = new URLSearchParams();
     query.set("page", String(params?.page ?? 0));
     query.set("size", String(params?.size ?? 20));
+    if (params?.categoryId) {
+      query.set("categoryId", String(params.categoryId));
+    }
     if (params?.subCategoryId) {
       query.set("subCategoryId", String(params.subCategoryId));
     }
@@ -200,6 +206,16 @@ export const packageService = {
       `/api/v1/packages?${query.toString()}`
     );
   },
+
+  getFeaturedPackages: (page: number = 0, size: number = 20) =>
+    apiService.getRequest<PageResponse<ProductPackageResponse>>(
+      `/api/v1/packages/featured?page=${page}&size=${size}`
+    ),
+
+  getAdPackages: (limit: number = 5) =>
+    apiService.getRequest<ProductPackageResponse[]>(
+      `/api/v1/packages/ads?limit=${limit}`
+    ),
 
   getPackageDetail: (packageId: number) =>
     apiService.getRequest<ProductPackageResponse>(
