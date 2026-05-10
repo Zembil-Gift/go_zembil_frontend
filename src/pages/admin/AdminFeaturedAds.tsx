@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { adminService } from '@/services/adminService';
 import {ServicePackageResponse } from '@/services/serviceService';
+import { ProductPackageResponse, packageService } from '@/services/packageService';
 import { apiService } from '@/services/apiService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -67,6 +68,8 @@ interface ServicePackageItem extends ServicePackageResponse {
   serviceName?: string;
   vendorName?: string;
 }
+
+type ProductPackageItem = ProductPackageResponse;
 
 export default function AdminFeaturedAds() {
   const queryClient = useQueryClient();
@@ -118,8 +121,18 @@ export default function AdminFeaturedAds() {
     },
   });
 
+  // Fetch product packages
+  const { data: productPackagesData, isLoading: productPackagesLoading } = useQuery({
+    queryKey: ['admin', 'all-product-packages-featured'],
+    queryFn: async () => {
+      const response = await packageService.browsePackages({ page: 0, size: 100 });
+      return response.content || [];
+    },
+  });
+
   const events: EventItem[] = eventsData || [];
   const servicePackages: ServicePackageItem[] = servicePackagesData || [];
+  const productPackages: ProductPackageItem[] = productPackagesData || [];
 
   // SKU featured/ad mutations (products use SKU-level featured/ad)
   const setSkuFeaturedMutation = useMutation({
@@ -196,6 +209,33 @@ export default function AdminFeaturedAds() {
     },
   });
 
+  // Product package featured mutation
+  const setProductPackageFeaturedMutation = useMutation({
+    mutationFn: ({ packageId, featured }: { packageId: number; featured: boolean }) =>
+      adminService.setProductPackageFeatured(packageId, featured),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'all-product-packages-featured'] });
+      queryClient.invalidateQueries({ queryKey: ['packages', 'featured'] });
+      toast({ title: 'Success', description: 'Product package featured status updated' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to update featured status', variant: 'destructive' });
+    },
+  });
+
+  const setProductPackageAdMutation = useMutation({
+    mutationFn: ({ packageId, isAd }: { packageId: number; isAd: boolean }) =>
+      adminService.setProductPackageAd(packageId, isAd),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'all-product-packages-featured'] });
+      queryClient.invalidateQueries({ queryKey: ['packages', 'ads'] });
+      toast({ title: 'Success', description: 'Product package ad status updated' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to update ad status', variant: 'destructive' });
+    },
+  });
+
   const formatPrice = (amountMinor: number | undefined, currency: string = 'ETB') => {
     if (amountMinor === undefined || amountMinor === null) return 'N/A';
     return `${(amountMinor / 100).toFixed(2)} ${currency}`;
@@ -217,6 +257,8 @@ export default function AdminFeaturedAds() {
   const adEventsCount = events.filter(e => e.isAd).length;
   const featuredPackagesCount = servicePackages.filter(sp => sp.isFeatured).length;
   const adPackagesCount = servicePackages.filter(sp => sp.isAd).length;
+  const featuredProductPackagesCount = productPackages.filter(pkg => pkg.isFeatured).length;
+  const adProductPackagesCount = productPackages.filter(pkg => pkg.isAd).length;
 
   return (
     <AdminLayout
@@ -224,7 +266,7 @@ export default function AdminFeaturedAds() {
       description="Manage featured items and advertisements across products, events, and services"
     >
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -293,6 +335,29 @@ export default function AdminFeaturedAds() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Package className="h-4 w-4 text-eagle-green" />
+              Product Packages
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1">
+                <Star className="h-4 w-4 text-yellow-500" />
+                <span className="text-lg font-bold">{featuredProductPackagesCount}</span>
+                <span className="text-sm text-muted-foreground">Featured</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Megaphone className="h-4 w-4 text-blue-500" />
+                <span className="text-lg font-bold">{adProductPackagesCount}</span>
+                <span className="text-sm text-muted-foreground">Ads</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -301,6 +366,11 @@ export default function AdminFeaturedAds() {
             <Package className="h-4 w-4" />
             Product SKUs
             <Badge className="ml-1 bg-eagle-green text-white">{productSkus.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="packages" className="flex items-center gap-2 whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
+            <Package className="h-4 w-4" />
+            Product Packages
+            <Badge className="ml-1 bg-eagle-green text-white">{productPackages.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="events" className="flex items-center gap-2 whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4">
             <Calendar className="h-4 w-4" />
@@ -412,6 +482,101 @@ export default function AdminFeaturedAds() {
                                   setSkuAdMutation.mutate({ skuId: sku.id, isAd: checked })
                                 }
                                 disabled={setSkuAdMutation.isPending}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Product Packages Tab */}
+        <TabsContent value="packages">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-eagle-green" />
+                Product Packages - Featured & Ads Management
+              </CardTitle>
+              <CardDescription>
+                Toggle featured and advertisement status for product packages
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {productPackagesLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-eagle-green" />
+                </div>
+              ) : productPackages.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>No product packages found</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16">Image</TableHead>
+                        <TableHead>Package</TableHead>
+                        <TableHead>Vendor</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-center">Featured</TableHead>
+                        <TableHead className="text-center">Ad</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {productPackages.map((pkg) => {
+                        const packageImage =
+                          pkg.images?.[0] ||
+                          pkg.items?.find((item) => item.productImage)?.productImage;
+
+                        return (
+                          <TableRow key={pkg.id}>
+                            <TableCell>
+                              <div className="w-12 h-12 rounded-md overflow-hidden bg-gray-100">
+                                {packageImage ? (
+                                  <img
+                                    src={packageImage}
+                                    alt={pkg.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <ImageIcon className="h-6 w-6 text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{pkg.name}</div>
+                              <div className="text-sm text-muted-foreground">ID: {pkg.id}</div>
+                            </TableCell>
+                            <TableCell>{pkg.vendorName || 'N/A'}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{pkg.status}</Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Switch
+                                checked={pkg.isFeatured || false}
+                                onCheckedChange={(checked) =>
+                                  setProductPackageFeaturedMutation.mutate({ packageId: pkg.id, featured: checked })
+                                }
+                                disabled={setProductPackageFeaturedMutation.isPending}
+                              />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Switch
+                                checked={pkg.isAd || false}
+                                onCheckedChange={(checked) =>
+                                  setProductPackageAdMutation.mutate({ packageId: pkg.id, isAd: checked })
+                                }
+                                disabled={setProductPackageAdMutation.isPending}
                               />
                             </TableCell>
                           </TableRow>
