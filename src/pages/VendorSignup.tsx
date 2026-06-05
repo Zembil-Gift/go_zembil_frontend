@@ -881,13 +881,22 @@ export default function VendorSignup() {
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Create your vendor account and join goGerami's marketplace.
           </p>
-          <p className="text-sm text-gray-500 mt-2">
+          {/*<p className="text-sm text-gray-500 mt-2">
             Already have an account?{" "}
             <Link
               to="/signin"
               className="text-emerald-600 hover:text-emerald-700 font-medium"
             >
               Sign in here
+            </Link>
+          </p>*/}
+          <p className="text-sm text-gray-500 mt-1">
+            Just want to register your business?{" "}
+            <Link
+              to="/partner-signup"
+              className="text-emerald-600 hover:text-emerald-700 font-medium"
+            >
+              Join as a partner
             </Link>
           </p>
         </div>

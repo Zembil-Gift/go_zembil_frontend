@@ -4,7 +4,12 @@ import path from "path";
 import { visualizer } from "rollup-plugin-visualizer";
 import { VitePWA } from "vite-plugin-pwa";
 
-
+const CACHE_VERSION =
+  process.env.RENDER_GIT_COMMIT?.slice(0, 8) ||
+  process.env.VITE_APP_VERSION ||
+  process.env.npm_package_version ||
+  "v1";
+const CACHE_PREFIX = `gozembil-${CACHE_VERSION}`;
 
 export default defineConfig({
   plugins: [
@@ -14,24 +19,46 @@ export default defineConfig({
       injectRegister: false,
       manifest: false,
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,json,webmanifest,woff2}"],
+        cacheId: CACHE_PREFIX,
+        globPatterns: ["**/*.{js,css,ico,png,svg,json,webmanifest,woff2}"],
         globIgnores: ["**/attached_assets/**", "**/videos/**", "stats.html"],
-        navigateFallbackDenylist: [/^\/\.well-known(?:\/|$)/],
+        navigateFallbackDenylist: [
+          /^\/\.well-known(?:\/|$)/,
+          /^\/api\//,
+          /^\/auth\//,
+          /^\/payment\//,
+        ],
+        skipWaiting: true,
+        clientsClaim: true,
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            urlPattern:
-              /^https?:\/\/[^/]+\/(?:shop|shops|events|service|services|my-custom-order(?:s)?|my-ticket(?:s)?|my-order(?:s)?|my-service-order(?:s)?)(?:\/.*)?(?:\?.*)?$/i,
+            urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
             options: {
-              cacheName: "native-route-shell-cache",
-              networkTimeoutSeconds: 3,
+              cacheName: `${CACHE_PREFIX}-navigation-shell`,
+              networkTimeoutSeconds: 5,
+              cacheableResponse: {
+                statuses: [200],
+              },
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24,
+              },
+            },
+          },
+          {
+            urlPattern:
+              /^https?:\/\/[^/]+\/assets\/.*\.[a-f0-9]{8,}\.(?:js|css|png|jpg|jpeg|svg|webp|avif|gif|ico|woff|woff2|ttf|otf)$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: `${CACHE_PREFIX}-hashed-assets`,
               cacheableResponse: {
                 statuses: [0, 200],
               },
               expiration: {
-                maxEntries: 60,
-                maxAgeSeconds: 60 * 60 * 24 * 7,
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
             },
           },
@@ -39,7 +66,7 @@ export default defineConfig({
             urlPattern: /^https?:\/\/[^/]+\/api\/orders(?:\?.*)?$/i,
             handler: "NetworkFirst",
             options: {
-              cacheName: "native-my-orders-cache",
+              cacheName: `${CACHE_PREFIX}-native-my-orders-cache`,
               networkTimeoutSeconds: 4,
               cacheableResponse: {
                 statuses: [0, 200],
@@ -54,7 +81,7 @@ export default defineConfig({
             urlPattern: /^https?:\/\/[^/]+\/api\/events\/orders(?:\?.*)?$/i,
             handler: "NetworkFirst",
             options: {
-              cacheName: "native-my-event-orders-cache",
+              cacheName: `${CACHE_PREFIX}-native-my-event-cache`,
               networkTimeoutSeconds: 4,
               cacheableResponse: {
                 statuses: [0, 200],
@@ -70,7 +97,7 @@ export default defineConfig({
               /^https?:\/\/[^/]+\/api\/service-orders\/customer(?:\?.*)?$/i,
             handler: "NetworkFirst",
             options: {
-              cacheName: "native-my-service-orders-cache",
+              cacheName: `${CACHE_PREFIX}-native-my-services-cache`,
               networkTimeoutSeconds: 4,
               cacheableResponse: {
                 statuses: [0, 200],
@@ -86,7 +113,7 @@ export default defineConfig({
               /^https?:\/\/[^/]+\/api\/custom-orders\/customer(?:\?.*)?$/i,
             handler: "NetworkFirst",
             options: {
-              cacheName: "native-my-custom-orders-cache",
+              cacheName: `${CACHE_PREFIX}-native-my-custom-orders-cache`,
               networkTimeoutSeconds: 4,
               cacheableResponse: {
                 statuses: [0, 200],
@@ -111,7 +138,7 @@ export default defineConfig({
               /^https?:\/\/[^/]+\/api\/(?:v1\/products(?:\/.*)?|events(?:\/.*)?|services(?:\/.*)?|categories(?:\/.*)?|campaigns(?:\/.*)?)(?:\?.*)?$/i,
             handler: "NetworkFirst",
             options: {
-              cacheName: "public-api-cache",
+              cacheName: `${CACHE_PREFIX}-public-api-cache`,
               networkTimeoutSeconds: 5,
               cacheableResponse: {
                 statuses: [0, 200],
@@ -170,7 +197,7 @@ export default defineConfig({
             urlPattern: /^https:\/\/fonts\.(?:googleapis|cdnfonts)\.com\/.*/i,
             handler: "StaleWhileRevalidate",
             options: {
-              cacheName: "font-stylesheets",
+              cacheName: `${CACHE_PREFIX}-font-styles`,
               cacheableResponse: {
                 statuses: [0, 200],
               },
@@ -184,7 +211,7 @@ export default defineConfig({
             urlPattern: /^https:\/\/[abc]\.tile\.openstreetmap\.org\/.*/i,
             handler: "StaleWhileRevalidate",
             options: {
-              cacheName: "map-tiles",
+              cacheName: `${CACHE_PREFIX}-map-titles`,
               cacheableResponse: {
                 statuses: [0, 200],
               },
@@ -199,7 +226,7 @@ export default defineConfig({
               /\/(?:assets|attached_assets)\/.*\.(?:png|jpg|jpeg|svg|webp|avif|gif|ico)$/i,
             handler: "StaleWhileRevalidate",
             options: {
-              cacheName: "app-images",
+              cacheName: `${CACHE_PREFIX}-app-images`,
               cacheableResponse: {
                 statuses: [0, 200],
               },

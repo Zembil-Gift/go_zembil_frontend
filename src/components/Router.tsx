@@ -64,6 +64,7 @@ const VendorSignup = React.lazy(() => import("@/pages/VendorSignup"));
 const ForgotPassword = React.lazy(() => import("@/pages/forgot-password"));
 const ResetPassword = React.lazy(() => import("@/pages/reset-password"));
 const Profile = React.lazy(() => import("@/pages/Profile"));
+const PartnerSignup = React.lazy(() => import("@/pages/PartnerSignup"));
 
 const AdminDashboard = React.lazy(() => import("@/pages/admin/AdminDashboard"));
 const AdminUsers = React.lazy(() => import("@/pages/admin/AdminUsers"));
@@ -116,6 +117,9 @@ const AdminVendorPayout = React.lazy(
 const AdminRoles = React.lazy(() => import("@/pages/admin/AdminRoles"));
 const AdminPermissions = React.lazy(
   () => import("@/pages/admin/AdminPermissions")
+);
+const AdminPartnershipApplications = React.lazy(
+  () => import("@/pages/admin/AdminPartnershipApplications")
 );
 
 const VendorDashboardLayout = React.lazy(
@@ -547,6 +551,7 @@ export default function Router() {
             <Route path="signup" element={<SignUp />} />
             <Route path="verify-email" element={<VerifyEmail />} />
             <Route path="vendor-signup" element={<VendorSignup />} />
+            <Route path="partner-signup" element={<PartnerSignup />} />
             <Route path="forgot-password" element={<ForgotPassword />} />
             <Route path="reset-password" element={<ResetPassword />} />
 
@@ -953,6 +958,10 @@ export default function Router() {
             <Route path="commission" element={<AdminCommission />} />
             <Route path="roles" element={<AdminRoles />} />
             <Route path="permissions" element={<AdminPermissions />} />
+            <Route
+              path="partnership-applications"
+              element={<AdminPartnershipApplications />}
+            />
           </Route>
 
           {/* Delivery Person Routes - Outside main Layout to avoid navbar */}
