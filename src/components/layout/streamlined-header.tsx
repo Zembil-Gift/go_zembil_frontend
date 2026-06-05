@@ -413,7 +413,14 @@ export default function StreamlinedHeader() {
                           <Store className="mr-2 h-4 w-4" />
                           <span>Join as Vendor</span>
                         </Link>
-                      </DropdownMenuItem>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                          <Link to="/partner-signup" className="flex items-center">
+                            <Store className="mr-2 h-4 w-4" />
+                            <span>Join as Partner</span>
+                          </Link>
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
 
