@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: go-zembil-frontend
+    env: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+      - type: header
+        source: /index.html
+        headers:
+          - key: Cache-Control
+            value: no-cache
+      - type: header
+        source: /sw.js
+        headers:
+          - key: Cache-Control
+            value: no-cache, no-store, must-revalidate
+      - type: header
+        source: /workbox-*.js
+        headers:
+          - key: Cache-Control
+            value: no-cache, no-store, must-revalidate
+      - type: header
+        source: /assets/*
+        headers:
+          - key: Cache-Control
+            value: public, max-age=31536000, immutable
+      - type: header
+        source: /registerSW.js
+        headers:
+          - key: Cache-Control
+            value: no-cache, no-store, must-revalidate
+      - type: header
+        source: /manifest.webmanifest
+        headers:
+          - key: Cache-Control
+            value: no-cache

@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { toast } from "@/hooks/use-toast";
 
 const SW_RELOAD_INTERVAL_MS = 60 * 60 * 1000;
 
 export default function PwaUpdatePrompt() {
+  const autoUpdateTriggeredRef = useRef(false);
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     offlineReady: [offlineReady, setOfflineReady],
@@ -41,29 +42,17 @@ export default function PwaUpdatePrompt() {
   }, [offlineReady, setOfflineReady]);
 
   useEffect(() => {
-    if (!needRefresh) return;
-
-    const { dismiss } = toast({
-      title: "Update available",
-      description: "A newer version is ready. Reload to get the latest fixes.",
-      action: (
-        <button
-          type="button"
-          className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-white px-3 text-sm font-medium hover:bg-secondary"
-          onClick={() => {
-            void updateServiceWorker(true);
-          }}
-        >
-          Reload
-        </button>
-      ),
-      duration: 15000,
-    });
-
-    return () => {
-      dismiss();
+    if (!needRefresh || autoUpdateTriggeredRef.current) return;
+  
+    autoUpdateTriggeredRef.current = true;
+  
+    updateServiceWorker(true).catch(() => {
+      // Allow retry on next needRefresh trigger
+      autoUpdateTriggeredRef.current = false;
       setNeedRefresh(false);
-    };
+    });
+  
+    setNeedRefresh(false);
   }, [needRefresh, setNeedRefresh, updateServiceWorker]);
 
   return null;
