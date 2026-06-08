@@ -67,6 +67,10 @@ export interface ProductPackageResponse {
   slug?: string;
   vendorId: number;
   vendorName?: string;
+  vendorBusinessName?: string;
+  vendorTotalPackages?: number;
+  vendorMemberSince?: string;
+  vendorLocation?: string;
   name: string;
   summary?: string;
   description?: string;
@@ -84,6 +88,11 @@ export interface ProductPackageResponse {
   available?: boolean;
   rejectionReason?: string | null;
   items: ProductPackageItemResponse[];
+  suppliers?: {
+    id: number;
+    businessName: string;
+    description?: string | null;
+  }[];
   createdAt?: string;
   updatedAt?: string;
 }

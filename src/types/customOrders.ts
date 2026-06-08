@@ -48,6 +48,12 @@ export interface CustomOrderTemplatePrice {
   active?: boolean;
 }
 
+export interface CustomOrderTemplateSupplier {
+  id: number;
+  businessName: string;
+  description?: string | null;
+}
+
 export interface CustomOrderTemplate {
   id: number;
   vendorId: number;
@@ -73,6 +79,7 @@ export interface CustomOrderTemplate {
   fields: CustomOrderTemplateField[];
   images: CustomOrderTemplateImage[];
   activeDiscount?: DiscountInfo;
+  supplier?: CustomOrderTemplateSupplier | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -208,6 +215,7 @@ export interface CreateCustomOrderTemplateRequest {
     description?: string;
     sortOrder: number;
   }[];
+  supplierId?: number;
 }
 
 export interface UpdateCustomOrderTemplateRequest {

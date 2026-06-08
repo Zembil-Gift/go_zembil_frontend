@@ -39,6 +39,8 @@ import {
   PARTNERSHIP_STATUSES,
   PARTNERSHIP_STATUS_LABELS,
 } from "@/services/partnershipApplicationService";
+import { supplierService } from "@/services/supplierService";
+import { adminService } from "@/services/adminService";
 import { SUPPORTED_COUNTRIES } from "@/lib/countryConfig";
 import {
   Store,
@@ -51,6 +53,8 @@ import {
   Plus,
   Building2,
   Globe,
+  Link2,
+  Check,
 } from "lucide-react";
 
 const STATUS_COLORS: Record<PartnershipApplicationStatus, string> = {
@@ -81,6 +85,9 @@ export default function AdminPartnershipApplications() {
     country: "",
     status: "LEAD" as PartnershipApplicationStatus,
   });
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null);
+  const [vendorSearch, setVendorSearch] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -113,6 +120,42 @@ export default function AdminPartnershipApplications() {
       toast({
         title: "Error",
         description: error.message || "Failed to update status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const { data: vendorsPage } = useQuery({
+    queryKey: ["admin", "vendors", vendorSearch],
+    queryFn: () => adminService.getVendors(0, 50, vendorSearch || undefined),
+    enabled: showLinkDialog,
+  });
+
+  const assignSupplierMutation = useMutation({
+    mutationFn: ({
+      vendorId,
+      partnershipApplicationId,
+    }: {
+      vendorId: number;
+      partnershipApplicationId: number;
+    }) => supplierService.assignSupplier(vendorId, partnershipApplicationId),
+    onSuccess: () => {
+      toast({
+        title: "Supplier Linked",
+        description: "The partnership has been linked to the vendor.",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "partnership-applications"],
+      });
+      setShowLinkDialog(false);
+      setSelectedApp(null);
+      setSelectedVendorId(null);
+      setVendorSearch("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to link supplier",
         variant: "destructive",
       });
     },
@@ -468,8 +511,23 @@ export default function AdminPartnershipApplications() {
                           }}
                         >
                           <Globe className="w-4 h-4" />
-                          Change Status
+                          {/*Change Status*/}
                         </Button>
+                        {app.status === "ACTIVE" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedApp(app);
+                              setSelectedVendorId(null);
+                              setVendorSearch("");
+                              setShowLinkDialog(true);
+                            }}
+                          >
+                            <Link2 className="w-4 h-4" />
+                  
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -642,6 +700,84 @@ export default function AdminPartnershipApplications() {
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : null}
               Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link Partnership to Vendor</DialogTitle>
+            <DialogDescription>
+              Link <strong>{selectedApp?.businessName}</strong> as a supplier to a vendor.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="vendor-search">Search Vendor</Label>
+              <Input
+                id="vendor-search"
+                placeholder="Search vendors by name..."
+                value={vendorSearch}
+                onChange={(e) => setVendorSearch(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1 max-h-60 overflow-y-auto border rounded-md p-1">
+              {vendorsPage?.content.length === 0 && (
+                <p className="text-sm text-gray-500 p-2">No vendors found.</p>
+              )}
+              {vendorsPage?.content.map((vendor) => (
+                <button
+                  key={vendor.id}
+                  type="button"
+                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                    selectedVendorId === vendor.id
+                      ? "bg-eagle-green text-white"
+                      : "hover:bg-gray-100"
+                  }`}
+                  onClick={() => setSelectedVendorId(vendor.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-medium">{vendor.businessName}</span>
+                      {vendor.city && (
+                        <span className="ml-2 text-xs opacity-75">
+                          {vendor.city}
+                        </span>
+                      )}
+                    </div>
+                    {selectedVendorId === vendor.id && (
+                      <Check className="w-4 h-4" />
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowLinkDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedApp && selectedVendorId) {
+                  assignSupplierMutation.mutate({
+                    vendorId: selectedVendorId,
+                    partnershipApplicationId: selectedApp.id,
+                  });
+                }
+              }}
+              disabled={!selectedVendorId || assignSupplierMutation.isPending}
+              className="bg-eagle-green text-white hover:bg-viridian-green"
+            >
+              {assignSupplierMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : null}
+              Link to Vendor
             </Button>
           </DialogFooter>
         </DialogContent>

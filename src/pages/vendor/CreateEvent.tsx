@@ -13,6 +13,7 @@ import {
 } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService } from "@/services/imageService";
+import { supplierService } from "@/services/supplierService";
 import { toInstantISOString } from "@/lib/instant";
 import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
 
@@ -238,6 +239,7 @@ export default function CreateEvent() {
   const [storedDraft, setStoredDraft] = useState<EventDraft | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [hasConfirmedEventSubmit, setHasConfirmedEventSubmit] = useState(false);
+  const [eventSupplierId, setEventSupplierId] = useState<number | null>(null);
 
   const { data: currencies = [] } = useQuery({
     queryKey: ["currencies"],
@@ -248,6 +250,12 @@ export default function CreateEvent() {
     queryKey: ["vendor", "profile"],
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
+  });
+
+  const { data: activeSuppliers = [] } = useQuery({
+    queryKey: ["vendor", "active-suppliers", vendorProfile?.id],
+    queryFn: () => supplierService.getActiveSuppliers(vendorProfile!.id),
+    enabled: !!vendorProfile?.id,
   });
 
   const availableCurrencies = isEthiopianVendor(vendorProfile)
@@ -424,6 +432,7 @@ export default function CreateEvent() {
           currency: data.currencyCode,
           sortOrder: index,
         })),
+        supplierId: eventSupplierId || undefined,
       };
 
       const createdEvent = await vendorService.createEvent(eventPayload);
@@ -974,6 +983,36 @@ export default function CreateEvent() {
                     <Plus className="h-4 w-4 mr-2" />
                     Add Ticket Type
                   </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {currentStep === 3 && activeSuppliers.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                    Link Supplier (Optional)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select
+                    value={eventSupplierId?.toString() || ""}
+                    onValueChange={(value) =>
+                      setEventSupplierId(value ? parseInt(value) : null)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No supplier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">No supplier</SelectItem>
+                      {activeSuppliers.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>
+                          {s.businessName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </CardContent>
               </Card>
             )}

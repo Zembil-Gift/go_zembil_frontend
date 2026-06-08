@@ -12,6 +12,7 @@ import {
 } from "@/services/serviceService";
 import { vendorService, VendorProfile } from "@/services/vendorService";
 import { imageService } from "@/services/imageService";
+import { supplierService } from "@/services/supplierService";
 import { apiService } from "@/services/apiService";
 import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
 import {
@@ -395,6 +396,7 @@ export default function CreateService() {
   const [showDraftDecision, setShowDraftDecision] = useState(false);
   const [storedDraft, setStoredDraft] = useState<ServiceDraft | null>(null);
   const [hasReviewedPolicies, setHasReviewedPolicies] = useState(false);
+  const [serviceSupplierId, setServiceSupplierId] = useState<number | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
@@ -408,6 +410,12 @@ export default function CreateService() {
     queryKey: ["vendor", "profile"],
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
+  });
+
+  const { data: activeSuppliers = [] } = useQuery({
+    queryKey: ["vendor", "active-suppliers", vendorProfile?.id],
+    queryFn: () => supplierService.getActiveSuppliers(vendorProfile!.id),
+    enabled: !!vendorProfile?.id,
   });
 
   const availableCurrencies = isEthiopianVendor(vendorProfile)
@@ -737,6 +745,7 @@ export default function CreateService() {
         availabilityType,
         availabilityConfig,
         policiesConfig: { depositRequired: false, depositPercentage: 0 },
+        supplierId: serviceSupplierId || undefined,
       };
 
       const maxFileSize = 10 * 1024 * 1024;
@@ -1946,6 +1955,36 @@ export default function CreateService() {
                       I have read and understood these policies.
                     </Label>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {currentStep === 4 && activeSuppliers.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                    Link Supplier (Optional)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select
+                    value={serviceSupplierId?.toString() || ""}
+                    onValueChange={(value) =>
+                      setServiceSupplierId(value ? parseInt(value) : null)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No supplier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">No supplier</SelectItem>
+                      {activeSuppliers.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>
+                          {s.businessName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </CardContent>
               </Card>
             )}

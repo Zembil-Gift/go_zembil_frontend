@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { vendorService, VendorProfile } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService } from "@/services/imageService";
+import { supplierService } from "@/services/supplierService";
 
 const isEthiopianVendor = (
   vendorProfile: VendorProfile | undefined
@@ -309,6 +310,7 @@ export default function CreateProduct() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [hasConfirmedProductSubmit, setHasConfirmedProductSubmit] =
     useState(false);
+  const [productSupplierId, setProductSupplierId] = useState<number | null>(null);
 
   const { data: currencies = [] } = useQuery({
     queryKey: ["currencies"],
@@ -319,6 +321,12 @@ export default function CreateProduct() {
     queryKey: ["vendor", "profile"],
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
+  });
+
+  const { data: activeSuppliers = [] } = useQuery({
+    queryKey: ["vendor", "active-suppliers", vendorProfile?.id],
+    queryFn: () => supplierService.getActiveSuppliers(vendorProfile!.id),
+    enabled: !!vendorProfile?.id,
   });
 
   const availableCurrencies = isEthiopianVendor(vendorProfile)
@@ -553,6 +561,7 @@ export default function CreateProduct() {
           data.giftWrappable && data.giftWrapPrice
             ? data.currencyCode
             : undefined,
+        supplierId: productSupplierId || undefined,
       };
 
       // SKUs are required - first one is default
@@ -1517,6 +1526,36 @@ export default function CreateProduct() {
                       </p>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {currentStep === 4 && activeSuppliers.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                    Link Supplier (Optional)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select
+                    value={productSupplierId?.toString() || ""}
+                    onValueChange={(value) =>
+                      setProductSupplierId(value ? parseInt(value) : null)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No supplier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">No supplier</SelectItem>
+                      {activeSuppliers.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>
+                          {s.businessName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </CardContent>
               </Card>
             )}

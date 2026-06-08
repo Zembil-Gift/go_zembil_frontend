@@ -16,6 +16,8 @@ code.html
 
 api-mapping.json
 api-mapping/
+docs/
+supplier-chain-api.json
 # Environment variables
 .env
 .env.local

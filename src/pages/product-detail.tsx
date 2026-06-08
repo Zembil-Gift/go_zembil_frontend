@@ -19,7 +19,9 @@ import {
   Check,
   X,
   ZoomIn,
-  Gift
+  Gift,
+  Store,
+  Package as PackageIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { productService, Product, extractPriceAmount } from "@/services/productService";
@@ -47,7 +49,6 @@ function ProductImage({
 }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-
   return (
     <div className="relative w-full h-full" onClick={onClick}>
       {!loaded && !error && (
@@ -108,10 +109,8 @@ export default function ProductDetail() {
     return `${value.slice(0, maxLength)}...`;
   }, []);
 
-  // Auto-select first available SKU when product loads
   useEffect(() => {
     if (selectableSkus.length > 0 && selectedSkuId === null) {
-      // Find first SKU with stock, or just the first SKU if none have stock
       const firstAvailableSku = selectableSkus.find(sku => (sku.stockQuantity || 0) > 0);
       const skuToSelect = firstAvailableSku || selectableSkus[0];
       if (skuToSelect?.id) {
@@ -130,17 +129,12 @@ export default function ProductDetail() {
 
   const selectedSku = useMemo(() => {
     if (selectableSkus.length === 0) return null;
-    
     if (selectedSkuId) {
       return selectableSkus.find(sku => sku.id === selectedSkuId) || null;
     }
-    
-    // Auto-select if there's only ONE SKU (it's the base product, not a variant choice)
     if (selectableSkus.length === 1) {
       return selectableSkus[0];
     }
-    
-    // For multiple SKUs, don't auto-select - let user choose
     return null;
   }, [selectableSkus, selectedSkuId]);
 
@@ -157,15 +151,12 @@ export default function ProductDetail() {
   }, [selectedSku, selectableSkus, product]);
 
   const stockQuantity = useMemo(() => {
-    // For multi-SKU products, only show stock when a variant is selected
     const isMultiSku = selectableSkus.length > 1;
     if (isMultiSku && !selectedSkuId) return null;
-    
     if (selectedSku?.stockQuantity !== undefined) return selectedSku.stockQuantity;
     return product?.stockQuantity || 0;
   }, [selectedSku, selectedSkuId, selectableSkus.length, product]);
 
-  // Ensure quantity does not exceed stock
   useEffect(() => {
     if (stockQuantity !== null && stockQuantity > 0 && quantity > stockQuantity) {
       setQuantity(stockQuantity);
@@ -175,16 +166,13 @@ export default function ProductDetail() {
   const findBestMatchingSku = useCallback(
     (attributesToMatch: Record<string, string>) => {
       if (selectableSkus.length === 0) return null;
-
       const matchingSkus = selectableSkus.filter((sku) => {
         const skuAttributes = sku.attributes || [];
         return Object.entries(attributesToMatch).every(([name, value]) =>
           skuAttributes.some((attr) => attr.name === name && attr.value === value)
         );
       });
-
       if (matchingSkus.length === 0) return null;
-
       const firstInStock = matchingSkus.find((sku) => (sku.stockQuantity || 0) > 0);
       return firstInStock || matchingSkus[0];
     },
@@ -194,7 +182,6 @@ export default function ProductDetail() {
   const handleAttributeSelection = (attributeName: string, value: string, id?: number) => {
     const next = { id, name: attributeName, value };
     setSelectedAttribute(next);
-
     const matchedSku = findBestMatchingSku({ [attributeName]: value });
     if (matchedSku?.id) {
       setSelectedSkuId(matchedSku.id);
@@ -211,24 +198,17 @@ export default function ProductDetail() {
     return selectableSkus.some((sku) => (sku.attributes?.length || 0) > 0);
   }, [selectableSkus]);
 
-// Show product images by default.
-  // Only show SKU images when user explicitly selects a variant (for multi-SKU products).
-  // For single-SKU products, show SKU images if available (since the SKU IS the product).
   const images = useMemo(() => {
     const isMultiSku = selectableSkus.length > 1;
     const userSelectedVariant = selectedSkuId !== null;
-    
-    // Show SKU images if: single SKU product OR user explicitly selected a variant
     if ((!isMultiSku || userSelectedVariant) && selectedSku?.images && selectedSku.images.length > 0) {
       return selectedSku.images
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map(img => img.fullUrl);
     }
-    
     return getAllProductImages(product?.images);
   }, [selectedSkuId, selectedSku, selectableSkus.length, product?.images]);
-  
-  // Use images if available, otherwise empty array (no fallback)
+
   const displayImages = useMemo(() => {
     return images.length > 0 ? images : [];
   }, [images]);
@@ -279,16 +259,12 @@ export default function ProductDetail() {
       if (!isAuthenticated) {
         throw new Error('Authentication required');
       }
-
-      // Require variant selection for products with multiple SKUs
       if (selectableSkus.length > 1 && !selectedSku) {
         throw new Error('Please select a variant');
       }
-
       if (hasAttributeSelectionUI && selectedAttributeOption.length === 0) {
         throw new Error('Please select an option');
       }
-      
       return await cartService.addToCart({
         productId: Number(productId),
         productSkuId: selectedSku?.id,
@@ -312,7 +288,6 @@ export default function ProductDetail() {
         skuCode: selectedSku?.skuCode,
         skuName: selectedSku?.skuName,
       });
-      
       toast({
         title: "Added to cart",
         description: `${product?.name} added to your cart`,
@@ -325,7 +300,6 @@ export default function ProductDetail() {
         navigate(`/signin?returnUrl=${returnUrl}`);
         return;
       }
-
       toast({
         title: "Error",
         description: error?.message || "Failed to add item to cart",
@@ -337,7 +311,6 @@ export default function ProductDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -351,7 +324,6 @@ export default function ProductDetail() {
             </div>
           </div>
         </div>
-        
       </div>
     );
   }
@@ -359,7 +331,6 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <div className="min-h-screen bg-gray-50">
-        
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Product not found</h1>
@@ -370,27 +341,22 @@ export default function ProductDetail() {
             </Link>
           </div>
         </div>
-        
       </div>
     );
   }
-
 
   const nextImage = () => {
     if (displayImages.length === 0) return;
     setSelectedImageIndex((prev) => (prev + 1) % displayImages.length);
   };
-
   const prevImage = () => {
     if (displayImages.length === 0) return;
     setSelectedImageIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
   };
-
   const openLightbox = (index: number) => {
     setSelectedImageIndex(index);
     setLightboxOpen(true);
   };
-
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -411,6 +377,9 @@ export default function ProductDetail() {
     }
   };
 
+  const hasVendor = !!vendorProfile;
+  const hasSupplier = !!product.supplier;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Lightbox Modal */}
@@ -429,7 +398,6 @@ export default function ProductDetail() {
             >
               <X className="h-8 w-8" />
             </button>
-            
             {displayImages.length > 1 && (
               <>
                 <button
@@ -446,7 +414,6 @@ export default function ProductDetail() {
                 </button>
               </>
             )}
-            
             <motion.img
               key={selectedImageIndex}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -457,7 +424,6 @@ export default function ProductDetail() {
               className="max-h-[90vh] max-w-[90vw] object-contain"
               onClick={(e) => e.stopPropagation()}
             />
-            
             {displayImages.length > 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-light">
                 {selectedImageIndex + 1} / {displayImages.length}
@@ -497,7 +463,6 @@ export default function ProductDetail() {
           <div className="space-y-4">
             {displayImages.length > 0 ? (
               <>
-                {/* Main Image */}
                 <div 
                   className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-lg cursor-pointer group"
                   onClick={() => openLightbox(selectedImageIndex)}
@@ -510,8 +475,6 @@ export default function ProductDetail() {
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
                     <ZoomIn className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  
-                  {/* Navigation arrows */}
                   {displayImages.length > 1 && (
                     <>
                       <button
@@ -528,8 +491,6 @@ export default function ProductDetail() {
                       </button>
                     </>
                   )}
-                  
-                  {/* Image counter */}
                   {displayImages.length > 1 && (
                     <div className="absolute bottom-4 left-4">
                       <Badge className="bg-black/60 text-white border-none font-light">
@@ -538,8 +499,6 @@ export default function ProductDetail() {
                     </div>
                   )}
                 </div>
-
-                {/* Thumbnail Images */}
                 {displayImages.length > 1 && (
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     {displayImages.map((image, index) => (
@@ -563,7 +522,6 @@ export default function ProductDetail() {
                 )}
               </>
             ) : (
-              /* No Image Available */
               <div className="aspect-square bg-gray-100 rounded-2xl flex items-center justify-center shadow-lg">
                 <div className="text-center text-gray-400">
                   <p className="text-sm">No image available</p>
@@ -574,7 +532,6 @@ export default function ProductDetail() {
 
           {/* Product Info */}
           <div className="space-y-6">
-            {/* Title and Rating */}
             <div>
               {product.subCategoryName && (
                 <div className="text-sm font-medium text-viridian-green uppercase tracking-wider mb-2">
@@ -584,8 +541,6 @@ export default function ProductDetail() {
               <h1 className="text-3xl font-bold text-charcoal mb-4">
                 {product.name}
               </h1>
-              
-              {/* Rating from API */}
               {ratingSummary && ratingSummary.totalReviews > 0 ? (
                 <div className="flex items-center space-x-2 mb-4">
                   <CompactRating 
@@ -597,8 +552,6 @@ export default function ProductDetail() {
               ) : (
                 <p className="text-sm text-gray-500 mb-4">No reviews yet</p>
               )}
-
-              {/* Badges */}
               <div className="flex flex-wrap gap-2 mb-4">
                 {product.isFeatured && (
                   <Badge className="bg-viridian-green text-white">Featured</Badge>
@@ -612,8 +565,6 @@ export default function ProductDetail() {
                   </Badge>
                 )}
               </div>
-
-              {/* Product Tags */}
               {product.tags && product.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
                   {product.tags.map((tag: string, index: number) => (
@@ -661,12 +612,12 @@ export default function ProductDetail() {
               )}
             </div>
 
+            {/* Variant selector */}
             {selectableSkus.length > 1 && (
               <div className="space-y-4 pt-4 border-t border-gray-200">
                 <h3 className="font-semibold text-charcoal">
                   Select Variant <span className="text-red-500">*</span>
                 </h3>
-
                 <div className="grid grid-cols-1 gap-3">
                   {selectableSkus.map((sku) => (
                     <button
@@ -741,7 +692,8 @@ export default function ProductDetail() {
                 <p className="text-gray-600 leading-relaxed">{product.description}</p>
               </div>
             )}
-            {/* Single SKU Info */}
+
+            {/* Single SKU attributes */}
             {product.productSku && product.productSku.length === 1 && selectedSku?.attributes && selectedSku.attributes.length > 0 && (
               <div className="space-y-2 pt-4 border-t border-gray-200">
                 <h3 className="font-semibold text-charcoal">Options</h3>
@@ -767,8 +719,7 @@ export default function ProductDetail() {
               </div>
             )}
 
-
-            {/* Quantity Selector */}
+            {/* Quantity */}
             <div className="space-y-2">
               <label className="font-semibold text-charcoal">Quantity</label>
               <div className="flex items-center space-x-4">
@@ -795,7 +746,7 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            {/* Gift wrapping info - selection happens at checkout */}
+            {/* Gift wrap */}
             {product.giftWrappable && (
               <div className="flex items-center gap-2 p-3 border border-dashed border-viridian-green/30 rounded-lg bg-viridian-green/5">
                 <Gift className="h-4 w-4 text-viridian-green flex-shrink-0" />
@@ -823,13 +774,13 @@ export default function ProductDetail() {
                 >
                   {addToCartMutation.isPending 
                     ? "Adding..." 
-                      : stockQuantity === 0 
-                        ? "Out of Stock"
-                        : selectableSkus.length > 1 && !selectedSku
-                          ? "Select a Variant First"
-                        : hasAttributeSelectionUI && selectedAttributeOption.length === 0
-                          ? "Select an Option First"
-                        : "Add to Cart"}
+                    : stockQuantity === 0 
+                      ? "Out of Stock"
+                      : selectableSkus.length > 1 && !selectedSku
+                        ? "Select a Variant First"
+                      : hasAttributeSelectionUI && selectedAttributeOption.length === 0
+                        ? "Select an Option First"
+                      : "Add to Cart"}
                 </Button>
                 <Button
                   onClick={() => {
@@ -838,7 +789,6 @@ export default function ProductDetail() {
                       navigate(`/signin?returnUrl=${returnUrl}`);
                       return;
                     }
-
                     wishlistMutation.mutate();
                   }}
                   disabled={wishlistMutation.isPending}
@@ -855,10 +805,8 @@ export default function ProductDetail() {
                   <Share2 size={20} />
                 </Button>
               </div>
-
               <Button
                 onClick={async () => {
-                  // Check variant selection first for multi-SKU products
                   if (selectableSkus.length > 1 && !selectedSku) {
                     toast({
                       title: "Please select a variant",
@@ -867,7 +815,6 @@ export default function ProductDetail() {
                     });
                     return;
                   }
-
                   if (hasAttributeSelectionUI && selectedAttributeOption.length === 0) {
                     toast({
                       title: "Please select an option",
@@ -876,7 +823,6 @@ export default function ProductDetail() {
                     });
                     return;
                   }
-                  
                   if (stockQuantity === 0 || stockQuantity === null) {
                     toast({
                       title: "Out of stock",
@@ -885,7 +831,6 @@ export default function ProductDetail() {
                     });
                     return;
                   }
-
                   try {
                     await addToCartMutation.mutateAsync();
                     navigate("/checkout");
@@ -900,26 +845,43 @@ export default function ProductDetail() {
                 {addToCartMutation.isPending ? "Processing..." : "Buy Now"}
               </Button>
             </div>
-
-            {/* Delivery Info */}
-            {/* <div className="space-y-3 pt-6 border-t border-gray-200">
-              <div className="flex items-center space-x-3">
-                <Shield className="text-viridian-green" size={20} />
-                <span className="text-gray-600">Quality guarantee & authentic products</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <MessageCircle className="text-viridian-green" size={20} />
-                <span className="text-gray-600">Add personal video message (+50 ETB)</span>
-              </div>
-            </div> */}
           </div>
         </div>
 
-        {/* Vendor Section */}
-        {vendorProfile && (
-          <div className="mt-8">
-            <h3 className="font-semibold text-lg text-charcoal mb-4">Sold by</h3>
-            <VendorCard vendor={vendorProfile} />
+        {/* ── Seller Info: Sold by + Supplied by merged into one card ── */}
+        {(hasVendor || hasSupplier) && (
+          <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Sold by */}
+            {hasVendor && (
+              <div className="p-5">
+                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">
+                  Sold by
+                </p>
+                <VendorCard vendor={vendorProfile!} />
+
+
+              </div>
+            )}
+
+            {/* Divider — only when both sections exist */}
+            {hasVendor && hasSupplier && (
+              <div className="border-t border-gray-100 mx-5" />
+            )}
+
+            {/* Supplied by */}
+            {hasSupplier && (
+              <div className="p-5">
+          
+                <div className="flex items-start gap-3">
+                 
+                  <div>
+                    <p className="font-semibold text-charcoal text-sm leading-tight">
+                      Supplied by:  {product.supplier!.businessName}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -936,11 +898,9 @@ export default function ProductDetail() {
               <TabsTrigger value="details">Product Details</TabsTrigger>
               <TabsTrigger value="shipping">Shipping & Returns</TabsTrigger>
             </TabsList>
-            
             <TabsContent value="reviews" className="space-y-6 mt-6">
               <ProductReviewsSection productId={Number(productId)} />
             </TabsContent>
-            
             <TabsContent value="details" className="space-y-6">
               <div className="bg-white rounded-lg p-6">
                 <h3 className="font-semibold text-lg mb-4">Product Details</h3>
@@ -954,33 +914,9 @@ export default function ProductDetail() {
                 </div>
               </div>
             </TabsContent>
-            
-            {/* <TabsContent value="shipping" className="space-y-6">
-              <div className="bg-white rounded-lg p-6">
-                <h3 className="font-semibold text-lg mb-4">Shipping & Returns</h3>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Delivery Options</h4>
-                    <ul className="space-y-1 text-gray-600">
-                      <li>• Standard delivery: 3-5 business days (Free in Addis Ababa)</li>
-                      <li>• Express delivery: 1-2 business days (+100 ETB)</li>
-                      <li>• Influencer delivery: Special unboxing experience (+200 ETB)</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">Return Policy</h4>
-                    <p className="text-gray-600">
-                      30-day return policy for unopened items. Custom and personalized items are non-returnable.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </TabsContent> */}
           </Tabs>
         </div>
       </div>
-
-      
     </div>
   );
 }

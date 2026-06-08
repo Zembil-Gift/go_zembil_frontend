@@ -173,6 +173,7 @@ export interface CreateServiceRequest {
   availabilityType?: AvailabilityType;
   availabilityConfig?: AvailabilityConfig;
   policiesConfig?: PoliciesConfig;
+  supplierId?: number;
 }
 
 export interface UpdateServiceRequest {

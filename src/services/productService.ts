@@ -46,6 +46,12 @@ export interface ProductSku {
   }>;
 }
 
+export interface Supplier {
+  id: number;
+  businessName: string;
+  description?: string | null;
+}
+
 export interface Product {
   id: number; 
   name: string;
@@ -88,6 +94,7 @@ export interface Product {
   category?: string;
   vendorId?: number;
   vendorName?: string;
+  supplier?: Supplier | null;
   activeDiscount?: DiscountInfo;
   giftWrappable?: boolean;
   giftWrapPrice?: number;
