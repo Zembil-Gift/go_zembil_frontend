@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { customOrderTemplateService } from "@/services/customOrderTemplateService";
 import { vendorService } from "@/services/vendorService";
+import { supplierService } from "@/services/supplierService";
 import { apiService } from "@/services/apiService";
 import { imageService } from "@/services/imageService";
 import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
@@ -222,6 +223,7 @@ export default function CreateCustomTemplate() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [hasConfirmedTemplateSubmit, setHasConfirmedTemplateSubmit] =
     useState(false);
+  const [templateSupplierId, setTemplateSupplierId] = useState<number | null>(null);
 
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
@@ -236,6 +238,12 @@ export default function CreateCustomTemplate() {
     queryKey: ["vendor", "profile"],
     queryFn: () => vendorService.getMyProfile(),
     enabled: isAuthenticated && isVendor,
+  });
+
+  const { data: activeSuppliers = [] } = useQuery({
+    queryKey: ["vendor", "active-suppliers", vendorProfile?.id],
+    queryFn: () => supplierService.getActiveSuppliers(vendorProfile!.id),
+    enabled: !!vendorProfile?.id,
   });
 
   const availableCurrencies = isEthiopianVendor(vendorProfile)
@@ -421,6 +429,7 @@ export default function CreateCustomTemplate() {
           description: field.description,
           sortOrder: index,
         })),
+        supplierId: templateSupplierId || undefined,
       };
 
       const createdTemplate = await customOrderTemplateService.create(request);
@@ -1099,6 +1108,36 @@ export default function CreateCustomTemplate() {
                       template.
                     </Label>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {currentStep === 3 && activeSuppliers.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                    Link Supplier (Optional)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select
+                    value={templateSupplierId?.toString() || ""}
+                    onValueChange={(value) =>
+                      setTemplateSupplierId(value ? parseInt(value) : null)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No supplier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">No supplier</SelectItem>
+                      {activeSuppliers.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>
+                          {s.businessName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </CardContent>
               </Card>
             )}

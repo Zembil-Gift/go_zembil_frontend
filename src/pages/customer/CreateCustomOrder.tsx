@@ -15,6 +15,7 @@ import {
   CheckCircle,
   AlertCircle,
   Store,
+  Building2,
   ChevronLeft,
   ChevronRight,
   Tag,
@@ -496,6 +497,190 @@ function CreateCustomOrderContent() {
   };
 
   // Render field input based on type
+  const renderOrderSummary = () => {
+    if (!template) return null;
+    return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-eagle-green text-lg">
+          Order Summary
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/*<div className="flex items-center gap-2 text-sm">
+          <Store className="h-4 w-4 text-viridian-green" />
+          <span className="text-eagle-green/70">Vendor:</span>
+          <span className="text-eagle-green font-medium">
+            {template.vendorName}
+          </span>
+        </div>*/}
+
+        {/* Sold by */}
+        {template.vendorBusinessName && (
+          <div className="flex items-center gap-2 text-sm">
+            <Store className="h-4 w-4 text-viridian-green" />
+            <span className="text-eagle-green/70">Sold by:</span>
+            <span className="text-eagle-green font-medium">
+              {template.vendorBusinessName}
+            </span>
+          </div>
+        )}
+
+        {/* Supplied by (optional) */}
+        {template.supplier && (
+          <div className="flex items-center gap-2 text-sm">
+            <Building2 className="h-4 w-4 text-viridian-green" />
+            <span className="text-eagle-green/70">Supplied by:</span>
+            <span className="text-eagle-green font-medium">
+              {template.supplier.businessName}
+            </span>
+          </div>
+        )}
+
+        {/* Active Discount Badge */}
+        {template.activeDiscount && (
+          <div className="border-t border-gray-200 pt-4">
+            <DiscountBadge
+              discount={template.activeDiscount}
+              variant="full"
+              targetCurrency={
+                template.price?.currencyCode ||
+                template.currencyCode ||
+                preferredCurrency
+              }
+            />
+          </div>
+        )}
+
+        <div className="bg-june-bud/10 rounded-lg p-4">
+          <p className="text-sm text-eagle-green/70 mb-1">
+            {template.negotiable === false ? "Price" : "Base Price"}
+          </p>
+          {template.activeDiscount ? (
+            <div className="space-y-2">
+              <PriceWithDiscount
+                originalPrice={template.price?.amount || 0}
+                currency={
+                  template.price?.currencyCode ||
+                  template.currencyCode ||
+                  preferredCurrency
+                }
+                discount={template.activeDiscount}
+                size="large"
+              />
+              {template.negotiable === false ? (
+                <p className="text-xs text-viridian-green mt-1 font-medium">
+                  ✓ Fixed price with discount - pay directly
+                </p>
+              ) : (
+                <p className="text-xs text-eagle-green/60 mt-1">
+                  Final price may vary based on customizations
+                </p>
+              )}
+            </div>
+          ) : (
+            <>
+              <p className="text-2xl font-bold text-eagle-green">
+                {customOrderTemplateService.formatTemplatePrice(template)}
+              </p>
+              {template.negotiable === false ? (
+                <p className="text-xs text-viridian-green mt-1 font-medium">
+                  ✓ Fixed price - pay directly without negotiation
+                </p>
+              ) : (
+                <p className="text-xs text-eagle-green/60 mt-1">
+                  Final price may vary based on customizations
+                </p>
+              )}
+            </>
+          )}
+        </div>
+
+        {template.negotiable === false && (
+          <div className="space-y-2">
+            <Label className="text-eagle-green font-medium flex items-center gap-1">
+              <Tag className="h-4 w-4" />
+              Discount Code
+            </Label>
+            {discountResult?.applicable ? (
+              <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">
+                      Code "{discountCode}" applied
+                    </p>
+                    <p className="text-xs text-green-600">
+                      You save{" "}
+                      {formatPrice(
+                        manualDiscountAmountDisplay,
+                        template?.price?.currencyCode || preferredCurrency
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveDiscount}
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                >
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter discount code"
+                    value={discountCode}
+                    onChange={(e) => {
+                      setDiscountCode(e.target.value);
+                      setDiscountError(null);
+                    }}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && handleApplyDiscount()
+                    }
+                    className={discountError ? "border-red-300" : ""}
+                    disabled={isValidatingDiscount}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleApplyDiscount}
+                    disabled={
+                      isValidatingDiscount || !discountCode.trim()
+                    }
+                    className="bg-eagle-green hover:bg-eagle-green/90 text-white font-medium min-w-[90px] transition-all"
+                  >
+                    {isValidatingDiscount ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Apply Code"
+                    )}
+                  </Button>
+                </div>
+                {discountError && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <XCircle className="h-3 w-3" />
+                    {discountError}
+                  </p>
+                )}
+                {!discountError &&
+                  !discountCode.trim() &&
+                  template.activeDiscount && (
+                    <p className="text-xs text-eagle-green/60">
+                      A template discount will be applied automatically.
+                    </p>
+                  )}
+              </>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+  };
+
   const renderFieldInput = (field: CustomOrderTemplateField) => {
     const IconComponent = getFieldTypeIcon(field.fieldType);
     const value = fieldValues[field.id];
@@ -778,169 +963,10 @@ function CreateCustomOrderContent() {
                   </CardContent>
                 </Card>
 
-                {/* Template Info Card Below Images */}
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle className="text-eagle-green text-lg">
-                      Order Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Store className="h-4 w-4 text-viridian-green" />
-                      <span className="text-eagle-green/70">Vendor:</span>
-                      <span className="text-eagle-green font-medium">
-                        {template.vendorName}
-                      </span>
-                    </div>
-
-                    {/* Active Discount Badge */}
-                    {template.activeDiscount && (
-                      <div className="border-t border-gray-200 pt-4">
-                        <DiscountBadge
-                          discount={template.activeDiscount}
-                          variant="full"
-                          targetCurrency={
-                            template.price?.currencyCode ||
-                            template.currencyCode ||
-                            preferredCurrency
-                          }
-                        />
-                      </div>
-                    )}
-
-                    <div className="bg-june-bud/10 rounded-lg p-4">
-                      <p className="text-sm text-eagle-green/70 mb-1">
-                        {template.negotiable === false ? "Price" : "Base Price"}
-                      </p>
-                      {template.activeDiscount ? (
-                        <div className="space-y-2">
-                          <PriceWithDiscount
-                            originalPrice={template.price?.amount || 0}
-                            currency={
-                              template.price?.currencyCode ||
-                              template.currencyCode ||
-                              preferredCurrency
-                            }
-                            discount={template.activeDiscount}
-                            size="large"
-                          />
-                          {template.negotiable === false ? (
-                            <p className="text-xs text-viridian-green mt-1 font-medium">
-                              ✓ Fixed price with discount - pay directly
-                            </p>
-                          ) : (
-                            <p className="text-xs text-eagle-green/60 mt-1">
-                              Final price may vary based on customizations
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <>
-                          <p className="text-2xl font-bold text-eagle-green">
-                            {customOrderTemplateService.formatTemplatePrice(
-                              template
-                            )}
-                          </p>
-                          {template.negotiable === false ? (
-                            <p className="text-xs text-viridian-green mt-1 font-medium">
-                              ✓ Fixed price - pay directly without negotiation
-                            </p>
-                          ) : (
-                            <p className="text-xs text-eagle-green/60 mt-1">
-                              Final price may vary based on customizations
-                            </p>
-                          )}
-                        </>
-                      )}
-                    </div>
-
-                    {template.negotiable === false && (
-                      <div className="space-y-2">
-                        <Label className="text-eagle-green font-medium flex items-center gap-1">
-                          <Tag className="h-4 w-4" />
-                          Discount Code
-                        </Label>
-                        {discountResult?.applicable ? (
-                          <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle2 className="h-5 w-5 text-green-600" />
-                              <div>
-                                <p className="text-sm font-medium text-green-800">
-                                  Code "{discountCode}" applied
-                                </p>
-                                <p className="text-xs text-green-600">
-                                  You save{" "}
-                                  {formatPrice(
-                                    manualDiscountAmountDisplay,
-                                    template?.price?.currencyCode ||
-                                      preferredCurrency
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleRemoveDiscount}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex gap-2">
-                              <Input
-                                placeholder="Enter discount code"
-                                value={discountCode}
-                                onChange={(e) => {
-                                  setDiscountCode(e.target.value);
-                                  setDiscountError(null);
-                                }}
-                                onKeyDown={(e) =>
-                                  e.key === "Enter" && handleApplyDiscount()
-                                }
-                                className={
-                                  discountError ? "border-red-300" : ""
-                                }
-                                disabled={isValidatingDiscount}
-                              />
-                              <Button
-                                type="button"
-                                onClick={handleApplyDiscount}
-                                disabled={
-                                  isValidatingDiscount || !discountCode.trim()
-                                }
-                                className="bg-eagle-green hover:bg-eagle-green/90 text-white font-medium min-w-[90px] transition-all"
-                              >
-                                {isValidatingDiscount ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  "Apply Code"
-                                )}
-                              </Button>
-                            </div>
-                            {discountError && (
-                              <p className="text-xs text-red-500 flex items-center gap-1">
-                                <XCircle className="h-3 w-3" />
-                                {discountError}
-                              </p>
-                            )}
-                            {!discountError &&
-                              !discountCode.trim() &&
-                              template.activeDiscount && (
-                                <p className="text-xs text-eagle-green/60">
-                                  A template discount will be applied
-                                  automatically.
-                                </p>
-                              )}
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                {/* Desktop: Order Summary - hidden on mobile */}
+                <div className="hidden lg:block mt-6">
+                  {renderOrderSummary()}
+                </div>
               </motion.div>
             </div>
           )}
@@ -1018,6 +1044,11 @@ function CreateCustomOrderContent() {
                 </CardContent>
               </Card>
             </motion.div>
+
+            {/* Mobile: Order Summary at bottom - hidden on desktop */}
+            <div className="lg:hidden mt-8">
+              {renderOrderSummary()}
+            </div>
           </div>
         </div>
       </div>

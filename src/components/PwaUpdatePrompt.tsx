@@ -29,14 +29,9 @@ export default function PwaUpdatePrompt() {
   useEffect(() => {
     if (!offlineReady) return;
 
-    const { dismiss } = toast({
-      title: "Offline ready",
-      description: "goGerami is cached and can now open faster on repeat visits.",
-      duration: 5000,
-    });
+    
 
     return () => {
-      dismiss();
       setOfflineReady(false);
     };
   }, [offlineReady, setOfflineReady]);

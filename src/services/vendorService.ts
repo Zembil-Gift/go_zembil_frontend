@@ -246,6 +246,7 @@ export interface Product {
   giftWrapPrice?: number;
   giftWrapCustomerPrice?: number;
   giftWrapCurrencyCode?: string;
+  supplierId?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -401,6 +402,7 @@ export interface CreateEventRequest {
   bannerImageUrl?: string; // Backend uses 'bannerImageUrl' not 'imageUrl'
   organizerContact?: string;
   ticketTypes: CreateTicketType[];
+  supplierId?: number;
 }
 
 export interface UpdateEventRequest {
