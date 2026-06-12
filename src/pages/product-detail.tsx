@@ -24,7 +24,7 @@ import {
   Package as PackageIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { productService, Product, extractPriceAmount } from "@/services/productService";
+import { productService, Product, ProductSku, extractPriceAmount } from "@/services/productService";
 import { cartService } from "@/services/cartService";
 import { wishlistService } from "@/services/wishlistService";
 import { reviewService } from "@/services/reviewService";
@@ -115,6 +115,10 @@ export default function ProductDetail() {
       const skuToSelect = firstAvailableSku || selectableSkus[0];
       if (skuToSelect?.id) {
         setSelectedSkuId(skuToSelect.id);
+        const [firstAttribute] = skuToSelect.attributes || [];
+        if (firstAttribute) {
+          setSelectedAttribute({ id: firstAttribute.id, name: firstAttribute.name, value: firstAttribute.value });
+        }
       }
     }
   }, [selectableSkus, selectedSkuId]);
@@ -186,6 +190,17 @@ export default function ProductDetail() {
     if (matchedSku?.id) {
       setSelectedSkuId(matchedSku.id);
     }
+  };
+
+  const handleVariantSelect = (sku: ProductSku) => {
+    if ((sku.stockQuantity || 0) === 0) return;
+    setSelectedSkuId(sku.id || null);
+    const [firstAttribute] = sku.attributes || [];
+    setSelectedAttribute(
+      firstAttribute
+        ? { id: firstAttribute.id, name: firstAttribute.name, value: firstAttribute.value }
+        : null
+    );
   };
 
   const selectedAttributeOption = useMemo(() => {
@@ -622,7 +637,7 @@ export default function ProductDetail() {
                   {selectableSkus.map((sku) => (
                     <button
                       key={sku.id}
-                      onClick={() => setSelectedSkuId(sku.id || null)}
+                      onClick={() => handleVariantSelect(sku)}
                       disabled={(sku.stockQuantity || 0) === 0}
                       className={cn(
                         "flex items-center justify-between p-3 rounded-lg border-2 transition-all text-left",
@@ -643,42 +658,49 @@ export default function ProductDetail() {
                             <div className="w-3 h-3 rounded-full bg-viridian-green" />
                           )}
                         </div>
-                        <div>
-                          <div className="font-medium text-sm">{sku.skuName}</div>
-                          {sku.attributes && sku.attributes.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              {sku.attributes.map((attr, idx) => (
-                                <button
-                                  key={idx}
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAttributeSelection(attr.name, attr.value, attr.id);
-                                  }}
-                                  className={cn(
-                                    "text-xs px-2 py-1 rounded-full border transition-all",
-                                    selectedAttribute?.name === attr.name && selectedAttribute?.value === attr.value
-                                      ? "border-viridian-green bg-viridian-green text-white"
-                                      : "border-gray-300 text-gray-600 hover:border-viridian-green"
-                                  )}
-                                >
-                                  {attr.name}: <span className="font-medium">{attr.value}</span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                        <div className="font-medium text-sm">{sku.skuName}</div>
                       </div>
                       <div className="text-right">
                         <div className="font-semibold text-viridian-green">
                           {formatPrice(extractPriceAmount(sku.price), sku.price?.currencyCode || currencyCode)}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {(sku.stockQuantity || 0) > 0 
-                            ? `${sku.stockQuantity} in stock` 
+                          {(sku.stockQuantity || 0) > 0
+                            ? `${sku.stockQuantity} in stock`
                             : "Out of stock"}
                         </div>
                       </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Variant attributes/options */}
+            {selectedSku?.attributes && selectedSku.attributes.length > 0 && (
+              <div className="space-y-2 pt-4 border-t border-gray-200">
+                <h3 className="font-semibold text-charcoal">Options</h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedSku.attributes.map((attr, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleAttributeSelection(attr.name, attr.value, attr.id)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full border text-xs transition-all",
+                        selectedAttribute?.name === attr.name && selectedAttribute?.value === attr.value
+                          ? "border-viridian-green bg-viridian-green text-white"
+                          : "border-gray-300 text-gray-600 hover:border-viridian-green"
+                      )}
+                    >
+                      <span className={cn(
+                        selectedAttribute?.name === attr.name && selectedAttribute?.value === attr.value
+                          ? "text-white/80"
+                          : "text-gray-400"
+                      )}>
+                        {attr.name}:
+                      </span>{" "}
+                      <span className="font-medium">{attr.value}</span>
                     </button>
                   ))}
                 </div>
@@ -690,32 +712,6 @@ export default function ProductDetail() {
               <div>
                 <h3 className="font-semibold text-charcoal mb-2">Description</h3>
                 <p className="text-gray-600 leading-relaxed">{product.description}</p>
-              </div>
-            )}
-
-            {/* Single SKU attributes */}
-            {product.productSku && product.productSku.length === 1 && selectedSku?.attributes && selectedSku.attributes.length > 0 && (
-              <div className="space-y-2 pt-4 border-t border-gray-200">
-                <h3 className="font-semibold text-charcoal">Options</h3>
-                <div className="flex flex-wrap gap-4">
-                  {selectedSku.attributes.map((attr, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">{attr.name}:</span>
-                      <button
-                        type="button"
-                        onClick={() => handleAttributeSelection(attr.name, attr.value, attr.id)}
-                        className={cn(
-                          "px-2 py-1 rounded-full border text-xs transition-all",
-                          selectedAttribute?.name === attr.name && selectedAttribute?.value === attr.value
-                            ? "border-viridian-green bg-viridian-green text-white"
-                            : "border-gray-300 text-gray-600 hover:border-viridian-green"
-                        )}
-                      >
-                        {attr.value}
-                      </button>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
 

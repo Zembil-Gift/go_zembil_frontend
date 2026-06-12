@@ -571,8 +571,8 @@ export default function PackagesPage() {
                         {pkg.vendorName ? <span> • by {pkg.vendorName}</span> : null}
                       </div>
 
-                      <div className="flex items-center justify-between pt-1">
-                        <p className="text-sm sm:text-base lg:text-lg font-bold text-eagle-green break-all leading-tight">
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <p className="text-sm sm:text-base lg:text-lg font-bold text-eagle-green leading-tight whitespace-nowrap">
                           {formatPrice(
                             estimatedPrice.amount,
                             estimatedPrice.currency
@@ -580,6 +580,7 @@ export default function PackagesPage() {
                         </p>
                         <Button
                           asChild
+                          size="sm"
                           className="bg-eagle-green hover:bg-viridian-green text-white"
                         >
                           <Link to={`/packages/${pkg.id}`}>View</Link>
