@@ -289,7 +289,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                     </div>
 
                     {/* Subtle indicator for more */}
-                    <div className={`flex items-center gap-1 text-xs font-medium text-viridian-green
+                    <div className={`hidden sm:flex items-center gap-1 text-xs font-medium text-viridian-green
                         transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
                         <span>View</span>
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
