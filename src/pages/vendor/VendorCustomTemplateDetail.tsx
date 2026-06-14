@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { customOrderTemplateService } from "@/services/customOrderTemplateService";
 import { vendorService } from "@/services/vendorService";
+import { supplierService } from "@/services/supplierService";
 import { getAllTemplateImages } from "@/utils/imageUtils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +51,7 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  Truck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CustomOrderTemplate, CustomizationFieldType } from "@/types/customOrders";
@@ -56,6 +65,8 @@ export default function VendorCustomTemplateDetail() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editPriceDialogOpen, setEditPriceDialogOpen] = useState(false);
   const [newPrice, setNewPrice] = useState("");
+  const [editSupplierDialogOpen, setEditSupplierDialogOpen] = useState(false);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
 
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
 
@@ -71,6 +82,13 @@ export default function VendorCustomTemplateDetail() {
     queryKey: ['custom-template', id, user?.preferredCurrencyCode ?? 'default'],
     queryFn: () => customOrderTemplateService.getById(Number(id)),
     enabled: !!id && isAuthenticated && isVendor && isInitialized,
+  });
+
+  // Fetch the vendor's active suppliers (only suppliers attached to this vendor)
+  const { data: activeSuppliers = [] } = useQuery({
+    queryKey: ['vendor', 'active-suppliers', vendorProfile?.id],
+    queryFn: () => supplierService.getActiveSuppliers(vendorProfile!.id),
+    enabled: !!vendorProfile?.id,
   });
 
   // Delete mutation
@@ -97,6 +115,20 @@ export default function VendorCustomTemplateDetail() {
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message || "Failed to update price", variant: "destructive" });
+    },
+  });
+
+  // Update supplier mutation
+  const updateSupplierMutation = useMutation({
+    mutationFn: (supplierId: number | null) =>
+      customOrderTemplateService.update(Number(id), { supplierId: supplierId || undefined }),
+    onSuccess: async () => {
+      toast({ title: "Success", description: "Supplier updated successfully" });
+      await queryClient.invalidateQueries({ queryKey: ['custom-template', id] });
+      setEditSupplierDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to update supplier", variant: "destructive" });
     },
   });
 
@@ -429,6 +461,45 @@ export default function VendorCustomTemplateDetail() {
               </CardContent>
             </Card>
 
+            {/* Supplier Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="h-5 w-5" />
+                  Supplier
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center">
+                  {template.supplier ? (
+                    <div>
+                      <p className="font-medium text-gray-900">{template.supplier.businessName}</p>
+                      {template.supplier.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{template.supplier.description}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No supplier linked</p>
+                  )}
+
+                  {activeSuppliers.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => {
+                        setSelectedSupplierId(template.supplier?.id ?? null);
+                        setEditSupplierDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      {template.supplier ? "Change Supplier" : "Link Supplier"}
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Quick Stats Card */}
             <Card>
               <CardHeader>
@@ -534,6 +605,59 @@ export default function VendorCustomTemplateDetail() {
                 </>
               ) : (
                 'Update Price'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Supplier Dialog */}
+      <Dialog open={editSupplierDialogOpen} onOpenChange={setEditSupplierDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link Supplier</DialogTitle>
+            <DialogDescription>
+              Select the supplier that fulfills this template, or remove the link.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Supplier</Label>
+              <Select
+                value={selectedSupplierId?.toString() || "0"}
+                onValueChange={(value) =>
+                  setSelectedSupplierId(value === "0" ? null : parseInt(value))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No supplier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">No supplier</SelectItem>
+                  {activeSuppliers.map((s) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                      {s.businessName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditSupplierDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => updateSupplierMutation.mutate(selectedSupplierId)}
+              disabled={updateSupplierMutation.isPending}
+            >
+              {updateSupplierMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save'
               )}
             </Button>
           </DialogFooter>

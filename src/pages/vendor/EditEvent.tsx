@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { vendorService, VendorProfile, UpdateEventRequest } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { imageService, ImageDto } from "@/services/imageService";
+import { supplierService } from "@/services/supplierService";
 import { toInstantISOString } from "@/lib/instant";
 import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
 import {
   ArrowLeft,
@@ -74,6 +82,7 @@ const eventEditSchema = z.object({
   categoryId: z.string().optional(),
   organizerContact: z.string().optional(),
   ticketTypes: z.array(ticketTypeSchema).min(1, "At least one ticket type is required"),
+  supplierId: z.number().nullable().optional(),
 });
 
 type EventEditFormData = z.infer<typeof eventEditSchema>;
@@ -108,6 +117,12 @@ export default function EditEvent() {
     enabled: isAuthenticated && isVendor,
   });
 
+  const { data: activeSuppliers = [] } = useQuery({
+    queryKey: ['vendor', 'active-suppliers', vendorProfile?.id],
+    queryFn: () => supplierService.getActiveSuppliers(vendorProfile!.id),
+    enabled: !!vendorProfile?.id,
+  });
+
   // Fetch currencies
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies'],
@@ -135,6 +150,7 @@ export default function EditEvent() {
       categoryId: "",
       organizerContact: "",
       ticketTypes: [],
+      supplierId: null,
     },
   });
 
@@ -189,6 +205,7 @@ export default function EditEvent() {
         categoryId: event.eventTypeId?.toString() || "",
         organizerContact: event.organizerContact || "",
         ticketTypes: ticketData,
+        supplierId: event.supplier?.id ?? null,
       });
     }
   }, [event, form, vendorProfile]);
@@ -211,6 +228,7 @@ export default function EditEvent() {
         eventEndDate: toInstantISOString(data.endDateTime),
         location: data.location,
         city: data.city,
+        supplierId: data.supplierId || undefined,
       };
 
       // For pending/rejected events, include ticket price updates
@@ -760,6 +778,42 @@ export default function EditEvent() {
               </Alert>
             </CardContent>
           </Card>
+
+          {activeSuppliers.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                  Link Supplier (Optional)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Controller
+                  name="supplierId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value?.toString() || "0"}
+                      onValueChange={(value) =>
+                        field.onChange(value === "0" ? null : parseInt(value))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="No supplier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">No supplier</SelectItem>
+                        {activeSuppliers.map((s) => (
+                          <SelectItem key={s.id} value={s.id.toString()}>
+                            {s.businessName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Submit */}
           <div className="flex justify-end gap-4">

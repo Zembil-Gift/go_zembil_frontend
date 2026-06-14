@@ -415,6 +415,7 @@ export interface UpdateEventRequest {
   city?: string;
   imageUrl?: string;
   ticketTypeUpdates?: TicketTypeUpdate[];
+  supplierId?: number;
 }
 
 export interface TicketTypeUpdate {
@@ -459,6 +460,11 @@ export interface EventResponse {
   cancellationReason?: string;
   createdAt: string;
   updatedAt?: string;
+  supplier?: {
+    id: number;
+    businessName: string;
+    description?: string;
+  } | null;
 }
 
 export interface TicketType {

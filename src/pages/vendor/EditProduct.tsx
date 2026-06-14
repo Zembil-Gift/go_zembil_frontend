@@ -14,6 +14,7 @@ import {
 } from "@/services/vendorService";
 import { apiService } from "@/services/apiService";
 import { ImageDto, imageService } from "@/services/imageService";
+import { supplierService } from "@/services/supplierService";
 import {
   Card,
   CardContent,
@@ -124,6 +125,7 @@ const productEditSchema = z
     productSku: z
       .array(skuSchema)
       .min(1, "At least one product SKU is required"),
+    supplierId: z.number().nullable().optional(),
   })
   .refine(
     (data) => {
@@ -191,6 +193,12 @@ export default function EditProduct() {
     enabled: isAuthenticated && isVendor,
   });
 
+  const { data: activeSuppliers = [] } = useQuery({
+    queryKey: ["vendor", "active-suppliers", vendorProfile?.id],
+    queryFn: () => supplierService.getActiveSuppliers(vendorProfile!.id),
+    enabled: !!vendorProfile?.id,
+  });
+
   // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -256,6 +264,7 @@ export default function EditProduct() {
       giftWrapPrice: 0,
       giftWrapCurrencyCode: "",
       productSku: [],
+      supplierId: null,
     },
   });
 
@@ -382,6 +391,7 @@ export default function EditProduct() {
         giftWrapPrice: product.giftWrapPrice || 0,
         giftWrapCurrencyCode: product.giftWrapCurrencyCode || "",
         productSku: skuData,
+        supplierId: product.supplierId ?? null,
       });
     }
   }, [product, vendorProfile, currencies, form, allSubCategories]);
@@ -438,6 +448,7 @@ export default function EditProduct() {
               "ETB"
             : undefined,
         productSku: skuPayload,
+        supplierId: data.supplierId || undefined,
       };
 
       // Use the appropriate endpoint based on product status
@@ -1421,6 +1432,42 @@ export default function EditProduct() {
               )}
             </CardContent>
           </Card>
+
+          {activeSuppliers.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                  Link Supplier (Optional)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Controller
+                  name="supplierId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value?.toString() || "0"}
+                      onValueChange={(value) =>
+                        field.onChange(value === "0" ? null : parseInt(value))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="No supplier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">No supplier</SelectItem>
+                        {activeSuppliers.map((s) => (
+                          <SelectItem key={s.id} value={s.id.toString()}>
+                            {s.businessName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Submit */}
           <div className="flex justify-end gap-4">
