@@ -233,6 +233,7 @@ export interface UpdateCustomOrderTemplateRequest {
     description?: string;
     sortOrder: number;
   }[];
+  supplierId?: number;
 }
 
 export interface CreateCustomOrderRequest {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,6 +56,7 @@ import {
   Globe,
   Link2,
   Check,
+  BarChart3,
 } from "lucide-react";
 
 const STATUS_COLORS: Record<PartnershipApplicationStatus, string> = {
@@ -69,6 +71,7 @@ const STATUS_COLORS: Record<PartnershipApplicationStatus, string> = {
 };
 
 export default function AdminPartnershipApplications() {
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selectedApp, setSelectedApp] = useState<PartnershipApplication | null>(null);
@@ -223,6 +226,18 @@ export default function AdminPartnershipApplications() {
       title="Partnership Applications"
       description="Manage partnership applications from potential vendors"
     >
+      {/* Reports shortcut */}
+      <div className="flex justify-end mb-4">
+        <Button
+          variant="outline"
+          className="gap-2 border-eagle-green text-eagle-green hover:bg-eagle-green/10"
+          onClick={() => navigate("/admin/partnership-applications/reports")}
+        >
+          <BarChart3 className="w-4 h-4" />
+          Reports
+        </Button>
+      </div>
+
       {/* Search and Actions */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1">

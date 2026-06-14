@@ -86,6 +86,11 @@ export interface ServiceResponse {
   hasPackages?: boolean;
   activeDiscount?: DiscountInfo;
   availabilitySpotsPage?: AvailabilitySpotsPage;
+  supplier?: {
+    id: number;
+    businessName: string;
+    description?: string;
+  } | null;
 }
 
 export type ServicePackageStatus =
@@ -183,6 +188,7 @@ export interface UpdateServiceRequest {
   location?: string;
   city?: string;
   policiesConfig?: PoliciesConfig;
+  supplierId?: number;
 }
 
 // ==================== Service Package Types ====================

@@ -20,6 +20,7 @@ import {
   PriceDto,
 } from "@/services/vendorService";
 import { imageService } from "@/services/imageService";
+import { supplierService } from "@/services/supplierService";
 import { apiService } from "@/services/apiService";
 import imageCompression from "browser-image-compression";
 import { SubcategorySearchCombobox } from "@/components/SubcategorySearchCombobox";
@@ -115,6 +116,7 @@ const serviceMetadataSchema = z.object({
   location: z.string().min(1, "Location is required").max(500),
   city: z.string().min(1, "City is required").max(100),
   categoryId: z.string().optional(),
+  supplierId: z.number().nullable().optional(),
 });
 
 type ServiceMetadataFormData = z.infer<typeof serviceMetadataSchema>;
@@ -183,6 +185,8 @@ export default function EditService() {
     useState(false);
   const [packageNewTimeSlot, setPackageNewTimeSlot] = useState("");
   const [pendingPackageImages, setPendingPackageImages] = useState<File[]>([]);
+  const [pendingServiceImages, setPendingServiceImages] = useState<File[]>([]);
+  const [serviceImageUploadKey, setServiceImageUploadKey] = useState(0);
 
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
   const serviceId = id ? parseInt(id) : 0;
@@ -219,6 +223,12 @@ export default function EditService() {
     enabled: isAuthenticated && isVendor,
   });
 
+  const { data: activeSuppliers = [] } = useQuery({
+    queryKey: ["vendor", "active-suppliers", vendorProfile?.id],
+    queryFn: () => supplierService.getActiveSuppliers(vendorProfile!.id),
+    enabled: !!vendorProfile?.id,
+  });
+
   const { data: serviceImages = [], refetch: refetchImages } = useQuery({
     queryKey: ["service-images", serviceId],
     queryFn: () => imageService.getServiceImages(serviceId),
@@ -244,6 +254,7 @@ export default function EditService() {
       location: "",
       city: "",
       categoryId: "",
+      supplierId: null,
     },
   });
 
@@ -276,6 +287,7 @@ export default function EditService() {
         location: service.location || "",
         city: service.city || "",
         categoryId: service.categoryId?.toString() || "",
+        supplierId: service.supplier?.id ?? null,
       });
     }
   }, [service, metadataForm]);
@@ -408,6 +420,8 @@ export default function EditService() {
         description: "Your images have been uploaded successfully.",
       });
       refetchImages();
+      setPendingServiceImages([]);
+      setServiceImageUploadKey((key) => key + 1);
     },
     onError: (error: any) => {
       toast({
@@ -465,6 +479,7 @@ export default function EditService() {
         location: data.location,
         city: data.city,
         categoryId: data.categoryId ? parseInt(data.categoryId) : undefined,
+        supplierId: data.supplierId || undefined,
       };
       return await serviceService.updateService(serviceId, request);
     },
@@ -1080,6 +1095,42 @@ export default function EditService() {
                 </CardContent>
               </Card>
 
+              {activeSuppliers.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                      Link Supplier (Optional)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Controller
+                      name="supplierId"
+                      control={metadataForm.control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value?.toString() || "0"}
+                          onValueChange={(value) =>
+                            field.onChange(value === "0" ? null : parseInt(value))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="No supplier" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">No supplier</SelectItem>
+                            {activeSuppliers.map((s) => (
+                              <SelectItem key={s.id} value={s.id.toString()}>
+                                {s.businessName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="flex justify-end">
                 <Button
                   type="submit"
@@ -1262,9 +1313,10 @@ export default function EditService() {
               </CardHeader>
               <CardContent>
                 <ImageUpload
+                  key={serviceImageUploadKey}
                   images={serviceImages}
                   onFilesSelected={(files) =>
-                    uploadImagesMutation.mutate(files)
+                    setPendingServiceImages((prev) => [...prev, ...files])
                   }
                   onImageDelete={(imageId) =>
                     deleteImageMutation.mutate(imageId)
@@ -1279,6 +1331,39 @@ export default function EditService() {
                   helperText="Upload images that showcase your service. First image will be the cover."
                   showPrimarySelector={true}
                 />
+                {pendingServiceImages.length > 0 && (
+                  <div className="flex items-center justify-between mt-4 p-3 border rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">
+                      {pendingServiceImages.length} new image
+                      {pendingServiceImages.length > 1 ? "s" : ""} selected.
+                      Save to upload them.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isUploadingImages}
+                        onClick={() => {
+                          setPendingServiceImages([]);
+                          setServiceImageUploadKey((key) => key + 1);
+                        }}
+                      >
+                        Discard
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={isUploadingImages}
+                        onClick={() =>
+                          uploadImagesMutation.mutate(pendingServiceImages)
+                        }
+                      >
+                        {isUploadingImages ? "Uploading..." : "Save Images"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
