@@ -14,6 +14,19 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/apiService";
+import { consumePendingPurchase, trackPurchase } from "@/lib/analytics";
+
+function trackOrderPurchase(orderId: string, transactionId?: string) {
+  const pending = consumePendingPurchase(orderId);
+  if (!pending) return;
+  trackPurchase({
+    transactionId: transactionId || orderId,
+    value: pending.value,
+    currency: pending.currency,
+    items: pending.items,
+    coupon: pending.coupon,
+  });
+}
 
 interface OrderPaymentStatusResponse {
   orderId: number;
@@ -83,6 +96,7 @@ export default function PaymentSuccess() {
             }
 
             setPaymentStatus("success");
+            trackOrderPurchase(targetOrderId, result.providerRef || trxRef);
             setOrderInfo({
               id: targetOrderId,
               orderNumber: result.orderNumber,
@@ -196,6 +210,9 @@ export default function PaymentSuccess() {
         }
 
         setPaymentStatus("success");
+        if (orderId) {
+          trackOrderPurchase(orderId, paymentIntent);
+        }
         setOrderInfo({
           id: orderId,
           orderNumber: resolvedOrderNumber,
@@ -236,6 +253,9 @@ export default function PaymentSuccess() {
         }
 
         setPaymentStatus("success");
+        if (orderId) {
+          trackOrderPurchase(orderId, trxRef);
+        }
         setOrderInfo({
           id: orderId,
           orderType,
@@ -252,6 +272,7 @@ export default function PaymentSuccess() {
 
       if (orderId) {
         setPaymentStatus("success");
+        trackOrderPurchase(orderId);
         setOrderInfo({
           id: orderId,
           orderType,

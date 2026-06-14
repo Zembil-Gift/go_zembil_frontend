@@ -37,6 +37,12 @@ import {
   CreateEventOrderRequest,
   TicketPurchaseItem,
 } from "@/services/eventOrderService";
+import {
+  trackBeginCheckout,
+  trackAddPaymentInfo,
+  storePendingPurchase,
+  type AnalyticsItem,
+} from "@/lib/analytics";
 
 interface TicketSelection {
   ticketTypeId: number;
@@ -133,6 +139,22 @@ export default function EventCheckout() {
       });
 
       setTicketSelections(selections);
+
+      if (selections.length > 0) {
+        const currency = selections[0].currency;
+        const items = selections.map((sel) => ({
+          item_id: `${event.id}-${sel.ticketTypeId}`,
+          item_name: `${event.title} - ${sel.ticketTypeName}`,
+          item_category: "Event Ticket",
+          price: eventOrderService.minorToMajor(sel.priceMinor, sel.currency),
+          quantity: sel.recipients.length,
+        }));
+        const value = items.reduce(
+          (sum, item) => sum + (item.price ?? 0) * (item.quantity ?? 1),
+          0
+        );
+        trackBeginCheckout(items, currency, value);
+      }
     }
   }, [event, selectedTicketsFromState]);
 
@@ -230,6 +252,29 @@ export default function EventCheckout() {
 
       // Create order
       const order = await eventOrderService.createOrder(orderRequest);
+
+      const purchaseItems: AnalyticsItem[] = ticketSelections.map((sel) => ({
+        item_id: `${event.id}-${sel.ticketTypeId}`,
+        item_name: `${event.title} - ${sel.ticketTypeName}`,
+        item_category: "Event Ticket",
+        price: eventOrderService.minorToMajor(sel.priceMinor, sel.currency),
+        quantity: sel.recipients.length,
+      }));
+      const purchaseValue = eventOrderService.minorToMajor(
+        order.totalAmountMinor,
+        order.currency
+      );
+      trackAddPaymentInfo(
+        purchaseItems,
+        order.currency,
+        purchaseValue,
+        paymentProvider
+      );
+      storePendingPurchase(order.id, {
+        value: purchaseValue,
+        currency: order.currency,
+        items: purchaseItems,
+      });
 
       if (paymentProvider === "chapa") {
         navigate(`/payment/chapa?orderId=${order.id}&orderType=event`);

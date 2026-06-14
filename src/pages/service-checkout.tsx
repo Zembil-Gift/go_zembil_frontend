@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -48,7 +48,14 @@ import {
   formatPrice,
   calculateDiscountedPrice,
   getDiscountAmountForDisplay,
+  fromMinorUnits,
 } from "@/lib/currency";
+import {
+  trackBeginCheckout,
+  trackAddPaymentInfo,
+  storePendingPurchase,
+  type AnalyticsItem,
+} from "@/lib/analytics";
 
 export default function ServiceCheckout() {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -233,6 +240,42 @@ export default function ServiceCheckout() {
     if (displayPriceMajor === undefined) return false;
     return finalAmount < displayPriceMajor;
   }, [displayPriceMajor, finalAmount]);
+
+  const beginCheckoutSignatureRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!service || displayPriceMajor === undefined) return;
+
+    const signature = `${service.id}-${selectedPackage?.id ?? "default"}`;
+    if (beginCheckoutSignatureRef.current === signature) return;
+    beginCheckoutSignatureRef.current = signature;
+
+    trackBeginCheckout(
+      [
+        {
+          item_id: selectedPackage?.id ?? service.id,
+          item_name: selectedPackage
+            ? `${service.title} - ${selectedPackage.name}`
+            : service.title,
+          item_category: "Service",
+          item_brand: service.vendorName,
+          price: displayPriceMajor,
+          quantity: 1,
+        },
+      ],
+      displayCurrency,
+      finalAmount,
+      hasManualDiscount ? appliedDiscountCode : undefined
+    );
+  }, [
+    service,
+    selectedPackage,
+    displayPriceMajor,
+    displayCurrency,
+    finalAmount,
+    hasManualDiscount,
+    appliedDiscountCode,
+  ]);
 
   const paymentProviderLabel = useMemo(() => {
     return paymentProvider === "STRIPE" ? "Stripe" : "Chapa";
@@ -523,6 +566,28 @@ export default function ServiceCheckout() {
         setDiscountResult(null);
         setDiscountError(errorMessage);
       }
+
+      const purchaseItems: AnalyticsItem[] = [
+        {
+          item_id: selectedPackage?.id ?? service.id,
+          item_name: selectedPackage
+            ? `${service.title} - ${selectedPackage.name}`
+            : service.title,
+          item_category: "Service",
+          item_brand: service.vendorName,
+          price: displayPriceMajor,
+          quantity: 1,
+        },
+      ];
+      const purchaseValue = fromMinorUnits(order.totalAmountMinor, order.currency);
+
+      trackAddPaymentInfo(purchaseItems, order.currency, purchaseValue, paymentProvider);
+      storePendingPurchase(order.id, {
+        value: purchaseValue,
+        currency: order.currency,
+        items: purchaseItems,
+        coupon: appliedDiscountCode || undefined,
+      });
 
       if (paymentProvider === "CHAPA") {
         navigate(`/payment/chapa?orderId=${order.id}&orderType=service`);

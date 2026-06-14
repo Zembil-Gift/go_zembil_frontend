@@ -42,6 +42,22 @@ import {
   REWARD_TYPE_LABELS,
   type CampaignRewardPreviewItem,
 } from "@/services/campaignService";
+import {
+  trackViewCart,
+  trackRemoveFromCart,
+  trackBeginCheckout,
+  type AnalyticsItem,
+} from "@/lib/analytics";
+
+function toAnalyticsItem(item: CartItem): AnalyticsItem {
+  return {
+    item_id: item.productId,
+    item_name: item.product?.name || item.productName || `Product ${item.productId}`,
+    item_variant: item.productSkuId ? String(item.productSkuId) : undefined,
+    price: Number(item.unitPrice || 0),
+    quantity: Number(item.quantity || 0),
+  };
+}
 
 export default function Cart() {
   const { toast } = useToast();
@@ -299,6 +315,22 @@ export default function Cart() {
     cartSubtotal - discountAmountDisplay - campaignRewardDiscountDisplay
   );
 
+  const lastViewCartSignatureRef = useRef<string>("");
+
+  useEffect(() => {
+    if (cartLoading || !Array.isArray(cartItems) || cartItems.length === 0) {
+      return;
+    }
+    const signature = JSON.stringify(
+      cartItems.map((item) => [item.id, item.productId, item.productSkuId, item.quantity])
+    );
+    if (lastViewCartSignatureRef.current === signature) {
+      return;
+    }
+    lastViewCartSignatureRef.current = signature;
+    trackViewCart(cartItems.map(toAnalyticsItem), cartCurrency, cartSubtotal);
+  }, [cartLoading, cartItems, cartCurrency, cartSubtotal]);
+
   const formatRewardValue = useCallback(
     (
       rewardType: CampaignRewardPreviewItem["rewardType"],
@@ -484,6 +516,7 @@ export default function Cart() {
       const itemToRemove = cartItems.find((item) => item.id === itemId);
       if (itemToRemove) {
         setPendingRemoveItemKey(getCartItemKey(itemToRemove));
+        trackRemoveFromCart(toAnalyticsItem(itemToRemove), cartCurrency);
       }
 
       await queryClient.cancelQueries({ queryKey: ["cart", "items"] });
@@ -1448,15 +1481,21 @@ export default function Cart() {
                     {/* Checkout Button */}
                     <Button
                       className="w-full bg-ethiopian-gold hover:bg-amber text-white h-12"
-                      onClick={() =>
+                      onClick={() => {
+                        trackBeginCheckout(
+                          cartItems.map(toAnalyticsItem),
+                          cartCurrency,
+                          estimatedTotal,
+                          discountResult?.applicable ? discountCode : undefined
+                        );
                         navigate("/checkout", {
                           state: {
                             appliedDiscountCode: discountResult?.applicable
                               ? discountCode
                               : undefined,
                           },
-                        })
-                      }
+                        });
+                      }}
                     >
                       Proceed to Checkout
                       <ArrowRight size={16} className="ml-2" />

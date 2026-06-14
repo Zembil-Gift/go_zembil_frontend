@@ -21,6 +21,7 @@ import {Globe, Eye, EyeOff, Lock, Mail, User} from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import { SUPPORTED_COUNTRIES, getCurrencyForCountry } from "@/lib/countryConfig";
 import OAuth2Buttons from "@/components/auth/OAuth2Buttons";
+import { trackSignUp } from "@/lib/analytics";
 
 // Phone number validation using libphonenumber (E.164 format)
 const phoneValidation = z
@@ -111,6 +112,7 @@ export default function SignUp() {
       });
     },
     onSuccess: (response, variables) => {
+      trackSignUp("email");
       // Check if email verification is required
       if (response.requiresEmailVerification) {
         toast({
@@ -410,6 +412,7 @@ export default function SignUp() {
             <OAuth2Buttons 
               disabled={signupMutation.isPending}
               onSuccess={() => {
+                trackSignUp("google");
                 toast({
                   title: "Account created successfully!",
                   description: "Welcome to goGerami!",
