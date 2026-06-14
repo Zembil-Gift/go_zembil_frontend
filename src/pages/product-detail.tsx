@@ -20,7 +20,6 @@ import {
   X,
   ZoomIn,
   Gift,
-  Store,
   Package as PackageIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -31,9 +30,10 @@ import { reviewService } from "@/services/reviewService";
 import { cn } from "@/lib/utils";
 import { formatPrice, getPriceCurrency } from "@/lib/currency";
 import { getProductImageUrl, getAllProductImages } from "@/utils/imageUtils";
-import { ProductReviewsSection, VendorCard, CompactRating } from "@/components/reviews";
+import { ProductReviewsSection, CompactRating } from "@/components/reviews";
 import { DiscountBadge } from "@/components/DiscountBadge";
 import { PriceWithDiscount } from "@/components/PriceWithDiscount";
+import { SellerInfoCard } from "@/components/SellerInfoCard";
 import { trackViewItem, trackAddToCart, trackAddToWishlist } from "@/lib/analytics";
 
 // Image with skeleton loading
@@ -890,39 +890,28 @@ export default function ProductDetail() {
 
         {/* ── Seller Info: Sold by + Supplied by merged into one card ── */}
         {(hasVendor || hasSupplier) && (
-          <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            {/* Sold by */}
-            {hasVendor && (
-              <div className="p-5">
-                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3">
-                  Sold by
-                </p>
-                <VendorCard vendor={vendorProfile!} />
-
-
-              </div>
-            )}
-
-            {/* Divider — only when both sections exist */}
-            {hasVendor && hasSupplier && (
-              <div className="border-t border-gray-100 mx-5" />
-            )}
-
-            {/* Supplied by */}
-            {hasSupplier && (
-              <div className="p-5">
-          
-                <div className="flex items-start gap-3">
-                 
-                  <div>
-                    <p className="font-semibold text-charcoal text-sm leading-tight">
-                      Supplied by:  {product.supplier!.businessName}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <SellerInfoCard
+            className="mt-8"
+            vendor={
+              vendorProfile
+                ? {
+                    businessName: vendorProfile.businessName,
+                    link: `/vendor/${vendorProfile.id}`,
+                    logoUrl: vendorProfile.logoUrl,
+                    badge: "Verified Seller",
+                    categoryName: vendorProfile.vendorCategoryName,
+                    rating: vendorProfile.ratingSummary,
+                    description: vendorProfile.description,
+                    location: vendorProfile.city
+                      ? `${vendorProfile.city}${vendorProfile.country ? `, ${vendorProfile.country}` : ""}`
+                      : undefined,
+                    memberSince: vendorProfile.memberSince,
+                    meta: [{ icon: PackageIcon, label: `${vendorProfile.totalProducts} products` }],
+                  }
+                : undefined
+            }
+            suppliers={product.supplier ? [{ id: product.supplier.id, businessName: product.supplier.businessName }] : []}
+          />
         )}
 
         {/* Product Details Tabs */}

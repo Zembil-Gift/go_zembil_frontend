@@ -3,21 +3,19 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
-  Calendar,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Loader2,
-  MapPin,
   Package as PackageIcon,
   ShoppingCart,
-  Store,
   XCircle,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SellerInfoCard } from "@/components/SellerInfoCard";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -26,7 +24,6 @@ import {
 } from "@/services/packageService";
 import { formatPrice, getCurrencyDecimals } from "@/lib/currency";
 import { trackViewItem } from "@/lib/analytics";
-import { format } from "date-fns";
 
 const toMajor = (minor?: number, currency?: string): number => {
   if (typeof minor !== "number") return 0;
@@ -605,62 +602,27 @@ export default function PackageDetailPage() {
 
             {/* Seller info */}
             {(hasVendor || hasSuppliers) && (
-              <Card>
-                <CardContent className="p-4 space-y-4">
-                  {hasVendor && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Sold by</p>
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-viridian-green/10 flex items-center justify-center shrink-0">
-                          <Store className="h-4 w-4 text-viridian-green" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-charcoal text-sm leading-tight">
-                            {packageDetail.vendorBusinessName}
-                          </p>
-                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
-                            {packageDetail.vendorLocation && (
-                              <span className="flex items-center gap-1 text-xs text-slate-500">
-                                <MapPin className="h-3 w-3 shrink-0" />
-                                {packageDetail.vendorLocation}
-                              </span>
-                            )}
-                            {packageDetail.vendorMemberSince && (
-                              <span className="flex items-center gap-1 text-xs text-slate-500">
-                                <Calendar className="h-3 w-3 shrink-0" />
-                                Since {format(new Date(packageDetail.vendorMemberSince), "MMM yyyy")}
-                              </span>
-                            )}
-                            {packageDetail.vendorTotalPackages != null && (
-                              <span className="flex items-center gap-1 text-xs text-slate-500">
-                                <PackageIcon className="h-3 w-3 shrink-0" />
-                                {packageDetail.vendorTotalPackages} package{packageDetail.vendorTotalPackages !== 1 ? "s" : ""}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {hasVendor && hasSuppliers && <div className="border-t border-slate-100" />}
-                  {hasSuppliers && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Supplied by</p>
-                      <div className="space-y-2">
-                        {packageDetail.suppliers.map((supplier) => (
-                          <div key={supplier.id} className="flex items-start gap-2.5">
-                            <div>
-                              <p className="font-semibold text-charcoal text-sm leading-tight">
-                                {supplier.businessName}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <SellerInfoCard
+                vendor={
+                  hasVendor
+                    ? {
+                        businessName: packageDetail.vendorBusinessName!,
+                        location: packageDetail.vendorLocation,
+                        memberSince: packageDetail.vendorMemberSince,
+                        meta:
+                          packageDetail.vendorTotalPackages != null
+                            ? [
+                                {
+                                  icon: PackageIcon,
+                                  label: `${packageDetail.vendorTotalPackages} package${packageDetail.vendorTotalPackages !== 1 ? "s" : ""}`,
+                                },
+                              ]
+                            : [],
+                      }
+                    : undefined
+                }
+                suppliers={packageDetail.suppliers || []}
+              />
             )}
           </div>
         </div>
