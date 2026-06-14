@@ -32,6 +32,7 @@ import {
 } from "@/services/serviceService";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
+import { trackViewItem } from "@/lib/analytics";
 
 export default function ServiceDetail() {
   const { id } = useParams<{ id: string }>();
@@ -154,6 +155,22 @@ export default function ServiceDetail() {
   const displayCurrency = useMemo(() => {
     return selectedPackage?.currency ?? service?.currency ?? "ETB";
   }, [selectedPackage, service]);
+
+  useEffect(() => {
+    if (!service) return;
+    trackViewItem(
+      {
+        item_id: service.id,
+        item_name: service.title,
+        item_category: service.categoryName,
+        item_brand: service.vendorName,
+        item_variant: selectedPackage?.name,
+        price: displayPriceMajor,
+      },
+      displayCurrency
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [service?.id]);
 
   useMemo(() => {
     if (!service) return undefined;

@@ -4,6 +4,7 @@ import { CheckCircle, Calendar, Search } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { consumePendingPurchase, trackPurchase } from "@/lib/analytics";
 
 export default function ServiceOrderSuccess() {
   const [searchParams] = useSearchParams();
@@ -11,7 +12,20 @@ export default function ServiceOrderSuccess() {
 
   useEffect(() => {
     localStorage.removeItem("returnTo");
-  }, []);
+
+    if (orderId) {
+      const pending = consumePendingPurchase(orderId);
+      if (pending) {
+        trackPurchase({
+          transactionId: orderId,
+          value: pending.value,
+          currency: pending.currency,
+          items: pending.items,
+          coupon: pending.coupon,
+        });
+      }
+    }
+  }, [orderId]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">

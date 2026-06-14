@@ -25,6 +25,7 @@ import {
   ProductPackageItemResponse,
 } from "@/services/packageService";
 import { formatPrice, getCurrencyDecimals } from "@/lib/currency";
+import { trackViewItem } from "@/lib/analytics";
 import { format } from "date-fns";
 
 const toMajor = (minor?: number, currency?: string): number => {
@@ -333,6 +334,21 @@ export default function PackageDetailPage() {
     }
     return { amount: total, currency };
   }, [packageDetail, skuSelections]);
+
+  useEffect(() => {
+    if (!packageDetail) return;
+    trackViewItem(
+      {
+        item_id: packageDetail.id,
+        item_name: packageDetail.name,
+        item_category: packageDetail.subCategoryName,
+        item_brand: packageDetail.vendorBusinessName || packageDetail.vendorName,
+        price: packageEstimatedTotal.amount,
+      },
+      packageEstimatedTotal.currency
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packageDetail?.id]);
 
   const addToCartMutation = useMutation({
     mutationFn: () => {

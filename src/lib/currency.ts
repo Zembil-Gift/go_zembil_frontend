@@ -223,4 +223,11 @@ export function toMinorUnits(amount: number, currencyCode: string): number {
   return Math.round(amount * multiplier);
 }
 
+/** Convert minor units (e.g. cents) back to major units, e.g. for analytics values. */
+export function fromMinorUnits(amountMinor: number, currencyCode: string): number {
+  const decimals = getCurrencyDecimals(currencyCode);
+  const divisor = Math.pow(10, decimals);
+  return amountMinor / divisor;
+}
+
 export { fetchCurrencies };

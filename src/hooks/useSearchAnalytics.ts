@@ -3,6 +3,7 @@ import {
   SearchAnalyticsEventPayload,
   searchAnalyticsService,
 } from "@/services/searchAnalyticsService";
+import { trackSearch } from "@/lib/analytics";
 
 export const useSearchAnalytics = (
   payload: SearchAnalyticsEventPayload,
@@ -41,6 +42,7 @@ export const useSearchAnalytics = (
 
     lastSentSignatureRef.current = signature;
     void searchAnalyticsService.trackSearchEvent(payload);
+    trackSearch(normalized);
   }, [enabled, payload, signature]);
 };
 

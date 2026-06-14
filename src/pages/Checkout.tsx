@@ -59,6 +59,21 @@ import {
   type LocationData,
 } from "@/components/maps";
 import { useCheckoutStore } from "@/stores/checkout-store";
+import {
+  trackAddShippingInfo,
+  storePendingPurchase,
+  type AnalyticsItem,
+} from "@/lib/analytics";
+
+function toAnalyticsItem(item: CartItem): AnalyticsItem {
+  return {
+    item_id: item.productId,
+    item_name: item.product?.name || item.productName || `Product ${item.productId}`,
+    item_variant: item.productSkuId ? String(item.productSkuId) : undefined,
+    price: Number(item.unitPrice || 0),
+    quantity: Number(item.quantity || 0),
+  };
+}
 
 interface CurrencyConversionDto {
   amount: number;
@@ -793,6 +808,21 @@ export default function Checkout() {
         title: "Order Created",
         description:
           "Your order has been created. Please review the details before payment.",
+      });
+
+      const analyticsItems = cartItems.map(toAnalyticsItem);
+      trackAddShippingInfo(
+        analyticsItems,
+        cartCurrency,
+        finalTotal,
+        undefined,
+        confirmedDiscountCode || undefined
+      );
+      storePendingPurchase(orderId, {
+        value: finalTotal,
+        currency: cartCurrency,
+        items: analyticsItems,
+        coupon: confirmedDiscountCode || undefined,
       });
 
       // Reset idempotency key for next order

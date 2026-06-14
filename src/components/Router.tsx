@@ -11,6 +11,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import ScrollToTop from "./ScrollToTop";
+import AnalyticsPageviewTracker from "./AnalyticsPageviewTracker";
 import Layout from "./layout/layout";
 
 import Landing from "@/pages/landing";
@@ -120,6 +121,9 @@ const AdminPermissions = React.lazy(
 );
 const AdminPartnershipApplications = React.lazy(
   () => import("@/pages/admin/AdminPartnershipApplications")
+);
+const AdminSupplierReports = React.lazy(
+  () => import("@/pages/admin/AdminSupplierReports")
 );
 
 const VendorDashboardLayout = React.lazy(
@@ -535,6 +539,7 @@ export default function Router() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <AnalyticsPageviewTracker />
       <RoleBasedPrefetch />
       <React.Suspense fallback={<RouteLoading message="Loading page..." />}>
         <Routes>
@@ -961,6 +966,10 @@ export default function Router() {
             <Route
               path="partnership-applications"
               element={<AdminPartnershipApplications />}
+            />
+            <Route
+              path="partnership-applications/reports"
+              element={<AdminSupplierReports />}
             />
           </Route>
 

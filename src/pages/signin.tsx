@@ -23,6 +23,7 @@ import GoGeramiLogo from "@/components/GoGeramiLogo";
 import OAuth2Buttons from "@/components/auth/OAuth2Buttons";
 import authService from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
+import { trackLogin } from "@/lib/analytics";
 
 const signinSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -135,6 +136,7 @@ export default function SignIn() {
         description: "Welcome to goGerami!",
       });
 
+      trackLogin("email");
       await finishSigninNavigation(result.user?.role);
     } catch (err: any) {
       console.error("Login error:", err);
@@ -322,6 +324,7 @@ export default function SignIn() {
                   }
                 }
 
+                trackLogin("google");
                 await finishSigninNavigation(userRole);
               }}
             />

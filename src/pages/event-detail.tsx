@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,6 +41,7 @@ import {
 } from "@/services/eventOrderService";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
+import { trackViewItem } from "@/lib/analytics";
 
 export default function EventDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -302,6 +303,23 @@ export default function EventDetail() {
       : eventBanner
       ? [eventBanner]
       : [];
+
+  useEffect(() => {
+    if (!event) return;
+    trackViewItem(
+      {
+        item_id: isAPIEvent ? (apiEvent as EventResponse).id : (mockEvent as Event).id,
+        item_name: eventTitle,
+        item_category: isAPIEvent
+          ? (apiEvent as EventResponse).categoryName
+          : EVENT_CATEGORIES.find((c) => c.id === (mockEvent as Event).categoryId)?.name,
+        item_brand: vendorProfile?.businessName,
+        price: eventOrderService.minorToMajor(minPrice, baseCurrency),
+      },
+      baseCurrency
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAPIEvent ? (apiEvent as EventResponse)?.id : (mockEvent as Event)?.id]);
 
   const nextImage = () => {
     if (eventImages.length === 0) return;

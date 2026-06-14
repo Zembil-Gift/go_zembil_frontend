@@ -34,6 +34,7 @@ import { getProductImageUrl, getAllProductImages } from "@/utils/imageUtils";
 import { ProductReviewsSection, VendorCard, CompactRating } from "@/components/reviews";
 import { DiscountBadge } from "@/components/DiscountBadge";
 import { PriceWithDiscount } from "@/components/PriceWithDiscount";
+import { trackViewItem, trackAddToCart, trackAddToWishlist } from "@/lib/analytics";
 
 // Image with skeleton loading
 function ProductImage({ 
@@ -243,6 +244,23 @@ export default function ProductDetail() {
     enabled: !!product?.vendorId,
   });
 
+  useEffect(() => {
+    if (!product) return;
+    trackViewItem(
+      {
+        item_id: product.id,
+        item_name: product.name,
+        item_category: product.subCategoryName,
+        item_brand: vendorProfile?.businessName,
+        item_variant: selectedSku?.skuName || selectedSku?.skuCode,
+        price: currentPrice,
+      },
+      currencyCode
+    );
+    // Fire once per product load; variant/vendor changes don't need a new view_item.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
+
   const wishlistMutation = useMutation({
     mutationFn: async () => {
       if (isWishlisted) {
@@ -252,11 +270,23 @@ export default function ProductDetail() {
       }
     },
     onSuccess: () => {
+      if (!isWishlisted && product) {
+        trackAddToWishlist(
+          {
+            item_id: product.id,
+            item_name: product.name,
+            item_category: product.subCategoryName,
+            item_brand: vendorProfile?.businessName,
+            price: currentPrice,
+          },
+          currencyCode
+        );
+      }
       setIsWishlisted(!isWishlisted);
       toast({
         title: isWishlisted ? "Removed from wishlist" : "Added to wishlist",
-        description: isWishlisted 
-          ? "Item removed from your wishlist" 
+        description: isWishlisted
+          ? "Item removed from your wishlist"
           : "Item added to your wishlist",
       });
     },
@@ -303,6 +333,20 @@ export default function ProductDetail() {
         skuCode: selectedSku?.skuCode,
         skuName: selectedSku?.skuName,
       });
+      if (product) {
+        trackAddToCart(
+          {
+            item_id: product.id,
+            item_name: product.name,
+            item_category: product.subCategoryName,
+            item_brand: vendorProfile?.businessName,
+            item_variant: selectedSku?.skuName || selectedSku?.skuCode,
+            price: currentPrice,
+            quantity,
+          },
+          currencyCode
+        );
+      }
       toast({
         title: "Added to cart",
         description: `${product?.name} added to your cart`,

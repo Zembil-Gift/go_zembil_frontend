@@ -21,8 +21,13 @@ import {
   FileText
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { formatPrice } from "@/lib/currency";
+import { formatPrice, fromMinorUnits } from "@/lib/currency";
 import { orderService } from "@/services/orderService";
+import {
+  trackAddPaymentInfo,
+  storePendingPurchase,
+  type AnalyticsItem,
+} from "@/lib/analytics";
 
 interface OrderTotals {
   subtotalMinor: number;
@@ -183,6 +188,22 @@ export default function OrderReview() {
   const handleProceedToPayment = () => {
     if (!order) return;
 
+    const items: AnalyticsItem[] = order.lines.map((line) => ({
+      item_id: line.productId,
+      item_name: line.productName,
+      item_variant: line.skuCode,
+      price: fromMinorUnits(line.unitAmountMinor, line.currency || order.currency),
+      quantity: line.quantity,
+    }));
+    const value = fromMinorUnits(order.totals.totalMinor, order.currency);
+
+    trackAddPaymentInfo(items, order.currency, value, paymentMethod);
+    storePendingPurchase(order.orderId, {
+      value,
+      currency: order.currency,
+      items,
+    });
+
     setIsProcessing(true);
 
     let paymentPath: string;
@@ -193,7 +214,7 @@ export default function OrderReview() {
     } else {
       paymentPath = `/payment/stripe?orderId=${order.orderId}`;
     }
-    
+
     navigate(paymentPath);
   };
 
