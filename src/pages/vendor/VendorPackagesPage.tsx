@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import ProductPagination from "@/components/ProductPagination";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useCategories } from "@/hooks/useCategories";
@@ -106,11 +106,6 @@ export default function VendorPackagesPage() {
   const [statusFilter, setStatusFilter] = useState<"ALL" | VendorPackageStatus>(
     "ALL"
   );
-  const [pageSize, setPageSize] = useState(20);
-
-  useEffect(() => {
-    setPageSize(20);
-  }, [statusFilter]);
   const [packageFormOpen, setPackageFormOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -157,14 +152,23 @@ export default function VendorPackagesPage() {
     enabled: isAuthenticated && isVendor,
   });
 
-  const { data: packagesData, isLoading, isFetching } = useQuery({
-    queryKey: ["vendor", "packages", statusFilter, pageSize],
-    queryFn: () =>
+  const {
+    data: packagesData,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["vendor", "packages", statusFilter],
+    queryFn: ({ pageParam }) =>
       packageService.getVendorPackages(
         statusFilter === "ALL" ? undefined : statusFilter,
-        0,
-        pageSize
+        pageParam,
+        20
       ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.last ? undefined : lastPage.number + 1,
     enabled: isAuthenticated && isVendor,
   });
 
@@ -172,7 +176,9 @@ export default function VendorPackagesPage() {
   const activeProducts = products.filter(
     (p) => (p.status || "").toUpperCase() === "ACTIVE"
   );
-  const packages: ProductPackageResponse[] = packagesData?.content || [];
+  const packages: ProductPackageResponse[] =
+    packagesData?.pages.flatMap((page) => page.content) ?? [];
+  const totalPackages = packagesData?.pages[0]?.totalElements ?? 0;
 
   const filteredPackages = useMemo(() => {
     return packages.filter((pkg) => {
@@ -595,12 +601,12 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
         </div>
         {!searchQuery && (
           <ProductPagination
-            currentPage={pageSize / 20}
-            totalItems={packagesData?.totalElements ?? 0}
+            currentPage={packagesData?.pages.length ?? 0}
+            totalItems={totalPackages}
             itemsPerPage={20}
-            hasNextPage={!(packagesData?.last ?? true)}
-            onLoadMore={() => setPageSize((prev) => prev + 20)}
-            isLoading={isFetching && !isLoading}
+            hasNextPage={hasNextPage}
+            onLoadMore={() => fetchNextPage()}
+            isLoading={isFetchingNextPage}
           />
         )}
         </>
