@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ProductPagination from "@/components/ProductPagination";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +33,7 @@ export default function VendorEventsPage() {
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(20);
 
   // State for deactivate dialog
   const [deactivateEventDialog, setDeactivateEventDialog] = useState<{
@@ -52,9 +54,9 @@ export default function VendorEventsPage() {
   });
 
   // Fetch vendor events
-  const { data: eventsData, isLoading } = useQuery({
-    queryKey: ["vendor", "events"],
-    queryFn: () => vendorService.getMyEvents(),
+  const { data: eventsData, isLoading, isFetching } = useQuery({
+    queryKey: ["vendor", "events", pageSize],
+    queryFn: () => vendorService.getMyEvents(undefined, 0, pageSize),
     enabled: isAuthenticated && isVendor,
   });
 
@@ -214,6 +216,7 @@ export default function VendorEventsPage() {
           </CardContent>
         </Card>
       ) : (
+        <>
         <div className="grid gap-4">
           {filteredEvents.map((event) => (
             <Card key={event.id}>
@@ -299,6 +302,17 @@ export default function VendorEventsPage() {
             </Card>
           ))}
         </div>
+        {!searchQuery && (
+          <ProductPagination
+            currentPage={pageSize / 20}
+            totalItems={eventsData?.totalElements ?? 0}
+            itemsPerPage={20}
+            hasNextPage={!(eventsData?.last ?? true)}
+            onLoadMore={() => setPageSize((prev) => prev + 20)}
+            isLoading={isFetching && !isLoading}
+          />
+        )}
+        </>
       )}
 
       {/* Deactivate Event Dialog */}

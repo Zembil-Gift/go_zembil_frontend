@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import ProductPagination from "@/components/ProductPagination";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -55,6 +56,7 @@ export default function VendorCustomTemplates() {
   const [statusFilter, setStatusFilter] = useState<
     CustomOrderTemplateStatus | "ALL"
   >("ALL");
+  const [pageSize, setPageSize] = useState(20);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     template: CustomOrderTemplate | null;
@@ -72,6 +74,10 @@ export default function VendorCustomTemplates() {
 
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
+  useEffect(() => {
+    setPageSize(20);
+  }, [statusFilter]);
+
   // Fetch vendor profile to get vendor ID
   const { data: vendorProfile } = useQuery({
     queryKey: ["vendor", "profile"],
@@ -83,16 +89,17 @@ export default function VendorCustomTemplates() {
   const {
     data: templatesData,
     isLoading,
+    isFetching,
     refetch,
   } = useQuery<PagedCustomOrderTemplateResponse>({
-    queryKey: ["vendor", "custom-templates", vendorProfile?.id, statusFilter],
+    queryKey: ["vendor", "custom-templates", vendorProfile?.id, statusFilter, pageSize],
     queryFn: async (): Promise<PagedCustomOrderTemplateResponse> => {
       if (!vendorProfile?.id) {
         return {
           content: [],
           totalElements: 0,
           totalPages: 0,
-          size: 50,
+          size: pageSize,
           number: 0,
           first: true,
           last: true,
@@ -103,7 +110,7 @@ export default function VendorCustomTemplates() {
       return customOrderTemplateService.getByVendor(
         vendorProfile.id,
         0,
-        50,
+        pageSize,
         status
       );
     },
@@ -519,6 +526,17 @@ export default function VendorCustomTemplates() {
           </TabsContent>
         ))}
       </Tabs>
+
+      {!searchQuery && (
+        <ProductPagination
+          currentPage={pageSize / 20}
+          totalItems={templatesData?.totalElements ?? 0}
+          itemsPerPage={20}
+          hasNextPage={!(templatesData?.last ?? true)}
+          onLoadMore={() => setPageSize((prev) => prev + 20)}
+          isLoading={isFetching && !isLoading}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

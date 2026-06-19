@@ -41,6 +41,7 @@ import {
 import { useEffect, useState } from "react";
 import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
 import imageCompression from "browser-image-compression";
+import ProductPagination from "@/components/ProductPagination";
 
 export default function VendorProductsPage() {
   const { user, isAuthenticated } = useAuth();
@@ -50,6 +51,7 @@ export default function VendorProductsPage() {
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(20);
 
   // State for deactivate dialog
   const [deactivateProductDialog, setDeactivateProductDialog] = useState<{
@@ -85,9 +87,9 @@ export default function VendorProductsPage() {
   });
 
   // Fetch vendor products
-  const { data: productsData, isLoading } = useQuery({
-    queryKey: ["vendor", "my-products"],
-    queryFn: () => vendorService.getMyProducts(),
+  const { data: productsData, isLoading, isFetching } = useQuery({
+    queryKey: ["vendor", "my-products", pageSize],
+    queryFn: () => vendorService.getMyProducts(0, pageSize),
     enabled: isAuthenticated && isVendor,
   });
 
@@ -386,6 +388,7 @@ export default function VendorProductsPage() {
           </CardContent>
         </Card>
       ) : (
+        <>
         <div className="grid gap-4">
           {filteredProducts.map((product) => (
             <Card key={product.id}>
@@ -501,6 +504,17 @@ export default function VendorProductsPage() {
             </Card>
           ))}
         </div>
+        {!searchQuery && (
+          <ProductPagination
+            currentPage={pageSize / 20}
+            totalItems={productsData?.totalElements ?? 0}
+            itemsPerPage={20}
+            hasNextPage={!(productsData?.last ?? true)}
+            onLoadMore={() => setPageSize((prev) => prev + 20)}
+            isLoading={isFetching && !isLoading}
+          />
+        )}
+        </>
       )}
 
       {/* Deactivate Product Dialog */}
