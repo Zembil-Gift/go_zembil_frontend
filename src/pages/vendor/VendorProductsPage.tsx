@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -51,7 +51,6 @@ export default function VendorProductsPage() {
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [pageSize, setPageSize] = useState(20);
 
   // State for deactivate dialog
   const [deactivateProductDialog, setDeactivateProductDialog] = useState<{
@@ -87,9 +86,18 @@ export default function VendorProductsPage() {
   });
 
   // Fetch vendor products
-  const { data: productsData, isLoading, isFetching } = useQuery({
-    queryKey: ["vendor", "my-products", pageSize],
-    queryFn: () => vendorService.getMyProducts(0, pageSize),
+  const {
+    data: productsData,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["vendor", "my-products"],
+    queryFn: ({ pageParam }) => vendorService.getMyProducts(pageParam, 20),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.last ? undefined : lastPage.number + 1,
     enabled: isAuthenticated && isVendor,
   });
 
@@ -231,7 +239,9 @@ export default function VendorProductsPage() {
     }
   };
 
-  const products: Product[] = productsData?.content || [];
+  const products: Product[] =
+    productsData?.pages.flatMap((page) => page.content) ?? [];
+  const totalProducts = productsData?.pages[0]?.totalElements ?? 0;
 
   const { data: subCategoryNameMap = {} } = useQuery<Record<number, string>>({
     queryKey: ["vendor", "sub-category-name-map"],
@@ -506,12 +516,12 @@ export default function VendorProductsPage() {
         </div>
         {!searchQuery && (
           <ProductPagination
-            currentPage={pageSize / 20}
-            totalItems={productsData?.totalElements ?? 0}
+            currentPage={productsData?.pages.length ?? 0}
+            totalItems={totalProducts}
             itemsPerPage={20}
-            hasNextPage={!(productsData?.last ?? true)}
-            onLoadMore={() => setPageSize((prev) => prev + 20)}
-            isLoading={isFetching && !isLoading}
+            hasNextPage={hasNextPage}
+            onLoadMore={() => fetchNextPage()}
+            isLoading={isFetchingNextPage}
           />
         )}
         </>

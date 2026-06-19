@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ProductPagination from "@/components/ProductPagination";
 import { Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -33,7 +33,6 @@ export default function VendorEventsPage() {
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [pageSize, setPageSize] = useState(20);
 
   // State for deactivate dialog
   const [deactivateEventDialog, setDeactivateEventDialog] = useState<{
@@ -54,9 +53,19 @@ export default function VendorEventsPage() {
   });
 
   // Fetch vendor events
-  const { data: eventsData, isLoading, isFetching } = useQuery({
-    queryKey: ["vendor", "events", pageSize],
-    queryFn: () => vendorService.getMyEvents(undefined, 0, pageSize),
+  const {
+    data: eventsData,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["vendor", "events"],
+    queryFn: ({ pageParam }) =>
+      vendorService.getMyEvents(undefined, pageParam, 20),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.last ? undefined : lastPage.number + 1,
     enabled: isAuthenticated && isVendor,
   });
 
@@ -100,7 +109,9 @@ export default function VendorEventsPage() {
     },
   });
 
-  const events: EventResponse[] = eventsData?.content || [];
+  const events: EventResponse[] =
+    eventsData?.pages.flatMap((page) => page.content) ?? [];
+  const totalEvents = eventsData?.pages[0]?.totalElements ?? 0;
 
   const filteredEvents = events.filter(
     (event) =>
@@ -304,12 +315,12 @@ export default function VendorEventsPage() {
         </div>
         {!searchQuery && (
           <ProductPagination
-            currentPage={pageSize / 20}
-            totalItems={eventsData?.totalElements ?? 0}
+            currentPage={eventsData?.pages.length ?? 0}
+            totalItems={totalEvents}
             itemsPerPage={20}
-            hasNextPage={!(eventsData?.last ?? true)}
-            onLoadMore={() => setPageSize((prev) => prev + 20)}
-            isLoading={isFetching && !isLoading}
+            hasNextPage={hasNextPage}
+            onLoadMore={() => fetchNextPage()}
+            isLoading={isFetchingNextPage}
           />
         )}
         </>

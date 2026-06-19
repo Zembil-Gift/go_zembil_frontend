@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { vendorService, VendorProfile } from "@/services/vendorService";
@@ -29,7 +29,6 @@ export default function VendorServicesPage() {
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [pageSize, setPageSize] = useState(20);
   const [deactivateServiceDialog, setDeactivateServiceDialog] = useState<{
     open: boolean;
     serviceId: number | null;
@@ -48,9 +47,19 @@ export default function VendorServicesPage() {
   });
 
   // Fetch vendor services
-  const { data: servicesData, isLoading, isFetching } = useQuery({
-    queryKey: ["vendor", "services", pageSize],
-    queryFn: () => serviceService.getMyServices(undefined, 0, pageSize),
+  const {
+    data: servicesData,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["vendor", "services"],
+    queryFn: ({ pageParam }) =>
+      serviceService.getMyServices(undefined, pageParam, 20),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.last ? undefined : lastPage.number + 1,
     enabled: isAuthenticated && isVendor,
   });
 
@@ -99,7 +108,9 @@ export default function VendorServicesPage() {
     },
   });
 
-  const services: ServiceResponse[] = servicesData?.content || [];
+  const services: ServiceResponse[] =
+    servicesData?.pages.flatMap((page) => page.content) ?? [];
+  const totalServices = servicesData?.pages[0]?.totalElements ?? 0;
 
   const filteredServices = services.filter(
     (service) =>
@@ -306,12 +317,12 @@ export default function VendorServicesPage() {
         </div>
         {!searchQuery && (
           <ProductPagination
-            currentPage={pageSize / 20}
-            totalItems={servicesData?.totalElements ?? 0}
+            currentPage={servicesData?.pages.length ?? 0}
+            totalItems={totalServices}
             itemsPerPage={20}
-            hasNextPage={!(servicesData?.last ?? true)}
-            onLoadMore={() => setPageSize((prev) => prev + 20)}
-            isLoading={isFetching && !isLoading}
+            hasNextPage={hasNextPage}
+            onLoadMore={() => fetchNextPage()}
+            isLoading={isFetchingNextPage}
           />
         )}
         </>

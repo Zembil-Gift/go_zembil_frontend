@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import ProductPagination from "@/components/ProductPagination";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -56,7 +56,6 @@ export default function VendorCustomTemplates() {
   const [statusFilter, setStatusFilter] = useState<
     CustomOrderTemplateStatus | "ALL"
   >("ALL");
-  const [pageSize, setPageSize] = useState(20);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     template: CustomOrderTemplate | null;
@@ -74,10 +73,6 @@ export default function VendorCustomTemplates() {
 
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
-  useEffect(() => {
-    setPageSize(20);
-  }, [statusFilter]);
-
   // Fetch vendor profile to get vendor ID
   const { data: vendorProfile } = useQuery({
     queryKey: ["vendor", "profile"],
@@ -89,17 +84,19 @@ export default function VendorCustomTemplates() {
   const {
     data: templatesData,
     isLoading,
-    isFetching,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
     refetch,
-  } = useQuery<PagedCustomOrderTemplateResponse>({
-    queryKey: ["vendor", "custom-templates", vendorProfile?.id, statusFilter, pageSize],
-    queryFn: async (): Promise<PagedCustomOrderTemplateResponse> => {
+  } = useInfiniteQuery<PagedCustomOrderTemplateResponse>({
+    queryKey: ["vendor", "custom-templates", vendorProfile?.id, statusFilter],
+    queryFn: async ({ pageParam }): Promise<PagedCustomOrderTemplateResponse> => {
       if (!vendorProfile?.id) {
         return {
           content: [],
           totalElements: 0,
           totalPages: 0,
-          size: pageSize,
+          size: 20,
           number: 0,
           first: true,
           last: true,
@@ -109,11 +106,14 @@ export default function VendorCustomTemplates() {
       const status = statusFilter === "ALL" ? undefined : statusFilter;
       return customOrderTemplateService.getByVendor(
         vendorProfile.id,
-        0,
-        pageSize,
+        pageParam as number,
+        20,
         status
       );
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.last ? undefined : lastPage.number + 1,
     enabled: isAuthenticated && isVendor && !!vendorProfile?.id,
   });
 
@@ -161,7 +161,9 @@ export default function VendorCustomTemplates() {
     },
   });
 
-  const templates: CustomOrderTemplate[] = templatesData?.content || [];
+  const templates: CustomOrderTemplate[] =
+    templatesData?.pages.flatMap((page) => page.content) ?? [];
+  const totalTemplates = templatesData?.pages[0]?.totalElements ?? 0;
 
   // Filter templates by search query
   const filteredTemplates = templates.filter(
@@ -529,12 +531,12 @@ export default function VendorCustomTemplates() {
 
       {!searchQuery && (
         <ProductPagination
-          currentPage={pageSize / 20}
-          totalItems={templatesData?.totalElements ?? 0}
+          currentPage={templatesData?.pages.length ?? 0}
+          totalItems={totalTemplates}
           itemsPerPage={20}
-          hasNextPage={!(templatesData?.last ?? true)}
-          onLoadMore={() => setPageSize((prev) => prev + 20)}
-          isLoading={isFetching && !isLoading}
+          hasNextPage={hasNextPage}
+          onLoadMore={() => fetchNextPage()}
+          isLoading={isFetchingNextPage}
         />
       )}
 
