@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import ProductPagination from "@/components/ProductPagination";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -105,6 +106,11 @@ export default function VendorPackagesPage() {
   const [statusFilter, setStatusFilter] = useState<"ALL" | VendorPackageStatus>(
     "ALL"
   );
+  const [pageSize, setPageSize] = useState(20);
+
+  useEffect(() => {
+    setPageSize(20);
+  }, [statusFilter]);
   const [packageFormOpen, setPackageFormOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -151,13 +157,13 @@ export default function VendorPackagesPage() {
     enabled: isAuthenticated && isVendor,
   });
 
-  const { data: packagesData, isLoading } = useQuery({
-    queryKey: ["vendor", "packages", statusFilter],
+  const { data: packagesData, isLoading, isFetching } = useQuery({
+    queryKey: ["vendor", "packages", statusFilter, pageSize],
     queryFn: () =>
       packageService.getVendorPackages(
         statusFilter === "ALL" ? undefined : statusFilter,
         0,
-        100
+        pageSize
       ),
     enabled: isAuthenticated && isVendor,
   });
@@ -503,6 +509,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
           </CardContent>
         </Card>
       ) : (
+        <>
         <div className="grid gap-4">
           {filteredPackages.map((pkg) => (
             <Card key={pkg.id}>
@@ -586,6 +593,17 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
             </Card>
           ))}
         </div>
+        {!searchQuery && (
+          <ProductPagination
+            currentPage={pageSize / 20}
+            totalItems={packagesData?.totalElements ?? 0}
+            itemsPerPage={20}
+            hasNextPage={!(packagesData?.last ?? true)}
+            onLoadMore={() => setPageSize((prev) => prev + 20)}
+            isLoading={isFetching && !isLoading}
+          />
+        )}
+        </>
       )}
 
       <Dialog open={packageFormOpen} onOpenChange={setPackageFormOpen}>

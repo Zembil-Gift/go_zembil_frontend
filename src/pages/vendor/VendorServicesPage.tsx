@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Briefcase, Search, RotateCcw, XCircle } from "lucide-react";
 import { useState } from "react";
+import ProductPagination from "@/components/ProductPagination";
 
 export default function VendorServicesPage() {
   const { user, isAuthenticated } = useAuth();
@@ -28,6 +29,7 @@ export default function VendorServicesPage() {
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(20);
   const [deactivateServiceDialog, setDeactivateServiceDialog] = useState<{
     open: boolean;
     serviceId: number | null;
@@ -46,9 +48,9 @@ export default function VendorServicesPage() {
   });
 
   // Fetch vendor services
-  const { data: servicesData, isLoading } = useQuery({
-    queryKey: ["vendor", "services"],
-    queryFn: () => serviceService.getMyServices(undefined, 0, 100),
+  const { data: servicesData, isLoading, isFetching } = useQuery({
+    queryKey: ["vendor", "services", pageSize],
+    queryFn: () => serviceService.getMyServices(undefined, 0, pageSize),
     enabled: isAuthenticated && isVendor,
   });
 
@@ -217,6 +219,7 @@ export default function VendorServicesPage() {
           </CardContent>
         </Card>
       ) : (
+        <>
         <div className="grid gap-4">
           {filteredServices.map((service: ServiceResponse) => (
             <Card key={service.id}>
@@ -301,6 +304,17 @@ export default function VendorServicesPage() {
             </Card>
           ))}
         </div>
+        {!searchQuery && (
+          <ProductPagination
+            currentPage={pageSize / 20}
+            totalItems={servicesData?.totalElements ?? 0}
+            itemsPerPage={20}
+            hasNextPage={!(servicesData?.last ?? true)}
+            onLoadMore={() => setPageSize((prev) => prev + 20)}
+            isLoading={isFetching && !isLoading}
+          />
+        )}
+        </>
       )}
 
       <AlertDialog
