@@ -134,14 +134,20 @@ api.interceptors.response.use(
 );
 
 function handleAuthFailure() {
+  // Don't redirect during initial token refresh — mobile browsers
+  // may fail the first cross-origin cookie request on page reload.
+  if (!tokenManager.isFullyInitialized()) {
+    return;
+  }
+
   const currentPath = window.location.pathname;
   const authPages = ['/signin', '/signup', '/forgot-password', '/reset-password', '/vendor-signup', '/verify-email'];
-  
+
   const isOnAuthPage = authPages.some(page => currentPath.startsWith(page));
 
   // Clear token data
   tokenManager.clearTokenData();
-  
+
   // If not on auth page and not already redirecting, redirect to signin
   if (!isOnAuthPage && !isRedirecting) {
     isRedirecting = true;

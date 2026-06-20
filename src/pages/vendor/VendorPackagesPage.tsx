@@ -900,6 +900,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                   <div className="sm:col-span-8">
                     <Label className="text-xs">Product *</Label>
                     <Popover
+                      modal
                       open={productPopoverOpen[index] ?? false}
                       onOpenChange={(open) => {
                         setProductPopoverOpen((prev) => ({
@@ -926,7 +927,11 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <PopoverContent
+                        className="w-[--radix-popover-trigger-width] p-0"
+                        align="start"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                      >
                         <div className="flex items-center border-b px-3">
                           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
                           <input
@@ -937,7 +942,8 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                           />
                         </div>
                         <div
-                          className="max-h-[200px] overflow-y-auto p-1"
+                          className="max-h-[200px] overflow-y-auto overscroll-contain p-1"
+                          style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
                           onScroll={handleProductListScroll}
                         >
                           {activeProducts.length === 0 && (

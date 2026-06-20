@@ -69,6 +69,7 @@ class TokenAuthManager {
   private lastRefreshAttempt = 0;
   private listeners: Set<TokenChangeListener> = new Set();
   private initialized = false;
+  private isInitializing = false;
 
   /**
    * Initialize the token manager.
@@ -81,6 +82,7 @@ class TokenAuthManager {
     }
 
     this.initialized = true;
+    this.isInitializing = true;
 
     // Try to get a new access token using the refresh token cookie
     // The cookie is sent automatically with credentials: 'include'
@@ -89,6 +91,8 @@ class TokenAuthManager {
       return success;
     } catch (error) {
       return false;
+    } finally {
+      this.isInitializing = false;
     }
   }
 
@@ -144,6 +148,13 @@ class TokenAuthManager {
    */
   isAuthenticated(): boolean {
     return this.getAccessToken() !== null;
+  }
+
+  /**
+   * Whether initialization (including initial refresh) has completed.
+   */
+  isFullyInitialized(): boolean {
+    return this.initialized && !this.isInitializing;
   }
 
   /**
@@ -214,10 +225,13 @@ class TokenAuthManager {
       this.setTokenData(accessToken, expiresIn, normalizedUser);
       return true;
     } catch (error: any) {
-      
-      // Clear token data on refresh failure
-      this.clearTokenData();
-      
+      // During initialization (page reload), don't clear localStorage —
+      // mobile browsers may fail the first cross-origin cookie request.
+      // Only clear aggressively on non-init refresh failures.
+      if (!this.isInitializing) {
+        this.clearTokenData();
+      }
+
       return false;
     }
   }

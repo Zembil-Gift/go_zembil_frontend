@@ -60,7 +60,7 @@ export default function VendorEventsPage() {
     fetchNextPage,
     hasNextPage,
   } = useInfiniteQuery({
-    queryKey: ["vendor", "events"],
+    queryKey: ["vendor", "events", "infinite"],
     queryFn: ({ pageParam }) =>
       vendorService.getMyEvents(undefined, pageParam, 20),
     initialPageParam: 0,
