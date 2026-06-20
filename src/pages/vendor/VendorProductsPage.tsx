@@ -93,7 +93,7 @@ export default function VendorProductsPage() {
     fetchNextPage,
     hasNextPage,
   } = useInfiniteQuery({
-    queryKey: ["vendor", "my-products"],
+    queryKey: ["vendor", "my-products", "infinite"],
     queryFn: ({ pageParam }) => vendorService.getMyProducts(pageParam, 20),
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>

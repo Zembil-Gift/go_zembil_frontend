@@ -165,7 +165,7 @@ export default function VendorPackagesPage() {
     hasNextPage: hasNextProducts,
     isFetchingNextPage: isFetchingNextProducts,
   } = useInfiniteQuery<PageResponse<Product>>({
-    queryKey: ["vendor", "my-products"],
+    queryKey: ["vendor", "my-products", "infinite"],
     queryFn: ({ pageParam }) =>
       vendorService.getMyProducts(pageParam as number, 20),
     initialPageParam: 0,
