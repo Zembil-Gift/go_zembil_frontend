@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import ProductPagination from "@/components/ProductPagination";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,7 +8,13 @@ import {
   vendorService,
   Product,
   VendorProfile,
+  PageResponse,
 } from "@/services/vendorService";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   packageService,
   ProductPackageResponse,
@@ -42,6 +48,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Check,
+  ChevronsUpDown,
+  Loader2,
   Package,
   Plus,
   Search,
@@ -123,6 +132,10 @@ export default function VendorPackagesPage() {
   const [skuVisibilityByItem, setSkuVisibilityByItem] = useState<
     Record<number, boolean>
   >({});
+  const [productPopoverOpen, setProductPopoverOpen] = useState<
+    Record<number, boolean>
+  >({});
+  const [productSearch, setProductSearch] = useState("");
 
   const toMinorUnitsFromMajor = (value: string, currencyCode: string) => {
     const parsed = Number(value);
@@ -146,11 +159,32 @@ export default function VendorPackagesPage() {
     [vendorProfile]
   );
 
-  const { data: productsData } = useQuery({
+  const {
+    data: productsPages,
+    fetchNextPage: fetchNextProducts,
+    hasNextPage: hasNextProducts,
+    isFetchingNextPage: isFetchingNextProducts,
+  } = useInfiniteQuery<PageResponse<Product>>({
     queryKey: ["vendor", "my-products"],
-    queryFn: () => vendorService.getMyProducts(),
+    queryFn: ({ pageParam }) =>
+      vendorService.getMyProducts(pageParam as number, 20),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.last ? undefined : lastPage.number + 1,
     enabled: isAuthenticated && isVendor,
   });
+
+  const handleProductListScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const target = e.currentTarget;
+      const nearBottom =
+        target.scrollHeight - target.scrollTop - target.clientHeight < 40;
+      if (nearBottom && hasNextProducts && !isFetchingNextProducts) {
+        fetchNextProducts();
+      }
+    },
+    [hasNextProducts, isFetchingNextProducts, fetchNextProducts]
+  );
 
   const {
     data: packagesData,
@@ -172,9 +206,13 @@ export default function VendorPackagesPage() {
     enabled: isAuthenticated && isVendor,
   });
 
-  const products: Product[] = productsData?.content || [];
-  const activeProducts = products.filter(
-    (p) => (p.status || "").toUpperCase() === "ACTIVE"
+  const products: Product[] = useMemo(
+    () => productsPages?.pages.flatMap((page) => page.content) ?? [],
+    [productsPages]
+  );
+  const activeProducts = useMemo(
+    () => products.filter((p) => (p.status || "").toUpperCase() === "ACTIVE"),
+    [products]
   );
   const packages: ProductPackageResponse[] =
     packagesData?.pages.flatMap((page) => page.content) ?? [];
@@ -738,13 +776,13 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                     Upload package images. The first image will appear as cover.
                   </p>
                 )}
-                {formState.id && packagesData?.content && (
+                {formState.id && packages.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground">
                       Current images. Select images to delete, then add new ones to replace.
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {packagesData.content
+                      {packages
                         .find((p) => p.id === formState.id)?.images?.filter(
                           (img) => !existingImagesToDelete.includes(img)
                         )
@@ -861,32 +899,111 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                 >
                   <div className="sm:col-span-8">
                     <Label className="text-xs">Product *</Label>
-                    <select
-                      value={item.productId}
-                      onChange={(e) =>
-                        setFormState((prev) => ({
+                    <Popover
+                      open={productPopoverOpen[index] ?? false}
+                      onOpenChange={(open) => {
+                        setProductPopoverOpen((prev) => ({
                           ...prev,
-                          items: prev.items.map((it, idx) =>
-                            idx === index
-                              ? { ...it, productId: e.target.value }
-                              : it
-                          ),
-                        }))
-                      }
-                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                          [index]: open,
+                        }));
+                        if (!open) setProductSearch("");
+                      }}
                     >
-                      <option value="">Select product</option>
-                      {activeProducts.length === 0 && (
-                        <option value="" disabled>
-                          No ACTIVE products available
-                        </option>
-                      )}
-                      {activeProducts.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name}
-                        </option>
-                      ))}
-                    </select>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          className="h-10 w-full justify-between font-normal"
+                        >
+                          <span className="truncate">
+                            {item.productId
+                              ? activeProducts.find(
+                                  (p) => p.id === Number(item.productId)
+                                )?.name || `Product #${item.productId}`
+                              : "Select product"}
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <div className="flex items-center border-b px-3">
+                          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                          <input
+                            placeholder="Search products..."
+                            value={productSearch}
+                            onChange={(e) => setProductSearch(e.target.value)}
+                            className="flex h-10 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+                          />
+                        </div>
+                        <div
+                          className="max-h-[200px] overflow-y-auto p-1"
+                          onScroll={handleProductListScroll}
+                        >
+                          {activeProducts.length === 0 && (
+                            <p className="py-4 text-center text-sm text-muted-foreground">
+                              No active products available
+                            </p>
+                          )}
+                          {activeProducts
+                            .filter((p) =>
+                              productSearch
+                                ? p.name
+                                    .toLowerCase()
+                                    .includes(productSearch.toLowerCase())
+                                : true
+                            )
+                            .map((product) => (
+                              <button
+                                key={product.id}
+                                type="button"
+                                className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                onClick={() => {
+                                  setFormState((prev) => ({
+                                    ...prev,
+                                    items: prev.items.map((it, idx) =>
+                                      idx === index
+                                        ? {
+                                            ...it,
+                                            productId: String(product.id),
+                                          }
+                                        : it
+                                    ),
+                                  }));
+                                  setProductPopoverOpen((prev) => ({
+                                    ...prev,
+                                    [index]: false,
+                                  }));
+                                  setProductSearch("");
+                                }}
+                              >
+                                <Check
+                                  className={`mr-2 h-4 w-4 ${
+                                    Number(item.productId) === product.id
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  }`}
+                                />
+                                {product.name}
+                              </button>
+                            ))}
+                          {isFetchingNextProducts && (
+                            <div className="flex items-center justify-center py-2">
+                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            </div>
+                          )}
+                          {hasNextProducts && !isFetchingNextProducts && (
+                            <button
+                              type="button"
+                              className="flex w-full items-center justify-center rounded-sm px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent"
+                              onClick={() => fetchNextProducts()}
+                            >
+                              Load more products...
+                            </button>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <Button
                       type="button"
                       variant="ghost"
