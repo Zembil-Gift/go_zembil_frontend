@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { COUNTRIES } from "@/components/ui/state-select";
 import { useNavigate } from "react-router-dom";
 import {
   ShoppingCart,
@@ -50,6 +49,7 @@ import { type CartItem } from "@/services/cartService";
 import {
   getPaymentMethodsForCountry,
   getDefaultPaymentMethod,
+  SUPPORTED_COUNTRIES,
   type PaymentMethod,
 } from "@/lib/countryConfig";
 import { paymentMethodConfigService } from "@/services/paymentMethodConfigService";
@@ -143,6 +143,20 @@ export default function Checkout() {
   const [existingBillingAddressId, setExistingBillingAddressId] = useState<
     number | null
   >(null);
+
+  // Saved addresses the user can pick from (multiple per type). Selection of
+  // "new" reveals the entry form for a brand-new address.
+  const [savedShippingAddresses, setSavedShippingAddresses] = useState<
+    AddressDto[]
+  >([]);
+  const [savedBillingAddresses, setSavedBillingAddresses] = useState<
+    AddressDto[]
+  >([]);
+  type AddressSelection = number | "new";
+  const [selectedShippingId, setSelectedShippingId] =
+    useState<AddressSelection>("new");
+  const [selectedBillingId, setSelectedBillingId] =
+    useState<AddressSelection>("new");
   const [orderIdempotencyKey, setOrderIdempotencyKey] = useState<string | null>(
     null
   );
@@ -469,69 +483,60 @@ export default function Checkout() {
     }
   }, [user]);
 
+  // Select a saved shipping address and refresh its delivery estimate.
+  const selectShippingAddress = useCallback(
+    (addr: AddressDto) => {
+      setSelectedShippingId(addr.id ?? "new");
+      if (addr.id != null) setExistingAddressId(addr.id);
+      if (addr.latitude != null && addr.longitude != null) {
+        fetchDeliveryEstimate(addr.latitude, addr.longitude);
+      } else {
+        setDeliveryEstimate(null);
+      }
+    },
+    []
+  );
+
   useEffect(() => {
-    const fetchExistingAddress = async () => {
+    const fetchExistingAddresses = async () => {
       if (!isAuthenticated) return;
 
       try {
         const addresses = await apiService.getRequest<AddressDto[]>(
           "/api/addresses"
         );
-        const shippingAddress = addresses?.find(
-          (addr) => addr.type === "SHIPPING"
+        const shipping = (addresses || []).filter((a) => a.type === "SHIPPING");
+        const billing = (addresses || []).filter((a) => a.type === "BILLING");
+        setSavedShippingAddresses(shipping);
+        setSavedBillingAddresses(billing);
+
+        // If the user already has a draft (e.g. returning from order review),
+        // keep them on the "new address" form; otherwise pre-select the default
+        // saved address of each type.
+        const hasShippingDraft = !!(
+          shippingInfo.street || shippingCoords.latitude
         );
-        const billingAddress = addresses?.find(
-          (addr) => addr.type === "BILLING"
-        );
-
-        if (shippingAddress) {
-          setExistingAddressId(shippingAddress.id || null);
-
-          // Only overwrite form fields from the backend if the checkout store
-          // doesn't already have a draft (i.e., user is coming back from order review).
-          const hasDraft = !!(shippingInfo.street || shippingCoords.latitude);
-          if (!hasDraft) {
-            setShippingInfo({
-              street: shippingAddress.street || "",
-              city: shippingAddress.city || "",
-              state: shippingAddress.state || "",
-              postalCode: shippingAddress.postalCode || "0000",
-              country: shippingAddress.country || "",
-            });
-
-            if (shippingAddress.latitude && shippingAddress.longitude) {
-              setShippingCoords({
-                latitude: shippingAddress.latitude,
-                longitude: shippingAddress.longitude,
-                placeId: shippingAddress.placeId,
-                formattedAddress: shippingAddress.formattedAddress,
-              });
-            }
-
-            // Only set phone from address if user profile doesn't have one
-            if (!user?.phoneNumber && shippingAddress.contactPhone) {
-              setContactPhone(shippingAddress.contactPhone);
-            }
-
-            toast({
-              title: "Address Loaded",
-              description: "Your saved shipping address has been loaded.",
-            });
+        if (shipping.length > 0 && !hasShippingDraft) {
+          const def = shipping.find((a) => a.isDefault) || shipping[0];
+          setSelectedShippingId(def.id ?? "new");
+          setExistingAddressId(def.id || null);
+          if (def.latitude != null && def.longitude != null) {
+            fetchDeliveryEstimate(def.latitude, def.longitude);
           }
+          if (!user?.phoneNumber && def.contactPhone) {
+            setContactPhone(def.contactPhone);
+          }
+        } else {
+          setSelectedShippingId("new");
         }
 
-        if (billingAddress) {
-          setExistingBillingAddressId(billingAddress.id || null);
-          const hasBillingDraft = !!billingInfo.street;
-          if (!hasBillingDraft) {
-            setBillingInfo({
-              street: billingAddress.street || "",
-              city: billingAddress.city || "",
-              state: billingAddress.state || "",
-              postalCode: billingAddress.postalCode || "0000",
-              country: billingAddress.country || "",
-            });
-          }
+        const hasBillingDraft = !!billingInfo.street;
+        if (billing.length > 0 && !hasBillingDraft) {
+          const def = billing.find((a) => a.isDefault) || billing[0];
+          setSelectedBillingId(def.id ?? "new");
+          setExistingBillingAddressId(def.id || null);
+        } else {
+          setSelectedBillingId("new");
         }
       } catch (error) {
         console.log("No existing address found or error fetching:", error);
@@ -540,7 +545,7 @@ export default function Checkout() {
       }
     };
 
-    fetchExistingAddress();
+    fetchExistingAddresses();
   }, [isAuthenticated, user]);
 
   // Redirect if not authenticated
@@ -566,7 +571,9 @@ export default function Checkout() {
 
   const handleProceedToPayment = async () => {
     // Validate required fields
+    const addingNewShipping = selectedShippingId === "new";
     const hasValidLocation =
+      !addingNewShipping ||
       shippingCoords.latitude != null ||
       (!!shippingInfo.street && !!shippingInfo.city);
     const isOutsideRadius = deliveryEstimate?.withinDeliveryRadius === false;
@@ -593,13 +600,14 @@ export default function Checkout() {
       return;
     }
 
+    const addingNewBilling = selectedBillingId === "new";
     const isBillingInfoComplete =
       !!billingInfo.street?.trim() &&
       !!billingInfo.city?.trim() &&
       !!billingInfo.postalCode?.trim() &&
       !!billingInfo.country?.trim();
 
-    if (!isBillingInfoComplete) {
+    if (addingNewBilling && !isBillingInfoComplete) {
       toast({
         title: "Missing Information",
         description: "Please fill in all billing address fields.",
@@ -664,39 +672,31 @@ export default function Checkout() {
         }
       }
 
+      // Resolve shipping address: reuse the selected saved address, or create a
+      // brand-new one (addresses are never overwritten anymore).
       let shippingAddressId: number;
-
-      const addressPayload: AddressDto = {
-        street: shippingInfo.street || shippingCoords.formattedAddress || "",
-        city: shippingInfo.city || shippingInfo.state || "N/A",
-        state: shippingInfo.state || shippingInfo.city || "N/A",
-        postalCode: shippingInfo.postalCode || "",
-        country: shippingInfo.country || "",
-        type: "SHIPPING",
-        isDefault: true,
-        latitude: shippingCoords.latitude,
-        longitude: shippingCoords.longitude,
-        placeId: shippingCoords.placeId,
-        formattedAddress: shippingCoords.formattedAddress,
-      };
-
-      if (existingAddressId) {
-        // Update existing shipping address
-        console.log("Updating existing shipping address:", existingAddressId);
-        const updatedAddress = await apiService.putRequest<AddressDto>(
-          `/api/addresses/${existingAddressId}`,
-          addressPayload
-        );
-        shippingAddressId = updatedAddress.id!;
-        console.log("Updated shipping address:", updatedAddress);
+      if (selectedShippingId !== "new") {
+        shippingAddressId = selectedShippingId;
+        console.log("Using saved shipping address:", shippingAddressId);
       } else {
-        // Create new shipping address
+        const addressPayload: AddressDto = {
+          street: shippingInfo.street || shippingCoords.formattedAddress || "",
+          city: shippingInfo.city || shippingInfo.state || "N/A",
+          state: shippingInfo.state || shippingInfo.city || "N/A",
+          postalCode: shippingInfo.postalCode || "",
+          country: shippingInfo.country || "",
+          type: "SHIPPING",
+          isDefault: savedShippingAddresses.length === 0,
+          latitude: shippingCoords.latitude,
+          longitude: shippingCoords.longitude,
+          placeId: shippingCoords.placeId,
+          formattedAddress: shippingCoords.formattedAddress,
+        };
         console.log("Creating new shipping address...");
         const savedAddress = await apiService.postRequest<AddressDto>(
           "/api/addresses/type/SHIPPING",
           addressPayload
         );
-
         if (!savedAddress.id) {
           throw new Error("Failed to create shipping address - no ID returned");
         }
@@ -704,32 +704,21 @@ export default function Checkout() {
         console.log("Created shipping address with ID:", shippingAddressId);
       }
 
-      // Handle billing address
+      // Resolve billing address the same way.
       let billingAddressId: number | undefined;
-
-      const billingPayload: AddressDto = {
-        street: billingInfo.street.trim(),
-        city: billingInfo.city.trim(),
-        state: billingInfo.city.trim(),
-        postalCode: billingInfo.postalCode.trim(),
-        country: billingInfo.country.trim(),
-        type: "BILLING",
-        isDefault: false,
-      };
-
-      if (existingBillingAddressId) {
-        // Update existing billing address
-        console.log(
-          "Updating existing billing address:",
-          existingBillingAddressId
-        );
-        const updatedBillingAddress = await apiService.putRequest<AddressDto>(
-          `/api/addresses/${existingBillingAddressId}`,
-          billingPayload
-        );
-        billingAddressId = updatedBillingAddress.id!;
+      if (selectedBillingId !== "new") {
+        billingAddressId = selectedBillingId;
+        console.log("Using saved billing address:", billingAddressId);
       } else {
-        // Create new billing address
+        const billingPayload: AddressDto = {
+          street: billingInfo.street.trim(),
+          city: billingInfo.city.trim(),
+          state: billingInfo.state?.trim() || billingInfo.city.trim(),
+          postalCode: billingInfo.postalCode.trim(),
+          country: billingInfo.country.trim(),
+          type: "BILLING",
+          isDefault: savedBillingAddresses.length === 0,
+        };
         console.log("Creating new billing address...");
         const savedBillingAddress = await apiService.postRequest<AddressDto>(
           "/api/addresses/type/BILLING",
@@ -848,6 +837,12 @@ export default function Checkout() {
     }
   };
 
+  const formatAddressLine = (a: AddressDto) =>
+    [a.formattedAddress || a.street, a.city, a.state, a.country]
+      .map((p) => (p || "").trim())
+      .filter(Boolean)
+      .join(", ");
+
   if (!isAuthenticated || cartItems.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -889,8 +884,10 @@ export default function Checkout() {
                       Loading saved address...
                     </span>
                   )}
-                  {!isLoadingAddress && existingAddressId && (
-                    <Badge variant="secondary">Saved Address Loaded</Badge>
+                  {!isLoadingAddress && savedShippingAddresses.length > 0 && (
+                    <Badge variant="secondary">
+                      {savedShippingAddresses.length} saved
+                    </Badge>
                   )}
                 </CardTitle>
               </CardHeader>
@@ -919,7 +916,74 @@ export default function Checkout() {
                   />
                 </div>
 
-                <div className="space-y-2">
+                {/* Saved shipping addresses picker */}
+                {savedShippingAddresses.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Choose a saved delivery address</Label>
+                    <div className="space-y-2">
+                      {savedShippingAddresses.map((addr) => {
+                        const selected = selectedShippingId === addr.id;
+                        return (
+                          <div
+                            key={addr.id}
+                            onClick={() => selectShippingAddress(addr)}
+                            className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                              selected
+                                ? "border-emerald-500 bg-emerald-50"
+                                : "border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div
+                                className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                  selected
+                                    ? "border-emerald-500"
+                                    : "border-gray-300"
+                                }`}
+                              >
+                                {selected && (
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                )}
+                              </div>
+                              <div className="flex-1 text-sm">
+                                <p className="text-gray-800">
+                                  {formatAddressLine(addr)}
+                                </p>
+                                {addr.isDefault && (
+                                  <span className="text-xs text-emerald-600">
+                                    Default
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div
+                        onClick={() => {
+                          setSelectedShippingId("new");
+                          setDeliveryEstimate(null);
+                        }}
+                        className={`p-3 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
+                          selectedShippingId === "new"
+                            ? "border-emerald-500 bg-emerald-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <span className="text-sm font-medium text-emerald-700">
+                          + Add a new delivery address
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  className="space-y-2"
+                  style={{
+                    display: selectedShippingId === "new" ? undefined : "none",
+                  }}
+                >
                   <Label className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-emerald-600" />
                     Delivery Location *
@@ -977,77 +1041,156 @@ export default function Checkout() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Billing Address</span>
-                  {existingBillingAddressId && (
-                    <Badge variant="secondary">Saved Billing Address</Badge>
+                  {savedBillingAddresses.length > 0 && (
+                    <Badge variant="secondary">
+                      {savedBillingAddresses.length} saved
+                    </Badge>
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 pt-1">
-                  <div>
-                    <Label htmlFor="billingStreet">Street Address *</Label>
-                    <Input
-                      id="billingStreet"
-                      name="street"
-                      value={billingInfo.street}
-                      onChange={handleBillingInputChange}
-                      placeholder="Billing street address"
-                      required
-                    />
+                {/* Saved billing addresses picker */}
+                {savedBillingAddresses.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Choose a saved billing address</Label>
+                    <div className="space-y-2">
+                      {savedBillingAddresses.map((addr) => {
+                        const selected = selectedBillingId === addr.id;
+                        return (
+                          <div
+                            key={addr.id}
+                            onClick={() => {
+                              setSelectedBillingId(addr.id ?? "new");
+                              if (addr.id != null)
+                                setExistingBillingAddressId(addr.id);
+                            }}
+                            className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                              selected
+                                ? "border-emerald-500 bg-emerald-50"
+                                : "border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div
+                                className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                  selected
+                                    ? "border-emerald-500"
+                                    : "border-gray-300"
+                                }`}
+                              >
+                                {selected && (
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                )}
+                              </div>
+                              <div className="flex-1 text-sm">
+                                <p className="text-gray-800">
+                                  {formatAddressLine(addr)}
+                                </p>
+                                {addr.isDefault && (
+                                  <span className="text-xs text-emerald-600">
+                                    Default
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div
+                        onClick={() => setSelectedBillingId("new")}
+                        className={`p-3 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
+                          selectedBillingId === "new"
+                            ? "border-emerald-500 bg-emerald-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <span className="text-sm font-medium text-emerald-700">
+                          + Add a new billing address
+                        </span>
+                      </div>
+                    </div>
                   </div>
+                )}
 
-                  <div>
-                    <Label htmlFor="billingCity">City *</Label>
-                    <Input
-                      id="billingCity"
-                      name="city"
-                      value={billingInfo.city}
-                      onChange={handleBillingInputChange}
-                      placeholder="City"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+                {selectedBillingId === "new" && (
+                  <div className="grid grid-cols-1 gap-4 pt-1">
                     <div>
-                      <Label htmlFor="billingPostalCode">Postal Code *</Label>
+                      <Label htmlFor="billingStreet">Street Address *</Label>
                       <Input
-                        id="billingPostalCode"
-                        name="postalCode"
-                        value={billingInfo.postalCode}
+                        id="billingStreet"
+                        name="street"
+                        value={billingInfo.street}
                         onChange={handleBillingInputChange}
-                        placeholder="Postal code"
+                        placeholder="Billing street address"
                         required
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="billingCountry">Country *</Label>
-                      <Select
-                        value={billingInfo.country}
-                        onValueChange={(value) => {
-                          setBillingInfo({
-                            ...billingInfo,
-                            country: value,
-                          });
-                        }}
-                      >
-                        <SelectTrigger id="billingCountry">
-                          <SelectValue placeholder="Select a country" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {COUNTRIES.map((country) => (
-                            <SelectItem
-                              key={country.value}
-                              value={country.value}
-                            >
-                              {country.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="billingCity">City *</Label>
+                        <Input
+                          id="billingCity"
+                          name="city"
+                          value={billingInfo.city}
+                          onChange={handleBillingInputChange}
+                          placeholder="City"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="billingState">State / Region</Label>
+                        <Input
+                          id="billingState"
+                          name="state"
+                          value={billingInfo.state}
+                          onChange={handleBillingInputChange}
+                          placeholder="State or region"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="billingPostalCode">Postal Code *</Label>
+                        <Input
+                          id="billingPostalCode"
+                          name="postalCode"
+                          value={billingInfo.postalCode}
+                          onChange={handleBillingInputChange}
+                          placeholder="Postal code"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="billingCountry">Country *</Label>
+                        <Select
+                          value={billingInfo.country}
+                          onValueChange={(value) => {
+                            setBillingInfo({
+                              ...billingInfo,
+                              country: value,
+                            });
+                          }}
+                        >
+                          <SelectTrigger id="billingCountry">
+                            <SelectValue placeholder="Select a country" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SUPPORTED_COUNTRIES.map((country) => (
+                              <SelectItem
+                                key={country.value}
+                                value={country.value}
+                              >
+                                {country.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
