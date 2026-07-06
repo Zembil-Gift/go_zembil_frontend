@@ -458,6 +458,17 @@ export default function TrackServiceOrder() {
                   </span>
                 </div>
               )}
+              {(order.serviceFeeMinor || 0) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-eagle-green/70">Service Fee</span>
+                  <span>
+                    {serviceOrderService.formatPrice(
+                      order.serviceFeeMinor || 0,
+                      order.currency
+                    )}
+                  </span>
+                </div>
+              )}
               <Separator />
               <div className="flex justify-between font-bold text-eagle-green text-base">
                 <span>Total</span>

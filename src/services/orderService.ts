@@ -50,6 +50,8 @@ export interface SubOrder {
   totals?: {
     totalMinor?: number;
     subtotalMinor?: number;
+    serviceFeeMinor?: number;
+    serviceFeeRate?: number;
     [key: string]: any;
   };
   lines?: OrderLine[];
@@ -128,6 +130,8 @@ export interface Order {
   totals?: {
     totalMinor?: number;
     subtotalMinor?: number;
+    serviceFeeMinor?: number;
+    serviceFeeRate?: number;
     [key: string]: any;
   };
   subOrders?: SubOrder[];
@@ -291,6 +295,7 @@ export interface VendorOrder {
   totalAmountMinor: number;
   vendorAmountMinor: number;
   platformFeeMinor?: number;
+  serviceFeeMinor?: number;
   vatAmountMinor?: number;
   deliveryFeeMinor?: number;
   discountMinor?: number;

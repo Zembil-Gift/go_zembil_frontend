@@ -38,6 +38,8 @@ interface OrderTotals {
   discountMinor: number;
   shippingMinor: number;
   platformFeeMinor?: number;
+  serviceFeeMinor?: number;
+  serviceFeeRate?: number;
   totalMinor: number;
   vatRate?: number;
   salesTaxRate?: number;
@@ -453,7 +455,7 @@ export default function OrderReview() {
                 {/* Shipping */}
                 <div className="flex justify-between">
                   <span className="text-gray-600 flex items-center gap-1">
-                    <Truck className="h-4 w-4" />
+                    {/*<Truck className="h-4 w-4" />*/}
                     Shipping
                   </span>
                   {order.totals.shippingMinor === 0 ? (
@@ -462,6 +464,18 @@ export default function OrderReview() {
                     <span>{formatPrice(fromMinor(order.totals.shippingMinor), currency)}</span>
                   )}
                 </div>
+
+                {/* Service Fee */}
+                {order.totals.serviceFeeMinor != null && order.totals.serviceFeeMinor > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">
+                      Service fee
+                      {order.totals.serviceFeeRate != null &&
+                        ` (${(order.totals.serviceFeeRate * 100).toFixed(0)}%)`}
+                    </span>
+                    <span>{formatPrice(fromMinor(order.totals.serviceFeeMinor), currency)}</span>
+                  </div>
+                )}
 
                 {/* Discount */}
                 {order.totals.discountMinor > 0 && (

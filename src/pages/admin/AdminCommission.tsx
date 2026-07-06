@@ -25,11 +25,14 @@ import {
   Loader2,
   Info,
   CheckCircle,
+  Receipt,
 } from 'lucide-react';
 import {
   adminService,
   PlatformCommissionRateDto,
   UpdateCommissionRateRequest,
+  ServiceFeeRateDto,
+  UpdateServiceFeeRateRequest,
 } from '@/services/adminService';
 
 const VENDOR_TYPE_CONFIG: Record<string, { label: string; description: string; icon: React.ElementType; color: string }> = {
@@ -91,6 +94,49 @@ export default function AdminCommission() {
       });
     },
   });
+
+  // ── Service Fee (single global rate) ──
+  const [serviceFeeDialogOpen, setServiceFeeDialogOpen] = useState(false);
+  const [serviceFeeForm, setServiceFeeForm] = useState<UpdateServiceFeeRateRequest>({
+    serviceFeePercentage: 0,
+    description: '',
+  });
+
+  const { data: serviceFeeRate, isLoading: isServiceFeeLoading } = useQuery({
+    queryKey: ['admin', 'service-fee-rate'],
+    queryFn: () => adminService.getServiceFeeRate(),
+  });
+
+  const updateServiceFeeMutation = useMutation({
+    mutationFn: (data: UpdateServiceFeeRateRequest) => adminService.updateServiceFeeRate(data),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'service-fee-rate'] });
+      toast({
+        title: 'Service Fee Updated',
+        description: `Service fee set to ${updated.serviceFeePercentage}%`,
+      });
+      setServiceFeeDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update service fee',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleEditServiceFee = () => {
+    setServiceFeeForm({
+      serviceFeePercentage: serviceFeeRate?.serviceFeePercentage ?? 0,
+      description: serviceFeeRate?.description || '',
+    });
+    setServiceFeeDialogOpen(true);
+  };
+
+  const handleSaveServiceFee = () => {
+    updateServiceFeeMutation.mutate(serviceFeeForm);
+  };
 
   const handleEdit = (rate: PlatformCommissionRateDto) => {
     setEditingRate(rate);
@@ -227,6 +273,75 @@ export default function AdminCommission() {
           </div>
         )}
 
+        {/* Service Fee (global) */}
+        <Card className="relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500" />
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/10">
+                  <Receipt className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Service Fee</CardTitle>
+                  <CardDescription className="mt-1">
+                    A single global fee charged to the customer on top of the platform fee and delivery fee.
+                  </CardDescription>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleEditServiceFee}
+                disabled={isServiceFeeLoading}
+                title="Edit service fee"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isServiceFeeLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                <div className="text-center py-4 bg-amber-50 rounded-lg">
+                  <div className="text-4xl font-bold text-amber-600">
+                    {(serviceFeeRate?.serviceFeePercentage ?? 0).toFixed(1)}%
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">Service Fee Rate</div>
+                </div>
+                <div className="md:col-span-2 space-y-2 text-sm">
+                  <p className="text-muted-foreground">
+                    {serviceFeeRate?.description ||
+                      'Applied as: service fee = rate × (platform fee + delivery fee).'}
+                  </p>
+                  <div className="text-xs text-muted-foreground border-t pt-2 space-y-1">
+                    {serviceFeeRate?.updatedBy && (
+                      <p>Last updated by: <span className="font-medium">{serviceFeeRate.updatedBy}</span></p>
+                    )}
+                    {serviceFeeRate?.updatedAt && (
+                      <p>Updated: {new Date(serviceFeeRate.updatedAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}</p>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                      <span>{serviceFeeRate?.active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Example Pricing Table */}
         {sortedRates.length > 0 && (
           <Card>
@@ -343,6 +458,93 @@ export default function AdminCommission() {
               className="bg-primary-blue text-white hover:bg-primary-blue/90"
             >
               {updateMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Service Fee Dialog */}
+      <Dialog open={serviceFeeDialogOpen} onOpenChange={setServiceFeeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Service Fee</DialogTitle>
+            <DialogDescription>
+              Update the global service fee charged to customers. The rate must be between 0% and 100%.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="serviceFeePercentage">Service Fee Percentage (%)</Label>
+              <div className="relative">
+                <Input
+                  id="serviceFeePercentage"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={serviceFeeForm.serviceFeePercentage}
+                  onChange={(e) =>
+                    setServiceFeeForm({ ...serviceFeeForm, serviceFeePercentage: parseFloat(e.target.value) || 0 })
+                  }
+                  className="pr-8"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Enter the service fee as a percentage (e.g., 15.0 for 15%). Allowed range: 0% – 100%.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="serviceFeeDescription">Description (optional)</Label>
+              <Textarea
+                id="serviceFeeDescription"
+                value={serviceFeeForm.description || ''}
+                onChange={(e) => setServiceFeeForm({ ...serviceFeeForm, description: e.target.value })}
+                placeholder="E.g., Standard customer service fee"
+                rows={3}
+              />
+            </div>
+
+            {/* Preview */}
+            {serviceFeeForm.serviceFeePercentage > 0 && (
+              <div className="bg-amber-50 rounded-lg p-3 space-y-1 text-sm">
+                <p className="font-medium">Preview (platform fee $10 + delivery $5)</p>
+                <p>
+                  Service fee:{' '}
+                  <span className="font-medium text-amber-600">
+                    ${(15 * serviceFeeForm.serviceFeePercentage / 100).toFixed(2)}
+                  </span>{' '}
+                  <span className="text-muted-foreground">
+                    ({serviceFeeForm.serviceFeePercentage}% × $15.00)
+                  </span>
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setServiceFeeDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveServiceFee}
+              disabled={
+                updateServiceFeeMutation.isPending ||
+                serviceFeeForm.serviceFeePercentage < 0 ||
+                serviceFeeForm.serviceFeePercentage > 100
+              }
+              className="bg-amber-500 text-white hover:bg-amber-500/90"
+            >
+              {updateServiceFeeMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...

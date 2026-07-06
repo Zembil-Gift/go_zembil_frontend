@@ -1228,6 +1228,20 @@ export default function VendorProductOrders() {
                             </span>
                           </div>
                         )}
+                      {selectedOrder.serviceFeeMinor &&
+                        selectedOrder.serviceFeeMinor > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-eagle-green/70">
+                              Service Fee
+                            </span>
+                            <span className="text-eagle-green">
+                              {orderService.formatPrice(
+                                selectedOrder.serviceFeeMinor,
+                                selectedOrder.currency
+                              )}
+                            </span>
+                          </div>
+                        )}
                       <div className="flex justify-between text-sm">
                         <span className="text-eagle-green/70">Discount</span>
                         <span className="text-red-600">
