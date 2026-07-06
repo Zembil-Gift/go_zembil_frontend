@@ -700,6 +700,14 @@ export default function VendorServiceOrders() {
                           </span>
                         </div>
                       )}
+                      {selectedOrder.serviceFeeMinor && selectedOrder.serviceFeeMinor > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-eagle-green/70">Service Fee</span>
+                          <span className="text-eagle-green">
+                            {serviceOrderService.formatPrice(selectedOrder.serviceFeeMinor, selectedOrder.currency)}
+                          </span>
+                        </div>
+                      )}
                       <Separator />
                       <div className="flex justify-between">
                         <span className="font-bold text-eagle-green">Your Earnings</span>

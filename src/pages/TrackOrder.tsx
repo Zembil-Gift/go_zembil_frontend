@@ -565,6 +565,18 @@ export default function TrackOrder() {
                     )}
                   </p>
                 </div>
+                {typeof order.totals?.serviceFeeMinor === "number" &&
+                  order.totals.serviceFeeMinor > 0 && (
+                    <div>
+                      <p className="font-medium text-gray-900">Service Fee</p>
+                      <p className="text-gray-600">
+                        {formatMinorAmount(
+                          order.totals.serviceFeeMinor,
+                          order.currency
+                        )}
+                      </p>
+                    </div>
+                  )}
                 <div>
                   <p className="font-medium text-gray-900">Discount</p>
                   <p className="text-gray-600">

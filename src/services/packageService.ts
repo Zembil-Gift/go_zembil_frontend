@@ -131,6 +131,7 @@ export interface VendorPackageOrderResponse {
   packageQuantity: number;
   totalPriceMinor: number;
   platformFeeMinor: number;
+  serviceFeeMinor?: number;
   deliveryFeeMinor: number;
   currency: string;
   createdAt: string;

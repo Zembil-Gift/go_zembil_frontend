@@ -72,6 +72,7 @@ export interface ServiceOrderResponse {
   discountMinor?: number;
   vatAmountMinor?: number;
   platformFeeMinor?: number;
+  serviceFeeMinor?: number;
   totalAmountMinor: number;
   currency: string;
 

@@ -2022,6 +2022,21 @@ class AdminService {
     );
   }
 
+  async getServiceFeeRate(): Promise<ServiceFeeRateDto> {
+    return await apiService.getRequest<ServiceFeeRateDto>(
+      "/api/admin/service-fee-rate"
+    );
+  }
+
+  async updateServiceFeeRate(
+    data: UpdateServiceFeeRateRequest
+  ): Promise<ServiceFeeRateDto> {
+    return await apiService.putRequest<ServiceFeeRateDto>(
+      "/api/admin/service-fee-rate",
+      data
+    );
+  }
+
   async getVendorPayouts(params?: {
     vendorId?: number;
     status?: string;
@@ -2192,5 +2207,21 @@ export interface PlatformCommissionRateDto {
 
 export interface UpdateCommissionRateRequest {
   commissionPercentage: number; // percentage (e.g., 10.0 for 10%)
+  description?: string;
+}
+
+export interface ServiceFeeRateDto {
+  id: number | null;
+  serviceFeeRate: number; // decimal (e.g., 0.15)
+  serviceFeePercentage: number; // percentage (e.g., 15.0)
+  description: string | null;
+  active: boolean;
+  updatedBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface UpdateServiceFeeRateRequest {
+  serviceFeePercentage: number; // percentage (e.g., 15.0 for 15%)
   description?: string;
 }

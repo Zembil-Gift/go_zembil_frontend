@@ -75,6 +75,8 @@ interface OrderTotals {
   salesTaxMinor?: number;
   shippingMinor?: number;
   platformFeeMinor?: number;
+  serviceFeeMinor?: number;
+  serviceFeeRate?: number;
   totalMinor?: number;
   vatApplied?: boolean;
   salesTaxApplied?: boolean;
