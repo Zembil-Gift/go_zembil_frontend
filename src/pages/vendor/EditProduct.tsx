@@ -518,6 +518,10 @@ export default function EditProduct() {
             : "Your product has been updated successfully.",
       });
 
+      // Note: the products list uses the ["vendor", "my-products", ...] key.
+      // Invalidate that prefix (not ["vendor", "products"]) so the list refetches
+      // and reflects the new PENDING status / cleared rejection reason.
+      queryClient.invalidateQueries({ queryKey: ["vendor", "my-products"] });
       queryClient.invalidateQueries({ queryKey: ["vendor", "products"] });
       queryClient.invalidateQueries({ queryKey: ["product", productId] });
       queryClient.invalidateQueries({
