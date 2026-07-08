@@ -33,6 +33,10 @@ import {
   LocationPicker,
   type LocationData,
 } from "@/components/maps";
+import {
+  deliveryService,
+  type DeliveryModeResponse,
+} from "@/services/deliveryService";
 import type {
   CreateCustomOrderDraftState,
   CreateCustomOrderRequest,
@@ -94,6 +98,29 @@ export default function CustomOrderShipping() {
     queryFn: () => customOrderTemplateService.getById(templateIdNum),
     enabled: templateIdNum > 0,
   });
+
+  // Delivery mode (Google Maps vs manual flat fee) for this template's vendor.
+  const [deliveryMode, setDeliveryMode] = useState<DeliveryModeResponse | null>(
+    null
+  );
+  const isManualDelivery = deliveryMode?.deliveryMode === "MANUAL";
+
+  useEffect(() => {
+    const vendorId = template?.vendorId;
+    if (!vendorId) return;
+    let active = true;
+    deliveryService
+      .getDeliveryModeForVendor(vendorId)
+      .then((mode) => {
+        if (active) setDeliveryMode(mode);
+      })
+      .catch((err) =>
+        console.warn("Delivery mode fetch failed:", err?.message)
+      );
+    return () => {
+      active = false;
+    };
+  }, [template?.vendorId]);
 
   const { data: ongoingOrders } = useQuery({
     queryKey: ["customer-ongoing-custom-orders", templateIdNum],
@@ -190,7 +217,11 @@ export default function CustomOrderShipping() {
       return;
     }
 
-    if (!shippingCoords.latitude || !shippingCoords.longitude) {
+    // Map pin (coordinates) is only required for Google Maps delivery mode.
+    if (
+      !isManualDelivery &&
+      (!shippingCoords.latitude || !shippingCoords.longitude)
+    ) {
       toast({
         title: "Pin Delivery Location",
         description: "Please pin your shipping location on the map.",
@@ -461,42 +492,52 @@ export default function CustomOrderShipping() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-emerald-600" />
-                Pin Delivery Location *
-              </Label>
-              <GoogleMapsProvider>
-                <LocationPicker
-                  latitude={shippingCoords.latitude}
-                  longitude={shippingCoords.longitude}
-                  onLocationSelect={(loc: LocationData) => {
-                    setShippingInfo((prev) => ({
-                      ...prev,
-                      street: loc.streetAddress || loc.formattedAddress,
-                      city: loc.city || prev.city,
-                      state: loc.state || prev.state,
-                      postalCode: loc.postalCode || prev.postalCode,
-                      country: loc.country || prev.country,
-                    }));
-                    setShippingCoords({
-                      latitude: loc.latitude,
-                      longitude: loc.longitude,
-                      placeId: loc.placeId,
-                      formattedAddress: loc.formattedAddress,
-                    });
-                    setIsAddressDirty(true);
-                  }}
-                  height="320px"
-                  placeholder="Search and pin your shipping address..."
-                />
-              </GoogleMapsProvider>
-              {shippingCoords.formattedAddress && (
-                <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
-                  {shippingCoords.formattedAddress}
-                </p>
-              )}
-            </div>
+            {isManualDelivery ? (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                <span>
+                  Delivery for your area is charged a flat fee — just fill in the
+                  address fields above.
+                </span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-emerald-600" />
+                  Pin Delivery Location *
+                </Label>
+                <GoogleMapsProvider>
+                  <LocationPicker
+                    latitude={shippingCoords.latitude}
+                    longitude={shippingCoords.longitude}
+                    onLocationSelect={(loc: LocationData) => {
+                      setShippingInfo((prev) => ({
+                        ...prev,
+                        street: loc.streetAddress || loc.formattedAddress,
+                        city: loc.city || prev.city,
+                        state: loc.state || prev.state,
+                        postalCode: loc.postalCode || prev.postalCode,
+                        country: loc.country || prev.country,
+                      }));
+                      setShippingCoords({
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                        placeId: loc.placeId,
+                        formattedAddress: loc.formattedAddress,
+                      });
+                      setIsAddressDirty(true);
+                    }}
+                    height="320px"
+                    placeholder="Search and pin your shipping address..."
+                  />
+                </GoogleMapsProvider>
+                {shippingCoords.formattedAddress && (
+                  <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
+                    {shippingCoords.formattedAddress}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="pt-2">
               <Button

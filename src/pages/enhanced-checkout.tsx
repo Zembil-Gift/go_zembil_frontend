@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { formatPrice } from '@/lib/currency';
 import { ShoppingCart, User, CreditCard, CheckCircle, AlertCircle, Gift, MapPin } from 'lucide-react';
+import { deliveryService, type DeliveryModeResponse } from '@/services/deliveryService';
 
 const checkoutSchema = z.object({
   recipientName: z.string().min(2, 'Recipient name is required'),
@@ -26,6 +27,7 @@ const checkoutSchema = z.object({
   recipientPhone: z.string().min(10, 'Valid phone number is required'),
   recipientAddress: z.string().min(10, 'Complete address is required'),
   recipientCity: z.string().min(2, 'City is required'),
+  recipientCountry: z.string().min(2, 'Country is required'),
   deliveryType: z.enum(['standard', 'express', 'priority']),
   personalMessage: z.string().optional(),
   giftWrap: z.boolean().default(false),
@@ -62,6 +64,7 @@ export default function EnhancedCheckout() {
       recipientPhone: '',
       recipientAddress: '',
       recipientCity: 'Addis Ababa',
+      recipientCountry: 'Ethiopia',
       deliveryType: 'standard',
       personalMessage: '',
       giftWrap: false,
@@ -74,6 +77,23 @@ export default function EnhancedCheckout() {
     queryKey: ['/api/cart'],
   });
 
+  // Delivery mode (Google Maps vs admin manual flat fee) for the current cart.
+  const [deliveryMode, setDeliveryMode] = useState<DeliveryModeResponse | null>(null);
+  const isManualDelivery = deliveryMode?.deliveryMode === 'MANUAL';
+
+  useEffect(() => {
+    let active = true;
+    deliveryService
+      .getDeliveryModeForCart()
+      .then((mode) => {
+        if (active) setDeliveryMode(mode);
+      })
+      .catch((err) => console.warn('Delivery mode fetch failed:', err?.message));
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Calculate order totals
   const calculateSubtotal = () => {
     return cartItems.reduce((total: number, item: CartItem) => {
@@ -83,9 +103,14 @@ export default function EnhancedCheckout() {
   };
 
   const calculateDeliveryFee = () => {
+    // Manual delivery mode: use the admin-configured flat fee for the cart's area.
+    if (isManualDelivery && deliveryMode?.flatFee != null) {
+      return deliveryMode.flatFee;
+    }
+
     const deliveryType = form.watch('deliveryType');
     const subtotal = calculateSubtotal();
-    
+
     if (deliveryType === 'standard' && subtotal >= 1000) return 0;
     
     switch (deliveryType) {
@@ -373,6 +398,20 @@ export default function EnhancedCheckout() {
                       {form.formState.errors.recipientCity && (
                         <p className="text-sm text-red-600 mt-1">
                           {form.formState.errors.recipientCity.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="recipientCountry">Country *</Label>
+                      <Input
+                        id="recipientCountry"
+                        {...form.register('recipientCountry')}
+                        placeholder="Ethiopia"
+                      />
+                      {form.formState.errors.recipientCountry && (
+                        <p className="text-sm text-red-600 mt-1">
+                          {form.formState.errors.recipientCountry.message}
                         </p>
                       )}
                     </div>
