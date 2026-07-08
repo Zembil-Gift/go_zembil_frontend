@@ -445,30 +445,46 @@ export default function VendorProductsPage() {
                       View Details
                     </Link>
                   </Button>
-                  <Button asChild variant="outline" size="sm">
-                    <Link to={`/vendor/products/${product.id}/edit`}>Edit</Link>
-                  </Button>
-                  <Button asChild variant="outline" size="sm">
-                    <Link to={`/vendor/products/${product.id}/price`}>
-                      Update Price
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setUploadImageDialog({
-                        open: true,
-                        productId: product.id!,
-                        productName: product.name || "",
-                        currentImageUrl:
-                          getProductImageUrl(product.images, product.cover) ||
-                          "",
-                      })
-                    }
-                  >
-                    Update Image
-                  </Button>
+                  {product.status?.toUpperCase() === "REJECTED" ? (
+                    // Rejected products: let the vendor edit everything (price,
+                    // details, images) and resubmit directly for review.
+                    <Button asChild size="sm">
+                      <Link to={`/vendor/products/${product.id}/edit`}>
+                        Edit &amp; Resubmit
+                      </Link>
+                    </Button>
+                  ) : (
+                    <>
+                      <Button asChild variant="outline" size="sm">
+                        <Link to={`/vendor/products/${product.id}/edit`}>
+                          Edit
+                        </Link>
+                      </Button>
+                      <Button asChild variant="outline" size="sm">
+                        <Link to={`/vendor/products/${product.id}/price`}>
+                          Update Price
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setUploadImageDialog({
+                            open: true,
+                            productId: product.id!,
+                            productName: product.name || "",
+                            currentImageUrl:
+                              getProductImageUrl(
+                                product.images,
+                                product.cover
+                              ) || "",
+                          })
+                        }
+                      >
+                        Update Image
+                      </Button>
+                    </>
+                  )}
                   {product.status?.toUpperCase() === "INACTIVE" ? (
                     <Button
                       variant="outline"
