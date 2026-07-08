@@ -2037,6 +2037,33 @@ class AdminService {
     );
   }
 
+  // ===== Delivery Pricing / Delivery Mode =====
+
+  async getDeliveryPricingConfigs(): Promise<DeliveryPricingConfigDto[]> {
+    return await apiService.getRequest<DeliveryPricingConfigDto[]>(
+      "/api/admin/delivery-pricing"
+    );
+  }
+
+  async updateDeliveryPricingConfig(
+    countryCode: string,
+    data: UpdateDeliveryPricingConfigRequest
+  ): Promise<DeliveryPricingConfigDto> {
+    return await apiService.putRequest<DeliveryPricingConfigDto>(
+      `/api/admin/delivery-pricing/${countryCode}`,
+      data
+    );
+  }
+
+  async createDeliveryPricingConfig(
+    data: UpdateDeliveryPricingConfigRequest
+  ): Promise<DeliveryPricingConfigDto> {
+    return await apiService.postRequest<DeliveryPricingConfigDto>(
+      "/api/admin/delivery-pricing",
+      data
+    );
+  }
+
   async getVendorPayouts(params?: {
     vendorId?: number;
     status?: string;
@@ -2224,4 +2251,37 @@ export interface ServiceFeeRateDto {
 export interface UpdateServiceFeeRateRequest {
   serviceFeePercentage: number; // percentage (e.g., 15.0 for 15%)
   description?: string;
+}
+
+export type DeliveryMode = "GOOGLE_MAPS" | "MANUAL";
+
+export interface DeliveryPricingConfigDto {
+  id: number;
+  countryCode: string;
+  currencyCode: string;
+  baseFee: number;
+  perKmRate: number;
+  perMinuteRate: number;
+  trafficSurchargePercent: number;
+  minimumFee: number;
+  maximumFee?: number;
+  isActive: boolean;
+  deliveryMode: DeliveryMode;
+  manualFlatFee?: number;
+  manualFeeCurrency?: string;
+}
+
+export interface UpdateDeliveryPricingConfigRequest {
+  countryCode?: string;
+  currencyCode?: string;
+  baseFee?: number;
+  perKmRate?: number;
+  perMinuteRate?: number;
+  trafficSurchargePercent?: number;
+  minimumFee?: number;
+  maximumFee?: number;
+  isActive?: boolean;
+  deliveryMode?: DeliveryMode;
+  manualFlatFee?: number;
+  manualFeeCurrency?: string;
 }

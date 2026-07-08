@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Truck, Package, ClipboardCheck, Gift, Wallet } from 'lucide-react';
+import { Truck, Package, ClipboardCheck, Gift, Wallet, DollarSign } from 'lucide-react';
 
 import AdminDeliveryPersonnel from './AdminDeliveryPersonnel';
 import AdminOrderAssignments from './AdminOrderAssignments';
 import AdminCustomOrderAssignments from './AdminCustomOrderAssignments';
 import AdminDeliveryConfirmations from './AdminDeliveryConfirmations';
 import AdminDeliveryPayments from './AdminDeliveryPayments';
+import AdminDeliveryPricing from './AdminDeliveryPricing';
 
 export default function AdminDelivery() {
   const [activeTab, setActiveTab] = useState('personnel');
@@ -45,6 +46,11 @@ export default function AdminDelivery() {
               <span className="hidden sm:inline">Delivery Payments</span>
               <span className="sm:hidden">Payments</span>
             </TabsTrigger>
+            <TabsTrigger value="pricing" className="flex items-center gap-2 text-xs sm:text-sm">
+              <DollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">Delivery Pricing</span>
+              <span className="sm:hidden">Pricing</span>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="personnel" className="mt-6">
@@ -65,6 +71,10 @@ export default function AdminDelivery() {
 
           <TabsContent value="payments" className="mt-6">
             <AdminDeliveryPayments />
+          </TabsContent>
+
+          <TabsContent value="pricing" className="mt-6">
+            <AdminDeliveryPricing />
           </TabsContent>
         </Tabs>
       </div>

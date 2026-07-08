@@ -58,6 +58,11 @@ import {
   LocationPicker,
   type LocationData,
 } from "@/components/maps";
+import ManualAddressForm from "@/components/checkout/ManualAddressForm";
+import {
+  deliveryService,
+  type DeliveryModeResponse,
+} from "@/services/deliveryService";
 import { useCheckoutStore } from "@/stores/checkout-store";
 import {
   trackAddShippingInfo,
@@ -183,6 +188,12 @@ export default function Checkout() {
   const [deliveryEstimate, setDeliveryEstimate] =
     useState<DeliveryEstimate | null>(null);
   const [isEstimatingDelivery, setIsEstimatingDelivery] = useState(false);
+
+  // Delivery mode (Google Maps vs manual flat fee), resolved from the cart vendor's country.
+  const [deliveryMode, setDeliveryMode] = useState<DeliveryModeResponse | null>(
+    null
+  );
+  const isManualDelivery = deliveryMode?.deliveryMode === "MANUAL";
 
   const fetchDeliveryEstimate = async (lat: number, lng: number) => {
     setIsEstimatingDelivery(true);
@@ -562,6 +573,36 @@ export default function Checkout() {
     }
   }, [isAuthenticated, cartItems.length, navigate]);
 
+  // Resolve delivery mode (Google Maps vs manual) for the current cart.
+  useEffect(() => {
+    if (!isAuthenticated || cartItems.length === 0) return;
+    let active = true;
+    deliveryService
+      .getDeliveryModeForCart()
+      .then((mode) => {
+        if (active) setDeliveryMode(mode);
+      })
+      .catch((err) =>
+        console.warn("Delivery mode fetch failed:", err?.message)
+      );
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, cartItems.length]);
+
+  // In manual mode, the delivery fee is a flat fee from the backend — seed the estimate
+  // so order totals and the summary render correctly without a map/distance lookup.
+  useEffect(() => {
+    if (isManualDelivery) {
+      setDeliveryEstimate({
+        deliveryFee: deliveryMode?.flatFee,
+        currencyCode: deliveryMode?.currencyCode,
+        withinDeliveryRadius: true,
+        vendorLocationAvailable: true,
+      });
+    }
+  }, [isManualDelivery, deliveryMode]);
+
   const handleBillingInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBillingInfo({
       ...billingInfo,
@@ -574,14 +615,20 @@ export default function Checkout() {
     const addingNewShipping = selectedShippingId === "new";
     const hasValidLocation =
       !addingNewShipping ||
-      shippingCoords.latitude != null ||
-      (!!shippingInfo.street && !!shippingInfo.city);
-    const isOutsideRadius = deliveryEstimate?.withinDeliveryRadius === false;
+      (isManualDelivery
+        ? !!shippingInfo.street && !!shippingInfo.city && !!shippingInfo.country
+        : shippingCoords.latitude != null ||
+          (!!shippingInfo.street && !!shippingInfo.city));
+    // Radius is only enforced for map-based delivery; manual mode has no coordinates.
+    const isOutsideRadius =
+      !isManualDelivery && deliveryEstimate?.withinDeliveryRadius === false;
     if (!contactPhone || !hasValidLocation) {
       toast({
         title: "Missing Information",
         description: !contactPhone
           ? "Please enter your phone number."
+          : isManualDelivery
+          ? "Please enter your address, city and country."
           : "Please pin your delivery location on the map.",
         variant: "destructive",
       });
@@ -984,53 +1031,71 @@ export default function Checkout() {
                     display: selectedShippingId === "new" ? undefined : "none",
                   }}
                 >
-                  <Label className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-emerald-600" />
-                    Delivery Location *
-                  </Label>
-                  <p className="text-xs text-gray-500">
-                    Click on the map or use search to pin your exact delivery
-                    location
-                  </p>
-                  <GoogleMapsProvider>
-                    <LocationPicker
-                      latitude={shippingCoords.latitude}
-                      longitude={shippingCoords.longitude}
-                      onLocationSelect={(loc: LocationData) => {
-                        setShippingInfo({
-                          street: loc.streetAddress || loc.formattedAddress,
-                          city: loc.city || loc.state,
-                          state: loc.state,
-                          postalCode: loc.postalCode,
-                          country: loc.country,
-                        });
-                        setShippingCoords({
-                          latitude: loc.latitude,
-                          longitude: loc.longitude,
-                          placeId: loc.placeId,
-                          formattedAddress: loc.formattedAddress,
-                        });
-                        // Fetch delivery fee estimate for the selected location
-                        if (loc.latitude && loc.longitude) {
-                          fetchDeliveryEstimate(loc.latitude, loc.longitude);
-                        }
+                  {isManualDelivery ? (
+                    <ManualAddressForm
+                      idPrefix="shipping"
+                      value={{
+                        street: shippingInfo.street || "",
+                        city: shippingInfo.city || "",
+                        state: shippingInfo.state,
+                        postalCode: shippingInfo.postalCode,
+                        country: shippingInfo.country || "",
                       }}
-                      height="320px"
-                      placeholder="Search your delivery address..."
+                      onChange={(patch) =>
+                        setShippingInfo({ ...shippingInfo, ...patch })
+                      }
                     />
-                  </GoogleMapsProvider>
-                  {shippingCoords.formattedAddress && (
-                    <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-emerald-800">
-                          Delivery location confirmed
-                        </p>
-                        <p className="text-sm text-emerald-700 mt-0.5">
-                          {shippingCoords.formattedAddress}
-                        </p>
-                      </div>
-                    </div>
+                  ) : (
+                    <>
+                      <Label className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-emerald-600" />
+                        Delivery Location *
+                      </Label>
+                      <p className="text-xs text-gray-500">
+                        Click on the map or use search to pin your exact delivery
+                        location
+                      </p>
+                      <GoogleMapsProvider>
+                        <LocationPicker
+                          latitude={shippingCoords.latitude}
+                          longitude={shippingCoords.longitude}
+                          onLocationSelect={(loc: LocationData) => {
+                            setShippingInfo({
+                              street: loc.streetAddress || loc.formattedAddress,
+                              city: loc.city || loc.state,
+                              state: loc.state,
+                              postalCode: loc.postalCode,
+                              country: loc.country,
+                            });
+                            setShippingCoords({
+                              latitude: loc.latitude,
+                              longitude: loc.longitude,
+                              placeId: loc.placeId,
+                              formattedAddress: loc.formattedAddress,
+                            });
+                            // Fetch delivery fee estimate for the selected location
+                            if (loc.latitude && loc.longitude) {
+                              fetchDeliveryEstimate(loc.latitude, loc.longitude);
+                            }
+                          }}
+                          height="320px"
+                          placeholder="Search your delivery address..."
+                        />
+                      </GoogleMapsProvider>
+                      {shippingCoords.formattedAddress && (
+                        <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-emerald-800">
+                              Delivery location confirmed
+                            </p>
+                            <p className="text-sm text-emerald-700 mt-0.5">
+                              {shippingCoords.formattedAddress}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </CardContent>

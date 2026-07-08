@@ -212,6 +212,15 @@ export interface OrderReadyForDeliveryDto {
   estimatedDurationText?: string;
 }
 
+export type DeliveryMode = "GOOGLE_MAPS" | "MANUAL";
+
+export interface DeliveryModeResponse {
+  deliveryMode: DeliveryMode;
+  flatFee?: number;
+  currencyCode?: string;
+  countryCode?: string;
+}
+
 export interface PagedResponse<T> {
   content: T[];
   totalElements: number;
@@ -578,5 +587,14 @@ export const deliveryService = {
     apiService.postRequest<DeliveryAssignmentDto>(
       `/api/delivery/custom-orders/${customOrderId}/accept`,
       {}
+    ),
+
+  // Delivery mode (Google Maps vs manual flat fee) for checkout
+  getDeliveryModeForCart: () =>
+    apiService.getRequest<DeliveryModeResponse>("/api/delivery/mode/cart"),
+
+  getDeliveryModeForVendor: (vendorId: number) =>
+    apiService.getRequest<DeliveryModeResponse>(
+      `/api/delivery/mode/vendor/${vendorId}`
     ),
 };
