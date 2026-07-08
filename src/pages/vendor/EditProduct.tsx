@@ -250,6 +250,11 @@ export default function EditProduct() {
     ? currencies.filter((c) => c.code === "ETB")
     : currencies;
 
+  // Products that have not yet been approved can be fully edited (including
+  // price) by the vendor and resubmitted without a separate admin request.
+  const isPendingOrRejected =
+    product?.status === "PENDING" || product?.status === "REJECTED";
+
   const form = useForm<ProductEditFormData>({
     resolver: zodResolver(productEditSchema),
     defaultValues: {
@@ -406,6 +411,9 @@ export default function EditProduct() {
       if (!productId) throw new Error("Product ID is required");
 
       // Existing variants keep their skuCode; newly added variants send empty skuCode.
+      const fallbackCurrency = isEthiopianVendor(vendorProfile)
+        ? "ETB"
+        : currencies[0]?.code || "ETB";
       const skuPayload = data.productSku.map((sku, index) => {
         const normalizedSkuCode = sku.skuCode?.trim() || "";
         const isNewVariant = !sku.id;
@@ -416,6 +424,18 @@ export default function EditProduct() {
           skuName: sku.skuName?.trim(),
           stockQuantity: sku.stockQuantity,
           isDefault: index === 0,
+          // For not-yet-approved products, the vendor can set the price
+          // directly and it is applied on resubmission. For active products the
+          // price is omitted so it is preserved server-side (changes there go
+          // through a separate admin-approved price request).
+          ...(isPendingOrRejected
+            ? {
+                price: {
+                  currencyCode: sku.currencyCode || fallbackCurrency,
+                  amount: sku.currentPrice ?? 0,
+                },
+              }
+            : {}),
           attributes:
             sku.attributes
               ?.filter((attr) => attr.name?.trim() && attr.value?.trim())
@@ -452,9 +472,6 @@ export default function EditProduct() {
       };
 
       // Use the appropriate endpoint based on product status
-      const isPendingOrRejected =
-        product?.status === "PENDING" || product?.status === "REJECTED";
-
       if (isPendingOrRejected) {
         return vendorService.editPendingProduct(productId, productPayload);
       } else {
@@ -693,6 +710,27 @@ export default function EditProduct() {
       }
     }
 
+    // For not-yet-approved products the price is editable and required.
+    if (isPendingOrRejected) {
+      for (let i = 0; i < data.productSku.length; i++) {
+        const price = data.productSku[i].currentPrice;
+        if (price === undefined || price === null || price <= 0) {
+          toast({
+            title: "Price Required",
+            description: `Please enter a valid price for ${
+              data.productSku.length === 1
+                ? "your product"
+                : `variant #${i + 1} (${
+                    data.productSku[i].skuName || "unnamed"
+                  })`
+            }.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+
     // Check if category changed for ACTIVE products
     const isActiveProduct = product?.status === "ACTIVE";
     const originalSubCategoryId = product?.subCategoryId?.toString();
@@ -875,7 +913,9 @@ export default function EditProduct() {
               {getStatusBadge(product.status || "")}
             </div>
             <p className="text-muted-foreground">
-              Update your product details (prices require a separate request)
+              {isPendingOrRejected
+                ? "Update any details, including price, and resubmit for review"
+                : "Update your product details (prices require a separate request)"}
             </p>
           </div>
         </div>
@@ -904,22 +944,25 @@ export default function EditProduct() {
           </Alert>
         )}
 
-        {/* Price Update Notice */}
-        <Alert className="mb-6 border-blue-200 bg-blue-50">
-          <DollarSign className="h-4 w-4 text-blue-600" />
-          <AlertTitle className="text-blue-800">Price Updates</AlertTitle>
-          <AlertDescription className="text-blue-700">
-            Price changes require admin approval and cannot be made directly
-            here.{" "}
-            <Link
-              to={`/vendor/products/${productId}/price`}
-              className="font-medium underline"
-            >
-              Request a price update
-            </Link>{" "}
-            or go to the Requests tab in your dashboard.
-          </AlertDescription>
-        </Alert>
+        {/* Price Update Notice - only for active products, where price
+            changes must go through an admin-approved request */}
+        {!isPendingOrRejected && (
+          <Alert className="mb-6 border-blue-200 bg-blue-50">
+            <DollarSign className="h-4 w-4 text-blue-600" />
+            <AlertTitle className="text-blue-800">Price Updates</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              Price changes require admin approval and cannot be made directly
+              here.{" "}
+              <Link
+                to={`/vendor/products/${productId}/price`}
+                className="font-medium underline"
+              >
+                Request a price update
+              </Link>{" "}
+              or go to the Requests tab in your dashboard.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Pending Category Change Request Alert */}
         {pendingCategoryChangeRequest && (
@@ -1068,8 +1111,9 @@ export default function EditProduct() {
                     Product Variants (SKUs)
                   </CardTitle>
                   <CardDescription>
-                    Update stock and attributes for your product variants. Price
-                    changes require a separate request.
+                    {isPendingOrRejected
+                      ? "Update stock, price, and attributes for your product variants."
+                      : "Update stock and attributes for your product variants. Price changes require a separate request."}
                   </CardDescription>
                 </div>
                 <Button
@@ -1191,31 +1235,70 @@ export default function EditProduct() {
                         </div>
                       </div>
 
-                      {/* Current Price (Read-only) */}
-                      {skuId && currentPrice !== undefined && (
-                        <div className="p-3 bg-gray-50 rounded-lg border">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Label className="text-sm text-muted-foreground">
-                                Current Price
-                              </Label>
-                              <p className="text-lg font-semibold">
-                                {currencyCode} {currentPrice?.toFixed(2)}
-                              </p>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              asChild
-                            >
-                              <Link to={`/vendor/products/${productId}/price`}>
-                                <DollarSign className="h-4 w-4 mr-1" />
-                                Request Price Change
-                              </Link>
-                            </Button>
-                          </div>
+                      {/* Price - editable for not-yet-approved products,
+                          read-only (with request flow) for active products */}
+                      {isPendingOrRejected ? (
+                        <div>
+                          <Label>Price ({currencyCode || "ETB"}) *</Label>
+                          <Controller
+                            name={`productSku.${skuIndex}.currentPrice`}
+                            control={form.control}
+                            render={({ field }) => (
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                value={field.value ?? ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === "") {
+                                    field.onChange(0);
+                                  } else {
+                                    const numValue = parseFloat(value);
+                                    if (!isNaN(numValue)) {
+                                      field.onChange(
+                                        Math.round(numValue * 100) / 100
+                                      );
+                                    }
+                                  }
+                                }}
+                                onBlur={field.onBlur}
+                              />
+                            )}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Enter the price you'll receive. You can change it
+                            freely until the product is approved.
+                          </p>
                         </div>
+                      ) : (
+                        skuId &&
+                        currentPrice !== undefined && (
+                          <div className="p-3 bg-gray-50 rounded-lg border">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <Label className="text-sm text-muted-foreground">
+                                  Current Price
+                                </Label>
+                                <p className="text-lg font-semibold">
+                                  {currencyCode} {currentPrice?.toFixed(2)}
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                asChild
+                              >
+                                <Link to={`/vendor/products/${productId}/price`}>
+                                  <DollarSign className="h-4 w-4 mr-1" />
+                                  Request Price Change
+                                </Link>
+                              </Button>
+                            </div>
+                          </div>
+                        )
                       )}
 
                       {/* Attributes */}
