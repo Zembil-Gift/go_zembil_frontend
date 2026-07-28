@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { cartService, CartItem } from "@/services/cartService";
+import { FreeGiftLine } from "@/components/cart/FreeGiftLine";
 import { wishlistService } from "@/services/wishlistService";
 import {
   discountService,
@@ -1278,6 +1279,11 @@ export default function Cart() {
                   </Card>
                 );
               })}
+
+              <FreeGiftLine
+                subtotalMinor={rewardPreviewSubtotalMinor}
+                cartCurrency={cartCurrency}
+              />
             </div>
 
             {/* Order Summary */}

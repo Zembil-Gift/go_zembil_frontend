@@ -39,6 +39,7 @@ import { cartService } from "@/services/cartService";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
+import WalletMenu from "@/components/layout/WalletMenu";
 
 export default function StreamlinedHeader() {
   const { t } = useTranslation();
@@ -160,6 +161,9 @@ export default function StreamlinedHeader() {
                   <TooltipContent>Search products</TooltipContent>
                 </Tooltip>
               </TooltipProvider> */}
+
+              {/* Reward wallet */}
+              {isAuthenticated && <WalletMenu />}
 
               {/* Wishlist */}
               <TooltipProvider>
@@ -562,6 +566,13 @@ export default function StreamlinedHeader() {
                   <Search className="mr-2 h-4 w-4" />
                   Search
                 </Button> */}
+
+                {/* Reward wallet */}
+                {isAuthenticated && (
+                  <div className="w-full">
+                    <WalletMenu variant="mobile" />
+                  </div>
+                )}
 
                 {/* Wishlist */}
                 <Button

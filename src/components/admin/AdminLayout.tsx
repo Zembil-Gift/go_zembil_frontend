@@ -30,6 +30,7 @@ import {
   Search,
   Percent,
   Wallet,
+  WalletCards,
   Undo2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -107,6 +108,7 @@ const navItems = [
   { href: "/admin/refunds", label: "Refunds", icon: Undo2 },
   { href: "/admin/vendor-payouts", label: "Vendor Payout", icon: Wallet },
   { href: "/admin/commission", label: "Commission", icon: Percent },
+  { href: "/admin/wallet", label: "Reward Wallet", icon: WalletCards },
 ];
 
 // Super admin only items

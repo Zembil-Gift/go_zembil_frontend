@@ -39,6 +39,8 @@ interface ChapaPaymentData {
   amountMajor: string;
   amountMinor: number;
   currency: string;
+  /** Reward credits already taken off `amountMinor`, in the same currency. */
+  walletAppliedMinor: number;
   orderId: number;
   txRef: string;
   orderType: string;
@@ -49,6 +51,11 @@ interface ChapaPaymentData {
 interface ChapaInitializationResult {
   paymentId?: string;
   checkoutUrl?: string;
+  /** What the gateway will actually collect, in `currencyCode`. */
+  totalMinor?: number;
+  currencyCode?: string;
+  /** Reward credits taken off this charge, in `currencyCode`. */
+  walletAppliedMinor?: number;
 }
 
 interface CurrencyConversionDto {
@@ -380,8 +387,14 @@ export default function ChapaPaymentPage() {
       let chapaAmountMinor = orderAmountMinor;
       let chapaCurrency = normalizedType === "custom" ? "ETB" : orderCurrency;
 
+      // The backend already applied reward credits and did its own conversion, so
+      // its figure is exactly what Chapa will collect. Recomputing from the order
+      // total here would quote the customer the pre-credit price.
+      const backendCharge = initResult?.totalMinor;
+
       // Non-custom types may still require conversion to ETB before Chapa initialization.
       if (
+        backendCharge == null &&
         normalizedType !== "custom" &&
         orderCurrency.toUpperCase() !== "ETB"
       ) {
@@ -400,6 +413,11 @@ export default function ChapaPaymentPage() {
             conversionError
           );
         }
+      }
+
+      if (backendCharge != null) {
+        chapaAmountMinor = backendCharge;
+        chapaCurrency = initResult?.currencyCode || chapaCurrency;
       }
 
       const txRef = initResult?.paymentId?.trim();
@@ -436,6 +454,7 @@ export default function ChapaPaymentPage() {
         amountMajor: (chapaAmountMinor / 100).toFixed(2),
         amountMinor: chapaAmountMinor,
         currency: chapaCurrency,
+        walletAppliedMinor: initResult?.walletAppliedMinor ?? 0,
         orderId: orderIdNum,
         txRef,
         orderType: formatOrderType(type),
@@ -544,6 +563,18 @@ export default function ChapaPaymentPage() {
               <span className="font-medium">{paymentData.orderType}</span>
             </div>
             <Separator />
+            {paymentData.walletAppliedMinor > 0 && (
+              <div className="flex justify-between text-sm text-viridian-green">
+                <span>Reward credits applied</span>
+                <span>
+                  -
+                  {new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: paymentData.currency || "ETB",
+                  }).format(paymentData.walletAppliedMinor / 100)}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="font-semibold">Total Amount:</span>
               <span className="font-bold text-lg">

@@ -132,13 +132,32 @@ export interface Order {
     subtotalMinor?: number;
     serviceFeeMinor?: number;
     serviceFeeRate?: number;
+    /**
+     * Reward credits spent on this order, already off what the gateway charged.
+     * `totalMinor` is still what the order cost, so the customer paid
+     * `totalMinor - walletAppliedMinor` in money.
+     */
+    walletAppliedMinor?: number;
     [key: string]: any;
   };
+  /** Cashback this order earned, absent when it earned none. */
+  cashback?: OrderCashback;
   subOrders?: SubOrder[];
   lines?: OrderLine[];
   createdAt: string;
   updatedAt: string;
   cancellable?: boolean;
+}
+
+/**
+ * Cashback booked against an order. While PENDING the credits are promised but
+ * not yet spendable — they land in the wallet once the order completes.
+ */
+export interface OrderCashback {
+  status?: "PENDING" | "APPROVED" | "REJECTED";
+  amountMinor?: number;
+  campaignName?: string;
+  releasedAt?: string | null;
 }
 
 export interface CreateOrderRequest {

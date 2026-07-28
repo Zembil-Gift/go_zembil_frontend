@@ -45,6 +45,8 @@ interface PaymentFormProps {
   orderType?: string | null;
   amount: number;
   currency: string;
+  /** Reward credits already taken off `amount`, in the same currency. */
+  walletAppliedMinor?: number;
   billingDetails?: {
     name?: string;
     email?: string;
@@ -70,6 +72,7 @@ function PaymentForm({
   orderType,
   amount,
   currency,
+  walletAppliedMinor = 0,
   billingDetails,
   onSuccess,
   onError,
@@ -213,6 +216,18 @@ function PaymentForm({
       {/* Order Summary */}
       <div className="bg-gray-50 p-4 rounded-lg space-y-2">
         <Separator />
+        {walletAppliedMinor > 0 && (
+          <div className="flex justify-between text-sm text-viridian-green">
+            <span>Reward credits applied</span>
+            <span>
+              -
+              {new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: currency || "USD",
+              }).format(walletAppliedMinor / 100)}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="font-semibold">Total Amount:</span>
           <span className="font-bold text-lg">
@@ -267,6 +282,7 @@ export default function StripePaymentPage() {
   const [paymentData, setPaymentData] = useState<{
     amount: number;
     currency: string;
+    walletAppliedMinor?: number;
     orderId: number;
     billingDetails?: {
       name?: string;
@@ -364,9 +380,13 @@ export default function StripePaymentPage() {
         throw new Error("No client secret received from server");
       }
 
-      // Use order details for amount since payment init may not return it
-      const amount = response.amount || orderAmount;
-      const currency = response.currency || orderCurrency;
+      // Prefer what the backend says it is collecting: reward credits are taken
+      // off the charge there, so the order total would over-quote the customer.
+      // Fall back to the order total only when the backend reports nothing.
+      const amount = response.totalMinor ?? response.amount ?? orderAmount;
+      const currency =
+        response.currencyCode || response.currency || orderCurrency;
+      const walletAppliedMinor = response.walletAppliedMinor ?? 0;
 
       console.log("Parsed payment data:", {
         amount,
@@ -402,6 +422,7 @@ export default function StripePaymentPage() {
       setClientSecret(response.clientSecret);
       setPaymentData({
         amount: amount,
+        walletAppliedMinor,
         currency: currency,
         orderId: orderIdNum,
         billingDetails,
@@ -532,6 +553,7 @@ export default function StripePaymentPage() {
               orderId={paymentData.orderId}
               orderType={orderType}
               amount={paymentData.amount}
+              walletAppliedMinor={paymentData.walletAppliedMinor}
               currency={paymentData.currency}
               billingDetails={paymentData.billingDetails}
               onSuccess={handlePaymentSuccess}

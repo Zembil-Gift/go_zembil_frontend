@@ -1440,7 +1440,8 @@ class AdminService {
     size: number = 20,
     status?: string,
     search?: string,
-    sort?: string
+    sort?: string,
+    vendorId?: number
   ): Promise<PaginatedResponse<any>> {
     const params = new URLSearchParams();
     params.append("page", page.toString());
@@ -1453,6 +1454,9 @@ class AdminService {
     }
     if (sort) {
       params.append("sort", sort);
+    }
+    if (vendorId != null) {
+      params.append("vendorId", vendorId.toString());
     }
     return await apiService.getRequest<PaginatedResponse<any>>(
       `/api/admin/products?${params.toString()}`
@@ -2037,6 +2041,156 @@ class AdminService {
     );
   }
 
+  // ===== Reward wallet =====
+
+  async getWalletPolicy(): Promise<WalletPolicyDto> {
+    return await apiService.getRequest<WalletPolicyDto>("/api/admin/wallet-policy");
+  }
+
+  async updateWalletPolicy(
+    data: UpdateWalletPolicyRequest
+  ): Promise<WalletPolicyDto> {
+    return await apiService.putRequest<WalletPolicyDto>(
+      "/api/admin/wallet-policy",
+      data
+    );
+  }
+
+  async getWalletStats(params: {
+    from: string;
+    to: string;
+    bucket?: WalletStatsBucket;
+  }): Promise<WalletStatsDto> {
+    const query = new URLSearchParams({ from: params.from, to: params.to });
+    if (params.bucket) query.set("bucket", params.bucket);
+    return await apiService.getRequest<WalletStatsDto>(
+      `/api/admin/wallet/stats?${query.toString()}`
+    );
+  }
+
+  // ===== Free Gift Over Threshold campaigns =====
+
+  async getFreeGiftTiers(): Promise<FreeGiftTierDto[]> {
+    return await apiService.getRequest<FreeGiftTierDto[]>("/api/admin/free-gift");
+  }
+
+  async createFreeGiftTier(
+    data: SaveFreeGiftTierRequest
+  ): Promise<FreeGiftTierDto> {
+    return await apiService.postRequest<FreeGiftTierDto>(
+      "/api/admin/free-gift",
+      data
+    );
+  }
+
+  async updateFreeGiftTier(
+    id: number,
+    data: SaveFreeGiftTierRequest
+  ): Promise<FreeGiftTierDto> {
+    return await apiService.putRequest<FreeGiftTierDto>(
+      `/api/admin/free-gift/${id}`,
+      data
+    );
+  }
+
+  async deleteFreeGiftTier(id: number): Promise<void> {
+    return await apiService.deleteRequest<void>(`/api/admin/free-gift/${id}`);
+  }
+
+  async uploadFreeGiftImage(id: number, file: File): Promise<FreeGiftTierDto> {
+    const formData = new FormData();
+    formData.append("file", file);
+    return await apiService.postFormData<FreeGiftTierDto>(
+      `/api/admin/free-gift/${id}/image`,
+      formData
+    );
+  }
+
+  async deleteFreeGiftImage(id: number): Promise<FreeGiftTierDto> {
+    return await apiService.deleteRequest<FreeGiftTierDto>(
+      `/api/admin/free-gift/${id}/image`
+    );
+  }
+
+  /** Report of gifts granted to customers. */
+  async getFreeGiftGrants(
+    settingId?: number,
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<FreeGiftGrantDto>> {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("size", size.toString());
+    if (settingId != null) params.append("settingId", settingId.toString());
+    return await apiService.getRequest<PaginatedResponse<FreeGiftGrantDto>>(
+      `/api/admin/free-gift/grants?${params.toString()}`
+    );
+  }
+
+  // ===== Wallet Cashback Campaigns =====
+
+  async getCashbackCampaigns(): Promise<CashbackCampaignDto[]> {
+    return await apiService.getRequest<CashbackCampaignDto[]>(
+      "/api/admin/cashback"
+    );
+  }
+
+  async createCashbackCampaign(
+    data: SaveCashbackCampaignRequest
+  ): Promise<CashbackCampaignDto> {
+    return await apiService.postRequest<CashbackCampaignDto>(
+      "/api/admin/cashback",
+      data
+    );
+  }
+
+  async updateCashbackCampaign(
+    id: number,
+    data: SaveCashbackCampaignRequest
+  ): Promise<CashbackCampaignDto> {
+    return await apiService.putRequest<CashbackCampaignDto>(
+      `/api/admin/cashback/${id}`,
+      data
+    );
+  }
+
+  async deleteCashbackCampaign(id: number): Promise<void> {
+    return await apiService.deleteRequest<void>(`/api/admin/cashback/${id}`);
+  }
+
+  async uploadCashbackImage(
+    id: number,
+    file: File
+  ): Promise<CashbackCampaignDto> {
+    const formData = new FormData();
+    formData.append("file", file);
+    return await apiService.postFormData<CashbackCampaignDto>(
+      `/api/admin/cashback/${id}/image`,
+      formData
+    );
+  }
+
+  async deleteCashbackImage(id: number): Promise<CashbackCampaignDto> {
+    return await apiService.deleteRequest<CashbackCampaignDto>(
+      `/api/admin/cashback/${id}/image`
+    );
+  }
+
+  /** Report of cashback promised and paid to customers. */
+  async getCashbackAccruals(
+    settingId?: number,
+    page: number = 0,
+    size: number = 20
+  ): Promise<PaginatedResponse<CashbackAccrualDto>> {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("size", size.toString());
+    if (settingId != null) params.append("settingId", settingId.toString());
+    return await apiService.getRequest<PaginatedResponse<CashbackAccrualDto>>(
+      `/api/admin/cashback/accruals?${params.toString()}`
+    );
+  }
+
   // ===== Delivery Pricing / Delivery Mode =====
 
   async getDeliveryPricingConfigs(): Promise<DeliveryPricingConfigDto[]> {
@@ -2237,6 +2391,134 @@ export interface UpdateCommissionRateRequest {
   description?: string;
 }
 
+/** One Free Gift Over Threshold campaign. */
+export interface FreeGiftTierDto {
+  id: number;
+  /** Campaign name (unique). */
+  code: string;
+  enabled: boolean;
+  thresholdAmountMinor: number;
+  currencyCode: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  giftProductId: number | null;
+  giftProductName: string | null;
+  giftProductCover: string | null;
+  /** Total gifts left. Null = untracked. */
+  giftStock: number | null;
+  /** Max gifts one customer may receive from this campaign. Null = unlimited. */
+  perCustomerLimit: number | null;
+  description: string | null;
+  /** Banner image shown on the home page. */
+  imageUrl: string | null;
+  /** Server-computed: enabled, in window, product set, stock left. */
+  activeNow: boolean;
+  updatedBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+/** One free gift handed to one customer. */
+export interface FreeGiftGrantDto {
+  id: number;
+  settingId: number | null;
+  campaignName: string | null;
+  userId: number | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  giftProductId: number | null;
+  giftProductName: string | null;
+  orderId: number | null;
+  orderNumber: string | null;
+  status: string | null;
+  qualifyingSubtotalMinor: number | null;
+  currencyCode: string | null;
+  grantedAt: string | null;
+}
+
+export interface SaveFreeGiftTierRequest {
+  code?: string;
+  description?: string | null;
+  enabled?: boolean;
+  thresholdAmountMinor?: number;
+  currencyCode?: string;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  giftProductId?: number | null;
+  giftStock?: number | null;
+  perCustomerLimit?: number | null;
+}
+
+/**
+ * Which order amount a cashback campaign's percent is taken from. Either way the
+ * server caps the basis at the real money paid — credits spent on an order never
+ * earn cashback.
+ */
+export type CashbackBasis = "SUBTOTAL" | "ORDER_TOTAL";
+
+/** One Wallet Cashback campaign. */
+export interface CashbackCampaignDto {
+  id: number;
+  /** Campaign name (unique). */
+  code: string;
+  enabled: boolean;
+  /** Percent as the admin types it (5 = 5%). */
+  percent: number;
+  basis: CashbackBasis;
+  minOrderSubtotalMinor: number;
+  /** Ceiling on one order's cashback. Null = uncapped. */
+  maxCashbackMinor: number | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  /** Max orders one customer may earn from. Null = unlimited. */
+  perCustomerLimit: number | null;
+  /** Days the credit stays spendable once released. Null = never expires. */
+  creditExpiryDays: number | null;
+  description: string | null;
+  /** Banner image shown on the home page. */
+  imageUrl: string | null;
+  /** Server-computed: enabled, in window, rate above zero. */
+  activeNow: boolean;
+  updatedBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+/** One customer's cashback on one order. */
+export interface CashbackAccrualDto {
+  id: number;
+  settingId: number | null;
+  campaignName: string | null;
+  userId: number | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  orderId: number | null;
+  orderNumber: string | null;
+  /** PENDING (promised), APPROVED (in the wallet) or REJECTED (voided). */
+  status: string | null;
+  amountMinor: number | null;
+  basisMinor: number | null;
+  basis: CashbackBasis | null;
+  currencyCode: string | null;
+  accruedAt: string | null;
+  releasedAt: string | null;
+  voidReason: string | null;
+}
+
+export interface SaveCashbackCampaignRequest {
+  code?: string;
+  description?: string | null;
+  enabled?: boolean;
+  percent?: number;
+  basis?: CashbackBasis;
+  minOrderSubtotalMinor?: number;
+  maxCashbackMinor?: number | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  perCustomerLimit?: number | null;
+  creditExpiryDays?: number | null;
+}
+
 export interface ServiceFeeRateDto {
   id: number | null;
   serviceFeeRate: number; // decimal (e.g., 0.15)
@@ -2251,6 +2533,77 @@ export interface ServiceFeeRateDto {
 export interface UpdateServiceFeeRateRequest {
   serviceFeePercentage: number; // percentage (e.g., 15.0 for 15%)
   description?: string;
+}
+
+// ===== Reward wallet =====
+
+export interface WalletPolicyDto {
+  id: number | null;
+  /** False means no policy exists — the wallet is inert and credits never apply. */
+  configured: boolean;
+  walletCurrencyCode: string | null;
+  maxOrderCoverageRate: number | null; // decimal (e.g., 0.5)
+  maxOrderCoveragePercentage: number | null; // percentage (e.g., 50.0)
+  description: string | null;
+  active: boolean | null;
+  updatedBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface UpdateWalletPolicyRequest {
+  walletCurrencyCode: string;
+  maxOrderCoveragePercentage: number; // percentage (e.g., 50.0 for half)
+  description?: string;
+  active?: boolean;
+}
+
+export type WalletStatsBucket = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR";
+
+export interface WalletStatsPoint {
+  bucketStart: string;
+  grantedMinor: number;
+  spentMinor: number;
+  refundedMinor: number;
+  expiredMinor: number;
+}
+
+/**
+ * All amounts are positive minor units. Flow figures cover the requested
+ * window; position figures (outstanding, expiring, wallet counts) are as-of-now.
+ */
+export interface WalletStatsDto {
+  from: string;
+  to: string;
+  bucket: WalletStatsBucket;
+  currencyCode: string | null;
+  configured: boolean;
+  maxOrderCoveragePercentage: number | null;
+
+  grantedMinor: number;
+  spentMinor: number;
+  refundedMinor: number;
+  expiredMinor: number;
+  adjustedMinor: number;
+  netIssuedMinor: number;
+  netSpentMinor: number;
+  redemptionRate: number | null;
+  expiryRate: number | null;
+
+  grantCount: number;
+  spendCount: number;
+  refundCount: number;
+  expiryCount: number;
+  ordersUsingCredits: number;
+  avgCreditPerOrderMinor: number;
+  activeWallets: number;
+
+  outstandingMinor: number;
+  expiringNext30DaysMinor: number;
+  totalWallets: number;
+  fundedWallets: number;
+
+  series: WalletStatsPoint[];
 }
 
 export type DeliveryMode = "GOOGLE_MAPS" | "MANUAL";

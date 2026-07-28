@@ -15,5 +15,6 @@ export { default as AdminCustomOrders } from "./AdminCustomOrders";
 export { default as AdminBroadcasts } from "./AdminBroadcasts";
 export { default as AdminCommission } from "./AdminCommission";
 export { default as AdminRefunds } from "./AdminRefunds";
+export { default as AdminWallet } from "./AdminWallet";
 export { default as AdminRoles } from "./AdminRoles";
 export { default as AdminPermissions } from "./AdminPermissions";
