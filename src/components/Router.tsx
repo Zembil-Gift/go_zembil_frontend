@@ -112,6 +112,7 @@ const AdminCommission = React.lazy(
   () => import("@/pages/admin/AdminCommission")
 );
 const AdminRefunds = React.lazy(() => import("@/pages/admin/AdminRefunds"));
+const AdminWallet = React.lazy(() => import("@/pages/admin/AdminWallet"));
 const AdminVendorPayout = React.lazy(
   () => import("@/pages/admin/AdminVendorPayout")
 );
@@ -961,6 +962,7 @@ export default function Router() {
             <Route path="refunds" element={<AdminRefunds />} />
             <Route path="vendor-payouts" element={<AdminVendorPayout />} />
             <Route path="commission" element={<AdminCommission />} />
+            <Route path="wallet" element={<AdminWallet />} />
             <Route path="roles" element={<AdminRoles />} />
             <Route path="permissions" element={<AdminPermissions />} />
             <Route

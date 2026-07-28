@@ -11,6 +11,11 @@ export interface PaymentInitResponse {
   orderId: number;
   amount: number;
   currency: string;
+  /** What the gateway will actually collect, in `currencyCode`. */
+  totalMinor?: number;
+  currencyCode?: string;
+  /** Reward credits taken off this charge, in `currencyCode`. */
+  walletAppliedMinor?: number;
 }
 
 export interface PaymentVerificationRequest {

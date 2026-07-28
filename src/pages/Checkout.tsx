@@ -26,6 +26,7 @@ import {
   Loader2,
   Gift,
   Tag,
+  Wallet,
   CheckCircle2,
   XCircle,
   AlertCircle,
@@ -53,6 +54,7 @@ import {
   type PaymentMethod,
 } from "@/lib/countryConfig";
 import { paymentMethodConfigService } from "@/services/paymentMethodConfigService";
+import { walletService, minorToMajor } from "@/services/walletService";
 import {
   GoogleMapsProvider,
   LocationPicker,
@@ -431,6 +433,23 @@ export default function Checkout() {
         : 0;
     return Math.max(0, effectiveSubtotal - discountAmountDisplay + delivery);
   }, [effectiveSubtotal, discountAmountDisplay, deliveryEstimate]);
+
+  // Reward credits that will come off this order. Advisory — checkout debits the
+  // wallet atomically at payment time, so this previews rather than reserves.
+  const { data: walletApplicableMinor } = useQuery({
+    queryKey: ["wallet", "applicable", cartCurrency, toMinorUnits(finalTotal, cartCurrency)],
+    queryFn: () =>
+      walletService.getApplicable(
+        cartCurrency!,
+        toMinorUnits(finalTotal, cartCurrency)
+      ),
+    enabled: isAuthenticated && !!cartCurrency && finalTotal > 0,
+  });
+
+  const walletCreditDisplay = minorToMajor(walletApplicableMinor);
+
+  // What the customer actually pays once credits are taken off.
+  const payableTotal = Math.max(0, finalTotal - walletCreditDisplay);
 
   useEffect(() => {
     let cancelled = false;
@@ -1812,6 +1831,19 @@ export default function Checkout() {
                   </div>
                 )}
 
+                {/* Reward credits */}
+                {walletCreditDisplay > 0 && (
+                  <div className="flex justify-between text-sm text-viridian-green">
+                    <span className="flex items-center gap-1">
+                      <Wallet className="h-3 w-3" />
+                      Reward credits
+                    </span>
+                    <span>
+                      -{formatPrice(walletCreditDisplay, cartCurrency)}
+                    </span>
+                  </div>
+                )}
+
                 {/* Estimated Total */}
                 <div className="flex justify-between font-semibold text-lg pt-2">
                   <span>Estimated Total</span>
@@ -1821,14 +1853,21 @@ export default function Checkout() {
                           Math.max(
                             0,
                             telebirrConversion.convertedAmount -
-                              discountAmountDisplay *
+                              (discountAmountDisplay + walletCreditDisplay) *
                                 (telebirrConversion.rate || 1)
                           ),
                           "ETB"
                         )
-                      : formatPrice(finalTotal, cartCurrency)}
+                      : formatPrice(payableTotal, cartCurrency)}
                   </span>
                 </div>
+
+                {walletCreditDisplay > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Your reward credits cover part of this order. The rest is
+                    charged to your selected payment method.
+                  </p>
+                )}
 
                 {selectedPaymentMethod === "telebirr" &&
                   cartCurrency?.toUpperCase() !== "ETB" && (

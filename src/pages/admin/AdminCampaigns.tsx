@@ -69,7 +69,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
+  Gift,
+  Wallet,
 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import FreeGiftCampaigns from "@/components/admin/FreeGiftCampaigns";
+import CashbackCampaigns from "@/components/admin/CashbackCampaigns";
 import {
   campaignService,
   EventCampaign,
@@ -504,7 +509,38 @@ function parseVendorCriteria(criteria: string | null | undefined): {
 
 // ==================== Component ====================
 
+type CampaignSection = "campaigns" | "free-gift" | "cashback";
+
+/** Switches between regular campaigns, free gifts and wallet cashback. */
+function SectionTabs({
+  value,
+  onChange,
+}: {
+  value: CampaignSection;
+  onChange: (v: CampaignSection) => void;
+}) {
+  return (
+    <Tabs value={value} onValueChange={(v) => onChange(v as CampaignSection)}>
+      <TabsList>
+        <TabsTrigger value="campaigns">
+          <Megaphone className="mr-2 h-4 w-4" />
+          Campaigns
+        </TabsTrigger>
+        <TabsTrigger value="free-gift">
+          <Gift className="mr-2 h-4 w-4" />
+          Free Gifts
+        </TabsTrigger>
+        <TabsTrigger value="cashback">
+          <Wallet className="mr-2 h-4 w-4" />
+          Cashback
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+}
+
 export default function AdminCampaigns() {
+  const [section, setSection] = useState<CampaignSection>("campaigns");
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -1272,12 +1308,30 @@ export default function AdminCampaigns() {
 
   // ==================== Render ====================
 
+  // Free gifts and cashback are separate mechanisms, but they live here so all
+  // campaign-like things are managed in one place.
+  if (section === "free-gift" || section === "cashback") {
+    return (
+      <AdminLayout
+        title="Campaigns"
+        description="Create and manage promotional campaigns, product banners, and participation campaigns"
+      >
+        <div className="space-y-6 p-6">
+          <SectionTabs value={section} onChange={setSection} />
+          {section === "free-gift" ? <FreeGiftCampaigns /> : <CashbackCampaigns />}
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout
       title="Campaigns"
       description="Create and manage promotional campaigns, product banners, and participation campaigns"
     >
       <div className="space-y-6 p-6">
+        <SectionTabs value={section} onChange={setSection} />
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Card>

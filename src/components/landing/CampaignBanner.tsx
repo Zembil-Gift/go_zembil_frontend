@@ -3,12 +3,30 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   campaignService,
-  EventCampaign,
   TargetRole,
 } from "@/services/campaignService";
+import { freeGiftService } from "@/services/freeGiftService";
+import { cashbackService } from "@/services/cashbackService";
+import { formatPrice, fromMinorUnits, fetchCurrencies } from "@/lib/currency";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+
+/**
+ * What the carousel renders. Event campaigns and free-gift tiers both
+ * normalize into this, so they share one polished slide.
+ */
+interface Slide {
+  key: string;
+  name: string;
+  description?: string | null;
+  imageUrl: string;
+  badge?: string | null;
+  /** Omitted by free gifts, which may run open-ended — no countdown shown. */
+  endDateTime?: string | null;
+  ctaText: string;
+  href: string;
+}
 
 interface TimeRemaining {
   days: number;
@@ -59,35 +77,44 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
   );
 }
 
-function getCtaConfig(campaign: EventCampaign): {
-  text: string;
-  action: (navigate: ReturnType<typeof useNavigate>) => void;
-} {
-  return {
-    text: campaign.ctaText || "View Campaign",
-    action: (navigate) => navigate(`/campaigns/${campaign.id}`),
-  };
+/** Split out so the countdown hook only runs for slides that have a deadline. */
+function Countdown({ endDateTime }: { endDateTime: string }) {
+  const countdown = useCountdown(endDateTime);
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-5 sm:mb-10">
+      <CountdownUnit value={countdown.days} label="Days" />
+      <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
+        :
+      </span>
+      <CountdownUnit value={countdown.hours} label="Hours" />
+      <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
+        :
+      </span>
+      <CountdownUnit value={countdown.minutes} label="Mins" />
+      <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
+        :
+      </span>
+      <CountdownUnit value={countdown.seconds} label="Secs" />
+    </div>
+  );
 }
 
 function CampaignSlide({
-  campaign,
+  slide,
   isActive,
 }: {
-  campaign: EventCampaign;
+  slide: Slide;
   isActive: boolean;
 }) {
   const navigate = useNavigate();
-  const countdown = useCountdown(campaign.endDateTime);
-  const cta = getCtaConfig(campaign);
-
-  if (countdown.total <= 0) return null;
 
   return (
     <div className="relative w-full min-h-[550px] sm:min-h-[600px] md:min-h-[650px] lg:min-h-[720px] group bg-charcoal overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <img
-          src={campaign.imageUrl || ""}
-          alt={campaign.name}
+          src={slide.imageUrl}
+          alt={slide.name}
           className={cn(
             "w-full h-full object-cover transition-transform duration-[10s] ease-linear will-change-transform",
             isActive ? "scale-110" : "scale-100"
@@ -109,49 +136,33 @@ function CampaignSlide({
               : "opacity-0 translate-y-8"
           )}
         >
-          {campaign.campaignType !== "PRODUCT_EVENT" && (
+          {slide.badge && (
             <span className="inline-block px-3 py-1 mb-4 text-xs font-semibold uppercase tracking-wider rounded-full bg-ethiopian-gold/20 text-ethiopian-gold border border-ethiopian-gold/30">
-              {campaign.campaignType === "VENDOR_PARTICIPATION"
-                ? "Vendor Campaign"
-                : "Join & Win"}
+              {slide.badge}
             </span>
           )}
 
           <h2 className="pt-1 sm:pt-2 lg:pt-3 text-[clamp(1.75rem,6vw,4.75rem)] font-serif font-bold text-white leading-[1.05] sm:leading-[1.08] tracking-tight mb-4 sm:mb-7 drop-shadow-2xl max-w-[20ch] break-words">
             <span className="bg-clip-text font-serif font-bold text-transparent bg-gradient-to-b from-white via-white to-white/70">
-              {campaign.name}
+              {slide.name}
             </span>
           </h2>
 
-          {campaign.description && (
+          {slide.description && (
             <p className="hidden sm:block text-lg sm:text-xl text-gray-200 mb-10 max-w-2xl leading-relaxed font-light border-l-4 border-ethiopian-gold pl-6">
-              {campaign.description}
+              {slide.description}
             </p>
           )}
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-5 sm:mb-10">
-            <CountdownUnit value={countdown.days} label="Days" />
-            <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
-              :
-            </span>
-            <CountdownUnit value={countdown.hours} label="Hours" />
-            <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
-              :
-            </span>
-            <CountdownUnit value={countdown.minutes} label="Mins" />
-            <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
-              :
-            </span>
-            <CountdownUnit value={countdown.seconds} label="Secs" />
-          </div>
+          {slide.endDateTime && <Countdown endDateTime={slide.endDateTime} />}
 
           <div className="relative z-40 inline-block rounded-full bg-black/40 backdrop-blur-sm p-1.5 shadow-[0_0_40px_12px_rgba(0,0,0,0.4)]">
             <button
-              onClick={() => cta.action(navigate)}
+              onClick={() => navigate(slide.href)}
               className="group/btn relative inline-flex items-center gap-3 sm:gap-4 bg-white hover:bg-ethiopian-gold text-charcoal text-base sm:text-xl font-bold px-6 sm:px-10 py-3.5 sm:py-5 rounded-full transition-all duration-500 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(253,203,45,0.6)] overflow-hidden"
             >
               <span className="relative z-10 flex items-center gap-2 sm:gap-3">
-                {cta.text}
+                {slide.ctaText}
                 <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 group-hover/btn:translate-x-2" />
               </span>
 
@@ -180,9 +191,91 @@ export default function CampaignBanner() {
     retry: 1,
   });
 
-  const liveCampaigns = campaigns.filter((c) => {
-    return new Date(c.endDateTime).getTime() > Date.now() && !!c.imageUrl;
+  const { data: giftTiers = [] } = useQuery({
+    queryKey: ["free-gift"],
+    queryFn: () => freeGiftService.getFreeGiftTiers(),
+    staleTime: 60_000,
+    retry: 1,
   });
+
+  const { data: cashbackCampaigns = [] } = useQuery({
+    queryKey: ["cashback"],
+    queryFn: () => cashbackService.getCampaigns(),
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  // Campaigns no longer carry a currency; display amounts in the store default.
+  const { data: currencyMap } = useQuery({
+    queryKey: ["currencies"],
+    queryFn: () => fetchCurrencies(),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+  const defaultCurrency =
+    [...(currencyMap?.values() ?? [])].find((c) => c.isDefault)?.code ?? "USD";
+
+  const campaignSlides: Slide[] = campaigns
+    .filter((c) => new Date(c.endDateTime).getTime() > Date.now() && !!c.imageUrl)
+    .map((c) => ({
+      key: `campaign-${c.id}`,
+      name: c.name,
+      description: c.description,
+      imageUrl: c.imageUrl!,
+      badge:
+        c.campaignType === "PRODUCT_EVENT"
+          ? null
+          : c.campaignType === "VENDOR_PARTICIPATION"
+            ? "Vendor Campaign"
+            : "Join & Win",
+      endDateTime: c.endDateTime,
+      ctaText: c.ctaText || "View Campaign",
+      href: `/campaigns/${c.id}`,
+    }));
+
+  // Free gifts share the slide but carry their own hook: spend X, get it free.
+  const giftSlides: Slide[] = giftTiers
+    .filter((t) => t.activeNow && !!t.imageUrl)
+    .sort((a, b) => a.thresholdAmountMinor - b.thresholdAmountMinor)
+    .map((t) => ({
+      key: `gift-${t.id}`,
+      name: t.giftProductName ?? t.code,
+      description:
+        t.description ??
+        `Spend ${formatPrice(
+          fromMinorUnits(t.thresholdAmountMinor, t.currencyCode),
+          t.currencyCode
+        )} and this is yours, free.`,
+      imageUrl: t.imageUrl!,
+      badge: "Free Gift",
+      endDateTime: t.endsAt,
+      ctaText: "Start shopping",
+      href: "/shop",
+    }));
+
+  // Cashback shares the slide too: spend anything, get a percent back as credit.
+  const cashbackSlides: Slide[] = cashbackCampaigns
+    .filter((c) => c.activeNow && !!c.imageUrl)
+    .sort((a, b) => b.percent - a.percent)
+    .map((c) => ({
+      key: `cashback-${c.id}`,
+      name: c.code,
+      description:
+        c.description ??
+        (c.minOrderSubtotalMinor > 0
+          ? `Spend ${formatPrice(
+              fromMinorUnits(c.minOrderSubtotalMinor, defaultCurrency),
+              defaultCurrency
+            )} and get ${c.percent}% back as wallet credit.`
+          : `Get ${c.percent}% of every order back as wallet credit.`),
+      imageUrl: c.imageUrl!,
+      badge: `${c.percent}% Back`,
+      endDateTime: c.endsAt,
+      ctaText: "Start shopping",
+      href: "/shop",
+    }));
+
+  const liveCampaigns = [...campaignSlides, ...giftSlides, ...cashbackSlides];
 
   useEffect(() => {
     if (liveCampaigns.length <= 1 || isPaused) return;
@@ -219,9 +312,9 @@ export default function CampaignBanner() {
       <div className="max-w-[1400px] mx-auto">
         <div className="relative overflow-hidden rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl bg-charcoal ring-4 ring-white/10">
           <div className="relative bg-charcoal overflow-hidden">
-            {liveCampaigns.map((campaign, index) => (
+            {liveCampaigns.map((slide, index) => (
               <div
-                key={campaign.id}
+                key={slide.key}
                 className={cn(
                   "w-full transition-opacity duration-700 ease-in-out",
                   index === currentSlide
@@ -229,10 +322,7 @@ export default function CampaignBanner() {
                     : "absolute inset-0 opacity-0 pointer-events-none z-0"
                 )}
               >
-                <CampaignSlide
-                  campaign={campaign}
-                  isActive={index === currentSlide}
-                />
+                <CampaignSlide slide={slide} isActive={index === currentSlide} />
               </div>
             ))}
           </div>

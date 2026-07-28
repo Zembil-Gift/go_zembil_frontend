@@ -29,6 +29,8 @@ import {
   Phone,
   Mail,
   ArrowLeft,
+  Wallet,
+  Gift,
 } from "lucide-react";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { formatCurrency, getCurrencyDecimals } from "@/lib/currency";
@@ -278,6 +280,15 @@ export default function TrackOrder() {
       : paymentStatus === "REFUNDED"
       ? "bg-orange-100 text-orange-800"
       : "bg-yellow-100 text-yellow-800";
+  // Reward credits paid part of this order, so the total is not what the
+  // customer was actually charged. Show both rather than the total alone.
+  const walletAppliedMinor = order.totals?.walletAppliedMinor ?? 0;
+  // A voided accrual was never earned, so there is nothing to tell the customer.
+  const cashback =
+    order.cashback && order.cashback.status !== "REJECTED"
+      ? order.cashback
+      : undefined;
+  const cashbackPending = cashback?.status === "PENDING";
   const shippingAddress = order.shippingAddress as
     | (typeof order.shippingAddress & { street?: string; zipcode?: string })
     | undefined;
@@ -525,6 +536,32 @@ export default function TrackOrder() {
           </Card>
         )}
 
+        {/* Cashback earned on this order */}
+        {cashback && (cashback.amountMinor ?? 0) > 0 && (
+          <Card className="mb-8 border-viridian-green/40 bg-viridian-green/5">
+            <CardContent className="flex items-start gap-3 py-5">
+              <Gift className="text-viridian-green shrink-0 mt-0.5" size={22} />
+              <div>
+                <p className="font-semibold text-gray-900">
+                  You earned{" "}
+                  {formatMinorAmount(cashback.amountMinor, order.currency)}{" "}
+                  cashback on this order
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {cashbackPending
+                    ? "It becomes reward credit in your wallet once this order is complete, and you can spend it on your next order."
+                    : "It is in your wallet now — spend it on your next order."}
+                </p>
+                {cashbackPending && (
+                  <Badge className="mt-2 bg-yellow-100 text-yellow-800">
+                    Pending until delivery
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Order Details Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Order Information */}
@@ -595,6 +632,31 @@ export default function TrackOrder() {
                     )}
                   </p>
                 </div>
+                {walletAppliedMinor > 0 && (
+                  <>
+                    <div>
+                      <p className="font-medium text-viridian-green flex items-center gap-1">
+                        <Wallet size={14} />
+                        Reward Credits Used
+                      </p>
+                      <p className="text-viridian-green font-bold">
+                        -{formatMinorAmount(walletAppliedMinor, order.currency)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">Amount Charged</p>
+                      <p className="text-gray-900 font-bold">
+                        {formatMinorAmount(
+                          Math.max(
+                            0,
+                            (order.totals?.totalMinor ?? 0) - walletAppliedMinor
+                          ),
+                          order.currency
+                        )}
+                      </p>
+                    </div>
+                  </>
+                )}
                 <div>
                   <p className="font-medium text-gray-900">Payment Status</p>
                   <Badge className={paymentStatusClassName}>

@@ -6,8 +6,9 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { ShoppingCart, Plus, Minus, Trash2, CreditCard, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { formatPrice } from "@/lib/currency";
+import { formatPrice, toMinorUnits } from "@/lib/currency";
 import { CartItem } from "@/services/cartService";
+import { FreeGiftLine } from "@/components/cart/FreeGiftLine";
 
 export function CartSidebar() {
   const { isAuthenticated } = useAuth();
@@ -213,6 +214,12 @@ export function CartSidebar() {
                   </Button>
                 </div>
               ))}
+
+              <FreeGiftLine
+                subtotalMinor={cartCurrency ? toMinorUnits(totalPrice, cartCurrency) : 0}
+                cartCurrency={cartCurrency}
+                compact
+              />
             </div>
 
             <Separator />
