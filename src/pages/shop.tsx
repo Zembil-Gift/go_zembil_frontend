@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+} from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { motion } from "framer-motion";
@@ -48,6 +52,28 @@ export default function Shop() {
   return <ShopContent />;
 }
 
+function ProductCardSkeletons({ count }: { count: number }) {
+  return (
+    <>
+      {[...Array(count)].map((_, i) => (
+        <Card
+          key={i}
+          className="group overflow-hidden border-0 shadow-md bg-white rounded-2xl"
+        >
+          <CardContent className="p-0">
+            <Skeleton className="h-56 w-full bg-june-bud/10" />
+            <div className="p-4">
+              <Skeleton className="h-5 w-3/4 mb-2 bg-june-bud/20" />
+              <Skeleton className="h-4 w-1/2 mb-3 bg-june-bud/20" />
+              <Skeleton className="h-6 w-1/3 bg-june-bud/20" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </>
+  );
+}
+
 function ShopContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,7 +108,7 @@ function ShopContent() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-    }, 300);
+    }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
@@ -119,7 +145,6 @@ function ShopContent() {
   // Fetch products with filters (wait for auth so currency is correct)
   const {
     data: productsData,
-    isLoading: productsLoading,
     isFetching,
     isFetchingNextPage,
     hasNextPage,
@@ -149,6 +174,9 @@ function ShopContent() {
     getNextPageParam: (lastPage) =>
       lastPage.last ? undefined : lastPage.number + 1,
     enabled: isInitialized,
+    // ponytail: keeps the page mounted while a new search fetches, so the
+    // input never unmounts (that was the "full page refresh" while typing)
+    placeholderData: keepPreviousData,
   });
 
   const products = useMemo(
@@ -214,7 +242,8 @@ function ShopContent() {
     price: product.price || product.productSku?.[0]?.price || 0,
   }));
 
-  const isLoading = productsLoading || categoriesLoading;
+  // Fetching a new filter/search result (not appending the next page)
+  const isSearching = isFetching && !isFetchingNextPage;
   const hasFilters =
     selectedCategoryId || selectedSubCategoryId || debouncedSearch;
 
@@ -261,8 +290,8 @@ function ShopContent() {
     }
   );
 
-  // Loading state
-  if (isLoading && products.length === 0) {
+  // Cold start only — never on search, or the search input would unmount
+  if (categoriesLoading && products.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
         {/* Hero skeleton */}
@@ -295,21 +324,7 @@ function ShopContent() {
 
           {/* Products grid skeleton */}
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <Card
-                key={i}
-                className="group overflow-hidden border-0 shadow-md bg-white rounded-2xl"
-              >
-                <CardContent className="p-0">
-                  <Skeleton className="h-56 w-full bg-june-bud/10" />
-                  <div className="p-4">
-                    <Skeleton className="h-5 w-3/4 mb-2 bg-june-bud/20" />
-                    <Skeleton className="h-4 w-1/2 mb-3 bg-june-bud/20" />
-                    <Skeleton className="h-6 w-1/3 bg-june-bud/20" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            <ProductCardSkeletons count={8} />
           </div>
         </div>
       </div>
@@ -727,7 +742,11 @@ function ShopContent() {
             </p>
           </div>
 
-          {displayProducts.length === 0 && !isFetching ? (
+          {isSearching ? (
+            <div className="grid gap-6 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <ProductCardSkeletons count={itemsPerPage} />
+            </div>
+          ) : displayProducts.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
