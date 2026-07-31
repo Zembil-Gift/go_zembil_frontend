@@ -2158,21 +2158,22 @@ class AdminService {
     return await apiService.deleteRequest<void>(`/api/admin/cashback/${id}`);
   }
 
-  async uploadCashbackImage(
+  /** Replaces the campaign's banner images with exactly these, in this order. */
+  async uploadCashbackImages(
     id: number,
-    file: File
+    files: File[]
   ): Promise<CashbackCampaignDto> {
     const formData = new FormData();
-    formData.append("file", file);
+    files.forEach((file) => formData.append("files", file));
     return await apiService.postFormData<CashbackCampaignDto>(
-      `/api/admin/cashback/${id}/image`,
+      `/api/admin/cashback/${id}/images`,
       formData
     );
   }
 
-  async deleteCashbackImage(id: number): Promise<CashbackCampaignDto> {
+  async deleteCashbackImages(id: number): Promise<CashbackCampaignDto> {
     return await apiService.deleteRequest<CashbackCampaignDto>(
-      `/api/admin/cashback/${id}/image`
+      `/api/admin/cashback/${id}/images`
     );
   }
 
@@ -2475,7 +2476,9 @@ export interface CashbackCampaignDto {
   /** Days the credit stays spendable once released. Null = never expires. */
   creditExpiryDays: number | null;
   description: string | null;
-  /** Banner image shown on the home page. */
+  /** Banner images shown on the home page, cycled in this order. */
+  imageUrls: string[];
+  /** First banner image, or null when the campaign has none. */
   imageUrl: string | null;
   /** Server-computed: enabled, in window, rate above zero. */
   activeNow: boolean;
