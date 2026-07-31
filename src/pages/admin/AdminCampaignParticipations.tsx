@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import AdminLayout from "@/components/admin/AdminLayout";
 import FreeGiftGrantsTab from "@/components/admin/FreeGiftGrantsTab";
+import CashbackAccrualsTab from "@/components/admin/CashbackAccrualsTab";
 import {
   campaignService,
   CampaignActionProgress,
@@ -1481,11 +1482,12 @@ export default function AdminCampaignParticipations() {
     >
       <div className="space-y-6">
         <Tabs defaultValue="vendor" className="w-full">
-          <TabsList className="grid w-full max-w-3xl grid-cols-4">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5">
             <TabsTrigger value="vendor">Vendor Submissions</TabsTrigger>
             <TabsTrigger value="user">Customer Submissions</TabsTrigger>
             <TabsTrigger value="paid">Paid Submissions</TabsTrigger>
             <TabsTrigger value="free-gift">Free Gifts</TabsTrigger>
+            <TabsTrigger value="cashback">Cashback</TabsTrigger>
           </TabsList>
           <TabsContent value="vendor" className="mt-4">
             <ParticipationTabContent role="VENDOR" campaigns={campaigns} />
@@ -1498,6 +1500,9 @@ export default function AdminCampaignParticipations() {
           </TabsContent>
           <TabsContent value="free-gift" className="mt-4">
             <FreeGiftGrantsTab />
+          </TabsContent>
+          <TabsContent value="cashback" className="mt-4">
+            <CashbackAccrualsTab />
           </TabsContent>
         </Tabs>
       </div>

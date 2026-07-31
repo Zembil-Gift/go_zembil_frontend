@@ -20,13 +20,17 @@ interface Slide {
   key: string;
   name: string;
   description?: string | null;
-  imageUrl: string;
+  /** One or more backgrounds; more than one cycles every ROTATE_MS. */
+  imageUrls: string[];
   badge?: string | null;
   /** Omitted by free gifts, which may run open-ended — no countdown shown. */
   endDateTime?: string | null;
   ctaText: string;
   href: string;
 }
+
+/** How long each background image of a multi-image slide stays up. */
+const ROTATE_MS = 15_000;
 
 interface TimeRemaining {
   days: number;
@@ -108,18 +112,39 @@ function CampaignSlide({
   isActive: boolean;
 }) {
   const navigate = useNavigate();
+  const [imageIndex, setImageIndex] = useState(0);
+
+  // Campaigns with several banners cycle through them in place; the slide itself
+  // stays put, so a single-campaign home page still moves.
+  useEffect(() => {
+    // A refetch can shorten the list under us; start over rather than land on a
+    // gap where no image is the visible one.
+    setImageIndex(0);
+    if (slide.imageUrls.length <= 1) return;
+    const interval = setInterval(
+      () => setImageIndex((prev) => (prev + 1) % slide.imageUrls.length),
+      ROTATE_MS
+    );
+    return () => clearInterval(interval);
+  }, [slide.imageUrls.length]);
 
   return (
     <div className="relative w-full min-h-[550px] sm:min-h-[600px] md:min-h-[650px] lg:min-h-[720px] group bg-charcoal overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
-        <img
-          src={slide.imageUrl}
-          alt={slide.name}
-          className={cn(
-            "w-full h-full object-cover transition-transform duration-[10s] ease-linear will-change-transform",
-            isActive ? "scale-110" : "scale-100"
-          )}
-        />
+        {slide.imageUrls.map((url, index) => (
+          <img
+            key={url}
+            src={url}
+            alt={slide.name}
+            // Slow zoom as before, plus a one-second crossfade between images.
+            style={{ transition: "transform 10s linear, opacity 1s ease-in-out" }}
+            className={cn(
+              "absolute inset-0 w-full h-full object-cover will-change-transform",
+              isActive ? "scale-110" : "scale-100",
+              index === imageIndex ? "opacity-100" : "opacity-0"
+            )}
+          />
+        ))}
       </div>
 
       <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent opacity-90" />
@@ -221,7 +246,7 @@ export default function CampaignBanner() {
       key: `campaign-${c.id}`,
       name: c.name,
       description: c.description,
-      imageUrl: c.imageUrl!,
+      imageUrls: [c.imageUrl!],
       badge:
         c.campaignType === "PRODUCT_EVENT"
           ? null
@@ -246,7 +271,7 @@ export default function CampaignBanner() {
           fromMinorUnits(t.thresholdAmountMinor, t.currencyCode),
           t.currencyCode
         )} and this is yours, free.`,
-      imageUrl: t.imageUrl!,
+      imageUrls: [t.imageUrl!],
       badge: "Free Gift",
       endDateTime: t.endsAt,
       ctaText: "Start shopping",
@@ -255,7 +280,7 @@ export default function CampaignBanner() {
 
   // Cashback shares the slide too: spend anything, get a percent back as credit.
   const cashbackSlides: Slide[] = cashbackCampaigns
-    .filter((c) => c.activeNow && !!c.imageUrl)
+    .filter((c) => c.activeNow && c.imageUrls?.length > 0)
     .sort((a, b) => b.percent - a.percent)
     .map((c) => ({
       key: `cashback-${c.id}`,
@@ -268,7 +293,7 @@ export default function CampaignBanner() {
               defaultCurrency
             )} and get ${c.percent}% back as wallet credit.`
           : `Get ${c.percent}% of every order back as wallet credit.`),
-      imageUrl: c.imageUrl!,
+      imageUrls: c.imageUrls,
       badge: `${c.percent}% Back`,
       endDateTime: c.endsAt,
       ctaText: "Start shopping",

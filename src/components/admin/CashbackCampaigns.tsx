@@ -112,7 +112,9 @@ export default function CashbackCampaigns() {
   const [step, setStep] = useState(0);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<CampaignForm>(EMPTY_FORM);
-  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
+  /** Images already on the campaign being edited — shown so "replace" is not a surprise. */
+  const [editingImageUrls, setEditingImageUrls] = useState<string[]>([]);
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ['admin', 'cashback'],
@@ -144,13 +146,13 @@ export default function CashbackCampaigns() {
           ? await adminService.createCashbackCampaign(data)
           : await adminService.updateCashbackCampaign(id, data);
       // The image endpoint is keyed by id, so it can only run once the row exists.
-      if (pendingImage) {
+      if (pendingImages.length > 0) {
         try {
-          return await adminService.uploadCashbackImage(saved.id, pendingImage);
+          return await adminService.uploadCashbackImages(saved.id, pendingImages);
         } catch (e: any) {
           toast({
-            title: 'Campaign saved, image failed',
-            description: e?.message || 'The banner image could not be uploaded.',
+            title: 'Campaign saved, images failed',
+            description: e?.message || 'The banner images could not be uploaded.',
             variant: 'destructive',
           });
         }
@@ -179,7 +181,8 @@ export default function CashbackCampaigns() {
   const openCreate = () => {
     setEditingId(null);
     setForm({ ...EMPTY_FORM });
-    setPendingImage(null);
+    setPendingImages([]);
+    setEditingImageUrls([]);
     setStep(0);
     setDialogOpen(true);
   };
@@ -202,7 +205,8 @@ export default function CashbackCampaigns() {
       perCustomerLimit: campaign.perCustomerLimit === null ? '' : String(campaign.perCustomerLimit),
       creditExpiryDays: campaign.creditExpiryDays === null ? '' : String(campaign.creditExpiryDays),
     });
-    setPendingImage(null);
+    setPendingImages([]);
+    setEditingImageUrls(campaign.imageUrls ?? []);
     setStep(0);
     setDialogOpen(true);
   };
@@ -455,19 +459,41 @@ export default function CashbackCampaigns() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="image">Banner image</Label>
+                  <Label htmlFor="image">Banner images</Label>
                   <Input
                     id="image"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setPendingImage(e.target.files?.[0] ?? null)}
+                    multiple
+                    onChange={(e) => setPendingImages(Array.from(e.target.files ?? []))}
                   />
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <ImageIcon className="h-3 w-3" />
-                    {pendingImage
-                      ? `Selected: ${pendingImage.name}`
-                      : 'Shown on the home page campaign banner. Uploaded when you save.'}
+                    {pendingImages.length > 0
+                      ? `Selected ${pendingImages.length} image(s): ${pendingImages
+                          .map((f) => f.name)
+                          .join(', ')}`
+                      : 'The home page banner cycles through them every 15 seconds. Uploaded when you save.'}
                   </p>
+                  {editingImageUrls.length > 0 && (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        {editingImageUrls.map((url) => (
+                          <img
+                            key={url}
+                            src={url}
+                            alt=""
+                            className="h-14 w-20 rounded object-cover border"
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {pendingImages.length > 0
+                          ? 'These current images will be replaced by your selection.'
+                          : `${editingImageUrls.length} image(s) on this campaign. Selecting new files replaces all of them.`}
+                      </p>
+                    </>
+                  )}
                 </div>
               </>
             )}

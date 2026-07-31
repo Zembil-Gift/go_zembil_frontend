@@ -22,6 +22,9 @@ export interface CashbackCampaign {
   perCustomerLimit: number | null;
   creditExpiryDays: number | null;
   description: string | null;
+  /** Banner images, cycled on the home page banner. */
+  imageUrls: string[];
+  /** First banner image, or null when the campaign has none. */
   imageUrl: string | null;
   /** Server-computed: enabled, in window, rate above zero, customer cap not hit. */
   activeNow: boolean;
