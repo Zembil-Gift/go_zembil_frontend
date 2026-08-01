@@ -208,7 +208,8 @@
     "therapist": "የሚያከም",
     "psychologist": "የአእምሮ ሐኪም",
     "psychiatrist": "የአእምሮ ሐኪም",
-    "socialWorker": "የማህበራዊ ስራ ሰጪ"
+    "socialWorker": "የማህበራዊ ስራ ሰጪ",
+    "seeAll": "ሁሉንም ይመልከቱ"
   },
   "navigation": {
     "home": "የቤት ገጽ",
@@ -326,6 +327,16 @@
     "testimonials": {
       "title": "የውድ ስሜት እና ግንኙነት ታሪኮች",
       "subtitle": "ከዳያስፖራ ቤተሰቦች የሚመጡ እውነተኛ ልምዶች ተገኝተው ይገኛሉ"
+    },
+    "shopAll": {
+      "title": "ሁሉንም ስጦታዎች ይግዙ",
+      "subtitle": "ሙሉውን ስብስብ ከሱቃችን በቀጥታ ይመልከቱ",
+      "all": "ሁሉም",
+      "loadMore": "ተጨማሪ ይጫኑ",
+      "loading": "እየተጫነ ነው...",
+      "empty": "በዚህ ምድብ ውስጥ እስካሁን ምንም ምርት የለም።",
+      "error": "ምርቶችን መጫን አልቻልንም። እባክዎ እንደገና ይሞክሩ።",
+      "browseShop": "ሙሉውን ሱቅ ይመልከቱ"
     }
   },
   "footer": {
@@ -346,7 +357,7 @@
     "faq": "የሚጠየቁ ጥያቄዎች",
     "getInTouch": "ያግኙን",
     "USAPhone": "+1 945 399 3809",
-    "ETHPhone":"+251 91 791 4528",
+    "ETHPhone": "+251 91 791 4528",
     "email": "info@afrodebab.com",
     "address": "አዲስ አበባ፣ ኢትዮጵያ",
     "language": "ቋንቋ",
@@ -461,4 +472,4 @@
     "coffeeAccessories": "የቡና እቃዎች",
     "coffeeAccessoriesDesc": "የሥርዓት አስፈላጊ ነገሮች"
   }
-} 
+}

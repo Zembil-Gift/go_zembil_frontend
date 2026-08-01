@@ -36,15 +36,15 @@ import { ExternalLink } from "lucide-react";
 import HeroSection from "@/components/landing/HeroSection";
 import CategoryCarousel from "@/components/landing/CategoryCarousel";
 import TrendingGiftsSection from "@/components/landing/TrendingGiftsSection";
-import GiftRecipientsSection from "@/components/landing/GiftRecipientsSection";
-import DiasporaSection from "@/components/landing/DiasporaSection";
+import ShopGridSection from "@/components/landing/ShopGridSection";
+import TrustStrip from "@/components/landing/TrustStrip";
+import ShopByRecipient from "@/components/landing/ShopByRecipient";
 import FeaturesSection from "@/components/landing/FeaturesSection";
+import SectionHeader from "@/components/landing/SectionHeader";
 import EventCard from "@/components/EventCard";
 import ServiceCard from "@/components/ServiceCard";
-import SectionTransition from "@/components/landing/SectionTransition";
 import CampaignBanner from "@/components/landing/CampaignBanner";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
-// import TestimonialsSection from "@/components/landing/TestimonialsSection";
 
 export default function Landing() {
   const location = useLocation();
@@ -547,6 +547,8 @@ export default function Landing() {
         }
       />
 
+      <TrustStrip />
+
       <CampaignBanner />
 
       <CategoryCarousel
@@ -554,36 +556,29 @@ export default function Landing() {
         onCategoryChange={setActiveCategory}
       />
 
+      <ShopByRecipient />
+
       {/* Ad Banner Section - Enhanced UI */}
       {allAds.length > 0 && (
         <>
-          <SectionTransition
-            variant="gradient"
-            fromColor="from-light-cream"
-            toColor="to-gray-50"
-            className="mt-8"
-          />
-          <section className="py-20 relative overflow-hidden bg-gray-50">
+          <section className="py-10 relative overflow-hidden bg-gray-50">
             {/* Decorative background elements - Extremely subtle */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
               <div className="absolute top-[-10%] right-[-5%] w-[30%] h-[30%] rounded-full bg-ethiopian-gold/2 blur-[100px]"></div>
               <div className="absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-viridian-green/2 blur-[120px]"></div>
             </div>
 
-            <div className="container mx-auto px-4 relative z-10">
-              <div className="flex items-center justify-center gap-3 mb-10">
-                <span className="h-[1px] w-16 bg-gray-200"></span>
-                <span className="text-xs font-bold tracking-[0.25em] text-gray-400 uppercase">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="flex items-baseline gap-3 mb-5">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-charcoal tracking-tight">
+                  Featured Highlights
+                </h2>
+                <span className="text-xs font-medium tracking-wide text-gray-400 uppercase">
                   Sponsored
                 </span>
-                <span className="h-[1px] w-16 bg-gray-200"></span>
               </div>
 
-              <h2 className="text-3xl md:text-5xl font-extrabold text-center mb-16 text-charcoal tracking-tight">
-                Featured Highlights
-              </h2>
-
-              <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {allAds.slice(0, 3).map((ad) => (
                   <div
                     key={`${ad.type}-${ad.id}`}
@@ -795,20 +790,9 @@ export default function Landing() {
         </>
       )}
 
-      {/* Transition: Ads to Products */}
-      {allAds.length > 0 && trendingGifts.length > 0 && (
-        <div className="relative">
-          <SectionTransition
-            variant="wave"
-            fromColor="bg-gray-50"
-            toColor="bg-light-cream"
-          />
-        </div>
-      )}
-
       {/* Featured Products Section */}
       {isLoadingProducts ? (
-        <div className="py-24 text-center">
+        <div className="py-16 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ethiopian-gold mx-auto"></div>
           <p className="mt-6 text-gray-500 font-medium tracking-wide">
             Curating collections...
@@ -830,16 +814,11 @@ export default function Landing() {
 
       {/* Trending Packages Section */}
       {trendingPackages.length > 0 && (
-        <section className="py-20 bg-white relative">
+        <section className="py-10 bg-white relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-center mb-12">
-              <h2 className="text-4xl font-extrabold text-charcoal mb-4">
-                Trending Packages
-              </h2>
-              <div className="w-16 h-1 bg-ethiopian-gold rounded-full"></div>
-            </div>
+            <SectionHeader title="Trending Packages" href="/packages" />
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
               {trendingPackages.map((pkg: ProductPackageResponse) => {
                 const packageImage =
                   pkg.images?.[0] ||
@@ -851,11 +830,12 @@ export default function Landing() {
                     href={`/packages/${pkg.id}`}
                     className="group block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300"
                   >
-                    <div className="h-48 bg-gray-100 overflow-hidden">
+                    <div className="aspect-square bg-gray-100 overflow-hidden">
                       {packageImage ? (
                         <img
                           src={packageImage}
                           alt={pkg.name}
+                          loading="lazy"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
@@ -864,11 +844,11 @@ export default function Landing() {
                         </div>
                       )}
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-charcoal line-clamp-2 mb-1">
+                    <div className="p-3">
+                      <h3 className="font-bold text-sm text-charcoal line-clamp-2">
                         {pkg.name}
                       </h3>
-                      <p className="text-sm text-gray-600 line-clamp-1">
+                      <p className="text-xs text-gray-600 line-clamp-1 mt-0.5">
                         {pkg.vendorName || "Zembil"}
                       </p>
                     </div>
@@ -880,86 +860,38 @@ export default function Landing() {
         </section>
       )}
 
-      {/* Transition: Products to Events */}
-      {(trendingGifts.length > 0 || trendingPackages.length > 0) &&
-        featuredEventsResponse?.content &&
-        featuredEventsResponse.content.length > 0 && (
-          <SectionTransition
-            variant="gradient"
-            fromColor="from-light-cream"
-            toColor="to-white"
-          />
-        )}
-
       {/* Featured Events Section */}
       {featuredEventsResponse?.content &&
         featuredEventsResponse.content.length > 0 && (
-          <section className="py-20 bg-white relative">
+          <section className="py-10 bg-white relative">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex flex-col items-center mb-12">
-                <h2 className="text-4xl font-extrabold text-charcoal mb-4">
-                  Upcoming Events
-                </h2>
-                <div className="w-16 h-1 bg-ethiopian-gold rounded-full"></div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+              <SectionHeader title="Upcoming Events" href="/events" />
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                 {featuredEventsResponse.content.map(
                   (event: EventResponse, index: number) => (
-                    <div
-                      key={event.id}
-                      className="hover:-translate-y-2 transition-transform duration-300"
-                    >
-                      <EventCard event={event} index={index} />
-                    </div>
+                    <EventCard key={event.id} event={event} index={index} />
                   )
                 )}
               </div>
             </div>
           </section>
-        )}
-
-      {/* Transition: Events to Services */}
-      {featuredEventsResponse?.content &&
-        featuredEventsResponse.content.length > 0 &&
-        featuredServicesResponse?.content &&
-        featuredServicesResponse.content.length > 0 && (
-          <div className="relative">
-            <SectionTransition
-              variant="curve"
-              fromColor="bg-white"
-              toColor="bg-light-cream"
-            />
-          </div>
         )}
 
       {/* Featured Services Section */}
       {featuredServicesResponse?.content &&
         featuredServicesResponse.content.length > 0 && (
-          <section className="py-20 bg-light-cream relative">
-            {/* Subtle texture overlay */}
-            <div className="absolute inset-0 opacity-[0.4] mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none"></div>
-
+          <section className="py-10 bg-light-cream relative">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-              <div className="flex flex-col items-center mb-12">
-                <h2 className="text-4xl font-extrabold text-charcoal mb-4">
-                  Featured Services
-                </h2>
-                <div className="w-16 h-1 bg-ethiopian-gold rounded-full"></div>
-              </div>
+              <SectionHeader title="Featured Services" href="/services" />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                 {featuredServicesResponse.content.map(
                   (service: ServiceResponse, index: number) => (
-                    <div
+                    <ServiceCard
                       key={service.id}
-                      className="hover:-translate-y-2 transition-transform duration-300"
-                    >
-                      <ServiceCard
-                        key={service.id}
-                        service={service}
-                        index={index}
-                      />
-                    </div>
+                      service={service}
+                      index={index}
+                    />
                   )
                 )}
               </div>
@@ -967,21 +899,10 @@ export default function Landing() {
           </section>
         )}
 
-      {/* Transition: Services to Gift Recipients */}
-      {featuredServicesResponse?.content &&
-        featuredServicesResponse.content.length > 0 && (
-          <SectionTransition variant="divider" />
-        )}
-
-      <GiftRecipientsSection />
-
-      <DiasporaSection />
-
-      {/* <SubscriptionBanner /> */}
-
       <FeaturesSection />
 
-      {/* <TestimonialsSection /> */}
+      {/* The page ends in the shop itself: browsable, filterable, paged */}
+      <ShopGridSection />
 
       {/* <LiveChatButton /> */}
     </div>

@@ -208,7 +208,8 @@
     "therapist": "Therapist",
     "psychologist": "Psychologist",
     "psychiatrist": "Psychiatrist",
-    "socialWorker": "Social Worker"
+    "socialWorker": "Social Worker",
+    "seeAll": "See all"
   },
   "navigation": {
     "home": "Home",
@@ -326,6 +327,16 @@
     "testimonials": {
       "title": "Stories of Love & Connection",
       "subtitle": "Real experiences from diaspora families staying connected"
+    },
+    "shopAll": {
+      "title": "Shop All Gifts",
+      "subtitle": "Browse the full collection, straight from our shop",
+      "all": "All",
+      "loadMore": "Load more",
+      "loading": "Loading...",
+      "empty": "No products in this category yet.",
+      "error": "We couldn't load products. Please try again.",
+      "browseShop": "Browse the full shop"
     }
   },
   "footer": {
@@ -346,7 +357,7 @@
     "faq": "FAQ",
     "getInTouch": "Get in Touch",
     "USAPhone": "+1 945 399 3809",
-    "ETHPhone":"+251 91 791 4528",
+    "ETHPhone": "+251 91 791 4528",
     "email": "info@afrodebab.com",
     "address": "Addis Ababa, Ethiopia",
     "language": "Language",
@@ -461,4 +472,4 @@
     "coffeeAccessories": "Coffee Accessories",
     "coffeeAccessoriesDesc": "Ceremony essentials"
   }
-} 
+}

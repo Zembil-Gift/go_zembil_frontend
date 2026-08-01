@@ -104,7 +104,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* Image Container */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-light-cream to-white rounded-t-md">
+            <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-light-cream to-white rounded-t-md">
                 {/* Elegant skeleton loader with shimmer */}
                 {!imageLoaded && !imageError && (
                     <div className="absolute inset-0 bg-gradient-to-r from-june-bud/10 via-white to-june-bud/10 animate-shimmer"
@@ -116,7 +116,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                 <img
                     src={imageError ? '/placeholder-product.jpg' : primaryImage}
                     alt={name}
-                    className={`w-full h-[260px] object-cover transition-all duration-500 ease-out rounded-t-md
+                    className={`w-full h-full object-cover transition-all duration-500 ease-out rounded-t-md
                         ${imageLoaded ? 'opacity-100' : 'opacity-0'}
                         ${isHovered && hasSecondImage ? 'opacity-0' : 'opacity-100'}
                     `}
@@ -133,7 +133,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                     <img
                         src={secondImageError ? primaryImage : secondaryImage}
                         alt={`${name} - alternate view`}
-                        className={`absolute inset-0 w-full h-[260px] object-cover transition-all duration-500 ease-out rounded-t-md
+                        className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ease-out rounded-t-md
                             ${secondImageLoaded ? '' : 'opacity-0'}
                             ${isHovered && hasSecondImage ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}
                         `}
@@ -177,15 +177,15 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                 )}
 
                 {/* Quick Action Buttons - Slide up on hover */}
-                <div className={`absolute bottom-0 left-0 right-0 p-4
-                    flex justify-center gap-3
+                <div className={`absolute bottom-0 left-0 right-0 p-3
+                    flex justify-center gap-2
                     transform transition-all duration-400 ease-out
                     ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}
                 >
                     <button
                         onClick={handleAddToCart}
                         disabled={isAddingToCart}
-                        className={`flex items-center justify-center w-12 h-12
+                        className={`flex items-center justify-center w-10 h-10
                             backdrop-blur-sm rounded-md
                             shadow-lg hover:shadow-xl
                             transition-all duration-300 transform hover:scale-110
@@ -208,7 +208,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                         <WishlistButton
                             productId={product.id}
                             size="sm"
-                            className="flex items-center justify-center w-12 h-12
+                            className="flex items-center justify-center w-10 h-10
                                 bg-white/95 backdrop-blur-sm rounded-md
                                 shadow-lg hover:shadow-xl
                                 transition-all duration-300 transform hover:scale-110"
@@ -218,7 +218,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
             </div>
 
             {/* Content Container */}
-            <div className="p-5">
+            <div className="p-3">
                 {/* Subcategory */}
                 {product.subCategoryName && (
                     <span className="text-xs font-medium text-viridian-green uppercase tracking-wide mb-1 block">
@@ -227,14 +227,14 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                 )}
 
                 {/* Product Name */}
-                <h3 className="font-medium text-base text-eagle-green leading-snug 
-                    line-clamp-2 min-h-[44px] mb-2
+                <h3 className="font-medium text-sm text-eagle-green leading-snug 
+                    line-clamp-2 min-h-[36px] mb-1.5
                     group-hover:text-viridian-green transition-colors duration-300">
                     {name}
                 </h3>
 
                 {/* Rating - always show, even with 0 reviews */}
-                <div className="flex items-center gap-1 mb-2">
+                <div className="flex items-center gap-1 mb-1.5">
                     <div className="flex items-center">
                         {Array.from({ length: 5 }).map((_, i) => {
                             const reviewCount = product.reviewCount || product.totalReviews || 0;
@@ -242,7 +242,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                             return (
                                 <Star
                                     key={i}
-                                    className={`w-3.5 h-3.5 ${
+                                    className={`w-3 h-3 ${
                                         i < Math.floor(rating)
                                             ? 'text-yellow-400 fill-yellow-400'
                                             : 'text-gray-300'
@@ -270,7 +270,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                         ) : (
 <div className="flex items-baseline gap-1.5">
                                     <div className="flex items-baseline gap-0.5">
-                                        <span className="text-sm sm:text-base lg:text-xl font-bold text-eagle-green break-all leading-tight">
+                                        <span className="text-sm sm:text-base font-bold text-eagle-green break-all leading-tight">
                                             {priceParts.symbol}{priceParts.whole}
                                         </span>
                                         {priceParts.decimal && (
