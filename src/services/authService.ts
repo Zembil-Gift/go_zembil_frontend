@@ -50,11 +50,15 @@ export interface ResetPasswordRequest {
 }
 
 // OAuth2 Types
-export type OAuth2Provider = 'GOOGLE' | 'FACEBOOK';
+export type OAuth2Provider = 'GOOGLE' | 'FACEBOOK' | 'APPLE';
 
 export interface OAuth2LoginRequest {
   accessToken: string;
   provider: OAuth2Provider;
+  // Apple only returns the user's name on the very first authorization, and never
+  // inside the identity token, so it has to be forwarded separately.
+  firstName?: string;
+  lastName?: string;
 }
 
 // Email Verification Types
@@ -112,10 +116,14 @@ class AuthService {
   }
 
   /**
-   * OAuth2 login/signup (Google or Facebook)
+   * OAuth2 login/signup (Google, Facebook or Apple)
    */
-  async loginWithOAuth2(accessToken: string, provider: OAuth2Provider): Promise<AuthResponse> {
-    const loginData: OAuth2LoginRequest = { accessToken, provider };
+  async loginWithOAuth2(
+    accessToken: string,
+    provider: OAuth2Provider,
+    name?: { firstName?: string; lastName?: string }
+  ): Promise<AuthResponse> {
+    const loginData: OAuth2LoginRequest = { accessToken, provider, ...name };
     const response = await apiService.postRequest<AuthResponse>('/auth/oauth2/login', loginData);
 
     // Store token in memory using tokenManager
