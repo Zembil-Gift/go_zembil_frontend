@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation, Link } from "react-router-dom";
 import {
   isValidPhoneNumber,
   parsePhoneNumberFromString,
@@ -45,6 +45,7 @@ import {
   VendorTermsResponse,
 } from "@/services/vendorTermsService";
 import { vendorCategoryService } from "@/services/vendorCategoryService";
+import { certificateService } from "@/services/certificateService";
 import {
   SUPPORTED_COUNTRIES,
   getCurrencyForCountry,
@@ -345,6 +346,8 @@ export default function VendorSignup() {
     initialDraft?.phoneCountry || "ET"
   );
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { toast } = useToast();
 
   const { data: vendorCategories = [] } = useQuery({
@@ -382,6 +385,34 @@ export default function VendorSignup() {
       deliveryRadiusKm: initialDraft?.formValues.deliveryRadiusKm ?? 25,
     },
   });
+
+  // Resume an interrupted signup: the vendor already exists in the database, only the
+  // onboarding video is outstanding, so drop them straight back at the video step.
+  useEffect(() => {
+    if (searchParams.get("resume") !== "1") return;
+
+    const resumeAt = (email: string, vendorType: string) => {
+      form.setValue("email", email);
+      form.setValue("vendorType", vendorType);
+      setFormData({ email, vendorType });
+      setCurrentStep("video");
+    };
+
+    // Sent here from the sign-in page: the password was checked but the account is
+    // unverified, so there is no token yet and the details ride along in router state.
+    const fromSignin = location.state as
+      | { email?: string; vendorType?: string }
+      | null;
+    if (fromSignin?.email && fromSignin?.vendorType) {
+      resumeAt(fromSignin.email, fromSignin.vendorType);
+      return;
+    }
+
+    certificateService.getMyOnboardingStatus().then((status) => {
+      if (!status || status.certificateIssued) return;
+      resumeAt(status.email, status.vendorType);
+    });
+  }, [searchParams, location.state, form]);
 
   const saveDraft = () => {
     const draft: VendorSignupDraft = {
@@ -451,18 +482,13 @@ export default function VendorSignup() {
   // Generate certificate mutation
   const generateCertificateMutation = useMutation({
     mutationFn: async () => {
-      const vendorType = formData?.vendorType || form.getValues("vendorType");
       const email = formData?.email || form.getValues("email");
-      const firstName = formData?.firstName || form.getValues("firstName");
-      const lastName = formData?.lastName || form.getValues("lastName");
 
+      // The vendor row already exists at this point, so the backend fills in the name and
+      // vendor type from it - the client only says who is asking.
       return await apiService.postRequest<CertificateResponse>(
         "/api/vendor-certificates/generate",
-        {
-          email,
-          fullName: `${firstName} ${lastName}`,
-          vendorType,
-        }
+        { email }
       );
     },
     onSuccess: (data) => {
@@ -652,7 +678,6 @@ export default function VendorSignup() {
         formattedAddress: data.formattedAddress || undefined,
         streetAddress: data.streetAddress || undefined,
         deliveryRadiusKm: data.deliveryRadiusKm || undefined,
-        certificateCode: generatedCertificate?.certificateCode || "",
         termsVersion: termsData?.version || 1,
         acceptedTermIds,
       };
@@ -669,22 +694,19 @@ export default function VendorSignup() {
         requiresEmailVerification?: boolean;
       }>("/api/vendors/signup", payload);
     },
-    onSuccess: (_response, variables) => {
-      // Always redirect to email verification for vendors
+    onSuccess: () => {
+      // Account is in the database from here on. Anything that goes wrong after this point
+      // is resumable - the vendor signs in and picks up at the onboarding video.
       toast({
         title: t("Vendor Account Created!"),
-        description: t("Please verify your email to continue."),
+        description: t("Your details are saved. Finish the onboarding video to get your certificate."),
         variant: "default",
       });
-      // Redirect to email verification page
-      setTimeout(() => {
-        navigate("/verify-email", {
-          state: {
-            email: variables.email,
-            returnUrl: "/signin",
-          },
-        });
-      }, 500);
+      setVideoCompletedChecked(false);
+      setHasWatchedVideo(false);
+      setGeneratedCertificate(null);
+      setCurrentStep("video");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     },
     onError: (error: any) => {
       const responseData = error?.response?.data;
@@ -829,7 +851,9 @@ export default function VendorSignup() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleProceedToVideo = () => {
+  // Accepting the terms is what creates the account: everything the vendor typed is written
+  // to the database here, before the onboarding video, so an abandoned signup is recoverable.
+  const onSubmit = async (data: VendorSignupForm) => {
     if (!allTermsAccepted) {
       toast({
         title: t("Terms Required"),
@@ -838,25 +862,7 @@ export default function VendorSignup() {
       });
       return;
     }
-    setVideoCompletedChecked(false);
-    setHasWatchedVideo(false);
-    setGeneratedCertificate(null);
-    setCurrentStep("video");
-
-    // Ensure the new step starts at the top of the page
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const onSubmit = async (data: VendorSignupForm) => {
-    if (!generatedCertificate) {
-      toast({
-        title: t("Certificate Required"),
-        description: t("Please generate your certificate first."),
-        variant: "destructive",
-      });
-      return;
-    }
-    await signupMutation.mutateAsync(data);
+    signupMutation.mutate(data);
   };
 
   const getVideoId = () => {
@@ -1685,12 +1691,21 @@ export default function VendorSignup() {
                 </Button>
                 <Button
                   type="button"
-                  onClick={handleProceedToVideo}
-                  disabled={!allTermsAccepted}
+                  onClick={form.handleSubmit(onSubmit)}
+                  disabled={!allTermsAccepted || signupMutation.isPending}
                   className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
                 >
-                  {t("Continue to Onboarding Video")}
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  {signupMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {t("Saving Your Details...")}
+                    </>
+                  ) : (
+                    <>
+                      {t("Accept & Continue to Onboarding Video")}
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -1826,29 +1841,25 @@ export default function VendorSignup() {
               )}
 
               <div className="flex flex-col sm:flex-row gap-3 sm:justify-between pt-4 border-t">
+                {/* No way back: the account exists from the terms step onward. */}
+                <p className="text-sm text-gray-500 self-center">
+                  {t("Your account is saved. If you leave now, sign in to pick up here.")}
+                </p>
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => setCurrentStep("terms")}
-                  className="w-full sm:w-auto"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  {t("Back to Terms")}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={form.handleSubmit(onSubmit)}
-                  disabled={!generatedCertificate || signupMutation.isPending}
+                  onClick={() =>
+                    navigate("/verify-email", {
+                      state: {
+                        email: formData?.email || form.getValues("email"),
+                        returnUrl: "/signin",
+                      },
+                    })
+                  }
+                  disabled={!generatedCertificate}
                   className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
                 >
-                  {signupMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {t("Creating Account...")}
-                    </>
-                  ) : (
-                    "Complete Registration"
-                  )}
+                  {t("Verify Email & Finish")}
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             </CardContent>

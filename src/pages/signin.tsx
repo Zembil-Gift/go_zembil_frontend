@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Eye, EyeOff, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, AlertCircle, Loader2, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,6 +43,10 @@ export default function SignIn() {
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [pendingCertificate, setPendingCertificate] = useState<{
+    email: string;
+    vendorType: string;
+  } | null>(null);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const { toast } = useToast();
   const { refreshUser } = useAuth();
@@ -153,6 +157,12 @@ export default function SignIn() {
       if (isEmailNotVerified) {
         const email = responseData?.details?.email || data.email;
         setUnverifiedEmail(email);
+        // Vendor who stopped before the onboarding video: offer the certificate first.
+        setPendingCertificate(
+          responseData?.details?.certificatePending === true
+            ? { email, vendorType: responseData?.details?.vendorType || "" }
+            : null
+        );
       } else {
         toast({
           title: t("Sign in failed"),
@@ -283,29 +293,56 @@ export default function SignIn() {
               <Alert className="mt-4 border-amber-300 bg-amber-50">
                 <AlertCircle className="h-4 w-4 text-amber-600" />
                 <AlertDescription className="text-amber-800">
-                  <p className="font-medium mb-1">{t("Email not verified")}</p>
-                  <p className="text-sm mb-3">
-                    {t("Your account (")}
-                    <span className="font-medium">{unverifiedEmail}</span>{t(") hasn't been verified yet. Click below to receive a verification code.")}
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={handleVerifyEmail}
-                    disabled={isSendingOtp}
-                    className="bg-amber-600 hover:bg-amber-700 text-white"
-                  >
-                    {isSendingOtp ? (
-                      <>
-                        <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                        {t("Sending code...")}
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="w-3 h-3 mr-2" />
-                        {t("Send verification code")}
-                      </>
-                    )}
-                  </Button>
+                  {pendingCertificate ? (
+                    <>
+                      <p className="font-medium mb-1">
+                        {t("Finish your onboarding")}
+                      </p>
+                      <p className="text-sm mb-3">
+                        {t("Your account (")}
+                        <span className="font-medium">{unverifiedEmail}</span>
+                        {t(") is saved, but you haven't collected your onboarding certificate yet. Get it first, then verify your email.")}
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          navigate("/vendor-signup?resume=1", {
+                            state: pendingCertificate,
+                          })
+                        }
+                        className="bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        <Award className="w-3 h-3 mr-2" />
+                        {t("Get my certificate")}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-medium mb-1">{t("Email not verified")}</p>
+                      <p className="text-sm mb-3">
+                        {t("Your account (")}
+                        <span className="font-medium">{unverifiedEmail}</span>{t(") hasn't been verified yet. Click below to receive a verification code.")}
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={handleVerifyEmail}
+                        disabled={isSendingOtp}
+                        className="bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        {isSendingOtp ? (
+                          <>
+                            <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                            {t("Sending code...")}
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="w-3 h-3 mr-2" />
+                            {t("Send verification code")}
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
                 </AlertDescription>
               </Alert>
             )}

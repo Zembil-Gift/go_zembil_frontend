@@ -83,6 +83,7 @@ import {
   Briefcase,
   X,
   Award,
+  PlayCircle,
   Download,
   Loader2,
   ShoppingBag,
@@ -4932,6 +4933,7 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
 function VendorCertificateCard() {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
 
   const { data: certificate, isLoading, refetch, isRefetching } = useQuery({
@@ -4997,19 +4999,29 @@ function VendorCertificateCard() {
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-gray-500">
             <XCircle className="h-12 w-12 text-gray-300 mb-4" />
-            <p className="text-sm mb-2">{t("No certificate found for your account.")}</p>
+            <p className="text-sm mb-2">{t("You haven't finished onboarding yet.")}</p>
             <p className="text-xs text-gray-400 mb-4 text-center max-w-xs">
-              {t("If you completed the onboarding video, your certificate should appear here. Try refreshing if you just completed the process.")}
+              {t("Your account is saved. Watch the onboarding video to receive your certificate.")}
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              className="text-emerald-600"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              {t("Refresh")}
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => navigate("/vendor-signup?resume=1")}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                <PlayCircle className="h-4 w-4 mr-2" />
+                {t("Continue Onboarding")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                className="text-emerald-600"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {t("Refresh")}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
