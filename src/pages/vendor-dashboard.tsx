@@ -28,6 +28,7 @@ import {
   AlertCircle,
   Star,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Type definitions for vendor dashboard
 interface VendorProfile {
@@ -82,6 +83,7 @@ const productSchema = z.object({
 type ProductForm = z.infer<typeof productSchema>;
 
 export default function VendorDashboard() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("overview");
   const [_selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
@@ -96,8 +98,8 @@ export default function VendorDashboard() {
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || user?.role !== "vendor")) {
       toast({
-        title: "Access Denied",
-        description: "You need vendor access to view this page.",
+        title: t("Access Denied"),
+        description: t("You need vendor access to view this page."),
         variant: "destructive",
       });
       setTimeout(() => {
@@ -162,8 +164,8 @@ export default function VendorDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/vendor/products"] });
       toast({
-        title: "Product created",
-        description: "Your product has been added successfully.",
+        title: t("Product created"),
+        description: t("Your product has been added successfully."),
       });
       setIsProductDialogOpen(false);
       form.reset();
@@ -171,8 +173,8 @@ export default function VendorDashboard() {
     onError: (error) => {
       if (isUnauthorizedError(error as Error)) {
         toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
+          title: t("Unauthorized"),
+          description: t("You are logged out. Logging in again..."),
           variant: "destructive",
         });
         setTimeout(() => {
@@ -181,8 +183,8 @@ export default function VendorDashboard() {
         return;
       }
       toast({
-        title: "Error",
-        description: "Failed to create product. Please try again.",
+        title: t("Error"),
+        description: t("Failed to create product. Please try again."),
         variant: "destructive",
       });
     },
@@ -195,15 +197,15 @@ export default function VendorDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/vendor/orders"] });
       toast({
-        title: "Order updated",
-        description: "Order status has been updated successfully.",
+        title: t("Order updated"),
+        description: t("Order status has been updated successfully."),
       });
     },
     onError: (error) => {
       if (isUnauthorizedError(error as Error)) {
         toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
+          title: t("Unauthorized"),
+          description: t("You are logged out. Logging in again..."),
           variant: "destructive",
         });
         setTimeout(() => {
@@ -212,8 +214,8 @@ export default function VendorDashboard() {
         return;
       }
       toast({
-        title: "Error",
-        description: "Failed to update order status.",
+        title: t("Error"),
+        description: t("Failed to update order status."),
         variant: "destructive",
       });
     },
@@ -226,14 +228,14 @@ export default function VendorDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/vendor/orders"] });
       toast({
-        title: "Order accepted",
-        description: "Order has been confirmed and customer notified.",
+        title: t("Order accepted"),
+        description: t("Order has been confirmed and customer notified."),
       });
     },
     onError: (_error) => {
       toast({
-        title: "Error",
-        description: "Failed to accept order.",
+        title: t("Error"),
+        description: t("Failed to accept order."),
         variant: "destructive",
       });
     },
@@ -246,14 +248,14 @@ export default function VendorDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/vendor/orders"] });
       toast({
-        title: "Order denied",
-        description: "Order has been cancelled and customer notified.",
+        title: t("Order denied"),
+        description: t("Order has been cancelled and customer notified."),
       });
     },
     onError: (_error) => {
       toast({
-        title: "Error",
-        description: "Failed to deny order.",
+        title: t("Error"),
+        description: t("Failed to deny order."),
         variant: "destructive",
       });
     },
@@ -338,20 +340,20 @@ export default function VendorDashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold text-charcoal mb-2">
-            Vendor Dashboard
+            {t("Vendor Dashboard")}
           </h1>
           <p className="text-gray-600">
-            Welcome back, {user?.firstName || "Vendor"}! Manage your store and track your performance.
+            {t("Welcome back,")} {user?.firstName || "Vendor"}{t("! Manage your store and track your performance.")}
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="custom-orders">Custom Orders</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="overview">{t("Overview")}</TabsTrigger>
+            <TabsTrigger value="products">{t("Products")}</TabsTrigger>
+            <TabsTrigger value="orders">{t("Orders")}</TabsTrigger>
+            <TabsTrigger value="custom-orders">{t("Custom Orders")}</TabsTrigger>
+            <TabsTrigger value="settings">{t("Settings")}</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -360,46 +362,46 @@ export default function VendorDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Total Products")}</CardTitle>
                   <Package className="h-4 w-4 text-ethiopian-gold" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{metrics.totalProducts}</div>
                   <p className="text-xs text-muted-foreground">
-                    {metrics.activeProducts} active
+                    {metrics.activeProducts} {t("active")}
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Total Orders")}</CardTitle>
                   <ShoppingCart className="h-4 w-4 text-ethiopian-gold" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{metrics.totalOrders}</div>
                   <p className="text-xs text-muted-foreground">
-                    {metrics.placedOrders} awaiting approval
+                    {metrics.placedOrders} {t("awaiting approval")}
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Revenue")}</CardTitle>
                   <DollarSign className="h-4 w-4 text-ethiopian-gold" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{metrics.totalRevenue.toFixed(2)} ETB</div>
+                  <div className="text-2xl font-bold">{metrics.totalRevenue.toFixed(2)} {t("ETB")}</div>
                   <p className="text-xs text-muted-foreground">
-                    {metrics.completedOrders} completed orders
+                    {metrics.completedOrders} {t("completed orders")}
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Store Rating</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Store Rating")}</CardTitle>
                   <Star className="h-4 w-4 text-ethiopian-gold" />
                 </CardHeader>
                 <CardContent>
@@ -407,7 +409,7 @@ export default function VendorDashboard() {
                     {vendorProfile?.rating ? parseFloat(vendorProfile.rating).toFixed(1) : "N/A"}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {vendorProfile?.totalOrders || 0} total orders
+                    {vendorProfile?.totalOrders || 0} {t("total orders")}
                   </p>
                 </CardContent>
               </Card>
@@ -416,7 +418,7 @@ export default function VendorDashboard() {
             {/* Recent Orders */}
             <Card>
               <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
+                <CardTitle>{t("Recent Orders")}</CardTitle>
               </CardHeader>
               <CardContent>
                 {ordersLoading ? (
@@ -429,7 +431,7 @@ export default function VendorDashboard() {
                       <div key={order.orderId} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                         <div className="flex items-center space-x-4">
                           <div>
-                            <p className="font-medium">Order #{order.orderNumber}</p>
+                            <p className="font-medium">{t("Order #")}{order.orderNumber}</p>
                             <p className="text-sm text-gray-600">{order.customerName}</p>
                           </div>
                         </div>
@@ -445,7 +447,7 @@ export default function VendorDashboard() {
                 ) : (
                   <div className="text-center py-8">
                     <ShoppingCart size={48} className="text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No orders yet</p>
+                    <p className="text-gray-600">{t("No orders yet")}</p>
                   </div>
                 )}
               </CardContent>
@@ -455,12 +457,12 @@ export default function VendorDashboard() {
           {/* Products Tab */}
           <TabsContent value="products" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-charcoal">Your Products</h2>
+              <h2 className="text-2xl font-bold text-charcoal">{t("Your Products")}</h2>
               <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="bg-ethiopian-gold hover:bg-amber text-white">
                     <Plus size={16} className="mr-2" />
-                    Add Product
+                    {t("Add Product")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -475,9 +477,9 @@ export default function VendorDashboard() {
                           name="name"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Product Name</FormLabel>
+                              <FormLabel>{t("Product Name")}</FormLabel>
                               <FormControl>
-                                <Input placeholder="Enter product name" {...field} />
+                                <Input placeholder={t("Enter product name")} {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -489,11 +491,11 @@ export default function VendorDashboard() {
                           name="categoryId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Category</FormLabel>
+                              <FormLabel>{t("Category")}</FormLabel>
                               <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select category" />
+                                    <SelectValue placeholder={t("Select category")} />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -515,9 +517,9 @@ export default function VendorDashboard() {
                         name="description"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Description</FormLabel>
+                            <FormLabel>{t("Description")}</FormLabel>
                             <FormControl>
-                              <Textarea placeholder="Describe your product..." rows={3} {...field} />
+                              <Textarea placeholder={t("Describe your product...")} rows={3} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -530,7 +532,7 @@ export default function VendorDashboard() {
                           name="price"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Price (ETB)</FormLabel>
+                              <FormLabel>{t("Price (ETB)")}</FormLabel>
                               <FormControl>
                                 <Input type="number" placeholder="0.00" {...field} />
                               </FormControl>
@@ -544,7 +546,7 @@ export default function VendorDashboard() {
                           name="inventory"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Inventory</FormLabel>
+                              <FormLabel>{t("Inventory")}</FormLabel>
                               <FormControl>
                                 <Input 
                                   type="number" 
@@ -563,7 +565,7 @@ export default function VendorDashboard() {
                           name="deliveryDays"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Delivery Days</FormLabel>
+                              <FormLabel>{t("Delivery Days")}</FormLabel>
                               <FormControl>
                                 <Input 
                                   type="number" 
@@ -584,7 +586,7 @@ export default function VendorDashboard() {
                           name="weight"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Weight (kg)</FormLabel>
+                              <FormLabel>{t("Weight (kg)")}</FormLabel>
                               <FormControl>
                                 <Input placeholder="1.5" {...field} />
                               </FormControl>
@@ -598,9 +600,9 @@ export default function VendorDashboard() {
                           name="sku"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>SKU (Optional)</FormLabel>
+                              <FormLabel>{t("SKU (Optional)")}</FormLabel>
                               <FormControl>
-                                <Input placeholder="ZEM-001" {...field} />
+                                <Input placeholder={t("ZEM-001")} {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -612,9 +614,9 @@ export default function VendorDashboard() {
                           name="tags"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Tags</FormLabel>
+                              <FormLabel>{t("Tags")}</FormLabel>
                               <FormControl>
-                                <Input placeholder="handmade, authentic" {...field} />
+                                <Input placeholder={t("handmade, authentic")} {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -632,7 +634,7 @@ export default function VendorDashboard() {
                             form.reset();
                           }}
                         >
-                          Cancel
+                          {t("Cancel")}
                         </Button>
                         <Button 
                           type="submit" 
@@ -680,8 +682,8 @@ export default function VendorDashboard() {
                       <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
                       <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-ethiopian-gold font-bold text-lg">{product.price} ETB</span>
-                        <span className="text-sm text-gray-500">Stock: {product.inventory}</span>
+                        <span className="text-ethiopian-gold font-bold text-lg">{product.price} {t("ETB")}</span>
+                        <span className="text-sm text-gray-500">{t("Stock:")} {product.inventory}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Button
@@ -691,11 +693,11 @@ export default function VendorDashboard() {
                           className="flex-1"
                         >
                           <Edit size={14} className="mr-1" />
-                          Edit
+                          {t("Edit")}
                         </Button>
                         <Button size="sm" variant="outline" className="flex-1">
                           <Eye size={14} className="mr-1" />
-                          View
+                          {t("View")}
                         </Button>
                       </div>
                     </CardContent>
@@ -705,13 +707,13 @@ export default function VendorDashboard() {
             ) : (
               <div className="text-center py-12">
                 <Package size={64} className="text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No products yet</h3>
-                <p className="text-gray-500 mb-6">Start by adding your first product to the marketplace</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t("No products yet")}</h3>
+                <p className="text-gray-500 mb-6">{t("Start by adding your first product to the marketplace")}</p>
                 <Button 
                   onClick={() => setIsProductDialogOpen(true)}
                   className="bg-ethiopian-gold hover:bg-amber text-white"
                 >
-                  Add Your First Product
+                  {t("Add Your First Product")}
                 </Button>
               </div>
             )}
@@ -720,7 +722,7 @@ export default function VendorDashboard() {
           {/* Orders Tab */}
           <TabsContent value="orders" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-charcoal">Order Management</h2>
+              <h2 className="text-2xl font-bold text-charcoal">{t("Order Management")}</h2>
             </div>
 
             {/* Order Status Filter Tabs */}
@@ -730,7 +732,7 @@ export default function VendorDashboard() {
                 size="sm"
                 onClick={() => setOrderStatusFilter('all')}
               >
-                All ({orders.length})
+                {t("All (")}{orders.length})
               </Button>
               <Button
                 variant={orderStatusFilter === 'PLACED' ? 'default' : 'outline'}
@@ -738,35 +740,35 @@ export default function VendorDashboard() {
                 onClick={() => setOrderStatusFilter('PLACED')}
                 className={orderStatusFilter !== 'PLACED' && orders.filter((o: any) => o.status === 'PLACED').length > 0 ? 'border-purple-500 text-purple-700' : ''}
               >
-                Awaiting Approval ({orders.filter((o: any) => o.status === 'PLACED').length})
+                {t("Awaiting Approval (")}{orders.filter((o: any) => o.status === 'PLACED').length})
               </Button>
               <Button
                 variant={orderStatusFilter === 'CONFIRMED' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setOrderStatusFilter('CONFIRMED')}
               >
-                Confirmed ({orders.filter((o: any) => o.status === 'CONFIRMED').length})
+                {t("Confirmed (")}{orders.filter((o: any) => o.status === 'CONFIRMED').length})
               </Button>
               <Button
                 variant={orderStatusFilter === 'PROCESSING' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setOrderStatusFilter('PROCESSING')}
               >
-                Processing ({orders.filter((o: any) => o.status === 'PROCESSING').length})
+                {t("Processing (")}{orders.filter((o: any) => o.status === 'PROCESSING').length})
               </Button>
               <Button
                 variant={orderStatusFilter === 'SHIPPED' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setOrderStatusFilter('SHIPPED')}
               >
-                Shipped ({orders.filter((o: any) => o.status === 'SHIPPED').length})
+                {t("Shipped (")}{orders.filter((o: any) => o.status === 'SHIPPED').length})
               </Button>
               <Button
                 variant={orderStatusFilter === 'DELIVERED' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setOrderStatusFilter('DELIVERED')}
               >
-                Delivered ({orders.filter((o: any) => o.status === 'DELIVERED').length})
+                {t("Delivered (")}{orders.filter((o: any) => o.status === 'DELIVERED').length})
               </Button>
             </div>
 
@@ -780,13 +782,13 @@ export default function VendorDashboard() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Order ID</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Items</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead>{t("Order ID")}</TableHead>
+                        <TableHead>{t("Customer")}</TableHead>
+                        <TableHead>{t("Items")}</TableHead>
+                        <TableHead>{t("Total")}</TableHead>
+                        <TableHead>{t("Status")}</TableHead>
+                        <TableHead>{t("Date")}</TableHead>
+                        <TableHead>{t("Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -804,7 +806,7 @@ export default function VendorDashboard() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {order.items?.length || 0} items
+                            {order.items?.length || 0} {t("items")}
                           </TableCell>
                           <TableCell className="font-medium">
                             {(order.totalAmountMinor / 100).toFixed(2)} {order.currency}
@@ -838,8 +840,8 @@ export default function VendorDashboard() {
                                       denyOrderMutation.mutate({ orderId: order.orderId, reason: reason.trim() });
                                     } else if (reason !== null) {
                                       toast({
-                                        title: "Rejection reason required",
-                                        description: "Please provide a valid reason for denying this order.",
+                                        title: t("Rejection reason required"),
+                                        description: t("Please provide a valid reason for denying this order."),
                                         variant: "destructive",
                                       });
                                     }
@@ -860,13 +862,13 @@ export default function VendorDashboard() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="pending">Pending</SelectItem>
-                                  <SelectItem value="placed">Placed</SelectItem>
-                                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                                  <SelectItem value="processing">Processing</SelectItem>
-                                  <SelectItem value="shipped">Shipped</SelectItem>
-                                  <SelectItem value="delivered">Delivered</SelectItem>
-                                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                                  <SelectItem value="pending">{t("Pending")}</SelectItem>
+                                  <SelectItem value="placed">{t("Placed")}</SelectItem>
+                                  <SelectItem value="confirmed">{t("Confirmed")}</SelectItem>
+                                  <SelectItem value="processing">{t("Processing")}</SelectItem>
+                                  <SelectItem value="shipped">{t("Shipped")}</SelectItem>
+                                  <SelectItem value="delivered">{t("Delivered")}</SelectItem>
+                                  <SelectItem value="cancelled">{t("Cancelled")}</SelectItem>
                                 </SelectContent>
                               </Select>
                             )}
@@ -880,8 +882,8 @@ export default function VendorDashboard() {
             ) : (
               <div className="text-center py-12">
                 <ShoppingCart size={64} className="text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
-                <p className="text-gray-500">Orders will appear here when customers purchase your products</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t("No orders yet")}</h3>
+                <p className="text-gray-500">{t("Orders will appear here when customers purchase your products")}</p>
               </div>
             )}
           </TabsContent>
@@ -889,48 +891,48 @@ export default function VendorDashboard() {
           {/* Custom Orders Tab */}
           <TabsContent value="custom-orders" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-charcoal">Custom Order Requests</h2>
+              <h2 className="text-2xl font-bold text-charcoal">{t("Custom Order Requests")}</h2>
             </div>
 
             <div className="text-center py-12">
               <AlertCircle size={64} className="text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No custom orders</h3>
-              <p className="text-gray-500">Custom order requests from customers will appear here</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t("No custom orders")}</h3>
+              <p className="text-gray-500">{t("Custom order requests from customers will appear here")}</p>
             </div>
           </TabsContent>
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-charcoal">Vendor Settings</h2>
+              <h2 className="text-2xl font-bold text-charcoal">{t("Vendor Settings")}</h2>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Business Information</CardTitle>
+                  <CardTitle>{t("Business Information")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {vendorProfile ? (
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium">Business Name</label>
+                        <label className="text-sm font-medium">{t("Business Name")}</label>
                         <p className="text-gray-600">{vendorProfile.businessName}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Email</label>
+                        <label className="text-sm font-medium">{t("Email")}</label>
                         <p className="text-gray-600">{vendorProfile.email}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Phone</label>
+                        <label className="text-sm font-medium">{t("Phone")}</label>
                         <p className="text-gray-600">{vendorProfile.phone}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Address</label>
+                        <label className="text-sm font-medium">{t("Address")}</label>
                         <p className="text-gray-600">{vendorProfile.address}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Status</label>
+                        <label className="text-sm font-medium">{t("Status")}</label>
                         <Badge className={
                           vendorProfile.status === "approved" 
                             ? "bg-green-100 text-green-800" 
@@ -945,7 +947,7 @@ export default function VendorDashboard() {
                   ) : (
                     <div className="text-center py-8">
                       <Store size={48} className="text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Vendor profile not found</p>
+                      <p className="text-gray-600">{t("Vendor profile not found")}</p>
                     </div>
                   )}
                 </CardContent>
@@ -953,27 +955,27 @@ export default function VendorDashboard() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Store Statistics</CardTitle>
+                  <CardTitle>{t("Store Statistics")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
                       <div className="text-2xl font-bold text-ethiopian-gold">{metrics.totalProducts}</div>
-                      <div className="text-sm text-gray-600">Total Products</div>
+                      <div className="text-sm text-gray-600">{t("Total Products")}</div>
                     </div>
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
                       <div className="text-2xl font-bold text-ethiopian-gold">{metrics.totalOrders}</div>
-                      <div className="text-sm text-gray-600">Total Orders</div>
+                      <div className="text-sm text-gray-600">{t("Total Orders")}</div>
                     </div>
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
                       <div className="text-2xl font-bold text-ethiopian-gold">
                         {vendorProfile?.rating ? parseFloat(vendorProfile.rating).toFixed(1) : "N/A"}
                       </div>
-                      <div className="text-sm text-gray-600">Store Rating</div>
+                      <div className="text-sm text-gray-600">{t("Store Rating")}</div>
                     </div>
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
                       <div className="text-2xl font-bold text-ethiopian-gold">{metrics.totalRevenue.toFixed(0)}</div>
-                      <div className="text-sm text-gray-600">Revenue (ETB)</div>
+                      <div className="text-sm text-gray-600">{t("Revenue (ETB)")}</div>
                     </div>
                   </div>
                 </CardContent>

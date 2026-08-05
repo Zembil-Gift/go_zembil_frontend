@@ -25,8 +25,10 @@ import { useToast } from '@/hooks/use-toast';
 
 import { serviceOrderService } from '@/services/serviceOrderService';
 import { serviceService } from '@/services/serviceService';
+import { useTranslation } from "react-i18next";
 
 export default function ServiceConfirmation() {
+  const { t } = useTranslation();
   const { orderId } = useParams<{ orderId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -51,8 +53,8 @@ export default function ServiceConfirmation() {
     if (order?.orderNumber) {
       navigator.clipboard.writeText(order.orderNumber);
       toast({
-        title: 'Copied!',
-        description: 'Order number copied to clipboard',
+        title: t("Copied!"),
+        description: t("Order number copied to clipboard"),
       });
     }
   };
@@ -62,7 +64,7 @@ export default function ServiceConfirmation() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-eagle-green mx-auto mb-4" />
-          <p className="font-light text-eagle-green">Loading order details...</p>
+          <p className="font-light text-eagle-green">{t("Loading order details...")}</p>
         </div>
       </div>
     );
@@ -73,15 +75,15 @@ export default function ServiceConfirmation() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-eagle-green mb-2">Order Not Found</h2>
+          <h2 className="text-2xl font-bold text-eagle-green mb-2">{t("Order Not Found")}</h2>
           <p className="font-light text-eagle-green/70 mb-4">
-            We couldn't find the order you're looking for.
+            {t("We couldn't find the order you're looking for.")}
           </p>
           <Button 
             onClick={() => navigate('/my-service-orders')} 
             className="bg-eagle-green hover:bg-viridian-green text-white"
           >
-            View My Orders
+            {t("View My Orders")}
           </Button>
         </div>
       </div>
@@ -104,10 +106,10 @@ export default function ServiceConfirmation() {
             <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
           <h1 className="text-3xl font-bold text-eagle-green mb-2">
-            Booking Confirmed!
+            {t("Booking Confirmed!")}
           </h1>
           <p className="font-light text-eagle-green/70">
-            Your service has been booked successfully
+            {t("Your service has been booked successfully")}
           </p>
         </motion.div>
 
@@ -121,7 +123,7 @@ export default function ServiceConfirmation() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-light text-eagle-green/70">Order Number</p>
+                  <p className="text-sm font-light text-eagle-green/70">{t("Order Number")}</p>
                   <p className="text-xl font-bold text-eagle-green">{order.orderNumber}</p>
                 </div>
                 <Button
@@ -131,7 +133,7 @@ export default function ServiceConfirmation() {
                   className="border-eagle-green/30"
                 >
                   <Copy className="h-4 w-4 mr-2" />
-                  Copy
+                  {t("Copy")}
                 </Button>
               </div>
               <div className="flex gap-2 mt-4">
@@ -154,7 +156,7 @@ export default function ServiceConfirmation() {
         >
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="font-bold text-eagle-green">Booking Details</CardTitle>
+              <CardTitle className="font-bold text-eagle-green">{t("Booking Details")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Service Info */}
@@ -191,7 +193,7 @@ export default function ServiceConfirmation() {
                     <Calendar className="h-5 w-5 text-viridian-green" />
                   </div>
                   <div>
-                    <p className="text-sm font-light text-eagle-green/70">Date</p>
+                    <p className="text-sm font-light text-eagle-green/70">{t("Date")}</p>
                     <p className="font-bold text-eagle-green">
                       {serviceOrderService.formatDate(order.scheduledDateTime)}
                     </p>
@@ -202,7 +204,7 @@ export default function ServiceConfirmation() {
                     <Clock className="h-5 w-5 text-viridian-green" />
                   </div>
                   <div>
-                    <p className="text-sm font-light text-eagle-green/70">Time</p>
+                    <p className="text-sm font-light text-eagle-green/70">{t("Time")}</p>
                     <p className="font-bold text-eagle-green">
                       {serviceOrderService.formatTime(order.scheduledDateTime)}
                     </p>
@@ -217,7 +219,7 @@ export default function ServiceConfirmation() {
                     <MapPin className="h-5 w-5 text-viridian-green" />
                   </div>
                   <div>
-                    <p className="text-sm font-light text-eagle-green/70">Location</p>
+                    <p className="text-sm font-light text-eagle-green/70">{t("Location")}</p>
                     <p className="font-bold text-eagle-green">
                       {order.service.city}{order.service.location ? `, ${order.service.location}` : ''}
                     </p>
@@ -236,7 +238,7 @@ export default function ServiceConfirmation() {
         >
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="font-bold text-eagle-green">Contact Information</CardTitle>
+              <CardTitle className="font-bold text-eagle-green">{t("Contact Information")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -261,7 +263,7 @@ export default function ServiceConfirmation() {
                   <div>
                     <p className="text-sm font-bold text-eagle-green mb-2 flex items-center gap-2">
                       <Gift className="h-4 w-4" />
-                      Gift Recipient
+                      {t("Gift Recipient")}
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                       {order.recipientName && (
@@ -292,7 +294,7 @@ export default function ServiceConfirmation() {
                 <>
                   <Separator />
                   <div>
-                    <p className="text-sm font-bold text-eagle-green mb-2">Gift Message</p>
+                    <p className="text-sm font-bold text-eagle-green mb-2">{t("Gift Message")}</p>
                     <p className="font-light text-eagle-green/80 italic">"{order.giftMessage}"</p>
                   </div>
                 </>
@@ -309,18 +311,18 @@ export default function ServiceConfirmation() {
         >
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="font-bold text-eagle-green">Payment Summary</CardTitle>
+              <CardTitle className="font-bold text-eagle-green">{t("Payment Summary")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="font-light text-eagle-green/70">Subtotal</span>
+                <span className="font-light text-eagle-green/70">{t("Subtotal")}</span>
                 <span className="font-bold text-eagle-green">
                   {serviceOrderService.formatPrice(order.subtotalMinor, order.currency)}
                 </span>
               </div>
               {order.discountMinor && order.discountMinor > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="font-light text-eagle-green/70">Discount</span>
+                  <span className="font-light text-eagle-green/70">{t("Discount")}</span>
                   <span className="font-bold text-green-600">
                     -{serviceOrderService.formatPrice(order.discountMinor, order.currency)}
                   </span>
@@ -328,7 +330,7 @@ export default function ServiceConfirmation() {
               )}
               {order.vatAmountMinor && order.vatAmountMinor > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="font-light text-eagle-green/70">VAT</span>
+                  <span className="font-light text-eagle-green/70">{t("VAT")}</span>
                   <span className="font-bold text-eagle-green">
                     {serviceOrderService.formatPrice(order.vatAmountMinor, order.currency)}
                   </span>
@@ -336,7 +338,7 @@ export default function ServiceConfirmation() {
               )}
               <Separator />
               <div className="flex justify-between">
-                <span className="font-bold text-eagle-green">Total Paid</span>
+                <span className="font-bold text-eagle-green">{t("Total Paid")}</span>
                 <span className="font-bold text-eagle-green text-xl">
                   {serviceOrderService.formatPrice(order.totalAmountMinor, order.currency)}
                 </span>
@@ -355,21 +357,21 @@ export default function ServiceConfirmation() {
             <CardHeader>
               <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Cancellation & Refund Policy
+                {t("Cancellation & Refund Policy")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {order.refundEligibility && (
                 <div className="mb-4 p-3 bg-june-bud/10 rounded-lg">
                   <p className="text-sm font-bold text-eagle-green mb-1">
-                    Current Refund Eligibility
+                    {t("Current Refund Eligibility")}
                   </p>
                   <p className="text-sm font-light text-eagle-green/70">
                     {order.refundEligibility.reason}
                   </p>
                   {order.refundEligibility.canCancel && order.refundEligibility.estimatedRefundMinor && (
                     <p className="text-sm font-bold text-viridian-green mt-1">
-                      Estimated refund: {serviceOrderService.formatPrice(order.refundEligibility.estimatedRefundMinor, order.currency)}
+                      {t("Estimated refund:")} {serviceOrderService.formatPrice(order.refundEligibility.estimatedRefundMinor, order.currency)}
                     </p>
                   )}
                 </div>
@@ -377,15 +379,15 @@ export default function ServiceConfirmation() {
               <ul className="space-y-2 text-sm font-light text-eagle-green/70">
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>48+ hours before service: 100% refund (minus platform fee)</span>
+                  <span>{t("48+ hours before service: 100% refund (minus platform fee)")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                  <span>24-48 hours before service: 50% refund</span>
+                  <span>{t("24-48 hours before service: 50% refund")}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                  <span>Less than 24 hours before service: No refund</span>
+                  <span>{t("Less than 24 hours before service: No refund")}</span>
                 </li>
               </ul>
             </CardContent>
@@ -403,7 +405,7 @@ export default function ServiceConfirmation() {
             onClick={() => navigate('/my-service-orders')}
             className="flex-1 bg-eagle-green hover:bg-viridian-green text-white font-bold h-12"
           >
-            View My Bookings
+            {t("View My Bookings")}
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
           <Button 
@@ -411,7 +413,7 @@ export default function ServiceConfirmation() {
             onClick={() => navigate('/services')}
             className="flex-1 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white font-bold h-12"
           >
-            Browse More Services
+            {t("Browse More Services")}
           </Button>
         </motion.div>
       </div>

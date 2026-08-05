@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { orderChatService } from '@/services/orderChatService';
 import { imageService } from '@/services/imageService';
 import type { OrderChatMessage } from '@/types/customOrders';
+import { useTranslation } from "react-i18next";
 
 interface OrderChatProps {
   orderId: number;
@@ -42,6 +43,7 @@ export default function OrderChat({
   pollInterval = 10000,
   onUnreadCountChange,
 }: OrderChatProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
@@ -124,7 +126,7 @@ export default function OrderChat({
       queryClient.invalidateQueries({ queryKey: ['custom-order-chat', orderId] });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
@@ -133,12 +135,12 @@ export default function OrderChat({
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        toast({ title: 'Invalid File', description: 'Please select an image file', variant: 'destructive' });
+        toast({ title: t("Invalid File"), description: t("Please select an image file"), variant: 'destructive' });
         return;
       }
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast({ title: 'File Too Large', description: 'Image must be less than 5MB', variant: 'destructive' });
+        toast({ title: t("File Too Large"), description: t("Image must be less than 5MB"), variant: 'destructive' });
         return;
       }
       setPendingImage({ file, preview: URL.createObjectURL(file) });
@@ -162,7 +164,7 @@ export default function OrderChat({
     
     // Validate that we have at least a message or an image
     if (!trimmedMessage && !pendingImage) {
-      toast({ title: 'Empty Message', description: 'Please enter a message or attach an image', variant: 'destructive' });
+      toast({ title: t("Empty Message"), description: t("Please enter a message or attach an image"), variant: 'destructive' });
       return;
     }
     
@@ -170,7 +172,7 @@ export default function OrderChat({
     if (trimmedMessage) {
       const errors = orderChatService.validateMessage(trimmedMessage);
       if (errors.length > 0) {
-        toast({ title: 'Invalid Message', description: errors[0], variant: 'destructive' });
+        toast({ title: t("Invalid Message"), description: errors[0], variant: 'destructive' });
         return;
       }
     }
@@ -185,7 +187,7 @@ export default function OrderChat({
         imageUrl = uploadResponse.fileUrl;
       } catch (error: any) {
         setIsUploadingImage(false);
-        toast({ title: 'Upload Failed', description: error.message || 'Failed to upload image', variant: 'destructive' });
+        toast({ title: t("Upload Failed"), description: error.message || 'Failed to upload image', variant: 'destructive' });
         return;
       }
       setIsUploadingImage(false);
@@ -207,7 +209,7 @@ export default function OrderChat({
   if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center p-8 text-gray-500">
-        <p>Please sign in to view chat messages.</p>
+        <p>{t("Please sign in to view chat messages.")}</p>
       </div>
     );
   }
@@ -269,7 +271,7 @@ export default function OrderChat({
           <div className="relative inline-block">
             <img 
               src={pendingImage.preview} 
-              alt="Pending upload" 
+              alt={t("Pending upload")} 
               className="h-20 w-20 object-cover rounded-lg border-2 border-eagle-green/20"
             />
             <button
@@ -300,7 +302,7 @@ export default function OrderChat({
             onClick={() => fileInputRef.current?.click()}
             disabled={sendMessageMutation.isPending || isUploadingImage}
             className="shrink-0"
-            title="Attach image"
+            title={t("Attach image")}
           >
             <ImageIcon className="h-4 w-4" />
           </Button>
@@ -309,7 +311,7 @@ export default function OrderChat({
             value={chatMessage}
             onChange={(e) => setChatMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
+            placeholder={t("Type your message...")}
             className="flex-1"
             disabled={sendMessageMutation.isPending || isUploadingImage}
             maxLength={1000}
@@ -333,10 +335,11 @@ export default function OrderChat({
 
 // Empty state component
 function EmptyState() {
+  const { t } = useTranslation();
   return (
     <div className="text-center py-8 text-eagle-green/60">
       <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-      <p>No messages yet. Start the conversation!</p>
+      <p>{t("No messages yet. Start the conversation!")}</p>
     </div>
   );
 }
@@ -348,6 +351,7 @@ interface ChatMessageProps {
 }
 
 function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
+  const { t } = useTranslation();
   // Use fullImageUrl if available, fallback to imageUrl
   const imageUrl = message.fullImageUrl || message.imageUrl;
 
@@ -382,7 +386,7 @@ function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
             {orderChatService.formatMessageTime(message.sentAt)}
           </span>
           {!isOwnMessage && !message.isRead && (
-            <span className="w-2 h-2 rounded-full bg-blue-500" title="Unread" />
+            <span className="w-2 h-2 rounded-full bg-blue-500" title={t("Unread")} />
           )}
         </div>
         
@@ -397,7 +401,7 @@ function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
             >
               <img 
                 src={imageUrl} 
-                alt="Chat image"
+                alt={t("Chat image")}
                 className="max-w-full max-h-48 rounded-lg object-cover"
               />
               <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">

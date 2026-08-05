@@ -23,6 +23,7 @@ import { paymentService } from "@/services/paymentService";
 import { apiService } from "@/services/apiService";
 import { eventOrderService } from "@/services/eventOrderService";
 import { customOrderService } from "@/services/customOrderService";
+import { useTranslation } from "react-i18next";
 
 const stripePromise = loadStripe(
   import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""
@@ -77,6 +78,7 @@ function PaymentForm({
   onSuccess,
   onError,
 }: PaymentFormProps) {
+  const { t } = useTranslation();
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -124,7 +126,7 @@ function PaymentForm({
         onError(message);
 
         toast({
-          title: "Payment Failed",
+          title: t("Payment Failed"),
           description: message,
           variant: "destructive",
         });
@@ -134,9 +136,9 @@ function PaymentForm({
           console.log("✅ Payment succeeded:", paymentIntent.id);
 
           toast({
-            title: "Payment Successful!",
+            title: t("Payment Successful!"),
             description:
-              "Your payment has been processed. Opening confirmation...",
+              t("Your payment has been processed. Opening confirmation..."),
           });
 
           onSuccess(paymentIntent.id);
@@ -151,9 +153,9 @@ function PaymentForm({
           }, 1500);
         } else if (paymentIntent.status === "processing") {
           toast({
-            title: "Payment Processing",
+            title: t("Payment Processing"),
             description:
-              "Your payment is being processed. You'll receive a confirmation shortly.",
+              t("Your payment is being processed. You'll receive a confirmation shortly."),
           });
 
           setTimeout(() => {
@@ -174,7 +176,7 @@ function PaymentForm({
       onError(message);
 
       toast({
-        title: "Payment Error",
+        title: t("Payment Error"),
         description: message,
         variant: "destructive",
       });
@@ -218,7 +220,7 @@ function PaymentForm({
         <Separator />
         {walletAppliedMinor > 0 && (
           <div className="flex justify-between text-sm text-viridian-green">
-            <span>Reward credits applied</span>
+            <span>{t("Reward credits applied")}</span>
             <span>
               -
               {new Intl.NumberFormat("en-US", {
@@ -229,7 +231,7 @@ function PaymentForm({
           </div>
         )}
         <div className="flex justify-between">
-          <span className="font-semibold">Total Amount:</span>
+          <span className="font-semibold">{t("Total Amount:")}</span>
           <span className="font-bold text-lg">
             {new Intl.NumberFormat("en-US", {
               style: "currency",
@@ -248,12 +250,12 @@ function PaymentForm({
         {isProcessing ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Processing Payment...
+            {t("Processing Payment...")}
           </>
         ) : (
           <>
             <CreditCard className="mr-2 h-5 w-5" />
-            Pay{" "}
+            {t("Pay")}{" "}
             {new Intl.NumberFormat("en-US", {
               style: "currency",
               currency: currency || "USD",
@@ -269,6 +271,7 @@ function PaymentForm({
  * Main Stripe Payment Page Component
  */
 export default function StripePaymentPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -429,8 +432,8 @@ export default function StripePaymentPage() {
       });
 
       toast({
-        title: "Payment Ready",
-        description: "Enter your card details to complete the payment.",
+        title: t("Payment Ready"),
+        description: t("Enter your card details to complete the payment."),
       });
     } catch (err: any) {
       console.error("❌ Payment initialization failed:", err);
@@ -438,7 +441,7 @@ export default function StripePaymentPage() {
       setError(errorMsg);
 
       toast({
-        title: "Initialization Failed",
+        title: t("Initialization Failed"),
         description: errorMsg,
         variant: "destructive",
       });
@@ -467,10 +470,10 @@ export default function StripePaymentPage() {
           <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <p className="text-lg font-medium">
-              Initializing secure payment...
+              {t("Initializing secure payment...")}
             </p>
             <p className="text-sm text-gray-500">
-              Please wait while we prepare your payment
+              {t("Please wait while we prepare your payment")}
             </p>
           </CardContent>
         </Card>
@@ -486,7 +489,7 @@ export default function StripePaymentPage() {
           <CardHeader>
             <CardTitle className="flex items-center text-red-600">
               <AlertCircle className="mr-2 h-6 w-6" />
-              Payment Initialization Failed
+              {t("Payment Initialization Failed")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -502,13 +505,13 @@ export default function StripePaymentPage() {
                 className="flex-1"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                View Orders
+                {t("View Orders")}
               </Button>
               <Button
                 onClick={() => window.location.reload()}
                 className="flex-1"
               >
-                Try Again
+                {t("Try Again")}
               </Button>
             </div>
           </CardContent>
@@ -524,10 +527,10 @@ export default function StripePaymentPage() {
         <CardHeader>
           <CardTitle className="flex items-center text-2xl">
             <CreditCard className="mr-2 h-6 w-6" />
-            Complete Your Payment
+            {t("Complete Your Payment")}
           </CardTitle>
           <CardDescription>
-            Enter your card details to securely complete your order
+            {t("Enter your card details to securely complete your order")}
           </CardDescription>
         </CardHeader>
         <CardContent>

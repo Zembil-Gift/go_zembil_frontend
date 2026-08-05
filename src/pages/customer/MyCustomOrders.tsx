@@ -37,6 +37,7 @@ import { customOrderService } from "@/services/customOrderService";
 import { reviewService } from "@/services/reviewService";
 import { CustomReviewForm } from "@/components/reviews";
 import type { CustomOrder, CustomOrderStatus } from "@/types/customOrders";
+import { useTranslation } from "react-i18next";
 
 const STATUS_OPTIONS: { value: CustomOrderStatus | "ALL"; label: string }[] = [
   { value: "ALL", label: "All Orders" },
@@ -52,6 +53,7 @@ const STATUS_OPTIONS: { value: CustomOrderStatus | "ALL"; label: string }[] = [
 ];
 
 function MyCustomOrdersContent() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isAuthenticated, isInitialized } = useAuth();
   const [statusFilter, setStatusFilter] = useState<CustomOrderStatus | "ALL">(
@@ -138,16 +140,16 @@ function MyCustomOrdersContent() {
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-eagle-green mb-2">
-            Sign In Required
+            {t("Sign In Required")}
           </h2>
           <p className="font-light text-eagle-green/70 mb-4">
-            Please sign in to view your orders.
+            {t("Please sign in to view your orders.")}
           </p>
           <Button
             onClick={() => navigate("/signin")}
             className="bg-eagle-green hover:bg-viridian-green text-white"
           >
-            Sign In
+            {t("Sign In")}
           </Button>
         </div>
       </div>
@@ -161,10 +163,10 @@ function MyCustomOrdersContent() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-eagle-green">
-              My Custom Orders
+              {t("My Custom Orders")}
             </h1>
             <p className="text-eagle-green/70 mt-1">
-              Track and manage your personalized orders
+              {t("Track and manage your personalized orders")}
             </p>
           </div>
 
@@ -172,7 +174,7 @@ function MyCustomOrdersContent() {
             <Filter className="h-4 w-4 text-eagle-green/50" />
             <Select value={statusFilter} onValueChange={handleStatusChange}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder={t("Filter by status")} />
               </SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map((option) => (
@@ -211,16 +213,16 @@ function MyCustomOrdersContent() {
             <CardContent className="p-12 text-center">
               <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-eagle-green mb-2">
-                Failed to Load Orders
+                {t("Failed to Load Orders")}
               </h3>
               <p className="text-eagle-green/70 mb-4">
-                Something went wrong while fetching your orders.
+                {t("Something went wrong while fetching your orders.")}
               </p>
               <Button
                 onClick={() => window.location.reload()}
                 variant="outline"
               >
-                Try Again
+                {t("Try Again")}
               </Button>
             </CardContent>
           </Card>
@@ -248,7 +250,7 @@ function MyCustomOrdersContent() {
                   onClick={() => navigate("/custom-orders")}
                   className="bg-eagle-green hover:bg-viridian-green text-white"
                 >
-                  Browse Custom Templates
+                  {t("Browse Custom Templates")}
                 </Button>
               )}
             </CardContent>
@@ -259,7 +261,7 @@ function MyCustomOrdersContent() {
         {!isLoading && !isError && orders.length > 0 && (
           <>
             <div className="text-sm text-eagle-green/60 mb-4">
-              Showing {orders.length} of {totalElements} orders
+              {t("Showing")} {orders.length} of {totalElements} {t("orders")}
             </div>
 
             <div className="space-y-4">
@@ -341,7 +343,7 @@ function MyCustomOrdersContent() {
                         <div className="mt-4 pt-4 border-t border-june-bud/20">
                           <p className="text-sm text-amber-600 flex items-center gap-2">
                             <AlertCircle className="h-4 w-4" />
-                            Vendor has proposed a price. Review and respond.
+                            {t("Vendor has proposed a price. Review and respond.")}
                           </p>
                         </div>
                       )}
@@ -349,7 +351,7 @@ function MyCustomOrdersContent() {
                         <div className="mt-4 pt-4 border-t border-june-bud/20">
                           <p className="text-sm text-green-600 flex items-center gap-2">
                             <CheckCircle className="h-4 w-4" />
-                            Ready for payment. Complete your purchase.
+                            {t("Ready for payment. Complete your purchase.")}
                           </p>
                         </div>
                       )}
@@ -365,7 +367,7 @@ function MyCustomOrdersContent() {
                                 setSelectedReviewOrder(order);
                               }}
                             >
-                              Add Review
+                              {t("Add Review")}
                             </Button>
                           </div>
                         )}
@@ -383,10 +385,10 @@ function MyCustomOrdersContent() {
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
                 >
-                  Previous
+                  {t("Previous")}
                 </Button>
                 <span className="flex items-center px-4 text-sm text-eagle-green/70">
-                  Page {page + 1} of {totalPages}
+                  {t("Page")} {page + 1} of {totalPages}
                 </span>
                 <Button
                   variant="outline"
@@ -395,7 +397,7 @@ function MyCustomOrdersContent() {
                   }
                   disabled={page >= totalPages - 1}
                 >
-                  Next
+                  {t("Next")}
                 </Button>
               </div>
             )}
@@ -415,7 +417,7 @@ function MyCustomOrdersContent() {
               <>
                 <DialogHeader>
                   <DialogTitle>
-                    Add Review for {selectedReviewOrder.templateName}
+                    {t("Add Review for")} {selectedReviewOrder.templateName}
                   </DialogTitle>
                 </DialogHeader>
                 <CustomReviewForm

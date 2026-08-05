@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useRef, useEffect, useState } from "react";
 import authService from "@/services/authService";
+import { useTranslation } from "react-i18next";
 
 interface OAuth2ButtonsProps {
   onSuccess?: () => void;
@@ -21,6 +22,7 @@ const APPLE_CANCEL_CODES = new Set([
 ]);
 
 export function OAuth2Buttons({ onSuccess, disabled }: OAuth2ButtonsProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
   const {  data } = useOAuth2Login();
@@ -48,8 +50,8 @@ export function OAuth2Buttons({ onSuccess, disabled }: OAuth2ButtonsProps) {
               const result = await authService.loginWithOAuth2(response.credential, 'GOOGLE');
 
               toast({
-                title: "Sign in successful",
-                description: "Welcome to goGerami!",
+                title: t("Sign in successful"),
+                description: t("Welcome to goGerami!"),
               });
 
               if (onSuccess) {
@@ -113,8 +115,8 @@ export function OAuth2Buttons({ onSuccess, disabled }: OAuth2ButtonsProps) {
   const handleAppleSignIn = async () => {
     if (!window.AppleID) {
       toast({
-        title: "Apple sign in unavailable",
-        description: "Could not load Apple sign in. Please check your connection and try again.",
+        title: t("Apple sign in unavailable"),
+        description: t("Could not load Apple sign in. Please check your connection and try again."),
         variant: "destructive",
       });
       return;
@@ -134,8 +136,8 @@ export function OAuth2Buttons({ onSuccess, disabled }: OAuth2ButtonsProps) {
       );
 
       toast({
-        title: "Sign in successful",
-        description: "Welcome to goGerami!",
+        title: t("Sign in successful"),
+        description: t("Welcome to goGerami!"),
       });
 
       if (onSuccess) {
@@ -201,7 +203,7 @@ export function OAuth2Buttons({ onSuccess, disabled }: OAuth2ButtonsProps) {
           <Separator className="w-full" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-2 text-gray-500">Or continue with</span>
+          <span className="bg-white px-2 text-gray-500">{t("Or continue with")}</span>
         </div>
       </div>
 
@@ -219,7 +221,7 @@ export function OAuth2Buttons({ onSuccess, disabled }: OAuth2ButtonsProps) {
             type="button"
             onClick={handleAppleSignIn}
             disabled={disabled || isAppleLoading || !isAppleReady}
-            aria-label="Continue with Apple"
+            aria-label={t("Continue with Apple")}
             className="flex h-[44px] w-full items-center justify-center gap-2 rounded-[4px] bg-black text-[14px] font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <svg

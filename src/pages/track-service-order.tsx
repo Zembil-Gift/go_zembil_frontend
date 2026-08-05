@@ -37,6 +37,7 @@ import {
   type ServiceOrderStatus,
 } from "@/services/serviceOrderService";
 import { serviceService } from "@/services/serviceService";
+import { useTranslation } from "react-i18next";
 
 const TRACKING_STEPS: Array<{
   key: ServiceOrderStatus;
@@ -99,6 +100,7 @@ const getStatusBadgeClass = (status: ServiceOrderStatus) => {
 };
 
 export default function TrackServiceOrder() {
+  const { t } = useTranslation();
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -167,7 +169,7 @@ export default function TrackServiceOrder() {
     },
     onError: (error: any) => {
       toast({
-        title: "Checkout Failed",
+        title: t("Checkout Failed"),
         description:
           error?.message || "Failed to continue checkout. Please try again.",
         variant: "destructive",
@@ -190,8 +192,8 @@ export default function TrackServiceOrder() {
     },
     onSuccess: async () => {
       toast({
-        title: "Booking Cancelled",
-        description: "Your service booking has been cancelled successfully.",
+        title: t("Booking Cancelled"),
+        description: t("Your service booking has been cancelled successfully."),
       });
       setCancelDialogOpen(false);
       setCancelReason("");
@@ -202,7 +204,7 @@ export default function TrackServiceOrder() {
     },
     onError: (error: any) => {
       toast({
-        title: "Cancellation Failed",
+        title: t("Cancellation Failed"),
         description:
           error?.message || "Failed to cancel booking. Please try again.",
         variant: "destructive",
@@ -258,7 +260,7 @@ export default function TrackServiceOrder() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-10 w-10 animate-spin text-eagle-green mx-auto mb-4" />
-          <p className="text-eagle-green/70">Loading service booking...</p>
+          <p className="text-eagle-green/70">{t("Loading service booking...")}</p>
         </div>
       </div>
     );
@@ -272,13 +274,13 @@ export default function TrackServiceOrder() {
             <CardContent className="py-16 text-center">
               <XCircle className="h-14 w-14 text-orange-500 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-eagle-green mb-2">
-                Service Order Not Found
+                {t("Service Order Not Found")}
               </h2>
               <p className="text-eagle-green/70 mb-6">
-                We couldn't find this service booking.
+                {t("We couldn't find this service booking.")}
               </p>
               <Button asChild>
-                <Link to="/my-service-orders">Back to My Services</Link>
+                <Link to="/my-service-orders">{t("Back to My Services")}</Link>
               </Button>
             </CardContent>
           </Card>
@@ -305,16 +307,16 @@ export default function TrackServiceOrder() {
           <Button asChild variant="ghost" className="mb-4">
             <Link to="/my-service-orders" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Back to My Services
+              {t("Back to My Services")}
             </Link>
           </Button>
 
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h1 className="text-3xl font-bold text-eagle-green mb-1">
-                Track Service Booking
+                {t("Track Service Booking")}
               </h1>
-              <p className="text-eagle-green/70">Order #{order.orderNumber}</p>
+              <p className="text-eagle-green/70">{t("Order #")}{order.orderNumber}</p>
             </div>
             <div className="flex items-center gap-2">
               <Badge className={getStatusBadgeClass(order.status)}>
@@ -333,7 +335,7 @@ export default function TrackServiceOrder() {
 
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Order Progress</CardTitle>
+            <CardTitle>{t("Order Progress")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between gap-3">
@@ -372,7 +374,7 @@ export default function TrackServiceOrder() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <Card>
             <CardHeader>
-              <CardTitle>Service Details</CardTitle>
+              <CardTitle>{t("Service Details")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4">
@@ -423,11 +425,11 @@ export default function TrackServiceOrder() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Payment Summary</CardTitle>
+              <CardTitle>{t("Payment Summary")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-eagle-green/70">Subtotal</span>
+                <span className="text-eagle-green/70">{t("Subtotal")}</span>
                 <span>
                   {serviceOrderService.formatPrice(
                     order.subtotalMinor,
@@ -437,7 +439,7 @@ export default function TrackServiceOrder() {
               </div>
               {(order.discountMinor || 0) > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-eagle-green/70">Discount</span>
+                  <span className="text-eagle-green/70">{t("Discount")}</span>
                   <span className="text-green-700">
                     -
                     {serviceOrderService.formatPrice(
@@ -449,7 +451,7 @@ export default function TrackServiceOrder() {
               )}
               {(order.vatAmountMinor || 0) > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-eagle-green/70">VAT</span>
+                  <span className="text-eagle-green/70">{t("VAT")}</span>
                   <span>
                     {serviceOrderService.formatPrice(
                       order.vatAmountMinor || 0,
@@ -460,7 +462,7 @@ export default function TrackServiceOrder() {
               )}
               {(order.serviceFeeMinor || 0) > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-eagle-green/70">Service Fee</span>
+                  <span className="text-eagle-green/70">{t("Service Fee")}</span>
                   <span>
                     {serviceOrderService.formatPrice(
                       order.serviceFeeMinor || 0,
@@ -471,7 +473,7 @@ export default function TrackServiceOrder() {
               )}
               <Separator />
               <div className="flex justify-between font-bold text-eagle-green text-base">
-                <span>Total</span>
+                <span>{t("Total")}</span>
                 <span>
                   {serviceOrderService.formatPrice(
                     order.totalAmountMinor,
@@ -489,7 +491,7 @@ export default function TrackServiceOrder() {
                   {isContinuingCheckout ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Initializing...
+                      {t("Initializing...")}
                     </>
                   ) : (
                     "Continue Checkout"
@@ -502,12 +504,12 @@ export default function TrackServiceOrder() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Contact Details</CardTitle>
+            <CardTitle>{t("Contact Details")}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="font-medium text-eagle-green mb-1">
-                Customer Contact
+                {t("Customer Contact")}
               </p>
               <p className="flex items-center gap-2 text-eagle-green/80 mb-1">
                 <Mail className="h-4 w-4" />
@@ -522,7 +524,7 @@ export default function TrackServiceOrder() {
             </div>
 
             <div>
-              <p className="font-medium text-eagle-green mb-1">Recipient</p>
+              <p className="font-medium text-eagle-green mb-1">{t("Recipient")}</p>
               <p className="flex items-center gap-2 text-eagle-green/80 mb-1">
                 <User className="h-4 w-4" />
                 {order.recipientName || "Same as customer"}
@@ -545,25 +547,25 @@ export default function TrackServiceOrder() {
 
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle>Cancellation & Refund</CardTitle>
+            <CardTitle>{t("Cancellation & Refund")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {order.cancellationInfo && (
               <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
                 <p className="text-sm font-semibold text-orange-800 mb-2">
-                  Cancellation Details
+                  {t("Cancellation Details")}
                 </p>
                 <div className="space-y-1 text-sm text-orange-900">
                   <p>
-                    <span className="font-medium">Cancelled by:</span>{" "}
+                    <span className="font-medium">{t("Cancelled by:")}</span>{" "}
                     {cancellationByLabel}
                   </p>
                   <p>
-                    <span className="font-medium">Reason:</span>{" "}
+                    <span className="font-medium">{t("Reason:")}</span>{" "}
                     {order.cancellationInfo.reason || "No reason provided"}
                   </p>
                   <p>
-                    <span className="font-medium">Refund amount:</span>{" "}
+                    <span className="font-medium">{t("Refund amount:")}</span>{" "}
                     {typeof order.cancellationInfo.refundAmountMinor === "number"
                       ? serviceOrderService.formatPrice(
                           order.cancellationInfo.refundAmountMinor,
@@ -583,14 +585,14 @@ export default function TrackServiceOrder() {
                       "Refund amount is calculated from the current policy and your booking time."}
                   </p>
                   <p className="text-sm font-medium text-eagle-green">
-                    Refund Tier: {order.refundEligibility.refundTier || "N/A"}
+                    {t("Refund Tier:")} {order.refundEligibility.refundTier || "N/A"}
                   </p>
                   <p className="text-sm font-medium text-eagle-green">
-                    Refund Percentage:{" "}
+                    {t("Refund Percentage:")}{" "}
                     {order.refundEligibility.refundPercentage ?? 0}%
                   </p>
                   <p className="text-base font-bold text-viridian-green mt-1">
-                    You will get:{" "}
+                    {t("You will get:")}{" "}
                     {serviceOrderService.formatPrice(
                       order.refundEligibility.estimatedRefundMinor || 0,
                       order.currency
@@ -599,16 +601,16 @@ export default function TrackServiceOrder() {
                 </div>
 
                 <ul className="text-xs text-eagle-green/70 space-y-1 list-disc pl-5">
-                  <li>48+ hours before service: up to full refund.</li>
+                  <li>{t("48+ hours before service: up to full refund.")}</li>
                   <li>
-                    24-48 hours before service: partial refund based on policy.
+                    {t("24-48 hours before service: partial refund based on policy.")}
                   </li>
-                  <li>Less than 24 hours: refund may not apply.</li>
+                  <li>{t("Less than 24 hours: refund may not apply.")}</li>
                 </ul>
               </>
             ) : (
               <p className="text-sm text-eagle-green/70">
-                Refund information is not available for this booking.
+                {t("Refund information is not available for this booking.")}
               </p>
             )}
 
@@ -619,7 +621,7 @@ export default function TrackServiceOrder() {
                 onClick={() => setCancelDialogOpen(true)}
               >
                 <XCircle className="h-4 w-4 mr-2" />
-                Cancel Booking
+                {t("Cancel Booking")}
               </Button>
             )}
           </CardContent>
@@ -629,23 +631,22 @@ export default function TrackServiceOrder() {
           <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="text-eagle-green">
-                Cancel Service Booking
+                {t("Cancel Service Booking")}
               </DialogTitle>
               <DialogDescription className="text-eagle-green/70">
-                Your refund will follow the policy shown above. Confirm to
-                proceed with cancellation.
+                {t("Your refund will follow the policy shown above. Confirm to proceed with cancellation.")}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3">
               <Label htmlFor="cancelReason" className="text-eagle-green">
-                Reason (optional)
+                {t("Reason (optional)")}
               </Label>
               <Textarea
                 id="cancelReason"
                 value={cancelReason}
                 onChange={(event) => setCancelReason(event.target.value)}
-                placeholder="Tell us why you want to cancel..."
+                placeholder={t("Tell us why you want to cancel...")}
               />
             </div>
 
@@ -657,7 +658,7 @@ export default function TrackServiceOrder() {
                   setCancelReason("");
                 }}
               >
-                Keep Booking
+                {t("Keep Booking")}
               </Button>
               <Button
                 className="bg-red-600 hover:bg-red-700 text-white"

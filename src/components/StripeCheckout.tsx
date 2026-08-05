@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { useTranslation } from "react-i18next";
 
 // Initialize Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
@@ -31,6 +32,7 @@ interface CheckoutFormProps {
 }
 
 function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
+  const { t } = useTranslation();
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
@@ -48,8 +50,8 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
     if (paymentIntentId && redirectStatus === 'succeeded') {
       setMessage('Payment succeeded!');
       toast({
-        title: "Payment Successful",
-        description: "Your payment has been processed successfully.",
+        title: t("Payment Successful"),
+        description: t("Your payment has been processed successfully."),
       });
       onSuccess({ paymentIntentId, status: 'succeeded' });
     }
@@ -83,7 +85,7 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
           onError("An unexpected error occurred.");
         }
         toast({
-          title: "Payment Failed",
+          title: t("Payment Failed"),
           description: error.message || "An unexpected error occurred.",
           variant: "destructive",
         });
@@ -91,8 +93,8 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
         if (paymentIntent.status === 'succeeded') {
           setMessage('Payment succeeded!');
           toast({
-            title: "Payment Successful",
-            description: "Your payment has been processed successfully.",
+            title: t("Payment Successful"),
+            description: t("Your payment has been processed successfully."),
           });
           console.log('✅ Stripe payment confirmed, calling onSuccess with:', paymentIntent.id);
           console.log('🔄 Payment intent details:', {
@@ -132,8 +134,8 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
       setMessage("Payment processing failed. Please try again.");
       onError("Payment processing failed. Please try again.");
       toast({
-        title: "Payment Error",
-        description: "Payment processing failed. Please try again.",
+        title: t("Payment Error"),
+        description: t("Payment processing failed. Please try again."),
         variant: "destructive",
       });
     } finally {
@@ -152,7 +154,7 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <CreditCard className="w-5 h-5 text-amber-600" />
-            <span>Payment Details</span>
+            <span>{t("Payment Details")}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -182,7 +184,7 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
               {isLoading ? (
                 <>
                   <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
-                  Processing Payment...
+                  {t("Processing Payment...")}
                 </>
               ) : (
                 'Complete Payment'
@@ -198,15 +200,15 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="text-green-800">256-bit SSL encryption</span>
+              <span className="text-green-800">{t("256-bit SSL encryption")}</span>
             </div>
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="text-green-800">PCI DSS compliant</span>
+              <span className="text-green-800">{t("PCI DSS compliant")}</span>
             </div>
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="text-green-800">Fraud protection</span>
+              <span className="text-green-800">{t("Fraud protection")}</span>
             </div>
           </div>
         </CardContent>
@@ -216,6 +218,7 @@ function CheckoutForm({ clientSecret, onSuccess, onError }: CheckoutFormProps) {
 }
 
 export default function StripeCheckout({ amount, currency, orderData, onSuccess, onError }: StripeCheckoutProps) {
+  const { t } = useTranslation();
   const [clientSecret, setClientSecret] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -248,7 +251,7 @@ export default function StripeCheckout({ amount, currency, orderData, onSuccess,
         const errorMessage = error instanceof Error ? error.message : 'Failed to initialize payment';
         onError(errorMessage);
         toast({
-          title: "Payment Initialization Failed",
+          title: t("Payment Initialization Failed"),
           description: `No client secret received: ${errorMessage}`,
           variant: "destructive",
         });
@@ -266,7 +269,7 @@ export default function StripeCheckout({ amount, currency, orderData, onSuccess,
         <CardContent className="pt-6">
           <div className="flex items-center justify-center space-x-2 py-8">
             <div className="animate-spin w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full" />
-            <span className="text-gray-600">Initializing secure payment...</span>
+            <span className="text-gray-600">{t("Initializing secure payment...")}</span>
           </div>
         </CardContent>
       </Card>
@@ -278,7 +281,7 @@ export default function StripeCheckout({ amount, currency, orderData, onSuccess,
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Failed to initialize payment. Please try again or contact support.
+          {t("Failed to initialize payment. Please try again or contact support.")}
         </AlertDescription>
       </Alert>
     );

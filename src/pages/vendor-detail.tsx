@@ -10,8 +10,10 @@ import { reviewService } from '@/services/reviewService';
 import { RatingSummaryDisplay, ReviewCard, VendorReviewForm } from '@/components/reviews';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
+import { useTranslation } from "react-i18next";
 
 export default function VendorDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const vendorId = Number(id);
   const { isAuthenticated } = useAuth();
@@ -75,10 +77,10 @@ export default function VendorDetail() {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 py-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Vendor not found</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{t("Vendor not found")}</h1>
           <Link to="/shop">
             <Button className="bg-viridian-green hover:bg-viridian-green/90">
-              Browse Shop
+              {t("Browse Shop")}
             </Button>
           </Link>
         </div>
@@ -95,7 +97,7 @@ export default function VendorDetail() {
           className="inline-flex items-center text-sm text-gray-600 hover:text-viridian-green mb-6"
         >
           <ChevronLeft className="h-4 w-4 mr-1" />
-          Back to Shop
+          {t("Back to Shop")}
         </Link>
 
         {/* Vendor Header */}
@@ -117,7 +119,7 @@ export default function VendorDetail() {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-2xl font-bold text-charcoal">{vendor.businessName}</h1>
-                  <Badge className="bg-viridian-green/10 text-viridian-green">Verified Seller</Badge>
+                  <Badge className="bg-viridian-green/10 text-viridian-green">{t("Verified Seller")}</Badge>
                 </div>
                 
                 {vendor.vendorCategoryName && (
@@ -137,7 +139,7 @@ export default function VendorDetail() {
                     </span>
                   </div>
                   <span className="text-gray-500">
-                    ({vendor.ratingSummary.totalReviews} reviews)
+                    ({vendor.ratingSummary.totalReviews} {t("reviews)")}
                   </span>
                 </div>
 
@@ -154,12 +156,12 @@ export default function VendorDetail() {
                   )}
                   <div className="flex items-center gap-1">
                     <Package className="h-4 w-4" />
-                    <span>{vendor.totalProducts} products</span>
+                    <span>{vendor.totalProducts} {t("products")}</span>
                   </div>
                   {memberSince && (
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      <span>Member since {memberSince}</span>
+                      <span>{t("Member since")} {memberSince}</span>
                     </div>
                   )}
                 </div>
@@ -172,9 +174,9 @@ export default function VendorDetail() {
         <Tabs defaultValue="reviews" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="reviews">
-              Reviews {ratingSummary && `(${ratingSummary.totalReviews})`}
+              {t("Reviews")} {ratingSummary && `(${ratingSummary.totalReviews})`}
             </TabsTrigger>
-            <TabsTrigger value="about">About</TabsTrigger>
+            <TabsTrigger value="about">{t("About")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="reviews" className="mt-6 space-y-6">
@@ -196,12 +198,12 @@ export default function VendorDetail() {
                     />
                   ) : (
                     <div className="text-center">
-                      <p className="text-gray-600 mb-3">Share your experience with this vendor</p>
+                      <p className="text-gray-600 mb-3">{t("Share your experience with this vendor")}</p>
                       <Button
                         onClick={() => setShowReviewForm(true)}
                         className="bg-viridian-green hover:bg-viridian-green/90"
                       >
-                        Write a Review
+                        {t("Write a Review")}
                       </Button>
                     </div>
                   )}
@@ -212,9 +214,9 @@ export default function VendorDetail() {
             {!isAuthenticated && (
               <Card>
                 <CardContent className="p-6 text-center">
-                  <p className="text-gray-600 mb-3">Sign in to leave a review</p>
+                  <p className="text-gray-600 mb-3">{t("Sign in to leave a review")}</p>
                   <Link to="/signin">
-                    <Button variant="outline">Sign In</Button>
+                    <Button variant="outline">{t("Sign In")}</Button>
                   </Link>
                 </CardContent>
               </Card>
@@ -242,7 +244,7 @@ export default function VendorDetail() {
             ) : (
               <Card>
                 <CardContent className="p-8 text-center">
-                  <p className="text-gray-500">No reviews yet. Be the first to review!</p>
+                  <p className="text-gray-500">{t("No reviews yet. Be the first to review!")}</p>
                 </CardContent>
               </Card>
             )}
@@ -251,36 +253,36 @@ export default function VendorDetail() {
           <TabsContent value="about" className="mt-6">
             <Card>
               <CardContent className="p-6 space-y-4">
-                <h3 className="font-semibold text-lg">About {vendor.businessName}</h3>
+                <h3 className="font-semibold text-lg">{t("About")} {vendor.businessName}</h3>
                 {vendor.description ? (
                   <p className="text-gray-600">{vendor.description}</p>
                 ) : (
-                  <p className="text-gray-500 italic">No description provided.</p>
+                  <p className="text-gray-500 italic">{t("No description provided.")}</p>
                 )}
 
                 <div className="pt-4 border-t space-y-3">
-                  <h4 className="font-medium">Seller Information</h4>
+                  <h4 className="font-medium">{t("Seller Information")}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     {vendor.city && (
                       <div>
-                        <span className="text-gray-500">Location:</span>
+                        <span className="text-gray-500">{t("Location:")}</span>
                         <span className="ml-2">{vendor.city}{vendor.country ? `, ${vendor.country}` : ''}</span>
                       </div>
                     )}
                     <div>
-                      <span className="text-gray-500">Products:</span>
+                      <span className="text-gray-500">{t("Products:")}</span>
                       <span className="ml-2">{vendor.totalProducts}</span>
                     </div>
                     {memberSince && (
                       <div>
-                        <span className="text-gray-500">Member since:</span>
+                        <span className="text-gray-500">{t("Member since:")}</span>
                         <span className="ml-2">{memberSince}</span>
                       </div>
                     )}
                     <div>
-                      <span className="text-gray-500">Rating:</span>
+                      <span className="text-gray-500">{t("Rating:")}</span>
                       <span className="ml-2">
-                        {vendor.ratingSummary.averageRating.toFixed(1)} ({vendor.ratingSummary.totalReviews} reviews)
+                        {vendor.ratingSummary.averageRating.toFixed(1)} ({vendor.ratingSummary.totalReviews} {t("reviews)")}
                       </span>
                     </div>
                   </div>

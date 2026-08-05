@@ -8,6 +8,7 @@ import { EventReviewForm } from "./ReviewForm";
 import { RatingSummaryDisplay } from "./RatingSummary";
 import { reviewService } from "@/services/reviewService";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 
 interface EventReviewsSectionProps {
   eventId: number;
@@ -20,6 +21,7 @@ export function EventReviewsSection({
   eventOrderId,
   allowWriteReview = true,
 }: EventReviewsSectionProps) {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [page, setPage] = useState(0);
@@ -47,7 +49,7 @@ export function EventReviewsSection({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-xl font-bold text-charcoal">
-          Event Reviews
+          {t("Event Reviews")}
         </CardTitle>
         {allowWriteReview &&
           isAuthenticated &&
@@ -58,7 +60,7 @@ export function EventReviewsSection({
               className="bg-viridian-green hover:bg-viridian-green/90"
             >
               <MessageSquarePlus className="h-4 w-4 mr-2" />
-              Write a Review
+              {t("Write a Review")}
             </Button>
           )}
       </CardHeader>
@@ -76,7 +78,7 @@ export function EventReviewsSection({
         {allowWriteReview && showReviewForm && (
           <div className="border-t pt-6">
             <h3 className="font-semibold text-charcoal mb-4">
-              Write Your Review
+              {t("Write Your Review")}
             </h3>
             <EventReviewForm
               eventId={eventId}
@@ -108,10 +110,10 @@ export function EventReviewsSection({
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0}
                   >
-                    Previous
+                    {t("Previous")}
                   </Button>
                   <span className="flex items-center px-3 text-sm text-gray-600">
-                    Page {page + 1} of {totalPages}
+                    {t("Page")} {page + 1} of {totalPages}
                   </span>
                   <Button
                     variant="outline"
@@ -119,14 +121,14 @@ export function EventReviewsSection({
                     onClick={() => setPage((p) => p + 1)}
                     disabled={page >= totalPages - 1}
                   >
-                    Next
+                    {t("Next")}
                   </Button>
                 </div>
               )}
             </>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p>No reviews yet. Be the first to review this event!</p>
+              <p>{t("No reviews yet. Be the first to review this event!")}</p>
             </div>
           )}
         </div>

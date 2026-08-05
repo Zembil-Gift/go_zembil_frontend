@@ -8,6 +8,12 @@ import { DiscountBadge } from '@/components/DiscountBadge';
 import { PriceWithDiscount } from '@/components/PriceWithDiscount';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
+import { cdnImage, cdnSrcSet } from '@/utils/imageUtils';
+import { useTranslation } from "react-i18next";
+
+// Card renders ~300px wide at lg, 50vw on mobile. Top width covers 2x DPR.
+const CARD_WIDTHS = [200, 300, 400, 600];
+const CARD_SIZES = '(min-width: 1024px) 300px, (min-width: 768px) 33vw, 50vw';
 
 interface GiftItemCardProps {
     product: any;
@@ -15,10 +21,14 @@ interface GiftItemCardProps {
 }
 
 const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
+  const { t } = useTranslation();
     const [imageLoaded, setImageLoaded] = useState(false);
     const [secondImageLoaded, setSecondImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [secondImageError, setSecondImageError] = useState(false);
+    // ponytail: if the resize layer 404s, fall back to the untransformed R2 url rather than
+    // showing nothing. Drop this once /cdn-cgi/image/ is confirmed healthy.
+    const [rawFallback, setRawFallback] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [addedToCart, setAddedToCart] = useState(false);
     
@@ -114,7 +124,9 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
 
                 {/* Primary Product Image */}
                 <img
-                    src={imageError ? '/placeholder-product.jpg' : primaryImage}
+                    src={imageError ? '/placeholder-product.jpg' : rawFallback ? primaryImage : cdnImage(primaryImage, 300)}
+                    srcSet={imageError || rawFallback ? undefined : cdnSrcSet(primaryImage, CARD_WIDTHS)}
+                    sizes={CARD_SIZES}
                     alt={name}
                     className={`w-full h-full object-cover transition-all duration-500 ease-out rounded-t-md
                         ${imageLoaded ? 'opacity-100' : 'opacity-0'}
@@ -122,6 +134,11 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                     `}
                     onLoad={() => setImageLoaded(true)}
                     onError={() => {
+                        if (!rawFallback) {
+                            console.warn('[img] resize failed, using origin:', cdnImage(primaryImage, 300));
+                            setRawFallback(true);
+                            return;
+                        }
                         setImageError(true);
                         setImageLoaded(true);
                     }}
@@ -131,7 +148,11 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                 {/* Secondary Product Image (shown on hover) */}
                 {secondaryImage && (
                     <img
-                        src={secondImageError ? primaryImage : secondaryImage}
+                        src={rawFallback
+                            ? (secondImageError ? primaryImage : secondaryImage)
+                            : cdnImage(secondImageError ? primaryImage : secondaryImage, 300)}
+                        srcSet={rawFallback ? undefined : cdnSrcSet(secondImageError ? primaryImage : secondaryImage, CARD_WIDTHS)}
+                        sizes={CARD_SIZES}
                         alt={`${name} - alternate view`}
                         className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ease-out rounded-t-md
                             ${secondImageLoaded ? '' : 'opacity-0'}
@@ -170,7 +191,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                                 shadow-lg shadow-warm-red/30 backdrop-blur-sm
                                 transform transition-transform duration-300 group-hover:scale-110">
                                 <Sparkles className="w-3 h-3" />
-                                <span>{discountLabel} OFF</span>
+                                <span>{discountLabel} {t("OFF")}</span>
                             </div>
                         </div>
                     )
@@ -193,7 +214,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                                 ? 'bg-green-500 text-white' 
                                 : 'bg-white/95 text-eagle-green hover:text-white hover:bg-gradient-to-br hover:from-eagle-green hover:to-viridian-green'}
                             ${isAddingToCart ? 'opacity-70 cursor-not-allowed' : ''}`}
-                        aria-label="Add to cart"
+                        aria-label={t("Add to cart")}
                     >
                         {isAddingToCart ? (
                             <Loader2 className="w-5 h-5 animate-spin" strokeWidth={1.5} />
@@ -291,7 +312,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                     {/* Subtle indicator for more */}
                     <div className={`hidden sm:flex items-center gap-1 text-xs font-medium text-viridian-green
                         transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
-                        <span>View</span>
+                        <span>{t("View")}</span>
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                         </svg>

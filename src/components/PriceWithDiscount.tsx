@@ -1,6 +1,7 @@
 import React from 'react';
 import { DiscountInfo } from '@/types/discount';
 import { getCurrencySymbol, calculateDiscountedPrice } from '@/lib/currency';
+import { useTranslation } from "react-i18next";
 
 interface PriceWithDiscountProps {
   originalPrice: number; // in major units
@@ -19,6 +20,7 @@ export const PriceWithDiscount: React.FC<PriceWithDiscountProps> = ({
   showSavings = true,
   theme = 'default'
 }) => {
+  const { t } = useTranslation();
   let discountedPrice = originalPrice;
   try {
     discountedPrice = calculateDiscountedPrice(originalPrice, currency, discount);
@@ -82,13 +84,13 @@ export const PriceWithDiscount: React.FC<PriceWithDiscountProps> = ({
       </div>
       {showSavings && savings > 0 && (
         <div className={`${classes.savings} ${theme === 'onRed' ? 'text-white/90' : 'text-green-600'} font-medium flex flex-wrap items-center gap-1 break-all`}>
-          <span>Save {getCurrencySymbol(currency)}{savings.toFixed(decimals)}</span>
+          <span>{t("Save")} {getCurrencySymbol(currency)}{savings.toFixed(decimals)}</span>
           {discount.discountType === 'PERCENTAGE' && discount.discountPercentage && (
             <span className={`${theme === 'onRed' ? 'text-white/80' : 'text-gray-500'} text-xs`}>
               {(savings / originalPrice) * 100 < discount.discountPercentage - 0.1 ? (
-                <span>(Capped at max)</span>
+                <span>{t("(Capped at max)")}</span>
               ) : (
-                <span>({discount.discountPercentage}% off)</span>
+                <span>({discount.discountPercentage}{t("% off)")}</span>
               )}
             </span>
           )}

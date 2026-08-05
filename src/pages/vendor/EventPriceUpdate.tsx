@@ -37,6 +37,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
   if (!vendorProfile) return false;
@@ -64,6 +65,7 @@ const priceUpdateSchema = z.object({
 type PriceUpdateFormData = z.infer<typeof priceUpdateSchema>;
 
 export default function EventPriceUpdate() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const eventId = id ? parseInt(id, 10) : null;
 
@@ -139,15 +141,15 @@ export default function EventPriceUpdate() {
       queryClient.invalidateQueries({ queryKey: ['vendor', 'event', eventId] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'event-price-requests'] });
       toast({
-        title: "Price Update Requested",
-        description: "Your ticket price update request has been submitted for admin approval.",
+        title: t("Price Update Requested"),
+        description: t("Your ticket price update request has been submitted for admin approval."),
       });
       setDialogOpen(false);
       form.reset();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to submit price update request",
         variant: "destructive",
       });
@@ -208,9 +210,9 @@ export default function EventPriceUpdate() {
       <div className="container mx-auto py-8 px-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Access Denied</AlertTitle>
+          <AlertTitle>{t("Access Denied")}</AlertTitle>
           <AlertDescription>
-            You must be logged in as a vendor to access this page.
+            {t("You must be logged in as a vendor to access this page.")}
           </AlertDescription>
         </Alert>
       </div>
@@ -232,15 +234,15 @@ export default function EventPriceUpdate() {
       <div className="container mx-auto py-8 px-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>{t("Error")}</AlertTitle>
           <AlertDescription>
-            Failed to load event. The event may not exist or you may not have permission to view it.
+            {t("Failed to load event. The event may not exist or you may not have permission to view it.")}
           </AlertDescription>
         </Alert>
         <Button asChild className="mt-4">
           <Link to="/vendor">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+            {t("Back to Dashboard")}
           </Link>
         </Button>
       </div>
@@ -252,15 +254,15 @@ export default function EventPriceUpdate() {
       <div className="container mx-auto py-8 px-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Unauthorized</AlertTitle>
+          <AlertTitle>{t("Unauthorized")}</AlertTitle>
           <AlertDescription>
-            You can only update prices for your own events.
+            {t("You can only update prices for your own events.")}
           </AlertDescription>
         </Alert>
         <Button asChild className="mt-4">
           <Link to="/vendor">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+            {t("Back to Dashboard")}
           </Link>
         </Button>
       </div>
@@ -279,7 +281,7 @@ export default function EventPriceUpdate() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Update Ticket Prices</h1>
+          <h1 className="text-2xl font-bold">{t("Update Ticket Prices")}</h1>
           <p className="text-muted-foreground">{event.title}</p>
         </div>
       </div>
@@ -308,10 +310,9 @@ export default function EventPriceUpdate() {
       {/* Info Alert */}
       <Alert className="mb-6">
         <Info className="h-4 w-4" />
-        <AlertTitle>Price Update Process</AlertTitle>
+        <AlertTitle>{t("Price Update Process")}</AlertTitle>
         <AlertDescription>
-          Ticket price updates require admin approval. Once you submit a price change request,
-          it will be reviewed by an administrator before taking effect.
+          {t("Ticket price updates require admin approval. Once you submit a price change request, it will be reviewed by an administrator before taking effect.")}
         </AlertDescription>
       </Alert>
 
@@ -320,16 +321,16 @@ export default function EventPriceUpdate() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Ticket className="h-5 w-5" />
-            Ticket Types
+            {t("Ticket Types")}
           </CardTitle>
           <CardDescription>
-            Select a ticket type to request a price update
+            {t("Select a ticket type to request a price update")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {ticketTypes.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No ticket types found for this event.
+              {t("No ticket types found for this event.")}
             </div>
           ) : (
             <div className="space-y-4">
@@ -349,10 +350,10 @@ export default function EventPriceUpdate() {
                       )}
                       <div className="flex gap-2 mt-1">
                         <Badge variant="outline" className="text-xs">
-                          Capacity: {ticketType.capacity}
+                          {t("Capacity:")} {ticketType.capacity}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          Sold: {ticketType.soldCount || 0}
+                          {t("Sold:")} {ticketType.soldCount || 0}
                         </Badge>
                         <Badge variant={ticketType.isActive ? "default" : "secondary"} className="text-xs">
                           {ticketType.isActive ? "Active" : "Inactive"}
@@ -362,9 +363,9 @@ export default function EventPriceUpdate() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Your Price</p>
+                      <p className="text-sm text-muted-foreground">{t("Your Price")}</p>
                       <p className="font-semibold text-green-600">{getTicketVendorPrice(ticketType)}</p>
-                      <p className="text-xs text-muted-foreground">Customer: {getTicketCurrentPrice(ticketType)}</p>
+                      <p className="text-xs text-muted-foreground">{t("Customer:")} {getTicketCurrentPrice(ticketType)}</p>
                     </div>
                     <Button
                       variant="outline"
@@ -372,7 +373,7 @@ export default function EventPriceUpdate() {
                       onClick={() => openPriceDialog(ticketType)}
                     >
                       <DollarSign className="h-4 w-4 mr-1" />
-                      Update Price
+                      {t("Update Price")}
                     </Button>
                   </div>
                 </div>
@@ -386,22 +387,22 @@ export default function EventPriceUpdate() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Request Ticket Price Update</DialogTitle>
+            <DialogTitle>{t("Request Ticket Price Update")}</DialogTitle>
             <DialogDescription>
-              Submit a new price for "{selectedTicketType?.name}". This change requires admin approval.
+              {t("Submit a new price for \"")}{selectedTicketType?.name}{t("\". This change requires admin approval.")}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Current Vendor Price</Label>
+                <Label className="text-xs text-muted-foreground">{t("Current Vendor Price")}</Label>
                 <p className="text-lg font-semibold text-green-600">
                   {selectedTicketType && getTicketVendorPrice(selectedTicketType)}
                 </p>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Current Customer Price</Label>
+                <Label className="text-xs text-muted-foreground">{t("Current Customer Price")}</Label>
                 <p className="text-lg font-semibold">
                   {selectedTicketType && getTicketCurrentPrice(selectedTicketType)}
                 </p>
@@ -410,13 +411,13 @@ export default function EventPriceUpdate() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="currencyCode">Currency</Label>
+                <Label htmlFor="currencyCode">{t("Currency")}</Label>
                 <Select
                   value={form.watch("currencyCode")}
                   onValueChange={(value) => form.setValue("currencyCode", value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
+                    <SelectValue placeholder={t("Select currency")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableCurrencies.map((currency) => (
@@ -434,7 +435,7 @@ export default function EventPriceUpdate() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="vendorAmount">Your New Price</Label>
+                <Label htmlFor="vendorAmount">{t("Your New Price")}</Label>
                 <Input
                   id="vendorAmount"
                   type="number"
@@ -454,8 +455,8 @@ export default function EventPriceUpdate() {
             <div className="p-3 bg-blue-50 rounded-lg">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-sm font-medium">Customer Price (with {(PLATFORM_COMMISSION_RATE * 100).toFixed(0)}% platform fee)</p>
-                  <p className="text-xs text-muted-foreground">This is what customers will pay</p>
+                  <p className="text-sm font-medium">{t("Customer Price (with")} {(PLATFORM_COMMISSION_RATE * 100).toFixed(0)}{t("% platform fee)")}</p>
+                  <p className="text-xs text-muted-foreground">{t("This is what customers will pay")}</p>
                 </div>
                 <p className="text-lg font-bold">
                   {(() => {
@@ -469,10 +470,10 @@ export default function EventPriceUpdate() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason for Change (Optional)</Label>
+              <Label htmlFor="reason">{t("Reason for Change (Optional)")}</Label>
               <Textarea
                 id="reason"
-                placeholder="Explain why you're requesting this price change..."
+                placeholder={t("Explain why you're requesting this price change...")}
                 {...form.register("reason")}
                 rows={3}
               />
@@ -484,13 +485,13 @@ export default function EventPriceUpdate() {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button type="submit" disabled={priceUpdateMutation.isPending}>
                 {priceUpdateMutation.isPending ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
+                    {t("Submitting...")}
                   </>
                 ) : (
                   "Submit Request"

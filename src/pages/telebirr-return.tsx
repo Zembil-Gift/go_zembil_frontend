@@ -15,8 +15,10 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
+import { useTranslation } from "react-i18next";
 
 export default function TelebirrReturnPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -66,8 +68,8 @@ export default function TelebirrReturnPage() {
         setStatus('success');
         setMessage('Your payment was successful! Thank you for your order.');
         toast({
-          title: "Payment Successful",
-          description: "Your TeleBirr payment has been confirmed.",
+          title: t("Payment Successful"),
+          description: t("Your TeleBirr payment has been confirmed."),
         });
         
         // Clear stored order info
@@ -202,23 +204,23 @@ export default function TelebirrReturnPage() {
           {orderDetails && (
             <div className="bg-white rounded-lg p-4 border space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Order ID:</span>
+                <span className="text-gray-600">{t("Order ID:")}</span>
                 <span className="font-medium">#{orderId}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Order Type:</span>
+                <span className="text-gray-600">{t("Order Type:")}</span>
                 <span className="font-medium capitalize">{orderType}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Payment Method:</span>
+                <span className="text-gray-600">{t("Payment Method:")}</span>
                 <span className="font-medium flex items-center">
                   <Phone className="h-4 w-4 mr-1 text-green-600" />
-                  TeleBirr
+                  {t("TeleBirr")}
                 </span>
               </div>
               {orderDetails.orderNumber && (
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Order Number:</span>
+                  <span className="text-gray-600">{t("Order Number:")}</span>
                   <span className="font-medium">{orderDetails.orderNumber}</span>
                 </div>
               )}
@@ -230,8 +232,7 @@ export default function TelebirrReturnPage() {
             <Alert className="bg-amber-100 border-amber-300">
               <Clock className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-700 ml-2">
-                TeleBirr payments may take a few minutes to confirm. 
-                You'll receive an SMS confirmation from TeleBirr once complete.
+                {t("TeleBirr payments may take a few minutes to confirm. You'll receive an SMS confirmation from TeleBirr once complete.")}
               </AlertDescription>
             </Alert>
           )}
@@ -240,8 +241,7 @@ export default function TelebirrReturnPage() {
             <Alert className="bg-red-100 border-red-300">
               <XCircle className="h-4 w-4 text-red-600" />
               <AlertDescription className="text-red-700 ml-2">
-                If you were charged but see this error, please contact support.
-                For payment issues, you can also dial *127# to check your TeleBirr transaction.
+                {t("If you were charged but see this error, please contact support. For payment issues, you can also dial *127# to check your TeleBirr transaction.")}
               </AlertDescription>
             </Alert>
           )}
@@ -257,12 +257,12 @@ export default function TelebirrReturnPage() {
                 {orderType === 'event' ? (
                   <>
                     <TicketIcon className="mr-2 h-4 w-4" />
-                    View My Tickets
+                    {t("View My Tickets")}
                   </>
                 ) : (
                   <>
                     <ShoppingBag className="mr-2 h-4 w-4" />
-                    View Order Details
+                    {t("View Order Details")}
                   </>
                 )}
               </Button>
@@ -272,7 +272,7 @@ export default function TelebirrReturnPage() {
                 className="w-full"
               >
                 <Home className="mr-2 h-4 w-4" />
-                Continue Shopping
+                {t("Continue Shopping")}
               </Button>
             </>
           )}
@@ -284,7 +284,7 @@ export default function TelebirrReturnPage() {
                 className="w-full bg-amber-600 hover:bg-amber-700"
               >
                 <ShoppingBag className="mr-2 h-4 w-4" />
-                Check My Orders
+                {t("Check My Orders")}
               </Button>
               <Button 
                 onClick={handleContinueShopping}
@@ -292,7 +292,7 @@ export default function TelebirrReturnPage() {
                 className="w-full"
               >
                 <Home className="mr-2 h-4 w-4" />
-                Continue Shopping
+                {t("Continue Shopping")}
               </Button>
             </>
           )}
@@ -304,14 +304,14 @@ export default function TelebirrReturnPage() {
                 className="w-full bg-green-600 hover:bg-green-700"
               >
                 <Phone className="mr-2 h-4 w-4" />
-                Try Again with TeleBirr
+                {t("Try Again with TeleBirr")}
               </Button>
               <Button 
                 onClick={() => navigate(-2)} // Go back to checkout
                 variant="outline"
                 className="w-full"
               >
-                Choose Different Payment
+                {t("Choose Different Payment")}
               </Button>
             </>
           )}
@@ -319,7 +319,7 @@ export default function TelebirrReturnPage() {
           {status === 'verifying' && (
             <div className="text-center text-sm text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
-              Checking payment status... ({checkCount + 1}/6)
+              {t("Checking payment status... (")}{checkCount + 1}/6)
             </div>
           )}
         </CardFooter>
@@ -328,12 +328,12 @@ export default function TelebirrReturnPage() {
       {/* Help Section */}
       <Card className="mt-6 border-gray-200">
         <CardContent className="pt-4">
-          <h4 className="font-medium text-gray-700 mb-3">TeleBirr Support</h4>
+          <h4 className="font-medium text-gray-700 mb-3">{t("TeleBirr Support")}</h4>
           <div className="space-y-2 text-sm text-gray-600">
-            <p>• Check your TeleBirr balance: Dial *127#</p>
-            <p>• TeleBirr customer support: 994</p>
-            <p>• Payment may take up to 5 minutes to confirm</p>
-            <p>• You will receive an SMS confirmation from TeleBirr</p>
+            <p>{t("• Check your TeleBirr balance: Dial *127#")}</p>
+            <p>{t("• TeleBirr customer support: 994")}</p>
+            <p>{t("• Payment may take up to 5 minutes to confirm")}</p>
+            <p>{t("• You will receive an SMS confirmation from TeleBirr")}</p>
           </div>
         </CardContent>
       </Card>

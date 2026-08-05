@@ -63,6 +63,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 const isEthiopianVendor = (
   vendorProfile: VendorProfile | undefined
@@ -145,6 +146,7 @@ const productEditSchema = z
 type ProductEditFormData = z.infer<typeof productEditSchema>;
 
 export default function EditProduct() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const productId = id ? parseInt(id, 10) : null;
 
@@ -501,8 +503,8 @@ export default function EditProduct() {
         } catch (imageError) {
           console.error("Failed to upload SKU images:", imageError);
           toast({
-            title: "Warning",
-            description: "Product updated but some images failed to upload.",
+            title: t("Warning"),
+            description: t("Product updated but some images failed to upload."),
             variant: "destructive",
           });
         } finally {
@@ -511,7 +513,7 @@ export default function EditProduct() {
       }
 
       toast({
-        title: "Product Updated",
+        title: t("Product Updated"),
         description:
           product?.status === "PENDING" || product?.status === "REJECTED"
             ? "Your product has been updated and resubmitted for review."
@@ -536,7 +538,7 @@ export default function EditProduct() {
     onError: (error: any) => {
       setIsUploadingImages(false);
       toast({
-        title: "Error",
+        title: t("Error"),
         description:
           error.response?.data?.message ||
           error.message ||
@@ -563,14 +565,14 @@ export default function EditProduct() {
         [skuIndex]: (prev[skuIndex] || []).filter((img) => img.id !== imageId),
       }));
       toast({
-        title: "Image Deleted",
-        description: "The image has been removed.",
+        title: t("Image Deleted"),
+        description: t("The image has been removed."),
       });
       queryClient.invalidateQueries({ queryKey: ["product", productId] });
     },
     onError: (error: any) => {
       toast({
-        title: "Delete Failed",
+        title: t("Delete Failed"),
         description:
           error.response?.data?.message ||
           error.message ||
@@ -598,14 +600,14 @@ export default function EditProduct() {
         })),
       }));
       toast({
-        title: "Primary Image Set",
-        description: "The primary image has been updated.",
+        title: t("Primary Image Set"),
+        description: t("The primary image has been updated."),
       });
       queryClient.invalidateQueries({ queryKey: ["product", productId] });
     },
     onError: (error: any) => {
       toast({
-        title: "Update Failed",
+        title: t("Update Failed"),
         description:
           error.response?.data?.message ||
           error.message ||
@@ -632,9 +634,9 @@ export default function EditProduct() {
     },
     onSuccess: () => {
       toast({
-        title: "Category Change Requested",
+        title: t("Category Change Requested"),
         description:
-          "Your category change request has been submitted for admin approval.",
+          t("Your category change request has been submitted for admin approval."),
       });
       queryClient.invalidateQueries({
         queryKey: ["pending-category-change", productId],
@@ -650,7 +652,7 @@ export default function EditProduct() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description:
           error.response?.data?.message ||
           error.message ||
@@ -702,7 +704,7 @@ export default function EditProduct() {
 
       if (totalImages === 0) {
         toast({
-          title: "Image Required",
+          title: t("Image Required"),
           description: `Please upload at least one image for ${
             data.productSku.length === 1
               ? "your product"
@@ -720,7 +722,7 @@ export default function EditProduct() {
         const price = data.productSku[i].currentPrice;
         if (price === undefined || price === null || price <= 0) {
           toast({
-            title: "Price Required",
+            title: t("Price Required"),
             description: `Please enter a valid price for ${
               data.productSku.length === 1
                 ? "your product"
@@ -751,9 +753,9 @@ export default function EditProduct() {
     // If there's already a pending category change request, warn the user
     if (isActiveProduct && categoryChanged && pendingCategoryChangeRequest) {
       toast({
-        title: "Pending Category Change",
+        title: t("Pending Category Change"),
         description:
-          "You already have a pending category change request for this product. Please wait for admin approval or cancel the existing request.",
+          t("You already have a pending category change request for this product. Please wait for admin approval or cancel the existing request."),
         variant: "destructive",
       });
       // Reset the category dropdown to current value
@@ -818,7 +820,7 @@ export default function EditProduct() {
     }
 
     toast({
-      title: "Validation Error",
+      title: t("Validation Error"),
       description:
         errorMessages.length > 0
           ? errorMessages.join(". ")
@@ -831,12 +833,12 @@ export default function EditProduct() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
         <p className="text-gray-600 mb-4">
-          You need to be a vendor to edit products.
+          {t("You need to be a vendor to edit products.")}
         </p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -847,7 +849,7 @@ export default function EditProduct() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <RefreshCw className="h-12 w-12 animate-spin text-eagle-green mx-auto mb-4" />
-          <p className="text-gray-600">Loading product...</p>
+          <p className="text-gray-600">{t("Loading product...")}</p>
         </div>
       </div>
     );
@@ -858,13 +860,13 @@ export default function EditProduct() {
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Product Not Found
+          {t("Product Not Found")}
         </h1>
         <p className="text-gray-600 mb-4">
-          The product you're looking for doesn't exist or couldn't be loaded.
+          {t("The product you're looking for doesn't exist or couldn't be loaded.")}
         </p>
         <Button asChild>
-          <Link to="/vendor">Back to Dashboard</Link>
+          <Link to="/vendor">{t("Back to Dashboard")}</Link>
         </Button>
       </div>
     );
@@ -874,12 +876,12 @@ export default function EditProduct() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Unauthorized</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Unauthorized")}</h1>
         <p className="text-gray-600 mb-4">
-          You can only edit your own products.
+          {t("You can only edit your own products.")}
         </p>
         <Button asChild>
-          <Link to="/vendor">Back to Dashboard</Link>
+          <Link to="/vendor">{t("Back to Dashboard")}</Link>
         </Button>
       </div>
     );
@@ -889,13 +891,13 @@ export default function EditProduct() {
     switch (status?.toUpperCase()) {
       case "ACTIVE":
       case "APPROVED":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Active")}</Badge>;
       case "PENDING":
         return (
-          <Badge className="bg-amber-100 text-amber-800">Pending Review</Badge>
+          <Badge className="bg-amber-100 text-amber-800">{t("Pending Review")}</Badge>
         );
       case "REJECTED":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Rejected")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -913,7 +915,7 @@ export default function EditProduct() {
           </Button>
           <div className="flex-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">Edit Product</h1>
+              <h1 className="text-2xl font-bold">{t("Edit Product")}</h1>
               {getStatusBadge(product.status || "")}
             </div>
             <p className="text-muted-foreground">
@@ -928,11 +930,11 @@ export default function EditProduct() {
         {product.status === "REJECTED" && product.rejectionReason && (
           <Alert variant="destructive" className="mb-6">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Product Rejected</AlertTitle>
+            <AlertTitle>{t("Product Rejected")}</AlertTitle>
             <AlertDescription>
-              <strong>Reason:</strong> {product.rejectionReason}
+              <strong>{t("Reason:")}</strong> {product.rejectionReason}
               <br />
-              Please address this issue and save to resubmit for review.
+              {t("Please address this issue and save to resubmit for review.")}
             </AlertDescription>
           </Alert>
         )}
@@ -940,10 +942,9 @@ export default function EditProduct() {
         {product.status === "PENDING" && (
           <Alert className="mb-6 border-amber-200 bg-amber-50">
             <Info className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-800">Pending Review</AlertTitle>
+            <AlertTitle className="text-amber-800">{t("Pending Review")}</AlertTitle>
             <AlertDescription className="text-amber-700">
-              This product is currently under review. Any changes will require
-              re-approval.
+              {t("This product is currently under review. Any changes will require re-approval.")}
             </AlertDescription>
           </Alert>
         )}
@@ -953,17 +954,16 @@ export default function EditProduct() {
         {!isPendingOrRejected && (
           <Alert className="mb-6 border-blue-200 bg-blue-50">
             <DollarSign className="h-4 w-4 text-blue-600" />
-            <AlertTitle className="text-blue-800">Price Updates</AlertTitle>
+            <AlertTitle className="text-blue-800">{t("Price Updates")}</AlertTitle>
             <AlertDescription className="text-blue-700">
-              Price changes require admin approval and cannot be made directly
-              here.{" "}
+              {t("Price changes require admin approval and cannot be made directly here.")}{" "}
               <Link
                 to={`/vendor/products/${productId}/price`}
                 className="font-medium underline"
               >
-                Request a price update
+                {t("Request a price update")}
               </Link>{" "}
-              or go to the Requests tab in your dashboard.
+              {t("or go to the Requests tab in your dashboard.")}
             </AlertDescription>
           </Alert>
         )}
@@ -973,19 +973,19 @@ export default function EditProduct() {
           <Alert className="mb-6 border-amber-200 bg-amber-50">
             <Clock className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800">
-              Pending Category Change Request
+              {t("Pending Category Change Request")}
             </AlertTitle>
             <AlertDescription className="text-amber-700">
-              You have a pending category change request for this product.
+              {t("You have a pending category change request for this product.")}
               <br />
-              <span className="font-medium">Requested Category:</span>{" "}
+              <span className="font-medium">{t("Requested Category:")}</span>{" "}
               {pendingCategoryChangeRequest.newSubCategoryName}
               <br />
-              <span className="font-medium">Reason:</span>{" "}
+              <span className="font-medium">{t("Reason:")}</span>{" "}
               {pendingCategoryChangeRequest.reason}
               <br />
               <Link to="/vendor?tab=requests" className="font-medium underline">
-                View in Requests
+                {t("View in Requests")}
               </Link>
             </AlertDescription>
           </Alert>
@@ -1000,15 +1000,15 @@ export default function EditProduct() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Basic Information
+                {t("Basic Information")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="name">Product Name *</Label>
+                <Label htmlFor="name">{t("Product Name *")}</Label>
                 <Input
                   id="name"
-                  placeholder="Enter product name"
+                  placeholder={t("Enter product name")}
                   {...form.register("name")}
                 />
                 {form.formState.errors.name && (
@@ -1019,19 +1019,19 @@ export default function EditProduct() {
               </div>
 
               <div>
-                <Label htmlFor="summary">Short Summary</Label>
+                <Label htmlFor="summary">{t("Short Summary")}</Label>
                 <Input
                   id="summary"
-                  placeholder="Brief product summary"
+                  placeholder={t("Brief product summary")}
                   {...form.register("summary")}
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t("Description")}</Label>
                 <Textarea
                   id="description"
-                  placeholder="Detailed product description"
+                  placeholder={t("Detailed product description")}
                   className="min-h-[120px]"
                   {...form.register("description")}
                 />
@@ -1042,11 +1042,11 @@ export default function EditProduct() {
           {/* Category */}
           <Card>
             <CardHeader>
-              <CardTitle>Category</CardTitle>
+              <CardTitle>{t("Category")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Sub-Category *</Label>
+                <Label>{t("Sub-Category *")}</Label>
                 <Controller
                   name="subCategoryId"
                   control={form.control}
@@ -1054,7 +1054,7 @@ export default function EditProduct() {
                     <SubcategorySearchCombobox
                       value={field.value}
                       onValueChange={field.onChange}
-                      placeholder="Search and select a sub-category"
+                      placeholder={t("Search and select a sub-category")}
                     />
                   )}
                 />
@@ -1066,21 +1066,21 @@ export default function EditProduct() {
               </div>
 
               <div>
-                <Label htmlFor="occasion">Occasion (Optional)</Label>
+                <Label htmlFor="occasion">{t("Occasion (Optional)")}</Label>
                 <Controller
                   name="occasion"
                   control={form.control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger id="occasion">
-                        <SelectValue placeholder="Select occasion" />
+                        <SelectValue placeholder={t("Select occasion")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="NEW_YEAR">New Year</SelectItem>
-                        <SelectItem value="BIRTHDAY">Birthday</SelectItem>
-                        <SelectItem value="TIMKET">Timket</SelectItem>
-                        <SelectItem value="EASTER">Easter</SelectItem>
-                        <SelectItem value="CHRISTMAS">Christmas</SelectItem>
+                        <SelectItem value="NEW_YEAR">{t("New Year")}</SelectItem>
+                        <SelectItem value="BIRTHDAY">{t("Birthday")}</SelectItem>
+                        <SelectItem value="TIMKET">{t("Timket")}</SelectItem>
+                        <SelectItem value="EASTER">{t("Easter")}</SelectItem>
+                        <SelectItem value="CHRISTMAS">{t("Christmas")}</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -1088,7 +1088,7 @@ export default function EditProduct() {
               </div>
 
               <div>
-                <Label htmlFor="tags">Tags</Label>
+                <Label htmlFor="tags">{t("Tags")}</Label>
                 <Controller
                   name="tags"
                   control={form.control}
@@ -1096,7 +1096,7 @@ export default function EditProduct() {
                     <TagInput
                       value={field.value}
                       onChange={field.onChange}
-                      placeholder="Enter tag"
+                      placeholder={t("Enter tag")}
                       maxTags={10}
                     />
                   )}
@@ -1112,7 +1112,7 @@ export default function EditProduct() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Layers className="h-5 w-5" />
-                    Product Variants (SKUs)
+                    {t("Product Variants (SKUs)")}
                   </CardTitle>
                   <CardDescription>
                     {isPendingOrRejected
@@ -1127,7 +1127,7 @@ export default function EditProduct() {
                   onClick={addSku}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Variant
+                  {t("Add Variant")}
                 </Button>
               </div>
             </CardHeader>
@@ -1168,7 +1168,7 @@ export default function EditProduct() {
                     <CardContent className="space-y-4">
                       {/* SKU Name */}
                       <div>
-                        <Label>Variant Name *</Label>
+                        <Label>{t("Variant Name *")}</Label>
                         <Input
                           placeholder={
                             skuFields.length === 1
@@ -1187,7 +1187,7 @@ export default function EditProduct() {
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground mt-1">
-                          A unique friendly name for this variant
+                          {t("A unique friendly name for this variant")}
                         </p>
                       </div>
 
@@ -1214,7 +1214,7 @@ export default function EditProduct() {
                           )}
                         </div> */}
                         <div>
-                          <Label>Stock Quantity *</Label>
+                          <Label>{t("Stock Quantity *")}</Label>
                           <Controller
                             name={`productSku.${skuIndex}.stockQuantity`}
                             control={form.control}
@@ -1243,7 +1243,7 @@ export default function EditProduct() {
                           read-only (with request flow) for active products */}
                       {isPendingOrRejected ? (
                         <div>
-                          <Label>Price ({currencyCode || "ETB"}) *</Label>
+                          <Label>{t("Price (")}{currencyCode || "ETB"}) *</Label>
                           <Controller
                             name={`productSku.${skuIndex}.currentPrice`}
                             control={form.control}
@@ -1272,8 +1272,7 @@ export default function EditProduct() {
                             )}
                           />
                           <p className="text-xs text-muted-foreground mt-1">
-                            Enter the price you'll receive. You can change it
-                            freely until the product is approved.
+                            {t("Enter the price you'll receive. You can change it freely until the product is approved.")}
                           </p>
                         </div>
                       ) : (
@@ -1283,7 +1282,7 @@ export default function EditProduct() {
                             <div className="flex items-center justify-between">
                               <div>
                                 <Label className="text-sm text-muted-foreground">
-                                  Current Price
+                                  {t("Current Price")}
                                 </Label>
                                 <p className="text-lg font-semibold">
                                   {currencyCode} {currentPrice?.toFixed(2)}
@@ -1297,7 +1296,7 @@ export default function EditProduct() {
                               >
                                 <Link to={`/vendor/products/${productId}/price`}>
                                   <DollarSign className="h-4 w-4 mr-1" />
-                                  Request Price Change
+                                  {t("Request Price Change")}
                                 </Link>
                               </Button>
                             </div>
@@ -1309,7 +1308,7 @@ export default function EditProduct() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <Label className="text-sm">
-                            Attributes (Size, Color, etc.)
+                            {t("Attributes (Size, Color, etc.)")}
                           </Label>
                           <Button
                             type="button"
@@ -1318,14 +1317,13 @@ export default function EditProduct() {
                             onClick={() => addAttribute(skuIndex)}
                           >
                             <Plus className="h-3 w-3 mr-1" />
-                            Add Attribute
+                            {t("Add Attribute")}
                           </Button>
                         </div>
 
                         {attributes.length === 0 && (
                           <p className="text-sm text-muted-foreground italic">
-                            No attributes added. Click "Add Attribute" to add
-                            size, color, etc.
+                            {t("No attributes added. Click \"Add Attribute\" to add size, color, etc.")}
                           </p>
                         )}
 
@@ -1335,14 +1333,14 @@ export default function EditProduct() {
                             className="flex items-center gap-2"
                           >
                             <Input
-                              placeholder="Name (e.g., Size)"
+                              placeholder={t("Name (e.g., Size)")}
                               {...form.register(
                                 `productSku.${skuIndex}.attributes.${attrIndex}.name`
                               )}
                               className="flex-1"
                             />
                             <Input
-                              placeholder="Value (e.g., Large)"
+                              placeholder={t("Value (e.g., Large)")}
                               {...form.register(
                                 `productSku.${skuIndex}.attributes.${attrIndex}.value`
                               )}
@@ -1368,13 +1366,12 @@ export default function EditProduct() {
                         <div className="flex items-center gap-2">
                           <ImageIcon className="h-4 w-4" />
                           <Label className="text-sm font-medium">
-                            Images *
+                            {t("Images *")}
                           </Label>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Upload images for this{" "}
-                          {skuFields.length === 1 ? "product" : "variant"}.
-                          First image will be the cover.
+                          {t("Upload images for this")}{" "}
+                          {skuFields.length === 1 ? "product" : "variant"}{t(". First image will be the cover.")}
                         </p>
                         <ImageUpload
                           images={currentSkuImages[skuIndex] || []}
@@ -1387,9 +1384,9 @@ export default function EditProduct() {
                           onImageDelete={(imageId) => {
                             if (!skuId) {
                               toast({
-                                title: "Save Required",
+                                title: t("Save Required"),
                                 description:
-                                  "Please save this variant before deleting images.",
+                                  t("Please save this variant before deleting images."),
                                 variant: "destructive",
                               });
                               return;
@@ -1403,9 +1400,9 @@ export default function EditProduct() {
                           onSetPrimary={(imageId) => {
                             if (!skuId) {
                               toast({
-                                title: "Save Required",
+                                title: t("Save Required"),
                                 description:
-                                  "Please save this variant before setting a primary image.",
+                                  t("Please save this variant before setting a primary image."),
                                 variant: "destructive",
                               });
                               return;
@@ -1431,8 +1428,7 @@ export default function EditProduct() {
                         {pendingSkuImages[skuIndex] &&
                           pendingSkuImages[skuIndex].length > 0 && (
                             <p className="text-sm text-muted-foreground">
-                              {pendingSkuImages[skuIndex].length} new image(s)
-                              will be uploaded
+                              {pendingSkuImages[skuIndex].length} {t("new image(s) will be uploaded")}
                             </p>
                           )}
                       </div>
@@ -1448,10 +1444,10 @@ export default function EditProduct() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Gift className="h-5 w-5" />
-                Gift Wrapping
+                {t("Gift Wrapping")}
               </CardTitle>
               <CardDescription>
-                Allow customers to add gift wrapping for an additional fee.
+                {t("Allow customers to add gift wrapping for an additional fee.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1473,14 +1469,14 @@ export default function EditProduct() {
                   )}
                 />
                 <Label htmlFor="giftWrappable" className="cursor-pointer">
-                  This product supports gift wrapping
+                  {t("This product supports gift wrapping")}
                 </Label>
               </div>
 
               {form.watch("giftWrappable") && (
                 <div>
                   <Label>
-                    Gift Wrapping Fee (
+                    {t("Gift Wrapping Fee (")}
                     {product?.giftWrapCurrencyCode ||
                       (product?.productSku?.[0] as any)?.price?.currencyCode ||
                       "ETB"}
@@ -1512,8 +1508,7 @@ export default function EditProduct() {
                     )}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Additional charge per item for gift wrapping. Set to 0 for
-                    free gift wrapping.
+                    {t("Additional charge per item for gift wrapping. Set to 0 for free gift wrapping.")}
                   </p>
                 </div>
               )}
@@ -1524,7 +1519,7 @@ export default function EditProduct() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                  Link Supplier (Optional)
+                  {t("Link Supplier (Optional)")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1539,10 +1534,10 @@ export default function EditProduct() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="No supplier" />
+                        <SelectValue placeholder={t("No supplier")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">No supplier</SelectItem>
+                        <SelectItem value="0">{t("No supplier")}</SelectItem>
                         {activeSuppliers.map((s) => (
                           <SelectItem key={s.id} value={s.id.toString()}>
                             {s.businessName}
@@ -1559,7 +1554,7 @@ export default function EditProduct() {
           {/* Submit */}
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" asChild>
-              <Link to="/vendor">Cancel</Link>
+              <Link to="/vendor">{t("Cancel")}</Link>
             </Button>
             <Button
               type="submit"
@@ -1600,22 +1595,20 @@ export default function EditProduct() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FolderTree className="h-5 w-5" />
-              Category Change Request
+              {t("Category Change Request")}
             </DialogTitle>
             <DialogDescription>
-              Since your product is already active, changing its category
-              requires admin approval. Please provide a reason for the category
-              change.
+              {t("Since your product is already active, changing its category requires admin approval. Please provide a reason for the category change.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="categoryChangeReason">
-                Reason for Category Change
+                {t("Reason for Category Change")}
               </Label>
               <Textarea
                 id="categoryChangeReason"
-                placeholder="e.g., The product fits better in the new category because..."
+                placeholder={t("e.g., The product fits better in the new category because...")}
                 value={categoryChangeReason}
                 onChange={(e) => setCategoryChangeReason(e.target.value)}
                 rows={4}
@@ -1624,13 +1617,13 @@ export default function EditProduct() {
             {pendingFormData && (
               <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
                 <p>
-                  <span className="font-medium">Current Category:</span>{" "}
+                  <span className="font-medium">{t("Current Category:")}</span>{" "}
                   {allSubCategories.find(
                     (sc: SubCategory) => sc.id === product?.subCategoryId
                   )?.name || "Unknown"}
                 </p>
                 <p>
-                  <span className="font-medium">New Category:</span>{" "}
+                  <span className="font-medium">{t("New Category:")}</span>{" "}
                   {allSubCategories.find(
                     (sc: SubCategory) =>
                       sc.id.toString() === pendingFormData.subCategoryId
@@ -1653,7 +1646,7 @@ export default function EditProduct() {
                 );
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleCategoryChangeSubmit}
@@ -1664,7 +1657,7 @@ export default function EditProduct() {
               {categoryChangeMutation.isPending ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Submitting...
+                  {t("Submitting...")}
                 </>
               ) : (
                 "Submit Request"

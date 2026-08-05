@@ -11,15 +11,17 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Palette, Sparkles } from 'lucide-react';
 import { useLocalSeasonalTheme, seasonalThemes } from './LocalSeasonalTheme';
+import { useTranslation } from "react-i18next";
 
 export function LocalSeasonalThemeSelector() {
+  const { t } = useTranslation();
   const { currentTheme, isSeasonalMode, setTheme, toggleSeasonalMode } = useLocalSeasonalTheme();
 
   return (
     <div className="flex items-center gap-4 mb-6">
       <div className="flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-ethiopian-gold" />
-        <span className="font-medium text-gray-700">Seasonal Themes</span>
+        <span className="font-medium text-gray-700">{t("Seasonal Themes")}</span>
       </div>
       
       <div className="flex items-center gap-2">
@@ -46,7 +48,7 @@ export function LocalSeasonalThemeSelector() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <div className="p-2">
-              <p className="text-sm font-medium text-gray-700 mb-2">Choose Theme</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">{t("Choose Theme")}</p>
               <DropdownMenuSeparator />
             </div>
             {Object.entries(seasonalThemes).map(([id, theme]) => (

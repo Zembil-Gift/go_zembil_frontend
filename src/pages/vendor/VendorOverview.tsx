@@ -39,8 +39,10 @@ import {
   Briefcase,
   ShoppingBag,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function VendorOverview() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
 
   const isVendor = user?.role?.toUpperCase() === "VENDOR";
@@ -187,21 +189,21 @@ export default function VendorOverview() {
       case "ACTIVE":
       case "APPROVED":
       case "ENABLED":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Active")}</Badge>;
       case "PENDING":
       case "PENDING_APPROVAL":
-        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800">{t("Pending")}</Badge>;
       case "REJECTED":
       case "DISABLED":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Rejected")}</Badge>;
       case "DRAFT":
-        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t("Draft")}</Badge>;
       case "INACTIVE":
-        return <Badge className="bg-slate-100 text-slate-800">Inactive</Badge>;
+        return <Badge className="bg-slate-100 text-slate-800">{t("Inactive")}</Badge>;
       case "CANCELLED":
-        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Cancelled")}</Badge>;
       case "COMPLETED":
-        return <Badge className="bg-blue-100 text-blue-800">Completed</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t("Completed")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -217,14 +219,14 @@ export default function VendorOverview() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
-                Total Products
+                {t("Total Products")}
               </CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{products.length}</div>
               <p className="text-xs text-muted-foreground">
-                {products.filter((p) => p.status === "ACTIVE").length} active
+                {products.filter((p) => p.status === "ACTIVE").length} {t("active")}
               </p>
             </CardContent>
           </Card>
@@ -232,7 +234,7 @@ export default function VendorOverview() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("Total Events")}</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -242,36 +244,36 @@ export default function VendorOverview() {
             <p className="text-xs text-muted-foreground">
               {vendorSummary?.activeEvents ||
                 events.filter((e) => e.status === "ACTIVE").length}{" "}
-              active
+              {t("active")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Tickets Sold</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("Tickets Sold")}</CardTitle>
             <Ticket className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {vendorSummary?.totalTicketsSold || 0}
             </div>
-            <p className="text-xs text-muted-foreground">All time</p>
+            <p className="text-xs text-muted-foreground">{t("All time")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
-              Service Bookings
+              {t("Service Bookings")}
             </CardTitle>
             <Briefcase className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{serviceOrderStats.total}</div>
             <p className="text-xs text-muted-foreground">
-              {serviceOrderStats.pending} pending •{" "}
-              {serviceOrderStats.confirmed} confirmed
+              {serviceOrderStats.pending} {t("pending •")}{" "}
+              {serviceOrderStats.confirmed} {t("confirmed")}
             </p>
           </CardContent>
         </Card>
@@ -280,14 +282,14 @@ export default function VendorOverview() {
           vendorProfile?.vendorType === "HYBRID") && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Packages</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("Packages")}</CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{packages.length}</div>
               <p className="text-xs text-muted-foreground">
                 {packages.filter((p: any) => p.status === "ACTIVE").length}{" "}
-                active
+                {t("active")}
               </p>
             </CardContent>
           </Card>
@@ -298,7 +300,7 @@ export default function VendorOverview() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
-                Package Orders
+                {t("Package Orders")}
               </CardTitle>
               <ShoppingBag className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -313,7 +315,7 @@ export default function VendorOverview() {
                       o.orderStatus === "CONFIRMED"
                   ).length
                 }{" "}
-                awaiting action
+                {t("awaiting action")}
               </p>
             </CardContent>
           </Card>
@@ -322,7 +324,7 @@ export default function VendorOverview() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
-              Custom Templates
+              {t("Custom Templates")}
             </CardTitle>
             <Layers className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -331,15 +333,15 @@ export default function VendorOverview() {
               {customTemplateStats.total}
             </div>
             <p className="text-xs text-muted-foreground">
-              {customTemplateStats.pending} pending •{" "}
-              {customTemplateStats.approved} approved
+              {customTemplateStats.pending} {t("pending •")}{" "}
+              {customTemplateStats.approved} {t("approved")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("Total Revenue")}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -348,14 +350,14 @@ export default function VendorOverview() {
               {vendorRevenue?.totalRevenue?.toFixed(2) || "0.00"}
             </div>
             <p className="text-xs text-muted-foreground">
-              {vendorRevenue?.totalOrderCount || 0} orders •{" "}
+              {vendorRevenue?.totalOrderCount || 0} {t("orders •")}{" "}
               {vendorRevenue?.currencyCode || "USD"}
             </p>
             {vendorRevenue?.isVatRegistered &&
               vendorRevenue?.vatIncluded > 0 && (
                 <p className="text-xs text-amber-600 mt-1">
-                  Includes {vendorRevenue.currencySymbol}
-                  {vendorRevenue.vatIncluded.toFixed(2)} VAT (pass-through)
+                  {t("Includes")} {vendorRevenue.currencySymbol}
+                  {vendorRevenue.vatIncluded.toFixed(2)} {t("VAT (pass-through)")}
                 </p>
               )}
           </CardContent>
@@ -368,10 +370,10 @@ export default function VendorOverview() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-800">
               <AlertCircle className="h-5 w-5" />
-              Payment Setup Required
+              {t("Payment Setup Required")}
             </CardTitle>
             <CardDescription className="text-amber-700">
-              Set up your payment accounts to receive payouts from sales.
+              {t("Set up your payment accounts to receive payouts from sales.")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -380,7 +382,7 @@ export default function VendorOverview() {
               variant="outline"
               className="border-amber-600 text-amber-700"
             >
-              <Link to="/vendor/payments">Set Up Payments</Link>
+              <Link to="/vendor/payments">{t("Set Up Payments")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -389,10 +391,10 @@ export default function VendorOverview() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle>{t("Quick Actions")}</CardTitle>
           {!vendorProfile?.isApproved && (
             <CardDescription className="text-amber-600">
-              Some actions are disabled until your vendor account is approved.
+              {t("Some actions are disabled until your vendor account is approved.")}
             </CardDescription>
           )}
         </CardHeader>
@@ -404,7 +406,7 @@ export default function VendorOverview() {
               <Button asChild variant="outline" className="h-20 flex-col">
                 <Link to="/vendor/products/new">
                   <Plus className="h-6 w-6 mb-2" />
-                  <span>Add Product</span>
+                  <span>{t("Add Product")}</span>
                 </Link>
               </Button>
             ) : (
@@ -414,7 +416,7 @@ export default function VendorOverview() {
                 disabled
               >
                 <Plus className="h-6 w-6 mb-2 text-gray-400" />
-                <span className="text-gray-400">Add Product</span>
+                <span className="text-gray-400">{t("Add Product")}</span>
               </Button>
             ))}
           {(vendorProfile?.vendorType === "PRODUCT" ||
@@ -422,7 +424,7 @@ export default function VendorOverview() {
             <Button asChild variant="outline" className="h-20 flex-col">
               <Link to="/vendor/packages">
                 <Package className="h-6 w-6 mb-2" />
-                <span>Packages</span>
+                <span>{t("Packages")}</span>
               </Link>
             </Button>
           )}
@@ -431,7 +433,7 @@ export default function VendorOverview() {
             <Button asChild variant="outline" className="h-20 flex-col">
               <Link to="/vendor/package-orders">
                 <ShoppingBag className="h-6 w-6 mb-2" />
-                <span>Package Orders</span>
+                <span>{t("Package Orders")}</span>
               </Link>
             </Button>
           )}
@@ -442,7 +444,7 @@ export default function VendorOverview() {
               <Button asChild variant="outline" className="h-20 flex-col">
                 <Link to="/vendor/events/new">
                   <Calendar className="h-6 w-6 mb-2" />
-                  <span>Create Event</span>
+                  <span>{t("Create Event")}</span>
                 </Link>
               </Button>
             ) : (
@@ -452,14 +454,14 @@ export default function VendorOverview() {
                 disabled
               >
                 <Calendar className="h-6 w-6 mb-2 text-gray-400" />
-                <span className="text-gray-400">Create Event</span>
+                <span className="text-gray-400">{t("Create Event")}</span>
               </Button>
             ))}
           {vendorProfile?.isApproved ? (
             <Button asChild variant="outline" className="h-20 flex-col">
               <Link to="/vendor/custom-templates/new">
                 <Layers className="h-6 w-6 mb-2" />
-                <span>Custom Template</span>
+                <span>{t("Custom Template")}</span>
               </Link>
             </Button>
           ) : (
@@ -469,25 +471,25 @@ export default function VendorOverview() {
               disabled
             >
               <Layers className="h-6 w-6 mb-2 text-gray-400" />
-              <span className="text-gray-400">Custom Template</span>
+              <span className="text-gray-400">{t("Custom Template")}</span>
             </Button>
           )}
           <Button asChild variant="outline" className="h-20 flex-col">
             <Link to="/vendor/requests">
               <Clock className="h-6 w-6 mb-2" />
-              <span>My Requests</span>
+              <span>{t("My Requests")}</span>
             </Link>
           </Button>
           <Button asChild variant="outline" className="h-20 flex-col">
             <Link to="/vendor/requests">
               <DollarSign className="h-6 w-6 mb-2" />
-              <span>Price Update</span>
+              <span>{t("Price Update")}</span>
             </Link>
           </Button>
           <Button asChild variant="outline" className="h-20 flex-col">
             <Link to="/vendor/payments">
               <CreditCard className="h-6 w-6 mb-2" />
-              <span>Payment Setup</span>
+              <span>{t("Payment Setup")}</span>
             </Link>
           </Button>
         </CardContent>
@@ -496,15 +498,15 @@ export default function VendorOverview() {
       {/* Recent Products */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Recent Products</CardTitle>
+          <CardTitle>{t("Recent Products")}</CardTitle>
           <Button asChild variant="ghost" size="sm">
-            <Link to="/vendor/products">View All</Link>
+            <Link to="/vendor/products">{t("View All")}</Link>
           </Button>
         </CardHeader>
         <CardContent>
           {products.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              No products yet. Create your first product!
+              {t("No products yet. Create your first product!")}
             </p>
           ) : (
             <div className="space-y-4">
@@ -538,7 +540,7 @@ export default function VendorOverview() {
                     {getStatusBadge(product.status || "")}
                     <Button asChild variant="ghost" size="sm">
                       <Link to={`/vendor/products/${product.id}/edit`}>
-                        Edit
+                        {t("Edit")}
                       </Link>
                     </Button>
                   </div>

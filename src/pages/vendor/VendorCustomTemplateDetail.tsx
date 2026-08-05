@@ -55,8 +55,10 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CustomOrderTemplate, CustomizationFieldType } from "@/types/customOrders";
+import { useTranslation } from "react-i18next";
 
 export default function VendorCustomTemplateDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -95,12 +97,12 @@ export default function VendorCustomTemplateDetail() {
   const deleteMutation = useMutation({
     mutationFn: () => customOrderTemplateService.delete(Number(id)),
     onSuccess: async () => {
-      toast({ title: "Success", description: "Template deleted successfully" });
+      toast({ title: t("Success"), description: t("Template deleted successfully") });
       await queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-templates'] });
       navigate('/vendor/custom-templates');
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message || "Failed to delete template", variant: "destructive" });
+      toast({ title: t("Error"), description: error.message || "Failed to delete template", variant: "destructive" });
     },
   });
 
@@ -108,13 +110,13 @@ export default function VendorCustomTemplateDetail() {
   const updatePriceMutation = useMutation({
     mutationFn: (price: number) => customOrderTemplateService.update(Number(id), { basePrice: price }),
     onSuccess: async () => {
-      toast({ title: "Success", description: "Price updated successfully" });
+      toast({ title: t("Success"), description: t("Price updated successfully") });
       await queryClient.invalidateQueries({ queryKey: ['custom-template', id] });
       setEditPriceDialogOpen(false);
       setNewPrice("");
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message || "Failed to update price", variant: "destructive" });
+      toast({ title: t("Error"), description: error.message || "Failed to update price", variant: "destructive" });
     },
   });
 
@@ -123,25 +125,25 @@ export default function VendorCustomTemplateDetail() {
     mutationFn: (supplierId: number | null) =>
       customOrderTemplateService.update(Number(id), { supplierId: supplierId || undefined }),
     onSuccess: async () => {
-      toast({ title: "Success", description: "Supplier updated successfully" });
+      toast({ title: t("Success"), description: t("Supplier updated successfully") });
       await queryClient.invalidateQueries({ queryKey: ['custom-template', id] });
       setEditSupplierDialogOpen(false);
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message || "Failed to update supplier", variant: "destructive" });
+      toast({ title: t("Error"), description: error.message || "Failed to update supplier", variant: "destructive" });
     },
   });
 
   const getStatusBadge = (status: CustomOrderTemplate['status']) => {
     switch (status) {
       case 'PENDING_APPROVAL':
-        return <Badge className="bg-amber-100 text-amber-800"><Clock className="h-3 w-3 mr-1" />Pending Approval</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800"><Clock className="h-3 w-3 mr-1" />{t("Pending Approval")}</Badge>;
       case 'APPROVED':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
+        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />{t("Approved")}</Badge>;
       case 'REJECTED':
-        return <Badge className="bg-red-100 text-red-800"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800"><XCircle className="h-3 w-3 mr-1" />{t("Rejected")}</Badge>;
       case 'ARCHIVED':
-        return <Badge className="bg-gray-100 text-gray-800">Archived</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t("Archived")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -166,8 +168,8 @@ export default function VendorCustomTemplateDetail() {
     const price = parseFloat(newPrice);
     if (isNaN(price) || price < 0) {
       toast({
-        title: "Error",
-        description: "Please enter a valid price",
+        title: t("Error"),
+        description: t("Please enter a valid price"),
         variant: "destructive",
       });
       return;
@@ -180,7 +182,7 @@ export default function VendorCustomTemplateDetail() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-eagle-green mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading template...</p>
+          <p className="text-muted-foreground">{t("Loading template...")}</p>
         </div>
       </div>
     );
@@ -192,14 +194,14 @@ export default function VendorCustomTemplateDetail() {
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Template Not Found</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("Template Not Found")}</h2>
             <p className="text-muted-foreground mb-4">
-              The template you're looking for doesn't exist or you don't have permission to view it.
+              {t("The template you're looking for doesn't exist or you don't have permission to view it.")}
             </p>
             <Button asChild>
               <Link to="/vendor/custom-templates">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Templates
+                {t("Back to Templates")}
               </Link>
             </Button>
           </CardContent>
@@ -215,14 +217,14 @@ export default function VendorCustomTemplateDetail() {
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
             <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("Access Denied")}</h2>
             <p className="text-muted-foreground mb-4">
-              You don't have permission to view this template.
+              {t("You don't have permission to view this template.")}
             </p>
             <Button asChild>
               <Link to="/vendor/custom-templates">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Templates
+                {t("Back to Templates")}
               </Link>
             </Button>
           </CardContent>
@@ -243,12 +245,12 @@ export default function VendorCustomTemplateDetail() {
             <Button asChild variant="outline" size="sm">
               <Link to="/vendor/custom-templates">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                {t("Back")}
               </Link>
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-eagle-green">{template.name}</h1>
-              <p className="text-muted-foreground">Template Details</p>
+              <p className="text-muted-foreground">{t("Template Details")}</p>
             </div>
           </div>
           
@@ -257,7 +259,7 @@ export default function VendorCustomTemplateDetail() {
               <Button asChild variant="outline">
                 <Link to={`/vendor/custom-templates/${template.id}/edit`}>
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit
+                  {t("Edit")}
                 </Link>
               </Button>
             )}
@@ -268,7 +270,7 @@ export default function VendorCustomTemplateDetail() {
                 onClick={() => setDeleteDialogOpen(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                {t("Delete")}
               </Button>
             )}
           </div>
@@ -281,28 +283,28 @@ export default function VendorCustomTemplateDetail() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Template Information</CardTitle>
+                  <CardTitle>{t("Template Information")}</CardTitle>
                   {getStatusBadge(template.status)}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {template.description && (
                   <div>
-                    <Label className="text-muted-foreground">Description</Label>
+                    <Label className="text-muted-foreground">{t("Description")}</Label>
                     <p className="mt-1 text-gray-900">{template.description}</p>
                   </div>
                 )}
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-muted-foreground">Category</Label>
+                    <Label className="text-muted-foreground">{t("Category")}</Label>
                     <div className="mt-1 flex items-center gap-2">
                       <Tag className="h-4 w-4 text-viridian-green" />
                       <span>{template.categoryName || 'Uncategorized'}</span>
                     </div>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Created</Label>
+                    <Label className="text-muted-foreground">{t("Created")}</Label>
                     <div className="mt-1 flex items-center gap-2">
                       <Clock className="h-4 w-4 text-viridian-green" />
                       <span>{new Date(template.createdAt).toLocaleDateString()}</span>
@@ -316,7 +318,7 @@ export default function VendorCustomTemplateDetail() {
                     <div className="flex items-start gap-3">
                       <XCircle className="h-5 w-5 text-red-500 mt-0.5" />
                       <div>
-                        <p className="font-medium text-red-800">Rejection Reason</p>
+                        <p className="font-medium text-red-800">{t("Rejection Reason")}</p>
                         <p className="text-red-700 mt-1">{template.rejectionReason}</p>
                       </div>
                     </div>
@@ -329,9 +331,9 @@ export default function VendorCustomTemplateDetail() {
                     <div className="flex items-start gap-3">
                       <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
                       <div>
-                        <p className="font-medium text-green-800">Approved</p>
+                        <p className="font-medium text-green-800">{t("Approved")}</p>
                         <p className="text-green-700 text-sm mt-1">
-                          By {template.approvedByName} on {template.approvedAt ? new Date(template.approvedAt).toLocaleDateString() : 'N/A'}
+                          {t("By")} {template.approvedByName} on {template.approvedAt ? new Date(template.approvedAt).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
                     </div>
@@ -343,9 +345,9 @@ export default function VendorCustomTemplateDetail() {
             {/* Customization Fields Card */}
             <Card>
               <CardHeader>
-                <CardTitle>Customization Fields</CardTitle>
+                <CardTitle>{t("Customization Fields")}</CardTitle>
                 <CardDescription>
-                  Fields that customers will fill out when ordering
+                  {t("Fields that customers will fill out when ordering")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -368,7 +370,7 @@ export default function VendorCustomTemplateDetail() {
                                 {field.fieldType}
                               </Badge>
                               {field.required && (
-                                <Badge className="bg-red-100 text-red-700 text-xs">Required</Badge>
+                                <Badge className="bg-red-100 text-red-700 text-xs">{t("Required")}</Badge>
                               )}
                             </div>
                             {field.description && (
@@ -381,7 +383,7 @@ export default function VendorCustomTemplateDetail() {
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-center py-4">
-                    No customization fields defined
+                    {t("No customization fields defined")}
                   </p>
                 )}
               </CardContent>
@@ -391,9 +393,9 @@ export default function VendorCustomTemplateDetail() {
             {getAllTemplateImages(template.images).length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Template Images</CardTitle>
+                  <CardTitle>{t("Template Images")}</CardTitle>
                   <CardDescription>
-                    {getAllTemplateImages(template.images).length} image{getAllTemplateImages(template.images).length !== 1 ? 's' : ''}
+                    {getAllTemplateImages(template.images).length} {t("image")}{getAllTemplateImages(template.images).length !== 1 ? 's' : ''}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -422,10 +424,10 @@ export default function VendorCustomTemplateDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  Pricing
+                  {t("Pricing")}
                   {template.negotiable === false && (
                     <Badge className="bg-viridian-green/10 text-viridian-green border-viridian-green/30">
-                      Fixed Price
+                      {t("Fixed Price")}
                     </Badge>
                   )}
                 </CardTitle>
@@ -436,7 +438,7 @@ export default function VendorCustomTemplateDetail() {
                     {customOrderTemplateService.formatVendorTemplatePrice(template)}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Your earnings per order
+                    {t("Your earnings per order")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {template.negotiable === false ? 'Fixed price (no negotiation)' : 'Base price (negotiable)'}
@@ -454,7 +456,7 @@ export default function VendorCustomTemplateDetail() {
                       }}
                     >
                       <Edit className="h-4 w-4 mr-2" />
-                      Update Price
+                      {t("Update Price")}
                     </Button>
                   )}
                 </div>
@@ -466,7 +468,7 @@ export default function VendorCustomTemplateDetail() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Truck className="h-5 w-5" />
-                  Supplier
+                  {t("Supplier")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -479,7 +481,7 @@ export default function VendorCustomTemplateDetail() {
                       )}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No supplier linked</p>
+                    <p className="text-sm text-muted-foreground">{t("No supplier linked")}</p>
                   )}
 
                   {activeSuppliers.length > 0 && (
@@ -503,11 +505,11 @@ export default function VendorCustomTemplateDetail() {
             {/* Quick Stats Card */}
             <Card>
               <CardHeader>
-                <CardTitle>Quick Stats</CardTitle>
+                <CardTitle>{t("Quick Stats")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Pricing Type</span>
+                  <span className="text-muted-foreground">{t("Pricing Type")}</span>
                   <Badge variant="outline" className={template.negotiable === false 
                     ? "bg-viridian-green/5 text-viridian-green border-viridian-green/20" 
                     : "bg-amber-50 text-amber-700 border-amber-200"
@@ -517,17 +519,17 @@ export default function VendorCustomTemplateDetail() {
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Customization Fields</span>
+                  <span className="text-muted-foreground">{t("Customization Fields")}</span>
                   <span className="font-medium">{template.fields?.length || 0}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Images</span>
+                  <span className="text-muted-foreground">{t("Images")}</span>
                   <span className="font-medium">{template.images?.length || 0}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Required Fields</span>
+                  <span className="text-muted-foreground">{t("Required Fields")}</span>
                   <span className="font-medium">
                     {template.fields?.filter(f => f.required).length || 0}
                   </span>
@@ -542,13 +544,13 @@ export default function VendorCustomTemplateDetail() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete Template")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{template.name}"? This action cannot be undone.
+              {t("Are you sure you want to delete \"")}{template.name}{t("\"? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate()}
               className="bg-red-600 hover:bg-red-700"
@@ -557,7 +559,7 @@ export default function VendorCustomTemplateDetail() {
               {deleteMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
+                  {t("Deleting...")}
                 </>
               ) : (
                 'Delete'
@@ -571,14 +573,14 @@ export default function VendorCustomTemplateDetail() {
       <Dialog open={editPriceDialogOpen} onOpenChange={setEditPriceDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Base Price</DialogTitle>
+            <DialogTitle>{t("Update Base Price")}</DialogTitle>
             <DialogDescription>
-              Enter the new base price for this template (in ETB)
+              {t("Enter the new base price for this template (in ETB)")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="newPrice">Base Price (ETB)</Label>
+              <Label htmlFor="newPrice">{t("Base Price (ETB)")}</Label>
               <Input
                 id="newPrice"
                 type="number"
@@ -586,13 +588,13 @@ export default function VendorCustomTemplateDetail() {
                 min="0"
                 value={newPrice}
                 onChange={(e) => setNewPrice(e.target.value)}
-                placeholder="Enter price"
+                placeholder={t("Enter price")}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditPriceDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button 
               onClick={handleUpdatePrice}
@@ -601,7 +603,7 @@ export default function VendorCustomTemplateDetail() {
               {updatePriceMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
+                  {t("Updating...")}
                 </>
               ) : (
                 'Update Price'
@@ -615,14 +617,14 @@ export default function VendorCustomTemplateDetail() {
       <Dialog open={editSupplierDialogOpen} onOpenChange={setEditSupplierDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Link Supplier</DialogTitle>
+            <DialogTitle>{t("Link Supplier")}</DialogTitle>
             <DialogDescription>
-              Select the supplier that fulfills this template, or remove the link.
+              {t("Select the supplier that fulfills this template, or remove the link.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Supplier</Label>
+              <Label>{t("Supplier")}</Label>
               <Select
                 value={selectedSupplierId?.toString() || "0"}
                 onValueChange={(value) =>
@@ -630,10 +632,10 @@ export default function VendorCustomTemplateDetail() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="No supplier" />
+                  <SelectValue placeholder={t("No supplier")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">No supplier</SelectItem>
+                  <SelectItem value="0">{t("No supplier")}</SelectItem>
                   {activeSuppliers.map((s) => (
                     <SelectItem key={s.id} value={s.id.toString()}>
                       {s.businessName}
@@ -645,7 +647,7 @@ export default function VendorCustomTemplateDetail() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditSupplierDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={() => updateSupplierMutation.mutate(selectedSupplierId)}
@@ -654,7 +656,7 @@ export default function VendorCustomTemplateDetail() {
               {updateSupplierMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
+                  {t("Saving...")}
                 </>
               ) : (
                 'Save'

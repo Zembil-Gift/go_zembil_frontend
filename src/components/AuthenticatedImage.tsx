@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '@/services/api';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from "react-i18next";
 
 interface AuthenticatedImageProps {
   src: string;
@@ -72,6 +73,7 @@ function transformDeliveryImageUrl(src: string): string {
  * Fetches the image with auth headers and displays as blob URL
  */
 export function AuthenticatedImage({ src, alt, className, onClick }: AuthenticatedImageProps) {
+  const { t } = useTranslation();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -126,7 +128,7 @@ export function AuthenticatedImage({ src, alt, className, onClick }: Authenticat
   if (error || !blobUrl) {
     return (
       <div className={`flex items-center justify-center bg-gray-100 ${className}`}>
-        <p className="text-sm text-gray-400">Failed to load image</p>
+        <p className="text-sm text-gray-400">{t("Failed to load image")}</p>
       </div>
     );
   }

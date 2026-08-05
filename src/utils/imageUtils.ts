@@ -1,5 +1,7 @@
 import { ImageDto } from '@/services/imageService';
 
+export { cdnImage, cdnSrcSet } from './cdnImage';
+
 // Base image type with required fields for image utilities
 export interface BaseImage {
   id: number;

@@ -50,8 +50,10 @@ import {
   useAuthenticatedImageViewer,
 } from "@/components/AuthenticatedImage";
 import imageCompression from "browser-image-compression";
+import { useTranslation } from "react-i18next";
 
 export default function DeliveryAssignmentDetail() {
+  const { t } = useTranslation();
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -106,15 +108,15 @@ export default function DeliveryAssignmentDetail() {
     mutationFn: () => deliveryService.acceptAssignment(Number(assignmentId)),
     onSuccess: () => {
       toast({
-        title: "Assignment Accepted",
-        description: "You have accepted this delivery",
+        title: t("Assignment Accepted"),
+        description: t("You have accepted this delivery"),
       });
       queryClient.invalidateQueries({ queryKey: ["delivery"] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to accept assignment",
+        title: t("Error"),
+        description: t("Failed to accept assignment"),
         variant: "destructive",
       });
     },
@@ -126,15 +128,15 @@ export default function DeliveryAssignmentDetail() {
       deliveryService.updateDeliveryStatus(Number(assignmentId), { status }),
     onSuccess: (data) => {
       toast({
-        title: "Status Updated",
+        title: t("Status Updated"),
         description: `Delivery is now ${data.status}`,
       });
       queryClient.invalidateQueries({ queryKey: ["delivery"] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update status",
+        title: t("Error"),
+        description: t("Failed to update status"),
         variant: "destructive",
       });
     },
@@ -149,8 +151,8 @@ export default function DeliveryAssignmentDetail() {
       ),
     onSuccess: () => {
       toast({
-        title: "Delivery Failed",
-        description: "The delivery failure has been reported",
+        title: t("Delivery Failed"),
+        description: t("The delivery failure has been reported"),
       });
       queryClient.invalidateQueries({ queryKey: ["delivery"] });
       setShowFailDialog(false);
@@ -158,8 +160,8 @@ export default function DeliveryAssignmentDetail() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to report failure",
+        title: t("Error"),
+        description: t("Failed to report failure"),
         variant: "destructive",
       });
     },
@@ -223,8 +225,8 @@ export default function DeliveryAssignmentDetail() {
   ) => {
     if (!navigator.mediaDevices?.getUserMedia) {
       toast({
-        title: "Camera Not Supported",
-        description: "Your browser does not support direct camera access.",
+        title: t("Camera Not Supported"),
+        description: t("Your browser does not support direct camera access."),
         variant: "destructive",
       });
       return;
@@ -247,8 +249,8 @@ export default function DeliveryAssignmentDetail() {
       setCameraReady(true);
     } catch {
       toast({
-        title: "Camera Access Failed",
-        description: "Please allow camera permission and try again.",
+        title: t("Camera Access Failed"),
+        description: t("Please allow camera permission and try again."),
         variant: "destructive",
       });
       setCameraReady(false);
@@ -268,8 +270,8 @@ export default function DeliveryAssignmentDetail() {
     const video = videoRef.current;
     if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
       toast({
-        title: "Camera Not Ready",
-        description: "Please wait for camera preview and try again.",
+        title: t("Camera Not Ready"),
+        description: t("Please wait for camera preview and try again."),
         variant: "destructive",
       });
       return;
@@ -281,8 +283,8 @@ export default function DeliveryAssignmentDetail() {
     const context = canvas.getContext("2d");
     if (!context) {
       toast({
-        title: "Capture Failed",
-        description: "Could not capture camera frame.",
+        title: t("Capture Failed"),
+        description: t("Could not capture camera frame."),
         variant: "destructive",
       });
       return;
@@ -295,8 +297,8 @@ export default function DeliveryAssignmentDetail() {
 
     if (!blob) {
       toast({
-        title: "Capture Failed",
-        description: "Could not generate image from camera frame.",
+        title: t("Capture Failed"),
+        description: t("Could not generate image from camera frame."),
         variant: "destructive",
       });
       return;
@@ -310,8 +312,8 @@ export default function DeliveryAssignmentDetail() {
       processedFile = await compressCapturedImage(processedFile);
     } catch {
       toast({
-        title: "Compression Skipped",
-        description: "Could not compress image, using original capture.",
+        title: t("Compression Skipped"),
+        description: t("Could not compress image, using original capture."),
       });
     }
 
@@ -323,15 +325,15 @@ export default function DeliveryAssignmentDetail() {
     reader.readAsDataURL(processedFile);
 
     stopCamera(streamRef, videoRef, setCameraReady);
-    toast({ title: "Photo Captured", description: successDescription });
+    toast({ title: t("Photo Captured"), description: successDescription });
   };
 
   // Upload pickup proof image and save
   const handleUploadPickupProof = async () => {
     if (!pickupImageFile) {
       toast({
-        title: "Image Required",
-        description: "Please capture or select a pickup proof image",
+        title: t("Image Required"),
+        description: t("Please capture or select a pickup proof image"),
         variant: "destructive",
       });
       return;
@@ -351,15 +353,15 @@ export default function DeliveryAssignmentDetail() {
       });
 
       toast({
-        title: "Pickup Proof Uploaded!",
-        description: "You can now mark the order as picked up",
+        title: t("Pickup Proof Uploaded!"),
+        description: t("You can now mark the order as picked up"),
       });
       queryClient.invalidateQueries({ queryKey: ["delivery"] });
       setShowPickupProofDialog(false);
       handleClearPickupImage();
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t("Error"),
         description:
           error.response?.data?.message || "Failed to upload pickup proof",
         variant: "destructive",
@@ -380,8 +382,8 @@ export default function DeliveryAssignmentDetail() {
   const handleCompleteDelivery = async () => {
     if (!proofImageFile) {
       toast({
-        title: "Image Required",
-        description: "Please capture or select a proof image",
+        title: t("Image Required"),
+        description: t("Please capture or select a proof image"),
         variant: "destructive",
       });
       return;
@@ -402,15 +404,15 @@ export default function DeliveryAssignmentDetail() {
       });
 
       toast({
-        title: "Delivery Completed!",
-        description: "The delivery has been marked as completed",
+        title: t("Delivery Completed!"),
+        description: t("The delivery has been marked as completed"),
       });
       queryClient.invalidateQueries({ queryKey: ["delivery"] });
       setShowCompleteDialog(false);
       navigate("/delivery/assignments");
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t("Error"),
         description:
           error.response?.data?.message || "Failed to complete delivery",
         variant: "destructive",
@@ -469,10 +471,10 @@ export default function DeliveryAssignmentDetail() {
     return (
       <div className="text-center py-16">
         <Package className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-        <h2 className="text-xl font-medium mb-2">Assignment Not Found</h2>
+        <h2 className="text-xl font-medium mb-2">{t("Assignment Not Found")}</h2>
         <Button onClick={() => navigate("/delivery/assignments")}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Assignments
+          {t("Back to Assignments")}
         </Button>
       </div>
     );
@@ -492,7 +494,7 @@ export default function DeliveryAssignmentDetail() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold">
-            {assignment.orderType === "CUSTOM" ? "Custom " : ""}Order #
+            {assignment.orderType === "CUSTOM" ? "Custom " : ""}{t("Order #")}
             {assignment.customOrderNumber || assignment.orderNumber}
           </h1>
           <Badge className={getStatusColor(assignment.status)}>
@@ -507,19 +509,19 @@ export default function DeliveryAssignmentDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Customer Details
+                {t("Customer Details")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-gray-500">Name</Label>
+                  <Label className="text-gray-500">{t("Name")}</Label>
                   <p className="font-medium">
                     {assignment.customerName || "N/A"}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-gray-500">Phone</Label>
+                  <Label className="text-gray-500">{t("Phone")}</Label>
                   <div className="flex items-center gap-2">
                     <p className="font-medium">
                       {assignment.customerPhone || "N/A"}
@@ -528,10 +530,10 @@ export default function DeliveryAssignmentDetail() {
                       <Button variant="outline" size="sm" asChild>
                         <a
                           href={`tel:${assignment.customerPhone}`}
-                          title="Call customer"
+                          title={t("Call customer")}
                         >
                           <Phone className="h-4 w-4" />
-                          <span className="sr-only">Call customer</span>
+                          <span className="sr-only">{t("Call customer")}</span>
                         </a>
                       </Button>
                     )}
@@ -545,7 +547,7 @@ export default function DeliveryAssignmentDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                Delivery Address
+                {t("Delivery Address")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -565,7 +567,7 @@ export default function DeliveryAssignmentDetail() {
                 }}
               >
                 <Navigation className="mr-2 h-4 w-4" />
-                Open in Maps
+                {t("Open in Maps")}
               </Button>
             </CardContent>
           </Card>
@@ -575,7 +577,7 @@ export default function DeliveryAssignmentDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Timeline
+                {t("Timeline")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -583,7 +585,7 @@ export default function DeliveryAssignmentDetail() {
                 <div className="flex items-center gap-4">
                   <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                   <div>
-                    <p className="font-medium">Assigned</p>
+                    <p className="font-medium">{t("Assigned")}</p>
                     <p className="text-sm text-gray-500">
                       {formatDate(assignment.assignedAt)}
                     </p>
@@ -593,7 +595,7 @@ export default function DeliveryAssignmentDetail() {
                   <div className="flex items-center gap-4">
                     <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
                     <div>
-                      <p className="font-medium">Picked Up</p>
+                      <p className="font-medium">{t("Picked Up")}</p>
                       <p className="text-sm text-gray-500">
                         {formatDate(assignment.pickedUpAt)}
                       </p>
@@ -604,7 +606,7 @@ export default function DeliveryAssignmentDetail() {
                   <div className="flex items-center gap-4">
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                     <div>
-                      <p className="font-medium">Delivered</p>
+                      <p className="font-medium">{t("Delivered")}</p>
                       <p className="text-sm text-gray-500">
                         {formatDate(assignment.deliveredAt)}
                       </p>
@@ -621,19 +623,19 @@ export default function DeliveryAssignmentDetail() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Camera className="h-5 w-5" />
-                  Pickup Proof
+                  {t("Pickup Proof")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <AuthenticatedImage
                   src={assignment.pickupImageUrl}
-                  alt="Pickup proof"
+                  alt={t("Pickup proof")}
                   className="max-w-full rounded-lg cursor-pointer hover:opacity-90"
                   onClick={() => openImage(assignment.pickupImageUrl ?? "")}
                 />
                 {assignment.pickupUploadedAt && (
                   <p className="text-sm text-gray-500 mt-2">
-                    Uploaded: {formatDate(assignment.pickupUploadedAt)}
+                    {t("Uploaded:")} {formatDate(assignment.pickupUploadedAt)}
                   </p>
                 )}
               </CardContent>
@@ -646,18 +648,18 @@ export default function DeliveryAssignmentDetail() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ImageIcon className="h-5 w-5" />
-                  Delivery Proof
+                  {t("Delivery Proof")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <AuthenticatedImage
                   src={assignment.proofImageUrl}
-                  alt="Delivery proof"
+                  alt={t("Delivery proof")}
                   className="max-w-full rounded-lg cursor-pointer hover:opacity-90"
                   onClick={() => openImage(assignment.proofImageUrl ?? "")}
                 />
                 <p className="text-sm text-gray-500 mt-2">
-                  Recipient: {assignment.recipientName || "N/A"}
+                  {t("Recipient:")} {assignment.recipientName || "N/A"}
                 </p>
               </CardContent>
             </Card>
@@ -669,16 +671,16 @@ export default function DeliveryAssignmentDetail() {
           {/* Order Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Order Information</CardTitle>
+              <CardTitle>{t("Order Information")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Attempt</span>
+                <span className="text-gray-500">{t("Attempt")}</span>
                 <span>{assignment.attemptCount}</span>
               </div>
               {assignment.expectedDeliveryAt && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Expected By</span>
+                  <span className="text-gray-500">{t("Expected By")}</span>
                   <span>{formatDate(assignment.expectedDeliveryAt)}</span>
                 </div>
               )}
@@ -689,7 +691,7 @@ export default function DeliveryAssignmentDetail() {
           {!isTerminalStatus && (
             <Card>
               <CardHeader>
-                <CardTitle>Actions</CardTitle>
+                <CardTitle>{t("Actions")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {assignment.status === "ASSIGNED" && (
@@ -703,7 +705,7 @@ export default function DeliveryAssignmentDetail() {
                     ) : (
                       <CheckCircle className="mr-2 h-4 w-4" />
                     )}
-                    Accept Assignment
+                    {t("Accept Assignment")}
                   </Button>
                 )}
 
@@ -715,7 +717,7 @@ export default function DeliveryAssignmentDetail() {
                       onClick={() => setShowPickupProofDialog(true)}
                     >
                       <Camera className="mr-2 h-4 w-4" />
-                      Upload Pickup Photo
+                      {t("Upload Pickup Photo")}
                     </Button>
                   )}
 
@@ -724,7 +726,7 @@ export default function DeliveryAssignmentDetail() {
                   assignment.pickupImageUrl && (
                     <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-2 rounded">
                       <CheckCircle className="h-4 w-4" />
-                      Pickup photo uploaded
+                      {t("Pickup photo uploaded")}
                     </div>
                   )}
 
@@ -741,7 +743,7 @@ export default function DeliveryAssignmentDetail() {
                       ) : (
                         <Truck className="mr-2 h-4 w-4" />
                       )}
-                      Mark as Picked Up
+                      {t("Mark as Picked Up")}
                     </Button>
                   )}
 
@@ -767,7 +769,7 @@ export default function DeliveryAssignmentDetail() {
                     onClick={() => setShowCompleteDialog(true)}
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
-                    Complete Delivery
+                    {t("Complete Delivery")}
                   </Button>
                 )}
 
@@ -780,7 +782,7 @@ export default function DeliveryAssignmentDetail() {
                     onClick={() => setShowFailDialog(true)}
                   >
                     <XCircle className="mr-2 h-4 w-4" />
-                    Report Failure
+                    {t("Report Failure")}
                   </Button>
                 )}
               </CardContent>
@@ -791,7 +793,7 @@ export default function DeliveryAssignmentDetail() {
           {assignment.notes && (
             <Card>
               <CardHeader>
-                <CardTitle>Notes</CardTitle>
+                <CardTitle>{t("Notes")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">{assignment.notes}</p>
@@ -805,7 +807,7 @@ export default function DeliveryAssignmentDetail() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-red-700">
                   <AlertTriangle className="h-5 w-5" />
-                  Failure Reason
+                  {t("Failure Reason")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -829,23 +831,23 @@ export default function DeliveryAssignmentDetail() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Complete Delivery</DialogTitle>
+            <DialogTitle>{t("Complete Delivery")}</DialogTitle>
             <DialogDescription>
-              Take a photo as proof of delivery
+              {t("Take a photo as proof of delivery")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Recipient Name</Label>
+              <Label>{t("Recipient Name")}</Label>
               <Input
                 value={recipientName}
                 onChange={(e) => setRecipientName(e.target.value)}
-                placeholder="Name of person who received the package"
+                placeholder={t("Name of person who received the package")}
               />
             </div>
             <div>
               <Label htmlFor="camera-input">
-                Delivery Proof Photo <span className="text-red-500">*</span>
+                {t("Delivery Proof Photo")} <span className="text-red-500">*</span>
               </Label>
 
               {/* Image Preview or Camera View */}
@@ -853,7 +855,7 @@ export default function DeliveryAssignmentDetail() {
                 <div className="mt-2 relative">
                   <img
                     src={proofImagePreview}
-                    alt="Delivery proof preview"
+                    alt={t("Delivery proof preview")}
                     className="w-full max-h-64 object-cover rounded-lg border"
                   />
                   <Button
@@ -880,7 +882,7 @@ export default function DeliveryAssignmentDetail() {
                       );
                     }}
                   >
-                    Retake
+                    {t("Retake")}
                   </Button>
                 </div>
               ) : (
@@ -913,7 +915,7 @@ export default function DeliveryAssignmentDetail() {
                       ) : (
                         <Camera className="mr-2 h-4 w-4" />
                       )}
-                      Start Camera
+                      {t("Start Camera")}
                     </Button>
                     <Button
                       type="button"
@@ -929,18 +931,18 @@ export default function DeliveryAssignmentDetail() {
                       }}
                       disabled={!isDeliveryCameraReady}
                     >
-                      Capture Photo
+                      {t("Capture Photo")}
                     </Button>
                   </div>
                 </div>
               )}
             </div>
             <div>
-              <Label>Notes (Optional)</Label>
+              <Label>{t("Notes (Optional)")}</Label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any additional notes about the delivery"
+                placeholder={t("Any additional notes about the delivery")}
               />
             </div>
           </div>
@@ -949,7 +951,7 @@ export default function DeliveryAssignmentDetail() {
               variant="outline"
               onClick={() => setShowCompleteDialog(false)}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               className="bg-green-600 hover:bg-green-700 text-white"
@@ -969,26 +971,26 @@ export default function DeliveryAssignmentDetail() {
       <AlertDialog open={showFailDialog} onOpenChange={setShowFailDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Report Delivery Failure</AlertDialogTitle>
+            <AlertDialogTitle>{t("Report Delivery Failure")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Please provide a reason for the delivery failure
+              {t("Please provide a reason for the delivery failure")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
             <Textarea
               value={failureReason}
               onChange={(e) => setFailureReason(e.target.value)}
-              placeholder="e.g., Customer not available, Wrong address, etc."
+              placeholder={t("e.g., Customer not available, Wrong address, etc.")}
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
               onClick={() => failMutation.mutate()}
               disabled={!failureReason || failMutation.isPending}
             >
-              Report Failure
+              {t("Report Failure")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1006,16 +1008,15 @@ export default function DeliveryAssignmentDetail() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Upload Pickup Proof</DialogTitle>
+            <DialogTitle>{t("Upload Pickup Proof")}</DialogTitle>
             <DialogDescription>
-              Take a photo of the product when you receive it. This serves as
-              evidence of the product's condition before delivery.
+              {t("Take a photo of the product when you receive it. This serves as evidence of the product's condition before delivery.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label htmlFor="pickup-camera-input">
-                Product Photo <span className="text-red-500">*</span>
+                {t("Product Photo")} <span className="text-red-500">*</span>
               </Label>
 
               {/* Image Preview or Camera View */}
@@ -1023,7 +1024,7 @@ export default function DeliveryAssignmentDetail() {
                 <div className="mt-2 relative">
                   <img
                     src={pickupImagePreview}
-                    alt="Pickup proof preview"
+                    alt={t("Pickup proof preview")}
                     className="w-full max-h-64 object-cover rounded-lg border"
                   />
                   <Button
@@ -1050,7 +1051,7 @@ export default function DeliveryAssignmentDetail() {
                       );
                     }}
                   >
-                    Retake
+                    {t("Retake")}
                   </Button>
                 </div>
               ) : (
@@ -1083,7 +1084,7 @@ export default function DeliveryAssignmentDetail() {
                       ) : (
                         <Camera className="mr-2 h-4 w-4" />
                       )}
-                      Start Camera
+                      {t("Start Camera")}
                     </Button>
                     <Button
                       type="button"
@@ -1099,18 +1100,18 @@ export default function DeliveryAssignmentDetail() {
                       }}
                       disabled={!isPickupCameraReady}
                     >
-                      Capture Photo
+                      {t("Capture Photo")}
                     </Button>
                   </div>
                 </div>
               )}
             </div>
             <div>
-              <Label>Notes (Optional)</Label>
+              <Label>{t("Notes (Optional)")}</Label>
               <Textarea
                 value={pickupNotes}
                 onChange={(e) => setPickupNotes(e.target.value)}
-                placeholder="Any notes about the product condition, packaging, etc."
+                placeholder={t("Any notes about the product condition, packaging, etc.")}
               />
             </div>
           </div>
@@ -1119,7 +1120,7 @@ export default function DeliveryAssignmentDetail() {
               variant="outline"
               onClick={() => setShowPickupProofDialog(false)}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               className="bg-purple-600 hover:bg-purple-700 text-white"

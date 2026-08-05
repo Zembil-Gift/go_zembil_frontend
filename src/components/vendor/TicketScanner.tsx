@@ -26,6 +26,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface TicketScannerProps {
   className?: string;
@@ -55,6 +56,7 @@ type Html5QrcodeInstance = {
 type Html5QrcodeConstructor = new (elementId: string) => Html5QrcodeInstance;
 
 export function TicketScanner({ className }: TicketScannerProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [manualCode, setManualCode] = useState("");
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -74,12 +76,12 @@ export function TicketScanner({ className }: TicketScannerProps) {
       setValidationResult(data);
       if (data.valid) {
         toast({
-          title: "Valid Ticket",
+          title: t("Valid Ticket"),
           description: data.message,
         });
       } else {
         toast({
-          title: "Invalid Ticket",
+          title: t("Invalid Ticket"),
           description: data.message,
           variant: "destructive",
         });
@@ -92,7 +94,7 @@ export function TicketScanner({ className }: TicketScannerProps) {
         message,
       });
       toast({
-        title: "Validation Error",
+        title: t("Validation Error"),
         description: message,
         variant: "destructive",
       });
@@ -106,12 +108,12 @@ export function TicketScanner({ className }: TicketScannerProps) {
       setValidationResult(data);
       if (data.valid || data.message?.includes("successful")) {
         toast({
-          title: "Check-In Successful",
+          title: t("Check-In Successful"),
           description: data.message,
         });
       } else {
         toast({
-          title: "Check-In Failed",
+          title: t("Check-In Failed"),
           description: data.message,
           variant: "destructive",
         });
@@ -120,7 +122,7 @@ export function TicketScanner({ className }: TicketScannerProps) {
     onError: (error: any) => {
       const message = error?.response?.data?.message || error?.message || "Failed to check in ticket";
       toast({
-        title: "Check-In Error",
+        title: t("Check-In Error"),
         description: message,
         variant: "destructive",
       });
@@ -224,8 +226,8 @@ export function TicketScanner({ className }: TicketScannerProps) {
       if (isMountedRef.current) {
         setIsCameraActive(false);
         toast({
-          title: "Camera Error",
-          description: "Failed to access camera. Please check permissions or use manual entry.",
+          title: t("Camera Error"),
+          description: t("Failed to access camera. Please check permissions or use manual entry."),
           variant: "destructive",
         });
       }
@@ -279,8 +281,8 @@ export function TicketScanner({ className }: TicketScannerProps) {
   const handleManualValidate = () => {
     if (!manualCode.trim()) {
       toast({
-        title: "Invalid Input",
-        description: "Please enter a ticket code",
+        title: t("Invalid Input"),
+        description: t("Please enter a ticket code"),
         variant: "destructive",
       });
       return;
@@ -307,17 +309,17 @@ export function TicketScanner({ className }: TicketScannerProps) {
   const getStatusBadge = (status?: TicketStatus) => {
     switch (status) {
       case "ISSUED":
-        return <Badge className="bg-green-500 text-white">Valid - Ready for Check-In</Badge>;
+        return <Badge className="bg-green-500 text-white">{t("Valid - Ready for Check-In")}</Badge>;
       case "CHECKED_IN":
-        return <Badge className="bg-amber-500 text-white">Already Checked In</Badge>;
+        return <Badge className="bg-amber-500 text-white">{t("Already Checked In")}</Badge>;
       case "CANCELLED":
-        return <Badge className="bg-red-500 text-white">Cancelled</Badge>;
+        return <Badge className="bg-red-500 text-white">{t("Cancelled")}</Badge>;
       case "REFUNDED":
-        return <Badge className="bg-red-500 text-white">Refunded</Badge>;
+        return <Badge className="bg-red-500 text-white">{t("Refunded")}</Badge>;
       case "EXPIRED":
-        return <Badge className="bg-gray-500 text-white">Expired</Badge>;
+        return <Badge className="bg-gray-500 text-white">{t("Expired")}</Badge>;
       default:
-        return <Badge variant="outline">Unknown Status</Badge>;
+        return <Badge variant="outline">{t("Unknown Status")}</Badge>;
     }
   };
 
@@ -354,17 +356,17 @@ export function TicketScanner({ className }: TicketScannerProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Camera className="h-5 w-5" />
-            Ticket Scanner
+            {t("Ticket Scanner")}
           </CardTitle>
           <CardDescription>
-            Scan a QR code or enter the ticket code manually to validate and check in attendees
+            {t("Scan a QR code or enter the ticket code manually to validate and check in attendees")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Camera Scanner */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-base font-medium">Camera Scanner</Label>
+              <Label className="text-base font-medium">{t("Camera Scanner")}</Label>
               <Button
                 variant={isCameraActive ? "destructive" : "default"}
                 size="sm"
@@ -374,12 +376,12 @@ export function TicketScanner({ className }: TicketScannerProps) {
                 {isCameraActive ? (
                   <>
                     <CameraOff className="h-4 w-4 mr-2" />
-                    Stop Camera
+                    {t("Stop Camera")}
                   </>
                 ) : (
                   <>
                     <Camera className="h-4 w-4 mr-2" />
-                    Start Camera
+                    {t("Start Camera")}
                   </>
                 )}
               </Button>
@@ -392,7 +394,7 @@ export function TicketScanner({ className }: TicketScannerProps) {
                 <div className="h-[300px] sm:h-[350px] lg:h-[400px] flex items-center justify-center rounded-lg bg-gray-100">
                   <div className="text-center text-muted-foreground">
                     <Camera className="h-12 w-12 mx-auto mb-2 opacity-30" />
-                    <p>Click "Start Camera" to scan QR codes</p>
+                    <p>{t("Click \"Start Camera\" to scan QR codes")}</p>
                   </div>
                 </div>
               )}
@@ -427,10 +429,10 @@ export function TicketScanner({ className }: TicketScannerProps) {
 
           {/* Manual Entry */}
           <div className="space-y-4">
-            <Label className="text-base font-medium">Manual Entry</Label>
+            <Label className="text-base font-medium">{t("Manual Entry")}</Label>
             <div className="flex gap-2">
               <Input
-                placeholder="Enter ticket code (e.g., EVT-123-ABCD1234)"
+                placeholder={t("Enter ticket code (e.g., EVT-123-ABCD1234)")}
                 value={manualCode}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualCode(e.target.value)}
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && handleManualValidate()}
@@ -467,7 +469,7 @@ export function TicketScanner({ className }: TicketScannerProps) {
               </div>
               <Button variant="ghost" size="sm" onClick={handleReset}>
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Scan New
+                {t("Scan New")}
               </Button>
             </div>
           </CardHeader>
@@ -479,7 +481,7 @@ export function TicketScanner({ className }: TicketScannerProps) {
                 {getStatusBadge(validationResult.status)}
                 {validationResult.checkedInAt && (
                   <span className="text-sm text-muted-foreground">
-                    Checked in: {new Date(validationResult.checkedInAt).toLocaleString()}
+                    {t("Checked in:")} {new Date(validationResult.checkedInAt).toLocaleString()}
                     {validationResult.checkedInByName && ` by ${validationResult.checkedInByName}`}
                   </span>
                 )}
@@ -489,7 +491,7 @@ export function TicketScanner({ className }: TicketScannerProps) {
                 {/* Ticket Details */}
                 <div className="space-y-4">
                   <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                    Ticket Details
+                    {t("Ticket Details")}
                   </h4>
                   <div className="space-y-3">
                     {validationResult.ticketCode && (
@@ -518,9 +520,9 @@ export function TicketScanner({ className }: TicketScannerProps) {
                     )}
                     {validationResult.orderNumber && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>Order: {validationResult.orderNumber}</span>
+                        <span>{t("Order:")} {validationResult.orderNumber}</span>
                         {validationResult.purchaserName && (
-                          <span>• Purchaser: {validationResult.purchaserName}</span>
+                          <span>{t("• Purchaser:")} {validationResult.purchaserName}</span>
                         )}
                       </div>
                     )}
@@ -530,7 +532,7 @@ export function TicketScanner({ className }: TicketScannerProps) {
                 {/* Event Details */}
                 <div className="space-y-4">
                   <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                    Event Details
+                    {t("Event Details")}
                   </h4>
                   <div className="space-y-3">
                     {validationResult.eventTitle && (
@@ -566,12 +568,12 @@ export function TicketScanner({ className }: TicketScannerProps) {
                       {checkInMutation.isPending ? (
                         <>
                           <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Checking In...
+                          {t("Checking In...")}
                         </>
                       ) : (
                         <>
                           <CheckCircle className="h-4 w-4 mr-2" />
-                          Check In Attendee
+                          {t("Check In Attendee")}
                         </>
                       )}
                     </Button>
@@ -587,13 +589,13 @@ export function TicketScanner({ className }: TicketScannerProps) {
       {!validationResult && (
         <Alert>
           <Ticket className="h-4 w-4" />
-          <AlertTitle>Tips for Quick Check-In</AlertTitle>
+          <AlertTitle>{t("Tips for Quick Check-In")}</AlertTitle>
           <AlertDescription>
             <ul className="mt-2 list-disc list-inside space-y-1 text-sm">
-              <li>Point your camera at the QR code on the attendee's ticket</li>
-              <li>Hold steady until the code is detected</li>
-              <li>Ticket codes follow the format: EVT-[EventID]-[RandomCode]</li>
-              <li>You can also type the code manually if scanning doesn't work</li>
+              <li>{t("Point your camera at the QR code on the attendee's ticket")}</li>
+              <li>{t("Hold steady until the code is detected")}</li>
+              <li>{t("Ticket codes follow the format: EVT-[EventID]-[RandomCode]")}</li>
+              <li>{t("You can also type the code manually if scanning doesn't work")}</li>
             </ul>
           </AlertDescription>
         </Alert>

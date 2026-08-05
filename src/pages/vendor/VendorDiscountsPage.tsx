@@ -30,8 +30,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 export default function VendorDiscountsPage() {
+  const { t } = useTranslation();
   const { user, isAuthenticated, isInitialized } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -57,14 +59,14 @@ export default function VendorDiscountsPage() {
     mutationFn: (discountId: number) => discountService.deactivateDiscount(discountId),
     onSuccess: () => {
       toast({
-        title: "Discount deactivated",
-        description: "The discount code has been deactivated and is no longer usable.",
+        title: t("Discount deactivated"),
+        description: t("The discount code has been deactivated and is no longer usable."),
       });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'discounts'] });
       setDeactivateDialog({ open: false, discountId: null, discountCode: '' });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -73,13 +75,13 @@ export default function VendorDiscountsPage() {
     mutationFn: (discountId: number) => discountService.reactivateDiscount(discountId),
     onSuccess: () => {
       toast({
-        title: "Discount reactivated",
-        description: "The discount code has been reactivated and is now usable.",
+        title: t("Discount reactivated"),
+        description: t("The discount code has been reactivated and is now usable."),
       });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'discounts'] });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -90,15 +92,15 @@ export default function VendorDiscountsPage() {
 
   const getStatusBadge = (discount: DiscountResponse) => {
     if (!discount.isActive) {
-      return <Badge className="bg-slate-100 text-slate-800">Inactive</Badge>;
+      return <Badge className="bg-slate-100 text-slate-800">{t("Inactive")}</Badge>;
     }
     if (!discount.isCurrentlyValid) {
-      return <Badge className="bg-amber-100 text-amber-800">Expired</Badge>;
+      return <Badge className="bg-amber-100 text-amber-800">{t("Expired")}</Badge>;
     }
     if (!discount.hasRemainingUses) {
-      return <Badge className="bg-red-100 text-red-800">Limit Reached</Badge>;
+      return <Badge className="bg-red-100 text-red-800">{t("Limit Reached")}</Badge>;
     }
-    return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+    return <Badge className="bg-green-100 text-green-800">{t("Active")}</Badge>;
   };
 
   const getTypeBadge = (discount: DiscountResponse) => {
@@ -106,14 +108,14 @@ export default function VendorDiscountsPage() {
       return (
         <Badge variant="outline" className="border-blue-300 text-blue-700">
           <Percent className="h-3 w-3 mr-1" />
-          {discount.discountPercentage}% Off
+          {discount.discountPercentage}{t("% Off")}
         </Badge>
       );
     }
     return (
       <Badge variant="outline" className="border-purple-300 text-purple-700">
         <Tag className="h-3 w-3 mr-1" />
-        {((discount.fixedAmountMinor || 0) / 100).toFixed(2)} {discount.currencyCode} Off
+        {((discount.fixedAmountMinor || 0) / 100).toFixed(2)} {discount.currencyCode} {t("Off")}
       </Badge>
     );
   };
@@ -121,22 +123,22 @@ export default function VendorDiscountsPage() {
   const getAppliesToBadge = (discount: DiscountResponse) => {
     switch (discount.appliesTo) {
       case 'ORDER_TOTAL':
-        return <Badge variant="outline" className="text-xs">Whole Order</Badge>;
+        return <Badge variant="outline" className="text-xs">{t("Whole Order")}</Badge>;
       case 'SPECIFIC_PRODUCTS':
         return <Badge variant="outline" className="text-xs border-emerald-300 text-emerald-700">
-          {discount.productNames?.length || discount.productIds?.length || 0} Product(s)
+          {discount.productNames?.length || discount.productIds?.length || 0} {t("Product(s)")}
         </Badge>;
       case 'SPECIFIC_CATEGORIES':
         return <Badge variant="outline" className="text-xs border-orange-300 text-orange-700">
-          {discount.categoryNames?.length || discount.categoryIds?.length || 0} Category(ies)
+          {discount.categoryNames?.length || discount.categoryIds?.length || 0} {t("Category(ies)")}
         </Badge>;
       case 'SPECIFIC_SERVICES':
         return <Badge variant="outline" className="text-xs border-sky-300 text-sky-700">
-          {discount.serviceNames?.length || discount.serviceIds?.length || 0} Service(s)
+          {discount.serviceNames?.length || discount.serviceIds?.length || 0} {t("Service(s)")}
         </Badge>;
       case 'SPECIFIC_CUSTOM_ORDER_TEMPLATES':
         return <Badge variant="outline" className="text-xs border-violet-300 text-violet-700">
-          {discount.customOrderTemplateNames?.length || discount.customOrderTemplateIds?.length || 0} Template(s)
+          {discount.customOrderTemplateNames?.length || discount.customOrderTemplateIds?.length || 0} {t("Template(s)")}
         </Badge>;
       default:
         return null;
@@ -164,14 +166,14 @@ export default function VendorDiscountsPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold">Discounts</h2>
-          <p className="text-sm text-muted-foreground">Create and manage discount codes for your products, services, and custom orders</p>
+          <h2 className="text-xl font-semibold">{t("Discounts")}</h2>
+          <p className="text-sm text-muted-foreground">{t("Create and manage discount codes for your products, services, and custom orders")}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by code or description..."
+              placeholder={t("Search by code or description...")}
               className="pl-9 h-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -180,7 +182,7 @@ export default function VendorDiscountsPage() {
           <Button asChild className="shrink-0">
             <Link to="/vendor/discounts/new">
               <Plus className="h-4 w-4 mr-2" />
-              Create Discount
+              {t("Create Discount")}
             </Link>
           </Button>
         </div>
@@ -190,12 +192,12 @@ export default function VendorDiscountsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Percent className="h-16 w-16 text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">No discounts yet</h3>
-            <p className="text-muted-foreground mb-4">Create your first discount code to attract more customers</p>
+            <h3 className="text-lg font-medium text-gray-900">{t("No discounts yet")}</h3>
+            <p className="text-muted-foreground mb-4">{t("Create your first discount code to attract more customers")}</p>
             <Button asChild>
               <Link to="/vendor/discounts/new">
                 <Plus className="h-4 w-4 mr-2" />
-                Create Discount
+                {t("Create Discount")}
               </Link>
             </Button>
           </CardContent>
@@ -221,14 +223,14 @@ export default function VendorDiscountsPage() {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {discount.usageCount}{discount.usageLimit ? `/${discount.usageLimit}` : ''} uses
+                        {discount.usageCount}{discount.usageLimit ? `/${discount.usageLimit}` : ''} {t("uses")}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {formatDate(discount.validFrom)} – {formatDate(discount.validUntil)}
                       </span>
                       {discount.perUserLimit && (
-                        <span className="text-xs">Max {discount.perUserLimit}/user</span>
+                        <span className="text-xs">{t("Max")} {discount.perUserLimit}{t("/user")}</span>
                       )}
                     </div>
                   </div>
@@ -238,19 +240,19 @@ export default function VendorDiscountsPage() {
                     <Button asChild variant="outline" size="sm">
                       <Link to={`/vendor/discounts/${discount.id}`}>
                         <Eye className="h-4 w-4 mr-1" />
-                        View
+                        {t("View")}
                       </Link>
                     </Button>
                     <Button asChild variant="outline" size="sm">
                       <Link to={`/vendor/discounts/${discount.id}/edit`}>
                         <Pencil className="h-4 w-4 mr-1" />
-                        Edit
+                        {t("Edit")}
                       </Link>
                     </Button>
                     <Button asChild variant="outline" size="sm">
                       <Link to={`/vendor/discounts/${discount.id}/usages`}>
                         <BarChart3 className="h-4 w-4 mr-1" />
-                        Usages
+                        {t("Usages")}
                       </Link>
                     </Button>
                     {discount.isActive ? (
@@ -267,7 +269,7 @@ export default function VendorDiscountsPage() {
                         className="text-red-600 hover:text-red-700"
                       >
                         <XCircle className="h-4 w-4 mr-1" />
-                        Deactivate
+                        {t("Deactivate")}
                       </Button>
                     ) : (
                       <Button
@@ -300,14 +302,13 @@ export default function VendorDiscountsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate Discount</AlertDialogTitle>
+            <AlertDialogTitle>{t("Deactivate Discount")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deactivate discount code "{deactivateDialog.discountCode}"?
-              Customers will no longer be able to use this code. This action cannot be undone.
+              {t("Are you sure you want to deactivate discount code \"")}{deactivateDialog.discountCode}{t("\"? Customers will no longer be able to use this code. This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deactivateMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deactivateMutation.isPending}>{t("Cancel")}</AlertDialogCancel>
             <Button
               variant="destructive"
               onClick={() => {

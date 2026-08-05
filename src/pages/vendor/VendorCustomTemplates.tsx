@@ -46,8 +46,10 @@ import type {
   CustomOrderTemplateStatus,
   PagedCustomOrderTemplateResponse,
 } from "@/types/customOrders";
+import { useTranslation } from "react-i18next";
 
 export default function VendorCustomTemplates() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -122,9 +124,9 @@ export default function VendorCustomTemplates() {
       customOrderTemplateService.deactivate(templateId),
     onSuccess: () => {
       toast({
-        title: "Template deactivated",
+        title: t("Template deactivated"),
         description:
-          "Your template has been archived and hidden from customers.",
+          t("Your template has been archived and hidden from customers."),
       });
       queryClient.invalidateQueries({
         queryKey: ["vendor", "custom-templates"],
@@ -133,7 +135,7 @@ export default function VendorCustomTemplates() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error?.message || "Failed to deactivate template.",
         variant: "destructive",
       });
@@ -145,8 +147,8 @@ export default function VendorCustomTemplates() {
       customOrderTemplateService.reactivate(templateId),
     onSuccess: () => {
       toast({
-        title: "Template reactivated",
-        description: "Your template is pending approval again.",
+        title: t("Template reactivated"),
+        description: t("Your template is pending approval again."),
       });
       queryClient.invalidateQueries({
         queryKey: ["vendor", "custom-templates"],
@@ -154,7 +156,7 @@ export default function VendorCustomTemplates() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error?.message || "Failed to reactivate template.",
         variant: "destructive",
       });
@@ -196,15 +198,15 @@ export default function VendorCustomTemplates() {
       case "PENDING_APPROVAL":
         return (
           <Badge className="bg-amber-100 text-amber-800">
-            Pending Approval
+            {t("Pending Approval")}
           </Badge>
         );
       case "APPROVED":
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Approved")}</Badge>;
       case "REJECTED":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Rejected")}</Badge>;
       case "ARCHIVED":
-        return <Badge className="bg-gray-100 text-gray-800">Archived</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t("Archived")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -224,12 +226,12 @@ export default function VendorCustomTemplates() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
         <p className="text-gray-600 mb-4">
-          You need to be a vendor to access this page.
+          {t("You need to be a vendor to access this page.")}
         </p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -239,11 +241,11 @@ export default function VendorCustomTemplates() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Custom Order Templates</h2>
+        <h2 className="text-xl font-semibold">{t("Custom Order Templates")}</h2>
         <Button asChild>
           <Link to="/vendor/custom-templates/new">
             <Plus className="h-4 w-4 mr-2" />
-            Create Template
+            {t("Create Template")}
           </Link>
         </Button>
       </div>
@@ -252,7 +254,7 @@ export default function VendorCustomTemplates() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Templates
+              {t("Total Templates")}
             </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -263,7 +265,7 @@ export default function VendorCustomTemplates() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
-              Pending Approval
+              {t("Pending Approval")}
             </CardTitle>
             <Clock className="h-4 w-4 text-amber-500" />
           </CardHeader>
@@ -275,7 +277,7 @@ export default function VendorCustomTemplates() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("Approved")}</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -286,7 +288,7 @@ export default function VendorCustomTemplates() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("Rejected")}</CardTitle>
             <XCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -305,7 +307,7 @@ export default function VendorCustomTemplates() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search templates by name, description, or category..."
+                  placeholder={t("Search templates by name, description, or category...")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -320,16 +322,16 @@ export default function VendorCustomTemplates() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t("Filter by status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All Statuses</SelectItem>
+                  <SelectItem value="ALL">{t("All Statuses")}</SelectItem>
                   <SelectItem value="PENDING_APPROVAL">
-                    Pending Approval
+                    {t("Pending Approval")}
                   </SelectItem>
-                  <SelectItem value="APPROVED">Approved</SelectItem>
-                  <SelectItem value="REJECTED">Rejected</SelectItem>
-                  <SelectItem value="ARCHIVED">Archived</SelectItem>
+                  <SelectItem value="APPROVED">{t("Approved")}</SelectItem>
+                  <SelectItem value="REJECTED">{t("Rejected")}</SelectItem>
+                  <SelectItem value="ARCHIVED">{t("Archived")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -348,25 +350,25 @@ export default function VendorCustomTemplates() {
             value="all"
             className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
           >
-            All ({templatesByStatus.all.length})
+            {t("All (")}{templatesByStatus.all.length})
           </TabsTrigger>
           <TabsTrigger
             value="pending"
             className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
           >
-            Pending ({templatesByStatus.pending.length})
+            {t("Pending (")}{templatesByStatus.pending.length})
           </TabsTrigger>
           <TabsTrigger
             value="approved"
             className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
           >
-            Approved ({templatesByStatus.approved.length})
+            {t("Approved (")}{templatesByStatus.approved.length})
           </TabsTrigger>
           <TabsTrigger
             value="rejected"
             className="whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
           >
-            Rejected ({templatesByStatus.rejected.length})
+            {t("Rejected (")}{templatesByStatus.rejected.length})
           </TabsTrigger>
         </TabsList>
 
@@ -394,7 +396,7 @@ export default function VendorCustomTemplates() {
                     <Button asChild>
                       <Link to="/vendor/custom-templates/new">
                         <Plus className="h-4 w-4 mr-2" />
-                        Create Template
+                        {t("Create Template")}
                       </Link>
                     </Button>
                   )}
@@ -425,20 +427,20 @@ export default function VendorCustomTemplates() {
 
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <span>
-                              Your Price:{" "}
+                              {t("Your Price:")}{" "}
                               {customOrderTemplateService.formatVendorTemplatePrice(
                                 template
                               )}
                             </span>
                             {template.categoryName && (
-                              <span>Category: {template.categoryName}</span>
+                              <span>{t("Category:")} {template.categoryName}</span>
                             )}
                             <span>
-                              {template.fields.length} customization field
+                              {template.fields.length} {t("customization field")}
                               {template.fields.length !== 1 ? "s" : ""}
                             </span>
                             <span>
-                              Created:{" "}
+                              {t("Created:")}{" "}
                               {new Date(
                                 template.createdAt
                               ).toLocaleDateString()}
@@ -449,7 +451,7 @@ export default function VendorCustomTemplates() {
                             template.rejectionReason && (
                               <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
                                 <p className="text-sm text-red-800">
-                                  <strong>Rejection Reason:</strong>{" "}
+                                  <strong>{t("Rejection Reason:")}</strong>{" "}
                                   {template.rejectionReason}
                                 </p>
                               </div>
@@ -462,7 +464,7 @@ export default function VendorCustomTemplates() {
                               to={`/vendor/custom-templates/${template.id}`}
                             >
                               <Eye className="h-4 w-4 mr-1" />
-                              View
+                              {t("View")}
                             </Link>
                           </Button>
 
@@ -477,7 +479,7 @@ export default function VendorCustomTemplates() {
                               className="text-green-600 hover:text-green-700"
                             >
                               <RotateCcw className="h-4 w-4 mr-1" />
-                              Reactivate
+                              {t("Reactivate")}
                             </Button>
                           ) : template.status === "APPROVED" ||
                             template.status === "PENDING_APPROVAL" ? (
@@ -491,7 +493,7 @@ export default function VendorCustomTemplates() {
                               className="text-red-600 hover:text-red-700"
                             >
                               <XCircle className="h-4 w-4 mr-1" />
-                              Deactivate
+                              {t("Deactivate")}
                             </Button>
                           ) : null}
 
@@ -502,7 +504,7 @@ export default function VendorCustomTemplates() {
                                   to={`/vendor/custom-templates/${template.id}/edit`}
                                 >
                                   <Edit className="h-4 w-4 mr-1" />
-                                  Edit
+                                  {t("Edit")}
                                 </Link>
                               </Button>
                               <Button
@@ -514,7 +516,7 @@ export default function VendorCustomTemplates() {
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                               >
                                 <Trash2 className="h-4 w-4 mr-1" />
-                                Delete
+                                {t("Delete")}
                               </Button>
                             </>
                           )}
@@ -547,14 +549,13 @@ export default function VendorCustomTemplates() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete Template")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteDialog.template?.name}"?
-              This action cannot be undone.
+              {t("Are you sure you want to delete \"")}{deleteDialog.template?.name}{t("\"? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
                 deleteDialog.template &&
@@ -562,7 +563,7 @@ export default function VendorCustomTemplates() {
               }
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -578,17 +579,15 @@ export default function VendorCustomTemplates() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate Template</AlertDialogTitle>
+            <AlertDialogTitle>{t("Deactivate Template")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deactivate "
-              {deactivateDialog.template?.name}"? This will hide the template
-              from customers. You can reactivate it later, but it will require
-              admin approval again.
+              {t("Are you sure you want to deactivate \"")}
+              {deactivateDialog.template?.name}{t("\"? This will hide the template from customers. You can reactivate it later, but it will require admin approval again.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deactivateTemplateMutation.isPending}>
-              Cancel
+              {t("Cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {

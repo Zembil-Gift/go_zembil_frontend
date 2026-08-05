@@ -41,6 +41,7 @@ import type {
   CreateCustomOrderDraftState,
   CreateCustomOrderRequest,
 } from "@/types/customOrders";
+import { useTranslation } from "react-i18next";
 
 interface AddressDto {
   id?: number;
@@ -59,6 +60,7 @@ interface AddressDto {
 }
 
 export default function CustomOrderShipping() {
+  const { t } = useTranslation();
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -139,9 +141,9 @@ export default function CustomOrderShipping() {
   useEffect(() => {
     if (!draft || !templateIdNum || draft.templateId !== templateIdNum) {
       toast({
-        title: "Custom Order Draft Missing",
+        title: t("Custom Order Draft Missing"),
         description:
-          "Please complete your customization details first before adding shipping.",
+          t("Please complete your customization details first before adding shipping."),
         variant: "destructive",
       });
       navigate(`/custom-orders/template/${templateIdNum}`, { replace: true });
@@ -210,8 +212,8 @@ export default function CustomOrderShipping() {
 
     if (!shippingInfo.street || !shippingInfo.city || !shippingInfo.country) {
       toast({
-        title: "Missing Shipping Details",
-        description: "Please fill street, city, and country before submitting.",
+        title: t("Missing Shipping Details"),
+        description: t("Please fill street, city, and country before submitting."),
         variant: "destructive",
       });
       return;
@@ -223,8 +225,8 @@ export default function CustomOrderShipping() {
       (!shippingCoords.latitude || !shippingCoords.longitude)
     ) {
       toast({
-        title: "Pin Delivery Location",
-        description: "Please pin your shipping location on the map.",
+        title: t("Pin Delivery Location"),
+        description: t("Please pin your shipping location on the map."),
         variant: "destructive",
       });
       return;
@@ -288,7 +290,7 @@ export default function CustomOrderShipping() {
 
       if (isNonNegotiable) {
         toast({
-          title: "Order Created",
+          title: t("Order Created"),
           description: `Your order #${order.orderNumber} is ready for payment.`,
         });
         navigate(`/my-custom-orders/${order.id}?action=pay`);
@@ -296,13 +298,13 @@ export default function CustomOrderShipping() {
       }
 
       toast({
-        title: "Order Submitted",
+        title: t("Order Submitted"),
         description: `Your custom order #${order.orderNumber} was submitted successfully.`,
       });
       navigate(`/my-custom-orders/${order.id}`);
     } catch (error: any) {
       toast({
-        title: "Submission Failed",
+        title: t("Submission Failed"),
         description:
           error?.message || "Failed to submit custom order. Please try again.",
         variant: "destructive",
@@ -325,23 +327,22 @@ export default function CustomOrderShipping() {
           className="mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Customization
+          {t("Back to Customization")}
         </Button>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Shipping Information
+              {t("Shipping Information")}
             </CardTitle>
             <p className="text-sm text-gray-600">
-              Add your shipping address and pin your map location so delivery
-              can be calculated correctly.
+              {t("Add your shipping address and pin your map location so delivery can be calculated correctly.")}
             </p>
             {isLoadingAddress && (
               <p className="text-sm text-gray-500 flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading saved shipping address...
+                {t("Loading saved shipping address...")}
               </p>
             )}
           </CardHeader>
@@ -352,19 +353,19 @@ export default function CustomOrderShipping() {
                 <AlertTriangle className="h-4 w-4 text-amber-700" />
                 <button
                   type="button"
-                  aria-label="Dismiss ongoing orders notification"
+                  aria-label={t("Dismiss ongoing orders notification")}
                   onClick={() => setIsOngoingNoticeDismissed(true)}
                   className="absolute right-3 top-3 rounded-md p-1 text-amber-700 hover:bg-amber-100 hover:text-amber-900"
                 >
                   <X className="h-4 w-4" />
                 </button>
                 <AlertTitle className="text-amber-900">
-                  You Already Have Ongoing Orders For This Template
+                  {t("You Already Have Ongoing Orders For This Template")}
                 </AlertTitle>
                 <AlertDescription className="space-y-2 text-amber-800">
                   <p>
-                    You currently have {ongoingOrders?.totalOngoingOrders}{" "}
-                    ongoing order(s). Please review before creating another one.
+                    {t("You currently have")} {ongoingOrders?.totalOngoingOrders}{" "}
+                    {t("ongoing order(s). Please review before creating another one.")}
                   </p>
                   <div className="space-y-2">
                     {templateOngoingOrders.map((order) => (
@@ -383,7 +384,7 @@ export default function CustomOrderShipping() {
                             navigate(`/my-custom-orders/${order.orderId}`)
                           }
                         >
-                          View Order
+                          {t("View Order")}
                         </button>
                       </div>
                     ))}
@@ -394,7 +395,7 @@ export default function CustomOrderShipping() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="street">Street *</Label>
+                <Label htmlFor="street">{t("Street *")}</Label>
                 <Input
                   id="street"
                   value={shippingInfo.street}
@@ -408,7 +409,7 @@ export default function CustomOrderShipping() {
                 />
               </div>
               <div>
-                <Label htmlFor="city">City *</Label>
+                <Label htmlFor="city">{t("City *")}</Label>
                 <Input
                   id="city"
                   value={shippingInfo.city}
@@ -422,7 +423,7 @@ export default function CustomOrderShipping() {
                 />
               </div>
               <div>
-                <Label htmlFor="state">State</Label>
+                <Label htmlFor="state">{t("State")}</Label>
                 <Input
                   id="state"
                   value={shippingInfo.state}
@@ -436,7 +437,7 @@ export default function CustomOrderShipping() {
                 />
               </div>
               <div>
-                <Label htmlFor="postalCode">Postal Code</Label>
+                <Label htmlFor="postalCode">{t("Postal Code")}</Label>
                 <Input
                   id="postalCode"
                   value={shippingInfo.postalCode}
@@ -452,7 +453,7 @@ export default function CustomOrderShipping() {
             </div>
 
             <div>
-              <Label htmlFor="country">Country *</Label>
+              <Label htmlFor="country">{t("Country *")}</Label>
               <Select
                 value={shippingInfo.country}
                 onValueChange={(value) => {
@@ -464,7 +465,7 @@ export default function CustomOrderShipping() {
                 }}
               >
                 <SelectTrigger id="country">
-                  <SelectValue placeholder="Select country" />
+                  <SelectValue placeholder={t("Select country")} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
                   {allCountries.map((country) => (
@@ -477,10 +478,10 @@ export default function CustomOrderShipping() {
             </div>
 
             <div>
-              <Label htmlFor="additionalDetails">Additional Details</Label>
+              <Label htmlFor="additionalDetails">{t("Additional Details")}</Label>
               <Input
                 id="additionalDetails"
-                placeholder="Landmark, building, floor, etc."
+                placeholder={t("Landmark, building, floor, etc.")}
                 value={shippingInfo.additionalDetails}
                 onChange={(e) => {
                   setShippingInfo((prev) => ({
@@ -496,15 +497,14 @@ export default function CustomOrderShipping() {
               <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <span>
-                  Delivery for your area is charged a flat fee — just fill in the
-                  address fields above.
+                  {t("Delivery for your area is charged a flat fee — just fill in the address fields above.")}
                 </span>
               </div>
             ) : (
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-emerald-600" />
-                  Pin Delivery Location *
+                  {t("Pin Delivery Location *")}
                 </Label>
                 <GoogleMapsProvider>
                   <LocationPicker
@@ -528,7 +528,7 @@ export default function CustomOrderShipping() {
                       setIsAddressDirty(true);
                     }}
                     height="320px"
-                    placeholder="Search and pin your shipping address..."
+                    placeholder={t("Search and pin your shipping address...")}
                   />
                 </GoogleMapsProvider>
                 {shippingCoords.formattedAddress && (
@@ -548,12 +548,12 @@ export default function CustomOrderShipping() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
+                    {t("Submitting...")}
                   </>
                 ) : (
                   <>
                     <CheckCircle className="mr-2 h-4 w-4" />
-                    Submit Order
+                    {t("Submit Order")}
                   </>
                 )}
               </Button>

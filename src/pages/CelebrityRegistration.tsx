@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Star, Upload, MapPin, Clock, Camera, Globe, FileText, Image, CheckCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const celebrityRegistrationSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters").max(200, "Full name is too long"),
@@ -56,6 +57,7 @@ const DELIVERY_REGIONS = [
 ];
 
 export default function CelebrityRegistration() {
+  const { t } = useTranslation();
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
@@ -97,15 +99,15 @@ export default function CelebrityRegistration() {
     },
     onSuccess: () => {
       toast({
-        title: "Registration Submitted Successfully!",
-        description: "Your celebrity registration has been submitted for admin review. You'll receive a confirmation email shortly.",
+        title: t("Registration Submitted Successfully!"),
+        description: t("Your celebrity registration has been submitted for admin review. You'll receive a confirmation email shortly."),
         variant: "default",
       });
       navigate("/");
     },
     onError: (error: any) => {
       toast({
-        title: "Registration Failed",
+        title: t("Registration Failed"),
         description: error.message || "Failed to submit celebrity registration. Please try again.",
         variant: "destructive",
       });
@@ -142,7 +144,7 @@ export default function CelebrityRegistration() {
     }
 
     toast({
-      title: "File uploaded successfully",
+      title: t("File uploaded successfully"),
       description: `${type === 'profile' ? 'Profile picture' : 'Government ID'} uploaded.`,
     });
   };
@@ -176,12 +178,11 @@ export default function CelebrityRegistration() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Star className="w-8 h-8 text-amber-500" />
-            <h1 className="text-4xl font-bold text-gray-900">Celebrity Registration</h1>
+            <h1 className="text-4xl font-bold text-gray-900">{t("Celebrity Registration")}</h1>
             <Star className="w-8 h-8 text-amber-500" />
           </div>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Join goGerami as a verified celebrity and offer personalized gift delivery experiences 
-            to connect hearts across distances.
+            {t("Join goGerami as a verified celebrity and offer personalized gift delivery experiences to connect hearts across distances.")}
           </p>
         </div>
 
@@ -191,19 +192,19 @@ export default function CelebrityRegistration() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Camera className="w-5 h-5" />
-                <span>Personal Information</span>
+                <span>{t("Personal Information")}</span>
               </CardTitle>
               <CardDescription>
-                Tell us about yourself and build your celebrity profile
+                {t("Tell us about yourself and build your celebrity profile")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Label htmlFor="fullName">{t("Full Name *")}</Label>
                   <Input
                     id="fullName"
-                    placeholder="Your legal full name"
+                    placeholder={t("Your legal full name")}
                     {...form.register("fullName")}
                   />
                   {form.formState.errors.fullName && (
@@ -211,20 +212,20 @@ export default function CelebrityRegistration() {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="stageName">Stage/Public Name</Label>
+                  <Label htmlFor="stageName">{t("Stage/Public Name")}</Label>
                   <Input
                     id="stageName"
-                    placeholder="Your known public name (optional)"
+                    placeholder={t("Your known public name (optional)")}
                     {...form.register("stageName")}
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="bio">Bio/Personal Message *</Label>
+                <Label htmlFor="bio">{t("Bio/Personal Message *")}</Label>
                 <Textarea
                   id="bio"
-                  placeholder="Tell your fans about yourself, your career, and why you're excited to deliver personalized gifts..."
+                  placeholder={t("Tell your fans about yourself, your career, and why you're excited to deliver personalized gifts...")}
                   className="min-h-[120px]"
                   {...form.register("bio")}
                 />
@@ -235,11 +236,11 @@ export default function CelebrityRegistration() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="email">Email Address *</Label>
+                  <Label htmlFor="email">{t("Email Address *")}</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="your.email@example.com"
+                    placeholder={t("your.email@example.com")}
                     {...form.register("email")}
                   />
                   {form.formState.errors.email && (
@@ -247,7 +248,7 @@ export default function CelebrityRegistration() {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="phoneNumber">Phone Number *</Label>
+                  <Label htmlFor="phoneNumber">{t("Phone Number *")}</Label>
                   <Input
                     id="phoneNumber"
                     placeholder="+1234567890"
@@ -266,10 +267,10 @@ export default function CelebrityRegistration() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Globe className="w-5 h-5" />
-                <span>Social Media Presence</span>
+                <span>{t("Social Media Presence")}</span>
               </CardTitle>
               <CardDescription>
-                Link your social media accounts to build trust with customers
+                {t("Link your social media accounts to build trust with customers")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -282,7 +283,7 @@ export default function CelebrityRegistration() {
                   facebook: "Facebook"
                 }).map(([platform, label]) => (
                   <div key={platform}>
-                    <Label htmlFor={platform}>{label} URL</Label>
+                    <Label htmlFor={platform}>{label} {t("URL")}</Label>
                     <Input
                       id={platform}
                       placeholder={`https://${platform}.com/your-profile`}
@@ -299,19 +300,19 @@ export default function CelebrityRegistration() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Upload className="w-5 h-5" />
-                <span>Document & Photo Upload</span>
+                <span>{t("Document & Photo Upload")}</span>
               </CardTitle>
               <CardDescription>
-                Upload your profile picture and government-issued ID for verification
+                {t("Upload your profile picture and government-issued ID for verification")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label>Profile Picture</Label>
+                  <Label>{t("Profile Picture")}</Label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                     <Image className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600 mb-2">Upload your professional photo</p>
+                    <p className="text-sm text-gray-600 mb-2">{t("Upload your professional photo")}</p>
                     <input
                       type="file"
                       accept="image/*"
@@ -323,7 +324,7 @@ export default function CelebrityRegistration() {
                       id="profilePicture"
                     />
                     <Button type="button" variant="outline" onClick={() => document.getElementById('profilePicture')?.click()}>
-                      Choose File
+                      {t("Choose File")}
                     </Button>
                     {profilePictureFile && (
                       <p className="text-sm text-green-600 mt-2 flex items-center justify-center">
@@ -335,10 +336,10 @@ export default function CelebrityRegistration() {
                 </div>
 
                 <div>
-                  <Label>Government-Issued ID *</Label>
+                  <Label>{t("Government-Issued ID *")}</Label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                     <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600 mb-2">Upload valid ID for verification</p>
+                    <p className="text-sm text-gray-600 mb-2">{t("Upload valid ID for verification")}</p>
                     <input
                       type="file"
                       accept="image/*,.pdf"
@@ -350,7 +351,7 @@ export default function CelebrityRegistration() {
                       id="governmentId"
                     />
                     <Button type="button" variant="outline" onClick={() => document.getElementById('governmentId')?.click()}>
-                      Choose File
+                      {t("Choose File")}
                     </Button>
                     {governmentIdFile && (
                       <p className="text-sm text-green-600 mt-2 flex items-center justify-center">
@@ -372,15 +373,15 @@ export default function CelebrityRegistration() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Clock className="w-5 h-5" />
-                <span>Delivery Availability</span>
+                <span>{t("Delivery Availability")}</span>
               </CardTitle>
               <CardDescription>
-                Set your availability for personalized gift deliveries
+                {t("Set your availability for personalized gift deliveries")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <Label>Available Days *</Label>
+                <Label>{t("Available Days *")}</Label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
                   {DAYS_OF_WEEK.map((day) => (
                     <Button
@@ -402,7 +403,7 @@ export default function CelebrityRegistration() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="startTime">Available From *</Label>
+                  <Label htmlFor="startTime">{t("Available From *")}</Label>
                   <Input
                     id="startTime"
                     type="time"
@@ -410,7 +411,7 @@ export default function CelebrityRegistration() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="endTime">Available Until *</Label>
+                  <Label htmlFor="endTime">{t("Available Until *")}</Label>
                   <Input
                     id="endTime"
                     type="time"
@@ -420,7 +421,7 @@ export default function CelebrityRegistration() {
               </div>
 
               <div>
-                <Label htmlFor="pricePerDelivery">Price Per Delivery (USD) *</Label>
+                <Label htmlFor="pricePerDelivery">{t("Price Per Delivery (USD) *")}</Label>
                 <Input
                   id="pricePerDelivery"
                   type="number"
@@ -441,10 +442,10 @@ export default function CelebrityRegistration() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <MapPin className="w-5 h-5" />
-                <span>Delivery Regions</span>
+                <span>{t("Delivery Regions")}</span>
               </CardTitle>
               <CardDescription>
-                Select the cities and regions where you can deliver gifts
+                {t("Select the cities and regions where you can deliver gifts")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -464,7 +465,7 @@ export default function CelebrityRegistration() {
               </div>
               {selectedRegions.length > 0 && (
                 <div className="mt-4">
-                  <p className="text-sm text-gray-600 mb-2">Selected regions:</p>
+                  <p className="text-sm text-gray-600 mb-2">{t("Selected regions:")}</p>
                   <div className="flex flex-wrap gap-1">
                     {selectedRegions.map((region) => (
                       <Badge key={region} variant="secondary" className="text-xs">

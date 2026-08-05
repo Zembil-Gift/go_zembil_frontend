@@ -2,6 +2,7 @@ import React from 'react';
 import { Tag, Percent, Clock } from 'lucide-react';
 import { DiscountInfo } from '@/types/discount';
 import { getCurrencySymbol, getCurrencyDecimals } from '@/lib/currency';
+import { useTranslation } from "react-i18next";
 
 interface DiscountBadgeProps {
   discount: DiscountInfo;
@@ -16,6 +17,7 @@ export const DiscountBadge: React.FC<DiscountBadgeProps> = ({
   variant = 'compact',
   targetCurrency
 }) => {
+  const { t } = useTranslation();
   const displayCurrency = discount.displayCurrencyCode || discount.currency || discount.currencyCode || targetCurrency || 'ETB';
 
   const formatDiscountValue = () => {
@@ -74,7 +76,7 @@ export const DiscountBadge: React.FC<DiscountBadgeProps> = ({
             </div>
             {discount.discountType === 'PERCENTAGE' && (discount.maxDiscountAmount != null || discount.maxDiscountAmountMinor != null) && (
               <span className="text-xs text-gray-600">
-                (Max: {(() => {
+                {t("(Max:")} {(() => {
                   const maxAmount = discount.maxDiscountAmount != null
                     ? discount.maxDiscountAmount
                     : (discount.maxDiscountAmountMinor ?? 0) / Math.pow(10, getCurrencyDecimals(displayCurrency));
@@ -98,7 +100,7 @@ export const DiscountBadge: React.FC<DiscountBadgeProps> = ({
       {discount.remainingUses !== null && discount.remainingUses !== undefined && discount.remainingUses <= 10 && (
         <div className="mt-2 text-xs text-amber-600  flex items-center gap-1">
           <Percent className="w-3 h-3" />
-          <span>Only {discount.remainingUses} uses left!</span>
+          <span>{t("Only")} {discount.remainingUses} {t("uses left!")}</span>
         </div>
       )}
     </div>

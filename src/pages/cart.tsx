@@ -49,6 +49,7 @@ import {
   trackBeginCheckout,
   type AnalyticsItem,
 } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 function toAnalyticsItem(item: CartItem): AnalyticsItem {
   return {
@@ -61,6 +62,7 @@ function toAnalyticsItem(item: CartItem): AnalyticsItem {
 }
 
 export default function Cart() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -388,7 +390,7 @@ export default function Cart() {
           setDiscountError(null);
           if (showToast) {
             toast({
-              title: "Discount Applied",
+              title: t("Discount Applied"),
               description: `Discount code "${code}" is valid! Savings shown below.`,
             });
           }
@@ -490,8 +492,8 @@ export default function Cart() {
         }
       }
       toast({
-        title: "Quantity updated",
-        description: "Cart item quantity updated successfully",
+        title: t("Quantity updated"),
+        description: t("Cart item quantity updated successfully"),
       });
     },
     onSettled: () => {
@@ -502,8 +504,8 @@ export default function Cart() {
         queryClient.setQueryData(["cart", "items"], context.previousCartData);
       }
       toast({
-        title: "Error",
-        description: "Failed to update cart item",
+        title: t("Error"),
+        description: t("Failed to update cart item"),
         variant: "destructive",
       });
     },
@@ -563,8 +565,8 @@ export default function Cart() {
         }
       }
       toast({
-        title: "Item removed",
-        description: "Item removed from cart",
+        title: t("Item removed"),
+        description: t("Item removed from cart"),
       });
     },
     onSettled: () => {
@@ -575,8 +577,8 @@ export default function Cart() {
         queryClient.setQueryData(["cart", "items"], context.previousCartData);
       }
       toast({
-        title: "Error",
-        description: "Failed to remove item from cart",
+        title: t("Error"),
+        description: t("Failed to remove item from cart"),
         variant: "destructive",
       });
     },
@@ -615,8 +617,8 @@ export default function Cart() {
         }
       }
       toast({
-        title: "Saved for later",
-        description: "Item moved to your wishlist",
+        title: t("Saved for later"),
+        description: t("Item moved to your wishlist"),
       });
     },
     onSettled: () => {
@@ -624,8 +626,8 @@ export default function Cart() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to save item for later",
+        title: t("Error"),
+        description: t("Failed to save item for later"),
         variant: "destructive",
       });
     },
@@ -645,14 +647,14 @@ export default function Cart() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
       toast({
-        title: "Package removed",
-        description: "Bundle removed from your cart.",
+        title: t("Package removed"),
+        description: t("Bundle removed from your cart."),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to remove package",
+        title: t("Error"),
+        description: t("Failed to remove package"),
         variant: "destructive",
       });
     },
@@ -696,7 +698,7 @@ export default function Cart() {
 
     if (stockQuantity !== null && newQuantity > stockQuantity) {
       toast({
-        title: "Stock limit reached",
+        title: t("Stock limit reached"),
         description: `Only ${stockQuantity} item${
           stockQuantity === 1 ? "" : "s"
         } available in stock.`,
@@ -724,7 +726,7 @@ export default function Cart() {
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-gray-200 rounded w-1/4"></div>
             <div className="text-center py-8">
-              <div className="text-gray-600">Checking authentication...</div>
+              <div className="text-gray-600">{t("Checking authentication...")}</div>
             </div>
           </div>
         </div>
@@ -739,17 +741,16 @@ export default function Cart() {
           <div className="text-center">
             <LogIn size={64} className="text-gray-400 mx-auto mb-6" />
             <h2 className="  text-2xl font-bold text-charcoal mb-4">
-              Sign in to view your cart
+              {t("Sign in to view your cart")}
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Please sign in to your account to view and manage your shopping
-              cart.
+              {t("Please sign in to your account to view and manage your shopping cart.")}
             </p>
             <Button
               asChild
               className="bg-ethiopian-gold hover:bg-amber text-white"
             >
-              <Link to="/signin">Sign In</Link>
+              <Link to="/signin">{t("Sign In")}</Link>
             </Button>
           </div>
         </div>
@@ -764,17 +765,16 @@ export default function Cart() {
           <div className="text-center">
             <LogIn size={64} className="text-gray-400 mx-auto mb-6" />
             <h2 className="  text-2xl font-bold text-charcoal mb-4">
-              Sign in to view your cart
+              {t("Sign in to view your cart")}
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Please sign in to your account to view and manage your shopping
-              cart.
+              {t("Please sign in to your account to view and manage your shopping cart.")}
             </p>
             <Button
               asChild
               className="bg-ethiopian-gold hover:bg-amber text-white"
             >
-              <Link to="/signin">Sign In</Link>
+              <Link to="/signin">{t("Sign In")}</Link>
             </Button>
           </div>
         </div>
@@ -809,16 +809,16 @@ export default function Cart() {
           <div className="text-center">
             <ShoppingBag size={64} className="text-red-400 mx-auto mb-6" />
             <h2 className="  text-2xl font-bold text-charcoal mb-4">
-              Failed to load cart
+              {t("Failed to load cart")}
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              There was an error loading your cart. Please try again.
+              {t("There was an error loading your cart. Please try again.")}
             </p>
             <Button
               onClick={() => refetch()}
               className="bg-ethiopian-gold hover:bg-amber text-white"
             >
-              Try Again
+              {t("Try Again")}
             </Button>
           </div>
         </div>
@@ -832,11 +832,10 @@ export default function Cart() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="  text-3xl font-bold text-charcoal mb-2">
-            Shopping Cart
+            {t("Shopping Cart")}
           </h1>
           <p className="text-gray-600">
-            {getTotalItems()} {getTotalItems() === 1 ? "item" : "items"} in your
-            cart
+            {getTotalItems()} {getTotalItems() === 1 ? "item" : "items"} {t("in your cart")}
           </p>
         </div>
 
@@ -844,18 +843,17 @@ export default function Cart() {
           <div className="text-center py-16">
             <ShoppingBag size={64} className="text-gray-400 mx-auto mb-6" />
             <h2 className="  text-2xl font-bold text-charcoal mb-4">
-              Your cart is empty
+              {t("Your cart is empty")}
             </h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Looks like you haven't added any items to your cart yet. Start
-              shopping to fill it up!
+              {t("Looks like you haven't added any items to your cart yet. Start shopping to fill it up!")}
             </p>
             <div className="space-y-4">
               <Button
                 asChild
                 className="bg-ethiopian-gold hover:bg-amber text-white"
               >
-                <Link to="/gifts">Browse All Gifts</Link>
+                <Link to="/gifts">{t("Browse All Gifts")}</Link>
               </Button>
               <br />
               <Button
@@ -863,7 +861,7 @@ export default function Cart() {
                 variant="outline"
                 className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
               >
-                <Link to="/wishlist">View Wishlist</Link>
+                <Link to="/wishlist">{t("View Wishlist")}</Link>
               </Button>
             </div>
           </div>
@@ -893,7 +891,7 @@ export default function Cart() {
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <p className="text-xs uppercase tracking-wide text-eagle-green/70">
-                            Package Bundle
+                            {t("Package Bundle")}
                           </p>
                           <h3 className="text-xl font-semibold text-charcoal">
                             {group.packageName ||
@@ -904,7 +902,7 @@ export default function Cart() {
                           variant="outline"
                           className="text-eagle-green border-eagle-green/30"
                         >
-                          {group.items.length} item(s)
+                          {group.items.length} {t("item(s)")}
                         </Badge>
                       </div>
 
@@ -923,7 +921,7 @@ export default function Cart() {
                               </span>
                             </div>
                             <span className="text-gray-500">
-                              Qty {item.quantity}
+                              {t("Qty")} {item.quantity}
                             </span>
                           </div>
                         ))}
@@ -943,8 +941,8 @@ export default function Cart() {
                             className="text-gray-600 hover:text-red-600 md:bg-transparent md:hover:bg-transparent bg-red-50 text-red-600 hover:bg-red-100 rounded-md px-3"
                           >
                             <X size={14} className="mr-1" />
-                            <span className="md:hidden">Remove</span>
-                            <span className="hidden md:inline">Remove Package</span>
+                            <span className="md:hidden">{t("Remove")}</span>
+                            <span className="hidden md:inline">{t("Remove Package")}</span>
                           </Button>
                         </div>
                         <div className="text-right">
@@ -999,7 +997,7 @@ export default function Cart() {
                                   ) : (
                                     <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
                                       <div className="text-center text-gray-400">
-                                        <p className="text-xs">No image</p>
+                                        <p className="text-xs">{t("No image")}</p>
                                       </div>
                                     </div>
                                   )}
@@ -1022,7 +1020,7 @@ export default function Cart() {
                                       <Truck size={16} />
                                       <span className="text-xs">
                                         {item.product?.deliveryDays || 3}{" "}
-                                        days delivery
+                                        {t("days delivery")}
                                       </span>
                                     </div>
                                   </div>
@@ -1106,7 +1104,7 @@ export default function Cart() {
                                   className="px-6 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-80 bg-rose-50 text-rose-600"
                                 >
                                   <X className="h-4 w-4" />
-                                  Remove
+                                  {t("Remove")}
                                 </button>
                               </div>
                             </div>
@@ -1134,7 +1132,7 @@ export default function Cart() {
                                 ) : (
                                   <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
                                     <div className="text-center text-gray-400">
-                                      <p className="text-xs">No image</p>
+                                      <p className="text-xs">{t("No image")}</p>
                                     </div>
                                   </div>
                                 )}
@@ -1176,8 +1174,7 @@ export default function Cart() {
                                 <div className="flex items-center mt-2 text-sm text-gray-500">
                                   <Truck size={14} className="mr-1" />
                                   <span>
-                                    {item.product?.deliveryDays || 3} days
-                                    delivery
+                                    {item.product?.deliveryDays || 3} {t("days delivery")}
                                   </span>
                                 </div>
 
@@ -1229,8 +1226,8 @@ export default function Cart() {
                                     className="text-gray-600 hover:text-red-600 md:bg-transparent md:hover:bg-transparent bg-red-50 text-red-600 hover:bg-red-100 rounded-md px-3"
                                   >
                                     <X size={14} className="mr-1" />
-                                    <span className="md:hidden">Remove</span>
-                                    <span className="hidden md:inline">Remove</span>
+                                    <span className="md:hidden">{t("Remove")}</span>
+                                    <span className="hidden md:inline">{t("Remove")}</span>
                                   </Button>
                                 </div>
                               </div>
@@ -1291,14 +1288,14 @@ export default function Cart() {
               <Card className="sticky top-8">
                 <CardContent className="p-6">
                   <h2 className="font-semibold text-xl text-charcoal mb-6">
-                    Order Summary
+                    {t("Order Summary")}
                   </h2>
 
                   <div className="space-y-4">
                     {/* Subtotal */}
                     <div className="flex justify-between">
                       <span className="text-gray-600">
-                        Subtotal ({getTotalItems()} items)
+                        {t("Subtotal (")}{getTotalItems()} {t("items)")}
                       </span>
                       <span className="font-medium break-all">
                         {formatPrice(cartSubtotal, cartCurrency)}
@@ -1310,23 +1307,22 @@ export default function Cart() {
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <p className="text-sm font-semibold text-amber-950">
-                              Campaign rewards ready
+                              {t("Campaign rewards ready")}
                             </p>
                             <p className="text-xs text-amber-800 mt-1">
-                              Active rewards are previewed here and will be
-                              applied automatically at checkout.
+                              {t("Active rewards are previewed here and will be applied automatically at checkout.")}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {campaignRewardPreview?.freeDeliveryActive && (
                               <Badge className="bg-emerald-600 text-white px-2.5 py-1 text-[11px]">
-                                Free Delivery
+                                {t("Free Delivery")}
                               </Badge>
                             )}
                             {campaignRewardPreview?.hasDiscount &&
                               campaignRewardDiscountDisplay > 0 && (
                                 <Badge className="bg-amber-600 text-white px-2.5 py-1 text-[11px]">
-                                  Save{" "}
+                                  {t("Save")}{" "}
                                   {formatPrice(
                                     campaignRewardDiscountDisplay,
                                     cartCurrency
@@ -1372,10 +1368,10 @@ export default function Cart() {
                             <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
                             <div>
                               <p className="text-xs font-medium text-green-800">
-                                "{discountCode}" applied
+                                "{discountCode}{t("\" applied")}
                               </p>
                               <p className="text-xs text-green-600">
-                                Save{" "}
+                                {t("Save")}{" "}
                                 {formatPrice(
                                   discountAmountDisplay,
                                   cartCurrency
@@ -1396,7 +1392,7 @@ export default function Cart() {
                         <>
                           <div className="flex gap-2">
                             <Input
-                              placeholder="Discount code"
+                              placeholder={t("Discount code")}
                               value={discountCode}
                               onChange={(e) => {
                                 setDiscountCode(e.target.value);
@@ -1439,7 +1435,7 @@ export default function Cart() {
                     {discountResult?.applicable &&
                       discountAmountDisplay > 0 && (
                         <div className="flex justify-between text-sm text-green-600">
-                          <span>Discount code</span>
+                          <span>{t("Discount code")}</span>
                           <span>
                             -{formatPrice(discountAmountDisplay, cartCurrency)}
                           </span>
@@ -1449,7 +1445,7 @@ export default function Cart() {
                     {campaignRewardPreview?.hasDiscount &&
                       campaignRewardDiscountDisplay > 0 && (
                         <div className="flex justify-between text-sm text-amber-700">
-                          <span>Campaign reward</span>
+                          <span>{t("Campaign reward")}</span>
                           <span>
                             -
                             {formatPrice(
@@ -1462,8 +1458,8 @@ export default function Cart() {
 
                     {campaignRewardPreview?.freeDeliveryActive && (
                       <div className="flex justify-between text-sm text-emerald-600">
-                        <span>Delivery reward</span>
-                        <span>Free at checkout</span>
+                        <span>{t("Delivery reward")}</span>
+                        <span>{t("Free at checkout")}</span>
                       </div>
                     )}
 
@@ -1471,7 +1467,7 @@ export default function Cart() {
 
                     {/* Total */}
                     <div className="flex justify-between text-base sm:text-lg font-bold">
-                      <span>Estimated Total</span>
+                      <span>{t("Estimated Total")}</span>
                       <span className="text-ethiopian-gold break-all leading-tight">
                         {formatPrice(estimatedTotal, cartCurrency)}
                       </span>
@@ -1479,8 +1475,7 @@ export default function Cart() {
 
                     {(discountResult?.applicable || hasCampaignRewards) && (
                       <p className="text-xs text-gray-500">
-                        Discounts and reward benefits will be confirmed at
-                        checkout.
+                        {t("Discounts and reward benefits will be confirmed at checkout.")}
                       </p>
                     )}
 
@@ -1503,7 +1498,7 @@ export default function Cart() {
                         });
                       }}
                     >
-                      Proceed to Checkout
+                      {t("Proceed to Checkout")}
                       <ArrowRight size={16} className="ml-2" />
                     </Button>
 
@@ -1513,7 +1508,7 @@ export default function Cart() {
                       variant="outline"
                       className="w-full border-gray-300"
                     >
-                      <Link to="/gifts">Continue Shopping</Link>
+                      <Link to="/gifts">{t("Continue Shopping")}</Link>
                     </Button>
                   </div>
                 </CardContent>

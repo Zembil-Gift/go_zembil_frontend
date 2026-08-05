@@ -8,6 +8,7 @@ import { useSeasonalTheme } from './SeasonalThemeProvider';
 import { SeasonalProductBadge } from './SeasonalDecorations';
 import { extractPriceAmount } from '@/services/productService';
 import { formatPriceFromDto, formatPrice, PriceData } from '@/lib/currency';
+import { useTranslation } from "react-i18next";
 
 interface Product {
   id: number;
@@ -38,6 +39,7 @@ export function SeasonalProductCard({
   showWishlistDate = false,
   className = "" 
 }: SeasonalProductCardProps) {
+  const { t } = useTranslation();
   const { currentTheme, isSeasonalMode } = useSeasonalTheme();
   
   const cardStyle = isSeasonalMode && currentTheme.id !== 'default' ? {
@@ -77,7 +79,7 @@ export function SeasonalProductCard({
                     : undefined
                 }}
               >
-                <span className="text-gray-400">No Image</span>
+                <span className="text-gray-400">{t("No Image")}</span>
               </div>
             )}
             
@@ -115,7 +117,7 @@ export function SeasonalProductCard({
                       : undefined
                   }}
                 >
-                  Bestseller
+                  {t("Bestseller")}
                 </Badge>
               )}
             </div>
@@ -183,7 +185,7 @@ export function SeasonalProductCard({
                       : undefined
                   }}
                 >
-                  Added {new Date(wishlistItem.createdAt).toLocaleDateString()}
+                  {t("Added")} {new Date(wishlistItem.createdAt).toLocaleDateString()}
                 </span>
               )}
             </div>

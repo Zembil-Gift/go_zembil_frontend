@@ -43,6 +43,7 @@ import {
   storePendingPurchase,
   type AnalyticsItem,
 } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 interface TicketSelection {
   ticketTypeId: number;
@@ -53,6 +54,7 @@ interface TicketSelection {
 }
 
 export default function EventCheckout() {
+  const { t } = useTranslation();
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -177,8 +179,8 @@ export default function EventCheckout() {
       (!selectedTicketsFromState || selectedTicketsFromState.size === 0)
     ) {
       toast({
-        title: "No tickets selected",
-        description: "Please select tickets before proceeding to checkout.",
+        title: t("No tickets selected"),
+        description: t("Please select tickets before proceeding to checkout."),
         variant: "destructive",
       });
       navigate(`/events/${eventId}`);
@@ -222,8 +224,8 @@ export default function EventCheckout() {
 
     if (!contactEmail) {
       toast({
-        title: "Missing Contact Email",
-        description: "Please enter your contact email.",
+        title: t("Missing Contact Email"),
+        description: t("Please enter your contact email."),
         variant: "destructive",
       });
       return;
@@ -312,7 +314,7 @@ export default function EventCheckout() {
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast({
-        title: "Checkout Failed",
+        title: t("Checkout Failed"),
         description:
           error.message || "Failed to process your order. Please try again.",
         variant: "destructive",
@@ -339,7 +341,7 @@ export default function EventCheckout() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-eagle-green mx-auto mb-4" />
-          <p className="font-light text-eagle-green">Loading checkout...</p>
+          <p className="font-light text-eagle-green">{t("Loading checkout...")}</p>
         </div>
       </div>
     );
@@ -350,13 +352,13 @@ export default function EventCheckout() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-eagle-green mb-2">
-            Event Not Found
+            {t("Event Not Found")}
           </h2>
           <Button
             onClick={() => navigate("/events")}
             className="bg-eagle-green hover:bg-viridian-green text-white"
           >
-            Browse Events
+            {t("Browse Events")}
           </Button>
         </div>
       </div>
@@ -380,14 +382,14 @@ export default function EventCheckout() {
             className="mb-4 text-eagle-green hover:text-viridian-green"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Event
+            {t("Back to Event")}
           </Button>
 
           <h1 className="text-3xl font-bold text-eagle-green">
-            Complete Your Order
+            {t("Complete Your Order")}
           </h1>
           <p className="font-light text-eagle-green/70 mt-1">
-            Fill in the details below to purchase your tickets
+            {t("Fill in the details below to purchase your tickets")}
           </p>
         </motion.div>
 
@@ -447,10 +449,10 @@ export default function EventCheckout() {
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <User className="h-5 w-5" />
-                    Ticket Recipients
+                    {t("Ticket Recipients")}
                   </CardTitle>
                   <p className="text-sm font-light text-eagle-green/70">
-                    You can optionally add recipient details for each ticket
+                    {t("You can optionally add recipient details for each ticket")}
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -462,7 +464,7 @@ export default function EventCheckout() {
                           {selection.ticketTypeName}
                         </h4>
                         <Badge variant="outline">
-                          {selection.recipients.length} ticket
+                          {selection.recipients.length} {t("ticket")}
                           {selection.recipients.length > 1 ? "s" : ""}
                         </Badge>
                       </div>
@@ -473,17 +475,17 @@ export default function EventCheckout() {
                           className="border rounded-lg p-4 bg-white space-y-4"
                         >
                           <p className="text-sm font-bold text-eagle-green/60">
-                            Ticket #{recIndex + 1}
+                            {t("Ticket #")}{recIndex + 1}
                           </p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <Label className="text-sm font-light">
-                                Recipient Name (optional)
+                                {t("Recipient Name (optional)")}
                               </Label>
                               <div className="relative mt-1">
                                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                                 <Input
-                                  placeholder="Full name"
+                                  placeholder={t("Full name")}
                                   value={recipient.recipientName}
                                   onChange={(e) =>
                                     updateRecipient(
@@ -499,13 +501,13 @@ export default function EventCheckout() {
                             </div>
                             <div>
                               <Label className="text-sm font-light">
-                                Recipient Email (optional)
+                                {t("Recipient Email (optional)")}
                               </Label>
                               <div className="relative mt-1">
                                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                                 <Input
                                   type="email"
-                                  placeholder="email@example.com"
+                                  placeholder={t("email@example.com")}
                                   value={recipient.recipientEmail}
                                   onChange={(e) =>
                                     updateRecipient(
@@ -521,7 +523,7 @@ export default function EventCheckout() {
                             </div>
                             <div className="md:col-span-2">
                               <Label className="text-sm font-light">
-                                Recipient Phone (optional)
+                                {t("Recipient Phone (optional)")}
                               </Label>
                               <div className="relative mt-1">
                                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
@@ -559,21 +561,21 @@ export default function EventCheckout() {
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Mail className="h-5 w-5" />
-                    Your Contact Information
+                    {t("Your Contact Information")}
                   </CardTitle>
                   <p className="text-sm font-light text-eagle-green/70">
-                    We'll send the order confirmation to this email
+                    {t("We'll send the order confirmation to this email")}
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-light">Your Email *</Label>
+                      <Label className="text-sm font-light">{t("Your Email *")}</Label>
                       <div className="relative mt-1">
                         <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                         <Input
                           type="email"
-                          placeholder="your@email.com"
+                          placeholder={t("your@email.com")}
                           value={contactEmail}
                           onChange={(e) => setContactEmail(e.target.value)}
                           className="pl-10 border-eagle-green/30"
@@ -582,7 +584,7 @@ export default function EventCheckout() {
                     </div>
                     <div>
                       <Label className="text-sm font-light">
-                        Your Phone (optional)
+                        {t("Your Phone (optional)")}
                       </Label>
                       <div className="relative mt-1">
                         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
@@ -609,12 +611,12 @@ export default function EventCheckout() {
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Gift className="h-5 w-5" />
-                    Gift Message (optional)
+                    {t("Gift Message (optional)")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Textarea
-                    placeholder="Add a personal message for the recipients..."
+                    placeholder={t("Add a personal message for the recipients...")}
                     value={giftMessage}
                     onChange={(e) => setGiftMessage(e.target.value)}
                     className="border-eagle-green/30 min-h-[100px]"
@@ -633,7 +635,7 @@ export default function EventCheckout() {
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
-                    Payment Method
+                    {t("Payment Method")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -641,8 +643,7 @@ export default function EventCheckout() {
                     <Alert variant="destructive">
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
-                        No payment methods are currently available. Please try
-                        again later or contact support.
+                        {t("No payment methods are currently available. Please try again later or contact support.")}
                       </AlertDescription>
                     </Alert>
                   ) : (
@@ -668,15 +669,15 @@ export default function EventCheckout() {
                             className="flex-1 cursor-pointer"
                           >
                             <span className="font-bold text-eagle-green">
-                              Card Payment (Stripe)
+                              {t("Card Payment (Stripe)")}
                             </span>
                             <p className="text-sm font-light text-eagle-green/70">
-                              Pay with Visa, Mastercard, or American Express
+                              {t("Pay with Visa, Mastercard, or American Express")}
                             </p>
                           </Label>
                           <img
                             src="/stripe-logo.png"
-                            alt="Stripe"
+                            alt={t("Stripe")}
                             className="h-6 w-auto"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
@@ -698,16 +699,15 @@ export default function EventCheckout() {
                             className="flex-1 cursor-pointer"
                           >
                             <span className="font-bold text-eagle-green">
-                              Chapa
+                              {t("Chapa")}
                             </span>
                             <p className="text-sm font-light text-eagle-green/70">
-                              Pay with CBE Birr, Awash Bank, or other local
-                              banks
+                              {t("Pay with CBE Birr, Awash Bank, or other local banks")}
                             </p>
                           </Label>
                           <img
                             src="/chapa-logo.png"
-                            alt="Chapa"
+                            alt={t("Chapa")}
                             className="h-8 w-auto"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
@@ -729,15 +729,15 @@ export default function EventCheckout() {
                             className="flex-1 cursor-pointer"
                           >
                             <span className="font-bold text-eagle-green">
-                              TeleBirr
+                              {t("TeleBirr")}
                             </span>
                             <p className="text-sm font-light text-eagle-green/70">
-                              Pay with TeleBirr Wallet, Bank Account, or Cards
+                              {t("Pay with TeleBirr Wallet, Bank Account, or Cards")}
                             </p>
                           </Label>
                           <img
                             src="/telebirr-logo.png"
-                            alt="TeleBirr"
+                            alt={t("TeleBirr")}
                             className="h-8 w-auto"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
@@ -763,7 +763,7 @@ export default function EventCheckout() {
               <Card className="border-eagle-green/20">
                 <CardHeader className="bg-gradient-to-r from-june-bud/10 to-white">
                   <CardTitle className="font-bold text-eagle-green">
-                    Order Summary
+                    {t("Order Summary")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
@@ -795,10 +795,10 @@ export default function EventCheckout() {
                     <div className="flex justify-between items-center">
                       <div>
                         <span className="font-light text-eagle-green text-sm">
-                          Total
+                          {t("Total")}
                         </span>
                         <p className="text-xs text-eagle-green/60">
-                          {getTotalTickets()} ticket
+                          {getTotalTickets()} {t("ticket")}
                           {getTotalTickets() !== 1 ? "s" : ""}
                         </p>
                       </div>
@@ -819,12 +819,12 @@ export default function EventCheckout() {
                     {isProcessing ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
+                        {t("Processing...")}
                       </>
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Pay{" "}
+                        {t("Pay")}{" "}
                         {eventOrderService.formatCurrency(
                           getTotalPrice(),
                           currency
@@ -834,9 +834,7 @@ export default function EventCheckout() {
                   </Button>
 
                   <p className="text-xs font-light text-eagle-green/60 text-center">
-                    By completing this purchase, you agree to our terms of
-                    service. Tickets will be emailed to recipients after
-                    payment.
+                    {t("By completing this purchase, you agree to our terms of service. Tickets will be emailed to recipients after payment.")}
                   </p>
                 </CardContent>
               </Card>

@@ -52,6 +52,7 @@ import type {
   CreateCustomOrderTemplateRequest,
   CustomizationFieldType,
 } from "@/types/customOrders";
+import { useTranslation } from "react-i18next";
 
 // Field type options
 const FIELD_TYPES: {
@@ -210,6 +211,7 @@ const isEthiopianVendor = (vendorProfile: any): boolean => {
 };
 
 export default function CreateCustomTemplate() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -349,18 +351,18 @@ export default function CreateCustomTemplate() {
     setShowDraftDecision(false);
     setIsDraftInitialized(true);
     toast({
-      title: "Draft Restored",
+      title: t("Draft Restored"),
       description:
-        "Your saved template draft has been loaded. Images need re-upload.",
+        t("Your saved template draft has been loaded. Images need re-upload."),
     });
   };
 
   const handleNextStep = async () => {
     if (currentStep === 2 && pendingImages.length === 0) {
       toast({
-        title: "Image Required",
+        title: t("Image Required"),
         description:
-          "Please upload at least one template image before continuing.",
+          t("Please upload at least one template image before continuing."),
         variant: "destructive",
       });
       return;
@@ -380,8 +382,8 @@ export default function CreateCustomTemplate() {
 
     if (!isValid) {
       toast({
-        title: "Validation Error",
-        description: "Please complete required fields before continuing.",
+        title: t("Validation Error"),
+        description: t("Please complete required fields before continuing."),
         variant: "destructive",
       });
       return;
@@ -445,8 +447,8 @@ export default function CreateCustomTemplate() {
         } catch (imageError: any) {
           console.error("Failed to upload template images:", imageError);
           toast({
-            title: "Warning",
-            description: "Template created but some images failed to upload.",
+            title: t("Warning"),
+            description: t("Template created but some images failed to upload."),
             variant: "destructive",
           });
         } finally {
@@ -471,16 +473,16 @@ export default function CreateCustomTemplate() {
       queryClient.invalidateQueries({ queryKey: ["admin", "all-templates"] });
 
       toast({
-        title: "Template Created",
+        title: t("Template Created"),
         description:
-          "Your custom order template has been submitted for admin approval.",
+          t("Your custom order template has been submitted for admin approval."),
       });
       navigate("/vendor/custom-templates");
     },
     onError: (error: any) => {
       setIsUploadingImages(false);
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to create template",
         variant: "destructive",
       });
@@ -490,8 +492,8 @@ export default function CreateCustomTemplate() {
   const onSubmit = (data: TemplateFormData) => {
     if (currentStep < TEMPLATE_TOTAL_STEPS) {
       toast({
-        title: "Complete The Form",
-        description: "Please continue to the final step and submit from there.",
+        title: t("Complete The Form"),
+        description: t("Please continue to the final step and submit from there."),
       });
       setCurrentStep(TEMPLATE_TOTAL_STEPS);
       return;
@@ -499,9 +501,9 @@ export default function CreateCustomTemplate() {
 
     if (pendingImages.length === 0) {
       toast({
-        title: "Image Required",
+        title: t("Image Required"),
         description:
-          "Please upload at least one template image before submitting.",
+          t("Please upload at least one template image before submitting."),
         variant: "destructive",
       });
       return;
@@ -509,9 +511,9 @@ export default function CreateCustomTemplate() {
 
     if (!hasConfirmedTemplateSubmit) {
       toast({
-        title: "Confirmation Required",
+        title: t("Confirmation Required"),
         description:
-          "Please confirm you have reviewed the template details before submitting.",
+          t("Please confirm you have reviewed the template details before submitting."),
         variant: "destructive",
       });
       return;
@@ -520,8 +522,8 @@ export default function CreateCustomTemplate() {
     // Validation
     if (data.fields.length === 0) {
       toast({
-        title: "Validation Error",
-        description: "Please add at least one customization field.",
+        title: t("Validation Error"),
+        description: t("Please add at least one customization field."),
         variant: "destructive",
       });
       return;
@@ -531,8 +533,8 @@ export default function CreateCustomTemplate() {
     const emptyFields = data.fields.filter((field) => !field.fieldName.trim());
     if (emptyFields.length > 0) {
       toast({
-        title: "Validation Error",
-        description: "All customization fields must have a name.",
+        title: t("Validation Error"),
+        description: t("All customization fields must have a name."),
         variant: "destructive",
       });
       return;
@@ -556,9 +558,9 @@ export default function CreateCustomTemplate() {
     }
 
     toast({
-      title: "Validation Error",
+      title: t("Validation Error"),
       description:
-        "Please fill all required fields and fix highlighted inputs.",
+        t("Please fill all required fields and fix highlighted inputs."),
       variant: "destructive",
     });
   };
@@ -573,12 +575,12 @@ export default function CreateCustomTemplate() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
         <p className="text-gray-600 mb-4">
-          You need to be a vendor to create templates.
+          {t("You need to be a vendor to create templates.")}
         </p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -595,10 +597,9 @@ export default function CreateCustomTemplate() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Create Custom Order Template</h1>
+            <h1 className="text-2xl font-bold">{t("Create Custom Order Template")}</h1>
             <p className="text-muted-foreground">
-              Create a customizable product/service template (requires admin
-              approval)
+              {t("Create a customizable product/service template (requires admin approval)")}
             </p>
           </div>
         </div>
@@ -606,11 +607,10 @@ export default function CreateCustomTemplate() {
         {showDraftDecision && storedDraft ? (
           <Card>
             <CardHeader>
-              <CardTitle>Saved Draft Found</CardTitle>
+              <CardTitle>{t("Saved Draft Found")}</CardTitle>
               <CardDescription>
-                You have a saved template draft from{" "}
-                {new Date(storedDraft.updatedAt).toLocaleString()}. Continue
-                where you stopped or start a new template.
+                {t("You have a saved template draft from")}{" "}
+                {new Date(storedDraft.updatedAt).toLocaleString()}{t(". Continue where you stopped or start a new template.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row gap-3 sm:justify-end">
@@ -619,10 +619,10 @@ export default function CreateCustomTemplate() {
                 variant="outline"
                 onClick={handleStartNewDraft}
               >
-                Create New Template
+                {t("Create New Template")}
               </Button>
               <Button type="button" onClick={handleContinueDraft}>
-                Continue Draft
+                {t("Continue Draft")}
               </Button>
             </CardContent>
           </Card>
@@ -649,7 +649,7 @@ export default function CreateCustomTemplate() {
                     }`}
                   >
                     <p className="text-xs text-muted-foreground">
-                      Step {stepNumber}
+                      {t("Step")} {stepNumber}
                     </p>
                     <p>{stepTitle}</p>
                   </div>
@@ -663,15 +663,15 @@ export default function CreateCustomTemplate() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
-                    Basic Information
+                    {t("Basic Information")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="name">Template Name *</Label>
+                    <Label htmlFor="name">{t("Template Name *")}</Label>
                     <Input
                       id="name"
-                      placeholder="Enter template name"
+                      placeholder={t("Enter template name")}
                       {...form.register("name")}
                     />
                     {form.formState.errors.name && (
@@ -682,10 +682,10 @@ export default function CreateCustomTemplate() {
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Description *</Label>
+                    <Label htmlFor="description">{t("Description *")}</Label>
                     <Textarea
                       id="description"
-                      placeholder="Describe your customizable product/service..."
+                      placeholder={t("Describe your customizable product/service...")}
                       className="min-h-[100px]"
                       {...form.register("description")}
                     />
@@ -703,7 +703,7 @@ export default function CreateCustomTemplate() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
-                    Pricing & Category
+                    {t("Pricing & Category")}
                   </CardTitle>
                 </CardHeader>
 
@@ -712,14 +712,13 @@ export default function CreateCustomTemplate() {
                   <Alert className="border-blue-200 bg-blue-50">
                     <Info className="h-4 w-4 text-blue-600" />
                     <AlertTitle className="text-blue-800">
-                      Pricing Information
+                      {t("Pricing Information")}
                     </AlertTitle>
                     <AlertDescription className="text-blue-700">
-                      Enter your base price (what you'll receive).
+                      {t("Enter your base price (what you'll receive).")}
                       {vendorProfile?.vatStatus === "VAT_REGISTERED" && (
                         <span className="block mt-1 font-medium">
-                          As a VAT-registered vendor, VAT will be included in
-                          the customer price.
+                          {t("As a VAT-registered vendor, VAT will be included in the customer price.")}
                         </span>
                       )}
                     </AlertDescription>
@@ -757,7 +756,7 @@ export default function CreateCustomTemplate() {
 
                     {!isEthiopianVendor(vendorProfile) && (
                       <div>
-                        <Label>Currency *</Label>
+                        <Label>{t("Currency *")}</Label>
                         <Controller
                           name="currency"
                           control={form.control}
@@ -767,7 +766,7 @@ export default function CreateCustomTemplate() {
                               onValueChange={field.onChange}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select currency" />
+                                <SelectValue placeholder={t("Select currency")} />
                               </SelectTrigger>
                               <SelectContent>
                                 {availableCurrencies.map((currency) => (
@@ -807,7 +806,7 @@ export default function CreateCustomTemplate() {
                   </div>
 
                   <div>
-                    <Label>Category</Label>
+                    <Label>{t("Category")}</Label>
                     <Controller
                       name="categoryId"
                       control={form.control}
@@ -817,7 +816,7 @@ export default function CreateCustomTemplate() {
                           onValueChange={(val) =>
                             field.onChange(val ? parseInt(val) : undefined)
                           }
-                          placeholder="Search and select a category"
+                          placeholder={t("Search and select a category")}
                           required
                         />
                       )}
@@ -832,7 +831,7 @@ export default function CreateCustomTemplate() {
                           htmlFor="negotiable"
                           className="text-base font-medium"
                         >
-                          Negotiable Pricing
+                          {t("Negotiable Pricing")}
                         </Label>
                         <p className="text-sm text-muted-foreground">
                           {form.watch("negotiable")
@@ -857,9 +856,7 @@ export default function CreateCustomTemplate() {
                       <Alert className="mt-3 border-blue-200 bg-blue-50">
                         <Info className="h-4 w-4 text-blue-600" />
                         <AlertDescription className="text-blue-700">
-                          <strong>Fixed Price Mode:</strong> Customers will pay
-                          the base price directly. You can start working on the
-                          order immediately after payment without negotiation.
+                          <strong>{t("Fixed Price Mode:")}</strong> {t("Customers will pay the base price directly. You can start working on the order immediately after payment without negotiation.")}
                         </AlertDescription>
                       </Alert>
                     )}
@@ -870,11 +867,10 @@ export default function CreateCustomTemplate() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Camera className="h-5 w-5" />
-                    Template Images
+                    {t("Template Images")}
                   </CardTitle>
                   <CardDescription>
-                    Upload images that showcase your template. First image will
-                    be the cover.
+                    {t("Upload images that showcase your template. First image will be the cover.")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -892,7 +888,7 @@ export default function CreateCustomTemplate() {
                   {pendingImages.length > 0 && (
                     <div className="mt-3">
                       <p className="text-sm text-muted-foreground">
-                        {pendingImages.length} image(s) will be uploaded
+                        {pendingImages.length} {t("image(s) will be uploaded")}
                       </p>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {pendingImages.map((file, index) => (
@@ -927,11 +923,10 @@ export default function CreateCustomTemplate() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <GripVertical className="h-5 w-5" />
-                    Customization Fields *
+                    {t("Customization Fields *")}
                   </CardTitle>
                   <CardDescription>
-                    Define the fields customers can customize. At least one
-                    field is required.
+                    {t("Define the fields customers can customize. At least one field is required.")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -967,10 +962,10 @@ export default function CreateCustomTemplate() {
                             <div className="flex items-center gap-2">
                               <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
                               <CardTitle className="text-lg">
-                                Field {index + 1}
+                                {t("Field")} {index + 1}
                               </CardTitle>
                               {fields[index]?.required && (
-                                <Badge variant="secondary">Required</Badge>
+                                <Badge variant="secondary">{t("Required")}</Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
@@ -991,9 +986,9 @@ export default function CreateCustomTemplate() {
                         <CardContent className="space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <Label>Field Name *</Label>
+                              <Label>{t("Field Name *")}</Label>
                               <Input
-                                placeholder="e.g., Custom Text, Size, Color"
+                                placeholder={t("e.g., Custom Text, Size, Color")}
                                 {...form.register(`fields.${index}.fieldName`)}
                               />
                               {form.formState.errors.fields?.[index]
@@ -1008,7 +1003,7 @@ export default function CreateCustomTemplate() {
                             </div>
 
                             <div>
-                              <Label>Field Type *</Label>
+                              <Label>{t("Field Type *")}</Label>
                               <Controller
                                 name={`fields.${index}.fieldType`}
                                 control={form.control}
@@ -1018,7 +1013,7 @@ export default function CreateCustomTemplate() {
                                     onValueChange={field.onChange}
                                   >
                                     <SelectTrigger>
-                                      <SelectValue placeholder="Select field type" />
+                                      <SelectValue placeholder={t("Select field type")} />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {FIELD_TYPES.map((type) => (
@@ -1040,9 +1035,9 @@ export default function CreateCustomTemplate() {
                           </div>
 
                           <div>
-                            <Label>Description (optional)</Label>
+                            <Label>{t("Description (optional)")}</Label>
                             <Textarea
-                              placeholder="Provide instructions or details for this field..."
+                              placeholder={t("Provide instructions or details for this field...")}
                               className="min-h-[60px]"
                               {...form.register(`fields.${index}.description`)}
                             />
@@ -1066,7 +1061,7 @@ export default function CreateCustomTemplate() {
                               htmlFor={`required-${index}`}
                               className="text-sm"
                             >
-                              This field is required
+                              {t("This field is required")}
                             </Label>
                           </div>
                         </CardContent>
@@ -1080,7 +1075,7 @@ export default function CreateCustomTemplate() {
                       className="w-full border-dashed"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Another Field
+                      {t("Add Another Field")}
                     </Button>
                   </div>
 
@@ -1104,8 +1099,7 @@ export default function CreateCustomTemplate() {
                       htmlFor="template-submit-confirmation"
                       className="cursor-pointer"
                     >
-                      I have reviewed all details and want to submit this
-                      template.
+                      {t("I have reviewed all details and want to submit this template.")}
                     </Label>
                   </div>
                 </CardContent>
@@ -1116,7 +1110,7 @@ export default function CreateCustomTemplate() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    Link Supplier (Optional)
+                    {t("Link Supplier (Optional)")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1127,10 +1121,10 @@ export default function CreateCustomTemplate() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="No supplier" />
+                      <SelectValue placeholder={t("No supplier")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">No supplier</SelectItem>
+                      <SelectItem value="0">{t("No supplier")}</SelectItem>
                       {activeSuppliers.map((s) => (
                         <SelectItem key={s.id} value={s.id.toString()}>
                           {s.businessName}
@@ -1222,14 +1216,14 @@ export default function CreateCustomTemplate() {
               <div className="text-sm text-muted-foreground">
                 <span className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  {fieldArray.length} customization field
-                  {fieldArray.length !== 1 ? "s" : ""} configured
+                  {fieldArray.length} {t("customization field")}
+                  {fieldArray.length !== 1 ? "s" : ""} {t("configured")}
                 </span>
               </div>
               <div className="flex gap-4">
                 <Button type="button" variant="outline" asChild>
                   <Link to="/vendor/custom-templates" onClick={handleCancel}>
-                    Cancel
+                    {t("Cancel")}
                   </Link>
                 </Button>
                 {currentStep > 1 && (
@@ -1240,12 +1234,12 @@ export default function CreateCustomTemplate() {
                       setCurrentStep((prev) => clampTemplateStep(prev - 1))
                     }
                   >
-                    Back
+                    {t("Back")}
                   </Button>
                 )}
                 {currentStep < TEMPLATE_TOTAL_STEPS ? (
                   <Button type="button" onClick={handleNextStep}>
-                    Next
+                    {t("Next")}
                   </Button>
                 ) : (
                   <Button

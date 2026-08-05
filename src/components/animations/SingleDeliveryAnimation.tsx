@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 interface SingleDeliveryAnimationProps {
   className?: string;
@@ -12,6 +13,7 @@ export default function SingleDeliveryAnimation({
   autoPlay = false, 
   loop = true 
 }: SingleDeliveryAnimationProps) {
+  const { t } = useTranslation();
   const [isPlaying, setIsPlaying] = useState(autoPlay);
 
   const handleAnimationComplete = () => {
@@ -394,7 +396,7 @@ export default function SingleDeliveryAnimation({
           
           {/* Tagline */}
           <text x="200" y="152" textAnchor="middle" className="fill-gray-600 font-medium text-xs">
-            Gifting with Heart
+            {t("Gifting with Heart")}
           </text>
         </motion.g>
       </svg>

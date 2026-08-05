@@ -8,6 +8,7 @@ import GiftItemCard from '@/components/gift-card';
 import ProductPagination from '@/components/ProductPagination';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Search as SearchIcon, Mic, Languages } from 'lucide-react';
+import { useTranslation } from "react-i18next";
 
 interface Product {
   id: number;
@@ -28,6 +29,7 @@ interface Product {
 }
 
 export default function Search() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [translatedQuery, setTranslatedQuery] = useState('');
@@ -98,19 +100,19 @@ export default function Search() {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Shop
+              {t("Back to Shop")}
             </Button>
             <div className="h-6 w-px bg-gray-300" />
             <h1 className="md:text-2xl text-lg font-bold text-gray-900 flex items-center gap-2">
               <SearchIcon className="h-6 w-6" />
-              Multilingual Search
+              {t("Multilingual Search")}
             </h1>
           </div>
 
           {/* Search Interface */}
           <MultilingualSearch
             onSearch={handleSearch}
-            placeholder="Search for Ethiopian gifts in any language..."
+            placeholder={t("Search for Ethiopian gifts in any language...")}
             autoFocus={!searchQuery}
           />
         </div>
@@ -125,10 +127,10 @@ export default function Search() {
               <div className="mb-8">
                 <Mic className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Multilingual Voice Search
+                  {t("Multilingual Voice Search")}
                 </h2>
                 <p className="text-gray-600">
-                  Search for Ethiopian gifts using voice commands in English, Amharic, Oromiffa, Tigrinya, and more.
+                  {t("Search for Ethiopian gifts using voice commands in English, Amharic, Oromiffa, Tigrinya, and more.")}
                 </p>
               </div>
 
@@ -137,10 +139,10 @@ export default function Search() {
                   <CardContent className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                       <Mic className="h-5 w-5 text-primary" />
-                      <h3 className="font-semibold">Voice Search</h3>
+                      <h3 className="font-semibold">{t("Voice Search")}</h3>
                     </div>
                     <p className="text-sm text-gray-600">
-                      Click the microphone icon and speak your search in any supported language.
+                      {t("Click the microphone icon and speak your search in any supported language.")}
                     </p>
                   </CardContent>
                 </Card>
@@ -149,17 +151,17 @@ export default function Search() {
                   <CardContent className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                       <Languages className="h-5 w-5 text-primary" />
-                      <h3 className="font-semibold">Auto Translation</h3>
+                      <h3 className="font-semibold">{t("Auto Translation")}</h3>
                     </div>
                     <p className="text-sm text-gray-600">
-                      Search queries are automatically translated to find the best results.
+                      {t("Search queries are automatically translated to find the best results.")}
                     </p>
                   </CardContent>
                 </Card>
               </div>
 
               <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4">Supported Languages</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("Supported Languages")}</h3>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {[
                     { code: 'en', name: 'English', flag: '🇺🇸' },
@@ -187,10 +189,10 @@ export default function Search() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900">
-                    Search Results
+                    {t("Search Results")}
                   </h2>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-gray-600">Query:</span>
+                    <span className="text-gray-600">{t("Query:")}</span>
                     <Badge variant="outline">{searchQuery}</Badge>
                     {translatedQuery && translatedQuery !== searchQuery && (
                       <>
@@ -201,7 +203,7 @@ export default function Search() {
                   </div>
                 </div>
                 <Button variant="outline" onClick={clearSearch}>
-                  New Search
+                  {t("New Search")}
                 </Button>
               </div>
             </div>
@@ -224,10 +226,10 @@ export default function Search() {
                 <CardContent className="p-8 text-center">
                   <SearchIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Search Error
+                    {t("Search Error")}
                   </h3>
                   <p className="text-gray-600">
-                    Something went wrong with your search. Please try again.
+                    {t("Something went wrong with your search. Please try again.")}
                   </p>
                 </CardContent>
               </Card>
@@ -236,13 +238,13 @@ export default function Search() {
                 <CardContent className="p-8 text-center">
                   <SearchIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    No Results Found
+                    {t("No Results Found")}
                   </h3>
                   <p className="text-gray-600 mb-4">
-                    We couldn't find any products matching "{searchQuery}".
+                    {t("We couldn't find any products matching \"")}{searchQuery}".
                   </p>
                   <Button variant="outline" onClick={clearSearch}>
-                    Try a Different Search
+                    {t("Try a Different Search")}
                   </Button>
                 </CardContent>
               </Card>
@@ -269,7 +271,7 @@ export default function Search() {
 
                 <div className="mt-8 text-center">
                   <p className="text-gray-600">
-                    Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"
+                    {t("Found")} {searchResults.length} {t("result")}{searchResults.length !== 1 ? 's' : ''} {t("for \"")}{searchQuery}"
                   </p>
                 </div>
               </>

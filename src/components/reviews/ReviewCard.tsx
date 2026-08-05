@@ -7,6 +7,7 @@ import { StarRating } from './StarRating';
 import { Review, reviewService } from '@/services/reviewService';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
+import { useTranslation } from "react-i18next";
 
 interface ReviewCardProps {
   review: Review;
@@ -14,6 +15,7 @@ interface ReviewCardProps {
 }
 
 export function ReviewCard({ review, showProduct = false }: ReviewCardProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [localHelpfulCount, setLocalHelpfulCount] = useState(review.helpfulCount);
@@ -24,10 +26,10 @@ export function ReviewCard({ review, showProduct = false }: ReviewCardProps) {
     onSuccess: () => {
       setLocalHelpfulCount(prev => prev + 1);
       setHasMarkedHelpful(true);
-      toast({ title: 'Thanks for your feedback!' });
+      toast({ title: t("Thanks for your feedback!") });
     },
     onError: () => {
-      toast({ title: 'Error', description: 'Failed to mark as helpful', variant: 'destructive' });
+      toast({ title: t("Error"), description: t("Failed to mark as helpful"), variant: 'destructive' });
     },
   });
 
@@ -42,7 +44,7 @@ export function ReviewCard({ review, showProduct = false }: ReviewCardProps) {
             {review.isVerifiedPurchase && (
               <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-200">
                 <CheckCircle className="h-3 w-3 mr-1" />
-                Verified Purchase
+                {t("Verified Purchase")}
               </Badge>
             )}
           </div>
@@ -55,7 +57,7 @@ export function ReviewCard({ review, showProduct = false }: ReviewCardProps) {
 
       {showProduct && review.productName && (
         <p className="text-sm text-gray-500 mb-2">
-          Product: <span className="font-medium">{review.productName}</span>
+          {t("Product:")} <span className="font-medium">{review.productName}</span>
         </p>
       )}
 
@@ -72,7 +74,7 @@ export function ReviewCard({ review, showProduct = false }: ReviewCardProps) {
         <div className="bg-gray-50 rounded-lg p-4 mb-4 border-l-4 border-viridian-green">
           <div className="flex items-center gap-2 mb-2">
             <MessageSquare className="h-4 w-4 text-viridian-green" />
-            <span className="font-medium text-sm text-viridian-green">Vendor Response</span>
+            <span className="font-medium text-sm text-viridian-green">{t("Vendor Response")}</span>
             {review.vendorResponseAt && (
               <span className="text-xs text-gray-500">
                 {formatDistanceToNow(new Date(review.vendorResponseAt), { addSuffix: true })}
@@ -93,7 +95,7 @@ export function ReviewCard({ review, showProduct = false }: ReviewCardProps) {
           className="text-gray-500 hover:text-viridian-green"
         >
           <ThumbsUp className={`h-4 w-4 mr-1 ${hasMarkedHelpful ? 'fill-viridian-green text-viridian-green' : ''}`} />
-          Helpful ({localHelpfulCount})
+          {t("Helpful (")}{localHelpfulCount})
         </Button>
       </div>
     </div>

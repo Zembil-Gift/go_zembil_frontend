@@ -3,8 +3,10 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Home, ArrowLeft, Search, Gift } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function NotFound() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
@@ -36,11 +38,10 @@ export default function NotFound() {
                 className="mb-8"
               >
                 <h1 className="text-2xl font-bold text-charcoal mb-3">
-                  Page Not Found
+                  {t("Page Not Found")}
                 </h1>
                 <p className="text-gray-600 leading-relaxed">
-                  Oops! The gift you're looking for seems to have been delivered elsewhere. 
-                  Let's get you back to finding the perfect present.
+                  {t("Oops! The gift you're looking for seems to have been delivered elsewhere. Let's get you back to finding the perfect present.")}
                 </p>
               </motion.div>
 
@@ -54,7 +55,7 @@ export default function NotFound() {
                 <Link to="/" className="block">
                   <Button className="w-full bg-ethiopian-gold hover:bg-amber text-white">
                     <Home size={18} className="mr-2" />
-                    Back to goGerami
+                    {t("Back to goGerami")}
                   </Button>
                 </Link>
                 
@@ -62,7 +63,7 @@ export default function NotFound() {
                   <Link to="/gifts" className="flex-1">
                     <Button variant="outline" className="w-full border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white">
                       <Gift size={18} className="mr-2" />
-                      Browse Gifts
+                      {t("Browse Gifts")}
                     </Button>
                   </Link>
                   
@@ -72,7 +73,7 @@ export default function NotFound() {
                     className="flex-1"
                   >
                     <ArrowLeft size={18} className="mr-2" />
-                    Go Back
+                    {t("Go Back")}
                   </Button>
                 </div>
               </motion.div>
@@ -84,27 +85,27 @@ export default function NotFound() {
                 transition={{ duration: 0.6, delay: 0.8 }}
                 className="mt-8 pt-6 border-t border-gray-100"
               >
-                <p className="text-sm text-gray-500 mb-3">Popular sections:</p>
+                <p className="text-sm text-gray-500 mb-3">{t("Popular sections:")}</p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   <Link 
                     to="/occasions" 
                     className="text-sm text-ethiopian-gold hover:text-amber transition-colors"
                   >
-                    Occasions
+                    {t("Occasions")}
                   </Link>
                   <span className="text-gray-300">•</span>
                   <Link 
                     to="/custom-orders" 
                     className="text-sm text-ethiopian-gold hover:text-amber transition-colors"
                   >
-                    Custom Orders
+                    {t("Custom Orders")}
                   </Link>
                   <span className="text-gray-300">•</span>
                   <Link 
                     to="/track" 
                     className="text-sm text-ethiopian-gold hover:text-amber transition-colors"
                   >
-                    Track Orders
+                    {t("Track Orders")}
                   </Link>
                 </div>
               </motion.div>

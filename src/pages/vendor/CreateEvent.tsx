@@ -49,6 +49,7 @@ import {
   Info,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useTranslation } from "react-i18next";
 
 const isEthiopianVendor = (
   vendorProfile: VendorProfile | undefined
@@ -224,6 +225,7 @@ const saveEventDraft = (
 };
 
 export default function CreateEvent() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -371,9 +373,9 @@ export default function CreateEvent() {
     setIsDraftInitialized(true);
 
     toast({
-      title: "Draft Restored",
+      title: t("Draft Restored"),
       description:
-        "Your saved event draft has been loaded. Images need re-upload.",
+        t("Your saved event draft has been loaded. Images need re-upload."),
     });
   };
 
@@ -392,8 +394,8 @@ export default function CreateEvent() {
 
     if (!isValid) {
       toast({
-        title: "Validation Error",
-        description: "Please complete required fields before continuing.",
+        title: t("Validation Error"),
+        description: t("Please complete required fields before continuing."),
         variant: "destructive",
       });
       return;
@@ -401,8 +403,8 @@ export default function CreateEvent() {
 
     if (currentStep === 1 && pendingImages.length === 0) {
       toast({
-        title: "Image Required",
-        description: "Please upload at least one image before continuing.",
+        title: t("Image Required"),
+        description: t("Please upload at least one image before continuing."),
         variant: "destructive",
       });
       return;
@@ -448,9 +450,9 @@ export default function CreateEvent() {
         } catch (imageError) {
           console.error("Failed to upload event images:", imageError);
           toast({
-            title: "Warning",
+            title: t("Warning"),
             description:
-              "Event created but some images failed to upload. You can add them later.",
+              t("Event created but some images failed to upload. You can add them later."),
             variant: "destructive",
           });
         } finally {
@@ -474,15 +476,15 @@ export default function CreateEvent() {
       queryClient.invalidateQueries({ queryKey: ["admin", "all-events"] });
 
       toast({
-        title: "Event Created",
-        description: "Your event has been submitted for admin approval.",
+        title: t("Event Created"),
+        description: t("Your event has been submitted for admin approval."),
       });
       navigate("/vendor");
     },
     onError: (error: any) => {
       setIsUploadingImages(false);
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to create event",
         variant: "destructive",
       });
@@ -495,18 +497,18 @@ export default function CreateEvent() {
     if (currentStep < EVENT_TOTAL_STEPS) {
       setCurrentStep(EVENT_TOTAL_STEPS);
       toast({
-        title: "Review Required",
+        title: t("Review Required"),
         description:
-          "Please review the final step and confirm submission before creating your event.",
+          t("Please review the final step and confirm submission before creating your event."),
       });
       return;
     }
 
     if (pendingImages.length === 0) {
       toast({
-        title: "Image Required",
+        title: t("Image Required"),
         description:
-          "Please upload at least one event image before creating the event.",
+          t("Please upload at least one event image before creating the event."),
         variant: "destructive",
       });
       return;
@@ -514,9 +516,9 @@ export default function CreateEvent() {
 
     if (!hasConfirmedEventSubmit) {
       toast({
-        title: "Confirmation Required",
+        title: t("Confirmation Required"),
         description:
-          "Please confirm that you're ready to submit this event before creating it.",
+          t("Please confirm that you're ready to submit this event before creating it."),
         variant: "destructive",
       });
       return;
@@ -542,8 +544,8 @@ export default function CreateEvent() {
     }
 
     toast({
-      title: "Validation Error",
-      description: "Please fill in all required fields correctly.",
+      title: t("Validation Error"),
+      description: t("Please fill in all required fields correctly."),
       variant: "destructive",
     });
   };
@@ -552,12 +554,12 @@ export default function CreateEvent() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
         <p className="text-gray-600 mb-4">
-          You need to be a vendor to create events.
+          {t("You need to be a vendor to create events.")}
         </p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -574,9 +576,9 @@ export default function CreateEvent() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Create Event</h1>
+            <h1 className="text-2xl font-bold">{t("Create Event")}</h1>
             <p className="text-muted-foreground">
-              Add a new event with ticket types (requires admin approval)
+              {t("Add a new event with ticket types (requires admin approval)")}
             </p>
           </div>
         </div>
@@ -584,11 +586,10 @@ export default function CreateEvent() {
         {showDraftDecision && storedDraft ? (
           <Card>
             <CardHeader>
-              <CardTitle>Saved Draft Found</CardTitle>
+              <CardTitle>{t("Saved Draft Found")}</CardTitle>
               <CardDescription>
-                You have a saved event draft from{" "}
-                {new Date(storedDraft.updatedAt).toLocaleString()}. Continue
-                where you stopped or start a new event.
+                {t("You have a saved event draft from")}{" "}
+                {new Date(storedDraft.updatedAt).toLocaleString()}{t(". Continue where you stopped or start a new event.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row gap-3 sm:justify-end">
@@ -597,10 +598,10 @@ export default function CreateEvent() {
                 variant="outline"
                 onClick={handleStartNewDraft}
               >
-                Create New Event
+                {t("Create New Event")}
               </Button>
               <Button type="button" onClick={handleContinueDraft}>
-                Continue Draft
+                {t("Continue Draft")}
               </Button>
             </CardContent>
           </Card>
@@ -627,7 +628,7 @@ export default function CreateEvent() {
                     }`}
                   >
                     <p className="text-xs text-muted-foreground">
-                      Step {stepNumber}
+                      {t("Step")} {stepNumber}
                     </p>
                     <p>{stepTitle}</p>
                   </div>
@@ -641,15 +642,15 @@ export default function CreateEvent() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
-                    Event Details
+                    {t("Event Details")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="title">Event Title *</Label>
+                    <Label htmlFor="title">{t("Event Title *")}</Label>
                     <Input
                       id="title"
-                      placeholder="Enter event title"
+                      placeholder={t("Enter event title")}
                       {...form.register("title")}
                     />
                     {form.formState.errors.title && (
@@ -660,10 +661,10 @@ export default function CreateEvent() {
                   </div>
 
                   <div>
-                    <Label htmlFor="summary">Summary *</Label>
+                    <Label htmlFor="summary">{t("Summary *")}</Label>
                     <Input
                       id="summary"
-                      placeholder="Brief event summary"
+                      placeholder={t("Brief event summary")}
                       {...form.register("summary")}
                     />
                     {form.formState.errors.summary && (
@@ -674,10 +675,10 @@ export default function CreateEvent() {
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Full Description *</Label>
+                    <Label htmlFor="description">{t("Full Description *")}</Label>
                     <Textarea
                       id="description"
-                      placeholder="Detailed event description"
+                      placeholder={t("Detailed event description")}
                       className="min-h-[120px]"
                       {...form.register("description")}
                     />
@@ -693,11 +694,10 @@ export default function CreateEvent() {
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base flex items-center gap-2">
                         <ImageIcon className="h-4 w-4" />
-                        Event Images
+                        {t("Event Images")}
                       </CardTitle>
                       <CardDescription>
-                        Upload up to 10 images for your event. The first image
-                        will be the primary/cover image.
+                        {t("Upload up to 10 images for your event. The first image will be the primary/cover image.")}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -714,21 +714,20 @@ export default function CreateEvent() {
                       />
                       {pendingImages.length > 0 && (
                         <p className="text-sm text-muted-foreground mt-2">
-                          {pendingImages.length} image(s) will be uploaded when
-                          you create the event
+                          {pendingImages.length} {t("image(s) will be uploaded when you create the event")}
                         </p>
                       )}
                     </CardContent>
                   </Card>
 
                   <div>
-                    <Label>Category</Label>
+                    <Label>{t("Category")}</Label>
                     <SubcategorySearchCombobox
                       value={form.watch("categoryId")}
                       onValueChange={(value) =>
                         form.setValue("categoryId", value)
                       }
-                      placeholder="Search and select a category (optional)"
+                      placeholder={t("Search and select a category (optional)")}
                     />
                   </div>
                 </CardContent>
@@ -739,12 +738,12 @@ export default function CreateEvent() {
             {currentStep === 2 && (
               <Card>
                 <CardHeader>
-                  <CardTitle> Date, Time & Location</CardTitle>
+                  <CardTitle> {t("Date, Time & Location")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="startDateTime">Start Date/Time *</Label>
+                      <Label htmlFor="startDateTime">{t("Start Date/Time *")}</Label>
                       <Input
                         id="startDateTime"
                         type="datetime-local"
@@ -757,7 +756,7 @@ export default function CreateEvent() {
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="endDateTime">End Date/Time *</Label>
+                      <Label htmlFor="endDateTime">{t("End Date/Time *")}</Label>
                       <Input
                         id="endDateTime"
                         type="datetime-local"
@@ -775,15 +774,15 @@ export default function CreateEvent() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
-                    Location
+                    {t("Location")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="location">Location *</Label>
+                    <Label htmlFor="location">{t("Location *")}</Label>
                     <Input
                       id="location"
-                      placeholder="Enter event location (venue, address, etc.)"
+                      placeholder={t("Enter event location (venue, address, etc.)")}
                       {...form.register("location")}
                     />
                     {form.formState.errors.location && (
@@ -794,10 +793,10 @@ export default function CreateEvent() {
                   </div>
 
                   <div>
-                    <Label htmlFor="city">City *</Label>
+                    <Label htmlFor="city">{t("City *")}</Label>
                     <Input
                       id="city"
-                      placeholder="City"
+                      placeholder={t("City")}
                       {...form.register("city")}
                     />
                     {form.formState.errors.city && (
@@ -808,10 +807,10 @@ export default function CreateEvent() {
                   </div>
 
                   <div>
-                    <Label htmlFor="organizerContact">Organizer Contact</Label>
+                    <Label htmlFor="organizerContact">{t("Organizer Contact")}</Label>
                     <Input
                       id="organizerContact"
-                      placeholder="Contact information for attendees"
+                      placeholder={t("Contact information for attendees")}
                       {...form.register("organizerContact")}
                     />
                   </div>
@@ -823,9 +822,9 @@ export default function CreateEvent() {
             {currentStep === 3 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Pricing *</CardTitle>
+                  <CardTitle>{t("Pricing *")}</CardTitle>
                   <CardDescription>
-                    Set the currency for all ticket types
+                    {t("Set the currency for all ticket types")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -833,14 +832,13 @@ export default function CreateEvent() {
                   <Alert className="border-blue-200 bg-blue-50">
                     <Info className="h-4 w-4 text-blue-600" />
                     <AlertTitle className="text-blue-800">
-                      Pricing Information
+                      {t("Pricing Information")}
                     </AlertTitle>
                     <AlertDescription className="text-blue-700">
-                      Enter your ticket prices (what you'll receive).
+                      {t("Enter your ticket prices (what you'll receive).")}
                       {vendorProfile?.vatStatus === "VAT_REGISTERED" && (
                         <span className="block mt-1 font-medium">
-                          As a VAT-registered vendor, VAT will be included in
-                          the customer price.
+                          {t("As a VAT-registered vendor, VAT will be included in the customer price.")}
                         </span>
                       )}
                     </AlertDescription>
@@ -848,7 +846,7 @@ export default function CreateEvent() {
 
                   {!isEthiopianVendor(vendorProfile) ? (
                     <div>
-                      <Label>Currency *</Label>
+                      <Label>{t("Currency *")}</Label>
                       <Select
                         value={form.watch("currencyCode")}
                         onValueChange={(value) =>
@@ -856,7 +854,7 @@ export default function CreateEvent() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select currency" />
+                          <SelectValue placeholder={t("Select currency")} />
                         </SelectTrigger>
                         <SelectContent>
                           {availableCurrencies.map((currency) => (
@@ -878,10 +876,10 @@ export default function CreateEvent() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Ticket className="h-5 w-5" />
-                    Ticket Types *
+                    {t("Ticket Types *")}
                   </CardTitle>
                   <CardDescription>
-                    Define the ticket types and pricing for your event
+                    {t("Define the ticket types and pricing for your event")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -892,7 +890,7 @@ export default function CreateEvent() {
                     >
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium">
-                          Ticket Type {ticketIndex + 1}
+                          {t("Ticket Type")} {ticketIndex + 1}
                         </h4>
                         {ticketFields.length > 1 && (
                           <Button
@@ -908,16 +906,16 @@ export default function CreateEvent() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label>Name *</Label>
+                          <Label>{t("Name *")}</Label>
                           <Input
-                            placeholder="e.g., General Admission, VIP"
+                            placeholder={t("e.g., General Admission, VIP")}
                             {...form.register(
                               `ticketTypes.${ticketIndex}.name`
                             )}
                           />
                         </div>
                         <div>
-                          <Label>Capacity *</Label>
+                          <Label>{t("Capacity *")}</Label>
                           <Input
                             type="number"
                             min="1"
@@ -931,9 +929,9 @@ export default function CreateEvent() {
                       </div>
 
                       <div>
-                        <Label>Description</Label>
+                        <Label>{t("Description")}</Label>
                         <Input
-                          placeholder="What's included with this ticket"
+                          placeholder={t("What's included with this ticket")}
                           {...form.register(
                             `ticketTypes.${ticketIndex}.description`
                           )}
@@ -981,7 +979,7 @@ export default function CreateEvent() {
                     }
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Ticket Type
+                    {t("Add Ticket Type")}
                   </Button>
                 </CardContent>
               </Card>
@@ -991,7 +989,7 @@ export default function CreateEvent() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    Link Supplier (Optional)
+                    {t("Link Supplier (Optional)")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1002,10 +1000,10 @@ export default function CreateEvent() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="No supplier" />
+                      <SelectValue placeholder={t("No supplier")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">No supplier</SelectItem>
+                      <SelectItem value="0">{t("No supplier")}</SelectItem>
                       {activeSuppliers.map((s) => (
                         <SelectItem key={s.id} value={s.id.toString()}>
                           {s.businessName}
@@ -1033,8 +1031,7 @@ export default function CreateEvent() {
                       htmlFor="event-submit-confirmation"
                       className="leading-relaxed cursor-pointer"
                     >
-                      I have reviewed this event and I am ready to submit it for
-                      admin approval.
+                      {t("I have reviewed this event and I am ready to submit it for admin approval.")}
                     </Label>
                   </div>
                 </CardContent>
@@ -1044,7 +1041,7 @@ export default function CreateEvent() {
             <div className="flex justify-end gap-4">
               <Button type="button" variant="outline" asChild>
                 <Link to="/vendor" onClick={handleCancel}>
-                  Cancel
+                  {t("Cancel")}
                 </Link>
               </Button>
 
@@ -1056,13 +1053,13 @@ export default function CreateEvent() {
                     setCurrentStep((prev) => clampEventStep(prev - 1))
                   }
                 >
-                  Back
+                  {t("Back")}
                 </Button>
               )}
 
               {currentStep < EVENT_TOTAL_STEPS ? (
                 <Button type="button" onClick={handleNextStep}>
-                  Next
+                  {t("Next")}
                 </Button>
               ) : (
                 <Button

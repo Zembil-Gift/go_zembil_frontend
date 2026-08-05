@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { CreditCard, AlertCircle, CheckCircle, ExternalLink } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ChapaCheckoutProps {
   amount: number;
@@ -28,6 +29,7 @@ export function ChapaCheckout({
   onSuccess, 
   onError 
 }: ChapaCheckoutProps) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const { toast } = useToast();
@@ -55,8 +57,8 @@ export function ChapaCheckout({
       if (response?.success && response?.data?.checkout_url) {
         setMessage('Redirecting to Chapa payment...');
         toast({
-          title: "Redirecting to Payment",
-          description: "You will be redirected to Chapa to complete your payment.",
+          title: t("Redirecting to Payment"),
+          description: t("You will be redirected to Chapa to complete your payment."),
         });
         
         onSuccess(response);
@@ -75,7 +77,7 @@ export function ChapaCheckout({
       setMessage(errorMessage);
       onError(errorMessage);
       toast({
-        title: "Payment Initialization Failed",
+        title: t("Payment Initialization Failed"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -90,34 +92,33 @@ export function ChapaCheckout({
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <CreditCard className="w-5 h-5 text-green-600" />
-            <span>Chapa Payment</span>
+            <span>{t("Chapa Payment")}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-2">
               <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="font-medium text-green-800">Ethiopian Payment Gateway</span>
+              <span className="font-medium text-green-800">{t("Ethiopian Payment Gateway")}</span>
             </div>
             <p className="text-sm text-green-700">
-              Pay securely using Chapa - Ethiopia's leading payment platform. 
-              Supports mobile money, bank transfers, and local payment methods.
+              {t("Pay securely using Chapa - Ethiopia's leading payment platform. Supports mobile money, bank transfers, and local payment methods.")}
             </p>
           </div>
 
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Payment Amount:</span>
+              <span className="text-sm font-medium">{t("Payment Amount:")}</span>
               <span className="text-lg font-bold text-amber-600">
                 {amount.toLocaleString()} {currency}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span>Customer:</span>
+              <span>{t("Customer:")}</span>
               <span>{userInfo.firstName} {userInfo.lastName}</span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span>Email:</span>
+              <span>{t("Email:")}</span>
               <span>{userInfo.email}</span>
             </div>
           </div>
@@ -142,12 +143,12 @@ export function ChapaCheckout({
             {isLoading ? (
               <>
                 <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
-                Initializing Payment...
+                {t("Initializing Payment...")}
               </>
             ) : (
               <>
                 <ExternalLink className="w-4 h-4 mr-2" />
-                Pay with Chapa
+                {t("Pay with Chapa")}
               </>
             )}
           </Button>
@@ -157,23 +158,23 @@ export function ChapaCheckout({
       {/* Supported Payment Methods */}
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="pt-4">
-          <h4 className="font-medium text-blue-800 mb-3">Supported Payment Methods</h4>
+          <h4 className="font-medium text-blue-800 mb-3">{t("Supported Payment Methods")}</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-4 h-4 text-blue-600" />
-              <span className="text-blue-800">CBE Birr</span>
+              <span className="text-blue-800">{t("CBE Birr")}</span>
             </div>
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-4 h-4 text-blue-600" />
-              <span className="text-blue-800">M-Birr</span>
+              <span className="text-blue-800">{t("M-Birr")}</span>
             </div>
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-4 h-4 text-blue-600" />
-              <span className="text-blue-800">HelloCash</span>
+              <span className="text-blue-800">{t("HelloCash")}</span>
             </div>
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-4 h-4 text-blue-600" />
-              <span className="text-blue-800">Bank Transfer</span>
+              <span className="text-blue-800">{t("Bank Transfer")}</span>
             </div>
           </div>
         </CardContent>

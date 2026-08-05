@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface SocialShareButtonProps {
   title: string;
@@ -37,6 +38,7 @@ export default function SocialShareButton({
   variant = "outline",
   className = "",
 }: SocialShareButtonProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
@@ -60,7 +62,7 @@ export default function SocialShareButton({
     window.open(shareUrl, "_blank", "width=600,height=400,scrollbars=yes,resizable=yes");
     
     toast({
-      title: "Sharing gift experience",
+      title: t("Sharing gift experience"),
       description: `Opening ${platform} to share this amazing gift experience!`,
       duration: 3000,
     });
@@ -73,14 +75,14 @@ export default function SocialShareButton({
       setTimeout(() => setCopied(false), 2000);
       
       toast({
-        title: "Link copied!",
-        description: "Gift experience link copied to clipboard",
+        title: t("Link copied!"),
+        description: t("Gift experience link copied to clipboard"),
         duration: 3000,
       });
     } catch (error) {
       toast({
-        title: "Copy failed",
-        description: "Unable to copy link to clipboard",
+        title: t("Copy failed"),
+        description: t("Unable to copy link to clipboard"),
         variant: "destructive",
         duration: 3000,
       });
@@ -111,7 +113,7 @@ export default function SocialShareButton({
           className={`${className} transition-all duration-200 hover:scale-105`}
         >
           <Share2 className="h-4 w-4 mr-2" />
-          <span>Share Gift</span>
+          <span>{t("Share Gift")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
@@ -120,7 +122,7 @@ export default function SocialShareButton({
           <>
             <DropdownMenuItem onClick={handleNativeShare} className="cursor-pointer">
               <Share2 className="mr-2 h-4 w-4" />
-              <span>Share via device</span>
+              <span>{t("Share via device")}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
@@ -132,7 +134,7 @@ export default function SocialShareButton({
           className="cursor-pointer hover:bg-blue-50"
         >
           <Facebook className="mr-2 h-4 w-4 text-blue-600" />
-          <span>Share on Facebook</span>
+          <span>{t("Share on Facebook")}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem 
@@ -140,7 +142,7 @@ export default function SocialShareButton({
           className="cursor-pointer hover:bg-sky-50"
         >
           <Twitter className="mr-2 h-4 w-4 text-sky-500" />
-          <span>Share on Twitter</span>
+          <span>{t("Share on Twitter")}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem 
@@ -148,7 +150,7 @@ export default function SocialShareButton({
           className="cursor-pointer hover:bg-green-50"
         >
           <MessageCircle className="mr-2 h-4 w-4 text-green-600" />
-          <span>Share on WhatsApp</span>
+          <span>{t("Share on WhatsApp")}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem 
@@ -156,7 +158,7 @@ export default function SocialShareButton({
           className="cursor-pointer hover:bg-blue-50"
         >
           <Linkedin className="mr-2 h-4 w-4 text-blue-700" />
-          <span>Share on LinkedIn</span>
+          <span>{t("Share on LinkedIn")}</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />

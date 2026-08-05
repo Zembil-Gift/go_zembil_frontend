@@ -71,6 +71,7 @@ import {
   Star,
   Edit2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const isEthiopianVendor = (
   vendorProfile: VendorProfile | undefined
@@ -153,6 +154,7 @@ const packageFormSchema = z.object({
 type PackageFormData = z.infer<typeof packageFormSchema>;
 
 export default function EditService() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   useNavigate(); // Keep hook to avoid conditional hook warning
   const { user, isAuthenticated } = useAuth();
@@ -393,7 +395,7 @@ export default function EditService() {
       const maxFileSize = 10 * 1024 * 1024;
       if (file.size > maxFileSize) {
         toast({
-          title: "Validation Error",
+          title: t("Validation Error"),
           description: `Image \"${file.name}\" exceeds the 10MB file size limit`,
           variant: "destructive",
         });
@@ -416,8 +418,8 @@ export default function EditService() {
     },
     onSuccess: () => {
       toast({
-        title: "Images Uploaded",
-        description: "Your images have been uploaded successfully.",
+        title: t("Images Uploaded"),
+        description: t("Your images have been uploaded successfully."),
       });
       refetchImages();
       setPendingServiceImages([]);
@@ -425,7 +427,7 @@ export default function EditService() {
     },
     onError: (error: any) => {
       toast({
-        title: "Upload Failed",
+        title: t("Upload Failed"),
         description: error.message || "Failed to upload images",
         variant: "destructive",
       });
@@ -438,14 +440,14 @@ export default function EditService() {
       imageService.deleteServiceImage(serviceId, imageId),
     onSuccess: () => {
       toast({
-        title: "Image Deleted",
-        description: "The image has been removed.",
+        title: t("Image Deleted"),
+        description: t("The image has been removed."),
       });
       refetchImages();
     },
     onError: (error: any) => {
       toast({
-        title: "Delete Failed",
+        title: t("Delete Failed"),
         description: error.message || "Failed to delete image",
         variant: "destructive",
       });
@@ -457,14 +459,14 @@ export default function EditService() {
       imageService.setServicePrimaryImage(serviceId, imageId),
     onSuccess: () => {
       toast({
-        title: "Primary Image Set",
-        description: "The primary image has been updated.",
+        title: t("Primary Image Set"),
+        description: t("The primary image has been updated."),
       });
       refetchImages();
     },
     onError: (error: any) => {
       toast({
-        title: "Update Failed",
+        title: t("Update Failed"),
         description: error.message || "Failed to set primary image",
         variant: "destructive",
       });
@@ -485,8 +487,8 @@ export default function EditService() {
     },
     onSuccess: () => {
       toast({
-        title: "Service Updated",
-        description: "Your service has been updated successfully.",
+        title: t("Service Updated"),
+        description: t("Your service has been updated successfully."),
       });
       refetchService();
       queryClient.invalidateQueries({ queryKey: ["vendor", "services"] });
@@ -496,7 +498,7 @@ export default function EditService() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to update service",
         variant: "destructive",
       });
@@ -518,9 +520,9 @@ export default function EditService() {
     },
     onSuccess: () => {
       toast({
-        title: "Category Change Request Submitted",
+        title: t("Category Change Request Submitted"),
         description:
-          "Your category change request has been submitted for admin approval.",
+          t("Your category change request has been submitted for admin approval."),
       });
       setShowCategoryChangeDialog(false);
       setPendingCategoryId(null);
@@ -528,7 +530,7 @@ export default function EditService() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description:
           error.message || "Failed to submit category change request",
         variant: "destructive",
@@ -563,9 +565,9 @@ export default function EditService() {
     },
     onSuccess: () => {
       toast({
-        title: "Price Update Request Submitted",
+        title: t("Price Update Request Submitted"),
         description:
-          "Your price update request has been submitted for admin approval.",
+          t("Your price update request has been submitted for admin approval."),
       });
       setShowPackagePriceDialog(false);
       setSelectedPackageForPriceChange(null);
@@ -574,7 +576,7 @@ export default function EditService() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to submit price update request",
         variant: "destructive",
       });
@@ -623,9 +625,9 @@ export default function EditService() {
     },
     onSuccess: () => {
       toast({
-        title: "Package Created",
+        title: t("Package Created"),
         description:
-          "Your service package has been created and submitted for approval.",
+          t("Your service package has been created and submitted for approval."),
       });
       setPendingPackageImages([]);
       setClearPackageImages(false);
@@ -634,7 +636,7 @@ export default function EditService() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to create package",
         variant: "destructive",
       });
@@ -709,8 +711,8 @@ export default function EditService() {
     },
     onSuccess: () => {
       toast({
-        title: "Package Updated",
-        description: "Your service package has been updated.",
+        title: t("Package Updated"),
+        description: t("Your service package has been updated."),
       });
       setPendingPackageImages([]);
       setClearPackageImages(false);
@@ -721,7 +723,7 @@ export default function EditService() {
     onError: (error: any) => {
       if (error.message === "PRICE_CHANGE_NEEDED") return; // Handled separately
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to update package",
         variant: "destructive",
       });
@@ -732,14 +734,14 @@ export default function EditService() {
     mutationFn: (packageId: number) => serviceService.archivePackage(packageId),
     onSuccess: () => {
       toast({
-        title: "Package Archived",
-        description: "The package has been archived.",
+        title: t("Package Archived"),
+        description: t("The package has been archived."),
       });
       refetchPackages();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to archive package",
         variant: "destructive",
       });
@@ -751,14 +753,14 @@ export default function EditService() {
       serviceService.setDefaultPackage(serviceId, packageId),
     onSuccess: () => {
       toast({
-        title: "Default Package Set",
-        description: "The default package has been updated.",
+        title: t("Default Package Set"),
+        description: t("The default package has been updated."),
       });
       refetchPackages();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to set default package",
         variant: "destructive",
       });
@@ -801,16 +803,16 @@ export default function EditService() {
   const onPackageSubmit = (data: PackageFormData) => {
     if (data.availabilityType === "TIME_SLOTS" && data.timeSlots.length === 0) {
       toast({
-        title: "Validation Error",
-        description: "Please add at least one time slot.",
+        title: t("Validation Error"),
+        description: t("Please add at least one time slot."),
         variant: "destructive",
       });
       return;
     }
     if (data.workingDays.length === 0) {
       toast({
-        title: "Validation Error",
-        description: "Please select at least one working day.",
+        title: t("Validation Error"),
+        description: t("Please select at least one working day."),
         variant: "destructive",
       });
       return;
@@ -860,12 +862,12 @@ export default function EditService() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
         <p className="text-gray-600 mb-4">
-          You need to be a vendor to edit services.
+          {t("You need to be a vendor to edit services.")}
         </p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -884,13 +886,13 @@ export default function EditService() {
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Service Not Found
+          {t("Service Not Found")}
         </h1>
         <p className="text-gray-600 mb-4">
-          The service you're looking for doesn't exist or you don't have access.
+          {t("The service you're looking for doesn't exist or you don't have access.")}
         </p>
         <Button asChild>
-          <Link to="/vendor">Back to Dashboard</Link>
+          <Link to="/vendor">{t("Back to Dashboard")}</Link>
         </Button>
       </div>
     );
@@ -899,20 +901,20 @@ export default function EditService() {
   const getStatusBadge = (status: string) => {
     switch (status?.toUpperCase()) {
       case "APPROVED":
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Approved")}</Badge>;
       case "PENDING_APPROVAL":
       case "PENDING":
         return (
           <Badge className="bg-amber-100 text-amber-800">
-            Pending Approval
+            {t("Pending Approval")}
           </Badge>
         );
       case "REJECTED":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Rejected")}</Badge>;
       case "SUSPENDED":
-        return <Badge className="bg-gray-100 text-gray-800">Suspended</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t("Suspended")}</Badge>;
       case "ARCHIVED":
-        return <Badge className="bg-gray-100 text-gray-600">Archived</Badge>;
+        return <Badge className="bg-gray-100 text-gray-600">{t("Archived")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -948,11 +950,11 @@ export default function EditService() {
           </Button>
           <div className="flex-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">Edit Service</h1>
+              <h1 className="text-2xl font-bold">{t("Edit Service")}</h1>
               {getStatusBadge(service.status)}
             </div>
             <p className="text-muted-foreground">
-              Manage your service and packages
+              {t("Manage your service and packages")}
             </p>
           </div>
         </div>
@@ -962,7 +964,7 @@ export default function EditService() {
           <Card className="mb-6 border-red-200 bg-red-50">
             <CardContent className="pt-4">
               <p className="text-red-800">
-                <strong>Rejection Reason:</strong> {service.rejectionReason}
+                <strong>{t("Rejection Reason:")}</strong> {service.rejectionReason}
               </p>
             </CardContent>
           </Card>
@@ -970,11 +972,11 @@ export default function EditService() {
 
         <Tabs defaultValue="details" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details">Service Details</TabsTrigger>
+            <TabsTrigger value="details">{t("Service Details")}</TabsTrigger>
             <TabsTrigger value="packages">
-              Packages ({packages.length})
+              {t("Packages (")}{packages.length})
             </TabsTrigger>
-            <TabsTrigger value="images">Images</TabsTrigger>
+            <TabsTrigger value="images">{t("Images")}</TabsTrigger>
           </TabsList>
 
           {/* Service Details Tab */}
@@ -987,15 +989,15 @@ export default function EditService() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Briefcase className="h-5 w-5" />
-                    Basic Information
+                    {t("Basic Information")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="title">Service Title *</Label>
+                    <Label htmlFor="title">{t("Service Title *")}</Label>
                     <Input
                       id="title"
-                      placeholder="e.g., Professional Photography Session"
+                      placeholder={t("e.g., Professional Photography Session")}
                       {...metadataForm.register("title")}
                     />
                     {metadataForm.formState.errors.title && (
@@ -1006,23 +1008,22 @@ export default function EditService() {
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Description</Label>
+                    <Label htmlFor="description">{t("Description")}</Label>
                     <Textarea
                       id="description"
-                      placeholder="Describe your service in detail..."
+                      placeholder={t("Describe your service in detail...")}
                       className="min-h-[120px]"
                       {...metadataForm.register("description")}
                     />
                   </div>
 
                   <div>
-                    <Label>Category</Label>
+                    <Label>{t("Category")}</Label>
                     {service.status === "APPROVED" && (
                       <Alert className="mb-2 border-blue-200 bg-blue-50">
                         <Info className="h-4 w-4 text-blue-600" />
                         <AlertDescription className="text-blue-700 text-sm">
-                          Category changes for approved services require admin
-                          approval.
+                          {t("Category changes for approved services require admin approval.")}
                         </AlertDescription>
                       </Alert>
                     )}
@@ -1033,7 +1034,7 @@ export default function EditService() {
                         <SubcategorySearchCombobox
                           value={field.value}
                           onValueChange={field.onChange}
-                          placeholder="Search and select a category"
+                          placeholder={t("Search and select a category")}
                         />
                       )}
                     />
@@ -1045,15 +1046,15 @@ export default function EditService() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
-                    Location
+                    {t("Location")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="location">Address *</Label>
+                    <Label htmlFor="location">{t("Address *")}</Label>
                     <Input
                       id="location"
-                      placeholder="e.g., Bole Road, Near Edna Mall"
+                      placeholder={t("e.g., Bole Road, Near Edna Mall")}
                       {...metadataForm.register("location")}
                     />
                     {metadataForm.formState.errors.location && (
@@ -1064,7 +1065,7 @@ export default function EditService() {
                   </div>
 
                   <div>
-                    <Label>City *</Label>
+                    <Label>{t("City *")}</Label>
                     <Controller
                       name="city"
                       control={metadataForm.control}
@@ -1074,7 +1075,7 @@ export default function EditService() {
                           onValueChange={field.onChange}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a city" />
+                            <SelectValue placeholder={t("Select a city")} />
                           </SelectTrigger>
                           <SelectContent>
                             {ETHIOPIAN_CITIES.map((city) => (
@@ -1099,7 +1100,7 @@ export default function EditService() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                      Link Supplier (Optional)
+                      {t("Link Supplier (Optional)")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -1114,10 +1115,10 @@ export default function EditService() {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="No supplier" />
+                            <SelectValue placeholder={t("No supplier")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="0">No supplier</SelectItem>
+                            <SelectItem value="0">{t("No supplier")}</SelectItem>
                             {activeSuppliers.map((s) => (
                               <SelectItem key={s.id} value={s.id.toString()}>
                                 {s.businessName}
@@ -1152,16 +1153,15 @@ export default function EditService() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Package className="h-5 w-5" />
-                      Service Packages
+                      {t("Service Packages")}
                     </CardTitle>
                     <CardDescription>
-                      Manage different packages for your service. Each package
-                      can have its own pricing, duration, and availability.
+                      {t("Manage different packages for your service. Each package can have its own pricing, duration, and availability.")}
                     </CardDescription>
                   </div>
                   <Button onClick={() => setShowAddPackageDialog(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Package
+                    {t("Add Package")}
                   </Button>
                 </div>
               </CardHeader>
@@ -1170,15 +1170,13 @@ export default function EditService() {
                 <Alert className="mb-4 border-amber-200 bg-amber-50">
                   <Info className="h-4 w-4 text-amber-600" />
                   <AlertTitle className="text-amber-800">
-                    Pricing Information
+                    {t("Pricing Information")}
                   </AlertTitle>
                   <AlertDescription className="text-amber-700">
-                    Prices shown are what you'll receive (vendor price).
-                    Platform fees are added for customers.
+                    {t("Prices shown are what you'll receive (vendor price). Platform fees are added for customers.")}
                     {vendorProfile?.vatStatus === "VAT_REGISTERED" && (
                       <span className="block mt-1 font-medium">
-                        As a VAT-registered vendor, VAT will be included in the
-                        customer price.
+                        {t("As a VAT-registered vendor, VAT will be included in the customer price.")}
                       </span>
                     )}
                   </AlertDescription>
@@ -1192,8 +1190,7 @@ export default function EditService() {
                   <div className="text-center py-8 text-muted-foreground">
                     <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p>
-                      No packages yet. Add your first package to start accepting
-                      bookings.
+                      {t("No packages yet. Add your first package to start accepting bookings.")}
                     </p>
                   </div>
                 ) : (
@@ -1210,7 +1207,7 @@ export default function EditService() {
                               {pkg.isDefault && (
                                 <Badge variant="secondary" className="text-xs">
                                   <Star className="h-3 w-3 mr-1" />
-                                  Default
+                                  {t("Default")}
                                 </Badge>
                               )}
                               {getStatusBadge(pkg.status)}
@@ -1232,13 +1229,13 @@ export default function EditService() {
                                 pkg.durationMinutes > 0 && (
                                   <span className="flex items-center gap-1">
                                     <Clock className="h-4 w-4" />
-                                    {pkg.durationMinutes} min
+                                    {pkg.durationMinutes} {t("min")}
                                   </span>
                                 )}
                               {(pkg.maxBookingsPerDay ?? 0) > 0 && (
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-4 w-4" />
-                                  {pkg.maxBookingsPerDay}/day
+                                  {pkg.maxBookingsPerDay}{t("/day")}
                                 </span>
                               )}
                             </div>
@@ -1253,7 +1250,7 @@ export default function EditService() {
                                 }
                                 disabled={setDefaultPackageMutation.isPending}
                               >
-                                Set Default
+                                {t("Set Default")}
                               </Button>
                             )}
                             <Button
@@ -1265,7 +1262,7 @@ export default function EditService() {
                               }}
                             >
                               <Edit2 className="h-4 w-4 mr-1" />
-                              Edit
+                              {t("Edit")}
                             </Button>
                             {packages.length > 1 &&
                               pkg.status !== "APPROVED" && (
@@ -1304,11 +1301,10 @@ export default function EditService() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Camera className="h-5 w-5" />
-                  Service Images
+                  {t("Service Images")}
                 </CardTitle>
                 <CardDescription>
-                  Manage images for your service. The primary image will be
-                  shown as the cover.
+                  {t("Manage images for your service. The primary image will be shown as the cover.")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1334,9 +1330,8 @@ export default function EditService() {
                 {pendingServiceImages.length > 0 && (
                   <div className="flex items-center justify-between mt-4 p-3 border rounded-lg bg-muted/50">
                     <p className="text-sm text-muted-foreground">
-                      {pendingServiceImages.length} new image
-                      {pendingServiceImages.length > 1 ? "s" : ""} selected.
-                      Save to upload them.
+                      {pendingServiceImages.length} {t("new image")}
+                      {pendingServiceImages.length > 1 ? "s" : ""} {t("selected. Save to upload them.")}
                     </p>
                     <div className="flex gap-2">
                       <Button
@@ -1349,7 +1344,7 @@ export default function EditService() {
                           setServiceImageUploadKey((key) => key + 1);
                         }}
                       >
-                        Discard
+                        {t("Discard")}
                       </Button>
                       <Button
                         type="button"
@@ -1376,20 +1371,19 @@ export default function EditService() {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Request Category Change</DialogTitle>
+              <DialogTitle>{t("Request Category Change")}</DialogTitle>
               <DialogDescription>
-                This service is already approved. Category changes require admin
-                approval. Please provide a reason for this change.
+                {t("This service is already approved. Category changes require admin approval. Please provide a reason for this change.")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
                 <Label htmlFor="categoryReason">
-                  Reason for Category Change *
+                  {t("Reason for Category Change *")}
                 </Label>
                 <Textarea
                   id="categoryReason"
-                  placeholder="Explain why you want to change the category..."
+                  placeholder={t("Explain why you want to change the category...")}
                   value={categoryChangeReason}
                   onChange={(e) => setCategoryChangeReason(e.target.value)}
                   className="min-h-[100px]"
@@ -1405,7 +1399,7 @@ export default function EditService() {
                   setCategoryChangeReason("");
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 onClick={handleCategoryChangeSubmit}
@@ -1429,22 +1423,21 @@ export default function EditService() {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Request Price Update</DialogTitle>
+              <DialogTitle>{t("Request Price Update")}</DialogTitle>
               <DialogDescription>
-                This package is already approved. Price changes require admin
-                approval. Please provide a reason for this change.
+                {t("This package is already approved. Price changes require admin approval. Please provide a reason for this change.")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Package</Label>
+                <Label>{t("Package")}</Label>
                 <Input
                   value={selectedPackageForPriceChange?.name || ""}
                   disabled
                 />
               </div>
               <div>
-                <Label>Current Price</Label>
+                <Label>{t("Current Price")}</Label>
                 <Input
                   value={
                     selectedPackageForPriceChange
@@ -1460,7 +1453,7 @@ export default function EditService() {
               </div>
               <div>
                 <Label>
-                  New Price ({selectedPackageForPriceChange?.currency || "ETB"})
+                  {t("New Price (")}{selectedPackageForPriceChange?.currency || "ETB"})
                 </Label>
                 <Input
                   type="number"
@@ -1472,10 +1465,10 @@ export default function EditService() {
                 />
               </div>
               <div>
-                <Label htmlFor="priceReason">Reason for Price Change *</Label>
+                <Label htmlFor="priceReason">{t("Reason for Price Change *")}</Label>
                 <Textarea
                   id="priceReason"
-                  placeholder="Explain why you want to change the price..."
+                  placeholder={t("Explain why you want to change the price...")}
                   value={packagePriceChangeReason}
                   onChange={(e) => setPackagePriceChangeReason(e.target.value)}
                   className="min-h-[100px]"
@@ -1492,7 +1485,7 @@ export default function EditService() {
                   setPackagePriceChangeReason("");
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 onClick={handlePackagePriceChangeSubmit}
@@ -1540,10 +1533,10 @@ export default function EditService() {
               {/* Package Basic Info */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="pkgName">Package Name *</Label>
+                  <Label htmlFor="pkgName">{t("Package Name *")}</Label>
                   <Input
                     id="pkgName"
-                    placeholder="e.g., Basic Session, Premium Package"
+                    placeholder={t("e.g., Basic Session, Premium Package")}
                     {...packageForm.register("name")}
                   />
                   {packageForm.formState.errors.name && (
@@ -1554,17 +1547,17 @@ export default function EditService() {
                 </div>
 
                 <div>
-                  <Label htmlFor="pkgDescription">Description</Label>
+                  <Label htmlFor="pkgDescription">{t("Description")}</Label>
                   <Textarea
                     id="pkgDescription"
-                    placeholder="Describe what this package includes..."
+                    placeholder={t("Describe what this package includes...")}
                     {...packageForm.register("description")}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="pkgDuration">Duration (minutes)</Label>
+                    <Label htmlFor="pkgDuration">{t("Duration (minutes)")}</Label>
                     <Controller
                       name="durationMinutes"
                       control={packageForm.control}
@@ -1582,7 +1575,7 @@ export default function EditService() {
                   </div>
                   <div>
                     <Label htmlFor="pkgMaxBookings">
-                      Max Bookings/Day (0 = unlimited)
+                      {t("Max Bookings/Day (0 = unlimited)")}
                     </Label>
                     <Controller
                       name="maxBookingsPerDay"
@@ -1605,15 +1598,14 @@ export default function EditService() {
                 <div className="border-t pt-4">
                   <h4 className="font-medium mb-3 flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    Pricing
+                    {t("Pricing")}
                   </h4>
 
                   {editingPackage?.status === "APPROVED" && (
                     <Alert className="mb-3 border-amber-200 bg-amber-50">
                       <Info className="h-4 w-4 text-amber-600" />
                       <AlertDescription className="text-amber-700 text-sm">
-                        Price changes for approved packages require admin
-                        approval.
+                        {t("Price changes for approved packages require admin approval.")}
                       </AlertDescription>
                     </Alert>
                   )}
@@ -1627,7 +1619,7 @@ export default function EditService() {
                   >
                     {!isEthiopianVendor(vendorProfile) && (
                       <div>
-                        <Label>Currency *</Label>
+                        <Label>{t("Currency *")}</Label>
                         <Controller
                           name="currency"
                           control={packageForm.control}
@@ -1637,7 +1629,7 @@ export default function EditService() {
                               onValueChange={field.onChange}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select currency" />
+                                <SelectValue placeholder={t("Select currency")} />
                               </SelectTrigger>
                               <SelectContent>
                                 {availableCurrencies.map((currency) => (
@@ -1656,7 +1648,7 @@ export default function EditService() {
                     )}
                     <div>
                       <Label htmlFor="pkgPrice">
-                        Your Price{" "}
+                        {t("Your Price")}{" "}
                         {isEthiopianVendor(vendorProfile) ? "(ETB)" : ""} *
                       </Label>
                       <Controller
@@ -1681,8 +1673,7 @@ export default function EditService() {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
-                        This is what you'll receive. Platform fee will be added
-                        for customers.
+                        {t("This is what you'll receive. Platform fee will be added for customers.")}
                       </p>
                     </div>
                   </div>
@@ -1692,12 +1683,12 @@ export default function EditService() {
                 <div className="border-t pt-4">
                   <h4 className="font-medium mb-3 flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    Availability
+                    {t("Availability")}
                   </h4>
 
                   <div className="space-y-4">
                     <div>
-                      <Label className="mb-2 block">Availability Type *</Label>
+                      <Label className="mb-2 block">{t("Availability Type *")}</Label>
                       <Controller
                         name="availabilityType"
                         control={packageForm.control}
@@ -1711,7 +1702,7 @@ export default function EditService() {
                                 onChange={() => field.onChange("TIME_SLOTS")}
                                 className="mr-2"
                               />
-                              <span>Time Slots</span>
+                              <span>{t("Time Slots")}</span>
                             </label>
                             <label className="flex items-center cursor-pointer">
                               <input
@@ -1721,7 +1712,7 @@ export default function EditService() {
                                 onChange={() => field.onChange("WORKING_HOURS")}
                                 className="mr-2"
                               />
-                              <span>Working Hours</span>
+                              <span>{t("Working Hours")}</span>
                             </label>
                           </div>
                         )}
@@ -1729,7 +1720,7 @@ export default function EditService() {
                     </div>
 
                     <div>
-                      <Label className="mb-2 block">Working Days *</Label>
+                      <Label className="mb-2 block">{t("Working Days *")}</Label>
                       <div className="flex flex-wrap gap-2">
                         {DAYS_OF_WEEK.map((day) => (
                           <Button
@@ -1751,7 +1742,7 @@ export default function EditService() {
 
                     {watchedAvailabilityType === "TIME_SLOTS" ? (
                       <div>
-                        <Label className="mb-2 block">Time Slots *</Label>
+                        <Label className="mb-2 block">{t("Time Slots *")}</Label>
                         <div className="flex flex-wrap gap-2 mb-3">
                           {watchedTimeSlots.map((slot) => (
                             <div
@@ -1787,14 +1778,14 @@ export default function EditService() {
                             onClick={addTimeSlot}
                           >
                             <Plus className="h-4 w-4 mr-1" />
-                            Add Slot
+                            {t("Add Slot")}
                           </Button>
                         </div>
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label>Start Time *</Label>
+                          <Label>{t("Start Time *")}</Label>
                           <Controller
                             name="workingHoursStart"
                             control={packageForm.control}
@@ -1808,7 +1799,7 @@ export default function EditService() {
                           />
                         </div>
                         <div>
-                          <Label>End Time *</Label>
+                          <Label>{t("End Time *")}</Label>
                           <Controller
                             name="workingHoursEnd"
                             control={packageForm.control}
@@ -1825,7 +1816,7 @@ export default function EditService() {
                     )}
 
                     <div>
-                      <Label>Advance Booking (days)</Label>
+                      <Label>{t("Advance Booking (days)")}</Label>
                       <Controller
                         name="advanceBookingDays"
                         control={packageForm.control}
@@ -1841,7 +1832,7 @@ export default function EditService() {
                         )}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        How far in advance can customers book
+                        {t("How far in advance can customers book")}
                       </p>
                     </div>
                   </div>
@@ -1851,7 +1842,7 @@ export default function EditService() {
                 <div className="border-t pt-4">
                   <h4 className="font-medium mb-3 flex items-center gap-2">
                     <Camera className="h-4 w-4" />
-                    Package Images
+                    {t("Package Images")}
                   </h4>
 
                   <p className="text-xs text-muted-foreground mb-3">
@@ -1865,7 +1856,7 @@ export default function EditService() {
                     !clearPackageImages && (
                       <div className="mb-3">
                         <p className="text-sm text-muted-foreground mb-2">
-                          Current images ({editingPackage.images?.length || 0})
+                          {t("Current images (")}{editingPackage.images?.length || 0})
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {editingPackage.images?.map((image) => (
@@ -1877,7 +1868,7 @@ export default function EditService() {
                               />
                               {image.isPrimary && (
                                 <Badge className="absolute -top-2 -left-2 text-[10px] px-1.5 py-0.5 bg-primary text-primary-foreground">
-                                  Primary
+                                  {t("Primary")}
                                 </Badge>
                               )}
                             </div>
@@ -1935,7 +1926,7 @@ export default function EditService() {
                   {pendingPackageImages.length > 0 && (
                     <div className="mt-3">
                       <p className="text-sm text-muted-foreground">
-                        {pendingPackageImages.length} image(s) ready to upload
+                        {pendingPackageImages.length} {t("image(s) ready to upload")}
                         {editingPackage ? " (will replace current images)" : ""}
                       </p>
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -1978,7 +1969,7 @@ export default function EditService() {
                     setEditingPackage(null);
                   }}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </Button>
                 <Button
                   type="submit"

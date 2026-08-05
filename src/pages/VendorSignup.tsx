@@ -80,6 +80,7 @@ import {
   LocationPicker,
   type LocationData,
 } from "@/components/maps";
+import { useTranslation } from "react-i18next";
 
 interface CertificateResponse {
   certificateCode: string;
@@ -306,6 +307,7 @@ const vendorSignupSchema = z
 type VendorSignupForm = z.infer<typeof vendorSignupSchema>;
 
 export default function VendorSignup() {
+  const { t } = useTranslation();
   const initialDraft = getInitialVendorSignupDraft();
   const isBrowserUnloadingRef = useRef(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -466,14 +468,14 @@ export default function VendorSignup() {
     onSuccess: (data) => {
       setGeneratedCertificate(data);
       toast({
-        title: "Certificate Generated!",
-        description: "Your onboarding certificate is ready.",
+        title: t("Certificate Generated!"),
+        description: t("Your onboarding certificate is ready."),
         variant: "default",
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Certificate Generation Failed",
+        title: t("Certificate Generation Failed"),
         description: error.message || "Please try again.",
         variant: "destructive",
       });
@@ -514,8 +516,8 @@ export default function VendorSignup() {
       setAllTermsAccepted(false);
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to load terms and conditions",
+        title: t("Error"),
+        description: t("Failed to load terms and conditions"),
         variant: "destructive",
       });
     } finally {
@@ -594,13 +596,13 @@ export default function VendorSignup() {
       document.body.removeChild(a);
 
       toast({
-        title: "Downloaded!",
-        description: "Certificate PDF downloaded successfully.",
+        title: t("Downloaded!"),
+        description: t("Certificate PDF downloaded successfully."),
       });
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to download certificate PDF.",
+        title: t("Error"),
+        description: t("Failed to download certificate PDF."),
         variant: "destructive",
       });
     } finally {
@@ -670,8 +672,8 @@ export default function VendorSignup() {
     onSuccess: (_response, variables) => {
       // Always redirect to email verification for vendors
       toast({
-        title: "Vendor Account Created!",
-        description: "Please verify your email to continue.",
+        title: t("Vendor Account Created!"),
+        description: t("Please verify your email to continue."),
         variant: "default",
       });
       // Redirect to email verification page
@@ -710,7 +712,7 @@ export default function VendorSignup() {
       });
 
       toast({
-        title: "Signup Failed",
+        title: t("Signup Failed"),
         description: duplicateMessage || error.message || "Please try again.",
         variant: "destructive",
       });
@@ -757,7 +759,7 @@ export default function VendorSignup() {
       }, 0);
 
       toast({
-        title: "Validation Errors",
+        title: t("Validation Errors"),
         description: `Please fix ${errorCount} error${
           errorCount > 1 ? "s" : ""
         } before continuing.`,
@@ -803,7 +805,7 @@ export default function VendorSignup() {
 
       if (duplicateMessage) {
         toast({
-          title: "Account Exists",
+          title: t("Account Exists"),
           description: duplicateMessage,
           variant: "destructive",
         });
@@ -811,8 +813,8 @@ export default function VendorSignup() {
       }
     } catch (error) {
       toast({
-        title: "Validation Error",
-        description: "Could not verify account availability. Please try again.",
+        title: t("Validation Error"),
+        description: t("Could not verify account availability. Please try again."),
         variant: "destructive",
       });
       return;
@@ -830,8 +832,8 @@ export default function VendorSignup() {
   const handleProceedToVideo = () => {
     if (!allTermsAccepted) {
       toast({
-        title: "Terms Required",
-        description: "Please read and accept the full Terms & Conditions.",
+        title: t("Terms Required"),
+        description: t("Please read and accept the full Terms & Conditions."),
         variant: "destructive",
       });
       return;
@@ -848,8 +850,8 @@ export default function VendorSignup() {
   const onSubmit = async (data: VendorSignupForm) => {
     if (!generatedCertificate) {
       toast({
-        title: "Certificate Required",
-        description: "Please generate your certificate first.",
+        title: t("Certificate Required"),
+        description: t("Please generate your certificate first."),
         variant: "destructive",
       });
       return;
@@ -876,10 +878,10 @@ export default function VendorSignup() {
             <GoGeramiLogo size="lg" variant="icon" className="h-16 w-16" />
           </Link>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Vendor Signup
+            {t("Vendor Signup")}
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Create your vendor account and join goGerami's marketplace.
+            {t("Create your vendor account and join goGerami's marketplace.")}
           </p>
           {/*<p className="text-sm text-gray-500 mt-2">
             Already have an account?{" "}
@@ -891,12 +893,12 @@ export default function VendorSignup() {
             </Link>
           </p>*/}
           <p className="text-sm text-gray-500 mt-1">
-            Just want to register your business?{" "}
+            {t("Just want to register your business?")}{" "}
             <Link
               to="/partner-signup"
               className="text-emerald-600 hover:text-emerald-700 font-medium"
             >
-              Join as a partner
+              {t("Join as a partner")}
             </Link>
           </p>
         </div>
@@ -929,7 +931,7 @@ export default function VendorSignup() {
                 )}
               </div>
               <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">
-                Details
+                {t("Details")}
               </span>
             </div>
             <div className="w-8 sm:w-16 h-0.5 bg-gray-300">
@@ -965,7 +967,7 @@ export default function VendorSignup() {
                 )}
               </div>
               <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">
-                Terms
+                {t("Terms")}
               </span>
             </div>
             <div className="w-8 sm:w-16 h-0.5 bg-gray-300">
@@ -1001,7 +1003,7 @@ export default function VendorSignup() {
                 )}
               </div>
               <span className="ml-1 sm:ml-2 font-medium text-xs sm:text-sm hidden sm:inline">
-                Video & Complete
+                {t("Video & Complete")}
               </span>
             </div>
           </div>
@@ -1014,13 +1016,13 @@ export default function VendorSignup() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <User className="w-5 h-5" />
-                  <span>Personal Information</span>
+                  <span>{t("Personal Information")}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="firstName">First Name *</Label>
+                    <Label htmlFor="firstName">{t("First Name *")}</Label>
                     <Input id="firstName" {...form.register("firstName")} />
                     {form.formState.errors.firstName && (
                       <p className="text-sm text-red-600 mt-1">
@@ -1029,7 +1031,7 @@ export default function VendorSignup() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="lastName">Last Name *</Label>
+                    <Label htmlFor="lastName">{t("Last Name *")}</Label>
                     <Input id="lastName" {...form.register("lastName")} />
                     {form.formState.errors.lastName && (
                       <p className="text-sm text-red-600 mt-1">
@@ -1041,7 +1043,7 @@ export default function VendorSignup() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="username">Username *</Label>
+                    <Label htmlFor="username">{t("Username *")}</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
@@ -1053,8 +1055,7 @@ export default function VendorSignup() {
                       />
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      8-20 characters, start with a letter,
-                      letters/numbers/underscores only
+                      {t("8-20 characters, start with a letter, letters/numbers/underscores only")}
                     </p>
                     {form.formState.errors.username && (
                       <p className="text-sm text-red-600 mt-1">
@@ -1063,7 +1064,7 @@ export default function VendorSignup() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">{t("Email *")}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
@@ -1084,7 +1085,7 @@ export default function VendorSignup() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="phoneNumber">Phone Number *</Label>
+                    <Label htmlFor="phoneNumber">{t("Phone Number *")}</Label>
                     <PhoneInput
                       id="phoneNumber"
                       value={form.watch("phoneNumber")}
@@ -1114,7 +1115,7 @@ export default function VendorSignup() {
                       error={!!form.formState.errors.phoneNumber}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Select your country and enter your phone number
+                      {t("Select your country and enter your phone number")}
                     </p>
                     {form.formState.errors.phoneNumber && (
                       <p className="text-sm text-red-600 mt-1">
@@ -1123,7 +1124,7 @@ export default function VendorSignup() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="birthDate">Birth Date *</Label>
+                    <Label htmlFor="birthDate">{t("Birth Date *")}</Label>
                     <div className="relative">
                       <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
@@ -1143,7 +1144,7 @@ export default function VendorSignup() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="password">Password *</Label>
+                    <Label htmlFor="password">{t("Password *")}</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
@@ -1166,8 +1167,7 @@ export default function VendorSignup() {
                       </button>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      At least 8 characters with uppercase, lowercase, number,
-                      and special character
+                      {t("At least 8 characters with uppercase, lowercase, number, and special character")}
                     </p>
                     {form.formState.errors.password && (
                       <p className="text-sm text-red-600 mt-1">
@@ -1176,7 +1176,7 @@ export default function VendorSignup() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                    <Label htmlFor="confirmPassword">{t("Confirm Password *")}</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
@@ -1208,7 +1208,7 @@ export default function VendorSignup() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="country">Country *</Label>
+                    <Label htmlFor="country">{t("Country *")}</Label>
                     <Select
                       value={form.watch("country")}
                       onValueChange={(value) => {
@@ -1216,7 +1216,7 @@ export default function VendorSignup() {
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select country" />
+                        <SelectValue placeholder={t("Select country")} />
                       </SelectTrigger>
                       <SelectContent>
                         {SUPPORTED_COUNTRIES.map((country) => (
@@ -1227,7 +1227,7 @@ export default function VendorSignup() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-gray-500 mt-1">
-                      Your currency will be set based on your country
+                      {t("Your currency will be set based on your country")}
                     </p>
                     {form.formState.errors.country && (
                       <p className="text-sm text-red-600 mt-1">
@@ -1243,12 +1243,12 @@ export default function VendorSignup() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Building2 className="w-5 h-5" />
-                  <span>Business Information</span>
+                  <span>{t("Business Information")}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="businessName">Business Name *</Label>
+                  <Label htmlFor="businessName">{t("Business Name *")}</Label>
                   <Input id="businessName" {...form.register("businessName")} />
                   {form.formState.errors.businessName && (
                     <p className="text-sm text-red-600 mt-1">
@@ -1258,17 +1258,17 @@ export default function VendorSignup() {
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Business Description</Label>
+                  <Label htmlFor="description">{t("Business Description")}</Label>
                   <Textarea
                     id="description"
-                    placeholder="Describe your business..."
+                    placeholder={t("Describe your business...")}
                     className="min-h-[100px]"
                     {...form.register("description")}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="vendorCategoryId">Business Category *</Label>
+                  <Label htmlFor="vendorCategoryId">{t("Business Category *")}</Label>
                   <Select
                     value={form.watch("vendorCategoryId")}
                     onValueChange={(value) =>
@@ -1276,7 +1276,7 @@ export default function VendorSignup() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select your business category" />
+                      <SelectValue placeholder={t("Select your business category")} />
                     </SelectTrigger>
                     <SelectContent>
                       {vendorCategories.map((category) => (
@@ -1297,7 +1297,7 @@ export default function VendorSignup() {
                 </div>
 
                 <div>
-                  <Label htmlFor="vendorType">Vendor Type *</Label>
+                  <Label htmlFor="vendorType">{t("Vendor Type *")}</Label>
                   <Select
                     value={form.watch("vendorType")}
                     onValueChange={(value) =>
@@ -1305,7 +1305,7 @@ export default function VendorSignup() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select your vendor type" />
+                      <SelectValue placeholder={t("Select your vendor type")} />
                     </SelectTrigger>
                     <SelectContent>
                       {VENDOR_TYPES.map((type) => (
@@ -1334,7 +1334,7 @@ export default function VendorSignup() {
                 {form.watch("country") === "Ethiopia" && (
                   <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
                     <Label htmlFor="vatStatus" className="text-amber-800">
-                      VAT Registration Status *
+                      {t("VAT Registration Status *")}
                     </Label>
                     <Select
                       onValueChange={(value) =>
@@ -1343,7 +1343,7 @@ export default function VendorSignup() {
                       value={form.watch("vatStatus") || undefined}
                     >
                       <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select your VAT status" />
+                        <SelectValue placeholder={t("Select your VAT status")} />
                       </SelectTrigger>
                       <SelectContent>
                         {VAT_STATUS_OPTIONS.map((status) => (
@@ -1363,7 +1363,7 @@ export default function VendorSignup() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="businessEmail">Business Email *</Label>
+                    <Label htmlFor="businessEmail">{t("Business Email *")}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
@@ -1380,7 +1380,7 @@ export default function VendorSignup() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="businessPhone">Business Phone *</Label>
+                    <Label htmlFor="businessPhone">{t("Business Phone *")}</Label>
                     <PhoneInput
                       id="businessPhone"
                       value={form.watch("businessPhone")}
@@ -1411,7 +1411,7 @@ export default function VendorSignup() {
                       error={!!form.formState.errors.businessPhone}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Select country and enter your business phone number
+                      {t("Select country and enter your business phone number")}
                     </p>
                     {form.formState.errors.businessPhone && (
                       <p className="text-sm text-red-600 mt-1">
@@ -1422,10 +1422,10 @@ export default function VendorSignup() {
                 </div>
 
                 <div>
-                  <Label htmlFor="city">City *</Label>
+                  <Label htmlFor="city">{t("City *")}</Label>
                   <Input
                     id="city"
-                    placeholder="Enter City"
+                    placeholder={t("Enter City")}
                     {...form.register("city")}
                   />
                   {form.formState.errors.city && (
@@ -1439,12 +1439,10 @@ export default function VendorSignup() {
                 <div id="latitude" className="space-y-2 pt-2">
                   <Label className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-emerald-600" />
-                    Business Location
+                    {t("Business Location")}
                   </Label>
                   <p className="text-xs text-gray-500">
-                    Pin your business location on the map. This helps with
-                    delivery pricing and connects you with nearby customers.
-                    Your country and city will be auto-detected.
+                    {t("Pin your business location on the map. This helps with delivery pricing and connects you with nearby customers. Your country and city will be auto-detected.")}
                   </p>
                   <GoogleMapsProvider>
                     <LocationPicker
@@ -1488,7 +1486,7 @@ export default function VendorSignup() {
                         }
                       }}
                       height="300px"
-                      placeholder="Search for your business location..."
+                      placeholder={t("Search for your business location...")}
                     />
                   </GoogleMapsProvider>
                   {form.watch("formattedAddress") && (
@@ -1511,7 +1509,7 @@ export default function VendorSignup() {
                 onClick={handleProceedToTerms}
                 className="bg-emerald-600 hover:bg-emerald-700 px-8"
               >
-                Continue to Terms & Conditions
+                {t("Continue to Terms & Conditions")}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -1524,18 +1522,17 @@ export default function VendorSignup() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <FileText className="w-5 h-5 text-emerald-600" />
-                <span>Terms & Conditions</span>
+                <span>{t("Terms & Conditions")}</span>
               </CardTitle>
               <CardDescription>
-                Review the key points below and accept the full legal terms to
-                continue.
+                {t("Review the key points below and accept the full legal terms to continue.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {isLoadingTerms ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-                  <span className="ml-2">Loading terms...</span>
+                  <span className="ml-2">{t("Loading terms...")}</span>
                 </div>
               ) : termsData ? (
                 <>
@@ -1580,7 +1577,7 @@ export default function VendorSignup() {
                                 setShowFullTermsModal(true);
                               }}
                             >
-                              Read full details{" "}
+                              {t("Read full details")}{" "}
                               <ExternalLink className="w-3 h-3 ml-1" />
                             </Button>
                           </div>
@@ -1598,7 +1595,7 @@ export default function VendorSignup() {
                       <DialogTrigger asChild>
                         <Button variant="outline" className="gap-2">
                           <FileText className="w-4 h-4" />
-                          View Full Terms & Conditions
+                          {t("View Full Terms & Conditions")}
                           <ExternalLink className="w-4 h-4" />
                         </Button>
                       </DialogTrigger>
@@ -1606,10 +1603,10 @@ export default function VendorSignup() {
                         <DialogHeader>
                           <DialogTitle className="flex items-center gap-2">
                             <FileText className="w-5 h-5 text-emerald-600" />
-                            goGerami Vendor Terms & Conditions
+                            {t("goGerami Vendor Terms & Conditions")}
                           </DialogTitle>
                           <DialogDescription>
-                            Please read carefully before accepting
+                            {t("Please read carefully before accepting")}
                           </DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="h-[60vh] pr-4">
@@ -1660,14 +1657,11 @@ export default function VendorSignup() {
                                 : "text-gray-400"
                             }`}
                           />
-                          I have read and agree to the full goGerami Vendor
-                          Terms & Conditions
+                          {t("I have read and agree to the full goGerami Vendor Terms & Conditions")}
                         </label>
                         <p className="text-xs text-gray-500 mt-1">
-                          By checking this box, you acknowledge that you have
-                          read, understood, and agree to be bound by all{" "}
-                          {termsData.terms.length} sections of the Terms &
-                          Conditions.
+                          {t("By checking this box, you acknowledge that you have read, understood, and agree to be bound by all")}{" "}
+                          {termsData.terms.length} {t("sections of the Terms & Conditions.")}
                         </p>
                       </div>
                     </div>
@@ -1675,7 +1669,7 @@ export default function VendorSignup() {
                 </>
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  No terms found for this vendor type.
+                  {t("No terms found for this vendor type.")}
                 </div>
               )}
 
@@ -1687,7 +1681,7 @@ export default function VendorSignup() {
                   className="w-full sm:w-auto"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Details
+                  {t("Back to Details")}
                 </Button>
                 <Button
                   type="button"
@@ -1695,7 +1689,7 @@ export default function VendorSignup() {
                   disabled={!allTermsAccepted}
                   className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
                 >
-                  Continue to Onboarding Video
+                  {t("Continue to Onboarding Video")}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -1709,12 +1703,11 @@ export default function VendorSignup() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <PlayCircle className="w-5 h-5 text-emerald-600" />
-                <span>{getVendorTypeLabel()} Onboarding Video</span>
+                <span>{getVendorTypeLabel()} {t("Onboarding Video")}</span>
               </CardTitle>
               <CardDescription>
-                Watch this video to learn how to navigate goGerami as a{" "}
-                {getVendorTypeLabel().toLowerCase()}. You may scrub forward or
-                back as needed.
+                {t("Watch this video to learn how to navigate goGerami as a")}{" "}
+                {getVendorTypeLabel().toLowerCase()}{t(". You may scrub forward or back as needed.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1735,7 +1728,7 @@ export default function VendorSignup() {
                   className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  Open in YouTube
+                  {t("Open in YouTube")}
                 </a>
               </div>
 
@@ -1759,13 +1752,13 @@ export default function VendorSignup() {
                     htmlFor="video-completed"
                     className="text-sm font-medium cursor-pointer leading-tight"
                   >
-                    I've completed the onboarding video
+                    {t("I've completed the onboarding video")}
                   </label>
                 </div>
                 {hasWatchedVideo && (
                   <p className="text-sm text-green-700 mt-2 flex items-center gap-1">
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    Your onboarding certificate will be generated below.
+                    {t("Your onboarding certificate will be generated below.")}
                   </p>
                 )}
               </div>
@@ -1796,7 +1789,7 @@ export default function VendorSignup() {
                           onClick={() => generateCertificateMutation.mutate()}
                           className="bg-emerald-600 hover:bg-emerald-700"
                         >
-                          Generate Certificate
+                          {t("Generate Certificate")}
                         </Button>
                       )}
                     </div>
@@ -1806,11 +1799,10 @@ export default function VendorSignup() {
                         <CheckCircle2 className="w-12 h-12 text-green-600" />
                       </div>
                       <h4 className="font-medium text-green-900 text-lg text-center mb-4">
-                        Certificate Generated!
+                        {t("Certificate Generated!")}
                       </h4>
                       <p className="text-sm text-green-700 text-center mb-4">
-                        Your onboarding certificate is ready. You can download
-                        it for your records.
+                        {t("Your onboarding certificate is ready. You can download it for your records.")}
                       </p>
                       <div className="flex justify-center">
                         <Button
@@ -1825,7 +1817,7 @@ export default function VendorSignup() {
                           ) : (
                             <Download className="w-4 h-4 mr-2" />
                           )}
-                          Download Certificate PDF
+                          {t("Download Certificate PDF")}
                         </Button>
                       </div>
                     </div>
@@ -1841,7 +1833,7 @@ export default function VendorSignup() {
                   className="w-full sm:w-auto"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Terms
+                  {t("Back to Terms")}
                 </Button>
                 <Button
                   type="button"
@@ -1852,7 +1844,7 @@ export default function VendorSignup() {
                   {signupMutation.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating Account...
+                      {t("Creating Account...")}
                     </>
                   ) : (
                     "Complete Registration"

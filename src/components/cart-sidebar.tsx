@@ -7,8 +7,10 @@ import { X, Plus, Minus, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { CartItem } from "@/services/cartService";
 import { getSkuImageUrl } from "@/utils/imageUtils";
+import { useTranslation } from "react-i18next";
 
 export default function CartSidebar() {
+  const { t } = useTranslation();
   const {
     cartItems,
     cartCurrency,
@@ -38,19 +40,19 @@ export default function CartSidebar() {
         <SheetHeader>
           <SheetTitle className="flex items-center space-x-2">
             <ShoppingBag size={20} />
-            <span>Your Cart ({getTotalItems()})</span>
+            <span>{t("Your Cart (")}{getTotalItems()})</span>
           </SheetTitle>
         </SheetHeader>
 
         {!isAuthenticated ? (
           <div className="flex flex-col items-center justify-center py-12">
             <ShoppingBag size={48} className="text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Sign in to view your cart</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t("Sign in to view your cart")}</h3>
             <p className="text-gray-500 text-center mb-6">
-              Please sign in to save and view your cart items
+              {t("Please sign in to save and view your cart items")}
             </p>
             <Button asChild className="bg-ethiopian-gold hover:bg-amber">
-              <a href="/api/login">Sign In</a>
+              <a href="/api/login">{t("Sign In")}</a>
             </Button>
           </div>
         ) : isLoading ? (
@@ -60,12 +62,12 @@ export default function CartSidebar() {
         ) : cartItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <ShoppingBag size={48} className="text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t("Your cart is empty")}</h3>
             <p className="text-gray-500 text-center mb-6">
-              Start shopping to add items to your cart
+              {t("Start shopping to add items to your cart")}
             </p>
             <Button asChild onClick={() => closeCart()} className="bg-ethiopian-gold hover:bg-amber">
-              <Link to="/gifts">Browse Gifts</Link>
+              <Link to="/gifts">{t("Browse Gifts")}</Link>
             </Button>
           </div>
         ) : (
@@ -151,7 +153,7 @@ export default function CartSidebar() {
 
             <div className="border-t pt-4 space-y-4">
               <div className="flex items-center justify-between text-lg font-semibold">
-                <span>Total:</span>
+                <span>{t("Total:")}</span>
                 <span className="text-ethiopian-gold">{formatPrice(getTotalPrice(), cartCurrency)}</span>
               </div>
               
@@ -161,7 +163,7 @@ export default function CartSidebar() {
                   className="w-full bg-ethiopian-gold hover:bg-amber text-white"
                   onClick={() => closeCart()}
                 >
-                  <Link to="/checkout">Proceed to Checkout</Link>
+                  <Link to="/checkout">{t("Proceed to Checkout")}</Link>
                 </Button>
                 <Button
                   asChild
@@ -169,7 +171,7 @@ export default function CartSidebar() {
                   className="w-full border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
                   onClick={() => closeCart()}
                 >
-                  <Link to="/cart">View Cart</Link>
+                  <Link to="/cart">{t("View Cart")}</Link>
                 </Button>
               </div>
             </div>

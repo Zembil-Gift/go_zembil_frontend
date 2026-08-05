@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "react-i18next";
 
 const getSeenStorageKey = (userId?: string | number) =>
   `vendor-broadcast-seen:${String(userId ?? "anonymous")}`;
@@ -49,6 +50,7 @@ interface VendorBroadcastNotificationsProps {
 export default function VendorBroadcastNotifications({
   className,
 }: VendorBroadcastNotificationsProps) {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   const [seenIds, setSeenIds] = useState<number[]>([]);
@@ -104,7 +106,7 @@ export default function VendorBroadcastNotifications({
           variant="ghost"
           size="icon"
           className={className}
-          aria-label="Open broadcast notifications"
+          aria-label={t("Open broadcast notifications")}
         >
           <div className="relative">
             <Bell className="h-5 w-5" />
@@ -119,7 +121,7 @@ export default function VendorBroadcastNotifications({
 
       <PopoverContent align="end" className="w-[360px] p-0">
         <div className="flex items-center justify-between px-4 py-3">
-          <h4 className="text-sm font-semibold">Broadcasts</h4>
+          <h4 className="text-sm font-semibold">{t("Broadcasts")}</h4>
           {(isLoading || isFetching) && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
@@ -129,7 +131,7 @@ export default function VendorBroadcastNotifications({
         <ScrollArea className="max-h-[380px]">
           {messages.length === 0 && !isLoading ? (
             <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-              No active broadcast messages.
+              {t("No active broadcast messages.")}
             </div>
           ) : (
             <div className="divide-y">

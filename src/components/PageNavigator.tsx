@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface PageNavigatorProps {
   currentPage: number;
@@ -19,6 +20,7 @@ export function PageNavigator({
   totalItems,
   itemsPerPage,
 }: PageNavigatorProps) {
+  const { t } = useTranslation();
   if (totalPages <= 1) return null;
 
   const maxVisiblePages = 5;
@@ -85,7 +87,7 @@ export function PageNavigator({
       {/* Items info */}
       {totalItems && (
         <p className="text-sm font-light text-eagle-green/70">
-          Showing {startItem}-{endItem} of {totalItems} items
+          {t("Showing")} {startItem}-{endItem} of {totalItems} {t("items")}
         </p>
       )}
 
@@ -97,7 +99,7 @@ export function PageNavigator({
           onClick={() => onPageChange(0)}
           disabled={currentPage === 0 || isLoading}
           className="hidden sm:flex h-9 w-9 p-0 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white disabled:opacity-50"
-          title="First page"
+          title={t("First page")}
         >
           <ChevronsLeft className="h-4 w-4" />
         </Button>
@@ -111,7 +113,7 @@ export function PageNavigator({
           className="h-9 px-2 sm:px-3 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white disabled:opacity-50"
         >
           <ChevronLeft className="h-4 w-4" />
-          <span className="hidden sm:inline ml-1">Previous</span>
+          <span className="hidden sm:inline ml-1">{t("Previous")}</span>
         </Button>
 
         {/* Page Numbers */}
@@ -156,7 +158,7 @@ export function PageNavigator({
           disabled={currentPage >= totalPages - 1 || isLoading}
           className="h-9 px-2 sm:px-3 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white disabled:opacity-50"
         >
-          <span className="hidden sm:inline mr-1">Next</span>
+          <span className="hidden sm:inline mr-1">{t("Next")}</span>
           <ChevronRight className="h-4 w-4" />
         </Button>
 
@@ -167,7 +169,7 @@ export function PageNavigator({
           onClick={() => onPageChange(totalPages - 1)}
           disabled={currentPage >= totalPages - 1 || isLoading}
           className="hidden sm:flex h-9 w-9 p-0 border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white disabled:opacity-50"
-          title="Last page"
+          title={t("Last page")}
         >
           <ChevronsRight className="h-4 w-4" />
         </Button>
@@ -175,7 +177,7 @@ export function PageNavigator({
 
       {/* Page indicator for mobile */}
       <p className="sm:hidden text-sm font-bold text-eagle-green">
-        Page {currentPage + 1} of {totalPages}
+        {t("Page")} {currentPage + 1} of {totalPages}
       </p>
     </div>
   );

@@ -5,8 +5,10 @@ import { discountService, CreateDiscountRequest } from "@/services/discountServi
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { DiscountForm } from "./CreateDiscount";
+import { useTranslation } from "react-i18next";
 
 export default function EditDiscount() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -24,13 +26,13 @@ export default function EditDiscount() {
     mutationFn: (data: CreateDiscountRequest) =>
       discountService.updateDiscount(discountId, data),
     onSuccess: () => {
-      toast({ title: "Discount updated", description: "Your discount has been updated successfully." });
+      toast({ title: t("Discount updated"), description: t("Your discount has been updated successfully.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'discounts'] });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'discount', discountId] });
       navigate('/vendor/discounts');
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -45,9 +47,9 @@ export default function EditDiscount() {
   if (!discount) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900">Discount not found</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t("Discount not found")}</h3>
         <Button variant="outline" className="mt-4" onClick={() => navigate('/vendor/discounts')}>
-          Back to Discounts
+          {t("Back to Discounts")}
         </Button>
       </div>
     );
@@ -88,9 +90,9 @@ export default function EditDiscount() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h2 className="text-xl font-semibold">Edit Discount</h2>
+          <h2 className="text-xl font-semibold">{t("Edit Discount")}</h2>
           <p className="text-sm text-muted-foreground">
-            Update discount code <span className="font-mono font-semibold">{discount.code}</span>
+            {t("Update discount code")} <span className="font-mono font-semibold">{discount.code}</span>
           </p>
         </div>
       </div>

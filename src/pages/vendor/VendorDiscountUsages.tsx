@@ -14,8 +14,10 @@ import {
 } from "@/components/ui/table";
 import { ArrowLeft, BarChart3, Users, DollarSign, Calendar } from "lucide-react";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 export default function VendorDiscountUsages() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const discountId = Number(id);
@@ -75,9 +77,9 @@ export default function VendorDiscountUsages() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h2 className="text-xl font-semibold">Usage History</h2>
+          <h2 className="text-xl font-semibold">{t("Usage History")}</h2>
           <p className="text-sm text-muted-foreground">
-            Discount code: <span className="font-mono font-semibold">{discount?.code || '...'}</span>
+            {t("Discount code:")} <span className="font-mono font-semibold">{discount?.code || '...'}</span>
             {discount && (
               <span> — {discount.name}</span>
             )}
@@ -94,7 +96,7 @@ export default function VendorDiscountUsages() {
             </div>
             <div>
               <p className="text-2xl font-bold">{totalUsages}</p>
-              <p className="text-xs text-muted-foreground">Total Usages</p>
+              <p className="text-xs text-muted-foreground">{t("Total Usages")}</p>
             </div>
           </CardContent>
         </Card>
@@ -107,7 +109,7 @@ export default function VendorDiscountUsages() {
               <p className="text-2xl font-bold">
                 {totalDiscountGiven.toFixed(2)} {displayCurrency}
               </p>
-              <p className="text-xs text-muted-foreground">Total Discount Given</p>
+              <p className="text-xs text-muted-foreground">{t("Total Discount Given")}</p>
             </div>
           </CardContent>
         </Card>
@@ -118,7 +120,7 @@ export default function VendorDiscountUsages() {
             </div>
             <div>
               <p className="text-2xl font-bold">{uniqueUsers}</p>
-              <p className="text-xs text-muted-foreground">Unique Users</p>
+              <p className="text-xs text-muted-foreground">{t("Unique Users")}</p>
             </div>
           </CardContent>
         </Card>
@@ -129,16 +131,16 @@ export default function VendorDiscountUsages() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Usage Records
+            {t("Usage Records")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {!usages || usages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <BarChart3 className="h-12 w-12 text-gray-300 mb-3" />
-              <p className="text-muted-foreground">No usages recorded yet</p>
+              <p className="text-muted-foreground">{t("No usages recorded yet")}</p>
               <p className="text-xs text-muted-foreground">
-                Usage data will appear here when customers use this discount code
+                {t("Usage data will appear here when customers use this discount code")}
               </p>
             </div>
           ) : (
@@ -146,11 +148,11 @@ export default function VendorDiscountUsages() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead className="text-right">Discount Amount</TableHead>
-                    <TableHead>Used At</TableHead>
+                    <TableHead>{t("User")}</TableHead>
+                    <TableHead>{t("Email")}</TableHead>
+                    <TableHead>{t("Order ID")}</TableHead>
+                    <TableHead className="text-right">{t("Discount Amount")}</TableHead>
+                    <TableHead>{t("Used At")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

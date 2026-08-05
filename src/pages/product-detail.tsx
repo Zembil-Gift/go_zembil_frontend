@@ -29,37 +29,54 @@ import { wishlistService } from "@/services/wishlistService";
 import { reviewService } from "@/services/reviewService";
 import { cn } from "@/lib/utils";
 import { formatPrice, getPriceCurrency } from "@/lib/currency";
-import { getProductImageUrl, getAllProductImages } from "@/utils/imageUtils";
+import { getProductImageUrl, getAllProductImages, cdnImage } from "@/utils/imageUtils";
 import { ProductReviewsSection, CompactRating } from "@/components/reviews";
 import { DiscountBadge } from "@/components/DiscountBadge";
 import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 import { SellerInfoCard } from "@/components/SellerInfoCard";
 import { trackViewItem, trackAddToCart, trackAddToWishlist } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
-// Image with skeleton loading
-function ProductImage({ 
-  src, 
-  alt, 
+// Image with a blurred low-res preview that swaps to full res once decoded
+function ProductImage({
+  src,
+  alt,
   className,
-  onClick 
-}: { 
-  src: string; 
-  alt: string; 
+  onClick,
+  width = 900
+}: {
+  src: string;
+  alt: string;
   className?: string;
   onClick?: () => void;
+  width?: number;
 }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  // ponytail: if the resize layer 404s, fall back to the untransformed R2 url rather than
+  // showing nothing. Drop this once /cdn-cgi/image/ is confirmed healthy.
+  const [rawFallback, setRawFallback] = useState(false);
+  // ~1KB, arrives in one round trip and covers the gap until the full image lands
+  const preview = rawFallback ? src : cdnImage(src, 32);
   return (
-    <div className="relative w-full h-full" onClick={onClick}>
+    <div className="relative w-full h-full overflow-hidden" onClick={onClick}>
       {!loaded && !error && (
-        <div 
-          className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer"
-          style={{ backgroundSize: '200% 100%' }}
-        />
+        preview !== src ? (
+          <img
+            src={preview}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+          />
+        ) : (
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer"
+            style={{ backgroundSize: '200% 100%' }}
+          />
+        )
       )}
       <img
-        src={error ? '/placeholder-product.jpg' : src}
+        src={error ? '/placeholder-product.jpg' : rawFallback ? src : cdnImage(src, width)}
         alt={alt}
         className={cn(
           'transition-opacity duration-300',
@@ -68,6 +85,11 @@ function ProductImage({
         )}
         onLoad={() => setLoaded(true)}
         onError={() => {
+          if (!rawFallback) {
+            console.warn('[img] resize failed, using origin:', cdnImage(src, width));
+            setRawFallback(true);
+            return;
+          }
           setError(true);
           setLoaded(true);
         }}
@@ -77,6 +99,7 @@ function ProductImage({
 }
 
 export default function ProductDetail() {
+  const { t } = useTranslation();
   const params = useParams();
   const navigate = useNavigate();
   const productId = params.id;
@@ -292,8 +315,8 @@ export default function ProductDetail() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update wishlist",
+        title: t("Error"),
+        description: t("Failed to update wishlist"),
         variant: "destructive",
       });
     },
@@ -348,7 +371,7 @@ export default function ProductDetail() {
         );
       }
       toast({
-        title: "Added to cart",
+        title: t("Added to cart"),
         description: `${product?.name} added to your cart`,
       });
       openCart();
@@ -360,7 +383,7 @@ export default function ProductDetail() {
         return;
       }
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error?.message || "Failed to add item to cart",
         variant: "destructive",
       });
@@ -392,10 +415,10 @@ export default function ProductDetail() {
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Product not found</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">{t("Product not found")}</h1>
             <Link to="/gifts">
               <Button className="bg-viridian-green hover:bg-viridian-green/90">
-                Browse All Gifts
+                {t("Browse All Gifts")}
               </Button>
             </Link>
           </div>
@@ -430,8 +453,8 @@ export default function ProductDetail() {
     } else {
       navigator.clipboard.writeText(window.location.href);
       toast({
-        title: "Link copied",
-        description: "Product link copied to clipboard",
+        title: t("Link copied"),
+        description: t("Product link copied to clipboard"),
       });
     }
   };
@@ -478,7 +501,7 @@ export default function ProductDetail() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              src={displayImages[selectedImageIndex]}
+              src={cdnImage(displayImages[selectedImageIndex], 1600)}
               alt={`${product.name} - Image ${selectedImageIndex + 1}`}
               className="max-h-[90vh] max-w-[90vw] object-contain"
               onClick={(e) => e.stopPropagation()}
@@ -495,9 +518,9 @@ export default function ProductDetail() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-8 min-w-0">
-          <Link to="/" className="hover:text-viridian-green shrink-0">Home</Link>
+          <Link to="/" className="hover:text-viridian-green shrink-0">{t("Home")}</Link>
           <span>/</span>
-          <Link to="/gifts" className="hover:text-viridian-green shrink-0">Gifts</Link>
+          <Link to="/gifts" className="hover:text-viridian-green shrink-0">{t("Gifts")}</Link>
           {product.subCategoryName && (
             <>
               <span>/</span>
@@ -574,6 +597,7 @@ export default function ProductDetail() {
                           src={image}
                           alt={`${product.name} thumbnail ${index + 1}`}
                           className="w-full h-full object-cover"
+                          width={160}
                         />
                       </button>
                     ))}
@@ -583,7 +607,7 @@ export default function ProductDetail() {
             ) : (
               <div className="aspect-square bg-gray-100 rounded-2xl flex items-center justify-center shadow-lg">
                 <div className="text-center text-gray-400">
-                  <p className="text-sm">No image available</p>
+                  <p className="text-sm">{t("No image available")}</p>
                 </div>
               </div>
             )}
@@ -609,18 +633,18 @@ export default function ProductDetail() {
                   />
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 mb-4">No reviews yet</p>
+                <p className="text-sm text-gray-500 mb-4">{t("No reviews yet")}</p>
               )}
               <div className="flex flex-wrap gap-2 mb-4">
                 {product.isFeatured && (
-                  <Badge className="bg-viridian-green text-white">Featured</Badge>
+                  <Badge className="bg-viridian-green text-white">{t("Featured")}</Badge>
                 )}
                 {product.isTrending && (
-                  <Badge className="bg-sunset-orange text-white">Trending</Badge>
+                  <Badge className="bg-sunset-orange text-white">{t("Trending")}</Badge>
                 )}
                 {stockQuantity !== null && stockQuantity > 0 && stockQuantity <= 5 && (
                   <Badge variant="outline" className="border-orange-500 text-orange-500">
-                    Only {stockQuantity} left
+                    {t("Only")} {stockQuantity} {t("left")}
                   </Badge>
                 )}
               </div>
@@ -659,15 +683,15 @@ export default function ProductDetail() {
               />
               {stockQuantity === null ? (
                 <div className="text-sm text-gray-500">
-                  Select a variant to see availability
+                  {t("Select a variant to see availability")}
                 </div>
               ) : stockQuantity > 0 ? (
                 <div className="flex items-center gap-2 text-sm text-green-600">
                   <Check className="h-4 w-4" />
-                  <span>In Stock ({stockQuantity} available)</span>
+                  <span>{t("In Stock (")}{stockQuantity} {t("available)")}</span>
                 </div>
               ) : (
-                <div className="text-sm text-red-500">Out of Stock</div>
+                <div className="text-sm text-red-500">{t("Out of Stock")}</div>
               )}
             </div>
 
@@ -675,7 +699,7 @@ export default function ProductDetail() {
             {selectableSkus.length > 1 && (
               <div className="space-y-4 pt-4 border-t border-gray-200">
                 <h3 className="font-semibold text-charcoal">
-                  Select Variant <span className="text-red-500">*</span>
+                  {t("Select Variant")} <span className="text-red-500">*</span>
                 </h3>
                 <div className="grid grid-cols-1 gap-3">
                   {selectableSkus.map((sku) => (
@@ -723,7 +747,7 @@ export default function ProductDetail() {
             {/* Variant attributes/options */}
             {selectedSku?.attributes && selectedSku.attributes.length > 0 && (
               <div className="space-y-2 pt-4 border-t border-gray-200">
-                <h3 className="font-semibold text-charcoal">Options</h3>
+                <h3 className="font-semibold text-charcoal">{t("Options")}</h3>
                 <div className="flex flex-wrap gap-2">
                   {selectedSku.attributes.map((attr, idx) => (
                     <button
@@ -754,14 +778,14 @@ export default function ProductDetail() {
             {/* Description */}
             {product.description && (
               <div>
-                <h3 className="font-semibold text-charcoal mb-2">Description</h3>
+                <h3 className="font-semibold text-charcoal mb-2">{t("Description")}</h3>
                 <p className="text-gray-600 leading-relaxed">{product.description}</p>
               </div>
             )}
 
             {/* Quantity */}
             <div className="space-y-2">
-              <label className="font-semibold text-charcoal">Quantity</label>
+              <label className="font-semibold text-charcoal">{t("Quantity")}</label>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <Button
@@ -791,15 +815,15 @@ export default function ProductDetail() {
               <div className="flex items-center gap-2 p-3 border border-dashed border-viridian-green/30 rounded-lg bg-viridian-green/5">
                 <Gift className="h-4 w-4 text-viridian-green flex-shrink-0" />
                 <span className="text-sm text-charcoal">
-                  Gift wrapping available
+                  {t("Gift wrapping available")}
                   {(product.giftWrapCustomerPrice || product.giftWrapPrice) && (product.giftWrapCustomerPrice || product.giftWrapPrice)! > 0 ? (
                     <span className="text-viridian-green font-semibold ml-1">
                       (+{formatPrice(product.giftWrapCustomerPrice || product.giftWrapPrice!, product.giftWrapCurrencyCode || currencyCode)})
                     </span>
                   ) : (
-                    <span className="text-green-600 font-medium ml-1">— Free</span>
+                    <span className="text-green-600 font-medium ml-1">{t("— Free")}</span>
                   )}
-                  <span className="text-muted-foreground ml-1">· Select at checkout</span>
+                  <span className="text-muted-foreground ml-1">{t("· Select at checkout")}</span>
                 </span>
               </div>
             )}
@@ -849,24 +873,24 @@ export default function ProductDetail() {
                 onClick={async () => {
                   if (selectableSkus.length > 1 && !selectedSku) {
                     toast({
-                      title: "Please select a variant",
-                      description: "Choose a product variant before proceeding",
+                      title: t("Please select a variant"),
+                      description: t("Choose a product variant before proceeding"),
                       variant: "destructive",
                     });
                     return;
                   }
                   if (hasAttributeSelectionUI && selectedAttributeOption.length === 0) {
                     toast({
-                      title: "Please select an option",
-                      description: "Choose one option before proceeding",
+                      title: t("Please select an option"),
+                      description: t("Choose one option before proceeding"),
                       variant: "destructive",
                     });
                     return;
                   }
                   if (stockQuantity === 0 || stockQuantity === null) {
                     toast({
-                      title: "Out of stock",
-                      description: "This item is currently unavailable",
+                      title: t("Out of stock"),
+                      description: t("This item is currently unavailable"),
                       variant: "destructive",
                     });
                     return;
@@ -919,24 +943,24 @@ export default function ProductDetail() {
           <Tabs defaultValue="reviews" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="reviews">
-                Reviews
+                {t("Reviews")}
                 {ratingSummary && ratingSummary.totalReviews > 0 && (
                   <span className="ml-1 text-xs">({ratingSummary.totalReviews})</span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="details">Product Details</TabsTrigger>
-              <TabsTrigger value="shipping">Shipping & Returns</TabsTrigger>
+              <TabsTrigger value="details">{t("Product Details")}</TabsTrigger>
+              <TabsTrigger value="shipping">{t("Shipping & Returns")}</TabsTrigger>
             </TabsList>
             <TabsContent value="reviews" className="space-y-6 mt-6">
               <ProductReviewsSection productId={Number(productId)} />
             </TabsContent>
             <TabsContent value="details" className="space-y-6">
               <div className="bg-white rounded-lg p-6">
-                <h3 className="font-semibold text-lg mb-4">Product Details</h3>
+                <h3 className="font-semibold text-lg mb-4">{t("Product Details")}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {selectedSku?.skuName && (
                     <div>
-                      <span className="font-medium">Variant:</span>
+                      <span className="font-medium">{t("Variant:")}</span>
                       <span className="ml-2 text-gray-600">{selectedSku.skuName}</span>
                     </div>
                   )}

@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Palette, Sparkles, X } from 'lucide-react';
 import { useSeasonalTheme } from './SeasonalThemeProvider';
+import { useTranslation } from "react-i18next";
 
 interface SeasonalThemeSelectorProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface SeasonalThemeSelectorProps {
 }
 
 export function SeasonalThemeSelector({ isOpen, onClose }: SeasonalThemeSelectorProps) {
+  const { t } = useTranslation();
   const {
     currentTheme,
     availableThemes,
@@ -53,8 +55,8 @@ export function SeasonalThemeSelector({ isOpen, onClose }: SeasonalThemeSelector
                       <Palette className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900">Seasonal Themes</h2>
-                      <p className="text-gray-600">Celebrate Ethiopian culture and seasons</p>
+                      <h2 className="text-2xl font-bold text-gray-900">{t("Seasonal Themes")}</h2>
+                      <p className="text-gray-600">{t("Celebrate Ethiopian culture and seasons")}</p>
                     </div>
                   </div>
                   <Button variant="ghost" size="icon" onClick={onClose}>
@@ -67,7 +69,7 @@ export function SeasonalThemeSelector({ isOpen, onClose }: SeasonalThemeSelector
                   <div className="flex items-center gap-3">
                     <Sparkles className="h-5 w-5 text-amber-500" />
                     <div>
-                      <h3 className="font-medium text-gray-900">Seasonal Mode</h3>
+                      <h3 className="font-medium text-gray-900">{t("Seasonal Mode")}</h3>
                       <p className="text-sm text-gray-600">
                         {activeSeasonalTheme 
                           ? `${activeSeasonalTheme.displayName} is currently active`
@@ -140,7 +142,7 @@ export function SeasonalThemeSelector({ isOpen, onClose }: SeasonalThemeSelector
                               {/* Seasonal indicator */}
                               {isCurrentSeasonal && (
                                 <div className="absolute top-2 left-2 px-2 py-1 bg-amber-400 text-white text-xs rounded-full font-medium">
-                                  Active Now
+                                  {t("Active Now")}
                                 </div>
                               )}
                             </div>
@@ -177,10 +179,10 @@ export function SeasonalThemeSelector({ isOpen, onClose }: SeasonalThemeSelector
               <div className="p-6 border-t border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-600">
-                    Current theme: <span className="font-medium">{currentTheme.displayName}</span>
+                    {t("Current theme:")} <span className="font-medium">{currentTheme.displayName}</span>
                   </p>
                   <Button onClick={onClose}>
-                    Done
+                    {t("Done")}
                   </Button>
                 </div>
               </div>

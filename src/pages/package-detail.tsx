@@ -24,6 +24,7 @@ import {
 } from "@/services/packageService";
 import { formatPrice, getCurrencyDecimals } from "@/lib/currency";
 import { trackViewItem } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 const toMajor = (minor?: number, currency?: string): number => {
   if (typeof minor !== "number") return 0;
@@ -45,13 +46,14 @@ const selectDefaultSku = (item: ProductPackageItemResponse): number | undefined 
 
 // ─── Image carousel ──────────────────────────────────────────────────────────
 function ImageCarousel({ images, altBase }: { images: string[]; altBase: string }) {
+  const { t } = useTranslation();
   const [idx, setIdx] = useState(0);
   useEffect(() => { setIdx(0); }, [images]);
 
   if (images.length === 0) {
     return (
       <div className="flex h-full min-h-[180px] items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
-        No image
+        {t("No image")}
       </div>
     );
   }
@@ -194,6 +196,7 @@ function PackageItemRow({
   selectedSkuId: number | undefined;
   onSkuChange: (skuId: number) => void;
 }) {
+  const { t } = useTranslation();
   const requiredQuantity = Math.max(1, item.requiredQuantity || 1);
   const options = (item.availableSkus || []).filter((sku) => {
     const stock = sku.stockQty ?? sku.quantity ?? 0;
@@ -242,7 +245,7 @@ function PackageItemRow({
         {isUnavailable ? (
           <div className="flex items-center gap-1.5 text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">
             <XCircle className="h-3.5 w-3.5 shrink-0" />
-            No options available
+            {t("No options available")}
           </div>
         ) : (
           <SkuDropdown
@@ -255,7 +258,7 @@ function PackageItemRow({
         {/* Subtotal chip */}
         {selectedSku?.priceMinor != null && (
           <div className="flex items-center justify-between text-xs bg-eagle-green/5 border border-eagle-green/10 rounded-lg px-3 py-1.5">
-            <span className="text-slate-500">Subtotal</span>
+            <span className="text-slate-500">{t("Subtotal")}</span>
             <span className="font-bold text-eagle-green">
               {formatPrice(
                 toMajor(selectedSku.priceMinor, selectedSku.priceCurrency || "ETB") * requiredQuantity,
@@ -271,6 +274,7 @@ function PackageItemRow({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function PackageDetailPage() {
+  const { t } = useTranslation();
   const { packageId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -365,7 +369,7 @@ export default function PackageDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart", "items"] });
-      toast({ title: "Package added", description: "Bundle added to your cart successfully." });
+      toast({ title: t("Package added"), description: t("Bundle added to your cart successfully.") });
       navigate("/cart");
     },
     onError: (error: any) => {
@@ -375,7 +379,7 @@ export default function PackageDetailPage() {
         return;
       }
       toast({
-        title: "Unable to add package",
+        title: t("Unable to add package"),
         description: error?.message || "Please check selected options and try again.",
         variant: "destructive",
       });
@@ -388,8 +392,8 @@ export default function PackageDetailPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card>
           <CardContent className="p-10 text-center">
-            <h2 className="text-xl font-semibold text-eagle-green mb-2">Invalid package</h2>
-            <Button asChild variant="outline"><Link to="/packages">Back to Packages</Link></Button>
+            <h2 className="text-xl font-semibold text-eagle-green mb-2">{t("Invalid package")}</h2>
+            <Button asChild variant="outline"><Link to="/packages">{t("Back to Packages")}</Link></Button>
           </CardContent>
         </Card>
       </div>
@@ -425,7 +429,7 @@ export default function PackageDetailPage() {
         <Button asChild variant="ghost" size="sm" className="text-eagle-green -ml-2">
           <Link to="/packages">
             <ArrowLeft className="h-4 w-4 mr-1.5" />
-            Packages
+            {t("Packages")}
           </Link>
         </Button>
 
@@ -449,11 +453,11 @@ export default function PackageDetailPage() {
                 {packageDetail.available !== false ? (
                   <Badge variant="outline" className="border-green-200 text-green-700 text-[10px]">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Available
+                    {t("Available")}
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="border-red-200 text-red-700 text-[10px]">
-                    Unavailable
+                    {t("Unavailable")}
                   </Badge>
                 )}
               </div>
@@ -465,11 +469,11 @@ export default function PackageDetailPage() {
               )}
               <div className="flex flex-wrap gap-3 mt-3">
                 <div className="text-xs bg-slate-50 border border-slate-100 rounded-lg px-3 py-1.5">
-                  <span className="text-slate-400">Items</span>{" "}
+                  <span className="text-slate-400">{t("Items")}</span>{" "}
                   <span className="font-semibold text-slate-700">{packageDetail.items.length}</span>
                 </div>
                 <div className="text-xs bg-slate-50 border border-slate-100 rounded-lg px-3 py-1.5">
-                  <span className="text-slate-400">Starting from</span>{" "}
+                  <span className="text-slate-400">{t("Starting from")}</span>{" "}
                   <span className="font-semibold text-eagle-green">
                     {formatPrice(packageEstimatedTotal.amount, packageEstimatedTotal.currency)}
                   </span>
@@ -497,7 +501,7 @@ export default function PackageDetailPage() {
           {/* ── Left column: package items ── */}
           <div className="flex-1 min-w-0 space-y-3">
             <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-widest px-0.5">
-              Customize Package · {packageDetail.items.length} item{packageDetail.items.length !== 1 ? "s" : ""}
+              {t("Customize Package ·")} {packageDetail.items.length} {t("item")}{packageDetail.items.length !== 1 ? "s" : ""}
             </h2>
             {packageDetail.items.map((item) => (
               <PackageItemRow
@@ -516,7 +520,7 @@ export default function PackageDetailPage() {
             {/* Order Summary */}
             <Card>
               <CardContent className="p-4 space-y-4">
-                <h3 className="text-sm font-semibold text-slate-700">Order Summary</h3>
+                <h3 className="text-sm font-semibold text-slate-700">{t("Order Summary")}</h3>
                 <ul className="space-y-3">
                   {packageDetail.items.map((item) => {
                     const requiredQuantity = Math.max(1, item.requiredQuantity || 1);
@@ -553,7 +557,7 @@ export default function PackageDetailPage() {
                               <span className="text-slate-500">×{requiredQuantity}</span>
                             </p>
                           ) : (
-                            <p className="text-amber-500 italic">Pending selection</p>
+                            <p className="text-amber-500 italic">{t("Pending selection")}</p>
                           )}
                         </div>
                         {selectedSku?.priceMinor != null && (
@@ -570,14 +574,14 @@ export default function PackageDetailPage() {
                   })}
                 </ul>
                 <div className="border-t border-slate-100 pt-3 flex justify-between items-baseline">
-                  <span className="text-xs text-slate-400 uppercase tracking-widest font-bold">Total</span>
+                  <span className="text-xs text-slate-400 uppercase tracking-widest font-bold">{t("Total")}</span>
                   <span className="text-lg font-extrabold text-eagle-green">
                     {formatPrice(packageEstimatedTotal.amount, packageEstimatedTotal.currency)}
                   </span>
                 </div>
                 {!allSelected && (
                   <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2 text-center">
-                    Select an option for each item to continue
+                    {t("Select an option for each item to continue")}
                   </p>
                 )}
                 <button
@@ -588,12 +592,12 @@ export default function PackageDetailPage() {
                   {addToCartMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Adding…
+                      {t("Adding…")}
                     </>
                   ) : (
                     <>
                       <ShoppingCart className="h-4 w-4" />
-                      Add Package to Cart
+                      {t("Add Package to Cart")}
                     </>
                   )}
                 </button>

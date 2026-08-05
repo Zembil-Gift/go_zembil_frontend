@@ -5,8 +5,10 @@ import { CheckCircle, Ticket, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { consumePendingPurchase, trackPurchase } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 export default function EventOrderSuccess() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get("orderId");
 
@@ -33,7 +35,7 @@ export default function EventOrderSuccess() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-green-600">
             <CheckCircle className="h-6 w-6" />
-            Event Payment Verified
+            {t("Event Payment Verified")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -50,14 +52,14 @@ export default function EventOrderSuccess() {
             >
               <a href="/my-tickets">
                 <Ticket className="h-4 w-4 mr-2" />
-                View Tickets
+                {t("View Tickets")}
               </a>
             </Button>
 
             <Button asChild variant="outline" className="w-full">
               <a href="/events">
                 <Search className="h-4 w-4 mr-2" />
-                Browse Event
+                {t("Browse Event")}
               </a>
             </Button>
           </div>

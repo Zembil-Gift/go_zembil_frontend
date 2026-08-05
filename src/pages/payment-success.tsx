@@ -15,6 +15,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/apiService";
 import { consumePendingPurchase, trackPurchase } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 function trackOrderPurchase(orderId: string, transactionId?: string) {
   const pending = consumePendingPurchase(orderId);
@@ -49,6 +50,7 @@ const PENDING_PAYMENT_STATUSES = new Set([
 ]);
 
 export default function PaymentSuccess() {
+  const { t } = useTranslation();
   const [paymentStatus, setPaymentStatus] = useState<
     "loading" | "success" | "failed" | "pending"
   >("loading");
@@ -109,7 +111,7 @@ export default function PaymentSuccess() {
             });
             setStatusMessage("Your payment has been confirmed.");
             toast({
-              title: "Payment Successful!",
+              title: t("Payment Successful!"),
               description:
                 result.message || "Your Chapa payment has been confirmed.",
             });
@@ -145,7 +147,7 @@ export default function PaymentSuccess() {
             result.message || "The payment could not be confirmed."
           );
           toast({
-            title: "Payment Not Confirmed",
+            title: t("Payment Not Confirmed"),
             description:
               result.message ||
               "The backend could not confirm your Chapa payment.",
@@ -233,9 +235,9 @@ export default function PaymentSuccess() {
             "Your Chapa payment was not successful. Please try again."
           );
           toast({
-            title: "Payment Failed",
+            title: t("Payment Failed"),
             description:
-              "Your Chapa payment was not successful. Please try again.",
+              t("Your Chapa payment was not successful. Please try again."),
             variant: "destructive",
           });
           return;
@@ -264,8 +266,8 @@ export default function PaymentSuccess() {
         });
         setStatusMessage("Chapa returned a successful payment result.");
         toast({
-          title: "Payment Successful!",
-          description: "Your Chapa payment has been processed successfully.",
+          title: t("Payment Successful!"),
+          description: t("Your Chapa payment has been processed successfully."),
         });
         return;
       }
@@ -306,7 +308,7 @@ export default function PaymentSuccess() {
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
               <div className="animate-spin w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full mx-auto"></div>
-              <h2 className="text-xl font-semibold">Verifying Payment...</h2>
+              <h2 className="text-xl font-semibold">{t("Verifying Payment...")}</h2>
               <p className="text-gray-600">{statusMessage}</p>
             </div>
           </CardContent>
@@ -322,7 +324,7 @@ export default function PaymentSuccess() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2 text-amber-600">
               <Clock className="w-6 h-6" />
-              <span>Payment Processing</span>
+              <span>{t("Payment Processing")}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -334,15 +336,15 @@ export default function PaymentSuccess() {
             {orderInfo?.id && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
                 <p>
-                  <span className="font-medium">Order ID:</span> {orderInfo.id}
+                  <span className="font-medium">{t("Order ID:")}</span> {orderInfo.id}
                 </p>
                 <p>
-                  <span className="font-medium">Payment Method:</span>{" "}
+                  <span className="font-medium">{t("Payment Method:")}</span>{" "}
                   {orderInfo.paymentMethod}
                 </p>
                 {orderInfo.paymentId && (
                   <p>
-                    <span className="font-medium">Payment ID:</span>{" "}
+                    <span className="font-medium">{t("Payment ID:")}</span>{" "}
                     {orderInfo.paymentId}
                   </p>
                 )}
@@ -355,13 +357,13 @@ export default function PaymentSuccess() {
                 className="w-full"
               >
                 <ArrowRight className="w-4 h-4 mr-2" />
-                Check Again
+                {t("Check Again")}
               </Button>
 
               <Button variant="outline" asChild className="w-full">
                 <a href="/my-orders">
                   <ShoppingBag className="w-4 h-4 mr-2" />
-                  View My Orders
+                  {t("View My Orders")}
                 </a>
               </Button>
             </div>
@@ -378,7 +380,7 @@ export default function PaymentSuccess() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2 text-red-600">
               <AlertTriangle className="w-6 h-6" />
-              <span>Payment Failed</span>
+              <span>{t("Payment Failed")}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -394,14 +396,14 @@ export default function PaymentSuccess() {
               <Button asChild className="w-full">
                 <a href="/checkout">
                   <ArrowRight className="w-4 h-4 mr-2" />
-                  Try Again
+                  {t("Try Again")}
                 </a>
               </Button>
 
               <Button variant="outline" asChild className="w-full">
                 <a href="/cart">
                   <ShoppingBag className="w-4 h-4 mr-2" />
-                  Back to Cart
+                  {t("Back to Cart")}
                 </a>
               </Button>
             </div>
@@ -417,7 +419,7 @@ export default function PaymentSuccess() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-green-600">
             <CheckCircle className="w-6 h-6" />
-            <span>Payment Successful!</span>
+            <span>{t("Payment Successful!")}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -462,7 +464,7 @@ export default function PaymentSuccess() {
               >
                 <a href="/my-tickets">
                   <Ticket className="w-4 h-4 mr-2" />
-                  View My Tickets
+                  {t("View My Tickets")}
                 </a>
               </Button>
             ) : orderInfo?.id && orderInfo?.orderType === "CUSTOM" ? (
@@ -473,7 +475,7 @@ export default function PaymentSuccess() {
               >
                 <a href={`/my-custom-orders/${orderInfo.id}`}>
                   <ShoppingBag className="w-4 h-4 mr-2" />
-                  Track Your Order
+                  {t("Track Your Order")}
                 </a>
               </Button>
             ) : orderInfo?.id ? (
@@ -484,7 +486,7 @@ export default function PaymentSuccess() {
               >
                 <a href={`/track/${orderInfo.orderNumber || orderInfo.id}`}>
                   <ShoppingBag className="w-4 h-4 mr-2" />
-                  Track Your Order
+                  {t("Track Your Order")}
                 </a>
               </Button>
             ) : null}

@@ -37,8 +37,10 @@ import { formatCurrency, getCurrencyDecimals } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import orderService, { Order, SubOrder } from "@/services/orderService";
+import { useTranslation } from "react-i18next";
 
 export default function TrackOrder() {
+  const { t } = useTranslation();
   const { orderId } = useParams<{ orderId: string }>();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -72,8 +74,8 @@ export default function TrackOrder() {
   useEffect(() => {
     if (error && isUnauthorizedError(error as Error)) {
       toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
+        title: t("Unauthorized"),
+        description: t("You are logged out. Logging in again..."),
         variant: "destructive",
       });
       setTimeout(() => {
@@ -111,8 +113,8 @@ export default function TrackOrder() {
     },
     onSuccess: () => {
       toast({
-        title: "Order cancelled",
-        description: "Cancellation submitted and refund processing has started.",
+        title: t("Order cancelled"),
+        description: t("Cancellation submitted and refund processing has started."),
       });
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["my-orders"] });
@@ -120,7 +122,7 @@ export default function TrackOrder() {
     },
     onError: (mutationError: Error) => {
       toast({
-        title: "Failed to cancel order",
+        title: t("Failed to cancel order"),
         description: mutationError.message,
         variant: "destructive",
       });
@@ -169,11 +171,11 @@ export default function TrackOrder() {
 
   const getStatusSteps = (currentStatus: string) => {
     const statuses = [
-      { key: "placed", label: "Order Placed", icon: Package },
-      { key: "confirmed", label: "Confirmed", icon: CheckCircle },
-      { key: "processing", label: "Processing", icon: Clock },
-      { key: "shipped", label: "Shipped", icon: Truck },
-      { key: "delivered", label: "Delivered", icon: CheckCircle },
+      { key: "placed", label: t("Order Placed"), icon: Package },
+      { key: "confirmed", label: t("Confirmed"), icon: CheckCircle },
+      { key: "processing", label: t("Processing"), icon: Clock },
+      { key: "shipped", label: t("Shipped"), icon: Truck },
+      { key: "delivered", label: t("Delivered"), icon: CheckCircle },
     ];
 
     const statusAliases: Record<string, string> = {
@@ -243,24 +245,23 @@ export default function TrackOrder() {
           <div className="text-center py-16">
             <Package size={64} className="text-gray-400 mx-auto mb-6" />
             <h2 className="font-display text-2xl font-bold text-charcoal mb-4">
-              Order not found
+              {t("Order not found")}
             </h2>
             <p className="text-gray-600 mb-8">
-              We couldn't find the order you're looking for. Please check your
-              order number and try again.
+              {t("We couldn't find the order you're looking for. Please check your order number and try again.")}
             </p>
             <div className="space-x-4">
               <Button asChild variant="outline">
                 <a href="/my-orders" className="flex items-center space-x-2">
                   <ArrowLeft size={16} />
-                  <span>My Orders</span>
+                  <span>{t("My Orders")}</span>
                 </a>
               </Button>
               <Button
                 asChild
                 className="bg-ethiopian-gold hover:bg-amber text-white"
               >
-                <a href="/gifts">Continue Shopping</a>
+                <a href="/gifts">{t("Continue Shopping")}</a>
               </Button>
             </div>
           </div>
@@ -402,16 +403,16 @@ export default function TrackOrder() {
           <Button asChild variant="ghost" className="mb-4">
             <a href="/my-orders" className="flex items-center space-x-2">
               <ArrowLeft size={16} />
-              <span>Back to My Orders</span>
+              <span>{t("Back to My Orders")}</span>
             </a>
           </Button>
 
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-display text-3xl font-bold text-charcoal mb-2">
-                Track Your Order
+                {t("Track Your Order")}
               </h1>
-              <p className="text-gray-600">Order #{displayOrderNumber}</p>
+              <p className="text-gray-600">{t("Order #")}{displayOrderNumber}</p>
             </div>
             <div className="text-right">
               <div className="flex items-center gap-2 justify-end">
@@ -420,7 +421,7 @@ export default function TrackOrder() {
                     asChild
                     className="bg-yellow-500 hover:bg-yellow-600 text-white"
                   >
-                    <a href={continueCheckoutUrl}>Continue Checkout</a>
+                    <a href={continueCheckoutUrl}>{t("Continue Checkout")}</a>
                   </Button>
                 ) : (
                   <Badge
@@ -436,7 +437,7 @@ export default function TrackOrder() {
                     variant="outline"
                     onClick={() => setShowDeliveryContactDialog(true)}
                   >
-                    Contact Delivery
+                    {t("Contact Delivery")}
                   </Button>
                 )}
               </div>
@@ -450,16 +451,15 @@ export default function TrackOrder() {
         >
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Delivery Contact</DialogTitle>
+              <DialogTitle>{t("Delivery Contact")}</DialogTitle>
               <DialogDescription>
-                Delivery Con Reach out to the assigned delivery person for this
-                order.
+                {t("Delivery Con Reach out to the assigned delivery person for this order.")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 text-sm">
               {deliveryPersonInfo?.fullName && (
                 <div>
-                  <p className="text-gray-500">Name</p>
+                  <p className="text-gray-500">{t("Name")}</p>
                   <p className="font-medium text-gray-900">
                     {deliveryPersonInfo.fullName}
                   </p>
@@ -467,7 +467,7 @@ export default function TrackOrder() {
               )}
               {deliveryPersonInfo?.phone && (
                 <div>
-                  <p className="text-gray-500">Phone</p>
+                  <p className="text-gray-500">{t("Phone")}</p>
                   <p className="font-medium text-gray-900">
                     {deliveryPersonInfo.phone}
                   </p>
@@ -475,7 +475,7 @@ export default function TrackOrder() {
               )}
               {deliveryPersonInfo?.email && (
                 <div>
-                  <p className="text-gray-500">Email</p>
+                  <p className="text-gray-500">{t("Email")}</p>
                   <p className="font-medium text-gray-900">
                     {deliveryPersonInfo.email}
                   </p>
@@ -489,7 +489,7 @@ export default function TrackOrder() {
         {!hasMultipleSubOrders && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Order Status</CardTitle>
+              <CardTitle>{t("Order Status")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
@@ -543,9 +543,9 @@ export default function TrackOrder() {
               <Gift className="text-viridian-green shrink-0 mt-0.5" size={22} />
               <div>
                 <p className="font-semibold text-gray-900">
-                  You earned{" "}
+                  {t("You earned")}{" "}
                   {formatMinorAmount(cashback.amountMinor, order.currency)}{" "}
-                  cashback on this order
+                  {t("cashback on this order")}
                 </p>
                 <p className="text-sm text-gray-600 mt-1">
                   {cashbackPending
@@ -554,7 +554,7 @@ export default function TrackOrder() {
                 </p>
                 {cashbackPending && (
                   <Badge className="mt-2 bg-yellow-100 text-yellow-800">
-                    Pending until delivery
+                    {t("Pending until delivery")}
                   </Badge>
                 )}
               </div>
@@ -569,13 +569,13 @@ export default function TrackOrder() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Package className="text-ethiopian-gold" size={20} />
-                <span>Order Details</span>
+                <span>{t("Order Details")}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="font-medium text-gray-900">Order Date</p>
+                  <p className="font-medium text-gray-900">{t("Order Date")}</p>
                   <p className="text-gray-600">
                     {new Date(order.createdAt || Date.now()).toLocaleDateString(
                       "en-US",
@@ -588,13 +588,13 @@ export default function TrackOrder() {
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Payment Method</p>
+                  <p className="font-medium text-gray-900">{t("Payment Method")}</p>
                   <p className="text-gray-600 capitalize">
                     {order.paymentMethod || "Card"}
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Shipping Fee</p>
+                  <p className="font-medium text-gray-900">{t("Shipping Fee")}</p>
                   <p className="text-gray-600">
                     {formatMinorAmount(
                       order.totals?.shippingMinor,
@@ -605,7 +605,7 @@ export default function TrackOrder() {
                 {typeof order.totals?.serviceFeeMinor === "number" &&
                   order.totals.serviceFeeMinor > 0 && (
                     <div>
-                      <p className="font-medium text-gray-900">Service Fee</p>
+                      <p className="font-medium text-gray-900">{t("Service Fee")}</p>
                       <p className="text-gray-600">
                         {formatMinorAmount(
                           order.totals.serviceFeeMinor,
@@ -615,7 +615,7 @@ export default function TrackOrder() {
                     </div>
                   )}
                 <div>
-                  <p className="font-medium text-gray-900">Discount</p>
+                  <p className="font-medium text-gray-900">{t("Discount")}</p>
                   <p className="text-gray-600">
                     {formatMinorAmount(
                       order.totals?.discountMinor,
@@ -624,7 +624,7 @@ export default function TrackOrder() {
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Total Amount</p>
+                  <p className="font-medium text-gray-900">{t("Total Amount")}</p>
                   <p className="text-gray-900 font-bold">
                     {formatMinorAmount(
                       order.totals?.totalMinor,
@@ -637,14 +637,14 @@ export default function TrackOrder() {
                     <div>
                       <p className="font-medium text-viridian-green flex items-center gap-1">
                         <Wallet size={14} />
-                        Reward Credits Used
+                        {t("Reward Credits Used")}
                       </p>
                       <p className="text-viridian-green font-bold">
                         -{formatMinorAmount(walletAppliedMinor, order.currency)}
                       </p>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Amount Charged</p>
+                      <p className="font-medium text-gray-900">{t("Amount Charged")}</p>
                       <p className="text-gray-900 font-bold">
                         {formatMinorAmount(
                           Math.max(
@@ -658,7 +658,7 @@ export default function TrackOrder() {
                   </>
                 )}
                 <div>
-                  <p className="font-medium text-gray-900">Payment Status</p>
+                  <p className="font-medium text-gray-900">{t("Payment Status")}</p>
                   <Badge className={paymentStatusClassName}>
                     {paymentStatus.charAt(0) +
                       paymentStatus.slice(1).toLowerCase()}
@@ -667,7 +667,7 @@ export default function TrackOrder() {
                 {typeof order.refundedAmountMinor === "number" &&
                   order.refundedAmountMinor > 0 && (
                     <div>
-                      <p className="font-medium text-orange-600">Refunded</p>
+                      <p className="font-medium text-orange-600">{t("Refunded")}</p>
                       <p className="text-orange-600 font-bold">
                         {formatMinorAmount(
                           order.refundedAmountMinor,
@@ -685,18 +685,18 @@ export default function TrackOrder() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <MapPin className="text-ethiopian-gold" size={20} />
-                <span>Delivery Information</span>
+                <span>{t("Delivery Information")}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="font-medium text-gray-900">Recipient</p>
+                <p className="font-medium text-gray-900">{t("Recipient")}</p>
                 <p className="text-gray-600">
                   {order.shippingAddress?.fullName || "Customer"}
                 </p>
               </div>
               <div>
-                <p className="font-medium text-gray-900">Delivery Address</p>
+                <p className="font-medium text-gray-900">{t("Delivery Address")}</p>
                 <p className="text-gray-600">{shippingAddressLine}</p>
                 {order.shippingAddress?.addressLine2 && (
                   <p className="text-gray-600 text-sm">
@@ -711,7 +711,7 @@ export default function TrackOrder() {
                 </p>
               </div>
               <div>
-                <p className="font-medium text-gray-900">Contact</p>
+                <p className="font-medium text-gray-900">{t("Contact")}</p>
                 {contactPhone ? (
                   <div className="flex items-center space-x-2 text-gray-600">
                     <Phone size={14} />
@@ -719,7 +719,7 @@ export default function TrackOrder() {
                   </div>
                 ) : (
                   <p className="text-gray-500 text-sm">
-                    No contact information
+                    {t("No contact information")}
                   </p>
                 )}
                 {contactEmail && (
@@ -732,7 +732,7 @@ export default function TrackOrder() {
               {etaValue && (
                 <div>
                   <p className="font-medium text-gray-900">
-                    Estimated Delivery
+                    {t("Estimated Delivery")}
                   </p>
                   <p className="text-gray-600">
                     {new Date(etaValue).toLocaleString("en-US", {
@@ -753,7 +753,7 @@ export default function TrackOrder() {
         {hasMultipleSubOrders && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Sub-Orders</CardTitle>
+              <CardTitle>{t("Sub-Orders")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -798,7 +798,7 @@ export default function TrackOrder() {
                           </p>
                           {subOrder.eta && (
                             <p className="text-sm text-gray-500 mt-1">
-                              ETA: {new Date(subOrder.eta).toLocaleString()}
+                              {t("ETA:")} {new Date(subOrder.eta).toLocaleString()}
                             </p>
                           )}
                         </div>
@@ -812,7 +812,7 @@ export default function TrackOrder() {
 
                       <div className="mb-4">
                         <p className="text-base font-semibold text-gray-900 mb-3">
-                          Order Status
+                          {t("Order Status")}
                         </p>
                         <div className="relative flex items-center justify-between">
                           {subOrderStatusSteps.map((step, stepIndex) => {
@@ -864,7 +864,7 @@ export default function TrackOrder() {
 
                       {subOrder.rejectionReason && (
                         <p className="text-sm text-red-600 mb-3">
-                          Reason: {subOrder.rejectionReason}
+                          {t("Reason:")} {subOrder.rejectionReason}
                         </p>
                       )}
 
@@ -872,7 +872,7 @@ export default function TrackOrder() {
                         subOrder.refundedAmountMinor > 0 && (
                           <div className="mb-3">
                             <p className="text-sm font-medium text-orange-600">
-                              Refunded Amount:{" "}
+                              {t("Refunded Amount:")}{" "}
                               {formatMinorAmount(
                                 subOrder.refundedAmountMinor,
                                 subOrder.currency || order.currency
@@ -885,13 +885,13 @@ export default function TrackOrder() {
                         <div className="rounded-lg border border-gray-200 overflow-hidden">
                           <div className="grid grid-cols-12 gap-3 bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">
                             <div className="col-span-6">
-                              Product
+                              {t("Product")}
                             </div>
                             <div className="col-span-2 text-center">
-                              Quantity
+                              {t("Quantity")}
                             </div>
-                            <div className="col-span-2 text-right">Unit Price</div>
-                            <div className="col-span-2 text-right">Total</div>
+                            <div className="col-span-2 text-right">{t("Unit Price")}</div>
+                            <div className="col-span-2 text-right">{t("Total")}</div>
                           </div>
 
                           {subOrderItems.map((item) => (
@@ -928,7 +928,7 @@ export default function TrackOrder() {
                                     )}
                                     {item.skuCode && (
                                       <p className="text-xs text-gray-500 mt-1">
-                                        SKU: {item.skuCode}
+                                        {t("SKU:")} {item.skuCode}
                                       </p>
                                     )}
                                     {Array.isArray(item.attributes) &&
@@ -975,15 +975,15 @@ export default function TrackOrder() {
         {!hasMultipleSubOrders && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Order Items</CardTitle>
+              <CardTitle>{t("Order Items")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="rounded-lg border border-gray-200 overflow-hidden">
                 <div className="grid grid-cols-12 gap-3 bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">
-                  <div className="col-span-6">Product</div>
-                  <div className="col-span-2 text-center">Quantity</div>
-                  <div className="col-span-2 text-right">Unit Price</div>
-                  <div className="col-span-2 text-right">Total</div>
+                  <div className="col-span-6">{t("Product")}</div>
+                  <div className="col-span-2 text-center">{t("Quantity")}</div>
+                  <div className="col-span-2 text-right">{t("Unit Price")}</div>
+                  <div className="col-span-2 text-right">{t("Total")}</div>
                 </div>
 
                 {orderItems?.map((item) => (
@@ -1018,7 +1018,7 @@ export default function TrackOrder() {
                           )}
                           {item.skuCode && (
                             <p className="text-xs text-gray-500 mt-1">
-                              SKU: {item.skuCode}
+                              {t("SKU:")} {item.skuCode}
                             </p>
                           )}
                           {Array.isArray(item.attributes) &&
@@ -1065,12 +1065,10 @@ export default function TrackOrder() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-amber-800">
-                      Delivery Pending Verification
+                      {t("Delivery Pending Verification")}
                     </h3>
                     <p className="text-sm text-amber-700">
-                      Your order has been delivered and is pending verification
-                      by our team. You will receive an email confirmation once
-                      verified.
+                      {t("Your order has been delivered and is pending verification by our team. You will receive an email confirmation once verified.")}
                     </p>
                   </div>
                 </div>
@@ -1089,10 +1087,10 @@ export default function TrackOrder() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-green-800">
-                      Delivery Confirmed
+                      {t("Delivery Confirmed")}
                     </h3>
                     <p className="text-sm text-green-600">
-                      Your order was verified and confirmed on{" "}
+                      {t("Your order was verified and confirmed on")}{" "}
                       {new Date(order.deliveryConfirmedAt).toLocaleDateString(
                         "en-US",
                         {
@@ -1117,7 +1115,7 @@ export default function TrackOrder() {
                 onClick={() => setCancelDialogOpen(true)}
                 disabled={cancelOrderMutation.isPending}
               >
-                Cancel Order
+                {t("Cancel Order")}
               </Button>
             </CardContent>
           </Card>
@@ -1127,7 +1125,7 @@ export default function TrackOrder() {
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+            <AlertDialogTitle>{t("Cancel Order")}</AlertDialogTitle>
             <AlertDialogDescription>
               {canCancelSubOrders
                 ? `This will cancel ${cancellableSubOrders.length} cancellable sub-order(s) and start refund processing.`
@@ -1135,7 +1133,7 @@ export default function TrackOrder() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep Order</AlertDialogCancel>
+            <AlertDialogCancel>{t("Keep Order")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => cancelOrderMutation.mutate()}
               disabled={cancelOrderMutation.isPending}

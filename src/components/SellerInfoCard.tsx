@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CompactRating } from "@/components/reviews";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface SellerInfoVendor {
   businessName: string;
@@ -31,6 +32,7 @@ interface SellerInfoCardProps {
 }
 
 export function SellerInfoCard({ vendor, suppliers = [], className }: SellerInfoCardProps) {
+  const { t } = useTranslation();
   if (!vendor && suppliers.length === 0) return null;
 
   const supplierNames = suppliers.map((s) => s.businessName).join(", ");
@@ -57,7 +59,7 @@ export function SellerInfoCard({ vendor, suppliers = [], className }: SellerInfo
 
             <div className="flex-1 min-w-0">
               <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">
-                Sold by
+                {t("Sold by")}
               </p>
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 {vendor.link ? (
@@ -105,7 +107,7 @@ export function SellerInfoCard({ vendor, suppliers = [], className }: SellerInfo
                 {memberSinceLabel && (
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3 shrink-0" />
-                    Since {memberSinceLabel}
+                    {t("Since")} {memberSinceLabel}
                   </span>
                 )}
                 {vendor.meta?.map(({ icon: Icon, label }, idx) => (
@@ -119,7 +121,7 @@ export function SellerInfoCard({ vendor, suppliers = [], className }: SellerInfo
               {supplierNames && (
                 <p className="flex items-center gap-1 text-xs text-gray-600 mt-2">
                   <Factory className="h-3 w-3 shrink-0" />
-                  Supplied by <span className="text-s text-black">{supplierNames}</span>
+                  {t("Supplied by")} <span className="text-s text-black">{supplierNames}</span>
                 </p>
               )}
             </div>
@@ -131,7 +133,7 @@ export function SellerInfoCard({ vendor, suppliers = [], className }: SellerInfo
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">
-                Supplied by
+                {t("Supplied by")}
               </p>
               <p className="font-semibold text-charcoal text-sm leading-tight">{supplierNames}</p>
             </div>

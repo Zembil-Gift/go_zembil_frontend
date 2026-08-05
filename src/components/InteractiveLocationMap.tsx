@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Sparkles, Users, Gift, Clock } from 'lucide-react';
+import { useTranslation } from "react-i18next";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -141,6 +142,7 @@ export default function InteractiveLocationMap({
   onLocationSelect,
   selectedLocationId
 }: InteractiveLocationMapProps) {
+  const { t } = useTranslation();
   const [mapCenter, setMapCenter] = useState<[number, number]>([20, 0]); // World view
   const [mapZoom, setMapZoom] = useState(2);
   const [locationData, setLocationData] = useState<LocationData[]>([]);
@@ -241,7 +243,7 @@ export default function InteractiveLocationMap({
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-amber-600" />
                             <span className="font-semibold text-amber-800">
-                              {location.events.length} Cultural Events
+                              {location.events.length} {t("Cultural Events")}
                             </span>
                           </div>
                           {location.events.slice(0, 2).map((event: any) => (
@@ -258,7 +260,7 @@ export default function InteractiveLocationMap({
                           ))}
                           {location.events.length > 2 && (
                             <p className="text-xs text-gray-500">
-                              +{location.events.length - 2} more events
+                              +{location.events.length - 2} {t("more events")}
                             </p>
                           )}
                         </div>
@@ -270,7 +272,7 @@ export default function InteractiveLocationMap({
                           <div className="flex items-center gap-2">
                             <Sparkles className="w-4 h-4 text-green-600" />
                             <span className="font-semibold text-green-800">
-                              {location.services.length} Professional Services
+                              {location.services.length} {t("Professional Services")}
                             </span>
                           </div>
                           {location.services.slice(0, 2).map((service: any) => (
@@ -287,7 +289,7 @@ export default function InteractiveLocationMap({
                           ))}
                           {location.services.length > 2 && (
                             <p className="text-xs text-gray-500">
-                              +{location.services.length - 2} more services
+                              +{location.services.length - 2} {t("more services")}
                             </p>
                           )}
                         </div>
@@ -298,7 +300,7 @@ export default function InteractiveLocationMap({
                         className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm"
                       >
                         <Gift className="w-4 h-4 mr-2" />
-                        View All Experiences
+                        {t("View All Experiences")}
                       </Button>
                     </div>
                   </Popup>
@@ -332,13 +334,13 @@ export default function InteractiveLocationMap({
                   {location.events.length > 0 && (
                     <div className="flex items-center gap-1 text-xs text-amber-700">
                       <Calendar className="w-3 h-3" />
-                      <span>{location.events.length} events</span>
+                      <span>{location.events.length} {t("events")}</span>
                     </div>
                   )}
                   {location.services.length > 0 && (
                     <div className="flex items-center gap-1 text-xs text-green-700">
                       <Sparkles className="w-3 h-3" />
-                      <span>{location.services.length} services</span>
+                      <span>{location.services.length} {t("services")}</span>
                     </div>
                   )}
                 </div>

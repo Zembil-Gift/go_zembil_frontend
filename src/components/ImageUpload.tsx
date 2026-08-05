@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ImageDto } from '@/services/imageService';
 import imageCompression from 'browser-image-compression';
+import { useTranslation } from "react-i18next";
 
 interface ImageUploadProps {
   images?: ImageDto[];
@@ -44,6 +45,7 @@ export function ImageUpload({
   maxFileSizeMB = 10,
   enableCompression = true,
 }: ImageUploadProps) {
+  const { t } = useTranslation();
   const [previewImages, setPreviewImages] = useState<PreviewImage[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
   const [, setIsCompressing] = useState(false);
@@ -226,7 +228,7 @@ export function ImageUpload({
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-foreground">{label}</label>
           <span className="text-xs text-muted-foreground">
-            {totalImages} / {maxImages} images
+            {totalImages} / {maxImages} {t("images")}
           </span>
         </div>
       )}
@@ -267,7 +269,7 @@ export function ImageUpload({
                   className="h-8 w-8"
                   onClick={() => onImageDelete?.(image.id)}
                   disabled={disabled}
-                  title="Delete image"
+                  title={t("Delete image")}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -277,7 +279,7 @@ export function ImageUpload({
               {image.isPrimary && (
                 <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
                   <Star className="h-3 w-3 fill-current" />
-                  Primary
+                  {t("Primary")}
                 </div>
               )}
             </div>
@@ -288,7 +290,7 @@ export function ImageUpload({
       {/* Preview Images Grid (pending upload) */}
       {previewImages.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">Pending upload:</p>
+          <p className="text-xs text-muted-foreground">{t("Pending upload:")}</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {previewImages.map((preview) => (
               <div
@@ -348,13 +350,13 @@ export function ImageUpload({
             onChange={handleFileInputChange}
             className="hidden"
             disabled={disabled || isUploading}
-            aria-label="Upload images"
+            aria-label={t("Upload images")}
           />
 
           {isUploading ? (
             <>
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Uploading...</p>
+              <p className="text-sm text-muted-foreground">{t("Uploading...")}</p>
             </>
           ) : (
             <>
@@ -364,7 +366,7 @@ export function ImageUpload({
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">{helperText}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Max {maxFileSizeMB}MB per file • {accept.replace(/image\//g, '').replace(/,/g, ', ')}
+                  {t("Max")} {maxFileSizeMB}{t("MB per file •")} {accept.replace(/image\//g, '').replace(/,/g, ', ')}
                 </p>
               </div>
             </>

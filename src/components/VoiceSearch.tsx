@@ -3,6 +3,7 @@ import { Mic, MicOff, Volume2, Globe, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
+import { useTranslation } from "react-i18next";
 
 interface VoiceSearchProps {
   onSearch: (query: string) => void;
@@ -22,6 +23,7 @@ const SUPPORTED_LANGUAGES = [
 ];
 
 export default function VoiceSearch({ onSearch, isOpen, onClose }: VoiceSearchProps) {
+  const { t } = useTranslation();
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [translatedText, setTranslatedText] = useState('');
@@ -159,7 +161,7 @@ export default function VoiceSearch({ onSearch, isOpen, onClose }: VoiceSearchPr
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
               <Globe className="w-5 h-5" />
-              Multilingual Voice Search
+              {t("Multilingual Voice Search")}
             </h2>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="w-4 h-4" />
@@ -169,7 +171,7 @@ export default function VoiceSearch({ onSearch, isOpen, onClose }: VoiceSearchPr
           {/* Language Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Language
+              {t("Select Language")}
             </label>
             <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
               <SelectTrigger className="w-full">
@@ -221,7 +223,7 @@ export default function VoiceSearch({ onSearch, isOpen, onClose }: VoiceSearchPr
           {transcript && (
             <div className="mb-4 p-4 bg-gray-50 rounded-md">
               <div className="flex justify-between items-start mb-2">
-                <h3 className="font-medium text-gray-900">Transcript:</h3>
+                <h3 className="font-medium text-gray-900">{t("Transcript:")}</h3>
                 <Button variant="ghost" size="sm" onClick={playTranscript}>
                   <Volume2 className="w-4 h-4" />
                 </Button>
@@ -233,9 +235,9 @@ export default function VoiceSearch({ onSearch, isOpen, onClose }: VoiceSearchPr
           {/* Translation Display */}
           {(translatedText || isTranslating) && selectedLanguage !== 'en-US' && (
             <div className="mb-4 p-4 bg-blue-50 rounded-md">
-              <h3 className="font-medium text-gray-900 mb-2">English Translation:</h3>
+              <h3 className="font-medium text-gray-900 mb-2">{t("English Translation:")}</h3>
               {isTranslating ? (
-                <p className="text-gray-600">Translating...</p>
+                <p className="text-gray-600">{t("Translating...")}</p>
               ) : (
                 <p className="text-gray-700">{translatedText}</p>
               )}
@@ -250,7 +252,7 @@ export default function VoiceSearch({ onSearch, isOpen, onClose }: VoiceSearchPr
                 className="w-full bg-teal-600 hover:bg-teal-700 text-white"
                 disabled={isTranslating}
               >
-                Search Products
+                {t("Search Products")}
               </Button>
             </div>
           )}
@@ -258,7 +260,7 @@ export default function VoiceSearch({ onSearch, isOpen, onClose }: VoiceSearchPr
           {/* Search History */}
           {searchHistory.length > 0 && (
             <div>
-              <h3 className="font-medium text-gray-900 mb-3">Recent Voice Searches:</h3>
+              <h3 className="font-medium text-gray-900 mb-3">{t("Recent Voice Searches:")}</h3>
               <div className="space-y-2">
                 {searchHistory.slice(0, 5).map((query, index) => (
                   <button

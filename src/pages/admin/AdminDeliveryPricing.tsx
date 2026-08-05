@@ -22,10 +22,24 @@ import {
 
 const FEE_CURRENCIES = ["ETB", "USD"];
 
+/** Distance-pricing knobs, editable only in GOOGLE_MAPS mode. */
+const DISTANCE_FIELDS = [
+  { key: "baseFee", label: "Base fee", required: true },
+  { key: "perKmRate", label: "Per km rate", required: true },
+  { key: "perMinuteRate", label: "Per minute rate", required: true },
+  {
+    key: "trafficSurchargePercent",
+    label: "Traffic surcharge %",
+    required: true,
+  },
+  { key: "minimumFee", label: "Minimum fee", required: true },
+  { key: "maximumFee", label: "Maximum fee (optional)", required: false },
+] as const;
+
 /**
  * Admin screen to toggle each country's delivery between Google Maps (dynamic) and a
- * manual flat fee, and to set that flat fee + currency. Used as a fallback when Google
- * Maps is unavailable.
+ * manual flat fee, and to set the pricing for whichever mode is active. Manual mode is
+ * the fallback when Google Maps is unavailable.
  */
 export default function AdminDeliveryPricing() {
   const { toast } = useToast();
@@ -83,6 +97,32 @@ export default function AdminDeliveryPricing() {
         });
         return;
       }
+    } else {
+      const bad = DISTANCE_FIELDS.find(({ key, required }) => {
+        const value = config[key];
+        if (value == null || (value as unknown as string) === "")
+          return required;
+        return !Number.isFinite(Number(value)) || Number(value) < 0;
+      });
+      if (bad) {
+        toast({
+          title: `${bad.label} is invalid`,
+          description: `Enter a number of 0 or more for ${config.countryCode}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (
+        config.maximumFee != null &&
+        Number(config.maximumFee) < Number(config.minimumFee)
+      ) {
+        toast({
+          title: "Maximum below minimum",
+          description: `Maximum fee must be at least the minimum fee for ${config.countryCode}.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setSavingCountry(config.countryCode);
@@ -93,6 +133,12 @@ export default function AdminDeliveryPricing() {
           deliveryMode: config.deliveryMode,
           manualFlatFee: config.manualFlatFee,
           manualFeeCurrency: config.manualFeeCurrency,
+          baseFee: config.baseFee,
+          perKmRate: config.perKmRate,
+          perMinuteRate: config.perMinuteRate,
+          trafficSurchargePercent: config.trafficSurchargePercent,
+          minimumFee: config.minimumFee,
+          maximumFee: config.maximumFee,
         }
       );
       patchConfig(config.countryCode, updated);
@@ -222,6 +268,38 @@ export default function AdminDeliveryPricing() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2 rounded-md border px-3 py-3">
+                  <p className="text-xs font-medium text-gray-500">
+                    Distance pricing ({config.currencyCode}) — fee is clamped
+                    between minimum and maximum
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {DISTANCE_FIELDS.map(({ key, label }) => (
+                      <div key={key}>
+                        <Label htmlFor={`${key}-${config.countryCode}`}>
+                          {label}
+                        </Label>
+                        <Input
+                          id={`${key}-${config.countryCode}`}
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={config[key] ?? ""}
+                          disabled={isManual}
+                          onChange={(e) =>
+                            patchConfig(config.countryCode, {
+                              [key]:
+                                e.target.value === ""
+                                  ? undefined
+                                  : Number(e.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
 

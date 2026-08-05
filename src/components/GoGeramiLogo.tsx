@@ -1,4 +1,5 @@
-// Using URL for public assets instead of import
+
+import { useTranslation } from "react-i18next";// Using URL for public assets instead of import
 const logoImagePath = "/attached_assets/go-gerami.png";
 
 interface GoGeramiLogoProps {
@@ -16,6 +17,7 @@ export default function GoGeramiLogo({
   showTagline = true,
   imagePath
 }: GoGeramiLogoProps) {
+  const { t } = useTranslation();
   const logoPath = imagePath || logoImagePath;
   const sizeClasses = {
     sm: 'h-6 w-6',
@@ -43,7 +45,7 @@ export default function GoGeramiLogo({
     return (
       <img 
         src={logoPath} 
-        alt="goGerami Logo"
+        alt={t("goGerami Logo")}
         className={`${sizeClasses[size]} object-contain ${className}`}
         onError={(e) => {
           console.error('Failed to load logo image:', logoPath);
@@ -64,7 +66,7 @@ export default function GoGeramiLogo({
         </div>
         {showTagline && (size === 'lg' || size === 'xl') && (
           <span className={`${taglineSizes[size]} font-medium text-warm-gold leading-none`}>
-            Gifting with Heart
+            {t("Gifting with Heart")}
           </span>
         )}
       </div>
@@ -76,7 +78,7 @@ export default function GoGeramiLogo({
     <div className={`flex items-center space-x-2 ${className}`}>
       <img 
         src={logoPath} 
-        alt="goGerami Logo"
+        alt={t("goGerami Logo")}
         className={`${sizeClasses[size]} object-contain flex-shrink-0`}
         onError={(e) => {
           console.error('Failed to load logo image:', logoPath);
@@ -91,7 +93,7 @@ export default function GoGeramiLogo({
         </div>
         {showTagline && (size === 'lg' || size === 'xl') && (
           <span className={`${taglineSizes[size]} font-medium text-warm-gold leading-none -mt-0.5`}>
-            Gifting with Heart
+            {t("Gifting with Heart")}
           </span>
         )}
       </div>

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface GiftingJourneyAnimationProps {
   className?: string;
@@ -14,6 +15,7 @@ export default function GiftingJourneyAnimation({
   loop = false,
   onComplete 
 }: GiftingJourneyAnimationProps) {
+  const { t } = useTranslation();
   const [isPlaying, setIsPlaying] = useState(autoPlay);
 
   useEffect(() => {
@@ -293,7 +295,7 @@ export default function GiftingJourneyAnimation({
             animate={isPlaying ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 0.8, delay: 3.5 }}
           >
-            Gifting with Heart
+            {t("Gifting with Heart")}
           </motion.text>
         </motion.g>
       </svg>

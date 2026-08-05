@@ -16,8 +16,10 @@ import {
   MessageCircle 
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function TrackOrder() {
+  const { t } = useTranslation();
   const params = useParams();
   const orderId = params.orderId;
 
@@ -53,11 +55,11 @@ export default function TrackOrder() {
 
   const getStatusSteps = () => {
     const allSteps = [
-      { key: "pending", label: "Order Placed", description: "Your order has been received" },
-      { key: "confirmed", label: "Confirmed", description: "Order confirmed and being prepared" },
-      { key: "processing", label: "Processing", description: "Your items are being prepared" },
-      { key: "shipped", label: "Shipped", description: "Order is on its way" },
-      { key: "delivered", label: "Delivered", description: "Order has been delivered" },
+      { key: "pending", label: t("Order Placed"), description: "Your order has been received" },
+      { key: "confirmed", label: t("Confirmed"), description: "Order confirmed and being prepared" },
+      { key: "processing", label: t("Processing"), description: "Your items are being prepared" },
+      { key: "shipped", label: t("Shipped"), description: "Order is on its way" },
+      { key: "delivered", label: t("Delivered"), description: "Order has been delivered" },
     ];
 
     const statusOrder = ["pending", "confirmed", "processing", "shipped", "delivered"];
@@ -94,18 +96,18 @@ export default function TrackOrder() {
           <div className="text-center py-16">
             <AlertCircle size={64} className="text-gray-400 mx-auto mb-6" />
             <h2 className="font-display text-2xl font-bold text-charcoal mb-4">
-              Order Not Found
+              {t("Order Not Found")}
             </h2>
             <p className="text-gray-600 mb-8">
-              We couldn't find an order with that tracking number.
+              {t("We couldn't find an order with that tracking number.")}
             </p>
             <div className="space-y-4">
               <Button asChild className="bg-ethiopian-gold hover:bg-amber text-white">
-                <Link href="/orders">View My Orders</Link>
+                <Link href="/orders">{t("View My Orders")}</Link>
               </Button>
               <br />
               <Button asChild variant="outline">
-                <Link href="/gifts">Continue Shopping</Link>
+                <Link href="/gifts">{t("Continue Shopping")}</Link>
               </Button>
             </div>
           </div>
@@ -125,10 +127,10 @@ export default function TrackOrder() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold text-charcoal mb-2">
-            Track Your Order
+            {t("Track Your Order")}
           </h1>
           <p className="text-gray-600">
-            Order ID: {order.id}
+            {t("Order ID:")} {order.id}
           </p>
         </div>
 
@@ -140,7 +142,7 @@ export default function TrackOrder() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   {getStatusIcon(order.status)}
-                  <span>Order Status</span>
+                  <span>{t("Order Status")}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -150,7 +152,7 @@ export default function TrackOrder() {
                   </Badge>
                   {order.trackingNumber && (
                     <div className="text-sm text-gray-600">
-                      Tracking: {order.trackingNumber}
+                      {t("Tracking:")} {order.trackingNumber}
                     </div>
                   )}
                 </div>
@@ -159,7 +161,7 @@ export default function TrackOrder() {
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
                     <Clock size={16} />
                     <span>
-                      Expected delivery: {new Date(order.deliveryDate).toLocaleDateString()}
+                      {t("Expected delivery:")} {new Date(order.deliveryDate).toLocaleDateString()}
                     </span>
                   </div>
                 )}
@@ -169,7 +171,7 @@ export default function TrackOrder() {
             {/* Progress Timeline */}
             <Card>
               <CardHeader>
-                <CardTitle>Order Progress</CardTitle>
+                <CardTitle>{t("Order Progress")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -196,7 +198,7 @@ export default function TrackOrder() {
                         </h4>
                         <p className="text-sm text-gray-600">{step.description}</p>
                         {step.isCurrent && (
-                          <p className="text-xs text-ethiopian-gold mt-1">Current status</p>
+                          <p className="text-xs text-ethiopian-gold mt-1">{t("Current status")}</p>
                         )}
                       </div>
                       {index < statusSteps.length - 1 && (
@@ -215,7 +217,7 @@ export default function TrackOrder() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <MapPin className="text-ethiopian-gold" size={20} />
-                  <span>Delivery Address</span>
+                  <span>{t("Delivery Address")}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -231,7 +233,7 @@ export default function TrackOrder() {
             {/* Order Items */}
             <Card>
               <CardHeader>
-                <CardTitle>Order Items</CardTitle>
+                <CardTitle>{t("Order Items")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -246,14 +248,14 @@ export default function TrackOrder() {
                       </div>
                       <div className="flex-1">
                         <h4 className="font-medium">{item.product?.name || "Product"}</h4>
-                        <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                        <p className="text-sm text-gray-600">{t("Quantity:")} {item.quantity}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{item.price} ETB</p>
+                        <p className="font-medium">{item.price} {t("ETB")}</p>
                       </div>
                     </div>
                   )) || (
-                    <p className="text-gray-500">Order items not available</p>
+                    <p className="text-gray-500">{t("Order items not available")}</p>
                   )}
                 </div>
               </CardContent>
@@ -265,38 +267,38 @@ export default function TrackOrder() {
             {/* Order Summary */}
             <Card>
               <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+                <CardTitle>{t("Order Summary")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>{order.subtotal} ETB</span>
+                    <span>{t("Subtotal")}</span>
+                    <span>{order.subtotal} {t("ETB")}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Delivery</span>
-                    <span>{order.deliveryFee} ETB</span>
+                    <span>{t("Delivery")}</span>
+                    <span>{order.deliveryFee} {t("ETB")}</span>
                   </div>
                 </div>
                 
                 <Separator />
                 
                 <div className="flex justify-between font-bold">
-                  <span>Total</span>
-                  <span className="text-ethiopian-gold">{order.total} ETB</span>
+                  <span>{t("Total")}</span>
+                  <span className="text-ethiopian-gold">{order.total} {t("ETB")}</span>
                 </div>
 
                 <div className="pt-4 space-y-2">
                   <div className="text-sm">
-                    <span className="font-medium">Delivery Type:</span>
+                    <span className="font-medium">{t("Delivery Type:")}</span>
                     <span className="ml-2 capitalize">{order.deliveryType}</span>
                   </div>
                   <div className="text-sm">
-                    <span className="font-medium">Payment:</span>
+                    <span className="font-medium">{t("Payment:")}</span>
                     <span className="ml-2 capitalize">{order.paymentMethod}</span>
                   </div>
                   <div className="text-sm">
-                    <span className="font-medium">Order Date:</span>
+                    <span className="font-medium">{t("Order Date:")}</span>
                     <span className="ml-2">{new Date(order.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
@@ -309,7 +311,7 @@ export default function TrackOrder() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <MessageCircle className="text-ethiopian-gold" size={20} />
-                    <span>Personal Message</span>
+                    <span>{t("Personal Message")}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -321,21 +323,21 @@ export default function TrackOrder() {
             {/* Contact Support */}
             <Card>
               <CardHeader>
-                <CardTitle>Need Help?</CardTitle>
+                <CardTitle>{t("Need Help?")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-gray-600">
-                  Have questions about your order? Contact our support team.
+                  {t("Have questions about your order? Contact our support team.")}
                 </p>
                 
                 <div className="space-y-2">
                   <Button variant="outline" className="w-full justify-start">
                     <Phone size={16} className="mr-2" />
-                    Call Support
+                    {t("Call Support")}
                   </Button>
                   <Button variant="outline" className="w-full justify-start">
                     <MessageCircle size={16} className="mr-2" />
-                    Live Chat
+                    {t("Live Chat")}
                   </Button>
                 </div>
               </CardContent>
@@ -344,14 +346,14 @@ export default function TrackOrder() {
             {/* Related Actions */}
             <Card>
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle>{t("Quick Actions")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button asChild variant="outline" className="w-full">
-                  <Link href="/orders">View All Orders</Link>
+                  <Link href="/orders">{t("View All Orders")}</Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full">
-                  <Link href="/gifts">Shop Again</Link>
+                  <Link href="/gifts">{t("Shop Again")}</Link>
                 </Button>
               </CardContent>
             </Card>

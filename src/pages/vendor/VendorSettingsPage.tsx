@@ -31,9 +31,11 @@ import {
   XCircle,
   CheckCircle,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Vendor Certificate Card Component
 function VendorCertificateCard() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -62,12 +64,12 @@ function VendorCertificateCard() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       toast({
-        title: "Success",
-        description: "Certificate downloaded successfully",
+        title: t("Success"),
+        description: t("Certificate downloaded successfully"),
       });
     } catch (error) {
       toast({
-        title: "Error",
+        title: t("Error"),
         description:
           error instanceof Error
             ? error.message
@@ -85,13 +87,13 @@ function VendorCertificateCard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-5 w-5" />
-            Onboarding Certificate
+            {t("Onboarding Certificate")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
-            <span className="ml-2">Loading certificate...</span>
+            <span className="ml-2">{t("Loading certificate...")}</span>
           </div>
         </CardContent>
       </Card>
@@ -104,18 +106,17 @@ function VendorCertificateCard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-5 w-5" />
-            Onboarding Certificate
+            {t("Onboarding Certificate")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-gray-500">
             <XCircle className="h-12 w-12 text-gray-300 mb-4" />
             <p className="text-sm mb-2">
-              No certificate found for your account.
+              {t("No certificate found for your account.")}
             </p>
             <p className="text-xs text-gray-400 mb-4 text-center max-w-xs">
-              If you completed the onboarding video, your certificate should
-              appear here. Try refreshing if you just completed the process.
+              {t("If you completed the onboarding video, your certificate should appear here. Try refreshing if you just completed the process.")}
             </p>
             <Button
               variant="outline"
@@ -124,7 +125,7 @@ function VendorCertificateCard() {
               className="text-emerald-600"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              {t("Refresh")}
             </Button>
           </div>
         </CardContent>
@@ -137,19 +138,19 @@ function VendorCertificateCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Award className="h-5 w-5 text-emerald-600" />
-          Onboarding Certificate
+          {t("Onboarding Certificate")}
         </CardTitle>
         <CardDescription>
-          Your vendor onboarding completion certificate.
+          {t("Your vendor onboarding completion certificate.")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center items-start gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
           <CheckCircle className="h-8 w-8 text-green-600 flex-shrink-0" />
           <div className="flex-1">
-            <h4 className="font-medium text-green-900">Certificate Verified</h4>
+            <h4 className="font-medium text-green-900">{t("Certificate Verified")}</h4>
             <p className="text-sm text-green-700">
-              Issued on {new Date(certificate.issuedAt).toLocaleDateString()}
+              {t("Issued on")} {new Date(certificate.issuedAt).toLocaleDateString()}
             </p>
           </div>
           <Button
@@ -164,7 +165,7 @@ function VendorCertificateCard() {
             ) : (
               <>
                 <Download className="h-4 w-4 mr-2" />
-                Download PDF
+                {t("Download PDF")}
               </>
             )}
           </Button>
@@ -173,22 +174,22 @@ function VendorCertificateCard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-3 bg-gray-50 rounded-lg border break-words">
             <Label className="text-muted-foreground text-xs">
-              Certificate Code
+              {t("Certificate Code")}
             </Label>
             <p className="font-mono font-bold text-emerald-600 break-all">
               {certificate.certificateCode}
             </p>
           </div>
           <div className="p-3 bg-gray-50 rounded-lg border break-words">
-            <Label className="text-muted-foreground text-xs">Vendor Type</Label>
+            <Label className="text-muted-foreground text-xs">{t("Vendor Type")}</Label>
             <p className="font-medium break-words">{certificate.vendorType}</p>
           </div>
           <div className="p-3 bg-gray-50 rounded-lg border break-words">
-            <Label className="text-muted-foreground text-xs">Full Name</Label>
+            <Label className="text-muted-foreground text-xs">{t("Full Name")}</Label>
             <p className="font-medium break-words">{certificate.fullName}</p>
           </div>
           <div className="p-3 bg-gray-50 rounded-lg border break-words">
-            <Label className="text-muted-foreground text-xs">Email</Label>
+            <Label className="text-muted-foreground text-xs">{t("Email")}</Label>
             <p className="font-medium break-all">{certificate.email}</p>
           </div>
         </div>
@@ -199,6 +200,7 @@ function VendorCertificateCard() {
 
 // Main Settings Page
 export default function VendorSettingsPage() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -227,14 +229,14 @@ export default function VendorSettingsPage() {
       return imageService.uploadVendorLogo(vendorProfile.id, file);
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "Logo uploaded successfully" });
+      toast({ title: t("Success"), description: t("Logo uploaded successfully") });
       queryClient.invalidateQueries({ queryKey: ["vendor", "profile"] });
       setPendingLogo(null);
       setPreviewUrl(null);
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to upload logo",
         variant: "destructive",
       });
@@ -248,12 +250,12 @@ export default function VendorSettingsPage() {
       return imageService.deleteVendorLogo(vendorProfile.id);
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "Logo deleted successfully" });
+      toast({ title: t("Success"), description: t("Logo deleted successfully") });
       queryClient.invalidateQueries({ queryKey: ["vendor", "profile"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to delete logo",
         variant: "destructive",
       });
@@ -299,14 +301,14 @@ export default function VendorSettingsPage() {
       });
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "Location saved successfully" });
+      toast({ title: t("Success"), description: t("Location saved successfully") });
       queryClient.invalidateQueries({ queryKey: ["vendor", "profile"] });
       setShowLocationPicker(false);
       setSelectedLocation(null);
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error?.message || "Failed to save location",
         variant: "destructive",
       });
@@ -319,8 +321,8 @@ export default function VendorSettingsPage() {
       // Validate file type
       if (!file.type.startsWith("image/")) {
         toast({
-          title: "Error",
-          description: "Please select an image file",
+          title: t("Error"),
+          description: t("Please select an image file"),
           variant: "destructive",
         });
         return;
@@ -328,8 +330,8 @@ export default function VendorSettingsPage() {
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
-          title: "Error",
-          description: "File size must be less than 5MB",
+          title: t("Error"),
+          description: t("File size must be less than 5MB"),
           variant: "destructive",
         });
         return;
@@ -365,8 +367,8 @@ export default function VendorSettingsPage() {
   const handleSaveLocation = () => {
     if (!selectedLocation) {
       toast({
-        title: "Select location",
-        description: "Please choose your location on the map first.",
+        title: t("Select location"),
+        description: t("Please choose your location on the map first."),
         variant: "destructive",
       });
       return;
@@ -389,18 +391,17 @@ export default function VendorSettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <h2 className="text-xl font-semibold">Business Settings</h2>
+      <h2 className="text-xl font-semibold">{t("Business Settings")}</h2>
 
       {/* Business Logo */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5" />
-            Business Logo
+            {t("Business Logo")}
           </CardTitle>
           <CardDescription>
-            Upload your business logo. This will be displayed on your vendor
-            profile and products.
+            {t("Upload your business logo. This will be displayed on your vendor profile and products.")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -411,17 +412,17 @@ export default function VendorSettingsPage() {
                 <div className="relative">
                   <img
                     src={previewUrl}
-                    alt="Logo preview"
+                    alt={t("Logo preview")}
                     className="w-32 h-32 object-cover rounded-lg border-2 border-dashed border-primary"
                   />
                   <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
-                    Preview
+                    {t("Preview")}
                   </span>
                 </div>
               ) : currentLogoUrl ? (
                 <img
                   src={currentLogoUrl}
-                  alt="Business logo"
+                  alt={t("Business logo")}
                   className="w-32 h-32 object-cover rounded-lg border"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
@@ -447,7 +448,7 @@ export default function VendorSettingsPage() {
               {pendingLogo ? (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Selected:{" "}
+                    {t("Selected:")}{" "}
                     <span className="font-medium">{pendingLogo.name}</span>
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2">
@@ -459,12 +460,12 @@ export default function VendorSettingsPage() {
                       {isUploading ? (
                         <>
                           <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Uploading...
+                          {t("Uploading...")}
                         </>
                       ) : (
                         <>
                           <Plus className="h-4 w-4 mr-2" />
-                          Upload Logo
+                          {t("Upload Logo")}
                         </>
                       )}
                     </Button>
@@ -473,7 +474,7 @@ export default function VendorSettingsPage() {
                       onClick={handleCancelUpload}
                       className="w-full sm:w-auto"
                     >
-                      Cancel
+                      {t("Cancel")}
                     </Button>
                   </div>
                 </div>
@@ -490,11 +491,11 @@ export default function VendorSettingsPage() {
                       accept="image/jpeg,image/png,image/gif,image/webp"
                       onChange={handleFileSelect}
                       className="hidden"
-                      aria-label="Upload logo image"
+                      aria-label={t("Upload logo image")}
                     />
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Accepted formats: JPEG, PNG, GIF, WebP. Max size: 5MB.
+                    {t("Accepted formats: JPEG, PNG, GIF, WebP. Max size: 5MB.")}
                   </p>
                   {currentLogoUrl && (
                     <Button
@@ -509,7 +510,7 @@ export default function VendorSettingsPage() {
                       ) : (
                         <Trash2 className="h-4 w-4 mr-2" />
                       )}
-                      Delete Logo
+                      {t("Delete Logo")}
                     </Button>
                   )}
                 </div>
@@ -524,39 +525,39 @@ export default function VendorSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Store className="h-5 w-5" />
-            Business Information
+            {t("Business Information")}
           </CardTitle>
-          <CardDescription>Your business details.</CardDescription>
+          <CardDescription>{t("Your business details.")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="break-words">
-              <Label className="text-muted-foreground">Business Name</Label>
+              <Label className="text-muted-foreground">{t("Business Name")}</Label>
               <p className="font-medium break-words">
                 {vendorProfile?.businessName || "-"}
               </p>
             </div>
             <div className="break-words">
-              <Label className="text-muted-foreground">Business Email</Label>
+              <Label className="text-muted-foreground">{t("Business Email")}</Label>
               <p className="font-medium break-all">
                 {vendorProfile?.businessEmail || "-"}
               </p>
             </div>
             <div className="break-words">
-              <Label className="text-muted-foreground">Business Phone</Label>
+              <Label className="text-muted-foreground">{t("Business Phone")}</Label>
               <p className="font-medium break-words">
                 {vendorProfile?.businessPhone || "-"}
               </p>
             </div>
             <div className="break-words">
-              <Label className="text-muted-foreground">City</Label>
+              <Label className="text-muted-foreground">{t("City")}</Label>
               <p className="font-medium break-words">
                 {vendorProfile?.city || "-"}
               </p>
             </div>
             <div className="break-words">
               <div className="flex items-center gap-2">
-                <Label className="text-muted-foreground">Country</Label>
+                <Label className="text-muted-foreground">{t("Country")}</Label>
               </div>
               <p className="font-medium break-words">
                 {vendorProfile?.country || "-"}
@@ -573,7 +574,7 @@ export default function VendorSettingsPage() {
                   className="h-7 px-2 text-xs"
                   onClick={() => setShowLocationPicker((prev) => !prev)}
                 >
-                  Add your location
+                  {t("Add your location")}
                 </Button>
               </div>
             )}
@@ -583,11 +584,10 @@ export default function VendorSettingsPage() {
             <div className="mt-4 space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
               <div>
                 <Label className="text-sm font-medium">
-                  Pick your business location
+                  {t("Pick your business location")}
                 </Label>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Drop a pin on the map and save to register your coordinates
-                  and missing address details.
+                  {t("Drop a pin on the map and save to register your coordinates and missing address details.")}
                 </p>
               </div>
 
@@ -597,7 +597,7 @@ export default function VendorSettingsPage() {
                   longitude={selectedLocation?.longitude}
                   onLocationSelect={setSelectedLocation}
                   height="320px"
-                  placeholder="Search your business address..."
+                  placeholder={t("Search your business address...")}
                 />
               </GoogleMapsProvider>
 
@@ -611,7 +611,7 @@ export default function VendorSettingsPage() {
                   {saveLocationMutation.isPending ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
+                      {t("Saving...")}
                     </>
                   ) : (
                     "Save Location"
@@ -627,7 +627,7 @@ export default function VendorSettingsPage() {
                   className="w-full sm:w-auto"
                   disabled={saveLocationMutation.isPending}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </Button>
               </div>
             </div>
@@ -635,7 +635,7 @@ export default function VendorSettingsPage() {
 
           {vendorProfile?.description && (
             <div className="mt-4">
-              <Label className="text-muted-foreground">Description</Label>
+              <Label className="text-muted-foreground">{t("Description")}</Label>
               <p className="text-sm mt-1 break-words">
                 {vendorProfile.description}
               </p>

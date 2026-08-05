@@ -232,10 +232,10 @@ export default function CategoryCarousel({
     id: cat.slug,
     label: cat.name,
   })) || [
-    { id: "occasions", label: "Occasions" },
-    { id: "cultural-religious", label: "Cultural & Religious" },
-    { id: "emotions", label: "Emotions" },
-    { id: "food-beverages", label: "Food & Beverages" },
+    { id: "occasions", label: t("Occasions") },
+    { id: "cultural-religious", label: t("Cultural & Religious") },
+    { id: "emotions", label: t("Emotions") },
+    { id: "food-beverages", label: t("Food & Beverages") },
   ];
 
   if (isLoading) {
@@ -295,7 +295,7 @@ export default function CategoryCarousel({
                 ? "hover:bg-viridian-green hover:border-viridian-green hover:text-white text-eagle-green"
                 : "opacity-40 cursor-not-allowed text-gray-400"
             }`}
-            aria-label="Scroll subcategories left"
+            aria-label={t("Scroll subcategories left")}
           >
             <ChevronLeft className="w-5 h-5 mx-auto" />
           </button>
@@ -309,7 +309,7 @@ export default function CategoryCarousel({
                 ? "hover:bg-viridian-green hover:border-viridian-green hover:text-white text-eagle-green"
                 : "opacity-40 cursor-not-allowed text-gray-400"
             }`}
-            aria-label="Scroll subcategories right"
+            aria-label={t("Scroll subcategories right")}
           >
             <ChevronRight className="w-5 h-5 mx-auto" />
           </button>

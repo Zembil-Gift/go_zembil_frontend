@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { CompactRating } from './RatingSummary';
 import { VendorPublicProfile } from '@/services/reviewService';
 import { format } from 'date-fns';
+import { useTranslation } from "react-i18next";
 
 interface VendorCardProps {
   vendor: VendorPublicProfile;
@@ -12,6 +13,7 @@ interface VendorCardProps {
 }
 
 export function VendorCard({ vendor, compact = false }: VendorCardProps) {
+  const { t } = useTranslation();
   const memberSince = vendor.memberSince 
     ? format(new Date(vendor.memberSince), 'MMMM yyyy')
     : null;
@@ -72,7 +74,7 @@ export function VendorCard({ vendor, compact = false }: VendorCardProps) {
                 {vendor.businessName}
               </Link>
               <Badge variant="secondary" className="bg-viridian-green/10 text-viridian-green">
-                Verified Seller
+                {t("Verified Seller")}
               </Badge>
             </div>
 
@@ -106,12 +108,12 @@ export function VendorCard({ vendor, compact = false }: VendorCardProps) {
               )}
               <div className="flex items-center gap-1">
                 <Package className="h-4 w-4" />
-                <span>{vendor.totalProducts} products</span>
+                <span>{vendor.totalProducts} {t("products")}</span>
               </div>
               {memberSince && (
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  <span>Member since {memberSince}</span>
+                  <span>{t("Member since")} {memberSince}</span>
                 </div>
               )}
             </div>

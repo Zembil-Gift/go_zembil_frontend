@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTranslation } from "react-i18next";
 
 interface Product {
   id: number;
@@ -31,6 +32,7 @@ interface Category {
 }
 
 function OccasionCategoryContent() {
+  const { t } = useTranslation();
   const { categorySlug = '' } = useParams<{ categorySlug: string }>();
   
   const [sortBy, setSortBy] = useState('popular');
@@ -100,11 +102,11 @@ function OccasionCategoryContent() {
         
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-charcoal mb-4">Category Not Found</h1>
-            <p className="text-gray-600 mb-8">The occasion category you're looking for doesn't exist.</p>
+            <h1 className="text-3xl font-bold text-charcoal mb-4">{t("Category Not Found")}</h1>
+            <p className="text-gray-600 mb-8">{t("The occasion category you're looking for doesn't exist.")}</p>
             <Link to="/occasions">
               <Button className="bg-ethiopian-gold hover:bg-amber">
-                Browse All Occasions
+                {t("Browse All Occasions")}
               </Button>
             </Link>
           </div>
@@ -123,11 +125,11 @@ function OccasionCategoryContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center space-x-2 text-sm">
             <Link to="/" className="text-gray-500 hover:text-ethiopian-gold transition-colors">
-              Home
+              {t("Home")}
             </Link>
             <ChevronRight size={16} className="text-gray-400" />
             <Link to="/occasions" className="text-gray-500 hover:text-ethiopian-gold transition-colors">
-              Occasions
+              {t("Occasions")}
             </Link>
             <ChevronRight size={16} className="text-gray-400" />
             <span className="text-charcoal font-medium">
@@ -156,27 +158,27 @@ function OccasionCategoryContent() {
             <Filter size={20} className="text-gray-600" />
             <Select value={priceFilter} onValueChange={setPriceFilter}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by price" />
+                <SelectValue placeholder={t("Filter by price")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Prices</SelectItem>
-                <SelectItem value="under-1000">Under 1,000 ETB</SelectItem>
-                <SelectItem value="1000-3000">1,000 - 3,000 ETB</SelectItem>
-                <SelectItem value="3000-5000">3,000 - 5,000 ETB</SelectItem>
-                <SelectItem value="over-5000">Over 5,000 ETB</SelectItem>
+                <SelectItem value="all">{t("All Prices")}</SelectItem>
+                <SelectItem value="under-1000">{t("Under 1,000 ETB")}</SelectItem>
+                <SelectItem value="1000-3000">{t("1,000 - 3,000 ETB")}</SelectItem>
+                <SelectItem value="3000-5000">{t("3,000 - 5,000 ETB")}</SelectItem>
+                <SelectItem value="over-5000">{t("Over 5,000 ETB")}</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder={t("Sort by")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="popular">Most Popular</SelectItem>
-                <SelectItem value="newest">Newest First</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
+                <SelectItem value="popular">{t("Most Popular")}</SelectItem>
+                <SelectItem value="newest">{t("Newest First")}</SelectItem>
+                <SelectItem value="price-low">{t("Price: Low to High")}</SelectItem>
+                <SelectItem value="price-high">{t("Price: High to Low")}</SelectItem>
+                <SelectItem value="rating">{t("Highest Rated")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -244,9 +246,9 @@ function OccasionCategoryContent() {
             <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
               <Heart size={32} className="text-gray-400" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No gifts found</h3>
+            <h3 className="text-xl font-medium text-gray-900 mb-2">{t("No gifts found")}</h3>
             <p className="text-gray-500 mb-6">
-              Try adjusting your filters or check back soon for new arrivals
+              {t("Try adjusting your filters or check back soon for new arrivals")}
             </p>
             <Button 
               onClick={() => {
@@ -255,7 +257,7 @@ function OccasionCategoryContent() {
               }}
               className="bg-ethiopian-gold hover:bg-amber"
             >
-              Clear Filters
+              {t("Clear Filters")}
             </Button>
           </div>
         )}
@@ -269,17 +271,17 @@ function OccasionCategoryContent() {
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
               >
-                Previous
+                {t("Previous")}
               </Button>
               <span className="px-4 py-2 text-sm text-gray-600">
-                Page {currentPage}
+                {t("Page")} {currentPage}
               </span>
               <Button
                 variant="outline"
                 onClick={() => setCurrentPage(currentPage + 1)}
                 className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
               >
-                Next
+                {t("Next")}
               </Button>
             </div>
           </div>

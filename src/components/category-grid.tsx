@@ -15,6 +15,7 @@ import {
   PaintbrushVertical,
   Coffee
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Category {
   id: number;
@@ -25,6 +26,7 @@ interface Category {
 }
 
 export default function CategoryGrid() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("occasions");
 
   const { data: categories = [] } = useQuery<Category[]>({
@@ -108,10 +110,10 @@ export default function CategoryGrid() {
   };
 
   const tabs = [
-    { key: "occasions", label: "Occasions" },
-    { key: "cultural", label: "Cultural & Religious" },
-    { key: "emotions", label: "Emotions" },
-    { key: "custom", label: "Custom Orders" },
+    { key: "occasions", label: t("Occasions") },
+    { key: "cultural", label: t("Cultural & Religious") },
+    { key: "emotions", label: t("Emotions") },
+    { key: "custom", label: t("Custom Orders") },
   ];
 
   const filteredCategories = getFilteredCategories();
@@ -173,8 +175,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-warm-red to-ethiopian-gold rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <CakeSlice size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Birthday</h3>
-                        <p className="text-xs md:text-sm opacity-90">Celebrate another year</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Birthday")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Celebrate another year")}</p>
                       </div>
                     </div>
                   </div>
@@ -184,8 +186,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-warm-red to-deep-forest rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Heart size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Anniversary</h3>
-                        <p className="text-xs md:text-sm opacity-90">Love & milestones</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Anniversary")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Love & milestones")}</p>
                       </div>
                     </div>
                   </div>
@@ -195,8 +197,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-ethiopian-gold to-amber-600 rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <GraduationCap size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Graduation</h3>
-                        <p className="text-xs md:text-sm opacity-90">Achievement celebration</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Graduation")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Achievement celebration")}</p>
                       </div>
                     </div>
                   </div>
@@ -206,8 +208,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-deep-forest to-ethiopian-gold rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Baby size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">New Baby</h3>
-                        <p className="text-xs md:text-sm opacity-90">Welcome little ones</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("New Baby")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Welcome little ones")}</p>
                       </div>
                     </div>
                   </div>
@@ -222,8 +224,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-ethiopian-gold to-warm-red rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Cross size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Meskel</h3>
-                        <p className="text-xs md:text-sm opacity-90">Finding of the True Cross</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Meskel")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Finding of the True Cross")}</p>
                       </div>
                     </div>
                   </div>
@@ -233,8 +235,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-deep-forest to-ethiopian-gold rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Waves size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Timket</h3>
-                        <p className="text-xs md:text-sm opacity-90">Ethiopian Epiphany</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Timket")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Ethiopian Epiphany")}</p>
                       </div>
                     </div>
                   </div>
@@ -244,8 +246,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-warm-red to-ethiopian-gold rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Star size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Gena</h3>
-                        <p className="text-xs md:text-sm opacity-90">Ethiopian Christmas</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Gena")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Ethiopian Christmas")}</p>
                       </div>
                     </div>
                   </div>
@@ -255,8 +257,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-ethiopian-gold to-deep-forest rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Egg size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Fasika</h3>
-                        <p className="text-xs md:text-sm opacity-90">Ethiopian Easter</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Fasika")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Ethiopian Easter")}</p>
                       </div>
                     </div>
                   </div>
@@ -271,8 +273,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-warm-red to-deep-forest rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Heart size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Love & Romance</h3>
-                        <p className="text-xs md:text-sm opacity-90">Express your feelings</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Love & Romance")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Express your feelings")}</p>
                       </div>
                     </div>
                   </div>
@@ -282,8 +284,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-ethiopian-gold to-warm-red rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Star size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Gratitude</h3>
-                        <p className="text-xs md:text-sm opacity-90">Say thank you</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Gratitude")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Say thank you")}</p>
                       </div>
                     </div>
                   </div>
@@ -293,8 +295,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-deep-forest to-ethiopian-gold rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Heart size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Comfort & Support</h3>
-                        <p className="text-xs md:text-sm opacity-90">Send encouragement</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Comfort & Support")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Send encouragement")}</p>
                       </div>
                     </div>
                   </div>
@@ -304,8 +306,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-ethiopian-gold to-amber-600 rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Star size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Celebration</h3>
-                        <p className="text-xs md:text-sm opacity-90">Share the joy</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Celebration")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Share the joy")}</p>
                       </div>
                     </div>
                   </div>
@@ -320,8 +322,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-ethiopian-gold to-deep-forest rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <PaintbrushVertical size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Custom Portrait</h3>
-                        <p className="text-xs md:text-sm opacity-90">Personalized artwork</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Custom Portrait")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Personalized artwork")}</p>
                       </div>
                     </div>
                   </div>
@@ -331,8 +333,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-warm-red to-ethiopian-gold rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Gift size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Embroidery</h3>
-                        <p className="text-xs md:text-sm opacity-90">Traditional handwork</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Embroidery")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Traditional handwork")}</p>
                       </div>
                     </div>
                   </div>
@@ -342,8 +344,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-deep-forest to-warm-red rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Coffee size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Wood Crafts</h3>
-                        <p className="text-xs md:text-sm opacity-90">Handmade woodwork</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Wood Crafts")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Handmade woodwork")}</p>
                       </div>
                     </div>
                   </div>
@@ -353,8 +355,8 @@ export default function CategoryGrid() {
                     <div className="bg-gradient-to-br from-ethiopian-gold to-amber-600 rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg">
                       <div className="text-center">
                         <Star size={28} className="mx-auto mb-3 md:mb-4" />
-                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">Custom Jewelry</h3>
-                        <p className="text-xs md:text-sm opacity-90">Unique accessories</p>
+                        <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t("Custom Jewelry")}</h3>
+                        <p className="text-xs md:text-sm opacity-90">{t("Unique accessories")}</p>
                       </div>
                     </div>
                   </div>

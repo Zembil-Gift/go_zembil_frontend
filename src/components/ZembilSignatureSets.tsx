@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 export default function GeramiSignatureSets() {
+  const { t } = useTranslation();
   return (
     <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-b from-white to-june-bud/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -12,7 +14,7 @@ export default function GeramiSignatureSets() {
           className="text-center mb-16"
         >
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-eagle-green mb-4 tracking-wider uppercase">
-            GIFTING WITH HEART – <span className="text-viridian-green">goGerami</span> SIGNATURE SETS
+            {t("GIFTING WITH HEART –")} <span className="text-viridian-green">{t("goGerami")}</span> {t("SIGNATURE SETS")}
           </h2>
         </motion.div>
 
@@ -71,7 +73,7 @@ export default function GeramiSignatureSets() {
           className="text-center max-w-5xl mx-auto"
         >
           <p className="text-base sm:text-lg text-eagle-green/80 leading-relaxed font-light max-w-4xl mx-auto">
-            Celebrate every occasion with heart and heritage. <span className="font-bold text-viridian-green">goGerami</span> Signature Sets feature authentic, handpicked gifts inspired by Ethiopian culture — from woven baskets and coffee to books, spices, and netela. Perfect for reconnecting families, surprising loved ones, or sending your roots in a box. Every Gerami carries a story.
+            {t("Celebrate every occasion with heart and heritage.")} <span className="font-bold text-viridian-green">{t("goGerami")}</span> {t("Signature Sets feature authentic, handpicked gifts inspired by Ethiopian culture — from woven baskets and coffee to books, spices, and netela. Perfect for reconnecting families, surprising loved ones, or sending your roots in a box. Every Gerami carries a story.")}
           </p>
         </motion.div>
       </div>

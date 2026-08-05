@@ -31,7 +31,7 @@ export default function SubscriptionBanner() {
                     </div>
                     <div>
                       <h3 className="font-bold text-xl text-white">{t('homepage.subscription.title')}</h3>
-                      <p className="text-white/90 font-medium text-sm">Never miss a special moment</p>
+                      <p className="text-white/90 font-medium text-sm">{t("Never miss a special moment")}</p>
                     </div>
                   </div>
                   <div className="flex space-x-1">
@@ -46,7 +46,7 @@ export default function SubscriptionBanner() {
               <div className="p-8">
                 <div className="flex items-center mb-4">
                   <Sparkles size={20} className="text-viridian-green mr-2" />
-                  <span className="text-sm font-medium text-viridian-green">Exclusive Benefits</span>
+                  <span className="text-sm font-medium text-viridian-green">{t("Exclusive Benefits")}</span>
                 </div>
                 
                 <p className="font-light text-gray-700 mb-6 leading-relaxed text-lg">
@@ -56,15 +56,15 @@ export default function SubscriptionBanner() {
                 <div className="space-y-3 mb-8">
                   <div className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-viridian-green rounded-full"></div>
-                    <span className="text-gray-600 font-medium">Early access to new products</span>
+                    <span className="text-gray-600 font-medium">{t("Early access to new products")}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-viridian-green rounded-full"></div>
-                    <span className="text-gray-600 font-medium">Exclusive discounts & offers</span>
+                    <span className="text-gray-600 font-medium">{t("Exclusive discounts & offers")}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-viridian-green rounded-full"></div>
-                    <span className="text-gray-600 font-medium">Personalized gift recommendations</span>
+                    <span className="text-gray-600 font-medium">{t("Personalized gift recommendations")}</span>
                   </div>
                 </div>
                 
@@ -89,7 +89,7 @@ export default function SubscriptionBanner() {
                     </div>
                     <div>
                       <h3 className="font-bold text-xl text-white">{t('homepage.referral.title')}</h3>
-                      <p className="text-white/90 font-medium text-sm">Share the love, earn rewards</p>
+                      <p className="text-white/90 font-medium text-sm">{t("Share the love, earn rewards")}</p>
                     </div>
                   </div>
                   <div className="flex space-x-1">
@@ -104,7 +104,7 @@ export default function SubscriptionBanner() {
               <div className="p-8">
                 <div className="flex items-center mb-4">
                   <Sparkles size={20} className="text-viridian-green mr-2" />
-                  <span className="text-sm font-medium text-viridian-green">Rewards Program</span>
+                  <span className="text-sm font-medium text-viridian-green">{t("Rewards Program")}</span>
                 </div>
                 
                 <p className="font-light text-gray-700 mb-6 leading-relaxed text-lg">
@@ -114,15 +114,15 @@ export default function SubscriptionBanner() {
                 <div className="space-y-3 mb-8">
                   <div className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-viridian-green rounded-full"></div>
-                    <span className="text-gray-600 font-medium">Earn points for every referral</span>
+                    <span className="text-gray-600 font-medium">{t("Earn points for every referral")}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-viridian-green rounded-full"></div>
-                    <span className="text-gray-600 font-medium">Redeem for exclusive gifts</span>
+                    <span className="text-gray-600 font-medium">{t("Redeem for exclusive gifts")}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-viridian-green rounded-full"></div>
-                    <span className="text-gray-600 font-medium">Special member-only events</span>
+                    <span className="text-gray-600 font-medium">{t("Special member-only events")}</span>
                   </div>
                 </div>
                 

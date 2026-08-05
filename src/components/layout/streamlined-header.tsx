@@ -89,7 +89,7 @@ export default function StreamlinedHeader() {
   const navigation = [
     { name: t("navigation.home"), href: "/" },
     { name: t("navigation.shop"), href: "/shop" },
-    { name: "Packages", href: "/packages" },
+    { name: t("Packages"), href: "/packages" },
     { name: t("navigation.services"), href: "/services" },
     { name: t("navigation.events"), href: "/events" },
     { name: t("navigation.custom"), href: "/custom-orders" },
@@ -185,11 +185,11 @@ export default function StreamlinedHeader() {
                             {wishlistCount}
                           </Badge>
                         )}
-                        <span className="sr-only">Wishlist</span>
+                        <span className="sr-only">{t("Wishlist")}</span>
                       </Link>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Wishlist</TooltipContent>
+                  <TooltipContent>{t("Wishlist")}</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
@@ -213,11 +213,11 @@ export default function StreamlinedHeader() {
                             {cartCount}
                           </Badge>
                         )}
-                        <span className="sr-only">Cart</span>
+                        <span className="sr-only">{t("Cart")}</span>
                       </Link>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Shopping Cart</TooltipContent>
+                  <TooltipContent>{t("Shopping Cart")}</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
@@ -230,7 +230,7 @@ export default function StreamlinedHeader() {
                     className="text-eagle-green hover:text-viridian-green p-2"
                   >
                     <Globe className="h-5 w-5" />
-                    <span className="sr-only">Language</span>
+                    <span className="sr-only">{t("Language")}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-white">
@@ -246,7 +246,7 @@ export default function StreamlinedHeader() {
                         <span className="font-medium">
                           {language.nativeName}
                         </span>
-                        {language.code !== language.nativeName && (
+                        {language.name !== language.nativeName && (
                           <span className="text-sm text-muted-foreground">
                             ({language.name})
                           </span>
@@ -273,7 +273,7 @@ export default function StreamlinedHeader() {
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                         </span>
                       )}
-                      <span className="sr-only">Profile</span>
+                      <span className="sr-only">{t("Profile")}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52 bg-white">
@@ -285,16 +285,16 @@ export default function StreamlinedHeader() {
                             <span className="text-amber-600 mt-0.5">⚠️</span>
                             <div>
                               <p className="font-medium text-amber-900 text-xs">
-                                Complete your profile
+                                {t("Complete your profile")}
                               </p>
                               <p className="text-amber-700 text-xs mt-0.5">
-                                Add missing details
+                                {t("Add missing details")}
                               </p>
                               <Link
                                 to="/profile?tab=personal"
                                 className="text-amber-800 hover:text-amber-900 text-xs font-medium underline mt-1 inline-block"
                               >
-                                Complete now →
+                                {t("Complete now")} →
                               </Link>
                             </div>
                           </div>
@@ -310,7 +310,7 @@ export default function StreamlinedHeader() {
                             className="flex items-center text-eagle-green font-medium"
                           >
                             <Shield className="mr-2 h-4 w-4" />
-                            <span>Admin Dashboard</span>
+                            <span>{t("Admin Dashboard")}</span>
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -324,7 +324,7 @@ export default function StreamlinedHeader() {
                             className="flex items-center text-emerald-600 font-medium"
                           >
                             <Store className="mr-2 h-4 w-4" />
-                            <span>Vendor Dashboard</span>
+                            <span>{t("Vendor Dashboard")}</span>
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -333,13 +333,13 @@ export default function StreamlinedHeader() {
                     <DropdownMenuItem asChild>
                       <Link to="/profile" className="flex items-center">
                         <User className="mr-2 h-4 w-4" />
-                        <span>My Profile</span>
+                        <span>{t("My Profile")}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/my-orders" className="flex items-center">
                         <Package className="mr-2 h-4 w-4" />
-                        <span>My Orders</span>
+                        <span>{t("My Orders")}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -348,13 +348,13 @@ export default function StreamlinedHeader() {
                         className="flex items-center"
                       >
                         <Calendar className="mr-2 h-4 w-4" />
-                        <span>My Services</span>
+                        <span>{t("My Services")}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/my-tickets" className="flex items-center">
                         <Ticket className="mr-2 h-4 w-4" />
-                        <span>My Tickets</span>
+                        <span>{t("My Tickets")}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -363,7 +363,7 @@ export default function StreamlinedHeader() {
                         className="flex items-center"
                       >
                         <Package className="mr-2 h-4 w-4" />
-                        <span>My Custom Orders</span>
+                        <span>{t("My Custom Orders")}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -381,14 +381,14 @@ export default function StreamlinedHeader() {
                             className="flex items-center"
                           >
                             <Store className="mr-2 h-4 w-4" />
-                            <span>Join as Vendor</span>
+                            <span>{t("Join as Vendor")}</span>
                           </Link>
                         </DropdownMenuItem>
                       )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="mr-2 h-4 w-4" />
-                      <span>Sign Out</span>
+                      <span>{t("Sign Out")}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -402,7 +402,7 @@ export default function StreamlinedHeader() {
                         size="sm"
                         className="text-eagle-green hover:text-viridian-green text-xs lg:text-sm"
                       >
-                        Partner
+                        {t("Partner")}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48 bg-white">
@@ -415,14 +415,14 @@ export default function StreamlinedHeader() {
                       <DropdownMenuItem asChild>
                         <Link to="/vendor-signup" className="flex items-center">
                           <Store className="mr-2 h-4 w-4" />
-                          <span>Join as Vendor</span>
+                          <span>{t("Join as Vendor")}</span>
                         </Link>
                         </DropdownMenuItem>
 
                         <DropdownMenuItem asChild>
                           <Link to="/partner-signup" className="flex items-center">
                             <Store className="mr-2 h-4 w-4" />
-                            <span>Join as Partner</span>
+                            <span>{t("Join as Partner")}</span>
                           </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -434,7 +434,7 @@ export default function StreamlinedHeader() {
                     asChild
                     className="text-eagle-green hover:text-viridian-green"
                   >
-                    <Link to="/signin">Sign In</Link>
+                    <Link to="/signin">{t("Sign In")}</Link>
                   </Button>
                 </div>
               )}
@@ -500,7 +500,9 @@ export default function StreamlinedHeader() {
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {t("Menu")}
+                </h2>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -583,7 +585,7 @@ export default function StreamlinedHeader() {
                 >
                   <Link to="/wishlist">
                     <Heart className="mr-2 h-4 w-4" />
-                    Wishlist
+                    {t("Wishlist")}
                     {wishlistCount > 0 && (
                       <Badge
                         variant="destructive"
@@ -604,11 +606,9 @@ export default function StreamlinedHeader() {
                       className="w-full justify-start h-9"
                     >
                       <Globe className="mr-2 h-4 w-4" />
-                      {currentLanguage === "en-US"
-                        ? "EN"
-                        : currentLanguage === "am"
-                        ? "አማ"
-                        : currentLanguage}
+                      {availableLanguages.find(
+                        (language) => language.code === currentLanguage,
+                      )?.nativeName ?? currentLanguage}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 bg-white">
@@ -624,7 +624,7 @@ export default function StreamlinedHeader() {
                           <span className="font-medium">
                             {language.nativeName}
                           </span>
-                          {language.code !== language.nativeName && (
+                          {language.name !== language.nativeName && (
                             <span className="text-sm text-muted-foreground">
                               ({language.name})
                             </span>
@@ -648,7 +648,7 @@ export default function StreamlinedHeader() {
                       >
                         <Link to="/admin">
                           <Shield className="mr-2 h-4 w-4" />
-                          Admin Dashboard
+                          {t("Admin Dashboard")}
                         </Link>
                       </Button>
                     )}
@@ -660,7 +660,7 @@ export default function StreamlinedHeader() {
                     >
                       <Link to="/profile">
                         <User className="mr-2 h-4 w-4" />
-                        Profile
+                        {t("Profile")}
                       </Link>
                     </Button>
                     <Button
@@ -671,7 +671,7 @@ export default function StreamlinedHeader() {
                     >
                       <Link to="/my-orders">
                         <Package className="mr-2 h-4 w-4" />
-                        Orders
+                        {t("Orders")}
                       </Link>
                     </Button>
                     <Button
@@ -682,7 +682,7 @@ export default function StreamlinedHeader() {
                     >
                       <Link to="/my-service-orders">
                         <Calendar className="mr-2 h-4 w-4" />
-                        Services
+                        {t("Services")}
                       </Link>
                     </Button>
                     <Button
@@ -693,7 +693,7 @@ export default function StreamlinedHeader() {
                     >
                       <Link to="/my-tickets">
                         <Ticket className="mr-2 h-4 w-4" />
-                        Tickets
+                        {t("Tickets")}
                       </Link>
                     </Button>
                     <Button
@@ -704,7 +704,7 @@ export default function StreamlinedHeader() {
                     >
                       <Link to="/my-custom-orders">
                         <Package className="mr-2 h-4 w-4" />
-                        Custom Orders
+                        {t("Custom Orders")}
                       </Link>
                     </Button>
                     {/* <Button variant="outline" size="sm" asChild className="w-full justify-start h-9">
@@ -724,7 +724,7 @@ export default function StreamlinedHeader() {
                         >
                           <Link to="/vendor-signup">
                             <Store className="mr-2 h-4 w-4" />
-                            Join as a Vendor
+                            {t("Join as a Vendor")}
                           </Link>
                         </Button>
                       )}
@@ -738,7 +738,7 @@ export default function StreamlinedHeader() {
                       >
                         <Link to="/vendor">
                           <Store className="mr-2 h-4 w-4" />
-                          Vendor
+                          {t("Vendor")}
                         </Link>
                       </Button>
                     )}
@@ -749,7 +749,7 @@ export default function StreamlinedHeader() {
                       className="w-full justify-start h-9"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      Sign Out
+                      {t("Sign Out")}
                     </Button>
                   </div>
                 ) : (
@@ -768,11 +768,11 @@ export default function StreamlinedHeader() {
                     >
                       <Link to="/vendor-signup">
                         <Store className="mr-2 h-4 w-4" />
-                        Join as a Vendor
+                        {t("Join as a Vendor")}
                       </Link>
                     </Button>
                     <Button size="sm" asChild className="w-full h-9">
-                      <Link to="/signin">Sign In</Link>
+                      <Link to="/signin">{t("Sign In")}</Link>
                     </Button>
                   </div>
                 )}

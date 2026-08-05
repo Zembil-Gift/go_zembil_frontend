@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { deliveryPricingService, type DeliveryEstimateResponse } from '@/services/geocodingService.ts';
 import { Truck, Clock, MapPin, AlertTriangle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useTranslation } from "react-i18next";
 
 interface DeliveryEstimateProps {
   /** Vendor/pickup latitude */
@@ -40,6 +41,7 @@ export function DeliveryEstimate({
   autoCalculate = true,
   className = '',
 }: DeliveryEstimateProps) {
+  const { t } = useTranslation();
   const [estimate, setEstimate] = useState<DeliveryEstimateResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,8 +81,8 @@ export function DeliveryEstimate({
       <div className={`flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200 ${className}`}>
         <Loader2 className="w-5 h-5 animate-spin text-primary-blue" />
         <div>
-          <p className="text-sm font-medium text-gray-700">Calculating delivery fee...</p>
-          <p className="text-xs text-gray-500">Checking traffic conditions and route</p>
+          <p className="text-sm font-medium text-gray-700">{t("Calculating delivery fee...")}</p>
+          <p className="text-xs text-gray-500">{t("Checking traffic conditions and route")}</p>
         </div>
       </div>
     );
@@ -91,7 +93,7 @@ export function DeliveryEstimate({
       <div className={`p-4 bg-red-50 rounded-xl border border-red-200 ${className}`}>
         <div className="flex items-center gap-2 mb-2">
           <AlertTriangle className="w-4 h-4 text-red-500" />
-          <p className="text-sm font-medium text-red-700">Could not estimate delivery</p>
+          <p className="text-sm font-medium text-red-700">{t("Could not estimate delivery")}</p>
         </div>
         <p className="text-xs text-red-600">{error}</p>
         <button
@@ -99,7 +101,7 @@ export function DeliveryEstimate({
           onClick={calculateEstimate}
           className="mt-2 text-xs text-primary-blue hover:underline font-medium"
         >
-          Try again
+          {t("Try again")}
         </button>
       </div>
     );
@@ -116,7 +118,7 @@ export function DeliveryEstimate({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Truck className="w-5 h-5 text-primary-blue" />
-            <span className="text-sm font-semibold text-gray-800">Delivery Fee</span>
+            <span className="text-sm font-semibold text-gray-800">{t("Delivery Fee")}</span>
           </div>
           <span className="text-lg font-bold text-primary-blue">
             {estimate.currencyCode} {estimate.deliveryFee.toFixed(2)}
@@ -131,7 +133,7 @@ export function DeliveryEstimate({
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
             <div>
-              <p className="text-xs text-gray-500">Distance</p>
+              <p className="text-xs text-gray-500">{t("Distance")}</p>
               <p className="text-sm font-medium text-gray-800">{estimate.distanceText}</p>
             </div>
           </div>
@@ -140,7 +142,7 @@ export function DeliveryEstimate({
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
             <div>
-              <p className="text-xs text-gray-500">Est. Time</p>
+              <p className="text-xs text-gray-500">{t("Est. Time")}</p>
               <p className="text-sm font-medium text-gray-800">{estimate.trafficDurationText}</p>
             </div>
           </div>
@@ -151,7 +153,7 @@ export function DeliveryEstimate({
           <div className="flex items-center gap-2 p-2.5 bg-amber-50 rounded-lg border border-amber-200">
             <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
             <p className="text-xs text-amber-700">
-              Heavy traffic detected — delivery may take longer than usual. Fee includes traffic surcharge.
+              {t("Heavy traffic detected — delivery may take longer than usual. Fee includes traffic surcharge.")}
             </p>
           </div>
         )}
@@ -165,31 +167,31 @@ export function DeliveryEstimate({
               className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary-blue transition-colors"
             >
               {showBreakdown ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              {showBreakdown ? 'Hide' : 'Show'} fee breakdown
+              {showBreakdown ? 'Hide' : 'Show'} {t("fee breakdown")}
             </button>
 
             {showBreakdown && (
               <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Base fee</span>
+                  <span className="text-gray-500">{t("Base fee")}</span>
                   <span className="text-gray-700">{estimate.currencyCode} {estimate.feeBreakdown.baseFee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Distance fee</span>
+                  <span className="text-gray-500">{t("Distance fee")}</span>
                   <span className="text-gray-700">{estimate.currencyCode} {estimate.feeBreakdown.distanceFee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Time fee</span>
+                  <span className="text-gray-500">{t("Time fee")}</span>
                   <span className="text-gray-700">{estimate.currencyCode} {estimate.feeBreakdown.durationFee.toFixed(2)}</span>
                 </div>
                 {estimate.feeBreakdown.trafficSurcharge > 0 && (
                   <div className="flex justify-between text-amber-600">
-                    <span>Traffic surcharge</span>
+                    <span>{t("Traffic surcharge")}</span>
                     <span>{estimate.currencyCode} {estimate.feeBreakdown.trafficSurcharge.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="border-t border-gray-200 pt-1.5 flex justify-between font-semibold">
-                  <span className="text-gray-700">Total</span>
+                  <span className="text-gray-700">{t("Total")}</span>
                   <span className="text-gray-900">{estimate.currencyCode} {estimate.feeBreakdown.total.toFixed(2)}</span>
                 </div>
               </div>

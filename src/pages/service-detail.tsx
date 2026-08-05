@@ -33,8 +33,10 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { trackViewItem } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 export default function ServiceDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isInitialized } = useAuth();
@@ -210,7 +212,7 @@ export default function ServiceDetail() {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-eagle-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="font-light text-eagle-green">
-            Loading service details...
+            {t("Loading service details...")}
           </p>
         </div>
       </div>
@@ -222,16 +224,16 @@ export default function ServiceDetail() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-eagle-green mb-2">
-            Service Not Found
+            {t("Service Not Found")}
           </h2>
           <p className="font-light text-eagle-green/70 mb-4">
-            The service you're looking for doesn't exist or is not available.
+            {t("The service you're looking for doesn't exist or is not available.")}
           </p>
           <Button
             onClick={() => navigate("/services")}
             className="bg-eagle-green hover:bg-viridian-green text-white"
           >
-            Browse All Services
+            {t("Browse All Services")}
           </Button>
         </div>
       </div>
@@ -308,7 +310,7 @@ export default function ServiceDetail() {
           className="mb-6 text-eagle-green hover:text-viridian-green hover:bg-june-bud/10"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Services
+          {t("Back to Services")}
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -384,7 +386,7 @@ export default function ServiceDetail() {
                       {/* Price Badge */}
                       <div className="absolute bottom-4 right-4">
                         <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
-                          From{" "}
+                          {t("From")}{" "}
                           {serviceService.formatPrice(
                             displayPriceMajor ?? 0,
                             displayCurrency
@@ -436,7 +438,7 @@ export default function ServiceDetail() {
                     {/* Price Badge */}
                     <div className="absolute bottom-4 right-4">
                       <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
-                        From{" "}
+                        {t("From")}{" "}
                         {serviceService.formatPrice(
                           displayPriceMajor ?? 0,
                           displayCurrency
@@ -503,7 +505,7 @@ export default function ServiceDetail() {
                             </h4>
                             {pkg.isDefault && (
                               <Badge className="bg-viridian-green text-white text-xs">
-                                Default
+                                {t("Default")}
                               </Badge>
                             )}
                           </div>
@@ -544,7 +546,7 @@ export default function ServiceDetail() {
               <Card>
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green">
-                    About This Service
+                    {t("About This Service")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -556,7 +558,7 @@ export default function ServiceDetail() {
                     {service.location && (
                       <div>
                         <h4 className="font-bold text-eagle-green mb-2">
-                          Location
+                          {t("Location")}
                         </h4>
                         <p className="font-light text-eagle-green/70">
                           {service.location}
@@ -569,7 +571,7 @@ export default function ServiceDetail() {
                       availability.workingDays.length > 0 && (
                         <div>
                           <h4 className="font-bold text-eagle-green mb-2">
-                            Working Days
+                            {t("Working Days")}
                           </h4>
                           <p className="font-light text-eagle-green/70">
                             {workingDaysDisplay}
@@ -583,7 +585,7 @@ export default function ServiceDetail() {
                       availability.workingHoursEnd && (
                         <div>
                           <h4 className="font-bold text-eagle-green mb-2">
-                            Working Hours
+                            {t("Working Hours")}
                           </h4>
                           <p className="font-light text-eagle-green/70">
                             {availability.workingHoursStart} -{" "}
@@ -598,7 +600,7 @@ export default function ServiceDetail() {
                       availability.timeSlots.length > 0 && (
                         <div>
                           <h4 className="font-bold text-eagle-green mb-2">
-                            Available Time Slots
+                            {t("Available Time Slots")}
                           </h4>
                           <div className="flex flex-wrap gap-2">
                             {availability.timeSlots.map((slot, index) => (
@@ -618,11 +620,11 @@ export default function ServiceDetail() {
                       selectedPackage.maxBookingsPerDay > 0 && (
                         <div>
                           <h4 className="font-bold text-eagle-green mb-2">
-                            Daily Availability
+                            {t("Daily Availability")}
                           </h4>
                           <p className="font-light text-eagle-green/70">
-                            Limited to {selectedPackage.maxBookingsPerDay}{" "}
-                            bookings per day
+                            {t("Limited to")} {selectedPackage.maxBookingsPerDay}{" "}
+                            {t("bookings per day")}
                           </p>
                         </div>
                       )}
@@ -642,7 +644,7 @@ export default function ServiceDetail() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="font-bold text-eagle-green">
-                        Package Details
+                        {t("Package Details")}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -683,59 +685,57 @@ export default function ServiceDetail() {
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Shield className="h-5 w-5" />
-                    Payment & Cancellation Policy
+                    {t("Payment & Cancellation Policy")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <h4 className="font-bold text-eagle-green mb-1">
-                        Payment
+                        {t("Payment")}
                       </h4>
                       <p className="font-light text-eagle-green/70 text-sm">
-                        Full payment required at booking
+                        {t("Full payment required at booking")}
                       </p>
                     </div>
                     <div>
                       <h4 className="font-bold text-eagle-green mb-1">
-                        Confirmation
+                        {t("Confirmation")}
                       </h4>
                       <p className="font-light text-eagle-green/70 text-sm">
-                        Vendor confirmation required after payment
+                        {t("Vendor confirmation required after payment")}
                       </p>
                     </div>
                   </div>
 
                   <div>
                     <h4 className="font-bold text-eagle-green mb-1">
-                      Cancellation & Refund Policy (System-Enforced)
+                      {t("Cancellation & Refund Policy (System-Enforced)")}
                     </h4>
                     <p className="font-light text-eagle-green/70 text-sm">
-                      Full refund for cancellations 48+ hours before service.
-                      50% refund for cancellations 24-48 hours before. No refund
-                      for cancellations less than 24 hours before service.
+                      {t("Full refund for cancellations 48+ hours before service. 50% refund for cancellations 24-48 hours before. No refund for cancellations less than 24 hours before service.")}
                     </p>
                   </div>
 
                   {/* Refund Tiers Info */}
                   <div className="bg-june-bud/10 rounded-lg p-4 mt-4">
                     <h4 className="font-bold text-eagle-green mb-2">
-                      Refund Tiers
+                      {t("Refund Tiers")}
                     </h4>
                     <ul className="space-y-2 text-sm font-light text-eagle-green/70">
                       <li className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-green-500" />
                         <span>
-                          48+ hours before: 100% refund (minus platform fee)
+                          {t("48+ hours before: 100% refund (minus platform fee)")}
                         </span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-yellow-500" />
-                        <span>24-48 hours before: 50% refund</span>
+                        <span>{t("24-48 hours before: 50% refund")}</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-red-500" />
-                        <span>Less than 24 hours: No refund</span>
+                        <span>{t("Less than 24 hours: No refund")}</span>
                       </li>
                     </ul>
                   </div>
@@ -760,7 +760,7 @@ export default function ServiceDetail() {
                 <CardHeader className="bg-gradient-to-r from-june-bud/10 to-white">
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    Service Provider
+                    {t("Service Provider")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
@@ -813,7 +813,7 @@ export default function ServiceDetail() {
                       {selectedPackage?.durationMinutes != null &&
                         selectedPackage.durationMinutes > 0 && (
                           <p className="font-light text-eagle-green/70 text-xs mt-1">
-                            Duration: {selectedPackage.durationMinutes} minutes
+                            {t("Duration:")} {selectedPackage.durationMinutes} {t("minutes")}
                           </p>
                         )}
                     </div>
@@ -832,12 +832,12 @@ export default function ServiceDetail() {
                     }}
                   >
                     <Calendar className="h-4 w-4 mr-2" />
-                    Book Now
+                    {t("Book Now")}
                   </Button>
 
                   <div className="flex items-center gap-2 text-sm font-light text-eagle-green/70">
                     <Clock className="h-4 w-4" />
-                    <span>Responds within 24 hours</span>
+                    <span>{t("Responds within 24 hours")}</span>
                   </div>
                 </CardContent>
               </Card>

@@ -13,6 +13,7 @@ import {
   Home,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface OrderItem {
   id: number;
@@ -42,6 +43,7 @@ interface Order {
 }
 
 export default function OrderSuccess() {
+  const { t } = useTranslation();
   const [orderId, setOrderId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [trackingNumber, setTrackingNumber] = useState<string>("");
@@ -97,7 +99,7 @@ export default function OrderSuccess() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ethiopian-gold mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your order details...</p>
+          <p className="text-gray-600">{t("Loading your order details...")}</p>
         </div>
       </div>
     );
@@ -111,12 +113,11 @@ export default function OrderSuccess() {
             <div className="text-red-500 mb-4">
               <Package className="w-16 h-16 mx-auto mb-4" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Order Not Found</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("Order Not Found")}</h2>
             <p className="text-gray-600 mb-6">
-              We couldn't find your order details. Please check your order
-              confirmation email or contact support.
+              {t("We couldn't find your order details. Please check your order confirmation email or contact support.")}
             </p>
-            <Button onClick={() => navigate("/shop")}>Continue Shopping</Button>
+            <Button onClick={() => navigate("/shop")}>{t("Continue Shopping")}</Button>
           </CardContent>
         </Card>
       </div>
@@ -132,15 +133,14 @@ export default function OrderSuccess() {
             <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Order Confirmed!
+            {t("Order Confirmed!")}
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Thank you for your order! We've received your payment and are
-            preparing your gift for delivery.
+            {t("Thank you for your order! We've received your payment and are preparing your gift for delivery.")}
           </p>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-block mt-4">
             <p className="text-green-800 font-medium">
-              Order ID:{" "}
+              {t("Order ID:")}{" "}
               <strong className="font-bold text-green-900">{orderId}</strong>
             </p>
           </div>
@@ -153,25 +153,25 @@ export default function OrderSuccess() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Package className="text-ethiopian-gold" size={20} />
-                <span>Order Information</span>
+                <span>{t("Order Information")}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="font-medium text-gray-900">Order Number</p>
+                  <p className="font-medium text-gray-900">{t("Order Number")}</p>
                   <p className="text-gray-600">
                     {order.id.slice(0, 8).toUpperCase()}
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Tracking Number</p>
+                  <p className="font-medium text-gray-900">{t("Tracking Number")}</p>
                   <p className="text-gray-600 font-mono">
                     {order.trackingNumber}
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Order Date</p>
+                  <p className="font-medium text-gray-900">{t("Order Date")}</p>
                   <p className="text-gray-600">
                     {new Date(order.createdAt).toLocaleDateString("en-US", {
                       year: "numeric",
@@ -181,22 +181,22 @@ export default function OrderSuccess() {
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Status</p>
+                  <p className="font-medium text-gray-900">{t("Status")}</p>
                   <Badge className="bg-blue-100 text-blue-800">
                     {order.status.charAt(0).toUpperCase() +
                       order.status.slice(1)}
                   </Badge>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Payment Method</p>
+                  <p className="font-medium text-gray-900">{t("Payment Method")}</p>
                   <p className="text-gray-600 capitalize">
                     {paymentMethod || "Card"}
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Total Amount</p>
+                  <p className="font-medium text-gray-900">{t("Total Amount")}</p>
                   <p className="text-gray-900 font-semibold">
-                    ETB {parseFloat(order.total).toFixed(2)}
+                    {t("ETB")} {parseFloat(order.total).toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -208,7 +208,7 @@ export default function OrderSuccess() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Truck className="text-ethiopian-gold" size={20} />
-                <span>Recipient Information</span>
+                <span>{t("Recipient Information")}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -216,14 +216,14 @@ export default function OrderSuccess() {
                 <div className="flex items-center space-x-3">
                   <User className="w-4 h-4 text-gray-500" />
                   <div>
-                    <p className="font-medium text-gray-900">Recipient Name</p>
+                    <p className="font-medium text-gray-900">{t("Recipient Name")}</p>
                     <p className="text-gray-600">{order.recipientName}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Phone className="w-4 h-4 text-gray-500" />
                   <div>
-                    <p className="font-medium text-gray-900">Phone Number</p>
+                    <p className="font-medium text-gray-900">{t("Phone Number")}</p>
                     <p className="text-gray-600">{order.recipientPhone}</p>
                   </div>
                 </div>
@@ -231,7 +231,7 @@ export default function OrderSuccess() {
                   <MapPin className="w-4 h-4 text-gray-500" />
                   <div>
                     <p className="font-medium text-gray-900">
-                      Delivery Address
+                      {t("Delivery Address")}
                     </p>
                     <p className="text-gray-600">{order.recipientCity}</p>
                     <p className="text-gray-600 text-sm">
@@ -242,7 +242,7 @@ export default function OrderSuccess() {
                 <div className="flex items-center space-x-3">
                   <Truck className="w-4 h-4 text-gray-500" />
                   <div>
-                    <p className="font-medium text-gray-900">Delivery Type</p>
+                    <p className="font-medium text-gray-900">{t("Delivery Type")}</p>
                     <Badge
                       variant="outline"
                       className="bg-green-50 text-green-700 border-green-200 capitalize"
@@ -260,7 +260,7 @@ export default function OrderSuccess() {
         {order.items && order.items.length > 0 && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Order Items</CardTitle>
+              <CardTitle>{t("Order Items")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -283,11 +283,11 @@ export default function OrderSuccess() {
                       <h4 className="font-medium text-gray-900">
                         {item.product?.name || "Product"}
                       </h4>
-                      <p className="text-gray-600">Quantity: {item.quantity}</p>
+                      <p className="text-gray-600">{t("Quantity:")} {item.quantity}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-medium text-gray-900">
-                        ETB {parseFloat(item.price).toFixed(2)}
+                        {t("ETB")} {parseFloat(item.price).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -295,8 +295,8 @@ export default function OrderSuccess() {
 
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center font-bold text-lg">
-                    <span>Total</span>
-                    <span>ETB {parseFloat(order.total).toFixed(2)}</span>
+                    <span>{t("Total")}</span>
+                    <span>{t("ETB")} {parseFloat(order.total).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -316,7 +316,7 @@ export default function OrderSuccess() {
           >
             <span className="flex items-center space-x-2">
               <span>📦</span>
-              <span>Track My Order</span>
+              <span>{t("Track My Order")}</span>
             </span>
           </Button>
 
@@ -330,7 +330,7 @@ export default function OrderSuccess() {
           >
             <span className="flex items-center space-x-2">
               <span>🛍️</span>
-              <span>Continue Shopping</span>
+              <span>{t("Continue Shopping")}</span>
             </span>
           </Button>
         </div>
@@ -338,7 +338,7 @@ export default function OrderSuccess() {
         {/* Next Steps */}
         <Card>
           <CardHeader>
-            <CardTitle>What's Next?</CardTitle>
+            <CardTitle>{t("What's Next?")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
@@ -346,27 +346,27 @@ export default function OrderSuccess() {
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
                   <Package className="w-6 h-6 text-blue-600" />
                 </div>
-                <h4 className="font-medium">Processing</h4>
+                <h4 className="font-medium">{t("Processing")}</h4>
                 <p className="text-sm text-gray-600">
-                  We're preparing your order for shipment
+                  {t("We're preparing your order for shipment")}
                 </p>
               </div>
               <div className="space-y-2">
                 <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto">
                   <Truck className="w-6 h-6 text-yellow-600" />
                 </div>
-                <h4 className="font-medium">Shipping</h4>
+                <h4 className="font-medium">{t("Shipping")}</h4>
                 <p className="text-sm text-gray-600">
-                  Your order will be shipped within 24 hours
+                  {t("Your order will be shipped within 24 hours")}
                 </p>
               </div>
               <div className="space-y-2">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
-                <h4 className="font-medium">Delivery</h4>
+                <h4 className="font-medium">{t("Delivery")}</h4>
                 <p className="text-sm text-gray-600">
-                  Delivered to your recipient in 2-3 days
+                  {t("Delivered to your recipient in 2-3 days")}
                 </p>
               </div>
             </div>

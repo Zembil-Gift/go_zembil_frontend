@@ -23,6 +23,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 
 const sidebarItems = [
   {
@@ -53,6 +54,7 @@ const sidebarItems = [
 ];
 
 export default function DeliveryLayout() {
+  const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -69,7 +71,7 @@ export default function DeliveryLayout() {
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b z-50 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Truck className="h-6 w-6 text-ethiopian-gold" />
-          <span className="font-bold text-lg">Gerami Delivery</span>
+          <span className="font-bold text-lg">{t("Gerami Delivery")}</span>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <X /> : <Menu />}
@@ -85,7 +87,7 @@ export default function DeliveryLayout() {
         <div className="flex flex-col h-full">
           <div className="h-16 flex items-center gap-2 px-6 border-b">
             <Truck className="h-6 w-6 text-ethiopian-gold" />
-            <span className="font-bold text-lg">Gerami Delivery</span>
+            <span className="font-bold text-lg">{t("Gerami Delivery")}</span>
           </div>
 
           <nav className="flex-1 p-4 space-y-1">
@@ -124,21 +126,21 @@ export default function DeliveryLayout() {
                     <span className="text-sm text-start font-medium">
                       {user?.firstName} {user?.lastName}
                     </span>
-                    <span className="text-xs text-gray-500">Delivery Person</span>
+                    <span className="text-xs text-gray-500">{t("Delivery Person")}</span>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("My Account")}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/delivery/profile")}>
                   <User className="mr-2 h-4 w-4" />
-                  Profile
+                  {t("Profile")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+                  {t("Logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

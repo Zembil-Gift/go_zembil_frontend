@@ -53,6 +53,7 @@ import type {
 } from "@/types/customOrders";
 import { getAllTemplateImages } from "@/utils/imageUtils";
 import imageCompression from "browser-image-compression";
+import { useTranslation } from "react-i18next";
 
 // Field type icon mapping
 const getFieldTypeIcon = (fieldType: string) => {
@@ -81,6 +82,7 @@ interface FieldValue {
 }
 
 function CreateCustomOrderContent() {
+  const { t } = useTranslation();
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -197,7 +199,7 @@ function CreateCustomOrderContent() {
         setDiscountResult(result);
         setDiscountError(null);
         toast({
-          title: "Discount Applied",
+          title: t("Discount Applied"),
           description: `Discount code "${code}" applied successfully!`,
         });
       } else {
@@ -292,7 +294,7 @@ function CreateCustomOrderContent() {
     if (file.size > maxSize) {
       const maxSizeMB = maxSize / (1024 * 1024);
       toast({
-        title: "File Too Large",
+        title: t("File Too Large"),
         description: `File size exceeds ${maxSizeMB}MB limit. Please choose a smaller file.`,
         variant: "destructive",
       });
@@ -305,8 +307,8 @@ function CreateCustomOrderContent() {
 
     if (isImage && !file.type.startsWith("image/")) {
       toast({
-        title: "Invalid File Type",
-        description: "Please upload an image file (jpg, png, gif, or webp).",
+        title: t("Invalid File Type"),
+        description: t("Please upload an image file (jpg, png, gif, or webp)."),
         variant: "destructive",
       });
       return;
@@ -314,9 +316,9 @@ function CreateCustomOrderContent() {
 
     if (isVideo && !file.type.startsWith("video/")) {
       toast({
-        title: "Invalid File Type",
+        title: t("Invalid File Type"),
         description:
-          "Please upload a video file (mp4, mov, avi, mkv, or webm).",
+          t("Please upload a video file (mp4, mov, avi, mkv, or webm)."),
         variant: "destructive",
       });
       return;
@@ -353,7 +355,7 @@ function CreateCustomOrderContent() {
       }
 
       toast({
-        title: "File Selected",
+        title: t("File Selected"),
         description: `${file.name} will be uploaded when you submit the order.`,
       });
     } catch (error: any) {
@@ -362,7 +364,7 @@ function CreateCustomOrderContent() {
         error?.response?.data?.message ||
         "Failed to upload file. Please try again.";
       toast({
-        title: "Upload Failed",
+        title: t("Upload Failed"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -437,8 +439,8 @@ function CreateCustomOrderContent() {
 
     if (!isFormValid || !isDescriptionValid) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields correctly.",
+        title: t("Validation Error"),
+        description: t("Please fill in all required fields correctly."),
         variant: "destructive",
       });
       return;
@@ -503,7 +505,7 @@ function CreateCustomOrderContent() {
     <Card>
       <CardHeader>
         <CardTitle className="text-eagle-green text-lg">
-          Order Summary
+          {t("Order Summary")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -519,7 +521,7 @@ function CreateCustomOrderContent() {
         {template.vendorBusinessName && (
           <div className="flex items-center gap-2 text-sm">
             <Store className="h-4 w-4 text-viridian-green" />
-            <span className="text-eagle-green/70">Sold by:</span>
+            <span className="text-eagle-green/70">{t("Sold by:")}</span>
             <span className="text-eagle-green font-medium">
               {template.vendorBusinessName}
             </span>
@@ -530,7 +532,7 @@ function CreateCustomOrderContent() {
         {template.supplier && (
           <div className="flex items-center gap-2 text-sm">
             <Building2 className="h-4 w-4 text-viridian-green" />
-            <span className="text-eagle-green/70">Supplied by:</span>
+            <span className="text-eagle-green/70">{t("Supplied by:")}</span>
             <span className="text-eagle-green font-medium">
               {template.supplier.businessName}
             </span>
@@ -570,11 +572,11 @@ function CreateCustomOrderContent() {
               />
               {template.negotiable === false ? (
                 <p className="text-xs text-viridian-green mt-1 font-medium">
-                  ✓ Fixed price with discount - pay directly
+                  {t("✓ Fixed price with discount - pay directly")}
                 </p>
               ) : (
                 <p className="text-xs text-eagle-green/60 mt-1">
-                  Final price may vary based on customizations
+                  {t("Final price may vary based on customizations")}
                 </p>
               )}
             </div>
@@ -585,11 +587,11 @@ function CreateCustomOrderContent() {
               </p>
               {template.negotiable === false ? (
                 <p className="text-xs text-viridian-green mt-1 font-medium">
-                  ✓ Fixed price - pay directly without negotiation
+                  {t("✓ Fixed price - pay directly without negotiation")}
                 </p>
               ) : (
                 <p className="text-xs text-eagle-green/60 mt-1">
-                  Final price may vary based on customizations
+                  {t("Final price may vary based on customizations")}
                 </p>
               )}
             </>
@@ -600,7 +602,7 @@ function CreateCustomOrderContent() {
           <div className="space-y-2">
             <Label className="text-eagle-green font-medium flex items-center gap-1">
               <Tag className="h-4 w-4" />
-              Discount Code
+              {t("Discount Code")}
             </Label>
             {discountResult?.applicable ? (
               <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
@@ -608,10 +610,10 @@ function CreateCustomOrderContent() {
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                   <div>
                     <p className="text-sm font-medium text-green-800">
-                      Code "{discountCode}" applied
+                      {t("Code \"")}{discountCode}{t("\" applied")}
                     </p>
                     <p className="text-xs text-green-600">
-                      You save{" "}
+                      {t("You save")}{" "}
                       {formatPrice(
                         manualDiscountAmountDisplay,
                         template?.price?.currencyCode || preferredCurrency
@@ -632,7 +634,7 @@ function CreateCustomOrderContent() {
               <>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Enter discount code"
+                    placeholder={t("Enter discount code")}
                     value={discountCode}
                     onChange={(e) => {
                       setDiscountCode(e.target.value);
@@ -669,7 +671,7 @@ function CreateCustomOrderContent() {
                   !discountCode.trim() &&
                   template.activeDiscount && (
                     <p className="text-xs text-eagle-green/60">
-                      A template discount will be applied automatically.
+                      {t("A template discount will be applied automatically.")}
                     </p>
                   )}
               </>
@@ -784,7 +786,7 @@ function CreateCustomOrderContent() {
                   <>
                     <Upload className="h-8 w-8 text-eagle-green/50 mb-2" />
                     <span className="text-sm text-eagle-green/60">
-                      Click to upload {field.fieldType.toLowerCase()}
+                      {t("Click to upload")} {field.fieldType.toLowerCase()}
                     </span>
                     <span className="text-xs text-eagle-green/40 mt-1">
                       {field.fieldType === "VIDEO"
@@ -814,16 +816,16 @@ function CreateCustomOrderContent() {
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-eagle-green mb-2">
-            Sign In Required
+            {t("Sign In Required")}
           </h2>
           <p className="font-light text-eagle-green/70 mb-4">
-            Please sign in to create a custom order.
+            {t("Please sign in to create a custom order.")}
           </p>
           <Button
             onClick={() => navigate("/signin")}
             className="bg-eagle-green hover:bg-viridian-green text-white"
           >
-            Sign In
+            {t("Sign In")}
           </Button>
         </div>
       </div>
@@ -864,16 +866,16 @@ function CreateCustomOrderContent() {
         <div className="text-center">
           <Package className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-eagle-green mb-2">
-            Template Not Found
+            {t("Template Not Found")}
           </h2>
           <p className="font-light text-eagle-green/70 mb-4">
-            The template you're looking for doesn't exist.
+            {t("The template you're looking for doesn't exist.")}
           </p>
           <Button
             onClick={() => navigate("/custom-orders")}
             className="bg-eagle-green hover:bg-viridian-green text-white"
           >
-            Browse Templates
+            {t("Browse Templates")}
           </Button>
         </div>
       </div>
@@ -890,7 +892,7 @@ function CreateCustomOrderContent() {
           className="mb-6 text-eagle-green hover:text-viridian-green hover:bg-june-bud/10"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          {t("Back")}
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -997,7 +999,7 @@ function CreateCustomOrderContent() {
                       htmlFor="additionalDescription"
                       className="text-eagle-green font-medium"
                     >
-                      Description <span className="text-red-500">*</span>
+                      {t("Description")} <span className="text-red-500">*</span>
                     </Label>
                     <Textarea
                       id="additionalDescription"
@@ -1012,7 +1014,7 @@ function CreateCustomOrderContent() {
                           });
                         }
                       }}
-                      placeholder="Please provide a detailed description of your request..."
+                      placeholder={t("Please provide a detailed description of your request...")}
                       className={`min-h-[100px] ${
                         errors[-1] ? "border-red-500" : ""
                       }`}
@@ -1034,11 +1036,11 @@ function CreateCustomOrderContent() {
                     >
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Submit
+                        {t("Submit")}
                       </>
                     </Button>
                     <p className="text-xs text-eagle-green/60 text-center mt-2">
-                      Next: add shipping details and pin delivery location.
+                      {t("Next: add shipping details and pin delivery location.")}
                     </p>
                   </div>
                 </CardContent>

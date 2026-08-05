@@ -54,8 +54,10 @@ import {
   VendorOrder,
   VendorOrderDeliveryInfo,
 } from "@/services/orderService";
+import { useTranslation } from "react-i18next";
 
 export default function VendorProductOrders() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { openImage } = useAuthenticatedImageViewer();
   const queryClient = useQueryClient();
@@ -75,9 +77,9 @@ export default function VendorProductOrders() {
     mutationFn: (orderId: number) => orderService.acceptOrder(orderId),
     onSuccess: async () => {
       toast({
-        title: "Order Accepted",
+        title: t("Order Accepted"),
         description:
-          "The order has been confirmed and is ready for processing.",
+          t("The order has been confirmed and is ready for processing."),
       });
       await queryClient.invalidateQueries({
         queryKey: ["vendor-product-orders"],
@@ -87,7 +89,7 @@ export default function VendorProductOrders() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to accept order",
         variant: "destructive",
       });
@@ -107,7 +109,7 @@ export default function VendorProductOrders() {
     }) => orderService.updateVendorOrderStatus(orderId, status, notes),
     onSuccess: async (updatedOrder) => {
       toast({
-        title: "Status Updated",
+        title: t("Status Updated"),
         description: `Order status moved to ${updatedOrder.status}.`,
       });
       await queryClient.invalidateQueries({
@@ -118,7 +120,7 @@ export default function VendorProductOrders() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to update order status",
         variant: "destructive",
       });
@@ -131,9 +133,9 @@ export default function VendorProductOrders() {
       orderService.denyOrder(orderId, reason),
     onSuccess: async () => {
       toast({
-        title: "Order Rejected",
+        title: t("Order Rejected"),
         description:
-          "The order has been rejected and the customer will be notified.",
+          t("The order has been rejected and the customer will be notified."),
       });
       await queryClient.invalidateQueries({
         queryKey: ["vendor-product-orders"],
@@ -146,7 +148,7 @@ export default function VendorProductOrders() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to reject order",
         variant: "destructive",
       });
@@ -210,7 +212,7 @@ export default function VendorProductOrders() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({
-      title: "Copied!",
+      title: t("Copied!"),
       description: `${label} copied to clipboard`,
     });
   };
@@ -314,7 +316,7 @@ export default function VendorProductOrders() {
                       order.paymentStatus === "SUCCESS") && (
                       <Badge className="bg-green-100 text-green-700 border-none">
                         <CheckCircle className="h-3 w-3 mr-1" />
-                        Paid
+                        {t("Paid")}
                       </Badge>
                     )}
                     {/* Only show delivery status badge if order isn't already showing DELIVERED status */}
@@ -333,7 +335,7 @@ export default function VendorProductOrders() {
                   </div>
 
                   <h3 className="font-bold text-eagle-green text-base mb-1">
-                    Order #{order.orderNumber}
+                    {t("Order #")}{order.orderNumber}
                   </h3>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-eagle-green/70">
@@ -348,7 +350,7 @@ export default function VendorProductOrders() {
                   </div>
 
                   <p className="text-sm text-eagle-green/60 mt-1">
-                    {order.items.length} item
+                    {order.items.length} {t("item")}
                     {order.items.length !== 1 ? "s" : ""}
                   </p>
                 </div>
@@ -362,12 +364,12 @@ export default function VendorProductOrders() {
                   )}
                 </p>
                 <p className="text-xs text-eagle-green/60 mt-1">
-                  Your earnings
+                  {t("Your earnings")}
                 </p>
                 {hasDelivery && (
                   <div className="mt-2 flex items-center gap-1 text-xs text-indigo-600">
                     <Truck className="h-3 w-3" />
-                    <span>Delivery assigned</span>
+                    <span>{t("Delivery assigned")}</span>
                   </div>
                 )}
               </div>
@@ -386,7 +388,7 @@ export default function VendorProductOrders() {
                 ))}
                 {order.items.length > 3 && (
                   <span className="text-xs bg-eagle-green/5 text-eagle-green/70 px-2 py-1 rounded">
-                    +{order.items.length - 3} more
+                    +{order.items.length - 3} {t("more")}
                   </span>
                 )}
               </div>
@@ -441,7 +443,7 @@ export default function VendorProductOrders() {
         <div className="flex items-center justify-between">
           <h4 className="font-bold text-indigo-900 flex items-center gap-2">
             <Truck className="h-5 w-5" />
-            Delivery Information
+            {t("Delivery Information")}
           </h4>
           <Badge
             className={`${statusDisplay.bgColor} ${statusDisplay.color} border-none`}
@@ -455,7 +457,7 @@ export default function VendorProductOrders() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
               <User className="h-4 w-4 text-indigo-600" />
-              <span className="text-indigo-700">Delivery Person:</span>
+              <span className="text-indigo-700">{t("Delivery Person:")}</span>
               <span className="font-medium text-indigo-900">
                 {deliveryInfo.deliveryPersonName}
               </span>
@@ -464,7 +466,7 @@ export default function VendorProductOrders() {
             {deliveryInfo.deliveryPersonPhone && (
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="h-4 w-4 text-indigo-600" />
-                <span className="text-indigo-700">Phone:</span>
+                <span className="text-indigo-700">{t("Phone:")}</span>
                 <a
                   href={`tel:${deliveryInfo.deliveryPersonPhone}`}
                   className="font-medium text-indigo-900 hover:underline"
@@ -492,7 +494,7 @@ export default function VendorProductOrders() {
             {deliveryInfo.deliveryPersonEmail && (
               <div className="flex items-center gap-2 text-sm">
                 <Mail className="h-4 w-4 text-indigo-600" />
-                <span className="text-indigo-700">Email:</span>
+                <span className="text-indigo-700">{t("Email:")}</span>
                 <a
                   href={`mailto:${deliveryInfo.deliveryPersonEmail}`}
                   className="font-medium text-indigo-900 hover:underline"
@@ -508,7 +510,7 @@ export default function VendorProductOrders() {
             {deliveryInfo.vehicleType && (
               <div className="flex items-center gap-2 text-sm">
                 <Truck className="h-4 w-4 text-indigo-600" />
-                <span className="text-indigo-700">Vehicle:</span>
+                <span className="text-indigo-700">{t("Vehicle:")}</span>
                 <span className="font-medium text-indigo-900">
                   {deliveryInfo.vehicleType}
                   {deliveryInfo.vehicleNumber &&
@@ -520,7 +522,7 @@ export default function VendorProductOrders() {
             {deliveryInfo.expectedDeliveryAt && (
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-indigo-600" />
-                <span className="text-indigo-700">Expected:</span>
+                <span className="text-indigo-700">{t("Expected:")}</span>
                 <span className="font-medium text-indigo-900">
                   {orderService.formatDateTime(deliveryInfo.expectedDeliveryAt)}
                 </span>
@@ -530,7 +532,7 @@ export default function VendorProductOrders() {
             {deliveryInfo.assignedAt && (
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-indigo-600" />
-                <span className="text-indigo-700">Assigned:</span>
+                <span className="text-indigo-700">{t("Assigned:")}</span>
                 <span className="font-medium text-indigo-900">
                   {orderService.formatDateTime(deliveryInfo.assignedAt)}
                 </span>
@@ -545,14 +547,14 @@ export default function VendorProductOrders() {
             {deliveryInfo.pickedUpAt && (
               <div className="flex items-center gap-1 text-indigo-700">
                 <CheckCircle className="h-3 w-3 text-green-600" />
-                Picked up:{" "}
+                {t("Picked up:")}{" "}
                 {orderService.formatDateTime(deliveryInfo.pickedUpAt)}
               </div>
             )}
             {deliveryInfo.deliveredAt && (
               <div className="flex items-center gap-1 text-indigo-700">
                 <CheckCircle className="h-3 w-3 text-green-600" />
-                Delivered:{" "}
+                {t("Delivered:")}{" "}
                 {orderService.formatDateTime(deliveryInfo.deliveredAt)}
               </div>
             )}
@@ -562,32 +564,32 @@ export default function VendorProductOrders() {
         {/* Proof Images */}
         {(deliveryInfo.pickupImageUrl || deliveryInfo.proofImageUrl) && (
           <div className="pt-3 border-t border-indigo-200">
-            <p className="text-sm text-indigo-700 mb-2">Delivery Proof:</p>
+            <p className="text-sm text-indigo-700 mb-2">{t("Delivery Proof:")}</p>
             <div className="flex gap-3">
               {deliveryInfo.pickupImageUrl && (
                 <div className="text-center">
                   <AuthenticatedImage
                     src={deliveryInfo.pickupImageUrl}
-                    alt="Pickup proof"
+                    alt={t("Pickup proof")}
                     className="w-20 h-20 rounded-lg object-cover cursor-pointer hover:opacity-80"
                     onClick={() => {
                       openImage(deliveryInfo.pickupImageUrl ?? "");
                     }}
                   />
-                  <p className="text-xs text-indigo-600 mt-1">Pickup</p>
+                  <p className="text-xs text-indigo-600 mt-1">{t("Pickup")}</p>
                 </div>
               )}
               {deliveryInfo.proofImageUrl && (
                 <div className="text-center">
                   <AuthenticatedImage
                     src={deliveryInfo.proofImageUrl}
-                    alt="Delivery proof"
+                    alt={t("Delivery proof")}
                     className="w-20 h-20 rounded-lg object-cover cursor-pointer hover:opacity-80"
                     onClick={() => {
                       openImage(deliveryInfo.proofImageUrl ?? "");
                     }}
                   />
-                  <p className="text-xs text-indigo-600 mt-1">Delivery</p>
+                  <p className="text-xs text-indigo-600 mt-1">{t("Delivery")}</p>
                 </div>
               )}
             </div>
@@ -596,7 +598,7 @@ export default function VendorProductOrders() {
 
         {deliveryInfo.notes && (
           <div className="pt-3 border-t border-indigo-200">
-            <p className="text-sm text-indigo-700">Notes:</p>
+            <p className="text-sm text-indigo-700">{t("Notes:")}</p>
             <p className="text-sm text-indigo-900">{deliveryInfo.notes}</p>
           </div>
         )}
@@ -617,10 +619,10 @@ export default function VendorProductOrders() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-eagle-green mb-1 truncate">
-                Product Orders
+                {t("Product Orders")}
               </h1>
               <p className="font-light text-eagle-green/70">
-                Track and manage orders for your products
+                {t("Track and manage orders for your products")}
               </p>
             </div>
             <Button
@@ -629,7 +631,7 @@ export default function VendorProductOrders() {
               className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              {t("Refresh")}
             </Button>
           </div>
         </motion.div>
@@ -641,7 +643,7 @@ export default function VendorProductOrders() {
               <p className="text-2xl font-bold text-yellow-700">
                 {pendingOrders.length}
               </p>
-              <p className="text-sm text-yellow-600">Pending</p>
+              <p className="text-sm text-yellow-600">{t("Pending")}</p>
             </CardContent>
           </Card>
           <Card className="bg-purple-50 border-purple-200">
@@ -649,7 +651,7 @@ export default function VendorProductOrders() {
               <p className="text-2xl font-bold text-purple-700">
                 {processingOrders.length}
               </p>
-              <p className="text-sm text-purple-600">Processing</p>
+              <p className="text-sm text-purple-600">{t("Processing")}</p>
             </CardContent>
           </Card>
           <Card className="bg-indigo-50 border-indigo-200">
@@ -657,7 +659,7 @@ export default function VendorProductOrders() {
               <p className="text-2xl font-bold text-indigo-700">
                 {shippedOrders.length}
               </p>
-              <p className="text-sm text-indigo-600">Shipped</p>
+              <p className="text-sm text-indigo-600">{t("Shipped")}</p>
             </CardContent>
           </Card>
           <Card className="bg-green-50 border-green-200">
@@ -665,7 +667,7 @@ export default function VendorProductOrders() {
               <p className="text-2xl font-bold text-green-700">
                 {completedOrders.filter((o) => o.status === "DELIVERED").length}
               </p>
-              <p className="text-sm text-green-600">Delivered</p>
+              <p className="text-sm text-green-600">{t("Delivered")}</p>
             </CardContent>
           </Card>
         </div>
@@ -678,7 +680,7 @@ export default function VendorProductOrders() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                   <Input
-                    placeholder="Search orders, products, customers..."
+                    placeholder={t("Search orders, products, customers...")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
@@ -688,16 +690,16 @@ export default function VendorProductOrders() {
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t("Filter by status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                  <SelectItem value="PROCESSING">Processing</SelectItem>
-                  <SelectItem value="SHIPPED">Shipped</SelectItem>
-                  <SelectItem value="DELIVERED">Delivered</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                  <SelectItem value="PENDING">{t("Pending")}</SelectItem>
+                  <SelectItem value="CONFIRMED">{t("Confirmed")}</SelectItem>
+                  <SelectItem value="PROCESSING">{t("Processing")}</SelectItem>
+                  <SelectItem value="SHIPPED">{t("Shipped")}</SelectItem>
+                  <SelectItem value="DELIVERED">{t("Delivered")}</SelectItem>
+                  <SelectItem value="CANCELLED">{t("Cancelled")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -711,31 +713,31 @@ export default function VendorProductOrders() {
               value="pending"
               className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
             >
-              New Orders ({pendingOrders.length})
+              {t("New Orders (")}{pendingOrders.length})
             </TabsTrigger>
             <TabsTrigger
               value="processing"
               className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
             >
-              Processing ({processingOrders.length})
+              {t("Processing (")}{processingOrders.length})
             </TabsTrigger>
             <TabsTrigger
               value="shipped"
               className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
             >
-              Shipped ({shippedOrders.length})
+              {t("Shipped (")}{shippedOrders.length})
             </TabsTrigger>
             <TabsTrigger
               value="awaiting"
               className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
             >
-              Awaiting Confirmation ({awaitingConfirmationOrders.length})
+              {t("Awaiting Confirmation (")}{awaitingConfirmationOrders.length})
             </TabsTrigger>
             <TabsTrigger
               value="completed"
               className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
             >
-              Completed ({completedOrders.length})
+              {t("Completed (")}{completedOrders.length})
             </TabsTrigger>
           </TabsList>
 
@@ -817,7 +819,7 @@ export default function VendorProductOrders() {
               <>
                 <DialogHeader>
                   <DialogTitle className="font-bold text-eagle-green flex items-center gap-2">
-                    Order #{selectedOrder.orderNumber}
+                    {t("Order #")}{selectedOrder.orderNumber}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -833,7 +835,7 @@ export default function VendorProductOrders() {
                     </Button>
                   </DialogTitle>
                   <DialogDescription>
-                    Placed on{" "}
+                    {t("Placed on")}{" "}
                     {orderService.formatDateTime(selectedOrder.createdAt)}
                   </DialogDescription>
                 </DialogHeader>
@@ -843,7 +845,7 @@ export default function VendorProductOrders() {
                   <div className="flex items-center gap-4 flex-wrap">
                     <div>
                       <span className="text-sm font-light text-eagle-green/70">
-                        Order Status
+                        {t("Order Status")}
                       </span>
                       <Badge
                         className={`ml-2 ${
@@ -865,7 +867,7 @@ export default function VendorProductOrders() {
                     </div>
                     <div>
                       <span className="text-sm font-light text-eagle-green/70">
-                        Payment
+                        {t("Payment")}
                       </span>
                       <Badge
                         className={`ml-2 ${
@@ -892,7 +894,7 @@ export default function VendorProductOrders() {
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                       <h4 className="font-bold text-purple-800 mb-2 flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        Order Awaiting Your Approval
+                        {t("Order Awaiting Your Approval")}
                       </h4>
                       <p className="text-sm text-purple-700 mb-4">
                         {selectedOrder.paymentStatus === "PENDING"
@@ -924,7 +926,7 @@ export default function VendorProductOrders() {
                           className="border-red-300 text-red-600 hover:bg-red-50"
                         >
                           <XCircle className="h-4 w-4 mr-2" />
-                          Reject Order
+                          {t("Reject Order")}
                         </Button>
                       </div>
                     </div>
@@ -935,11 +937,10 @@ export default function VendorProductOrders() {
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
                         <Play className="h-4 w-4" />
-                        Order Confirmed
+                        {t("Order Confirmed")}
                       </h4>
                       <p className="text-sm text-blue-700 mb-4">
-                        You've accepted this order. Start processing it when
-                        you're ready to prepare the items.
+                        {t("You've accepted this order. Start processing it when you're ready to prepare the items.")}
                       </p>
                       <Button
                         onClick={() =>
@@ -964,11 +965,10 @@ export default function VendorProductOrders() {
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                       <h4 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
                         <Package className="h-4 w-4" />
-                        Order in Processing
+                        {t("Order in Processing")}
                       </h4>
                       <p className="text-sm text-orange-700 mb-4">
-                        Once you've handed over the items to the delivery
-                        service, mark the order as shipped.
+                        {t("Once you've handed over the items to the delivery service, mark the order as shipped.")}
                       </p>
                       <Button
                         onClick={() =>
@@ -993,12 +993,12 @@ export default function VendorProductOrders() {
                   {/* Customer Contact Info */}
                   <div>
                     <h4 className="font-bold text-eagle-green mb-3">
-                      Customer Information
+                      {t("Customer Information")}
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center gap-2 text-sm">
                         <User className="h-4 w-4 text-eagle-green/50" />
-                        <span className="text-eagle-green/70">Name:</span>
+                        <span className="text-eagle-green/70">{t("Name:")}</span>
                         <span className="font-medium text-eagle-green">
                           {selectedOrder.customerName || "N/A"}
                         </span>
@@ -1006,7 +1006,7 @@ export default function VendorProductOrders() {
                       {selectedOrder.customerEmail && (
                         <div className="flex items-center gap-2 text-sm">
                           <Mail className="h-4 w-4 text-eagle-green/50" />
-                          <span className="text-eagle-green/70">Email:</span>
+                          <span className="text-eagle-green/70">{t("Email:")}</span>
                           <a
                             href={`mailto:${selectedOrder.customerEmail}`}
                             className="font-medium text-eagle-green hover:underline"
@@ -1018,7 +1018,7 @@ export default function VendorProductOrders() {
                       {selectedOrder.customerPhone && (
                         <div className="flex items-center gap-2 text-sm">
                           <Phone className="h-4 w-4 text-eagle-green/50" />
-                          <span className="text-eagle-green/70">Phone:</span>
+                          <span className="text-eagle-green/70">{t("Phone:")}</span>
                           <a
                             href={`tel:${selectedOrder.customerPhone}`}
                             className="font-medium text-eagle-green hover:underline"
@@ -1050,7 +1050,7 @@ export default function VendorProductOrders() {
                       <div>
                         <h4 className="font-bold text-eagle-green mb-3 flex items-center gap-2">
                           <MapPin className="h-4 w-4" />
-                          Shipping Address
+                          {t("Shipping Address")}
                         </h4>
                         <div className="bg-gray-50 rounded-lg p-4 text-sm text-eagle-green/80">
                           <p>
@@ -1090,7 +1090,7 @@ export default function VendorProductOrders() {
                   {/* Order Items */}
                   <div>
                     <h4 className="font-bold text-eagle-green mb-3">
-                      Order Items
+                      {t("Order Items")}
                     </h4>
                     <div className="space-y-3">
                       {selectedOrder.items.map((item, index) => (
@@ -1116,11 +1116,11 @@ export default function VendorProductOrders() {
                               </h5>
                               {item.skuCode && (
                                 <p className="text-xs text-eagle-green/60">
-                                  SKU: {item.skuCode}
+                                  {t("SKU:")} {item.skuCode}
                                 </p>
                               )}
                               <p className="text-sm text-eagle-green/70 mt-1">
-                                Qty: {item.quantity} ×{" "}
+                                {t("Qty:")} {item.quantity} ×{" "}
                                 {orderService.formatPrice(
                                   item.unitAmountMinor,
                                   item.currency
@@ -1154,18 +1154,18 @@ export default function VendorProductOrders() {
                       <Separator />
                       <div className="bg-yellow-50 rounded-lg p-4">
                         <h4 className="font-bold text-yellow-800 mb-2">
-                          Gift Options
+                          {t("Gift Options")}
                         </h4>
                         {selectedOrder.giftWrap && (
                           <div className="flex items-center gap-2 text-sm text-yellow-700 mb-1">
                             <CheckCircle className="h-4 w-4" />
-                            Gift wrapping requested
+                            {t("Gift wrapping requested")}
                           </div>
                         )}
                         {selectedOrder.cardMessage && (
                           <div>
                             <p className="text-sm text-yellow-700">
-                              Gift message:
+                              {t("Gift message:")}
                             </p>
                             <p className="text-sm italic text-yellow-800 mt-1">
                               "{selectedOrder.cardMessage}"
@@ -1181,11 +1181,11 @@ export default function VendorProductOrders() {
                   {/* Payment Summary */}
                   <div>
                     <h4 className="font-bold text-eagle-green mb-3">
-                      Payment Summary
+                      {t("Payment Summary")}
                     </h4>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-eagle-green/70">Subtotal</span>
+                        <span className="text-eagle-green/70">{t("Subtotal")}</span>
                         <span className="text-eagle-green">
                           {orderService.formatPrice(
                             selectedOrder.subtotalMinor ?? 0,
@@ -1194,7 +1194,7 @@ export default function VendorProductOrders() {
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-eagle-green/70">VAT</span>
+                        <span className="text-eagle-green/70">{t("VAT")}</span>
                         <span className="text-eagle-green">
                           {orderService.formatPrice(
                             selectedOrder.vatAmountMinor ?? 0,
@@ -1204,7 +1204,7 @@ export default function VendorProductOrders() {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-eagle-green/70">
-                          Platform Fee
+                          {t("Platform Fee")}
                         </span>
                         <span className="text-red-600">
                           -
@@ -1218,7 +1218,7 @@ export default function VendorProductOrders() {
                         selectedOrder.deliveryFeeMinor > 0 && (
                           <div className="flex justify-between text-sm">
                             <span className="text-eagle-green/70">
-                              Delivery Fee
+                              {t("Delivery Fee")}
                             </span>
                             <span className="text-eagle-green">
                               {orderService.formatPrice(
@@ -1232,7 +1232,7 @@ export default function VendorProductOrders() {
                         selectedOrder.serviceFeeMinor > 0 && (
                           <div className="flex justify-between text-sm">
                             <span className="text-eagle-green/70">
-                              Service Fee
+                              {t("Service Fee")}
                             </span>
                             <span className="text-eagle-green">
                               {orderService.formatPrice(
@@ -1243,7 +1243,7 @@ export default function VendorProductOrders() {
                           </div>
                         )}
                       <div className="flex justify-between text-sm">
-                        <span className="text-eagle-green/70">Discount</span>
+                        <span className="text-eagle-green/70">{t("Discount")}</span>
                         <span className="text-red-600">
                           {orderService.formatPrice(
                             selectedOrder.discountMinor ?? 0,
@@ -1254,7 +1254,7 @@ export default function VendorProductOrders() {
                       {selectedOrder.campaignRewardApplied && (
                         <div className="flex justify-between text-sm">
                           <span className="text-eagle-green/70">
-                            Campaign Bonus
+                            {t("Campaign Bonus")}
                           </span>
                           <span className="text-green-700">
                             +
@@ -1267,7 +1267,7 @@ export default function VendorProductOrders() {
                       )}
                       <Separator />
                       <div className="flex justify-between text-sm">
-                        <span className="text-eagle-green/70">Order Total</span>
+                        <span className="text-eagle-green/70">{t("Order Total")}</span>
                         <span className="text-eagle-green">
                           {orderService.formatPrice(
                             selectedOrder.totalAmountMinor ?? 0,
@@ -1277,7 +1277,7 @@ export default function VendorProductOrders() {
                       </div>
                       <div className="flex justify-between pt-2 border-t border-green-200 bg-green-50 -mx-2 px-2 py-2 rounded">
                         <span className="font-bold text-green-700">
-                          Your Earnings
+                          {t("Your Earnings")}
                         </span>
                         <span className="font-bold text-green-700 text-lg">
                           {orderService.formatPrice(
@@ -1295,11 +1295,11 @@ export default function VendorProductOrders() {
                       <Separator />
                       <div className="bg-blue-50 rounded-lg p-4">
                         <h4 className="font-bold text-blue-800 mb-2">
-                          Tracking Information
+                          {t("Tracking Information")}
                         </h4>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-blue-700">
-                            Tracking Code:
+                            {t("Tracking Code:")}
                           </span>
                           <span className="font-mono font-medium text-blue-900">
                             {selectedOrder.trackingCode}
@@ -1328,7 +1328,7 @@ export default function VendorProductOrders() {
                       <Separator />
                       <div>
                         <h4 className="font-bold text-eagle-green mb-2">
-                          Order Notes
+                          {t("Order Notes")}
                         </h4>
                         <p className="text-sm text-eagle-green/70">
                           {selectedOrder.notes}
@@ -1348,13 +1348,12 @@ export default function VendorProductOrders() {
             <DialogHeader>
               <DialogTitle className="font-bold text-red-600 flex items-center gap-2">
                 <XCircle className="h-5 w-5" />
-                Reject Order
+                {t("Reject Order")}
               </DialogTitle>
               <DialogDescription>
                 {orderToReject && (
                   <>
-                    Rejecting order #{orderToReject.orderNumber}. Please provide
-                    a reason for rejection.
+                    {t("Rejecting order #")}{orderToReject.orderNumber}{t(". Please provide a reason for rejection.")}
                   </>
                 )}
               </DialogDescription>
@@ -1363,18 +1362,17 @@ export default function VendorProductOrders() {
             <div className="space-y-4 py-4">
               <div>
                 <label className="text-sm font-medium text-eagle-green mb-2 block">
-                  Rejection Reason <span className="text-red-500">*</span>
+                  {t("Rejection Reason")} <span className="text-red-500">*</span>
                 </label>
                 <Textarea
-                  placeholder="e.g., Item out of stock, Cannot fulfill within delivery timeframe, etc."
+                  placeholder={t("e.g., Item out of stock, Cannot fulfill within delivery timeframe, etc.")}
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   className="min-h-[100px]"
                 />
               </div>
               <p className="text-xs text-eagle-green/60">
-                The customer will be notified of this rejection with the reason
-                provided.
+                {t("The customer will be notified of this rejection with the reason provided.")}
               </p>
             </div>
 
@@ -1387,7 +1385,7 @@ export default function VendorProductOrders() {
                   setOrderToReject(null);
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 variant="destructive"

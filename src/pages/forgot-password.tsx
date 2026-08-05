@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import authService from "@/services/authService";
+import { useTranslation } from "react-i18next";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -20,6 +21,7 @@ const forgotPasswordSchema = z.object({
 type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPassword() {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -40,8 +42,8 @@ export default function ForgotPassword() {
       await authService.forgotPassword(data.email);
       setIsSuccess(true);
       toast({
-        title: "Check your email",
-        description: "If an account with that email exists, we've sent a password reset link.",
+        title: t("Check your email"),
+        description: t("If an account with that email exists, we've sent a password reset link."),
       });
     } catch (error: any) {
       const message = error?.response?.data?.error ||
@@ -69,10 +71,10 @@ export default function ForgotPassword() {
               <Mail size={28} className="text-primary-blue" />
             </div>
             <CardTitle className="text-2xl font-bold text-gray-900">
-              Forgot your password?
+              {t("Forgot your password?")}
             </CardTitle>
             <p className="text-gray-600 mt-2 text-sm">
-              Enter your email address and we'll send you a link to reset your password.
+              {t("Enter your email address and we'll send you a link to reset your password.")}
             </p>
           </CardHeader>
 
@@ -82,16 +84,15 @@ export default function ForgotPassword() {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
                   <CheckCircle2 className="text-green-600 mt-0.5 flex-shrink-0" size={20} />
                   <div>
-                    <p className="text-sm font-medium text-green-800">Check your email</p>
+                    <p className="text-sm font-medium text-green-800">{t("Check your email")}</p>
                     <p className="text-sm text-green-700 mt-1">
-                      If an account with that email exists, we've sent a password reset link.
-                      The link will expire in 30 minutes.
+                      {t("If an account with that email exists, we've sent a password reset link. The link will expire in 30 minutes.")}
                     </p>
                   </div>
                 </div>
 
                 <div className="text-center text-sm text-gray-600">
-                  <p>Didn't receive the email? Check your spam folder or</p>
+                  <p>{t("Didn't receive the email? Check your spam folder or")}</p>
                   <button
                     type="button"
                     className="text-primary-blue hover:underline font-medium mt-1"
@@ -100,14 +101,14 @@ export default function ForgotPassword() {
                       form.reset();
                     }}
                   >
-                    try again with a different email
+                    {t("try again with a different email")}
                   </button>
                 </div>
 
                 <Link to="/signin" className="block">
                   <Button variant="outline" className="w-full">
                     <ArrowLeft size={16} className="mr-2" />
-                    Back to Sign In
+                    {t("Back to Sign In")}
                   </Button>
                 </Link>
               </div>
@@ -125,13 +126,13 @@ export default function ForgotPassword() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email address</FormLabel>
+                        <FormLabel>{t("Email address")}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <Input
                               type="email"
-                              placeholder="Enter your email"
+                              placeholder={t("Enter your email")}
                               className="pl-10"
                               disabled={isLoading}
                               {...field}
@@ -151,7 +152,7 @@ export default function ForgotPassword() {
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sending...
+                        {t("Sending...")}
                       </>
                     ) : (
                       "Send Reset Link"
@@ -164,7 +165,7 @@ export default function ForgotPassword() {
                       className="text-sm text-gray-600 hover:text-primary-blue transition-colors inline-flex items-center gap-1"
                     >
                       <ArrowLeft size={14} />
-                      Back to Sign In
+                      {t("Back to Sign In")}
                     </Link>
                   </div>
                 </form>

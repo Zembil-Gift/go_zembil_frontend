@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useTranslation } from "react-i18next";
 
 interface Currency {
   id: number;
@@ -292,6 +293,7 @@ const generateSkuCode = (
 };
 
 export default function CreateProduct() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -486,8 +488,8 @@ export default function CreateProduct() {
     setIsDraftInitialized(true);
 
     toast({
-      title: "New Draft Started",
-      description: "A fresh product draft is ready.",
+      title: t("New Draft Started"),
+      description: t("A fresh product draft is ready."),
     });
   };
 
@@ -506,9 +508,9 @@ export default function CreateProduct() {
     setIsDraftInitialized(true);
 
     toast({
-      title: "Draft Restored",
+      title: t("Draft Restored"),
       description:
-        "Your previous product draft has been loaded. SKU images need to be re-uploaded.",
+        t("Your previous product draft has been loaded. SKU images need to be re-uploaded."),
     });
   };
 
@@ -684,15 +686,15 @@ export default function CreateProduct() {
       queryClient.invalidateQueries({ queryKey: ["admin", "all-products"] });
 
       toast({
-        title: "Product Created",
-        description: "Your product has been submitted for admin approval.",
+        title: t("Product Created"),
+        description: t("Your product has been submitted for admin approval."),
       });
       navigate("/vendor");
     },
     onError: (error: any) => {
       setIsUploadingImages(false);
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to create product",
         variant: "destructive",
       });
@@ -717,18 +719,18 @@ export default function CreateProduct() {
     if (currentStep < TOTAL_STEPS) {
       setCurrentStep(TOTAL_STEPS);
       toast({
-        title: "Review Required",
+        title: t("Review Required"),
         description:
-          "Please review the final step and confirm submission before creating your product.",
+          t("Please review the final step and confirm submission before creating your product."),
       });
       return;
     }
 
     if (!data.productSku || data.productSku.length === 0) {
       toast({
-        title: "Validation Error",
+        title: t("Validation Error"),
         description:
-          "At least one product SKU is required. Stock is managed at the SKU level.",
+          t("At least one product SKU is required. Stock is managed at the SKU level."),
         variant: "destructive",
       });
       return;
@@ -738,7 +740,7 @@ export default function CreateProduct() {
     if (missingImageIndex !== -1) {
       const missingSku = data.productSku[missingImageIndex];
       toast({
-        title: "Image Required",
+        title: t("Image Required"),
         description: `Please upload at least one image for ${
           data.productSku.length === 1
             ? "your product"
@@ -753,9 +755,9 @@ export default function CreateProduct() {
 
     if (!hasConfirmedProductSubmit) {
       toast({
-        title: "Confirmation Required",
+        title: t("Confirmation Required"),
         description:
-          "Please confirm that you're ready to submit this product before creating it.",
+          t("Please confirm that you're ready to submit this product before creating it."),
         variant: "destructive",
       });
       return;
@@ -835,7 +837,7 @@ export default function CreateProduct() {
     }
 
     toast({
-      title: "Validation Error",
+      title: t("Validation Error"),
       description:
         errorMessages.length > 0
           ? errorMessages.join(". ")
@@ -860,9 +862,9 @@ export default function CreateProduct() {
 
     if (!isStepValid) {
       toast({
-        title: "Validation Error",
+        title: t("Validation Error"),
         description:
-          "Please complete required fields before going to the next step.",
+          t("Please complete required fields before going to the next step."),
         variant: "destructive",
       });
       return;
@@ -873,7 +875,7 @@ export default function CreateProduct() {
       if (missingImageIndex !== -1) {
         const missingSku = form.getValues(`productSku.${missingImageIndex}`);
         toast({
-          title: "Image Required",
+          title: t("Image Required"),
           description: `Please upload at least one image for ${
             skuFields.length === 1
               ? "your product"
@@ -894,12 +896,12 @@ export default function CreateProduct() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
         <p className="text-gray-600 mb-4">
-          You need to be a vendor to create products.
+          {t("You need to be a vendor to create products.")}
         </p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -916,9 +918,9 @@ export default function CreateProduct() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Create Product</h1>
+            <h1 className="text-2xl font-bold">{t("Create Product")}</h1>
             <p className="text-muted-foreground">
-              Add a new product to your catalog (requires admin approval)
+              {t("Add a new product to your catalog (requires admin approval)")}
             </p>
           </div>
         </div>
@@ -926,11 +928,10 @@ export default function CreateProduct() {
         {showDraftDecision && storedDraft ? (
           <Card>
             <CardHeader>
-              <CardTitle>Saved Draft Found</CardTitle>
+              <CardTitle>{t("Saved Draft Found")}</CardTitle>
               <CardDescription>
-                You have a saved product draft from{" "}
-                {new Date(storedDraft.updatedAt).toLocaleString()}. You can
-                continue where you stopped or start a brand-new product.
+                {t("You have a saved product draft from")}{" "}
+                {new Date(storedDraft.updatedAt).toLocaleString()}{t(". You can continue where you stopped or start a brand-new product.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row gap-3 sm:justify-end">
@@ -939,10 +940,10 @@ export default function CreateProduct() {
                 variant="outline"
                 onClick={handleStartNewDraft}
               >
-                Create New Product
+                {t("Create New Product")}
               </Button>
               <Button type="button" onClick={handleContinueDraft}>
-                Continue Draft
+                {t("Continue Draft")}
               </Button>
             </CardContent>
           </Card>
@@ -969,7 +970,7 @@ export default function CreateProduct() {
                     }`}
                   >
                     <p className="text-xs text-muted-foreground">
-                      Step {stepNumber}
+                      {t("Step")} {stepNumber}
                     </p>
                     <p>{stepTitle}</p>
                   </div>
@@ -983,15 +984,15 @@ export default function CreateProduct() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
-                    Basic Information
+                    {t("Basic Information")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="name">Product Name *</Label>
+                    <Label htmlFor="name">{t("Product Name *")}</Label>
                     <Input
                       id="name"
-                      placeholder="Enter product name"
+                      placeholder={t("Enter product name")}
                       {...form.register("name")}
                     />
                     {form.formState.errors.name && (
@@ -1002,10 +1003,10 @@ export default function CreateProduct() {
                   </div>
 
                   <div>
-                    <Label htmlFor="summary">Short Summary *</Label>
+                    <Label htmlFor="summary">{t("Short Summary *")}</Label>
                     <Input
                       id="summary"
-                      placeholder="Brief product summary"
+                      placeholder={t("Brief product summary")}
                       {...form.register("summary")}
                     />
                     {form.formState.errors.summary && (
@@ -1016,10 +1017,10 @@ export default function CreateProduct() {
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Description *</Label>
+                    <Label htmlFor="description">{t("Description *")}</Label>
                     <Textarea
                       id="description"
-                      placeholder="Detailed product description"
+                      placeholder={t("Detailed product description")}
                       className="min-h-[120px]"
                       {...form.register("description")}
                     />
@@ -1037,11 +1038,11 @@ export default function CreateProduct() {
             {currentStep === 2 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Category</CardTitle>
+                  <CardTitle>{t("Category")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label>Sub-Category *</Label>
+                    <Label>{t("Sub-Category *")}</Label>
                     <Controller
                       name="subCategoryId"
                       control={form.control}
@@ -1049,7 +1050,7 @@ export default function CreateProduct() {
                         <SubcategorySearchCombobox
                           value={field.value}
                           onValueChange={field.onChange}
-                          placeholder="Search and select a sub-category"
+                          placeholder={t("Search and select a sub-category")}
                         />
                       )}
                     />
@@ -1061,7 +1062,7 @@ export default function CreateProduct() {
                   </div>
 
                   <div>
-                    <Label htmlFor="occasion">Occasion (Optional)</Label>
+                    <Label htmlFor="occasion">{t("Occasion (Optional)")}</Label>
                     <Controller
                       name="occasion"
                       control={form.control}
@@ -1071,14 +1072,14 @@ export default function CreateProduct() {
                           onValueChange={field.onChange}
                         >
                           <SelectTrigger id="occasion">
-                            <SelectValue placeholder="Select occasion" />
+                            <SelectValue placeholder={t("Select occasion")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="NEW_YEAR">New Year</SelectItem>
-                            <SelectItem value="BIRTHDAY">Birthday</SelectItem>
-                            <SelectItem value="TIMKET">Timket</SelectItem>
-                            <SelectItem value="EASTER">Easter</SelectItem>
-                            <SelectItem value="CHRISTMAS">Christmas</SelectItem>
+                            <SelectItem value="NEW_YEAR">{t("New Year")}</SelectItem>
+                            <SelectItem value="BIRTHDAY">{t("Birthday")}</SelectItem>
+                            <SelectItem value="TIMKET">{t("Timket")}</SelectItem>
+                            <SelectItem value="EASTER">{t("Easter")}</SelectItem>
+                            <SelectItem value="CHRISTMAS">{t("Christmas")}</SelectItem>
                           </SelectContent>
                         </Select>
                       )}
@@ -1086,7 +1087,7 @@ export default function CreateProduct() {
                   </div>
 
                   <div>
-                    <Label htmlFor="tags">Tags</Label>
+                    <Label htmlFor="tags">{t("Tags")}</Label>
                     <Controller
                       name="tags"
                       control={form.control}
@@ -1094,7 +1095,7 @@ export default function CreateProduct() {
                         <TagInput
                           value={field.value}
                           onChange={field.onChange}
-                          placeholder="Enter tag"
+                          placeholder={t("Enter tag")}
                           maxTags={10}
                         />
                       )}
@@ -1108,9 +1109,9 @@ export default function CreateProduct() {
             {currentStep === 3 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Pricing *</CardTitle>
+                  <CardTitle>{t("Pricing *")}</CardTitle>
                   <CardDescription>
-                    Set the currency and prices for your product variants.
+                    {t("Set the currency and prices for your product variants.")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1118,14 +1119,13 @@ export default function CreateProduct() {
                   <Alert className="border-blue-200 bg-blue-50">
                     <Info className="h-4 w-4 text-blue-600" />
                     <AlertTitle className="text-blue-800">
-                      Pricing Information
+                      {t("Pricing Information")}
                     </AlertTitle>
                     <AlertDescription className="text-blue-700">
-                      Enter your price (what you'll receive).
+                      {t("Enter your price (what you'll receive).")}
                       {vendorProfile?.vatStatus === "VAT_REGISTERED" && (
                         <span className="block mt-1 font-medium">
-                          As a VAT-registered vendor, VAT will be included in
-                          the customer price.
+                          {t("As a VAT-registered vendor, VAT will be included in the customer price.")}
                         </span>
                       )}
                     </AlertDescription>
@@ -1134,7 +1134,7 @@ export default function CreateProduct() {
                   {/* Currency Selection */}
                   {!isEthiopianVendor(vendorProfile) ? (
                     <div>
-                      <Label>Currency *</Label>
+                      <Label>{t("Currency *")}</Label>
                       <Controller
                         name="currencyCode"
                         control={form.control}
@@ -1144,7 +1144,7 @@ export default function CreateProduct() {
                             onValueChange={field.onChange}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select currency" />
+                              <SelectValue placeholder={t("Select currency")} />
                             </SelectTrigger>
                             <SelectContent>
                               {availableCurrencies.map((currency) => (
@@ -1172,12 +1172,10 @@ export default function CreateProduct() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="text-base">
-                          Product Variants (SKUs)
+                          {t("Product Variants (SKUs)")}
                         </Label>
                         <p className="text-sm text-muted-foreground">
-                          Manage stock and pricing for your product. Add
-                          multiple variants if you have different sizes, colors,
-                          etc.
+                          {t("Manage stock and pricing for your product. Add multiple variants if you have different sizes, colors, etc.")}
                         </p>
                       </div>
                       <Button
@@ -1187,7 +1185,7 @@ export default function CreateProduct() {
                         onClick={addSku}
                       >
                         <Plus className="h-4 w-4 mr-1" />
-                        Add Variant
+                        {t("Add Variant")}
                       </Button>
                     </div>
 
@@ -1221,7 +1219,7 @@ export default function CreateProduct() {
                           <CardContent className="space-y-4">
                             {/* SKU Name */}
                             <div>
-                              <Label>Variant Name *</Label>
+                              <Label>{t("Variant Name *")}</Label>
                               <Input
                                 placeholder={
                                   skuFields.length === 1
@@ -1242,8 +1240,7 @@ export default function CreateProduct() {
                                 </p>
                               )}
                               <p className="text-xs text-muted-foreground mt-1">
-                                A friendly name for this variant (e.g., "Red
-                                Large T-Shirt")
+                                {t("A friendly name for this variant (e.g., \"Red Large T-Shirt\")")}
                               </p>
                             </div>
 
@@ -1316,13 +1313,12 @@ export default function CreateProduct() {
                                   )}
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  This is what you'll receive. Platform fee will
-                                  be added for customers.
+                                  {t("This is what you'll receive. Platform fee will be added for customers.")}
                                 </p>
                               </div>
                               {/* Stock */}
                               <div>
-                                <Label>Stock Quantity *</Label>
+                                <Label>{t("Stock Quantity *")}</Label>
                                 <Controller
                                   name={`productSku.${skuIndex}.stockQuantity`}
                                   control={form.control}
@@ -1345,7 +1341,7 @@ export default function CreateProduct() {
                                   )}
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  Available units in stock
+                                  {t("Available units in stock")}
                                 </p>
                               </div>
                             </div>
@@ -1354,7 +1350,7 @@ export default function CreateProduct() {
                             <div className="space-y-3">
                               <div className="flex items-center justify-between">
                                 <Label className="text-sm">
-                                  Attributes (Size, Color, etc.)
+                                  {t("Attributes (Size, Color, etc.)")}
                                 </Label>
                                 <Button
                                   type="button"
@@ -1363,14 +1359,13 @@ export default function CreateProduct() {
                                   onClick={() => addAttribute(skuIndex)}
                                 >
                                   <Plus className="h-3 w-3 mr-1" />
-                                  Add Attribute
+                                  {t("Add Attribute")}
                                 </Button>
                               </div>
 
                               {attributes.length === 0 && (
                                 <p className="text-sm text-muted-foreground italic">
-                                  No attributes added. Click "Add Attribute" to
-                                  add size, color, etc.
+                                  {t("No attributes added. Click \"Add Attribute\" to add size, color, etc.")}
                                 </p>
                               )}
 
@@ -1380,14 +1375,14 @@ export default function CreateProduct() {
                                   className="flex items-center gap-2"
                                 >
                                   <Input
-                                    placeholder="Name (e.g., Size)"
+                                    placeholder={t("Name (e.g., Size)")}
                                     {...form.register(
                                       `productSku.${skuIndex}.attributes.${attrIndex}.name`
                                     )}
                                     className="flex-1"
                                   />
                                   <Input
-                                    placeholder="Value (e.g., Large)"
+                                    placeholder={t("Value (e.g., Large)")}
                                     {...form.register(
                                       `productSku.${skuIndex}.attributes.${attrIndex}.value`
                                     )}
@@ -1410,11 +1405,11 @@ export default function CreateProduct() {
 
                             {/* SKU Images */}
                             <div className="space-y-3">
-                              <Label className="text-sm">Images *</Label>
+                              <Label className="text-sm">{t("Images *")}</Label>
                               <p className="text-xs text-muted-foreground">
-                                Upload images for this{" "}
+                                {t("Upload images for this")}{" "}
                                 {skuFields.length === 1 ? "product" : "variant"}
-                                . The first image will be the cover.
+                                {t(". The first image will be the cover.")}
                               </p>
                               <ImageUpload
                                 images={[]}
@@ -1438,8 +1433,7 @@ export default function CreateProduct() {
                               {pendingSkuImages[skuIndex] &&
                                 pendingSkuImages[skuIndex].length > 0 && (
                                   <p className="text-sm text-muted-foreground">
-                                    {pendingSkuImages[skuIndex].length} image(s)
-                                    will be uploaded
+                                    {pendingSkuImages[skuIndex].length} {t("image(s) will be uploaded")}
                                   </p>
                                 )}
                             </div>
@@ -1458,10 +1452,10 @@ export default function CreateProduct() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Gift className="h-5 w-5" />
-                    Gift Wrapping
+                    {t("Gift Wrapping")}
                   </CardTitle>
                   <CardDescription>
-                    Allow customers to add gift wrapping for an additional fee.
+                    {t("Allow customers to add gift wrapping for an additional fee.")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1483,14 +1477,14 @@ export default function CreateProduct() {
                       )}
                     />
                     <Label htmlFor="giftWrappable" className="cursor-pointer">
-                      This product supports gift wrapping
+                      {t("This product supports gift wrapping")}
                     </Label>
                   </div>
 
                   {form.watch("giftWrappable") && (
                     <div>
                       <Label>
-                        Gift Wrapping Fee (
+                        {t("Gift Wrapping Fee (")}
                         {form.watch("currencyCode") || "Currency"})
                       </Label>
                       <Controller
@@ -1521,8 +1515,7 @@ export default function CreateProduct() {
                         )}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Additional charge per item for gift wrapping. Set to 0
-                        for free gift wrapping.
+                        {t("Additional charge per item for gift wrapping. Set to 0 for free gift wrapping.")}
                       </p>
                     </div>
                   )}
@@ -1534,7 +1527,7 @@ export default function CreateProduct() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    Link Supplier (Optional)
+                    {t("Link Supplier (Optional)")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1545,10 +1538,10 @@ export default function CreateProduct() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="No supplier" />
+                      <SelectValue placeholder={t("No supplier")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">No supplier</SelectItem>
+                      <SelectItem value="0">{t("No supplier")}</SelectItem>
                       {activeSuppliers.map((s) => (
                         <SelectItem key={s.id} value={s.id.toString()}>
                           {s.businessName}
@@ -1576,8 +1569,7 @@ export default function CreateProduct() {
                       htmlFor="product-submit-confirmation"
                       className="leading-relaxed cursor-pointer"
                     >
-                      I have reviewed this product and I am ready to submit it
-                      for admin approval.
+                      {t("I have reviewed this product and I am ready to submit it for admin approval.")}
                     </Label>
                   </div>
                 </CardContent>
@@ -1587,7 +1579,7 @@ export default function CreateProduct() {
             <div className="flex flex-wrap justify-end gap-4">
               <Button type="button" variant="outline" asChild>
                 <Link to="/vendor" onClick={handleCancel}>
-                  Cancel
+                  {t("Cancel")}
                 </Link>
               </Button>
 
@@ -1597,13 +1589,13 @@ export default function CreateProduct() {
                   variant="outline"
                   onClick={() => setCurrentStep((prev) => clampStep(prev - 1))}
                 >
-                  Back
+                  {t("Back")}
                 </Button>
               )}
 
               {currentStep < TOTAL_STEPS ? (
                 <Button type="button" onClick={handleNextStep}>
-                  Next
+                  {t("Next")}
                 </Button>
               ) : (
                 <Button

@@ -25,6 +25,7 @@ import {
 import { categoryService } from "@/services/categoryService";
 import { formatPrice, getCurrencyDecimals } from "@/lib/currency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -102,6 +103,7 @@ const toOptionalNumber = (value: string | null): number | undefined => {
 };
 
 export default function PackagesPage() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(location.search);
@@ -294,12 +296,11 @@ export default function PackagesPage() {
           <div className="flex items-center gap-2 mb-2">
             <Gift className="h-5 w-5 text-white" />
             <h1 className="text-2xl lg:text-3xl font-bold text-white">
-              Package Bundles
+              {t("Package Bundles")}
             </h1>
           </div>
           <p className="text-sm lg:text-base font-light text-white/80 max-w-2xl">
-            Ready-made gift combinations you can customize and order in one
-            step.
+            {t("Ready-made gift combinations you can customize and order in one step.")}
           </p>
         </div>
       </section>
@@ -308,7 +309,7 @@ export default function PackagesPage() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <span className="font-bold text-xl text-eagle-green">
-              Browse by Category
+              {t("Browse by Category")}
             </span>
           </div>
           <div className="flex overflow-x-auto scrollbar-hide gap-3 py-2 -mx-4 px-4 sm:mx-0 sm:px-2 sm:flex-wrap">
@@ -353,7 +354,7 @@ export default function PackagesPage() {
                     return <CategoryIcon className="h-5 w-5 text-viridian-green" />;
                   })()}
                 </div>
-                <span>{currentCategory.name} Categories</span>
+                <span>{currentCategory.name} {t("Categories")}</span>
               </h2>
               {selectedSubCategoryId && (
                 <Button
@@ -363,7 +364,7 @@ export default function PackagesPage() {
                   className="text-eagle-green/70 hover:text-viridian-green hover:bg-viridian-green/10 font-medium rounded-full px-4"
                 >
                   <X className="h-4 w-4 mr-1" />
-                  Clear
+                  {t("Clear")}
                 </Button>
               )}
             </div>
@@ -431,7 +432,7 @@ export default function PackagesPage() {
                         <ChevronDown className="h-6 w-6" />
                       </div>
                       <span className="text-xs font-bold text-center leading-tight">
-                        Show {subCategories.length - 5} More
+                        {t("Show")} {subCategories.length - 5} {t("More")}
                       </span>
                     </Button>
                   )}
@@ -446,7 +447,7 @@ export default function PackagesPage() {
                       className="text-eagle-green/60 hover:text-viridian-green hover:bg-viridian-green/5 font-medium rounded-full px-6 flex items-center gap-2"
                     >
                       <ChevronUp className="h-4 w-4" />
-                      Show Less
+                      {t("Show Less")}
                     </Button>
                   </div>
                 )}
@@ -461,7 +462,7 @@ export default function PackagesPage() {
             <div className="relative bg-white rounded-2xl shadow-lg shadow-eagle-green/5 border border-eagle-green/10 overflow-hidden">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-eagle-green/40 h-5 w-5" />
               <Input
-                placeholder="Search packages..."
+                placeholder={t("Search packages...")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-12 pr-4 h-14 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 font-light text-eagle-green placeholder:text-eagle-green/40 w-full"
@@ -474,7 +475,7 @@ export default function PackagesPage() {
               onClick={handleClearFilters}
               className="h-14 rounded-2xl border-eagle-green/20 text-eagle-green hover:bg-eagle-green hover:text-white"
             >
-              Clear
+              {t("Clear")}
             </Button>
           )}
         </div>
@@ -482,8 +483,7 @@ export default function PackagesPage() {
         {hasFallbackResults && (
           <Card className="mb-6 border-june-bud/30 bg-june-bud/10">
             <CardContent className="py-4 text-sm text-eagle-green">
-              No packages found for this category. Showing all packages
-              instead.
+              {t("No packages found for this category. Showing all packages instead.")}
             </CardContent>
           </Card>
         )}
@@ -508,10 +508,10 @@ export default function PackagesPage() {
             <CardContent className="py-16 text-center">
               <PackageIcon className="h-14 w-14 text-eagle-green/30 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-eagle-green mb-2">
-                No packages found
+                {t("No packages found")}
               </h2>
               <p className="text-eagle-green/70">
-                Try adjusting your filters or check back soon for new bundles.
+                {t("Try adjusting your filters or check back soon for new bundles.")}
               </p>
             </CardContent>
           </Card>
@@ -567,8 +567,8 @@ export default function PackagesPage() {
                       )}
 
                       <div className="text-sm text-eagle-green/70">
-                        <span>{pkg.items?.length || 0} item(s)</span>
-                        {pkg.vendorName ? <span> • by {pkg.vendorName}</span> : null}
+                        <span>{pkg.items?.length || 0} {t("item(s)")}</span>
+                        {pkg.vendorName ? <span> {t("• by")} {pkg.vendorName}</span> : null}
                       </div>
 
                       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
@@ -583,7 +583,7 @@ export default function PackagesPage() {
                           size="sm"
                           className="bg-eagle-green hover:bg-viridian-green text-white"
                         >
-                          <Link to={`/packages/${pkg.id}`}>View</Link>
+                          <Link to={`/packages/${pkg.id}`}>{t("View")}</Link>
                         </Button>
                       </div>
                     </CardContent>

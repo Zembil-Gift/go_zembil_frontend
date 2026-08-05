@@ -49,8 +49,10 @@ import {
 import { serviceService } from "@/services/serviceService";
 import { reviewService } from "@/services/reviewService";
 import { ServiceReviewForm } from "@/components/reviews";
+import { useTranslation } from "react-i18next";
 
 export default function MyServiceOrders() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -119,8 +121,8 @@ export default function MyServiceOrders() {
       serviceOrderService.cancelOrder(orderId, reason),
     onSuccess: () => {
       toast({
-        title: "Order Cancelled",
-        description: "Your service order has been cancelled successfully.",
+        title: t("Order Cancelled"),
+        description: t("Your service order has been cancelled successfully."),
       });
       queryClient.invalidateQueries({ queryKey: ["my-service-orders"] });
       setCancelDialogOpen(false);
@@ -129,7 +131,7 @@ export default function MyServiceOrders() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Cancellation Failed",
+        title: t("Cancellation Failed"),
         description:
           error.message || "Failed to cancel order. Please try again.",
         variant: "destructive",
@@ -148,8 +150,8 @@ export default function MyServiceOrders() {
     }) => serviceOrderService.rescheduleOrder(orderId, newDateTime),
     onSuccess: () => {
       toast({
-        title: "Order Rescheduled",
-        description: "Your service has been rescheduled successfully.",
+        title: t("Order Rescheduled"),
+        description: t("Your service has been rescheduled successfully."),
       });
       queryClient.invalidateQueries({ queryKey: ["my-service-orders"] });
       setRescheduleDialogOpen(false);
@@ -159,7 +161,7 @@ export default function MyServiceOrders() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Reschedule Failed",
+        title: t("Reschedule Failed"),
         description:
           error.message || "Failed to reschedule order. Please try again.",
         variant: "destructive",
@@ -191,7 +193,7 @@ export default function MyServiceOrders() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Action Failed",
+        title: t("Action Failed"),
         description: error.message || "Failed to process reschedule request.",
         variant: "destructive",
       });
@@ -255,7 +257,7 @@ export default function MyServiceOrders() {
       );
     } catch (error: any) {
       toast({
-        title: "Checkout Failed",
+        title: t("Checkout Failed"),
         description:
           error?.message || "Failed to continue checkout. Please try again.",
         variant: "destructive",
@@ -381,7 +383,7 @@ export default function MyServiceOrders() {
                     {hasPendingReschedule && (
                       <Badge className="bg-purple-100 text-purple-700 border-none">
                         <CalendarClock className="h-3 w-3 mr-1" />
-                        Reschedule Pending
+                        {t("Reschedule Pending")}
                       </Badge>
                     )}
                   </div>
@@ -424,7 +426,7 @@ export default function MyServiceOrders() {
                 </p>
                 {hoursUntilService > 0 && order.status !== "CANCELLED" && (
                   <p className="text-xs text-eagle-green/60 mt-1">
-                    {hoursUntilService}h until service
+                    {hoursUntilService}{t("h until service")}
                   </p>
                 )}
                 <ChevronRight className="h-5 w-5 text-eagle-green/50 mt-2 ml-auto" />
@@ -466,7 +468,7 @@ export default function MyServiceOrders() {
                     {retryingPaymentOrderId === order.id ? (
                       <>
                         <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
-                        Initializing...
+                        {t("Initializing...")}
                       </>
                     ) : (
                       "Continue Checkout"
@@ -485,7 +487,7 @@ export default function MyServiceOrders() {
                     }}
                   >
                     <CalendarClock className="h-4 w-4 mr-1" />
-                    Review Reschedule
+                    {t("Review Reschedule")}
                   </Button>
                 )}
                 {canReschedule && !hasPendingReschedule && (
@@ -500,7 +502,7 @@ export default function MyServiceOrders() {
                     }}
                   >
                     <CalendarClock className="h-4 w-4 mr-1" />
-                    Reschedule
+                    {t("Reschedule")}
                   </Button>
                 )}
                 {canAddReview && (
@@ -513,7 +515,7 @@ export default function MyServiceOrders() {
                       setSelectedReviewOrder(order);
                     }}
                   >
-                    Add Review
+                    {t("Add Review")}
                   </Button>
                 )}
               </div>
@@ -532,7 +534,7 @@ export default function MyServiceOrders() {
         onClick={() => navigate("/services")}
         className="mt-4 bg-eagle-green hover:bg-viridian-green text-white"
       >
-        Browse Services
+        {t("Browse Services")}
       </Button>
     </div>
   );
@@ -550,10 +552,10 @@ export default function MyServiceOrders() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-eagle-green mb-2">
-                My Service Bookings
+                {t("My Service Bookings")}
               </h1>
               <p className="font-light text-eagle-green/70">
-                View and manage your service bookings
+                {t("View and manage your service bookings")}
               </p>
             </div>
             <Button
@@ -562,7 +564,7 @@ export default function MyServiceOrders() {
               className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              {t("Refresh")}
             </Button>
           </div>
         </motion.div>
@@ -609,10 +611,10 @@ export default function MyServiceOrders() {
               <>
                 <DialogHeader>
                   <DialogTitle>
-                    Add Review for {selectedReviewOrder.service.title}
+                    {t("Add Review for")} {selectedReviewOrder.service.title}
                   </DialogTitle>
                   <DialogDescription>
-                    Share feedback for this completed booking.
+                    {t("Share feedback for this completed booking.")}
                   </DialogDescription>
                 </DialogHeader>
                 <ServiceReviewForm
@@ -641,7 +643,7 @@ export default function MyServiceOrders() {
               <>
                 <DialogHeader>
                   <DialogTitle className="font-bold text-eagle-green">
-                    Order #{selectedOrder.orderNumber}
+                    {t("Order #")}{selectedOrder.orderNumber}
                   </DialogTitle>
                 </DialogHeader>
 
@@ -702,7 +704,7 @@ export default function MyServiceOrders() {
                   <div className="flex items-center gap-4 flex-wrap">
                     <div>
                       <span className="text-sm font-light text-eagle-green/70">
-                        Status
+                        {t("Status")}
                       </span>
                       <Badge
                         className={`ml-2 ${getStatusBadgeClass(
@@ -721,7 +723,7 @@ export default function MyServiceOrders() {
                     </div>
                     <div>
                       <span className="text-sm font-light text-eagle-green/70">
-                        Payment
+                        {t("Payment")}
                       </span>
                       <Badge
                         className={`ml-2 ${
@@ -751,23 +753,23 @@ export default function MyServiceOrders() {
                     <>
                       <div>
                         <h4 className="font-bold text-eagle-green mb-3">
-                          Gift Details
+                          {t("Gift Details")}
                         </h4>
                         {selectedOrder.recipientName && (
                           <p className="text-sm font-light text-eagle-green/70 mb-1">
-                            <span className="font-bold">Recipient:</span>{" "}
+                            <span className="font-bold">{t("Recipient:")}</span>{" "}
                             {selectedOrder.recipientName}
                           </p>
                         )}
                         {selectedOrder.recipientEmail && (
                           <p className="text-sm font-light text-eagle-green/70 mb-1">
-                            <span className="font-bold">Email:</span>{" "}
+                            <span className="font-bold">{t("Email:")}</span>{" "}
                             {selectedOrder.recipientEmail}
                           </p>
                         )}
                         {selectedOrder.recipientPhone && (
                           <p className="text-sm font-light text-eagle-green/70 mb-1">
-                            <span className="font-bold">Phone:</span>{" "}
+                            <span className="font-bold">{t("Phone:")}</span>{" "}
                             {selectedOrder.recipientPhone}
                           </p>
                         )}
@@ -788,29 +790,29 @@ export default function MyServiceOrders() {
                     <>
                       <div className="bg-red-50 rounded-lg p-4">
                         <h4 className="font-bold text-red-700 mb-2">
-                          Cancellation Details
+                          {t("Cancellation Details")}
                         </h4>
                         <div className="space-y-1 text-sm">
                           <p className="text-red-600">
-                            <span className="font-bold">Cancelled:</span>{" "}
+                            <span className="font-bold">{t("Cancelled:")}</span>{" "}
                             {serviceOrderService.formatDateTime(
                               selectedOrder.cancellationInfo.cancelledAt
                             )}
                           </p>
                           <p className="text-red-600">
-                            <span className="font-bold">By:</span>{" "}
+                            <span className="font-bold">{t("By:")}</span>{" "}
                             {selectedOrder.cancellationInfo.cancelledBy}
                           </p>
                           {selectedOrder.cancellationInfo.reason && (
                             <p className="text-red-600">
-                              <span className="font-bold">Reason:</span>{" "}
+                              <span className="font-bold">{t("Reason:")}</span>{" "}
                               {selectedOrder.cancellationInfo.reason}
                             </p>
                           )}
                           {selectedOrder.cancellationInfo.refundAmountMinor !==
                             undefined && (
                             <p className="text-red-600">
-                              <span className="font-bold">Refund:</span>{" "}
+                              <span className="font-bold">{t("Refund:")}</span>{" "}
                               {serviceOrderService.formatPrice(
                                 selectedOrder.cancellationInfo
                                   .refundAmountMinor,
@@ -831,25 +833,25 @@ export default function MyServiceOrders() {
                     <>
                       <div className="bg-purple-50 rounded-lg p-4">
                         <h4 className="font-bold text-purple-700 mb-2">
-                          Reschedule History
+                          {t("Reschedule History")}
                         </h4>
                         <div className="space-y-1 text-sm">
                           <p className="text-purple-600">
-                            <span className="font-bold">Original Date:</span>{" "}
+                            <span className="font-bold">{t("Original Date:")}</span>{" "}
                             {serviceOrderService.formatDateTime(
                               selectedOrder.rescheduleInfo.originalDateTime
                             )}
                           </p>
                           {selectedOrder.rescheduleInfo.rescheduledAt && (
                             <p className="text-purple-600">
-                              <span className="font-bold">Rescheduled:</span>{" "}
+                              <span className="font-bold">{t("Rescheduled:")}</span>{" "}
                               {serviceOrderService.formatDateTime(
                                 selectedOrder.rescheduleInfo.rescheduledAt
                               )}
                             </p>
                           )}
                           <p className="text-purple-600">
-                            <span className="font-bold">By:</span>{" "}
+                            <span className="font-bold">{t("By:")}</span>{" "}
                             {selectedOrder.rescheduleInfo.rescheduledBy}
                           </p>
                         </div>
@@ -861,11 +863,11 @@ export default function MyServiceOrders() {
                   {/* Order Summary */}
                   <div className="space-y-2">
                     <h4 className="font-bold text-eagle-green mb-3">
-                      Payment Summary
+                      {t("Payment Summary")}
                     </h4>
                     <div className="flex justify-between text-sm">
                       <span className="font-light text-eagle-green/70">
-                        Subtotal
+                        {t("Subtotal")}
                       </span>
                       <span className="font-light text-eagle-green">
                         {serviceOrderService.formatPrice(
@@ -878,7 +880,7 @@ export default function MyServiceOrders() {
                       selectedOrder.discountMinor > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="font-light text-eagle-green/70">
-                            Discount
+                            {t("Discount")}
                           </span>
                           <span className="font-light text-green-600">
                             -
@@ -893,7 +895,7 @@ export default function MyServiceOrders() {
                       selectedOrder.vatAmountMinor > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="font-light text-eagle-green/70">
-                            VAT
+                            {t("VAT")}
                           </span>
                           <span className="font-light text-eagle-green">
                             {serviceOrderService.formatPrice(
@@ -905,7 +907,7 @@ export default function MyServiceOrders() {
                       )}
                     <Separator />
                     <div className="flex justify-between">
-                      <span className="font-bold text-eagle-green">Total</span>
+                      <span className="font-bold text-eagle-green">{t("Total")}</span>
                       <span className="font-bold text-eagle-green text-xl">
                         {serviceOrderService.formatPrice(
                           selectedOrder.totalAmountMinor,
@@ -923,13 +925,13 @@ export default function MyServiceOrders() {
                         <div className="bg-june-bud/10 rounded-lg p-4">
                           <h4 className="font-bold text-eagle-green mb-2 flex items-center gap-2">
                             <Info className="h-4 w-4" />
-                            Refund Eligibility
+                            {t("Refund Eligibility")}
                           </h4>
                           <p className="text-sm font-light text-eagle-green/70 mb-2">
                             {selectedOrder.refundEligibility.reason}
                           </p>
                           <p className="text-sm font-bold text-viridian-green">
-                            Estimated refund:{" "}
+                            {t("Estimated refund:")}{" "}
                             {selectedOrder.refundEligibility.refundPercentage}%
                             (
                             {serviceOrderService.formatPrice(
@@ -956,7 +958,7 @@ export default function MyServiceOrders() {
                         }}
                       >
                         <CalendarClock className="h-4 w-4 mr-2" />
-                        Review Reschedule Request
+                        {t("Review Reschedule Request")}
                       </Button>
                     )}
                     {serviceOrderService.canRescheduleOrder(selectedOrder) &&
@@ -971,7 +973,7 @@ export default function MyServiceOrders() {
                           }}
                         >
                           <CalendarClock className="h-4 w-4 mr-2" />
-                          Reschedule
+                          {t("Reschedule")}
                         </Button>
                       )}
                     {serviceOrderService.canCancelOrder(selectedOrder) && (
@@ -983,7 +985,7 @@ export default function MyServiceOrders() {
                         }}
                       >
                         <X className="h-4 w-4 mr-2" />
-                        Cancel Order
+                        {t("Cancel Order")}
                       </Button>
                     )}
                     <Button
@@ -993,7 +995,7 @@ export default function MyServiceOrders() {
                         navigate(`/my-service-orders/${selectedOrder.id}`)
                       }
                     >
-                      View Full Details
+                      {t("View Full Details")}
                     </Button>
                   </div>
                 </div>
@@ -1007,10 +1009,10 @@ export default function MyServiceOrders() {
           <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="font-bold text-eagle-green">
-                Cancel Service Booking
+                {t("Cancel Service Booking")}
               </DialogTitle>
               <DialogDescription className="text-eagle-green/70">
-                Are you sure you want to cancel this booking?
+                {t("Are you sure you want to cancel this booking?")}
               </DialogDescription>
             </DialogHeader>
 
@@ -1030,13 +1032,13 @@ export default function MyServiceOrders() {
                 {selectedOrder.refundEligibility && (
                   <div className="bg-yellow/10 rounded-lg p-4">
                     <h5 className="font-bold text-eagle-green text-sm mb-1">
-                      Refund Information
+                      {t("Refund Information")}
                     </h5>
                     <p className="text-sm font-light text-eagle-green/70 mb-2">
                       {selectedOrder.refundEligibility.reason}
                     </p>
                     <p className="text-sm font-bold text-viridian-green">
-                      Estimated refund:{" "}
+                      {t("Estimated refund:")}{" "}
                       {selectedOrder.refundEligibility.refundPercentage}% (
                       {serviceOrderService.formatPrice(
                         selectedOrder.refundEligibility.estimatedRefundMinor ||
@@ -1050,13 +1052,13 @@ export default function MyServiceOrders() {
 
                 <div>
                   <Label htmlFor="cancelReason" className="text-eagle-green">
-                    Reason for cancellation (optional)
+                    {t("Reason for cancellation (optional)")}
                   </Label>
                   <Textarea
                     id="cancelReason"
                     value={cancelReason}
                     onChange={(e) => setCancelReason(e.target.value)}
-                    placeholder="Please let us know why you're cancelling..."
+                    placeholder={t("Please let us know why you're cancelling...")}
                     className="mt-2"
                   />
                 </div>
@@ -1072,7 +1074,7 @@ export default function MyServiceOrders() {
                 }}
                 className="border-eagle-green/30"
               >
-                Keep Booking
+                {t("Keep Booking")}
               </Button>
               <Button
                 onClick={handleCancelOrder}
@@ -1093,10 +1095,10 @@ export default function MyServiceOrders() {
           <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="font-bold text-eagle-green">
-                Reschedule Service
+                {t("Reschedule Service")}
               </DialogTitle>
               <DialogDescription className="text-eagle-green/70">
-                Select a new date and time for your service.
+                {t("Select a new date and time for your service.")}
               </DialogDescription>
             </DialogHeader>
 
@@ -1107,7 +1109,7 @@ export default function MyServiceOrders() {
                     {selectedOrder.service?.title || "Service"}
                   </h4>
                   <p className="text-sm font-light text-eagle-green/70">
-                    Current:{" "}
+                    {t("Current:")}{" "}
                     {serviceOrderService.formatDateTime(
                       selectedOrder.scheduledDateTime
                     )}
@@ -1117,15 +1119,14 @@ export default function MyServiceOrders() {
                 <div className="bg-blue-50 rounded-lg p-3">
                   <p className="text-sm font-light text-blue-700">
                     <Info className="h-4 w-4 inline mr-1" />
-                    You can only reschedule once per booking. The new date must
-                    be at least 48 hours from now.
+                    {t("You can only reschedule once per booking. The new date must be at least 48 hours from now.")}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="newDate" className="text-eagle-green">
-                      New Date
+                      {t("New Date")}
                     </Label>
                     <Input
                       id="newDate"
@@ -1142,7 +1143,7 @@ export default function MyServiceOrders() {
                   </div>
                   <div>
                     <Label htmlFor="newTime" className="text-eagle-green">
-                      New Time
+                      {t("New Time")}
                     </Label>
                     <Input
                       id="newTime"
@@ -1166,7 +1167,7 @@ export default function MyServiceOrders() {
                 }}
                 className="border-eagle-green/30"
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 onClick={handleRescheduleOrder}
@@ -1193,10 +1194,10 @@ export default function MyServiceOrders() {
           <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="font-bold text-eagle-green">
-                Vendor Reschedule Request
+                {t("Vendor Reschedule Request")}
               </DialogTitle>
               <DialogDescription className="text-eagle-green/70">
-                The vendor has requested to reschedule your service.
+                {t("The vendor has requested to reschedule your service.")}
               </DialogDescription>
             </DialogHeader>
 
@@ -1208,7 +1209,7 @@ export default function MyServiceOrders() {
                   </h4>
                   <div className="space-y-2 text-sm">
                     <p className="font-light text-eagle-green/70">
-                      <span className="font-bold">Current:</span>{" "}
+                      <span className="font-bold">{t("Current:")}</span>{" "}
                       {serviceOrderService.formatDateTime(
                         selectedOrder.scheduledDateTime
                       )}
@@ -1216,7 +1217,7 @@ export default function MyServiceOrders() {
                     {selectedOrder.rescheduleInfo
                       ?.pendingRescheduleDateTime && (
                       <p className="font-light text-purple-700">
-                        <span className="font-bold">Proposed:</span>{" "}
+                        <span className="font-bold">{t("Proposed:")}</span>{" "}
                         {serviceOrderService.formatDateTime(
                           selectedOrder.rescheduleInfo.pendingRescheduleDateTime
                         )}
@@ -1228,8 +1229,7 @@ export default function MyServiceOrders() {
                 <div className="bg-yellow/10 rounded-lg p-3">
                   <p className="text-sm font-light text-eagle-green/70">
                     <AlertCircle className="h-4 w-4 inline mr-1" />
-                    If you reject this request, the booking will be cancelled
-                    and you will receive a full refund.
+                    {t("If you reject this request, the booking will be cancelled and you will receive a full refund.")}
                   </p>
                 </div>
               </div>

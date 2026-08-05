@@ -63,6 +63,7 @@ import {
   ChevronUp,
   Eye,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface PackageItemForm {
   id?: number;
@@ -106,6 +107,7 @@ const resolveVendorCurrency = (profile?: VendorProfile): string => {
 };
 
 export default function VendorPackagesPage() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -259,8 +261,8 @@ export default function VendorPackagesPage() {
       }),
     onSuccess: () => {
       toast({
-        title: "Package created",
-        description: "Your package is saved.",
+        title: t("Package created"),
+        description: t("Your package is saved."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "packages"] });
       setPackageFormOpen(false);
@@ -269,7 +271,7 @@ export default function VendorPackagesPage() {
     },
     onError: (error: any) => {
       toast({
-        title: "Unable to create package",
+        title: t("Unable to create package"),
         description: error?.message || "Please check inputs and try again.",
         variant: "destructive",
       });
@@ -317,8 +319,8 @@ export default function VendorPackagesPage() {
     },
     onSuccess: () => {
       toast({
-        title: "Package updated",
-        description: "Your changes are saved.",
+        title: t("Package updated"),
+        description: t("Your changes are saved."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "packages"] });
       setPackageFormOpen(false);
@@ -328,7 +330,7 @@ export default function VendorPackagesPage() {
     },
     onError: (error: any) => {
       toast({
-        title: "Unable to update package",
+        title: t("Unable to update package"),
         description: error?.message || "Please try again.",
         variant: "destructive",
       });
@@ -340,8 +342,8 @@ export default function VendorPackagesPage() {
       packageService.deactivatePackage(packageId),
     onSuccess: () => {
       toast({
-        title: "Package deactivated",
-        description: "Package is now hidden from customers.",
+        title: t("Package deactivated"),
+        description: t("Package is now hidden from customers."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "packages"] });
     },
@@ -352,8 +354,8 @@ export default function VendorPackagesPage() {
       packageService.reactivatePackage(packageId),
     onSuccess: () => {
       toast({
-        title: "Package reactivated",
-        description: "Package is visible to customers again.",
+        title: t("Package reactivated"),
+        description: t("Package is visible to customers again."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "packages"] });
     },
@@ -363,15 +365,15 @@ export default function VendorPackagesPage() {
     mutationFn: (packageId: number) => packageService.deletePackage(packageId),
     onSuccess: () => {
       toast({
-        title: "Package deleted",
-        description: "Package has been permanently removed.",
+        title: t("Package deleted"),
+        description: t("Package has been permanently removed."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "packages"] });
       setDeleteDialog({ open: false });
     },
     onError: (error: any) => {
       toast({
-        title: "Unable to delete package",
+        title: t("Unable to delete package"),
         description: error?.message || "Please try again.",
         variant: "destructive",
       });
@@ -445,9 +447,9 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
 
     if (!hasRequiredFields) {
       toast({
-        title: "Missing package details",
+        title: t("Missing package details"),
         description:
-          "Complete required package fields. If gift wrap is enabled, add its price.",
+          t("Complete required package fields. If gift wrap is enabled, add its price."),
         variant: "destructive",
       });
       return;
@@ -463,13 +465,13 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
   const getStatusBadge = (status: string) => {
     switch ((status || "").toUpperCase()) {
       case "ACTIVE":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Active")}</Badge>;
       case "INACTIVE":
-        return <Badge className="bg-slate-100 text-slate-800">Inactive</Badge>;
+        return <Badge className="bg-slate-100 text-slate-800">{t("Inactive")}</Badge>;
       case "PENDING":
-        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800">{t("Pending")}</Badge>;
       case "REJECTED":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Rejected")}</Badge>;
       default:
         return <Badge variant="outline">{status || "Unknown"}</Badge>;
     }
@@ -487,16 +489,16 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Packages</h2>
+          <h2 className="text-xl font-semibold">{t("Packages")}</h2>
           <p className="text-sm text-muted-foreground">
-            Create and manage product bundles for your storefront.
+            {t("Create and manage product bundles for your storefront.")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search packages..."
+              placeholder={t("Search packages...")}
               className="pl-9"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -509,18 +511,18 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
             }
             className="h-10 rounded-md border bg-background px-3 text-sm"
           >
-            <option value="ALL">All</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-            <option value="PENDING">Pending</option>
-            <option value="REJECTED">Rejected</option>
+            <option value="ALL">{t("All")}</option>
+            <option value="ACTIVE">{t("Active")}</option>
+            <option value="INACTIVE">{t("Inactive")}</option>
+            <option value="PENDING">{t("Pending")}</option>
+            <option value="REJECTED">{t("Rejected")}</option>
           </select>
           <Button
             onClick={openCreateDialog}
             disabled={!vendorProfile?.isApproved}
           >
             <Plus className="h-4 w-4 mr-2" />
-            New Package
+            {t("New Package")}
           </Button>
         </div>
       </div>
@@ -528,7 +530,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
       {!vendorProfile?.isApproved && (
         <Card className="border-amber-200 bg-amber-50">
           <CardContent className="py-4 text-sm text-amber-800">
-            Your vendor account must be approved before creating packages.
+            {t("Your vendor account must be approved before creating packages.")}
           </CardContent>
         </Card>
       )}
@@ -537,7 +539,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Package className="h-14 w-14 text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium">No packages found</h3>
+            <h3 className="text-lg font-medium">{t("No packages found")}</h3>
             <p className="text-muted-foreground mb-4">
               {searchQuery
                 ? "Try another search term."
@@ -548,7 +550,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
               disabled={!vendorProfile?.isApproved}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Create Package
+              {t("Create Package")}
             </Button>
           </CardContent>
         </Card>
@@ -571,7 +573,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground mt-2">
-                    {pkg.items?.length || 0} item(s) in bundle
+                    {pkg.items?.length || 0} {t("item(s) in bundle")}
                     {pkg.giftWrappable
                       ? ` • Gift wrap ${
                           pkg.giftWrapPrice
@@ -590,7 +592,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                     onClick={() => setViewDialog({ open: true, pkg })}
                   >
                     <Eye className="h-4 w-4 mr-1" />
-                    View
+                    {t("View")}
                   </Button>
                   <Button
                     variant="outline"
@@ -598,7 +600,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                     onClick={() => openEditDialog(pkg)}
                   >
                     <Pencil className="h-4 w-4 mr-1" />
-                    Edit
+                    {t("Edit")}
                   </Button>
                   {pkg.status?.toUpperCase() === "INACTIVE" ? (
                     <Button
@@ -609,7 +611,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                       className="text-green-700"
                     >
                       <RotateCcw className="h-4 w-4 mr-1" />
-                      Reactivate
+                      {t("Reactivate")}
                     </Button>
                   ) : (
                     <Button
@@ -620,7 +622,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                       className="text-red-700"
                     >
                       <XCircle className="h-4 w-4 mr-1" />
-                      Deactivate
+                      {t("Deactivate")}
                     </Button>
                   )}
                   <Button
@@ -630,7 +632,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                     className="text-red-700"
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
+                    {t("Delete")}
                   </Button>
                 </div>
               </CardContent>
@@ -657,14 +659,14 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
               {formState.id ? "Edit Package" : "Create Package"}
             </DialogTitle>
             <DialogDescription>
-              Build bundles by selecting products and required quantities.
+              {t("Build bundles by selecting products and required quantities.")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="packageName">Package Name *</Label>
+                <Label htmlFor="packageName">{t("Package Name *")}</Label>
                 <Input
                   id="packageName"
                   required
@@ -675,7 +677,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="packageSummary">Summary *</Label>
+                <Label htmlFor="packageSummary">{t("Summary *")}</Label>
                 <Input
                   id="packageSummary"
                   required
@@ -689,7 +691,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="packageDescription">Description *</Label>
+                <Label htmlFor="packageDescription">{t("Description *")}</Label>
                 <Textarea
                   id="packageDescription"
                   required
@@ -703,7 +705,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="subCategory">Subcategory</Label>
+                <Label htmlFor="subCategory">{t("Subcategory")}</Label>
                 <select
                   id="subCategory"
                   value={formState.subCategoryId}
@@ -715,7 +717,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                   }
                   className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 >
-                  <option value="">Select subcategory (optional)</option>
+                  <option value="">{t("Select subcategory (optional)")}</option>
                   {categoriesData?.map((category) =>
                     category.subcategories?.map((sub) => (
                       <option key={sub.id} value={sub.id}>
@@ -738,11 +740,11 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                     }
                   />
                   <Label htmlFor="giftWrappable" className="cursor-pointer">
-                    Add gift wrapping option
+                    {t("Add gift wrapping option")}
                   </Label>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Show gift wrapping at checkout for this package.
+                  {t("Show gift wrapping at checkout for this package.")}
                 </p>
               </div>
 
@@ -750,7 +752,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="giftWrapPrice">
-                      Gift Wrap Price ({vendorCurrency}) *
+                      {t("Gift Wrap Price (")}{vendorCurrency}) *
                     </Label>
                     <Input
                       id="giftWrapPrice"
@@ -770,16 +772,16 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
               )}
 
               <div className="space-y-2 sm:col-span-2">
-                <Label className="text-sm">Images</Label>
+                <Label className="text-sm">{t("Images")}</Label>
                 {!formState.id && (
                   <p className="text-xs text-muted-foreground">
-                    Upload package images. The first image will appear as cover.
+                    {t("Upload package images. The first image will appear as cover.")}
                   </p>
                 )}
                 {formState.id && packages.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      Current images. Select images to delete, then add new ones to replace.
+                      {t("Current images. Select images to delete, then add new ones to replace.")}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {packages
@@ -810,7 +812,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                     </div>
                     {existingImagesToDelete.length > 0 && (
                       <p className="text-xs text-amber-600">
-                        {existingImagesToDelete.length} image(s) will be deleted
+                        {existingImagesToDelete.length} {t("image(s) will be deleted")}
                       </p>
                     )}
                   </div>
@@ -857,7 +859,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                 )}
                 {selectedImageFiles.length > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    {selectedImageFiles.length} new image(s) will be uploaded.
+                    {selectedImageFiles.length} {t("new image(s) will be uploaded.")}
                   </p>
                 )}
               </div>
@@ -865,9 +867,9 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
 
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-medium">Bundle Items</h4>
+                <h4 className="font-medium">{t("Bundle Items")}</h4>
                 <p className="text-xs text-muted-foreground mr-3">
-                  Minimum 2 products required
+                  {t("Minimum 2 products required")}
                 </p>
                 <Button
                   type="button"
@@ -888,7 +890,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                   }
                 >
                   <Plus className="h-3 w-3 mr-1" />
-                  Add Item
+                  {t("Add Item")}
                 </Button>
               </div>
 
@@ -898,7 +900,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                   className="grid gap-2 sm:grid-cols-12 border rounded-md p-3"
                 >
                   <div className="sm:col-span-8">
-                    <Label className="text-xs">Product *</Label>
+                    <Label className="text-xs">{t("Product *")}</Label>
                     <Popover
                       modal
                       open={productPopoverOpen[index] ?? false}
@@ -935,7 +937,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                         <div className="flex items-center border-b px-3">
                           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
                           <input
-                            placeholder="Search products..."
+                            placeholder={t("Search products...")}
                             value={productSearch}
                             onChange={(e) => setProductSearch(e.target.value)}
                             className="flex h-10 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
@@ -948,7 +950,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                         >
                           {activeProducts.length === 0 && (
                             <p className="py-4 text-center text-sm text-muted-foreground">
-                              No active products available
+                              {t("No active products available")}
                             </p>
                           )}
                           {activeProducts
@@ -1004,7 +1006,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                               className="flex w-full items-center justify-center rounded-sm px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent"
                               onClick={() => fetchNextProducts()}
                             >
-                              Load more products...
+                              {t("Load more products...")}
                             </button>
                           )}
                         </div>
@@ -1050,7 +1052,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                                 {sku.skuName ? ` - ${sku.skuName}` : ""}
                               </span>
                               <span className="text-muted-foreground">
-                                Stock: {sku.stockQuantity ?? 0}
+                                {t("Stock:")} {sku.stockQuantity ?? 0}
                               </span>
                             </div>
                           ))}
@@ -1060,14 +1062,14 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                           )?.productSku || []
                         ).length === 0 && (
                           <p className="text-muted-foreground">
-                            No options available for this product.
+                            {t("No options available for this product.")}
                           </p>
                         )}
                       </div>
                     )}
                   </div>
                   <div className="sm:col-span-2">
-                    <Label className="text-xs">Qty *</Label>
+                    <Label className="text-xs">{t("Qty *")}</Label>
                     <Input
                       type="number"
                       min={1}
@@ -1104,7 +1106,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                         }))
                       }
                     >
-                      Remove
+                      {t("Remove")}
                     </Button>
                   </div>
                 </div>
@@ -1122,7 +1124,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                 setExistingImagesToDelete([]);
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleSavePackage}
@@ -1140,12 +1142,12 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
       <Dialog open={viewDialog.open} onOpenChange={(open) => setViewDialog((prev) => ({ ...prev, open }))}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Package Details</DialogTitle>
+            <DialogTitle>{t("Package Details")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {viewDialog.pkg?.images && viewDialog.pkg.images.length > 0 && (
               <div className="space-y-2">
-                <Label>Images</Label>
+                <Label>{t("Images")}</Label>
                 <div className="flex flex-wrap gap-2">
                   {viewDialog.pkg.images.map((img, idx) => (
                     <img
@@ -1160,30 +1162,30 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
             )}
             <div className="grid gap-2 sm:grid-cols-2">
               <div>
-                <Label className="text-muted-foreground">Name</Label>
+                <Label className="text-muted-foreground">{t("Name")}</Label>
                 <p className="font-medium">{viewDialog.pkg?.name}</p>
               </div>
               <div>
-                <Label className="text-muted-foreground">Status</Label>
+                <Label className="text-muted-foreground">{t("Status")}</Label>
                 <p>{getStatusBadge(viewDialog.pkg?.status || "")}</p>
               </div>
               <div className="sm:col-span-2">
-                <Label className="text-muted-foreground">Summary</Label>
+                <Label className="text-muted-foreground">{t("Summary")}</Label>
                 <p>{viewDialog.pkg?.summary || "-"}</p>
               </div>
               <div className="sm:col-span-2">
-                <Label className="text-muted-foreground">Description</Label>
+                <Label className="text-muted-foreground">{t("Description")}</Label>
                 <p className="whitespace-pre-wrap">{viewDialog.pkg?.description || "-"}</p>
               </div>
               {viewDialog.pkg?.subCategoryName && (
                 <div>
-                  <Label className="text-muted-foreground">Subcategory</Label>
+                  <Label className="text-muted-foreground">{t("Subcategory")}</Label>
                   <p>{viewDialog.pkg?.subCategoryName}</p>
                 </div>
               )}
               {viewDialog.pkg?.giftWrappable && (
                 <div>
-                  <Label className="text-muted-foreground">Gift Wrap</Label>
+                  <Label className="text-muted-foreground">{t("Gift Wrap")}</Label>
                   <p>
                     {viewDialog.pkg?.giftWrapPrice
                       ? `${viewDialog.pkg.giftWrapCurrency} ${viewDialog.pkg.giftWrapPrice}`
@@ -1193,7 +1195,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Items ({viewDialog.pkg?.items?.length || 0})</Label>
+              <Label className="text-muted-foreground">{t("Items (")}{viewDialog.pkg?.items?.length || 0})</Label>
               <div className="border rounded-md divide-y">
                 {viewDialog.pkg?.items?.map((item, idx) => (
                   <div key={item.id || idx} className="p-3 flex items-center justify-between">
@@ -1204,7 +1206,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                       <div>
                         <p className="font-medium">{item.productName}</p>
                         <p className="text-sm text-muted-foreground">
-                          Required: {item.requiredQuantity}
+                          {t("Required:")} {item.requiredQuantity}
                           {item.description && ` • ${item.description}`}
                         </p>
                       </div>
@@ -1216,7 +1218,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewDialog({ open: false })}>
-              Close
+              {t("Close")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1228,14 +1230,14 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Package</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete Package")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to permanently delete "
-              {deleteDialog.pkg?.name}"? This action cannot be undone.
+              {t("Are you sure you want to permanently delete \"")}
+              {deleteDialog.pkg?.name}{t("\"? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deleteDialog.pkg?.id) {
@@ -1244,7 +1246,7 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
               }}
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

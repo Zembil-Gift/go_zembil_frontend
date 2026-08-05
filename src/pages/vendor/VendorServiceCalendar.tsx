@@ -23,8 +23,10 @@ import {
   ServiceOrderStatus 
 } from '@/services/serviceOrderService';
 import { serviceService, ServiceResponse } from '@/services/serviceService';
+import { useTranslation } from "react-i18next";
 
 export default function VendorServiceCalendar() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -132,7 +134,7 @@ export default function VendorServiceCalendar() {
           ))}
           {dayOrders.length > 3 && (
             <div className="text-xs text-eagle-green/70 px-1">
-              +{dayOrders.length - 3} more
+              +{dayOrders.length - 3} {t("more")}
             </div>
           )}
         </div>
@@ -157,10 +159,10 @@ export default function VendorServiceCalendar() {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-2xl font-bold text-eagle-green mb-1">
-                Service Calendar
+                {t("Service Calendar")}
               </h1>
               <p className="font-light text-eagle-green/70">
-                View and manage your service bookings
+                {t("View and manage your service bookings")}
               </p>
             </div>
             <Button
@@ -169,7 +171,7 @@ export default function VendorServiceCalendar() {
               className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              {t("Refresh")}
             </Button>
           </div>
         </motion.div>
@@ -193,14 +195,14 @@ export default function VendorServiceCalendar() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={goToToday}>
-                      Today
+                      {t("Today")}
                     </Button>
                     <Select value={selectedService} onValueChange={setSelectedService}>
                       <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by service" />
+                        <SelectValue placeholder={t("Filter by service")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Services</SelectItem>
+                        <SelectItem value="all">{t("All Services")}</SelectItem>
                         {services.map((service: ServiceResponse) => (
                           <SelectItem key={service.id} value={service.id.toString()}>
                             {service.title}
@@ -239,23 +241,23 @@ export default function VendorServiceCalendar() {
                     <div className="mt-4 flex flex-wrap gap-4 text-sm">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded bg-blue-500" />
-                        <span className="text-eagle-green/70">Booked</span>
+                        <span className="text-eagle-green/70">{t("Booked")}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded bg-green-500" />
-                        <span className="text-eagle-green/70">Confirmed</span>
+                        <span className="text-eagle-green/70">{t("Confirmed")}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded bg-yellow-500" />
-                        <span className="text-eagle-green/70">In Progress</span>
+                        <span className="text-eagle-green/70">{t("In Progress")}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded bg-emerald-500" />
-                        <span className="text-eagle-green/70">Completed</span>
+                        <span className="text-eagle-green/70">{t("Completed")}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded bg-red-500" />
-                        <span className="text-eagle-green/70">Cancelled</span>
+                        <span className="text-eagle-green/70">{t("Cancelled")}</span>
                       </div>
                     </div>
                   </>
@@ -273,19 +275,19 @@ export default function VendorServiceCalendar() {
                 </CardTitle>
                 {selectedDate && (
                   <CardDescription>
-                    {selectedDateOrders.length} booking{selectedDateOrders.length !== 1 ? 's' : ''}
+                    {selectedDateOrders.length} {t("booking")}{selectedDateOrders.length !== 1 ? 's' : ''}
                   </CardDescription>
                 )}
               </CardHeader>
               <CardContent>
                 {!selectedDate ? (
                   <p className="text-sm text-eagle-green/60 text-center py-8">
-                    Click on a date to view bookings
+                    {t("Click on a date to view bookings")}
                   </p>
                 ) : selectedDateOrders.length === 0 ? (
                   <div className="text-center py-8">
                     <CalendarIcon className="h-12 w-12 text-eagle-green/20 mx-auto mb-2" />
-                    <p className="text-sm text-eagle-green/60">No bookings on this date</p>
+                    <p className="text-sm text-eagle-green/60">{t("No bookings on this date")}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">

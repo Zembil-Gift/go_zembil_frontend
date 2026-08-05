@@ -21,8 +21,10 @@ import {
 import { Link } from "react-router-dom";
 import { deliveryService } from "@/services/deliveryService";
 import { ShoppingBag } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function DeliveryDashboard() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -49,11 +51,11 @@ export default function DeliveryDashboard() {
   const updateStatusMutation = useMutation({
     mutationFn: (status: string) => deliveryService.updateStatus(status),
     onSuccess: (data) => {
-      toast({ title: "Status Updated", description: `You are now ${data.status.toLowerCase().replace("_", " ")}` });
+      toast({ title: t("Status Updated"), description: `You are now ${data.status.toLowerCase().replace("_", " ")}` });
       queryClient.invalidateQueries({ queryKey: ["delivery", "dashboard"] });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to update status"), variant: "destructive" });
     },
   });
 
@@ -95,7 +97,7 @@ export default function DeliveryDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Hi, {dashboard?.name?.split(" ")[0] || "Driver"}
+            {t("Hi,")} {dashboard?.name?.split(" ")[0] || "Driver"}
           </h1>
           <p className="text-gray-500">{dashboard?.employeeId}</p>
         </div>
@@ -110,25 +112,25 @@ export default function DeliveryDashboard() {
               <SelectItem value="AVAILABLE">
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  Available
+                  {t("Available")}
                 </span>
               </SelectItem>
               <SelectItem value="BUSY">
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                  Busy
+                  {t("Busy")}
                 </span>
               </SelectItem>
               <SelectItem value="ON_BREAK">
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                  On Break
+                  {t("On Break")}
                 </span>
               </SelectItem>
               <SelectItem value="OFFLINE">
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-gray-500 rounded-full"></span>
-                  Offline
+                  {t("Offline")}
                 </span>
               </SelectItem>
             </SelectContent>
@@ -146,8 +148,8 @@ export default function DeliveryDashboard() {
                       <ShoppingBag className="h-6 w-6" />
                     </div>
                     <div>
-                      <p className="font-semibold text-lg">{availableOrdersCount} Orders Available</p>
-                      <p className="text-sm text-white/80">Tap to view and accept</p>
+                      <p className="font-semibold text-lg">{availableOrdersCount} {t("Orders Available")}</p>
+                      <p className="text-sm text-white/80">{t("Tap to view and accept")}</p>
                     </div>
                   </div>
                   <ChevronRight className="h-6 w-6 text-white/80" />
@@ -160,10 +162,10 @@ export default function DeliveryDashboard() {
       {/* Quick Count */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-medium text-gray-700">
-          Your Deliveries
+          {t("Your Deliveries")}
         </h2>
         <span className="text-sm text-gray-500">
-          {assignments.length} active
+          {assignments.length} {t("active")}
         </span>
       </div>
 
@@ -173,8 +175,8 @@ export default function DeliveryDashboard() {
           <CardContent className="py-12">
             <div className="text-center text-gray-500">
               <Package className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-              <p className="font-medium">No deliveries right now</p>
-              <p className="text-sm mt-1">New assignments will appear here</p>
+              <p className="font-medium">{t("No deliveries right now")}</p>
+              <p className="text-sm mt-1">{t("New assignments will appear here")}</p>
             </div>
           </CardContent>
         </Card>
@@ -237,7 +239,7 @@ export default function DeliveryDashboard() {
         <div className="mt-4 text-center">
           <Button variant="outline" size="sm" asChild className="w-full">
             <Link to="/delivery/assignments">
-              View All Assignments
+              {t("View All Assignments")}
             </Link>
           </Button>
         </div>

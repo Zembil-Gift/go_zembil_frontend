@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
+import { useTranslation } from "react-i18next";
 
 /* ─── Countdown hook ─── */
 
@@ -317,6 +318,7 @@ function parseEligibilityRules(
 /* ─── Main Page ─── */
 
 export default function CampaignDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -410,7 +412,7 @@ export default function CampaignDetailPage() {
         error?.response?.data?.error ||
         error?.message ||
         "Failed to submit participation";
-      toast({ title: "Error", description: message, variant: "destructive" });
+      toast({ title: t("Error"), description: message, variant: "destructive" });
     },
   });
 
@@ -468,8 +470,8 @@ export default function CampaignDetailPage() {
       setProofUrl("");
       setProofFile(null);
       toast({
-        title: "Proof submitted",
-        description: "Your proof has been sent successfully.",
+        title: t("Proof submitted"),
+        description: t("Your proof has been sent successfully."),
       });
       queryClient.invalidateQueries({
         queryKey: ["campaigns", "my-participations"],
@@ -481,7 +483,7 @@ export default function CampaignDetailPage() {
         error?.response?.data?.error ||
         error?.message ||
         "Failed to submit proof";
-      toast({ title: "Error", description: message, variant: "destructive" });
+      toast({ title: t("Error"), description: message, variant: "destructive" });
     },
   });
 
@@ -534,8 +536,8 @@ export default function CampaignDetailPage() {
 
     if (!isRoleEligibleForCampaign) {
       toast({
-        title: "Not eligible for this campaign",
-        description: "This campaign is targeted to a different account role.",
+        title: t("Not eligible for this campaign"),
+        description: t("This campaign is targeted to a different account role."),
         variant: "destructive",
       });
       return;
@@ -558,8 +560,8 @@ export default function CampaignDetailPage() {
     },
     onSuccess: () => {
       toast({
-        title: "Profile submitted",
-        description: "Your profile completion check was submitted.",
+        title: t("Profile submitted"),
+        description: t("Your profile completion check was submitted."),
       });
       queryClient.invalidateQueries({
         queryKey: ["campaigns", "my-participations"],
@@ -571,7 +573,7 @@ export default function CampaignDetailPage() {
         error?.response?.data?.error ||
         error?.message ||
         "Failed to complete profile action";
-      toast({ title: "Error", description: message, variant: "destructive" });
+      toast({ title: t("Error"), description: message, variant: "destructive" });
     },
   });
 
@@ -594,7 +596,7 @@ export default function CampaignDetailPage() {
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary-blue mx-auto mb-4" />
-          <p className="text-gray-500">Loading campaign…</p>
+          <p className="text-gray-500">{t("Loading campaign…")}</p>
         </div>
       </div>
     );
@@ -606,14 +608,14 @@ export default function CampaignDetailPage() {
         <div className="text-center max-w-md">
           <AlertCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            Campaign Not Found
+            {t("Campaign Not Found")}
           </h2>
           <p className="text-gray-500 mb-6">
-            This campaign may have ended or is no longer available.
+            {t("This campaign may have ended or is no longer available.")}
           </p>
           <Button onClick={() => navigate("/")} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Home
+            {t("Back to Home")}
           </Button>
         </div>
       </div>
@@ -651,7 +653,7 @@ export default function CampaignDetailPage() {
             className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-8 transition-colors text-sm"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {t("Back")}
           </button>
 
           <div className="max-w-3xl">
@@ -665,7 +667,7 @@ export default function CampaignDetailPage() {
               </Badge>
               {campaignEnded && (
                 <Badge className="bg-red-500/20 text-red-300 border border-red-500/30">
-                  Campaign Ended
+                  {t("Campaign Ended")}
                 </Badge>
               )}
             </div>
@@ -686,22 +688,22 @@ export default function CampaignDetailPage() {
             {!campaignEnded && (
               <div className="mb-8">
                 <p className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
-                  Time Remaining
+                  {t("Time Remaining")}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <CountdownUnit value={countdown.days} label="Days" />
+                  <CountdownUnit value={countdown.days} label={t("Days")} />
                   <span className="text-2xl font-light text-white/30 pb-5">
                     :
                   </span>
-                  <CountdownUnit value={countdown.hours} label="Hours" />
+                  <CountdownUnit value={countdown.hours} label={t("Hours")} />
                   <span className="text-2xl font-light text-white/30 pb-5">
                     :
                   </span>
-                  <CountdownUnit value={countdown.minutes} label="Mins" />
+                  <CountdownUnit value={countdown.minutes} label={t("Mins")} />
                   <span className="text-2xl font-light text-white/30 pb-5">
                     :
                   </span>
-                  <CountdownUnit value={countdown.seconds} label="Secs" />
+                  <CountdownUnit value={countdown.seconds} label={t("Secs")} />
                 </div>
               </div>
             )}
@@ -766,14 +768,14 @@ export default function CampaignDetailPage() {
                       </p>
                       <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-gray-500">
                         <span>
-                          Submitted {formatShortDate(myParticipation.createdAt)}
+                          {t("Submitted")} {formatShortDate(myParticipation.createdAt)}
                         </span>
                         {myParticipation.rewardStartDate &&
                           myParticipation.rewardEndDate && (
                             <>
                               <span>•</span>
                               <span className="text-green-700 font-medium">
-                                Reward:{" "}
+                                {t("Reward:")}{" "}
                                 {formatShortDate(
                                   myParticipation.rewardStartDate
                                 )}{" "}
@@ -795,14 +797,14 @@ export default function CampaignDetailPage() {
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <Target className="h-5 w-5 text-primary-blue" />
-                    Campaign Details
+                    {t("Campaign Details")}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
                       <CalendarDays className="h-5 w-5 text-primary-blue shrink-0" />
                       <div>
                         <p className="text-xs text-gray-500 font-medium">
-                          Start Date
+                          {t("Start Date")}
                         </p>
                         <p className="text-sm font-semibold text-gray-800">
                           {formatDate(campaign.startDateTime)}
@@ -813,7 +815,7 @@ export default function CampaignDetailPage() {
                       <CalendarDays className="h-5 w-5 text-red-500 shrink-0" />
                       <div>
                         <p className="text-xs text-gray-500 font-medium">
-                          End Date
+                          {t("End Date")}
                         </p>
                         <p className="text-sm font-semibold text-gray-800">
                           {formatDate(campaign.endDateTime)}
@@ -824,10 +826,10 @@ export default function CampaignDetailPage() {
                       <Users className="h-5 w-5 text-indigo-500 shrink-0" />
                       <div>
                         <p className="text-xs text-gray-500 font-medium">
-                          Participants
+                          {t("Participants")}
                         </p>
                         <p className="text-sm font-semibold text-gray-800">
-                          {participantCount} joined
+                          {participantCount} {t("joined")}
                         </p>
                       </div>
                     </div>
@@ -835,7 +837,7 @@ export default function CampaignDetailPage() {
                       <Shield className="h-5 w-5 text-green-600 shrink-0" />
                       <div>
                         <p className="text-xs text-gray-500 font-medium">
-                          Verification
+                          {t("Verification")}
                         </p>
                         <p className="text-sm font-semibold text-gray-800">
                           {campaign.verificationMethod === "AUTOMATIC"
@@ -858,7 +860,7 @@ export default function CampaignDetailPage() {
                     <div>
                       <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <FileText className="h-4 w-4 text-primary-blue" />
-                        Who Can Join
+                        {t("Who Can Join")}
                       </h3>
                       <ul className="space-y-2">
                         {eligibilityRuleItems.map((rule, i) => (
@@ -886,7 +888,7 @@ export default function CampaignDetailPage() {
                     <div>
                       <h3 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
                         <Target className="h-4 w-4 text-primary-blue" />
-                        What You Need To Do
+                        {t("What You Need To Do")}
                       </h3>
                       <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                         <p className="text-sm font-medium text-gray-800">
@@ -899,14 +901,14 @@ export default function CampaignDetailPage() {
                         )}
                         {campaign.proofType && (
                           <Badge variant="outline" className="text-xs">
-                            Required: {PROOF_TYPE_LABELS[campaign.proofType]}
+                            {t("Required:")} {PROOF_TYPE_LABELS[campaign.proofType]}
                           </Badge>
                         )}
 
                         {parsedCriteria?.minimumSalesAmountMinor != null && (
                           <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
                             <p className="text-sm font-semibold text-indigo-900">
-                              Minimum sales target
+                              {t("Minimum sales target")}
                             </p>
                             <p className="text-sm text-indigo-800 mt-0.5">
                               {formatMinorCurrency(
@@ -920,11 +922,11 @@ export default function CampaignDetailPage() {
                         {parsedCriteria?.minimumOrderCount != null && (
                           <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
                             <p className="text-sm font-semibold text-indigo-900">
-                              Minimum order target
+                              {t("Minimum order target")}
                             </p>
                             <p className="text-sm text-indigo-800 mt-0.5">
                               {parsedCriteria.minimumOrderCount.toLocaleString()}{" "}
-                              completed orders
+                              {t("completed orders")}
                             </p>
                           </div>
                         )}
@@ -947,7 +949,7 @@ export default function CampaignDetailPage() {
                       <Trophy className="h-7 w-7 text-ethiopian-gold" />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900">
-                      Your Reward
+                      {t("Your Reward")}
                     </h3>
                   </div>
 
@@ -989,23 +991,23 @@ export default function CampaignDetailPage() {
                     <div className="text-center py-4">
                       <Clock className="h-10 w-10 text-gray-300 mx-auto mb-3" />
                       <p className="font-semibold text-gray-700">
-                        Campaign Has Ended
+                        {t("Campaign Has Ended")}
                       </p>
                       <p className="text-sm text-gray-500 mt-1">
-                        This campaign is no longer accepting participants.
+                        {t("This campaign is no longer accepting participants.")}
                       </p>
                     </div>
                   ) : hasParticipated ? (
                     <div className="text-center py-4">
                       <CheckCircle2 className="h-10 w-10 text-green-500 mx-auto mb-3" />
                       <p className="font-semibold text-gray-700">
-                        Already Joined
+                        {t("Already Joined")}
                       </p>
                       <p className="text-sm text-gray-500 mt-1">
-                        You've already registered for this campaign.
+                        {t("You've already registered for this campaign.")}
                         {myParticipation && (
                           <span className="block mt-1">
-                            Status:{" "}
+                            {t("Status:")}{" "}
                             <span
                               className={cn(
                                 "font-medium",
@@ -1026,10 +1028,10 @@ export default function CampaignDetailPage() {
                     <div className="space-y-4">
                       <div className="text-center">
                         <h3 className="font-semibold text-gray-900">
-                          Ready to Join?
+                          {t("Ready to Join?")}
                         </h3>
                         <p className="text-sm text-gray-500 mt-1">
-                          Register now and earn your reward!
+                          {t("Register now and earn your reward!")}
                         </p>
                       </div>
                       {/* 
@@ -1068,18 +1070,18 @@ export default function CampaignDetailPage() {
 
                       {isAuthenticated && !isRoleEligibleForCampaign && (
                         <p className="text-xs text-red-500 text-center">
-                          Your current account role cannot join this campaign.
+                          {t("Your current account role cannot join this campaign.")}
                         </p>
                       )}
 
                       {!isAuthenticated && (
                         <p className="text-xs text-gray-400 text-center">
-                          You need to be signed in to participate.{" "}
+                          {t("You need to be signed in to participate.")}{" "}
                           <Link
                             to="/signup"
                             className="text-primary-blue underline"
                           >
-                            Create an account
+                            {t("Create an account")}
                           </Link>
                         </p>
                       )}
@@ -1091,7 +1093,7 @@ export default function CampaignDetailPage() {
                     needsProofAfterJoin && (
                       <div className="mt-4 pt-4 border-t space-y-3">
                         <p className="text-sm font-semibold text-gray-800">
-                          Submit Required Proof
+                          {t("Submit Required Proof")}
                         </p>
 
                         {(campaign.proofType === "TEXT" ||
@@ -1099,7 +1101,7 @@ export default function CampaignDetailPage() {
                           <Textarea
                             value={proofText}
                             onChange={(e) => setProofText(e.target.value)}
-                            placeholder="Enter proof details..."
+                            placeholder={t("Enter proof details...")}
                             rows={3}
                           />
                         )}
@@ -1134,7 +1136,7 @@ export default function CampaignDetailPage() {
                           ) : (
                             <CheckCircle2 className="h-4 w-4 mr-2" />
                           )}
-                          Submit Proof
+                          {t("Submit Proof")}
                         </Button>
                       </div>
                     )}
@@ -1145,7 +1147,7 @@ export default function CampaignDetailPage() {
                     hasSubmittedProof && (
                       <div className="mt-4 pt-4 border-t">
                         <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-md p-3">
-                          We received your submitted data and will review it.
+                          {t("We received your submitted data and will review it.")}
                         </p>
                       </div>
                     )}
@@ -1153,11 +1155,10 @@ export default function CampaignDetailPage() {
                   {hasParticipated && myParticipation && canCompleteProfile && (
                     <div className="mt-4 pt-4 border-t space-y-3">
                       <p className="text-sm font-semibold text-gray-800">
-                        Complete Profile Action
+                        {t("Complete Profile Action")}
                       </p>
                       <p className="text-xs text-gray-600">
-                        After approval, click below to verify your profile and
-                        complete this campaign.
+                        {t("After approval, click below to verify your profile and complete this campaign.")}
                       </p>
                       <Button
                         onClick={() => completeProfileMutation.mutate()}
@@ -1169,7 +1170,7 @@ export default function CampaignDetailPage() {
                         ) : (
                           <CheckCircle2 className="h-4 w-4 mr-2" />
                         )}
-                        Complete Profile
+                        {t("Complete Profile")}
                       </Button>
                     </div>
                   )}
@@ -1181,8 +1182,7 @@ export default function CampaignDetailPage() {
                     myParticipation.status === "PENDING" && (
                       <div className="mt-4 pt-4 border-t">
                         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-3">
-                          Your participation is pending admin approval. You can
-                          upload proof after your participation is approved.
+                          {t("Your participation is pending admin approval. You can upload proof after your participation is approved.")}
                         </p>
                       </div>
                     )}
@@ -1197,10 +1197,10 @@ export default function CampaignDetailPage() {
                   <CardContent className="pt-6 text-center">
                     <Gift className="h-10 w-10 text-primary-blue mx-auto mb-3" />
                     <p className="font-semibold text-gray-700">
-                      Shop The Collection
+                      {t("Shop The Collection")}
                     </p>
                     <p className="text-sm text-gray-500 mt-1 mb-4">
-                      Browse products featured in this campaign.
+                      {t("Browse products featured in this campaign.")}
                     </p>
                     <Button
                       onClick={() =>
@@ -1212,7 +1212,7 @@ export default function CampaignDetailPage() {
                       }
                       className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white"
                     >
-                      Browse Products
+                      {t("Browse Products")}
                     </Button>
                   </CardContent>
                 </Card>
@@ -1227,7 +1227,7 @@ export default function CampaignDetailPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Gift className="h-5 w-5 text-primary-blue" />
-              Join Campaign
+              {t("Join Campaign")}
             </DialogTitle>
             <DialogDescription>{campaign.name}</DialogDescription>
           </DialogHeader>
@@ -1241,7 +1241,7 @@ export default function CampaignDetailPage() {
             {campaign.rewardType && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-sm font-medium text-green-800">
-                  🎁 Reward: {REWARD_TYPE_LABELS[campaign.rewardType]}
+                  {t("🎁 Reward:")} {REWARD_TYPE_LABELS[campaign.rewardType]}
                   {rewardValueDisplay &&
                     ` — ${
                       campaign.rewardType === "DISCOUNT_COUPON"
@@ -1264,8 +1264,7 @@ export default function CampaignDetailPage() {
             {isUploadProofCampaign && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-800">
-                  After you join, your participation will be reviewed first.
-                  Once approved, you can submit your proof from this page.
+                  {t("After you join, your participation will be reviewed first. Once approved, you can submit your proof from this page.")}
                 </p>
               </div>
             )}
@@ -1280,7 +1279,7 @@ export default function CampaignDetailPage() {
                 return rules.length > 0 ? (
                   <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 space-y-1.5">
                     <p className="text-xs font-semibold text-blue-800 uppercase tracking-wider">
-                      Requirements
+                      {t("Requirements")}
                     </p>
                     {rules.map((rule, i) => (
                       <p
@@ -1298,7 +1297,7 @@ export default function CampaignDetailPage() {
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setJoinDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleJoinSubmit}
@@ -1308,12 +1307,12 @@ export default function CampaignDetailPage() {
               {joinMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Submitting…
+                  {t("Submitting…")}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Confirm Participation
+                  {t("Confirm Participation")}
                 </>
               )}
             </Button>
@@ -1329,10 +1328,10 @@ export default function CampaignDetailPage() {
               <PartyPopper className="h-10 w-10 text-green-600" />
             </div>
             <DialogTitle className="text-xl mb-2">
-              You're Registered! 🎉
+              {t("You're Registered! 🎉")}
             </DialogTitle>
             <DialogDescription className="text-base">
-              Your campaign participation has been submitted successfully.
+              {t("Your campaign participation has been submitted successfully.")}
               {isUploadProofCampaign
                 ? " Your request is now pending admin approval. You can upload proof once approved."
                 : campaign.verificationMethod === "AUTOMATIC"
@@ -1345,7 +1344,7 @@ export default function CampaignDetailPage() {
               onClick={() => setShowSuccessDialog(false)}
               className="bg-primary-blue text-white hover:bg-primary-blue/90 px-8"
             >
-              Got it!
+              {t("Got it!")}
             </Button>
           </DialogFooter>
         </DialogContent>

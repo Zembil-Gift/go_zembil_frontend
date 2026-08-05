@@ -37,6 +37,7 @@ import { formatCurrency, getCurrencyDecimals } from "@/lib/currency";
 import apiService from "@/services/apiService";
 import { ProductReviewForm } from "@/components/reviews";
 import { reviewService } from "@/services/reviewService";
+import { useTranslation } from "react-i18next";
 
 interface OrderItem {
   id: number;
@@ -159,6 +160,7 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
 ];
 
 function MyOrdersContent() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [statusFilter, setStatusFilter] = useState<OrderStatus>("ALL");
@@ -353,16 +355,16 @@ function MyOrdersContent() {
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-eagle-green mb-2">
-            Sign In Required
+            {t("Sign In Required")}
           </h2>
           <p className="font-light text-eagle-green/70 mb-4">
-            Please sign in to view your orders.
+            {t("Please sign in to view your orders.")}
           </p>
           <Button
             onClick={() => navigate("/signin")}
             className="bg-eagle-green hover:bg-viridian-green text-white"
           >
-            Sign In
+            {t("Sign In")}
           </Button>
         </div>
       </div>
@@ -375,9 +377,9 @@ function MyOrdersContent() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-eagle-green">My Orders</h1>
+            <h1 className="text-3xl font-bold text-eagle-green">{t("My Orders")}</h1>
             <p className="text-eagle-green/70 mt-1">
-              Track and manage your product orders
+              {t("Track and manage your product orders")}
             </p>
           </div>
 
@@ -385,7 +387,7 @@ function MyOrdersContent() {
             <Filter className="h-4 w-4 text-eagle-green/50" />
             <Select value={statusFilter} onValueChange={handleStatusChange}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder={t("Filter by status")} />
               </SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map((option) => (
@@ -424,16 +426,16 @@ function MyOrdersContent() {
             <CardContent className="p-12 text-center">
               <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-eagle-green mb-2">
-                Failed to Load Orders
+                {t("Failed to Load Orders")}
               </h3>
               <p className="text-eagle-green/70 mb-4">
-                Something went wrong while fetching your orders.
+                {t("Something went wrong while fetching your orders.")}
               </p>
               <Button
                 onClick={() => window.location.reload()}
                 variant="outline"
               >
-                Try Again
+                {t("Try Again")}
               </Button>
             </CardContent>
           </Card>
@@ -459,7 +461,7 @@ function MyOrdersContent() {
                   onClick={() => navigate("/gifts")}
                   className="bg-eagle-green hover:bg-viridian-green text-white"
                 >
-                  Browse Products
+                  {t("Browse Products")}
                 </Button>
               )}
             </CardContent>
@@ -470,7 +472,7 @@ function MyOrdersContent() {
         {!isLoading && !isError && orders.length > 0 && (
           <>
             <div className="text-sm text-eagle-green/60 mb-4">
-              Showing {orders.length} order{orders.length !== 1 ? "s" : ""}
+              {t("Showing")} {orders.length} {t("order")}{orders.length !== 1 ? "s" : ""}
             </div>
 
             <div className="space-y-4">
@@ -521,12 +523,12 @@ function MyOrdersContent() {
                                   </Badge>
                                   {hasPackageBundle && (
                                     <Badge variant="outline" className="ml-2">
-                                      Package Bundle
+                                      {t("Package Bundle")}
                                     </Badge>
                                   )}
                                   {hasMultipleSubOrders(order) && (
                                     <Badge variant="outline" className="ml-2">
-                                      {order.subOrders?.length} Sub-Orders
+                                      {order.subOrders?.length} {t("Sub-Orders")}
                                     </Badge>
                                   )}
                                 </div>
@@ -541,7 +543,7 @@ function MyOrdersContent() {
                                 </span>
                                 {order.shippingAddress?.fullName && (
                                   <span>
-                                    To: {order.shippingAddress.fullName}
+                                    {t("To:")} {order.shippingAddress.fullName}
                                   </span>
                                 )}
                                 {order.shippingAddress?.city && (
@@ -574,7 +576,7 @@ function MyOrdersContent() {
                           <div className="mt-4 pt-4 border-t border-june-bud/20">
                             <p className="text-sm text-green-600 flex items-center gap-2">
                               <Truck className="h-4 w-4" />
-                              Estimated delivery:{" "}
+                              {t("Estimated delivery:")}{" "}
                               {new Date(order.eta).toLocaleDateString()}
                             </p>
                           </div>
@@ -583,7 +585,7 @@ function MyOrdersContent() {
                         <div className="mt-4 pt-4 border-t border-june-bud/20">
                           <p className="text-sm text-green-600 flex items-center gap-2">
                             <CheckCircle className="h-4 w-4" />
-                            Order delivered successfully
+                            {t("Order delivered successfully")}
                           </p>
                           <div className="mt-3 flex flex-wrap gap-2">
                             {(order.lines || order.items || [])
@@ -615,7 +617,7 @@ function MyOrdersContent() {
                                       });
                                     }}
                                   >
-                                    Review {line.productName || "Product"}
+                                    {t("Review")} {line.productName || "Product"}
                                   </Button>
                                 );
                               })}
@@ -643,7 +645,7 @@ function MyOrdersContent() {
               <>
                 <DialogHeader>
                   <DialogTitle>
-                    Add Review for {selectedReviewTarget.productName}
+                    {t("Add Review for")} {selectedReviewTarget.productName}
                   </DialogTitle>
                 </DialogHeader>
                 <ProductReviewForm
