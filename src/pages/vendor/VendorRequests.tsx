@@ -50,6 +50,7 @@ import {
   Eye,
 } from "lucide-react";
 import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
+import { useTranslation } from "react-i18next";
 
 interface Currency {
   id: number;
@@ -85,6 +86,7 @@ type PriceEditForm = z.infer<typeof priceEditSchema>;
 type CategoryEditForm = z.infer<typeof categoryEditSchema>;
 
 export default function VendorRequests() {
+  const { t } = useTranslation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -223,7 +225,7 @@ export default function VendorRequests() {
     mutationFn: ({ requestId, request }: { requestId: number; request: EditChangeRequest }) =>
       vendorChangeRequestService.editChangeRequest(requestId, request),
     onSuccess: () => {
-      toast({ title: "Success", description: "Request updated and resubmitted for review." });
+      toast({ title: t("Success"), description: t("Request updated and resubmitted for review.") });
       queryClient.invalidateQueries({ queryKey: ["vendor", "change-requests"] });
       setEditPriceOpen(false);
       setEditCategoryOpen(false);
@@ -231,7 +233,7 @@ export default function VendorRequests() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to update request",
         variant: "destructive",
       });
@@ -241,12 +243,12 @@ export default function VendorRequests() {
   const deleteMutation = useMutation({
     mutationFn: (requestId: number) => vendorChangeRequestService.deleteChangeRequest(requestId),
     onSuccess: () => {
-      toast({ title: "Success", description: "Request cancelled." });
+      toast({ title: t("Success"), description: t("Request cancelled.") });
       queryClient.invalidateQueries({ queryKey: ["vendor", "change-requests"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to cancel request",
         variant: "destructive",
       });
@@ -316,21 +318,21 @@ export default function VendorRequests() {
         return (
           <Badge className="bg-green-100 text-green-800">
             <CheckCircle className="h-3 w-3 mr-1" />
-            Approved
+            {t("Approved")}
           </Badge>
         );
       case "PENDING":
         return (
           <Badge className="bg-amber-100 text-amber-800">
             <Clock className="h-3 w-3 mr-1" />
-            Pending
+            {t("Pending")}
           </Badge>
         );
       case "REJECTED":
         return (
           <Badge className="bg-red-100 text-red-800">
             <XCircle className="h-3 w-3 mr-1" />
-            Rejected
+            {t("Rejected")}
           </Badge>
         );
       default:
@@ -481,7 +483,7 @@ export default function VendorRequests() {
 
               {request.reason && (
                 <p className="text-xs text-muted-foreground mt-1 italic">
-                  Reason: {request.reason}
+                  {t("Reason:")} {request.reason}
                 </p>
               )}
             </div>
@@ -495,7 +497,7 @@ export default function VendorRequests() {
                 onClick={() => (isPriceUpdate ? openPriceEdit(request) : openCategoryEdit(request))}
               >
                 <Edit className="h-4 w-4 mr-1" />
-                Edit
+                {t("Edit")}
               </Button>
               {request.status === "PENDING" && (
                 <Button
@@ -505,7 +507,7 @@ export default function VendorRequests() {
                   disabled={deleteMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
-                  Cancel
+                  {t("Cancel")}
                 </Button>
               )}
             </div>
@@ -517,10 +519,10 @@ export default function VendorRequests() {
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                <p className="text-sm font-medium text-red-800">{t("Rejection Reason:")}</p>
                 <RejectionReasonWithModal
                   reason={request.rejectionReason}
-                  title="Request rejection reason"
+                  title={t("Request rejection reason")}
                   className="text-sm text-red-700"
                   truncateLength={100}
                 />
@@ -578,10 +580,10 @@ export default function VendorRequests() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You need to be a vendor to access this page.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
+        <p className="text-gray-600 mb-4">{t("You need to be a vendor to access this page.")}</p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -597,9 +599,9 @@ export default function VendorRequests() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Change Requests</h1>
+            <h1 className="text-2xl font-bold">{t("Change Requests")}</h1>
             <p className="text-muted-foreground">
-              Price and category change requests awaiting review ({grandTotal} total)
+              {t("Price and category change requests awaiting review (")}{grandTotal} {t("total)")}
             </p>
           </div>
         </div>
@@ -609,7 +611,7 @@ export default function VendorRequests() {
             {showProducts && (
               <TabsTrigger value="products" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                <span>Products</span>
+                <span>{t("Products")}</span>
                 {productTotal > 0 && (
                   <Badge variant="secondary" className="ml-1">{productTotal}</Badge>
                 )}
@@ -618,7 +620,7 @@ export default function VendorRequests() {
             {showCustomOrders && (
               <TabsTrigger value="custom-orders" className="flex items-center gap-2">
                 <ShoppingBag className="h-4 w-4" />
-                <span>Custom Orders</span>
+                <span>{t("Custom Orders")}</span>
                 {customOrdersTotal > 0 && (
                   <Badge variant="secondary" className="ml-1">{customOrdersTotal}</Badge>
                 )}
@@ -627,7 +629,7 @@ export default function VendorRequests() {
             {showServices && (
               <TabsTrigger value="services" className="flex items-center gap-2">
                 <Wrench className="h-4 w-4" />
-                <span>Services</span>
+                <span>{t("Services")}</span>
                 {serviceTotal > 0 && (
                   <Badge variant="secondary" className="ml-1">{serviceTotal}</Badge>
                 )}
@@ -636,7 +638,7 @@ export default function VendorRequests() {
             {showEvents && (
               <TabsTrigger value="events" className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                <span>Events</span>
+                <span>{t("Events")}</span>
                 {eventTotal > 0 && (
                   <Badge variant="secondary" className="ml-1">{eventTotal}</Badge>
                 )}
@@ -650,9 +652,9 @@ export default function VendorRequests() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
-                    Product Change Requests
+                    {t("Product Change Requests")}
                   </CardTitle>
-                  <CardDescription>Price and category change requests for your products</CardDescription>
+                  <CardDescription>{t("Price and category change requests for your products")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
                   {renderChangeTypeSection(
@@ -680,10 +682,10 @@ export default function VendorRequests() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ShoppingBag className="h-5 w-5" />
-                    Custom Order Requests
+                    {t("Custom Order Requests")}
                   </CardTitle>
                   <CardDescription>
-                    Customer custom order requests awaiting your action
+                    {t("Customer custom order requests awaiting your action")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -694,8 +696,8 @@ export default function VendorRequests() {
                   ) : (customOrdersData?.content ?? []).length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <ShoppingBag className="h-10 w-10 mx-auto mb-3 text-gray-300" />
-                      <p className="font-medium">No custom orders yet</p>
-                      <p className="text-sm mt-1">Customer custom orders will appear here</p>
+                      <p className="font-medium">{t("No custom orders yet")}</p>
+                      <p className="text-sm mt-1">{t("Customer custom orders will appear here")}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -737,18 +739,18 @@ export default function VendorRequests() {
                                   {order.templateName}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-0.5">
-                                  Customer: {order.customerName}
+                                  {t("Customer:")} {order.customerName}
                                 </p>
                                 {order.finalPrice != null ? (
                                   <p className="text-xs text-muted-foreground">
-                                    Price: {order.currencyCode}{" "}
+                                    {t("Price:")} {order.currencyCode}{" "}
                                     {order.finalPrice.toLocaleString("en-US", {
                                       minimumFractionDigits: 2,
                                     })}
                                   </p>
                                 ) : order.basePrice != null ? (
                                   <p className="text-xs text-muted-foreground">
-                                    Base price: {order.currencyCode}{" "}
+                                    {t("Base price:")} {order.currencyCode}{" "}
                                     {order.basePrice.toLocaleString("en-US", {
                                       minimumFractionDigits: 2,
                                     })}
@@ -761,7 +763,7 @@ export default function VendorRequests() {
                               <Button variant="outline" size="sm" asChild className="flex-shrink-0">
                                 <Link to={`/vendor/custom-orders/${order.id}`}>
                                   <Eye className="h-4 w-4 mr-1" />
-                                  View
+                                  {t("View")}
                                 </Link>
                               </Button>
                             </div>
@@ -781,9 +783,9 @@ export default function VendorRequests() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Wrench className="h-5 w-5" />
-                    Service Change Requests
+                    {t("Service Change Requests")}
                   </CardTitle>
-                  <CardDescription>Price and category change requests for your services and packages</CardDescription>
+                  <CardDescription>{t("Price and category change requests for your services and packages")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
                   {renderChangeTypeSection(
@@ -811,9 +813,9 @@ export default function VendorRequests() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
-                    Event Change Requests
+                    {t("Event Change Requests")}
                   </CardTitle>
-                  <CardDescription>Ticket price and category change requests for your events</CardDescription>
+                  <CardDescription>{t("Ticket price and category change requests for your events")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
                   {renderChangeTypeSection(
@@ -841,12 +843,12 @@ export default function VendorRequests() {
       <Dialog open={editPriceOpen} onOpenChange={setEditPriceOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Price Change Request</DialogTitle>
+            <DialogTitle>{t("Edit Price Change Request")}</DialogTitle>
             <DialogDescription>
-              Update your price change request for <strong>{selectedRequest?.entityName}</strong>.
+              {t("Update your price change request for")} <strong>{selectedRequest?.entityName}</strong>.
               {selectedRequest?.status === "REJECTED" && (
                 <span className="block mt-1 text-amber-600">
-                  This request was rejected. Editing will resubmit it for review.
+                  {t("This request was rejected. Editing will resubmit it for review.")}
                 </span>
               )}
             </DialogDescription>
@@ -854,14 +856,14 @@ export default function VendorRequests() {
           <form onSubmit={priceForm.handleSubmit(onPriceSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Currency *</Label>
+                <Label>{t("Currency *")}</Label>
                 <Controller
                   name="currencyCode"
                   control={priceForm.control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select currency" />
+                        <SelectValue placeholder={t("Select currency")} />
                       </SelectTrigger>
                       <SelectContent>
                         {currencies.map((c) => (
@@ -878,7 +880,7 @@ export default function VendorRequests() {
                 )}
               </div>
               <div>
-                <Label>New Price *</Label>
+                <Label>{t("New Price *")}</Label>
                 <Controller
                   name="amount"
                   control={priceForm.control}
@@ -902,14 +904,14 @@ export default function VendorRequests() {
               </div>
             </div>
             <div>
-              <Label>Reason for Change</Label>
-              <Textarea {...priceForm.register("reason")} placeholder="Explain why you need to change the price..." />
+              <Label>{t("Reason for Change")}</Label>
+              <Textarea {...priceForm.register("reason")} placeholder={t("Explain why you need to change the price...")} />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditPriceOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setEditPriceOpen(false)}>{t("Cancel")}</Button>
               <Button type="submit" disabled={editMutation.isPending}>
                 {editMutation.isPending ? (
-                  <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Submitting...</>
+                  <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />{t("Submitting...")}</>
                 ) : "Save & Resubmit"}
               </Button>
             </DialogFooter>
@@ -921,32 +923,32 @@ export default function VendorRequests() {
       <Dialog open={editCategoryOpen} onOpenChange={setEditCategoryOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Category Change Request</DialogTitle>
+            <DialogTitle>{t("Edit Category Change Request")}</DialogTitle>
             <DialogDescription>
-              Update your category change request for <strong>{selectedRequest?.entityName}</strong>.
+              {t("Update your category change request for")} <strong>{selectedRequest?.entityName}</strong>.
               {selectedRequest?.status === "REJECTED" && (
                 <span className="block mt-1 text-amber-600">
-                  This request was rejected. Editing will resubmit it for review.
+                  {t("This request was rejected. Editing will resubmit it for review.")}
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
           {selectedRequest && (
             <div className="p-3 bg-muted rounded-lg text-sm">
-              <span className="font-medium">Current category: </span>
+              <span className="font-medium">{t("Current category:")} </span>
               {selectedRequest.currentSubCategoryName || selectedRequest.currentCategoryName || "N/A"}
             </div>
           )}
           <form onSubmit={categoryForm.handleSubmit(onCategorySubmit)} className="space-y-4">
             <div>
-              <Label>New Category *</Label>
+              <Label>{t("New Category *")}</Label>
               <Controller
                 name="newSubCategoryId"
                 control={categoryForm.control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
+                      <SelectValue placeholder={t("Select a category")} />
                     </SelectTrigger>
                     <SelectContent>
                       {allSubCategories.map((sc) => (
@@ -963,14 +965,14 @@ export default function VendorRequests() {
               )}
             </div>
             <div>
-              <Label>Reason for Change</Label>
-              <Textarea {...categoryForm.register("reason")} placeholder="Explain why this item should be recategorized..." />
+              <Label>{t("Reason for Change")}</Label>
+              <Textarea {...categoryForm.register("reason")} placeholder={t("Explain why this item should be recategorized...")} />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditCategoryOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setEditCategoryOpen(false)}>{t("Cancel")}</Button>
               <Button type="submit" disabled={editMutation.isPending}>
                 {editMutation.isPending ? (
-                  <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Submitting...</>
+                  <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />{t("Submitting...")}</>
                 ) : "Save & Resubmit"}
               </Button>
             </DialogFooter>

@@ -21,8 +21,10 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { deliveryService, DeliveryAssignmentDto } from "@/services/deliveryService";
+import { useTranslation } from "react-i18next";
 
 export default function DeliveryAssignments() {
+  const { t } = useTranslation();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(0);
 
@@ -67,24 +69,24 @@ export default function DeliveryAssignments() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Deliveries</h1>
-          <p className="text-gray-500">Manage your assigned deliveries</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t("My Deliveries")}</h1>
+          <p className="text-gray-500">{t("Manage your assigned deliveries")}</p>
         </div>
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-gray-500" />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter status" />
+              <SelectValue placeholder={t("Filter status")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="ASSIGNED">Assigned</SelectItem>
-              <SelectItem value="ACCEPTED">Accepted</SelectItem>
-              <SelectItem value="PICKED_UP">Picked Up</SelectItem>
-              <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
-              <SelectItem value="ARRIVED">Arrived</SelectItem>
-              <SelectItem value="DELIVERED">Delivered</SelectItem>
-              <SelectItem value="FAILED">Failed</SelectItem>
+              <SelectItem value="all">{t("All Status")}</SelectItem>
+              <SelectItem value="ASSIGNED">{t("Assigned")}</SelectItem>
+              <SelectItem value="ACCEPTED">{t("Accepted")}</SelectItem>
+              <SelectItem value="PICKED_UP">{t("Picked Up")}</SelectItem>
+              <SelectItem value="IN_TRANSIT">{t("In Transit")}</SelectItem>
+              <SelectItem value="ARRIVED">{t("Arrived")}</SelectItem>
+              <SelectItem value="DELIVERED">{t("Delivered")}</SelectItem>
+              <SelectItem value="FAILED">{t("Failed")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -99,7 +101,7 @@ export default function DeliveryAssignments() {
           <CardContent className="py-16">
             <div className="text-center text-gray-500">
               <Package className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-              <h3 className="text-lg font-medium mb-1">No assignments found</h3>
+              <h3 className="text-lg font-medium mb-1">{t("No assignments found")}</h3>
               <p className="text-sm">
                 {statusFilter !== "all"
                   ? "Try changing the filter to see more assignments"
@@ -119,7 +121,7 @@ export default function DeliveryAssignments() {
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-3">
                           <span className="font-semibold text-lg">
-                            {assignment.orderType === 'CUSTOM' && <span className="text-purple-600 text-sm mr-1">CUSTOM</span>}
+                            {assignment.orderType === 'CUSTOM' && <span className="text-purple-600 text-sm mr-1">{t("CUSTOM")}</span>}
                             #{assignment.customOrderNumber || assignment.orderNumber}
                           </span>
                           <Badge className={getStatusColor(assignment.status)}>
@@ -144,13 +146,13 @@ export default function DeliveryAssignments() {
                         <div className="flex items-center gap-4 text-sm">
                           <div className="flex items-center gap-1 text-gray-500">
                             <Clock className="h-3 w-3" />
-                            <span>Assigned: {formatDate(assignment.assignedAt)}</span>
+                            <span>{t("Assigned:")} {formatDate(assignment.assignedAt)}</span>
                           </div>
                           {assignment.expectedDeliveryAt && (
                             <div className="flex items-center gap-1 text-ethiopian-gold">
                               <Clock className="h-3 w-3" />
                               <span>
-                                Due: {formatDate(assignment.expectedDeliveryAt)}
+                                {t("Due:")} {formatDate(assignment.expectedDeliveryAt)}
                               </span>
                             </div>
                           )}
@@ -181,10 +183,10 @@ export default function DeliveryAssignments() {
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
               >
-                Previous
+                {t("Previous")}
               </Button>
               <span className="text-sm text-gray-500">
-                Page {page + 1} of {totalPages}
+                {t("Page")} {page + 1} of {totalPages}
               </span>
               <Button
                 variant="outline"
@@ -192,7 +194,7 @@ export default function DeliveryAssignments() {
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page >= totalPages - 1}
               >
-                Next
+                {t("Next")}
               </Button>
             </div>
           )}

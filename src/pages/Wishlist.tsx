@@ -14,8 +14,10 @@ import { formatPrice } from "@/lib/currency";
 import { WishListItemDto } from "@/services/wishlistService";
 import { getSkuImageUrl, getProductImageUrl } from "@/utils/imageUtils";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 function WishlistContent() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { 
     wishlistItems, 
@@ -37,10 +39,10 @@ function WishlistContent() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <Heart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Your Wishlist</h1>
-            <p className="text-gray-600 mb-8">Sign in to save your favorite Ethiopian gifts</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">{t("Your Wishlist")}</h1>
+            <p className="text-gray-600 mb-8">{t("Sign in to save your favorite Ethiopian gifts")}</p>
             <Button asChild>
-              <Link to="/signin?redirect=/wishlist">Sign In</Link>
+              <Link to="/signin?redirect=/wishlist">{t("Sign In")}</Link>
             </Button>
           </div>
         </div>
@@ -54,7 +56,7 @@ function WishlistContent() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-ethiopian-gold mx-auto mb-4" />
-            <p className="text-gray-600">Loading your wishlist...</p>
+            <p className="text-gray-600">{t("Loading your wishlist...")}</p>
           </div>
         </div>
       </div>
@@ -69,14 +71,14 @@ function WishlistContent() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <Heart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Your Wishlist is Empty</h1>
-            <p className="text-gray-600 mb-8">Start exploring our authentic Ethiopian gifts to add favorites here</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">{t("Your Wishlist is Empty")}</h1>
+            <p className="text-gray-600 mb-8">{t("Start exploring our authentic Ethiopian gifts to add favorites here")}</p>
             <div className="space-x-4">
               <Button asChild>
-                <Link to="/shop">Browse Gifts</Link>
+                <Link to="/shop">{t("Browse Gifts")}</Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/occasions">Shop by Occasion</Link>
+                <Link to="/occasions">{t("Shop by Occasion")}</Link>
               </Button>
             </div>
           </div>
@@ -104,13 +106,13 @@ function WishlistContent() {
                 color: isSeasonalMode && currentTheme.id !== 'default' ? currentTheme.colors.text : undefined
               }}>
                 <Heart className="h-8 w-8 text-red-500" />
-                Your Wishlist
+                {t("Your Wishlist")}
               </h1>
               <p className="mt-2" style={{
                 color: isSeasonalMode && currentTheme.id !== 'default' ? currentTheme.colors.text : undefined,
                 opacity: 0.8
               }}>
-                {getWishlistCount()} {getWishlistCount() === 1 ? 'gift' : 'gifts'} saved for later
+                {getWishlistCount()} {getWishlistCount() === 1 ? 'gift' : 'gifts'} {t("saved for later")}
               </p>
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -126,7 +128,7 @@ function WishlistContent() {
                     ) : (
                       <ShoppingCart className="h-4 w-4 mr-2" />
                     )}
-                    Move {selectedItems.length} to Cart
+                    {t("Move")} {selectedItems.length} {t("to Cart")}
                   </Button>
                   <Button 
                     variant="destructive"
@@ -141,14 +143,14 @@ function WishlistContent() {
                     ) : (
                       <Trash2 className="h-4 w-4 mr-2" />
                     )}
-                    Remove {selectedItems.length}
+                    {t("Remove")} {selectedItems.length}
                   </Button>
                 </>
               )}
               <Button variant="outline" asChild>
                 <Link to="/shop">
                   <ShoppingCart className="h-4 w-4 mr-2" />
-                  Continue Shopping
+                  {t("Continue Shopping")}
                 </Link>
               </Button>
             </div>
@@ -237,7 +239,7 @@ function WishlistContent() {
                       )}
                       {item.priceChanged && (
                         <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">
-                          Price changed
+                          {t("Price changed")}
                         </Badge>
                       )}
                       {item.priority && item.priority !== 'UNASSIGNED' && (
@@ -273,7 +275,7 @@ function WishlistContent() {
                           <p 
                             className="text-xs mt-1 text-gray-500"
                           >
-                            SKU: {item.skuCode}
+                            {t("SKU:")} {item.skuCode}
                           </p>
                         )}
                         {item.productSku?.attributes && item.productSku.attributes.length > 0 && (
@@ -310,7 +312,7 @@ function WishlistContent() {
                           </span>
                           {item.priceChanged && item.snapshotPrice && (
                             <span className="text-xs text-gray-500 line-through">
-                              Was: {formatPrice(item.snapshotPrice, item.currency || 'ETB')}
+                              {t("Was:")} {formatPrice(item.snapshotPrice, item.currency || 'ETB')}
                             </span>
                           )}
                         </div>
@@ -323,7 +325,7 @@ function WishlistContent() {
                                 : undefined
                             }}
                           >
-                            Added {new Date(item.addedAt).toLocaleDateString()}
+                            {t("Added")} {new Date(item.addedAt).toLocaleDateString()}
                           </span>
                         )}
                       </div>
@@ -344,7 +346,7 @@ function WishlistContent() {
                         {item.available ? 'Add to Cart' : 'Unavailable'}
                       </Button>
                       <Button variant="outline" size="sm" asChild>
-                        <Link to={`/product/${item.productId}`}>View</Link>
+                        <Link to={`/product/${item.productId}`}>{t("View")}</Link>
                       </Button>
                     </div>
                   </div>
@@ -358,17 +360,17 @@ function WishlistContent() {
         <div className="mt-12 text-center">
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Need help choosing?
+              {t("Need help choosing?")}
             </h3>
             <div className="flex flex-wrap justify-center gap-4">
               <Button variant="outline" asChild>
-                <Link to="/occasions">Shop by Occasion</Link>
+                <Link to="/occasions">{t("Shop by Occasion")}</Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/custom-orders">Custom Orders</Link>
+                <Link to="/custom-orders">{t("Custom Orders")}</Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/events">Gift Experiences</Link>
+                <Link to="/events">{t("Gift Experiences")}</Link>
               </Button>
             </div>
           </div>

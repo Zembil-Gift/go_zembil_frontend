@@ -11,6 +11,7 @@ import { formatPrice, fromMinorUnits, fetchCurrencies } from "@/lib/currency";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 /**
  * What the carousel renders. Event campaigns and free-gift tiers both
@@ -83,23 +84,24 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
 
 /** Split out so the countdown hook only runs for slides that have a deadline. */
 function Countdown({ endDateTime }: { endDateTime: string }) {
+  const { t } = useTranslation();
   const countdown = useCountdown(endDateTime);
 
   return (
     <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-5 sm:mb-10">
-      <CountdownUnit value={countdown.days} label="Days" />
+      <CountdownUnit value={countdown.days} label={t("Days")} />
       <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
         :
       </span>
-      <CountdownUnit value={countdown.hours} label="Hours" />
+      <CountdownUnit value={countdown.hours} label={t("Hours")} />
       <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
         :
       </span>
-      <CountdownUnit value={countdown.minutes} label="Mins" />
+      <CountdownUnit value={countdown.minutes} label={t("Mins")} />
       <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
         :
       </span>
-      <CountdownUnit value={countdown.seconds} label="Secs" />
+      <CountdownUnit value={countdown.seconds} label={t("Secs")} />
     </div>
   );
 }

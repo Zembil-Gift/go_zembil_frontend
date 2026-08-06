@@ -5,8 +5,10 @@ import { CheckCircle, Calendar, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { consumePendingPurchase, trackPurchase } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 export default function ServiceOrderSuccess() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get("orderId");
 
@@ -33,7 +35,7 @@ export default function ServiceOrderSuccess() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-green-600">
             <CheckCircle className="h-6 w-6" />
-            Service Payment Verified
+            {t("Service Payment Verified")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -56,14 +58,14 @@ export default function ServiceOrderSuccess() {
                 }
               >
                 <Calendar className="h-4 w-4 mr-2" />
-                View Services
+                {t("View Services")}
               </a>
             </Button>
 
             <Button asChild variant="outline" className="w-full">
               <a href="/services">
                 <Search className="h-4 w-4 mr-2" />
-                Browse Service
+                {t("Browse Service")}
               </a>
             </Button>
           </div>

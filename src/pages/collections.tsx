@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import type { Product } from "@/services/productService";
+import { useTranslation } from "react-i18next";
 
 interface Collection {
   id: string;
@@ -31,6 +32,7 @@ interface Collection {
 }
 
 export default function Collections() {
+  const { t } = useTranslation();
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
 
   // Fetch trending products
@@ -158,12 +160,11 @@ export default function Collections() {
           <div className="flex items-center justify-center mb-6">
             <Gift className="h-12 w-12 text-ethiopian-gold mr-4" />
             <h1 className="text-4xl lg:text-5xl font-bold text-charcoal">
-              Gift Collections
+              {t("Gift Collections")}
             </h1>
           </div>
           <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-            Discover curated collections of meaningful gifts that connect hearts across distances. 
-            From trending favorites to cultural treasures, find the perfect gift for every occasion.
+            {t("Discover curated collections of meaningful gifts that connect hearts across distances. From trending favorites to cultural treasures, find the perfect gift for every occasion.")}
           </p>
         </div>
       </div>
@@ -231,7 +232,7 @@ export default function Collections() {
                     )}
                     
                     <Badge variant="secondary" className="text-xs">
-                      {collection.products.length}+ items
+                      {collection.products.length}{t("+ items")}
                     </Badge>
                   </div>
                 )}
@@ -241,7 +242,7 @@ export default function Collections() {
                   <Button 
                     className="w-full bg-charcoal hover:bg-ethiopian-gold text-white group-hover:shadow-lg transition-all duration-300"
                   >
-                    Explore Collection
+                    {t("Explore Collection")}
                     <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
                   </Button>
                 </Link>
@@ -255,14 +256,14 @@ export default function Collections() {
       <div className="bg-gradient-to-r from-deep-forest to-charcoal py-16">
         <div className="container mx-auto px-4 lg:px-6 text-center">
           <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-            Can't Find What You're Looking For?
+            {t("Can't Find What You're Looking For?")}
           </h2>
           <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto">
-            Create a custom gift order and let our artisans craft something special just for your loved one.
+            {t("Create a custom gift order and let our artisans craft something special just for your loved one.")}
           </p>
           <Link to="/custom-orders">
             <Button size="lg" className="bg-ethiopian-gold hover:bg-warm-gold text-white font-semibold">
-              Create Custom Order
+              {t("Create Custom Order")}
               <ChevronRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>

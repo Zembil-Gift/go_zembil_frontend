@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface TagInputProps {
   value?: string[];
@@ -29,6 +30,7 @@ export function TagInput({
   maxTags = 10,
   className 
 }: TagInputProps) {
+  const { t } = useTranslation();
   const [inputValue, setInputValue] = useState("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,7 +84,7 @@ export function TagInput({
             onClick={() => removeTag(tag)}
           >
             <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-            <span className="sr-only">Remove {tag}</span>
+            <span className="sr-only">{t("Remove")} {tag}</span>
           </button>
         </Badge>
       ))}

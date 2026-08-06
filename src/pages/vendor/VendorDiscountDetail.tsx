@@ -32,8 +32,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 export default function VendorDiscountDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -51,25 +53,25 @@ export default function VendorDiscountDetail() {
   const deactivateMutation = useMutation({
     mutationFn: () => discountService.deactivateDiscount(discountId),
     onSuccess: () => {
-      toast({ title: "Discount deactivated" });
+      toast({ title: t("Discount deactivated") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'discounts'] });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'discount', discountId] });
       setShowDeactivate(false);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
   const reactivateMutation = useMutation({
     mutationFn: () => discountService.reactivateDiscount(discountId),
     onSuccess: () => {
-      toast({ title: "Discount reactivated", description: "The discount is now active again." });
+      toast({ title: t("Discount reactivated"), description: t("The discount is now active again.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'discounts'] });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'discount', discountId] });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -98,9 +100,9 @@ export default function VendorDiscountDetail() {
   if (!discount) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900">Discount not found</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t("Discount not found")}</h3>
         <Button variant="outline" className="mt-4" onClick={() => navigate('/vendor/discounts')}>
-          Back to Discounts
+          {t("Back to Discounts")}
         </Button>
       </div>
     );
@@ -119,10 +121,10 @@ export default function VendorDiscountDetail() {
               <h2 className="text-xl font-semibold font-mono tracking-wider">{discount.code}</h2>
               {discount.isActive && discount.isCurrentlyValid && discount.hasRemainingUses ? (
                 <Badge className="bg-green-100 text-green-800">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />Active
+                  <CheckCircle2 className="h-3 w-3 mr-1" />{t("Active")}
                 </Badge>
               ) : !discount.isActive ? (
-                <Badge className="bg-slate-100 text-slate-800">Inactive</Badge>
+                <Badge className="bg-slate-100 text-slate-800">{t("Inactive")}</Badge>
               ) : (
                 <Badge className="bg-amber-100 text-amber-800">
                   <AlertCircle className="h-3 w-3 mr-1" />
@@ -137,13 +139,13 @@ export default function VendorDiscountDetail() {
           <Button asChild variant="outline" size="sm">
             <Link to={`/vendor/discounts/${discountId}/usages`}>
               <BarChart3 className="h-4 w-4 mr-1" />
-              View Usages
+              {t("View Usages")}
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to={`/vendor/discounts/${discountId}/edit`}>
               <Pencil className="h-4 w-4 mr-1" />
-              Edit
+              {t("Edit")}
             </Link>
           </Button>
           {discount.isActive ? (
@@ -154,7 +156,7 @@ export default function VendorDiscountDetail() {
               onClick={() => setShowDeactivate(true)}
             >
               <XCircle className="h-4 w-4 mr-1" />
-              Deactivate
+              {t("Deactivate")}
             </Button>
           ) : (
             <Button
@@ -182,19 +184,19 @@ export default function VendorDiscountDetail() {
               ) : (
                 <Tag className="h-4 w-4 text-purple-600" />
               )}
-              Discount Value
+              {t("Discount Value")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Type</span>
+              <span className="text-sm text-muted-foreground">{t("Type")}</span>
               <span className="text-sm font-medium">
                 {discount.discountType === 'PERCENTAGE' ? 'Percentage' : 'Fixed Amount'}
               </span>
             </div>
             <Separator />
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Value</span>
+              <span className="text-sm text-muted-foreground">{t("Value")}</span>
               <span className="text-sm font-semibold">
                 {discount.discountType === 'PERCENTAGE'
                   ? `${discount.discountPercentage}%`
@@ -207,7 +209,7 @@ export default function VendorDiscountDetail() {
               <>
                 <Separator />
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Max Discount Cap</span>
+                  <span className="text-sm text-muted-foreground">{t("Max Discount Cap")}</span>
                   <span className="text-sm">
                     {discount.maxDiscountAmount != null && discount.displayCurrencyCode
                       ? `${discount.maxDiscountAmount.toFixed(2)} ${discount.displayCurrencyCode}`
@@ -220,7 +222,7 @@ export default function VendorDiscountDetail() {
               <>
                 <Separator />
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Min Order Amount</span>
+                  <span className="text-sm text-muted-foreground">{t("Min Order Amount")}</span>
                   <span className="text-sm">
                     {discount.minOrderAmount != null && discount.displayCurrencyCode
                       ? `${discount.minOrderAmount.toFixed(2)} ${discount.displayCurrencyCode}`
@@ -231,7 +233,7 @@ export default function VendorDiscountDetail() {
             )}
             <Separator />
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Applies To</span>
+              <span className="text-sm text-muted-foreground">{t("Applies To")}</span>
               <span className="text-sm">
                 {discount.appliesTo === 'ORDER_TOTAL'
                   ? 'Entire Order'
@@ -254,12 +256,12 @@ export default function VendorDiscountDetail() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Users className="h-4 w-4 text-emerald-600" />
-              Usage & Validity
+              {t("Usage & Validity")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Total Uses</span>
+              <span className="text-sm text-muted-foreground">{t("Total Uses")}</span>
               <span className="text-sm font-semibold">
                 {discount.usageCount}
                 {discount.usageLimit ? ` / ${discount.usageLimit}` : ' (unlimited)'}
@@ -267,24 +269,24 @@ export default function VendorDiscountDetail() {
             </div>
             <Separator />
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Per User Limit</span>
+              <span className="text-sm text-muted-foreground">{t("Per User Limit")}</span>
               <span className="text-sm">
                 {discount.perUserLimit ? `${discount.perUserLimit} per user` : 'Unlimited'}
               </span>
             </div>
             <Separator />
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Valid From</span>
+              <span className="text-sm text-muted-foreground">{t("Valid From")}</span>
               <span className="text-sm">{formatDate(discount.validFrom)}</span>
             </div>
             <Separator />
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Valid Until</span>
+              <span className="text-sm text-muted-foreground">{t("Valid Until")}</span>
               <span className="text-sm">{formatDate(discount.validUntil)}</span>
             </div>
             <Separator />
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Created</span>
+              <span className="text-sm text-muted-foreground">{t("Created")}</span>
               <span className="text-sm">{formatDate(discount.createdAt)}</span>
             </div>
           </CardContent>
@@ -296,7 +298,7 @@ export default function VendorDiscountDetail() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <ShoppingBag className="h-4 w-4" />
-              Description
+              {t("Description")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -311,7 +313,7 @@ export default function VendorDiscountDetail() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Package className="h-4 w-4 text-emerald-600" />
-              Applicable Products ({discount.productNames.length})
+              {t("Applicable Products (")}{discount.productNames.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -331,7 +333,7 @@ export default function VendorDiscountDetail() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Tag className="h-4 w-4 text-orange-600" />
-              Applicable Categories ({discount.categoryNames.length})
+              {t("Applicable Categories (")}{discount.categoryNames.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -351,7 +353,7 @@ export default function VendorDiscountDetail() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Briefcase className="h-4 w-4 text-sky-600" />
-              Applicable Services ({discount.serviceNames.length})
+              {t("Applicable Services (")}{discount.serviceNames.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -371,7 +373,7 @@ export default function VendorDiscountDetail() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Layers className="h-4 w-4 text-violet-600" />
-              Applicable Custom Order Templates ({discount.customOrderTemplateNames.length})
+              {t("Applicable Custom Order Templates (")}{discount.customOrderTemplateNames.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -390,14 +392,13 @@ export default function VendorDiscountDetail() {
       <AlertDialog open={showDeactivate} onOpenChange={setShowDeactivate}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate Discount</AlertDialogTitle>
+            <AlertDialogTitle>{t("Deactivate Discount")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deactivate "{discount.code}"?
-              Customers will no longer be able to use this code.
+              {t("Are you sure you want to deactivate \"")}{discount.code}{t("\"? Customers will no longer be able to use this code.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deactivateMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deactivateMutation.isPending}>{t("Cancel")}</AlertDialogCancel>
             <Button
               variant="destructive"
               onClick={() => deactivateMutation.mutate()}

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Eye, EyeOff, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, AlertCircle, Loader2, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import OAuth2Buttons from "@/components/auth/OAuth2Buttons";
 import authService from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackLogin } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 const signinSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -39,8 +40,13 @@ const NON_ADMIN_LOGIN_ROLES = new Set([
 ]);
 
 export default function SignIn() {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [pendingCertificate, setPendingCertificate] = useState<{
+    email: string;
+    vendorType: string;
+  } | null>(null);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const { toast } = useToast();
   const { refreshUser } = useAuth();
@@ -102,8 +108,8 @@ export default function SignIn() {
     const returnUrl = getReturnUrl();
     if (returnUrl && returnUrl !== "/") {
       toast({
-        title: "Sign in required",
-        description: "Please sign in to continue",
+        title: t("Sign in required"),
+        description: t("Please sign in to continue"),
         variant: "default",
       });
     }
@@ -132,8 +138,8 @@ export default function SignIn() {
       console.log("Login successful:", result);
 
       toast({
-        title: "Sign in successful",
-        description: "Welcome to goGerami!",
+        title: t("Sign in successful"),
+        description: t("Welcome to goGerami!"),
       });
 
       trackLogin("email");
@@ -151,9 +157,15 @@ export default function SignIn() {
       if (isEmailNotVerified) {
         const email = responseData?.details?.email || data.email;
         setUnverifiedEmail(email);
+        // Vendor who stopped before the onboarding video: offer the certificate first.
+        setPendingCertificate(
+          responseData?.details?.certificatePending === true
+            ? { email, vendorType: responseData?.details?.vendorType || "" }
+            : null
+        );
       } else {
         toast({
-          title: "Sign in failed",
+          title: t("Sign in failed"),
           description:
             err?.message || "Invalid email or password. Please try again.",
           variant: "destructive",
@@ -175,7 +187,7 @@ export default function SignIn() {
       });
     } catch (err: any) {
       toast({
-        title: "Failed to send verification code",
+        title: t("Failed to send verification code"),
         description: err?.message || "Please try again.",
         variant: "destructive",
       });
@@ -196,9 +208,9 @@ export default function SignIn() {
             />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            Welcome back
+            {t("Welcome back")}
           </h1>
-          <p className="text-gray-600">Sign in to your goGerami account</p>
+          <p className="text-gray-600">{t("Sign in to your goGerami account")}</p>
         </div>
 
         <Card className="shadow-lg border-0">
@@ -214,7 +226,7 @@ export default function SignIn() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">
-                        Email
+                        {t("Email")}
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
@@ -222,7 +234,7 @@ export default function SignIn() {
                           <Input
                             {...field}
                             type="email"
-                            placeholder="Enter your email"
+                            placeholder={t("Enter your email")}
                             className="pl-10 h-11"
                           />
                         </div>
@@ -238,7 +250,7 @@ export default function SignIn() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">
-                        Password
+                        {t("Password")}
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
@@ -246,7 +258,7 @@ export default function SignIn() {
                           <Input
                             {...field}
                             type={showPassword ? "text" : "password"}
-                            placeholder="Enter your password"
+                            placeholder={t("Enter your password")}
                             className="pl-10 pr-10 h-11"
                           />
                           <button
@@ -281,31 +293,56 @@ export default function SignIn() {
               <Alert className="mt-4 border-amber-300 bg-amber-50">
                 <AlertCircle className="h-4 w-4 text-amber-600" />
                 <AlertDescription className="text-amber-800">
-                  <p className="font-medium mb-1">Email not verified</p>
-                  <p className="text-sm mb-3">
-                    Your account (
-                    <span className="font-medium">{unverifiedEmail}</span>)
-                    hasn't been verified yet. Click below to receive a
-                    verification code.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={handleVerifyEmail}
-                    disabled={isSendingOtp}
-                    className="bg-amber-600 hover:bg-amber-700 text-white"
-                  >
-                    {isSendingOtp ? (
-                      <>
-                        <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                        Sending code...
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="w-3 h-3 mr-2" />
-                        Send verification code
-                      </>
-                    )}
-                  </Button>
+                  {pendingCertificate ? (
+                    <>
+                      <p className="font-medium mb-1">
+                        {t("Finish your onboarding")}
+                      </p>
+                      <p className="text-sm mb-3">
+                        {t("Your account (")}
+                        <span className="font-medium">{unverifiedEmail}</span>
+                        {t(") is saved, but you haven't collected your onboarding certificate yet. Get it first, then verify your email.")}
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          navigate("/vendor-signup?resume=1", {
+                            state: pendingCertificate,
+                          })
+                        }
+                        className="bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        <Award className="w-3 h-3 mr-2" />
+                        {t("Get my certificate")}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-medium mb-1">{t("Email not verified")}</p>
+                      <p className="text-sm mb-3">
+                        {t("Your account (")}
+                        <span className="font-medium">{unverifiedEmail}</span>{t(") hasn't been verified yet. Click below to receive a verification code.")}
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={handleVerifyEmail}
+                        disabled={isSendingOtp}
+                        className="bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        {isSendingOtp ? (
+                          <>
+                            <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                            {t("Sending code...")}
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="w-3 h-3 mr-2" />
+                            {t("Send verification code")}
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
                 </AlertDescription>
               </Alert>
             )}
@@ -330,19 +367,19 @@ export default function SignIn() {
             />
 
             <div className="mt-6 text-center text-sm">
-              <span className="text-gray-600">Don't have an account? </span>
+              <span className="text-gray-600">{t("Don't have an account?")} </span>
               <Link
                 to="/signup"
                 className="text-viridian-green hover:text-viridian-green/80 font-medium"
               >
-                Sign up
+                {t("Sign up")}
               </Link>
               <span className="text-gray-600"> or </span>
               <Link
                 to="/vendor-signup"
                 className="text-emerald-600 hover:text-emerald-700 font-medium"
               >
-                Sign up as Vendor
+                {t("Sign up as Vendor")}
               </Link>
             </div>
 
@@ -351,7 +388,7 @@ export default function SignIn() {
                 to="/forgot-password"
                 className="text-sm text-gray-500 hover:text-gray-700"
               >
-                Forgot your password?
+                {t("Forgot your password?")}
               </Link>
             </div>
           </CardContent>

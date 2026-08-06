@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { SUPPORTED_COUNTRIES } from "@/lib/countryConfig";
 import { MapPin } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export interface ManualAddressValue {
   street: string;
@@ -35,6 +36,7 @@ export default function ManualAddressForm({
   onChange,
   idPrefix = "manual",
 }: ManualAddressFormProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3">
       <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -42,35 +44,35 @@ export default function ManualAddressForm({
       </div>
 
       <div>
-        <Label htmlFor={`${idPrefix}-street`}>Address *</Label>
+        <Label htmlFor={`${idPrefix}-street`}>{t("Address *")}</Label>
         <Input
           id={`${idPrefix}-street`}
           value={value.street}
           onChange={(e) => onChange({ street: e.target.value })}
-          placeholder="4 Kilo"
+          placeholder={t("4 Kilo")}
           required
         />
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
-          <Label htmlFor={`${idPrefix}-city`}>City *</Label>
+          <Label htmlFor={`${idPrefix}-city`}>{t("City *")}</Label>
           <Input
             id={`${idPrefix}-city`}
             value={value.city}
             onChange={(e) => onChange({ city: e.target.value })}
-            placeholder="Addis Ababa"
+            placeholder={t("Addis Ababa")}
             required
           />
         </div>
         <div>
-          <Label htmlFor={`${idPrefix}-country`}>Country *</Label>
+          <Label htmlFor={`${idPrefix}-country`}>{t("Country *")}</Label>
           <Select
             value={value.country || undefined}
             onValueChange={(country) => onChange({ country })}
           >
             <SelectTrigger id={`${idPrefix}-country`}>
-              <SelectValue placeholder="Select a country" />
+              <SelectValue placeholder={t("Select a country")} />
             </SelectTrigger>
             <SelectContent>
               {SUPPORTED_COUNTRIES.map((country) => (

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Gift } from "lucide-react";
 import { freeGiftService, pickUnlockedGift } from "@/services/freeGiftService";
+import { useTranslation } from "react-i18next";
 
 interface FreeGiftLineProps {
   subtotalMinor: number;
@@ -21,6 +22,7 @@ export function FreeGiftLine({
   cartCurrency,
   compact = false,
 }: FreeGiftLineProps) {
+  const { t } = useTranslation();
   const { data: tiers } = useQuery({
     queryKey: ["free-gift"],
     queryFn: () => freeGiftService.getFreeGiftTiers(),
@@ -54,16 +56,16 @@ export function FreeGiftLine({
 
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold uppercase tracking-wide text-green-700">
-          Free gift unlocked
+          {t("Free gift unlocked")}
         </p>
         <p className="font-semibold text-charcoal truncate">
           {gift.giftProductName ?? "Free gift"}
         </p>
-        <p className="text-xs text-gray-500">Added automatically · no extra cost</p>
+        <p className="text-xs text-gray-500">{t("Added automatically · no extra cost")}</p>
       </div>
 
       <div className="text-right">
-        <span className="font-bold text-green-700">FREE</span>
+        <span className="font-bold text-green-700">{t("FREE")}</span>
         <p className="text-xs text-gray-400 line-through">$0.00</p>
       </div>
     </div>

@@ -51,6 +51,7 @@ import {
   MapPin,
   Clock,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Memoized attribute input component to prevent re-renders
 interface AttributeInputProps {
@@ -68,6 +69,7 @@ const AttributeInput = memo(function AttributeInput({
   onValueChange,
   onRemove,
 }: AttributeInputProps) {
+  const { t } = useTranslation();
   const [localName, setLocalName] = useState(name);
   const [localValue, setLocalValue] = useState(value);
 
@@ -95,14 +97,14 @@ const AttributeInput = memo(function AttributeInput({
   return (
     <div className="flex items-center gap-2">
       <Input
-        placeholder="Name (optional)"
+        placeholder={t("Name (optional)")}
         value={localName}
         onChange={(e) => setLocalName(e.target.value)}
         onBlur={handleNameBlur}
         className="w-1/3"
       />
       <Input
-        placeholder="Value (required)"
+        placeholder={t("Value (required)")}
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         onBlur={handleValueBlur}
@@ -382,6 +384,7 @@ const saveServiceDraft = (
 };
 
 export default function CreateService() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -542,9 +545,9 @@ export default function CreateService() {
     setIsDraftInitialized(true);
 
     toast({
-      title: "Draft Restored",
+      title: t("Draft Restored"),
       description:
-        "Your saved service draft has been loaded. Images need re-upload.",
+        t("Your saved service draft has been loaded. Images need re-upload."),
     });
   };
 
@@ -557,9 +560,9 @@ export default function CreateService() {
   const handleNextStep = async () => {
     if (currentStep === 2 && pendingImages.length === 0) {
       toast({
-        title: "Image Required",
+        title: t("Image Required"),
         description:
-          "Please upload at least one service image before continuing.",
+          t("Please upload at least one service image before continuing."),
         variant: "destructive",
       });
       return;
@@ -580,8 +583,8 @@ export default function CreateService() {
 
     if (!isValid) {
       toast({
-        title: "Validation Error",
-        description: "Please complete required fields before continuing.",
+        title: t("Validation Error"),
+        description: t("Please complete required fields before continuing."),
         variant: "destructive",
       });
       return;
@@ -780,8 +783,8 @@ export default function CreateService() {
           );
         } catch (imageError: any) {
           toast({
-            title: "Warning",
-            description: "Service created but some images failed to upload.",
+            title: t("Warning"),
+            description: t("Service created but some images failed to upload."),
             variant: "destructive",
           });
         } finally {
@@ -886,7 +889,7 @@ export default function CreateService() {
       } else if (packageErrors.length > 0) {
         // Some packages failed - show warning but continue
         toast({
-          title: "Warning",
+          title: t("Warning"),
           description: `Some packages failed to create: ${packageErrors.join(
             "; "
           )}`,
@@ -912,7 +915,7 @@ export default function CreateService() {
       queryClient.invalidateQueries({ queryKey: ["admin", "all-services"] });
 
       toast({
-        title: "Service Created",
+        title: t("Service Created"),
         description:
           packages.length > 0
             ? "Your service and packages have been submitted for admin approval."
@@ -923,7 +926,7 @@ export default function CreateService() {
     onError: (error: any) => {
       setIsUploadingImages(false);
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to create service",
         variant: "destructive",
       });
@@ -935,9 +938,9 @@ export default function CreateService() {
 
     if (currentStep < SERVICE_TOTAL_STEPS) {
       toast({
-        title: "Review Policies",
+        title: t("Review Policies"),
         description:
-          "Please continue to the Policies step and submit from there.",
+          t("Please continue to the Policies step and submit from there."),
       });
       setCurrentStep(SERVICE_TOTAL_STEPS);
       return;
@@ -945,9 +948,9 @@ export default function CreateService() {
 
     if (!hasReviewedPolicies) {
       toast({
-        title: "Policy Confirmation Required",
+        title: t("Policy Confirmation Required"),
         description:
-          "Please confirm you have read the policies before submitting.",
+          t("Please confirm you have read the policies before submitting."),
         variant: "destructive",
       });
       return;
@@ -955,9 +958,9 @@ export default function CreateService() {
 
     if (pendingImages.length === 0) {
       toast({
-        title: "Image Required",
+        title: t("Image Required"),
         description:
-          "Please upload at least one service image before submitting.",
+          t("Please upload at least one service image before submitting."),
         variant: "destructive",
       });
       setCurrentStep(2);
@@ -966,8 +969,8 @@ export default function CreateService() {
 
     if (data.packages.length === 0) {
       toast({
-        title: "Validation Error",
-        description: "Please add at least one package.",
+        title: t("Validation Error"),
+        description: t("Please add at least one package."),
         variant: "destructive",
       });
       return;
@@ -975,8 +978,8 @@ export default function CreateService() {
     const hasDefault = data.packages.some((p) => p.isDefault);
     if (!hasDefault) {
       toast({
-        title: "Validation Error",
-        description: "Please set one package as default.",
+        title: t("Validation Error"),
+        description: t("Please set one package as default."),
         variant: "destructive",
       });
       return;
@@ -998,9 +1001,9 @@ export default function CreateService() {
     }
 
     toast({
-      title: "Validation Error",
+      title: t("Validation Error"),
       description:
-        "Please fill all required fields and fix highlighted inputs.",
+        t("Please fill all required fields and fix highlighted inputs."),
       variant: "destructive",
     });
   };
@@ -1009,12 +1012,12 @@ export default function CreateService() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
         <p className="text-gray-600 mb-4">
-          You need to be a vendor to create services.
+          {t("You need to be a vendor to create services.")}
         </p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -1031,9 +1034,9 @@ export default function CreateService() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Create Service</h1>
+            <h1 className="text-2xl font-bold">{t("Create Service")}</h1>
             <p className="text-muted-foreground">
-              Add a new service with packages (requires admin approval)
+              {t("Add a new service with packages (requires admin approval)")}
             </p>
           </div>
         </div>
@@ -1041,11 +1044,10 @@ export default function CreateService() {
         {showDraftDecision && storedDraft ? (
           <Card>
             <CardHeader>
-              <CardTitle>Saved Draft Found</CardTitle>
+              <CardTitle>{t("Saved Draft Found")}</CardTitle>
               <CardDescription>
-                You have a saved service draft from{" "}
-                {new Date(storedDraft.updatedAt).toLocaleString()}. Continue
-                where you stopped or start a new service.
+                {t("You have a saved service draft from")}{" "}
+                {new Date(storedDraft.updatedAt).toLocaleString()}{t(". Continue where you stopped or start a new service.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row gap-3 sm:justify-end">
@@ -1054,10 +1056,10 @@ export default function CreateService() {
                 variant="outline"
                 onClick={handleStartNewDraft}
               >
-                Create New Service
+                {t("Create New Service")}
               </Button>
               <Button type="button" onClick={handleContinueDraft}>
-                Continue Draft
+                {t("Continue Draft")}
               </Button>
             </CardContent>
           </Card>
@@ -1084,7 +1086,7 @@ export default function CreateService() {
                     }`}
                   >
                     <p className="text-xs text-muted-foreground">
-                      Step {stepNumber}
+                      {t("Step")} {stepNumber}
                     </p>
                     <p>{stepTitle}</p>
                   </div>
@@ -1097,15 +1099,15 @@ export default function CreateService() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Briefcase className="h-5 w-5" />
-                    Basic Information
+                    {t("Basic Information")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="title">Service Title *</Label>
+                    <Label htmlFor="title">{t("Service Title *")}</Label>
                     <Input
                       id="title"
-                      placeholder="Enter service name"
+                      placeholder={t("Enter service name")}
                       {...form.register("title")}
                     />
                     {form.formState.errors.title && (
@@ -1115,10 +1117,10 @@ export default function CreateService() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="description">Description *</Label>
+                    <Label htmlFor="description">{t("Description *")}</Label>
                     <Textarea
                       id="description"
-                      placeholder="Describe your service in detail..."
+                      placeholder={t("Describe your service in detail...")}
                       className="min-h-[100px]"
                       {...form.register("description")}
                     />
@@ -1129,7 +1131,7 @@ export default function CreateService() {
                     )}
                   </div>
                   <div>
-                    <Label>Category</Label>
+                    <Label>{t("Category")}</Label>
                     <Controller
                       name="categoryId"
                       control={form.control}
@@ -1137,7 +1139,7 @@ export default function CreateService() {
                         <SubcategorySearchCombobox
                           value={field.value}
                           onValueChange={field.onChange}
-                          placeholder="Search and select a category"
+                          placeholder={t("Search and select a category")}
                         />
                       )}
                     />
@@ -1152,11 +1154,10 @@ export default function CreateService() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Camera className="h-5 w-5" />
-                    Service Images
+                    {t("Service Images")}
                   </CardTitle>
                   <CardDescription>
-                    Upload images that showcase your service. First image will
-                    be the cover.
+                    {t("Upload images that showcase your service. First image will be the cover.")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1174,7 +1175,7 @@ export default function CreateService() {
                   {pendingImages.length > 0 && (
                     <div className="mt-3">
                       <p className="text-sm text-muted-foreground">
-                        {pendingImages.length} image(s) will be uploaded
+                        {pendingImages.length} {t("image(s) will be uploaded")}
                       </p>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {pendingImages.map((file, index) => (
@@ -1205,15 +1206,15 @@ export default function CreateService() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
-                    Location
+                    {t("Location")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="location">Address *</Label>
+                    <Label htmlFor="location">{t("Address *")}</Label>
                     <Input
                       id="location"
-                      placeholder="e.g., Bole Road, Near Edna Mall"
+                      placeholder={t("e.g., Bole Road, Near Edna Mall")}
                       {...form.register("location")}
                     />
                     {form.formState.errors.location && (
@@ -1223,10 +1224,10 @@ export default function CreateService() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="city">City *</Label>
+                    <Label htmlFor="city">{t("City *")}</Label>
                     <Input
                       id="city"
-                      placeholder="e.g., Addis Ababa"
+                      placeholder={t("e.g., Addis Ababa")}
                       {...form.register("city")}
                     />
                     {form.formState.errors.city && (
@@ -1245,27 +1246,23 @@ export default function CreateService() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
-                    Service Packages *
+                    {t("Service Packages *")}
                   </CardTitle>
                   <CardDescription>
-                    Create packages for your service with pricing, durations,
-                    and features. At least one package is required. Each package
-                    requires admin approval.
+                    {t("Create packages for your service with pricing, durations, and features. At least one package is required. Each package requires admin approval.")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Alert className="border-blue-200 bg-blue-50">
                     <Info className="h-4 w-4 text-blue-600" />
                     <AlertTitle className="text-blue-800">
-                      Pricing Information
+                      {t("Pricing Information")}
                     </AlertTitle>
                     <AlertDescription className="text-blue-700">
-                      Enter your price (what you'll receive). Platform fee will
-                      be added for customers. The default package price will be
-                      shown on service listings.
+                      {t("Enter your price (what you'll receive). Platform fee will be added for customers. The default package price will be shown on service listings.")}
                       {vendorProfile?.vatStatus === "VAT_REGISTERED" && (
                         <span className="block mt-1 font-medium">
-                          As a VAT-registered vendor, VAT will be included.
+                          {t("As a VAT-registered vendor, VAT will be included.")}
                         </span>
                       )}
                     </AlertDescription>
@@ -1290,7 +1287,7 @@ export default function CreateService() {
                                   `Package ${index + 1}`}
                               </CardTitle>
                               {packages[index]?.isDefault && (
-                                <Badge variant="default">Default</Badge>
+                                <Badge variant="default">{t("Default")}</Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
@@ -1301,7 +1298,7 @@ export default function CreateService() {
                                   size="sm"
                                   onClick={() => setDefaultPackage(index)}
                                 >
-                                  Set as Default
+                                  {t("Set as Default")}
                                 </Button>
                               )}
                               {packageFields.length > 1 && (
@@ -1321,19 +1318,19 @@ export default function CreateService() {
                         <CardContent className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <Label>Package Code (reference code)</Label>
+                              <Label>{t("Package Code (reference code)")}</Label>
                               <Input
                                 {...form.register(
                                   `packages.${index}.packageCode`
                                 )}
-                                placeholder="e.g., BASIC, PREMIUM"
+                                placeholder={t("e.g., BASIC, PREMIUM")}
                               />
                             </div>
                             <div>
-                              <Label>Package Name *</Label>
+                              <Label>{t("Package Name *")}</Label>
                               <Input
                                 {...form.register(`packages.${index}.name`)}
-                                placeholder="e.g., Basic Package"
+                                placeholder={t("e.g., Basic Package")}
                               />
                               {form.formState.errors.packages?.[index]
                                 ?.name && (
@@ -1347,12 +1344,12 @@ export default function CreateService() {
                             </div>
                           </div>
                           <div>
-                            <Label>Description</Label>
+                            <Label>{t("Description")}</Label>
                             <Textarea
                               {...form.register(
                                 `packages.${index}.description`
                               )}
-                              placeholder="Describe what's included..."
+                              placeholder={t("Describe what's included...")}
                               className="min-h-[60px]"
                             />
                           </div>
@@ -1394,7 +1391,7 @@ export default function CreateService() {
                             </div>
                             {!isEthiopianVendor(vendorProfile) && (
                               <div>
-                                <Label>Currency *</Label>
+                                <Label>{t("Currency *")}</Label>
                                 <Controller
                                   name={`packages.${index}.currency`}
                                   control={form.control}
@@ -1404,7 +1401,7 @@ export default function CreateService() {
                                       onValueChange={field.onChange}
                                     >
                                       <SelectTrigger>
-                                        <SelectValue placeholder="Currency" />
+                                        <SelectValue placeholder={t("Currency")} />
                                       </SelectTrigger>
                                       <SelectContent>
                                         {availableCurrencies.map((currency) => (
@@ -1422,7 +1419,7 @@ export default function CreateService() {
                               </div>
                             )}
                             <div>
-                              <Label>Duration (min)</Label>
+                              <Label>{t("Duration (min)")}</Label>
                               <Controller
                                 name={`packages.${index}.durationMinutes`}
                                 control={form.control}
@@ -1441,7 +1438,7 @@ export default function CreateService() {
                               />
                             </div>
                             <div>
-                              <Label>Max Bookings/Day</Label>
+                              <Label>{t("Max Bookings/Day")}</Label>
                               <Controller
                                 name={`packages.${index}.maxBookingsPerDay`}
                                 control={form.control}
@@ -1449,7 +1446,7 @@ export default function CreateService() {
                                   <Input
                                     type="number"
                                     min="0"
-                                    placeholder="0 = unlimited"
+                                    placeholder={t("0 = unlimited")}
                                     value={field.value || ""}
                                     onChange={(e) =>
                                       field.onChange(
@@ -1467,14 +1464,14 @@ export default function CreateService() {
                             <div className="flex items-center gap-2 mb-3">
                               <Calendar className="h-4 w-4 text-muted-foreground" />
                               <Label className="font-medium">
-                                Package Availability
+                                {t("Package Availability")}
                               </Label>
                             </div>
 
                             <div className="space-y-4">
                               <div>
                                 <Label className="mb-2 block text-sm">
-                                  Availability Type *
+                                  {t("Availability Type *")}
                                 </Label>
                                 <Controller
                                   name={`packages.${index}.availabilityType`}
@@ -1491,7 +1488,7 @@ export default function CreateService() {
                                           }
                                           className="mr-2"
                                         />
-                                        <span>Time Slots</span>
+                                        <span>{t("Time Slots")}</span>
                                       </label>
                                       <label className="flex items-center cursor-pointer text-sm">
                                         <input
@@ -1505,7 +1502,7 @@ export default function CreateService() {
                                           }
                                           className="mr-2"
                                         />
-                                        <span>Working Hours</span>
+                                        <span>{t("Working Hours")}</span>
                                       </label>
                                     </div>
                                   )}
@@ -1514,7 +1511,7 @@ export default function CreateService() {
 
                               <div>
                                 <Label className="mb-2 block text-sm">
-                                  Working Days *
+                                  {t("Working Days *")}
                                 </Label>
                                 <div className="flex flex-wrap gap-1">
                                   {DAYS_OF_WEEK.map((day) => (
@@ -1556,7 +1553,7 @@ export default function CreateService() {
                               "TIME_SLOTS" ? (
                                 <div>
                                   <Label className="mb-2 block text-sm">
-                                    Time Slots *
+                                    {t("Time Slots *")}
                                   </Label>
                                   <div className="flex flex-wrap gap-1 mb-2">
                                     {(packages[index]?.timeSlots || []).map(
@@ -1610,7 +1607,7 @@ export default function CreateService() {
                                       }}
                                     />
                                     <span className="text-xs text-muted-foreground self-center">
-                                      Press Enter or blur to add
+                                      {t("Press Enter or blur to add")}
                                     </span>
                                   </div>
                                   {form.formState.errors.packages?.[index]
@@ -1627,7 +1624,7 @@ export default function CreateService() {
                                 <div className="grid grid-cols-2 gap-3">
                                   <div>
                                     <Label className="text-sm">
-                                      Start Time *
+                                      {t("Start Time *")}
                                     </Label>
                                     <Controller
                                       name={`packages.${index}.workingHoursStart`}
@@ -1654,7 +1651,7 @@ export default function CreateService() {
                                   </div>
                                   <div>
                                     <Label className="text-sm">
-                                      End Time *
+                                      {t("End Time *")}
                                     </Label>
                                     <Controller
                                       name={`packages.${index}.workingHoursEnd`}
@@ -1683,7 +1680,7 @@ export default function CreateService() {
 
                               <div>
                                 <Label className="text-sm">
-                                  Advance Booking (days)
+                                  {t("Advance Booking (days)")}
                                 </Label>
                                 <Controller
                                   name={`packages.${index}.advanceBookingDays`}
@@ -1709,7 +1706,7 @@ export default function CreateService() {
                           {/* Package Attributes */}
                           <div className="border-t pt-4 mt-4">
                             <div className="flex items-center justify-between mb-2">
-                              <Label>Package Features/Attributes</Label>
+                              <Label>{t("Package Features/Attributes")}</Label>
                               <Button
                                 type="button"
                                 variant="outline"
@@ -1717,13 +1714,11 @@ export default function CreateService() {
                                 onClick={() => addPackageAttribute(index)}
                               >
                                 <Plus className="h-3 w-3 mr-1" />
-                                Add Feature
+                                {t("Add Feature")}
                               </Button>
                             </div>
                             <p className="text-xs text-muted-foreground mb-2">
-                              Add features for this package. Name is optional
-                              (e.g., "Duration: 2 hours" or just "Includes
-                              editing").
+                              {t("Add features for this package. Name is optional (e.g., \"Duration: 2 hours\" or just \"Includes editing\").")}
                             </p>
                             {packages[index]?.attributes &&
                             packages[index].attributes.length > 0 ? (
@@ -1759,7 +1754,7 @@ export default function CreateService() {
                               </div>
                             ) : (
                               <p className="text-sm text-muted-foreground italic">
-                                No features added yet.
+                                {t("No features added yet.")}
                               </p>
                             )}
                           </div>
@@ -1769,16 +1764,16 @@ export default function CreateService() {
                             <div className="flex items-center gap-2 mb-3">
                               <Camera className="h-4 w-4 text-muted-foreground" />
                               <Label className="font-medium">
-                                Package Images
+                                {t("Package Images")}
                               </Label>
                               {packages[index]?.isDefault && (
                                 <Badge variant="secondary" className="text-xs">
-                                  Shown on listings
+                                  {t("Shown on listings")}
                                 </Badge>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground mb-3">
-                              Add images for this package.{" "}
+                              {t("Add images for this package.")}{" "}
                               {packages[index]?.isDefault
                                 ? "These images will be displayed on service listings and the home page."
                                 : "First image becomes the primary image."}
@@ -1811,7 +1806,7 @@ export default function CreateService() {
                                       </Button>
                                       {fileIndex === 0 && (
                                         <Badge className="absolute bottom-1 left-1 text-xs">
-                                          Primary
+                                          {t("Primary")}
                                         </Badge>
                                       )}
                                     </div>
@@ -1848,13 +1843,13 @@ export default function CreateService() {
                                 >
                                   <span>
                                     <Plus className="h-3 w-3 mr-1" />
-                                    Add Images
+                                    {t("Add Images")}
                                   </span>
                                 </Button>
                               </label>
                               <span className="text-xs text-muted-foreground">
                                 {pendingPackageImages[index]?.length || 0}{" "}
-                                image(s) selected
+                                {t("image(s) selected")}
                               </span>
                             </div>
                           </div>
@@ -1868,7 +1863,7 @@ export default function CreateService() {
                       className="w-full"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Another Package
+                      {t("Add Another Package")}
                     </Button>
                   </div>
                 </CardContent>
@@ -1881,49 +1876,44 @@ export default function CreateService() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Clock className="h-5 w-5" />
-                    Policies
+                    {t("Policies")}
                   </CardTitle>
                   <CardDescription>
-                    Payment and cancellation policies for your service
+                    {t("Payment and cancellation policies for your service")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Alert className="border-green-200 bg-green-50">
                     <Info className="h-4 w-4 text-green-600" />
                     <AlertTitle className="text-green-800">
-                      Payment Policy
+                      {t("Payment Policy")}
                     </AlertTitle>
                     <AlertDescription className="text-green-700">
-                      Full payment is required at the time of booking. No
-                      deposits.
+                      {t("Full payment is required at the time of booking. No deposits.")}
                     </AlertDescription>
                   </Alert>
 
                   <Alert className="border-blue-200 bg-blue-50">
                     <Info className="h-4 w-4 text-blue-600" />
                     <AlertTitle className="text-blue-800">
-                      Cancellation & Reschedule Policy
+                      {t("Cancellation & Reschedule Policy")}
                     </AlertTitle>
                     <AlertDescription className="text-blue-700">
                       <p className="mb-2">
-                        All services follow the platform's standard policy:
+                        {t("All services follow the platform's standard policy:")}
                       </p>
                       <ul className="list-disc list-inside text-sm space-y-1">
                         <li>
-                          Free cancellation up to 48 hours before service (100%
-                          refund minus platform fee)
+                          {t("Free cancellation up to 48 hours before service (100% refund minus platform fee)")}
                         </li>
                         <li>
-                          50% refund for cancellations 24-48 hours before
-                          service
+                          {t("50% refund for cancellations 24-48 hours before service")}
                         </li>
                         <li>
-                          No refund for cancellations less than 24 hours before
-                          service
+                          {t("No refund for cancellations less than 24 hours before service")}
                         </li>
                         <li>
-                          Free reschedule allowed up to 48 hours before service
-                          (one time only)
+                          {t("Free reschedule allowed up to 48 hours before service (one time only)")}
                         </li>
                       </ul>
                     </AlertDescription>
@@ -1932,11 +1922,10 @@ export default function CreateService() {
                   <Alert className="border-amber-200 bg-amber-50">
                     <Info className="h-4 w-4 text-amber-600" />
                     <AlertTitle className="text-amber-800">
-                      Order Confirmation
+                      {t("Order Confirmation")}
                     </AlertTitle>
                     <AlertDescription className="text-amber-700">
-                      After a customer books and pays, you will need to confirm
-                      the booking before it becomes active.
+                      {t("After a customer books and pays, you will need to confirm the booking before it becomes active.")}
                     </AlertDescription>
                   </Alert>
 
@@ -1952,7 +1941,7 @@ export default function CreateService() {
                       htmlFor="service-policy-confirmation"
                       className="cursor-pointer"
                     >
-                      I have read and understood these policies.
+                      {t("I have read and understood these policies.")}
                     </Label>
                   </div>
                 </CardContent>
@@ -1963,7 +1952,7 @@ export default function CreateService() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    Link Supplier (Optional)
+                    {t("Link Supplier (Optional)")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1974,10 +1963,10 @@ export default function CreateService() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="No supplier" />
+                      <SelectValue placeholder={t("No supplier")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">No supplier</SelectItem>
+                      <SelectItem value="0">{t("No supplier")}</SelectItem>
                       {activeSuppliers.map((s) => (
                         <SelectItem key={s.id} value={s.id.toString()}>
                           {s.businessName}
@@ -1994,13 +1983,13 @@ export default function CreateService() {
               <div className="text-sm text-muted-foreground">
                 <span className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  {packages.length} package(s) configured
+                  {packages.length} {t("package(s) configured")}
                 </span>
               </div>
               <div className="flex gap-4">
                 <Button type="button" variant="outline" asChild>
                   <Link to="/vendor" onClick={handleCancel}>
-                    Cancel
+                    {t("Cancel")}
                   </Link>
                 </Button>
                 {currentStep > 1 && (
@@ -2011,12 +2000,12 @@ export default function CreateService() {
                       setCurrentStep((prev) => clampServiceStep(prev - 1))
                     }
                   >
-                    Back
+                    {t("Back")}
                   </Button>
                 )}
                 {currentStep < SERVICE_TOTAL_STEPS ? (
                   <Button type="button" onClick={handleNextStep}>
-                    Next
+                    {t("Next")}
                   </Button>
                 ) : (
                   <Button

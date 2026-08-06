@@ -3,6 +3,7 @@ import { GoogleMap, Marker } from '@react-google-maps/api';
 import { useGoogleMaps } from './GoogleMapsProvider';
 import { geocodingService, type GeocodeResponse } from '@/services/geocodingService.ts';
 import { MapPin, Loader2, Search, LocateFixed } from 'lucide-react';
+import { useTranslation } from "react-i18next";
 
 interface LocationPickerProps {
   /** Current latitude (controlled) */
@@ -71,6 +72,7 @@ export function LocationPicker({
   showSearch = true,
   disabled = false,
 }: LocationPickerProps) {
+  const { t } = useTranslation();
   const { isLoaded, loadError } = useGoogleMaps();
   const mapRef = useRef<google.maps.Map | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -210,8 +212,8 @@ export function LocationPicker({
       <div className="flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 p-8" style={{ height }}>
         <div className="text-center text-gray-500">
           <MapPin className="w-8 h-8 mx-auto mb-2 text-red-400" />
-          <p className="font-medium">Failed to load Google Maps</p>
-          <p className="text-sm mt-1">Please check your internet connection and try again.</p>
+          <p className="font-medium">{t("Failed to load Google Maps")}</p>
+          <p className="text-sm mt-1">{t("Please check your internet connection and try again.")}</p>
         </div>
       </div>
     );
@@ -222,7 +224,7 @@ export function LocationPicker({
       <div className="flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 p-8" style={{ height }}>
         <div className="text-center text-gray-500">
           <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin text-primary-blue" />
-          <p>Loading map...</p>
+          <p>{t("Loading map...")}</p>
         </div>
       </div>
     );
@@ -254,7 +256,7 @@ export function LocationPicker({
             ) : (
               <LocateFixed className="w-4 h-4" />
             )}
-            My Location
+            {t("My Location")}
           </button>
         </div>
       )}
@@ -292,7 +294,7 @@ export function LocationPicker({
             <div className="bg-white/90 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg border">
               <p className="text-sm text-gray-700 font-medium flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary-blue" />
-                Click on the map to drop a pin at your business location
+                {t("Click on the map to drop a pin at your business location")}
               </p>
             </div>
           </div>
@@ -305,7 +307,7 @@ export function LocationPicker({
           {isGeocoding ? (
             <>
               <Loader2 className="w-4 h-4 mt-0.5 animate-spin text-primary-blue flex-shrink-0" />
-              <span className="text-sm text-gray-600">Resolving address...</span>
+              <span className="text-sm text-gray-600">{t("Resolving address...")}</span>
             </>
           ) : (
             <>
@@ -319,7 +321,7 @@ export function LocationPicker({
       {/* Coordinates display */}
       {markerPosition && (
         <p className="text-xs text-gray-400">
-          Coordinates: {markerPosition.lat.toFixed(6)}, {markerPosition.lng.toFixed(6)}
+          {t("Coordinates:")} {markerPosition.lat.toFixed(6)}, {markerPosition.lng.toFixed(6)}
         </p>
       )}
     </div>

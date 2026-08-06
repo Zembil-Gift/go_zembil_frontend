@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { AlertTriangle } from 'lucide-react';
+import { useTranslation } from "react-i18next";
 
 const DEFAULT_TITLE = 'Rejection Reason';
 
@@ -23,6 +24,7 @@ export function RejectionReasonModal({
   reason,
   title = DEFAULT_TITLE,
 }: RejectionReasonModalProps) {
+  const { t } = useTranslation();
   if (!reason?.trim()) return null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -33,7 +35,7 @@ export function RejectionReasonModal({
             {title}
           </DialogTitle>
           <DialogDescription>
-            Full reason provided for this rejection.
+            {t("Full reason provided for this rejection.")}
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto min-h-0">
@@ -59,6 +61,7 @@ export function RejectionReasonWithModal({
   className?: string;
   truncateLength?: number;
 }) {
+  const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
   if (!reason?.trim()) return null;
   const truncated =
@@ -76,7 +79,7 @@ export function RejectionReasonWithModal({
             onClick={() => setModalOpen(true)}
             className="ml-1 text-red-700 underline hover:no-underline font-medium"
           >
-            View reason
+            {t("View reason")}
           </button>
         </p>
       </div>

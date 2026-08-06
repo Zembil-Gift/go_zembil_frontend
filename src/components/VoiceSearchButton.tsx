@@ -6,6 +6,7 @@ import { Mic, MicOff, Volume2, Languages, Loader2, X } from 'lucide-react';
 import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { cn } from '@/lib/utils';
 import { useLocation } from 'wouter';
+import { useTranslation } from "react-i18next";
 
 interface VoiceSearchButtonProps {
   onSearchQuery?: (query: string) => void;
@@ -27,6 +28,7 @@ export function VoiceSearchButton({
   size = 'default',
   variant = 'outline' 
 }: VoiceSearchButtonProps) {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [selectedLanguage, setSelectedLanguage] = useState('en-US');
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
@@ -121,7 +123,7 @@ export function VoiceSearchButton({
           )}>
             <CardContent className="p-3">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm text-gray-800">Select Language</h3>
+                <h3 className="font-semibold text-sm text-gray-800">{t("Select Language")}</h3>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -162,7 +164,7 @@ export function VoiceSearchButton({
           )}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-base text-gray-800">Choose Voice Language</h3>
+                <h3 className="font-semibold text-base text-gray-800">{t("Choose Voice Language")}</h3>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -205,7 +207,7 @@ export function VoiceSearchButton({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Mic className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Voice Input</span>
+                <span className="text-sm font-medium">{t("Voice Input")}</span>
                 {detectedLanguage && (
                   <Badge variant="secondary" className="text-xs">
                     {detectedLanguage.toUpperCase()}
@@ -223,7 +225,7 @@ export function VoiceSearchButton({
 
             {transcript && (
               <div className="mb-3">
-                <p className="text-xs text-gray-600 mb-1">Original:</p>
+                <p className="text-xs text-gray-600 mb-1">{t("Original:")}</p>
                 <p className="text-sm bg-gray-50 p-2 rounded">
                   {transcript}
                 </p>
@@ -235,7 +237,7 @@ export function VoiceSearchButton({
                     className="mt-1 h-6 px-2 text-xs"
                   >
                     <Volume2 className="h-3 w-3 mr-1" />
-                    Replay
+                    {t("Replay")}
                   </Button>
                 )}
               </div>
@@ -243,7 +245,7 @@ export function VoiceSearchButton({
 
             {translatedText && translatedText !== transcript && (
               <div className="mb-3">
-                <p className="text-xs text-gray-600 mb-1">Translation:</p>
+                <p className="text-xs text-gray-600 mb-1">{t("Translation:")}</p>
                 <p className="text-sm bg-blue-50 p-2 rounded border-l-2 border-blue-200">
                   {translatedText}
                 </p>
@@ -254,7 +256,7 @@ export function VoiceSearchButton({
                   className="mt-1 h-6 px-2 text-xs"
                 >
                   <Volume2 className="h-3 w-3 mr-1" />
-                  Listen
+                  {t("Listen")}
                 </Button>
               </div>
             )}
@@ -262,7 +264,7 @@ export function VoiceSearchButton({
             {isTranslating && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Translating...
+                {t("Translating...")}
               </div>
             )}
           </CardContent>
@@ -296,7 +298,7 @@ export function VoiceSearchButton({
           size="sm"
           onClick={() => setShowLanguageSelector(!showLanguageSelector)}
           className="px-2 h-6 text-xs"
-          title="Select language"
+          title={t("Select language")}
         >
           <Languages className="h-3 w-3 mr-1" />
           <span className="hidden sm:inline">

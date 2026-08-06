@@ -11,6 +11,7 @@ import { apiService } from "@/services/apiService";
 import { tokenManager } from "@/services/tokenManager";
 import { Mail, RefreshCw, CheckCircle2, Shield } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 z.object({
   otp: z.string().length(6, "Please enter the 6-digit code"),
@@ -38,6 +39,7 @@ interface OtpResponse {
 }
 
 export default function VerifyEmail() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -64,8 +66,8 @@ export default function VerifyEmail() {
   useEffect(() => {
     if (!email) {
       toast({
-        title: "Error",
-        description: "Email address is required for verification",
+        title: t("Error"),
+        description: t("Email address is required for verification"),
         variant: "destructive",
       });
       navigate('/signup');
@@ -113,8 +115,8 @@ export default function VerifyEmail() {
       }
       
       toast({
-        title: "Email Verified! 🎉",
-        description: "Welcome to goGerami! Your account is now active.",
+        title: t("Email Verified! 🎉"),
+        description: t("Welcome to goGerami! Your account is now active."),
       });
       
       // Redirect after a short delay to show success animation
@@ -124,8 +126,8 @@ export default function VerifyEmail() {
           navigate('/admin');
         } else if (userRole === 'VENDOR') {
           toast({
-            title: "Email Verified Successfully!",
-            description: "Your vendor account is pending admin approval. You'll be notified once approved.",
+            title: t("Email Verified Successfully!"),
+            description: t("Your vendor account is pending admin approval. You'll be notified once approved."),
           });
           navigate('/vendor');
         } else {
@@ -136,7 +138,7 @@ export default function VerifyEmail() {
     onError: (error: any) => {
       const message = error?.message || "Invalid verification code. Please try again.";
       toast({
-        title: "Verification Failed",
+        title: t("Verification Failed"),
         description: message,
         variant: "destructive",
       });
@@ -159,7 +161,7 @@ export default function VerifyEmail() {
       console.log('Resend success:', response);
       setCountdown(response.expiresInSeconds || 300);
       toast({
-        title: "Code Sent!",
+        title: t("Code Sent!"),
         description: `A new verification code has been sent to ${response.email || email}`,
       });
       
@@ -178,7 +180,7 @@ export default function VerifyEmail() {
       }
       
       toast({
-        title: "Error",
+        title: t("Error"),
         description: message,
         variant: "destructive",
       });
@@ -264,8 +266,8 @@ export default function VerifyEmail() {
           >
             <CheckCircle2 className="w-12 h-12 text-green-600" />
           </motion.div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Email Verified!</h1>
-          <p className="text-gray-600">Redirecting you to your dashboard...</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Email Verified!")}</h1>
+          <p className="text-gray-600">{t("Redirecting you to your dashboard...")}</p>
         </motion.div>
       </div>
     );
@@ -283,9 +285,9 @@ export default function VerifyEmail() {
               className="h-10 w-10 lg:h-14 lg:w-14"
             />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Email</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Verify Your Email")}</h1>
           <p className="text-gray-600">
-            We've sent a verification code to
+            {t("We've sent a verification code to")}
           </p>
           <p className="text-viridian-green font-medium mt-1">
             {email}
@@ -323,11 +325,11 @@ export default function VerifyEmail() {
             <div className="text-center mb-6">
               {countdown > 0 ? (
                 <p className="text-sm text-gray-500">
-                  Code expires in <span className="font-medium text-viridian-green">{formatTime(countdown)}</span>
+                  {t("Code expires in")} <span className="font-medium text-viridian-green">{formatTime(countdown)}</span>
                 </p>
               ) : (
                 <p className="text-sm text-gray-500">
-                  Code expired
+                  {t("Code expired")}
                 </p>
               )}
             </div>
@@ -341,7 +343,7 @@ export default function VerifyEmail() {
               {verifyMutation.isPending ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Verifying...
+                  {t("Verifying...")}
                 </>
               ) : (
                 "Verify Email"
@@ -358,24 +360,24 @@ export default function VerifyEmail() {
               {resendMutation.isPending ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Sending...
+                  {t("Sending...")}
                 </>
               ) : countdown > 0 ? (
                 <>
                   <Mail className="w-4 h-4 mr-2" />
-                  Resend in {formatTime(countdown)}
+                  {t("Resend in")} {formatTime(countdown)}
                 </>
               ) : (
                 <>
                   <Mail className="w-4 h-4 mr-2" />
-                  Resend Code
+                  {t("Resend Code")}
                 </>
               )}
             </Button>
 
             {/* Help Text */}
             <p className="text-center text-xs text-gray-500 mt-6">
-              Didn't receive the email? Check your spam folder or resend.{" "}
+              {t("Didn't receive the email? Check your spam folder or resend.")}{" "}
               {/* <button 
                 onClick={handleResend}
                 disabled={countdown > 0 || resendMutation.isPending}
@@ -389,7 +391,7 @@ export default function VerifyEmail() {
 
         {/* Help text */}
         <div className="text-center mt-6 text-sm text-gray-500">
-          <p>Need help? Contact support at info@afrodebab.com</p>
+          <p>{t("Need help? Contact support at info@afrodebab.com")}</p>
         </div>
       </div>
     </div>

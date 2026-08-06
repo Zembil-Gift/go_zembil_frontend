@@ -13,8 +13,10 @@ import {
   Calendar,
 } from "lucide-react";
 import { deliveryService, DeliveryAssignmentDto } from "@/services/deliveryService";
+import { useTranslation } from "react-i18next";
 
 export default function DeliveryHistory() {
+  const { t } = useTranslation();
   const [page, setPage] = useState(0);
 
   const { data, isLoading } = useQuery({
@@ -67,8 +69,8 @@ export default function DeliveryHistory() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Delivery History</h1>
-        <p className="text-gray-500">Your past deliveries ({totalElements} total)</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t("Delivery History")}</h1>
+        <p className="text-gray-500">{t("Your past deliveries (")}{totalElements} {t("total)")}</p>
       </div>
 
       {isLoading ? (
@@ -80,8 +82,8 @@ export default function DeliveryHistory() {
           <CardContent className="py-16">
             <div className="text-center text-gray-500">
               <Calendar className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-              <h3 className="text-lg font-medium mb-1">No delivery history</h3>
-              <p className="text-sm">Your completed deliveries will appear here</p>
+              <h3 className="text-lg font-medium mb-1">{t("No delivery history")}</h3>
+              <p className="text-sm">{t("Your completed deliveries will appear here")}</p>
             </div>
           </CardContent>
         </Card>
@@ -122,13 +124,13 @@ export default function DeliveryHistory() {
 
                       {delivery.status === "DELIVERED" && delivery.recipientName && (
                         <p className="text-sm text-green-600 mt-2">
-                          Received by: {delivery.recipientName}
+                          {t("Received by:")} {delivery.recipientName}
                         </p>
                       )}
 
                       {delivery.status === "FAILED" && delivery.failureReason && (
                         <p className="text-sm text-red-600 mt-2">
-                          Reason: {delivery.failureReason}
+                          {t("Reason:")} {delivery.failureReason}
                         </p>
                       )}
                     </div>
@@ -147,10 +149,10 @@ export default function DeliveryHistory() {
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
               >
-                Previous
+                {t("Previous")}
               </Button>
               <span className="text-sm text-gray-500">
-                Page {page + 1} of {totalPages}
+                {t("Page")} {page + 1} of {totalPages}
               </span>
               <Button
                 variant="outline"
@@ -158,7 +160,7 @@ export default function DeliveryHistory() {
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page >= totalPages - 1}
               >
-                Next
+                {t("Next")}
               </Button>
             </div>
           )}

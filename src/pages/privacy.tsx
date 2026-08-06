@@ -1,4 +1,5 @@
-const privacyCommitments = [
+
+import { useTranslation } from "react-i18next";const privacyCommitments = [
   {
     title: "We do not sell personal data",
     description:
@@ -56,17 +57,17 @@ const googlePlayDisclosures = [
 ];
 
 export default function Privacy() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
         <section className="rounded-2xl bg-gradient-to-r from-eagle-green to-viridian-green text-white p-8 sm:p-10 shadow-lg">
           <p className="text-sm uppercase tracking-wide text-ethiopian-gold font-semibold mb-3">
-            Privacy Policy
+            {t("Privacy Policy")}
           </p>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Your data is not for sale</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4">{t("Your data is not for sale")}</h1>
           <p className="text-base sm:text-lg text-white/90 leading-relaxed max-w-3xl">
-            goGerami does not sell your personal data. We only process data that is necessary to run
-            your account, complete orders, and keep the platform secure.
+            {t("goGerami does not sell your personal data. We only process data that is necessary to run your account, complete orders, and keep the platform secure.")}
           </p>
         </section>
 
@@ -80,7 +81,7 @@ export default function Privacy() {
         </section>
 
         <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold text-charcoal mb-4">1. Data We Collect</h2>
+          <h2 className="text-2xl font-semibold text-charcoal mb-4">{t("1. Data We Collect")}</h2>
           <ul className="list-disc pl-6 space-y-2 text-gray-600">
             {dataWeCollect.map((item) => (
               <li key={item}>{item}</li>
@@ -89,7 +90,7 @@ export default function Privacy() {
         </section>
 
         <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold text-charcoal mb-4">2. How We Use Data</h2>
+          <h2 className="text-2xl font-semibold text-charcoal mb-4">{t("2. How We Use Data")}</h2>
           <ul className="list-disc pl-6 space-y-2 text-gray-600">
             {whyWeUseData.map((item) => (
               <li key={item}>{item}</li>
@@ -98,9 +99,9 @@ export default function Privacy() {
         </section>
 
         <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold text-charcoal mb-4">3. Data Sharing Rules</h2>
+          <h2 className="text-2xl font-semibold text-charcoal mb-4">{t("3. Data Sharing Rules")}</h2>
           <p className="text-gray-600 mb-4">
-            We never sell personal data. We only share limited data in the following cases:
+            {t("We never sell personal data. We only share limited data in the following cases:")}
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-600">
             {sharingRules.map((item) => (
@@ -112,36 +113,34 @@ export default function Privacy() {
 
 
         <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold text-charcoal mb-4">4. Retention and Security</h2>
+          <h2 className="text-2xl font-semibold text-charcoal mb-4">{t("4. Retention and Security")}</h2>
           <p className="text-gray-600 leading-relaxed mb-3">
-            We retain data only as long as needed for account operation, order fulfillment, support,
-            and legal obligations.
+            {t("We retain data only as long as needed for account operation, order fulfillment, support, and legal obligations.")}
           </p>
           <p className="text-gray-600 leading-relaxed">
-            We apply reasonable technical and organizational safeguards to protect personal data,
-            including access controls and encrypted transport in supported production environments.
+            {t("We apply reasonable technical and organizational safeguards to protect personal data, including access controls and encrypted transport in supported production environments.")}
           </p>
         </section>
 
         <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold text-charcoal mb-4">5. Your Privacy Rights</h2>
+          <h2 className="text-2xl font-semibold text-charcoal mb-4">{t("5. Your Privacy Rights")}</h2>
           <ul className="list-disc pl-6 space-y-2 text-gray-600">
-            <li>Access or update your account information.</li>
-            <li>Request a copy/export of your personal data.</li>
-            <li>Request correction or deletion of your personal data.</li>
-            <li>Opt out of non-essential promotional communications.</li>
+            <li>{t("Access or update your account information.")}</li>
+            <li>{t("Request a copy/export of your personal data.")}</li>
+            <li>{t("Request correction or deletion of your personal data.")}</li>
+            <li>{t("Opt out of non-essential promotional communications.")}</li>
           </ul>
           <p className="text-gray-600 mt-4">
-            To submit a privacy or deletion request, contact{" "}
+            {t("To submit a privacy or deletion request, contact")}{" "}
             <a href="mailto:support@gogerami.com" className="text-viridian-green hover:underline">
-              support@gogerami.com
+              {t("support@gogerami.com")}
             </a>
             .
           </p>
         </section>
 
         <section className="bg-eagle-green/5 rounded-2xl border border-eagle-green/20 p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold text-charcoal mb-4">6. Google Play Data Safety Disclosure</h2>
+          <h2 className="text-2xl font-semibold text-charcoal mb-4">{t("6. Google Play Data Safety Disclosure")}</h2>
           <ul className="list-disc pl-6 space-y-2 text-gray-700">
             {googlePlayDisclosures.map((item) => (
               <li key={item}>{item}</li>
@@ -150,24 +149,21 @@ export default function Privacy() {
         </section>
 
         <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold text-charcoal mb-4">7. Children, International Transfers, and Updates</h2>
+          <h2 className="text-2xl font-semibold text-charcoal mb-4">{t("7. Children, International Transfers, and Updates")}</h2>
           <p className="text-gray-600 leading-relaxed mb-3">
-            Our services are not directed to children under 13, and we do not knowingly collect
-            personal data from children under 13.
+            {t("Our services are not directed to children under 13, and we do not knowingly collect personal data from children under 13.")}
           </p>
           <p className="text-gray-600 leading-relaxed mb-3">
-            Depending on where you use our services, data may be processed in countries outside your
-            residence with appropriate safeguards.
+            {t("Depending on where you use our services, data may be processed in countries outside your residence with appropriate safeguards.")}
           </p>
           <p className="text-gray-600 leading-relaxed">
-            We may update this policy as our product, legal obligations, or platform requirements
-            change. Material updates are posted on this page.
+            {t("We may update this policy as our product, legal obligations, or platform requirements change. Material updates are posted on this page.")}
           </p>
         </section>
 
         <section className="bg-gray-100 rounded-xl p-5 border border-gray-200">
           <p className="text-sm text-gray-600">
-            <strong>Last updated:</strong> April 23, 2026
+            <strong>{t("Last updated:")}</strong> {t("April 23, 2026")}
           </p>
         </section>
       </main>

@@ -12,8 +12,10 @@ import {
   RefreshCw,
   ArrowRight,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function StripeOnboardingRefresh() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
@@ -27,21 +29,21 @@ export default function StripeOnboardingRefresh() {
     onSuccess: (data) => {
       if (data.onboardingUrl) {
         toast({
-          title: "Redirecting to Stripe",
-          description: "Please complete the onboarding process.",
+          title: t("Redirecting to Stripe"),
+          description: t("Please complete the onboarding process."),
         });
         window.location.href = data.onboardingUrl;
       } else {
         toast({
-          title: "Error",
-          description: "Could not get onboarding link. Please try again.",
+          title: t("Error"),
+          description: t("Could not get onboarding link. Please try again."),
           variant: "destructive",
         });
       }
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to refresh onboarding link.",
         variant: "destructive",
       });
@@ -59,10 +61,10 @@ export default function StripeOnboardingRefresh() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You need to be a vendor to access this page.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
+        <p className="text-gray-600 mb-4">{t("You need to be a vendor to access this page.")}</p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -102,11 +104,11 @@ export default function StripeOnboardingRefresh() {
                 className="w-full bg-eagle-green hover:bg-eagle-green/90"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
+                {t("Try Again")}
               </Button>
               <Button asChild variant="outline" className="w-full">
                 <Link to="/vendor">
-                  Back to Dashboard
+                  {t("Back to Dashboard")}
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
               </Button>
@@ -115,7 +117,7 @@ export default function StripeOnboardingRefresh() {
           
           {refreshMutation.isPending && (
             <p className="text-sm text-center text-muted-foreground">
-              You will be automatically redirected to Stripe...
+              {t("You will be automatically redirected to Stripe...")}
             </p>
           )}
         </CardContent>

@@ -60,6 +60,7 @@ import { customOrderService } from '@/services/customOrderService';
 import { orderChatService } from '@/services/orderChatService';
 import { vendorService, VendorProfile } from '@/services/vendorService';
 import type { OrderChatMessage, CustomOrderValue, CustomOrderStatus } from '@/types/customOrders';
+import { useTranslation } from "react-i18next";
 
 const STATUS_TIMELINE: { status: CustomOrderStatus; label: string; icon: React.ElementType }[] = [
   { status: 'SUBMITTED', label: 'Submitted', icon: Clock },
@@ -93,6 +94,7 @@ const getVendorCurrency = (vendorProfile: VendorProfile | undefined): string => 
 };
 
 export default function VendorCustomOrderDetail() {
+  const { t } = useTranslation();
   const { orderId } = useParams<{ orderId: string }>();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -169,7 +171,7 @@ export default function VendorCustomOrderDetail() {
     mutationFn: ({ price, currency }: { price: number; currency: string }) => 
       customOrderService.proposePrice(orderIdNum, price, currency),
     onSuccess: async () => {
-      toast({ title: 'Price Proposed', description: 'Your price proposal has been sent to the customer.' });
+      toast({ title: t("Price Proposed"), description: t("Your price proposal has been sent to the customer.") });
       await queryClient.invalidateQueries({ queryKey: ['custom-order', 'vendor', orderIdNum] });
       await queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
       await queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
@@ -177,40 +179,40 @@ export default function VendorCustomOrderDetail() {
       setProposedPrice('');
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
   const markInProgressMutation = useMutation({
     mutationFn: () => customOrderService.markInProgress(orderIdNum),
     onSuccess: async () => {
-      toast({ title: 'Status Updated', description: 'Order marked as in progress.' });
+      toast({ title: t("Status Updated"), description: t("Order marked as in progress.") });
       await queryClient.invalidateQueries({ queryKey: ['custom-order', 'vendor', orderIdNum] });
       await queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
       await queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
   const markCompletedMutation = useMutation({
     mutationFn: () => customOrderService.markCompleted(orderIdNum),
     onSuccess: async () => {
-      toast({ title: 'Order Completed', description: 'Order has been marked as completed.' });
+      toast({ title: t("Order Completed"), description: t("Order has been marked as completed.") });
       await queryClient.invalidateQueries({ queryKey: ['custom-order', 'vendor', orderIdNum] });
       await queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
       await queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
   const cancelMutation = useMutation({
     mutationFn: (reason: string) => customOrderService.cancel(orderIdNum, reason),
     onSuccess: async () => {
-      toast({ title: 'Order Cancelled', description: 'The order has been cancelled.' });
+      toast({ title: t("Order Cancelled"), description: t("The order has been cancelled.") });
       await queryClient.invalidateQueries({ queryKey: ['custom-order', 'vendor', orderIdNum] });
       await queryClient.invalidateQueries({ queryKey: ['vendor-custom-orders'] });
       await queryClient.invalidateQueries({ queryKey: ['vendor', 'custom-orders'] });
@@ -218,7 +220,7 @@ export default function VendorCustomOrderDetail() {
       setCancelReason('');
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
@@ -237,7 +239,7 @@ export default function VendorCustomOrderDetail() {
       queryClient.invalidateQueries({ queryKey: ['custom-order-chat', orderIdNum] });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
@@ -272,13 +274,13 @@ export default function VendorCustomOrderDetail() {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        toast({ title: 'Error', description: 'Please select an image file', variant: 'destructive' });
+        toast({ title: t("Error"), description: t("Please select an image file"), variant: 'destructive' });
         return;
       }
       
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast({ title: 'Error', description: 'Image must be less than 5MB', variant: 'destructive' });
+        toast({ title: t("Error"), description: t("Image must be less than 5MB"), variant: 'destructive' });
         return;
       }
       
@@ -340,7 +342,7 @@ export default function VendorCustomOrderDetail() {
             />
             <ExternalLink className="h-4 w-4" />
           </a>
-        ) : <p className="text-eagle-green/60">No image provided</p>;
+        ) : <p className="text-eagle-green/60">{t("No image provided")}</p>;
       case 'VIDEO':
         return imageUrl ? (
           <a 
@@ -353,7 +355,7 @@ export default function VendorCustomOrderDetail() {
             <span>{value.originalFilename || 'View Video'}</span>
             <ExternalLink className="h-4 w-4" />
           </a>
-        ) : <p className="text-eagle-green/60">No video provided</p>;
+        ) : <p className="text-eagle-green/60">{t("No video provided")}</p>;
       default:
         return <p className="text-eagle-green/60">-</p>;
     }
@@ -363,10 +365,10 @@ export default function VendorCustomOrderDetail() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You need to be a vendor to access this page.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
+        <p className="text-gray-600 mb-4">{t("You need to be a vendor to access this page.")}</p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -384,10 +386,10 @@ export default function VendorCustomOrderDetail() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Not Found</h1>
-        <p className="text-gray-600 mb-4">The order you're looking for doesn't exist.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Order Not Found")}</h1>
+        <p className="text-gray-600 mb-4">{t("The order you're looking for doesn't exist.")}</p>
         <Button asChild>
-          <Link to="/vendor/custom-orders">Back to Orders</Link>
+          <Link to="/vendor/custom-orders">{t("Back to Orders")}</Link>
         </Button>
       </div>
     );
@@ -421,7 +423,7 @@ export default function VendorCustomOrderDetail() {
                 </Link>
               </Button>
               <div>
-                <h1 className="text-xl font-bold">Order #{order.orderNumber}</h1>
+                <h1 className="text-xl font-bold">{t("Order #")}{order.orderNumber}</h1>
                 <p className="text-gray-500 text-sm">{order.templateName}</p>
               </div>
             </div>
@@ -518,8 +520,8 @@ export default function VendorCustomOrderDetail() {
               <div className="flex items-center gap-4">
                 <XCircle className="h-10 w-10 text-red-500" />
                 <div>
-                  <h3 className="text-lg font-bold text-red-700">Order Cancelled</h3>
-                  <p className="text-red-600 text-sm mt-1">This order has been cancelled</p>
+                  <h3 className="text-lg font-bold text-red-700">{t("Order Cancelled")}</h3>
+                  <p className="text-red-600 text-sm mt-1">{t("This order has been cancelled")}</p>
                 </div>
               </div>
             </CardContent>
@@ -535,7 +537,7 @@ export default function VendorCustomOrderDetail() {
                   value="details"
                   className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
                 >
-                  Order Details
+                  {t("Order Details")}
                 </TabsTrigger>
                 {!isNonNegotiable && (
                 <TabsTrigger 
@@ -543,14 +545,14 @@ export default function VendorCustomOrderDetail() {
                   className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
-                  Chat
+                  {t("Chat")}
                 </TabsTrigger>
                 )}
                 <TabsTrigger 
                   value="history"
                   className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
                 >
-                  History
+                  {t("History")}
                 </TabsTrigger>
               </TabsList>
 
@@ -559,8 +561,8 @@ export default function VendorCustomOrderDetail() {
                 {/* Customization Values */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-eagle-green">Customer's Customizations</CardTitle>
-                    <CardDescription>Values provided by the customer for this order</CardDescription>
+                    <CardTitle className="text-eagle-green">{t("Customer's Customizations")}</CardTitle>
+                    <CardDescription>{t("Values provided by the customer for this order")}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {order.values && order.values.length > 0 ? (
@@ -577,7 +579,7 @@ export default function VendorCustomOrderDetail() {
                         </div>
                       ))
                     ) : (
-                      <p className="text-eagle-green/60 text-center py-4">No customization values</p>
+                      <p className="text-eagle-green/60 text-center py-4">{t("No customization values")}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -586,7 +588,7 @@ export default function VendorCustomOrderDetail() {
                 {order.additionalDescription && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-eagle-green">Additional Notes</CardTitle>
+                      <CardTitle className="text-eagle-green">{t("Additional Notes")}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-eagle-green/80 whitespace-pre-wrap">{order.additionalDescription}</p>
@@ -600,7 +602,7 @@ export default function VendorCustomOrderDetail() {
               <TabsContent value="chat" className="space-y-4">
                 <Card className="h-[500px] flex flex-col">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-eagle-green text-lg">Chat with Customer</CardTitle>
+                    <CardTitle className="text-eagle-green text-lg">{t("Chat with Customer")}</CardTitle>
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col overflow-hidden">
                     <ScrollArea className="flex-1 pr-4">
@@ -612,7 +614,7 @@ export default function VendorCustomOrderDetail() {
                         ) : messages.length === 0 ? (
                           <div className="text-center py-8 text-eagle-green/60">
                             <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                            <p>No messages yet. Start the conversation!</p>
+                            <p>{t("No messages yet. Start the conversation!")}</p>
                           </div>
                         ) : (
                           orderChatService.sortMessagesBySentTime(messages).map((msg: OrderChatMessage) => {
@@ -641,7 +643,7 @@ export default function VendorCustomOrderDetail() {
                                     <div className="mb-2">
                                       <img 
                                         src={msg.fullImageUrl || msg.imageUrl} 
-                                        alt="Chat image" 
+                                        alt={t("Chat image")} 
                                         className="rounded-lg max-w-full max-h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity"
                                         onClick={() => window.open(msg.fullImageUrl || msg.imageUrl, '_blank')}
                                       />
@@ -665,7 +667,7 @@ export default function VendorCustomOrderDetail() {
                         <div className="relative inline-block">
                           <img 
                             src={imagePreview} 
-                            alt="Preview" 
+                            alt={t("Preview")} 
                             className="h-20 w-20 object-cover rounded-lg border-2 border-eagle-green/20"
                           />
                           <button
@@ -700,7 +702,7 @@ export default function VendorCustomOrderDetail() {
                         <Input
                           value={chatMessage}
                           onChange={(e) => setChatMessage(e.target.value)}
-                          placeholder="Type your message..."
+                          placeholder={t("Type your message...")}
                           className="flex-1"
                           disabled={sendMessageMutation.isPending}
                         />
@@ -727,7 +729,7 @@ export default function VendorCustomOrderDetail() {
                 {/* Status History */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-eagle-green">Status History</CardTitle>
+                    <CardTitle className="text-eagle-green">{t("Status History")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {order.statusHistory && order.statusHistory.length > 0 ? (
@@ -745,11 +747,11 @@ export default function VendorCustomOrderDetail() {
                                 </span>
                               </div>
                               <p className="text-sm text-eagle-green/70 mt-1">
-                                Changed by {history.changedBy} ({history.changedByRole})
+                                {t("Changed by")} {history.changedBy} ({history.changedByRole})
                               </p>
                               {history.reason && (
                                 <p className="text-sm text-eagle-green/60 mt-1 italic">
-                                  Reason: {history.reason}
+                                  {t("Reason:")} {history.reason}
                                 </p>
                               )}
                             </div>
@@ -757,7 +759,7 @@ export default function VendorCustomOrderDetail() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-eagle-green/60 text-center py-4">No status history</p>
+                      <p className="text-eagle-green/60 text-center py-4">{t("No status history")}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -765,7 +767,7 @@ export default function VendorCustomOrderDetail() {
                 {/* Price History */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-eagle-green">Price History</CardTitle>
+                    <CardTitle className="text-eagle-green">{t("Price History")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {order.priceHistory && order.priceHistory.length > 0 ? (
@@ -783,7 +785,7 @@ export default function VendorCustomOrderDetail() {
                                 </span>
                               </div>
                               <p className="text-sm text-eagle-green/70 mt-1">
-                                Set by {history.setByName || 'System'} ({history.setByRole || 'SYSTEM'})
+                                {t("Set by")} {history.setByName || 'System'} ({history.setByRole || 'SYSTEM'})
                               </p>
                               {history.reason && (
                                 <p className="text-sm text-eagle-green/60 mt-1 italic">
@@ -795,7 +797,7 @@ export default function VendorCustomOrderDetail() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-eagle-green/60 text-center py-4">No price changes</p>
+                      <p className="text-eagle-green/60 text-center py-4">{t("No price changes")}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -808,7 +810,7 @@ export default function VendorCustomOrderDetail() {
             {/* Customer Info */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-eagle-green text-lg">Customer</CardTitle>
+                <CardTitle className="text-eagle-green text-lg">{t("Customer")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2">
@@ -830,10 +832,10 @@ export default function VendorCustomOrderDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-eagle-green text-lg flex items-center justify-between">
-                  Pricing
+                  {t("Pricing")}
                   {isNonNegotiable && (
                     <Badge className="bg-viridian-green/10 text-viridian-green border-viridian-green/30">
-                      Fixed Price
+                      {t("Fixed Price")}
                     </Badge>
                   )}
                 </CardTitle>
@@ -841,11 +843,11 @@ export default function VendorCustomOrderDetail() {
               <CardContent className="space-y-3">
                 {isNonNegotiable && (
                   <p className="text-sm text-viridian-green bg-viridian-green/5 p-2 rounded-md">
-                    This is a fixed price order. Customer paid the base price directly.
+                    {t("This is a fixed price order. Customer paid the base price directly.")}
                   </p>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-eagle-green/70">Price (After Discount)</span>
+                  <span className="text-eagle-green/70">{t("Price (After Discount)")}</span>
                   <span className="font-bold text-eagle-green">
                     {customOrderService.formatPrice(
                       order.finalVendorPrice ?? order.baseVendorPrice ?? order.finalPrice ?? order.basePrice ?? 0,
@@ -855,7 +857,7 @@ export default function VendorCustomOrderDetail() {
                 </div>
                 <Separator />
                 <div className="flex justify-between">
-                  <span className="font-medium text-eagle-green">Total</span>
+                  <span className="font-medium text-eagle-green">{t("Total")}</span>
                   <span className="font-bold text-eagle-green text-lg">
                     {customOrderService.formatPrice(
                       order.finalVendorPrice ?? order.baseVendorPrice ?? order.finalPrice ?? order.basePrice ?? 0,
@@ -864,7 +866,7 @@ export default function VendorCustomOrderDetail() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-eagle-green/70">Payment:</span>
+                  <span className="text-eagle-green/70">{t("Payment:")}</span>
                   <Badge className={order.paymentStatus === 'PAID' 
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-gray-100 text-gray-800'
@@ -878,7 +880,7 @@ export default function VendorCustomOrderDetail() {
             {/* Actions */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-eagle-green text-lg">Actions</CardTitle>
+                <CardTitle className="text-eagle-green text-lg">{t("Actions")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {canProposePrice && (
@@ -887,7 +889,7 @@ export default function VendorCustomOrderDetail() {
                     onClick={() => setPriceDialogOpen(true)}
                   >
                     <DollarSign className="h-4 w-4 mr-2" />
-                    Propose Price
+                    {t("Propose Price")}
                   </Button>
                 )}
                 
@@ -902,7 +904,7 @@ export default function VendorCustomOrderDetail() {
                     ) : (
                       <Play className="h-4 w-4 mr-2" />
                     )}
-                    Start Work
+                    {t("Start Work")}
                   </Button>
                 )}
                 
@@ -917,7 +919,7 @@ export default function VendorCustomOrderDetail() {
                     ) : (
                       <CheckCircle className="h-4 w-4 mr-2" />
                     )}
-                    Mark Completed
+                    {t("Mark Completed")}
                   </Button>
                 )}
                 
@@ -928,7 +930,7 @@ export default function VendorCustomOrderDetail() {
                     onClick={() => setCancelDialogOpen(true)}
                   >
                     <XCircle className="h-4 w-4 mr-2" />
-                    Cancel Order
+                    {t("Cancel Order")}
                   </Button>
                 )}
               </CardContent>
@@ -937,21 +939,21 @@ export default function VendorCustomOrderDetail() {
             {/* Order Info */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-eagle-green text-lg">Order Info</CardTitle>
+                <CardTitle className="text-eagle-green text-lg">{t("Order Info")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-eagle-green/70">Order Number</span>
+                  <span className="text-eagle-green/70">{t("Order Number")}</span>
                   <span className="text-eagle-green font-mono">{order.orderNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-eagle-green/70">Created</span>
+                  <span className="text-eagle-green/70">{t("Created")}</span>
                   <span className="text-eagle-green">
                     {new Date(order.createdAt).toLocaleDateString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-eagle-green/70">Template</span>
+                  <span className="text-eagle-green/70">{t("Template")}</span>
                   <span className="text-eagle-green">{order.templateName}</span>
                 </div>
               </CardContent>
@@ -964,14 +966,14 @@ export default function VendorCustomOrderDetail() {
       <Dialog open={priceDialogOpen} onOpenChange={setPriceDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Propose Final Price</DialogTitle>
+            <DialogTitle>{t("Propose Final Price")}</DialogTitle>
             <DialogDescription>
-              Set the final price for this custom order based on the customer's requirements.
+              {t("Set the final price for this custom order based on the customer's requirements.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Final Price (After Discount)</Label>
+              <Label>{t("Final Price (After Discount)")}</Label>
               <p className="text-lg font-medium text-eagle-green">
                 {customOrderService.formatPrice(
                   order.finalVendorPrice ?? order.baseVendorPrice ?? order.finalPrice ?? order.basePrice ?? 0,
@@ -980,7 +982,7 @@ export default function VendorCustomOrderDetail() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="proposedPrice">Proposed Final Price ({vendorCurrency})</Label>
+              <Label htmlFor="proposedPrice">{t("Proposed Final Price (")}{vendorCurrency})</Label>
               <Input
                 id="proposedPrice"
                 type="number"
@@ -992,17 +994,17 @@ export default function VendorCustomOrderDetail() {
               />
               {proposedPrice && parseFloat(proposedPrice) > 0 && (
                 <p className="text-sm font-medium text-eagle-green">
-                  Preview: {customOrderService.formatPrice(parseFloat(proposedPrice), vendorCurrency)}
+                  {t("Preview:")} {customOrderService.formatPrice(parseFloat(proposedPrice), vendorCurrency)}
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                Customer will see this in their preferred currency
+                {t("Customer will see this in their preferred currency")}
               </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPriceDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button 
               onClick={handleProposePrice}
@@ -1014,7 +1016,7 @@ export default function VendorCustomOrderDetail() {
               ) : (
                 <DollarSign className="h-4 w-4 mr-2 text-white" />
               )}
-              Send Proposal
+              {t("Send Proposal")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1024,23 +1026,23 @@ export default function VendorCustomOrderDetail() {
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+            <AlertDialogTitle>{t("Cancel Order")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to cancel this order? This action cannot be undone.
+              {t("Are you sure you want to cancel this order? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
-            <Label htmlFor="cancelReason">Reason for cancellation</Label>
+            <Label htmlFor="cancelReason">{t("Reason for cancellation")}</Label>
             <Textarea
               id="cancelReason"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="Please provide a reason..."
+              placeholder={t("Please provide a reason...")}
               className="mt-2"
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep Order</AlertDialogCancel>
+            <AlertDialogCancel>{t("Keep Order")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => cancelMutation.mutate(cancelReason)}
               disabled={cancelMutation.isPending}
@@ -1049,7 +1051,7 @@ export default function VendorCustomOrderDetail() {
               {cancelMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : null}
-              Cancel Order
+              {t("Cancel Order")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -9,6 +9,7 @@ import { CustomReviewForm } from "./ReviewForm";
 import { StarRating } from "./StarRating";
 import { reviewService } from "@/services/reviewService";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 
 interface CustomReviewsSectionProps {
   customOrderId: number;
@@ -19,6 +20,7 @@ export function CustomReviewsSection({
   customOrderId,
   title = "Custom Order Reviews",
 }: CustomReviewsSectionProps) {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [page, setPage] = useState(0);
@@ -55,7 +57,7 @@ export function CustomReviewsSection({
             className="bg-viridian-green hover:bg-viridian-green/90"
           >
             <MessageSquarePlus className="h-4 w-4 mr-2" />
-            Write a Review
+            {t("Write a Review")}
           </Button>
         )}
       </CardHeader>
@@ -65,8 +67,7 @@ export function CustomReviewsSection({
           <div className="flex items-center gap-3">
             <StarRating rating={averageRating} size="sm" />
             <span className="text-sm text-gray-700 font-medium">
-              {totalReviews > 0 ? averageRating.toFixed(1) : "0.0"} average
-              rating
+              {totalReviews > 0 ? averageRating.toFixed(1) : "0.0"} {t("average rating")}
             </span>
             <span className="text-sm text-gray-500">
               ({totalReviews} {totalReviews === 1 ? "review" : "reviews"})
@@ -77,7 +78,7 @@ export function CustomReviewsSection({
         {showReviewForm && (
           <div className="border-t pt-6">
             <h3 className="font-semibold text-charcoal mb-4">
-              Write Your Review
+              {t("Write Your Review")}
             </h3>
             <CustomReviewForm
               customOrderId={customOrderId}
@@ -106,10 +107,10 @@ export function CustomReviewsSection({
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0}
                   >
-                    Previous
+                    {t("Previous")}
                   </Button>
                   <span className="flex items-center px-3 text-sm text-gray-600">
-                    Page {page + 1} of {totalPages}
+                    {t("Page")} {page + 1} of {totalPages}
                   </span>
                   <Button
                     variant="outline"
@@ -117,14 +118,14 @@ export function CustomReviewsSection({
                     onClick={() => setPage((p) => p + 1)}
                     disabled={page >= totalPages - 1}
                   >
-                    Next
+                    {t("Next")}
                   </Button>
                 </div>
               )}
             </>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p>No reviews yet. Be the first to review this custom order!</p>
+              <p>{t("No reviews yet. Be the first to review this custom order!")}</p>
             </div>
           )}
         </div>

@@ -98,7 +98,7 @@ export default function HeroSection({
             <div className="relative w-full h-full hidden lg:block">
               <img
                 src="/attached_assets/landing_page_img.png"
-                alt="Ethiopian Gifts - Send Love Through Meaningful Gifts"
+                alt={t("Ethiopian Gifts - Send Love Through Meaningful Gifts")}
                 className="w-full h-full object-cover"
               />
             </div>

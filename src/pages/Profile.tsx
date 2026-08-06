@@ -57,6 +57,7 @@ import {
   User,
   X,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const MINIMUM_AGE_YEARS = 18;
 
@@ -172,6 +173,7 @@ interface UserProfile {
 }
 
 export default function Profile() {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -277,16 +279,16 @@ export default function Profile() {
         localStorage.setItem("user", JSON.stringify(updatedUser));
       }
       toast({
-        title: "Password Set",
+        title: t("Password Set"),
         description:
-          "Your password has been set successfully. You can now log in with your email and password.",
+          t("Your password has been set successfully. You can now log in with your email and password."),
       });
       setIsPasswordDialogOpen(false);
       passwordForm.reset();
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to set password",
+        title: t("Failed to set password"),
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
@@ -306,15 +308,15 @@ export default function Profile() {
     },
     onSuccess: () => {
       toast({
-        title: "Password Changed",
-        description: "Your password has been updated successfully.",
+        title: t("Password Changed"),
+        description: t("Your password has been updated successfully."),
       });
       setIsChangePasswordDialogOpen(false);
       changePasswordForm.reset();
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to change password",
+        title: t("Failed to change password"),
         description: error.message || "Incorrect current password",
         variant: "destructive",
       });
@@ -363,9 +365,9 @@ export default function Profile() {
 
       if (countryWasUpdated) {
         toast({
-          title: "Profile Updated",
+          title: t("Profile Updated"),
           description:
-            "Country updated. Reloading to apply regional backend responses.",
+            t("Country updated. Reloading to apply regional backend responses."),
         });
         setTimeout(() => {
           window.location.reload();
@@ -374,14 +376,14 @@ export default function Profile() {
       }
 
       toast({
-        title: "Profile Updated",
-        description: "Your profile has been updated successfully.",
+        title: t("Profile Updated"),
+        description: t("Your profile has been updated successfully."),
       });
       setIsEditing(false);
     },
     onError: (error: Error) => {
       toast({
-        title: "Update Failed",
+        title: t("Update Failed"),
         description:
           error.message || "Failed to update profile. Please try again.",
         variant: "destructive",
@@ -408,8 +410,8 @@ export default function Profile() {
 
     if (Object.keys(patch).length === 0) {
       toast({
-        title: "No changes",
-        description: "Update at least one field to save.",
+        title: t("No changes"),
+        description: t("Update at least one field to save."),
       });
       return;
     }
@@ -456,7 +458,7 @@ export default function Profile() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-ethiopian-gold animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading profile...</p>
+          <p className="text-gray-600">{t("Loading profile...")}</p>
         </div>
       </div>
     );
@@ -467,8 +469,8 @@ export default function Profile() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
-            <p className="text-red-500 mb-4">Failed to load profile</p>
-            <Button onClick={() => window.location.reload()}>Try Again</Button>
+            <p className="text-red-500 mb-4">{t("Failed to load profile")}</p>
+            <Button onClick={() => window.location.reload()}>{t("Try Again")}</Button>
           </CardContent>
         </Card>
       </div>
@@ -480,9 +482,9 @@ export default function Profile() {
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t("My Profile")}</h1>
           <p className="text-gray-600 mt-2">
-            Manage your account settings and preferences
+            {t("Manage your account settings and preferences")}
           </p>
         </div>
 
@@ -491,23 +493,22 @@ export default function Profile() {
           <Alert className="mb-6 border-amber-300 bg-amber-50">
             <AlertCircle className="h-5 w-5 text-amber-600" />
             <AlertTitle className="text-amber-900 font-semibold">
-              Complete Your Profile
+              {t("Complete Your Profile")}
             </AlertTitle>
             <AlertDescription className="text-amber-800">
               {isOAuth2User && (
                 <p className="mb-2">
-                  You signed up with {user?.email} using social login. To access
-                  all features, please add the following information:
+                  {t("You signed up with")} {user?.email} {t("using social login. To access all features, please add the following information:")}
                 </p>
               )}
               <ul className="list-disc list-inside space-y-1">
                 {missingFields.includes("username") && (
-                  <li>Username (choose a unique username for your profile)</li>
+                  <li>{t("Username (choose a unique username for your profile)")}</li>
                 )}
-                {missingFields.includes("phoneNumber") && <li>Phone Number</li>}
-                {missingFields.includes("birthDate") && <li>Date of Birth</li>}
+                {missingFields.includes("phoneNumber") && <li>{t("Phone Number")}</li>}
+                {missingFields.includes("birthDate") && <li>{t("Date of Birth")}</li>}
                 {missingFields.includes("password") && isOAuth2User && (
-                  <li>Password (to enable standard login)</li>
+                  <li>{t("Password (to enable standard login)")}</li>
                 )}
               </ul>
               {!isEditing && (
@@ -517,7 +518,7 @@ export default function Profile() {
                   className="mt-3 border-amber-600 text-amber-900 hover:bg-amber-100"
                   onClick={() => setIsEditing(true)}
                 >
-                  Complete Now
+                  {t("Complete Now")}
                 </Button>
               )}
             </AlertDescription>
@@ -559,7 +560,7 @@ export default function Profile() {
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <Heart className="w-5 h-5 text-red-500" />
-                    <span className="text-gray-700">Wishlist</span>
+                    <span className="text-gray-700">{t("Wishlist")}</span>
                   </Link>
 
                   <Link
@@ -567,7 +568,7 @@ export default function Profile() {
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <ShoppingBag className="w-5 h-5 text-ethiopian-gold" />
-                    <span className="text-gray-700">My Tickets</span>
+                    <span className="text-gray-700">{t("My Tickets")}</span>
                   </Link>
 
                   {/* Only show Join as Vendor if user is NOT a vendor */}
@@ -577,7 +578,7 @@ export default function Profile() {
                       className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <Store className="w-5 h-5 text-viridian-green" />
-                      <span className="text-gray-700">Join as Vendor</span>
+                      <span className="text-gray-700">{t("Join as Vendor")}</span>
                     </Link>
                   )}
 
@@ -588,7 +589,7 @@ export default function Profile() {
                       className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <Store className="w-5 h-5 text-viridian-green" />
-                      <span className="text-gray-700">Vendor Dashboard</span>
+                      <span className="text-gray-700">{t("Vendor Dashboard")}</span>
                     </Link>
                   )}
                 </div>
@@ -601,15 +602,15 @@ export default function Profile() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Profile Information</CardTitle>
+                  <CardTitle>{t("Profile Information")}</CardTitle>
                   <CardDescription>
-                    Update your personal details
+                    {t("Update your personal details")}
                   </CardDescription>
                 </div>
                 {!isEditing ? (
                   <Button variant="outline" onClick={() => setIsEditing(true)}>
                     <Edit2 className="w-4 h-4 mr-2" />
-                    Edit
+                    {t("Edit")}
                   </Button>
                 ) : (
                   <div className="flex gap-2">
@@ -619,7 +620,7 @@ export default function Profile() {
                       disabled={updateProfileMutation.isPending}
                     >
                       <X className="w-4 h-4 mr-2" />
-                      Cancel
+                      {t("Cancel")}
                     </Button>
                     <Button
                       onClick={form.handleSubmit(onSubmit)}
@@ -630,7 +631,7 @@ export default function Profile() {
                       ) : (
                         <Save className="w-4 h-4 mr-2" />
                       )}
-                      Save
+                      {t("Save")}
                     </Button>
                   </div>
                 )}
@@ -639,8 +640,8 @@ export default function Profile() {
             <CardContent>
               <Tabs defaultValue="personal" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="personal">Personal Info</TabsTrigger>
-                  <TabsTrigger value="account">Account</TabsTrigger>
+                  <TabsTrigger value="personal">{t("Personal Info")}</TabsTrigger>
+                  <TabsTrigger value="account">{t("Account")}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="personal" className="mt-6 space-y-6">
@@ -653,14 +654,14 @@ export default function Profile() {
                           className="flex items-center gap-2"
                         >
                           <User className="w-4 h-4 text-gray-500" />
-                          First Name
+                          {t("First Name")}
                         </Label>
                         {isEditing ? (
                           <>
                             <Input
                               id="firstName"
                               {...form.register("firstName")}
-                              placeholder="Enter your first name"
+                              placeholder={t("Enter your first name")}
                             />
                             {form.formState.errors.firstName && (
                               <p className="text-red-500 text-sm">
@@ -682,14 +683,14 @@ export default function Profile() {
                           className="flex items-center gap-2"
                         >
                           <User className="w-4 h-4 text-gray-500" />
-                          Last Name
+                          {t("Last Name")}
                         </Label>
                         {isEditing ? (
                           <>
                             <Input
                               id="lastName"
                               {...form.register("lastName")}
-                              placeholder="Enter your last name"
+                              placeholder={t("Enter your last name")}
                             />
                             {form.formState.errors.lastName && (
                               <p className="text-red-500 text-sm">
@@ -712,13 +713,13 @@ export default function Profile() {
                         className="flex items-center gap-2"
                       >
                         <Phone className="w-4 h-4 text-gray-500" />
-                        Phone Number
+                        {t("Phone Number")}
                       </Label>
                       {isEditing ? (
                         <Input
                           id="phoneNumber"
                           {...form.register("phoneNumber")}
-                          placeholder="Enter your phone number"
+                          placeholder={t("Enter your phone number")}
                         />
                       ) : (
                         <p className="text-gray-900 py-2">
@@ -734,7 +735,7 @@ export default function Profile() {
                         className="flex items-center gap-2"
                       >
                         <Calendar className="w-4 h-4 text-gray-500" />
-                        Birth Date
+                        {t("Birth Date")}
                       </Label>
                       {isEditing ? (
                         <>
@@ -774,13 +775,11 @@ export default function Profile() {
                     <Alert className="mb-6 border-blue-200 bg-blue-50">
                       <Lock className="h-5 w-5 text-blue-600" />
                       <AlertTitle className="text-blue-900 font-semibold">
-                        Set a Password
+                        {t("Set a Password")}
                       </AlertTitle>
                       <AlertDescription className="text-blue-800">
                         <p className="mb-3">
-                          You currently don't have a password set because you
-                          signed up with a social account. Setting a password
-                          allows you to log in with your email address directly.
+                          {t("You currently don't have a password set because you signed up with a social account. Setting a password allows you to log in with your email address directly.")}
                         </p>
                         <Dialog
                           open={isPasswordDialogOpen}
@@ -791,14 +790,14 @@ export default function Profile() {
                               size="sm"
                               className="bg-blue-600 hover:bg-blue-700 text-white border-none"
                             >
-                              Create Password
+                              {t("Create Password")}
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Create Password</DialogTitle>
+                              <DialogTitle>{t("Create Password")}</DialogTitle>
                               <DialogDescription>
-                                Set a password to enable email/password login.
+                                {t("Set a password to enable email/password login.")}
                               </DialogDescription>
                             </DialogHeader>
                             <form
@@ -808,12 +807,12 @@ export default function Profile() {
                               className="space-y-4 py-4"
                             >
                               <div className="space-y-2">
-                                <Label htmlFor="password">New Password</Label>
+                                <Label htmlFor="password">{t("New Password")}</Label>
                                 <div className="relative">
                                   <Input
                                     id="password"
                                     type={showPassword ? "text" : "password"}
-                                    placeholder="Enter new password"
+                                    placeholder={t("Enter new password")}
                                     {...passwordForm.register("password")}
                                   />
                                   <button
@@ -841,7 +840,7 @@ export default function Profile() {
                               </div>
                               <div className="space-y-2">
                                 <Label htmlFor="confirmPassword">
-                                  Confirm Password
+                                  {t("Confirm Password")}
                                 </Label>
                                 <div className="relative">
                                   <Input
@@ -849,7 +848,7 @@ export default function Profile() {
                                     type={
                                       showConfirmPassword ? "text" : "password"
                                     }
-                                    placeholder="Confirm new password"
+                                    placeholder={t("Confirm new password")}
                                     {...passwordForm.register(
                                       "confirmPassword"
                                     )}
@@ -888,7 +887,7 @@ export default function Profile() {
                                   {setPasswordMutation.isPending && (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                   )}
-                                  Set Password
+                                  {t("Set Password")}
                                 </Button>
                               </DialogFooter>
                             </form>
@@ -904,10 +903,10 @@ export default function Profile() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-semibold text-gray-900">
-                            Password
+                            {t("Password")}
                           </h3>
                           <p className="text-sm text-gray-500">
-                            Change your account password securely.
+                            {t("Change your account password securely.")}
                           </p>
                         </div>
                         <Dialog
@@ -917,14 +916,14 @@ export default function Profile() {
                           <DialogTrigger asChild>
                             <Button variant="outline" className="gap-2">
                               <Lock className="h-4 w-4" />
-                              Change Password
+                              {t("Change Password")}
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Change Password</DialogTitle>
+                              <DialogTitle>{t("Change Password")}</DialogTitle>
                               <DialogDescription>
-                                Enter your current password and a new password.
+                                {t("Enter your current password and a new password.")}
                               </DialogDescription>
                             </DialogHeader>
                             <form
@@ -935,7 +934,7 @@ export default function Profile() {
                             >
                               <div className="space-y-2">
                                 <Label htmlFor="currentPassword">
-                                  Current Password
+                                  {t("Current Password")}
                                 </Label>
                                 <div className="relative">
                                   <Input
@@ -943,7 +942,7 @@ export default function Profile() {
                                     type={
                                       showCurrentPassword ? "text" : "password"
                                     }
-                                    placeholder="Enter current password"
+                                    placeholder={t("Enter current password")}
                                     {...changePasswordForm.register(
                                       "currentPassword"
                                     )}
@@ -976,13 +975,13 @@ export default function Profile() {
                               </div>
                               <div className="space-y-2">
                                 <Label htmlFor="newPassword">
-                                  New Password
+                                  {t("New Password")}
                                 </Label>
                                 <div className="relative">
                                   <Input
                                     id="newPassword"
                                     type={showNewPassword ? "text" : "password"}
-                                    placeholder="Enter new password"
+                                    placeholder={t("Enter new password")}
                                     {...changePasswordForm.register(
                                       "newPassword"
                                     )}
@@ -1013,7 +1012,7 @@ export default function Profile() {
                               </div>
                               <div className="space-y-2">
                                 <Label htmlFor="confirmNewPassword">
-                                  Confirm New Password
+                                  {t("Confirm New Password")}
                                 </Label>
                                 <div className="relative">
                                   <Input
@@ -1023,7 +1022,7 @@ export default function Profile() {
                                         ? "text"
                                         : "password"
                                     }
-                                    placeholder="Confirm new password"
+                                    placeholder={t("Confirm new password")}
                                     {...changePasswordForm.register(
                                       "confirmPassword"
                                     )}
@@ -1062,7 +1061,7 @@ export default function Profile() {
                                   {changePasswordMutation.isPending && (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                   )}
-                                  Change Password
+                                  {t("Change Password")}
                                 </Button>
                               </DialogFooter>
                             </form>
@@ -1077,13 +1076,13 @@ export default function Profile() {
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
                         <Mail className="w-4 h-4 text-gray-500" />
-                        Email Address
+                        {t("Email Address")}
                       </Label>
                       {isEditing ? (
                         <>
                           <Input
                             {...form.register("email")}
-                            placeholder="Enter your email"
+                            placeholder={t("Enter your email")}
                             type="email"
                           />
                           {form.formState.errors.email && (
@@ -1103,13 +1102,13 @@ export default function Profile() {
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-500" />
-                        Username
+                        {t("Username")}
                       </Label>
                       {isEditing ? (
                         <>
                           <Input
                             {...form.register("username")}
-                            placeholder="Enter your username"
+                            placeholder={t("Enter your username")}
                           />
                           {form.formState.errors.username && (
                             <p className="text-red-500 text-sm">
@@ -1128,7 +1127,7 @@ export default function Profile() {
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-500" />
-                        Country
+                        {t("Country")}
                       </Label>
                       {isEditing ? (
                         <Select
@@ -1140,7 +1139,7 @@ export default function Profile() {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select country" />
+                            <SelectValue placeholder={t("Select country")} />
                           </SelectTrigger>
                           <SelectContent>
                             {SUPPORTED_COUNTRIES.map((country) => (
@@ -1164,7 +1163,7 @@ export default function Profile() {
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-500" />
-                        Account Type
+                        {t("Account Type")}
                       </Label>
                       <Badge className={getRoleBadgeColor(profile?.role || "")}>
                         {profile?.role || "Customer"}

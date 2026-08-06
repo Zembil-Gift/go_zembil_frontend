@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { formatPrice } from "@/lib/currency";
+import { useTranslation } from "react-i18next";
 
 interface GiftExperienceModalProps {
   experience: {
@@ -36,6 +37,7 @@ interface GiftOrderResponse {
 }
 
 export default function GiftExperienceModal({ experience, children }: GiftExperienceModalProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     recipientName: "",
@@ -69,7 +71,7 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
     },
     onSuccess: (data) => {
       toast({
-        title: "Gift Experience Created! 🎁",
+        title: t("Gift Experience Created! 🎁"),
         description: `Your gift has been created with confirmation code: ${data.confirmationCode}`,
       });
       setOpen(false);
@@ -89,7 +91,7 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
     },
     onError: (error) => {
       toast({
-        title: "Error Creating Gift",
+        title: t("Error Creating Gift"),
         description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
@@ -101,8 +103,8 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
     
     if (!isAuthenticated) {
       toast({
-        title: "Please Sign In",
-        description: "You need to be signed in to gift experiences.",
+        title: t("Please Sign In"),
+        description: t("You need to be signed in to gift experiences."),
         variant: "destructive",
       });
       setTimeout(() => {
@@ -113,8 +115,8 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
 
     if (!formData.recipientName || !formData.recipientEmail) {
       toast({
-        title: "Missing Information",
-        description: "Please provide recipient name and email.",
+        title: t("Missing Information"),
+        description: t("Please provide recipient name and email."),
         variant: "destructive",
       });
       return;
@@ -132,7 +134,7 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-amber-700">
             <Gift className="w-6 h-6" />
-            Gift This Experience
+            {t("Gift This Experience")}
           </DialogTitle>
         </DialogHeader>
         
@@ -159,7 +161,7 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
                 )}
                 <div className="flex items-center gap-2 text-amber-700">
                   <Heart className="w-4 h-4" />
-                  <span className="font-semibold">${price} per person</span>
+                  <span className="font-semibold">${price} {t("per person")}</span>
                 </div>
               </div>
             </CardContent>
@@ -170,21 +172,21 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="recipientName" className="text-amber-800 font-semibold">
-                  Recipient Name *
+                  {t("Recipient Name *")}
                 </Label>
                 <Input
                   id="recipientName"
                   value={formData.recipientName}
                   onChange={(e) => setFormData(prev => ({ ...prev, recipientName: e.target.value }))}
                   className="border-amber-300 focus:border-amber-500"
-                  placeholder="Who is this gift for?"
+                  placeholder={t("Who is this gift for?")}
                   required
                 />
               </div>
               
               <div>
                 <Label htmlFor="recipientEmail" className="text-amber-800 font-semibold">
-                  Recipient Email *
+                  {t("Recipient Email *")}
                 </Label>
                 <Input
                   id="recipientEmail"
@@ -192,7 +194,7 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
                   value={formData.recipientEmail}
                   onChange={(e) => setFormData(prev => ({ ...prev, recipientEmail: e.target.value }))}
                   className="border-amber-300 focus:border-amber-500"
-                  placeholder="recipient@example.com"
+                  placeholder={t("recipient@example.com")}
                   required
                 />
               </div>
@@ -201,21 +203,21 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="recipientPhone" className="text-amber-800 font-semibold">
-                  Recipient Phone
+                  {t("Recipient Phone")}
                 </Label>
                 <Input
                   id="recipientPhone"
                   value={formData.recipientPhone}
                   onChange={(e) => setFormData(prev => ({ ...prev, recipientPhone: e.target.value }))}
                   className="border-amber-300 focus:border-amber-500"
-                  placeholder="Optional contact number"
+                  placeholder={t("Optional contact number")}
                 />
               </div>
               
               {experience.type === "event" && (
                 <div>
                   <Label htmlFor="ticketQuantity" className="text-amber-800 font-semibold">
-                    Number of Tickets
+                    {t("Number of Tickets")}
                   </Label>
                   <Select 
                     value={formData.ticketQuantity.toString()} 
@@ -238,28 +240,28 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
 
             <div>
               <Label htmlFor="recipientAddress" className="text-amber-800 font-semibold">
-                Recipient Address
+                {t("Recipient Address")}
               </Label>
               <Textarea
                 id="recipientAddress"
                 value={formData.recipientAddress}
                 onChange={(e) => setFormData(prev => ({ ...prev, recipientAddress: e.target.value }))}
                 className="border-amber-300 focus:border-amber-500"
-                placeholder="For physical delivery (optional)"
+                placeholder={t("For physical delivery (optional)")}
                 rows={2}
               />
             </div>
 
             <div>
               <Label htmlFor="giftMessage" className="text-amber-800 font-semibold">
-                Personal Gift Message
+                {t("Personal Gift Message")}
               </Label>
               <Textarea
                 id="giftMessage"
                 value={formData.giftMessage}
                 onChange={(e) => setFormData(prev => ({ ...prev, giftMessage: e.target.value }))}
                 className="border-amber-300 focus:border-amber-500"
-                placeholder="Add a heartfelt message to make this gift extra special..."
+                placeholder={t("Add a heartfelt message to make this gift extra special...")}
                 rows={3}
               />
             </div>
@@ -267,7 +269,7 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="deliveryMethod" className="text-amber-800 font-semibold">
-                  Delivery Method
+                  {t("Delivery Method")}
                 </Label>
                 <Select 
                   value={formData.deliveryMethod} 
@@ -277,16 +279,16 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="digital">Digital Delivery (Email)</SelectItem>
-                    <SelectItem value="physical">Physical Card</SelectItem>
-                    <SelectItem value="email">Email Only</SelectItem>
+                    <SelectItem value="digital">{t("Digital Delivery (Email)")}</SelectItem>
+                    <SelectItem value="physical">{t("Physical Card")}</SelectItem>
+                    <SelectItem value="email">{t("Email Only")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div>
                 <Label htmlFor="deliveryDate" className="text-amber-800 font-semibold">
-                  Delivery Date
+                  {t("Delivery Date")}
                 </Label>
                 <Input
                   id="deliveryDate"
@@ -300,14 +302,14 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
 
             <div>
               <Label htmlFor="specialRequests" className="text-amber-800 font-semibold">
-                Special Requests
+                {t("Special Requests")}
               </Label>
               <Textarea
                 id="specialRequests"
                 value={formData.specialRequests}
                 onChange={(e) => setFormData(prev => ({ ...prev, specialRequests: e.target.value }))}
                 className="border-amber-300 focus:border-amber-500"
-                placeholder="Any special arrangements or notes..."
+                placeholder={t("Any special arrangements or notes...")}
                 rows={2}
               />
             </div>
@@ -317,27 +319,27 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-green-800 flex items-center gap-2">
                   <Heart className="w-5 h-5" />
-                  Gift Summary
+                  {t("Gift Summary")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span>Experience:</span>
+                    <span>{t("Experience:")}</span>
                     <span className="font-semibold">{experience.name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Recipient:</span>
+                    <span>{t("Recipient:")}</span>
                     <span className="font-semibold">{formData.recipientName || "Not specified"}</span>
                   </div>
                   {experience.type === "event" && (
                     <div className="flex justify-between">
-                      <span>Tickets:</span>
+                      <span>{t("Tickets:")}</span>
                       <span className="font-semibold">{formData.ticketQuantity}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-lg font-bold text-green-800 border-t pt-2">
-                    <span>Total Amount:</span>
+                    <span>{t("Total Amount:")}</span>
                     <span>{formatPrice(totalAmount, 'USD')}</span>
                   </div>
                 </div>
@@ -355,7 +357,7 @@ export default function GiftExperienceModal({ experience, children }: GiftExperi
               ) : (
                 <>
                   <Send className="w-5 h-5 mr-2" />
-                  Create Gift Experience
+                  {t("Create Gift Experience")}
                 </>
               )}
             </Button>

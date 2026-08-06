@@ -61,6 +61,7 @@ import type {
   CustomOrderValue,
   CustomOrderStatus,
 } from "@/types/customOrders";
+import { useTranslation } from "react-i18next";
 
 const CUSTOMER_CANCEL_REASON = "Customer requested cancellation";
 
@@ -95,6 +96,7 @@ const NON_NEGOTIABLE_STATUS_TIMELINE: {
 ];
 
 function CustomerCustomOrderDetailContent() {
+  const { t } = useTranslation();
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -180,15 +182,15 @@ function CustomerCustomOrderDetailContent() {
     mutationFn: () => customOrderService.acceptPrice(orderIdNum),
     onSuccess: () => {
       toast({
-        title: "Price Accepted",
-        description: "You can now proceed to payment.",
+        title: t("Price Accepted"),
+        description: t("You can now proceed to payment."),
       });
       queryClient.invalidateQueries({ queryKey: ["custom-order", orderIdNum] });
       queryClient.invalidateQueries({ queryKey: ["my-custom-orders"] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message,
         variant: "destructive",
       });
@@ -199,15 +201,15 @@ function CustomerCustomOrderDetailContent() {
     mutationFn: () => customOrderService.rejectPrice(orderIdNum),
     onSuccess: () => {
       toast({
-        title: "Price Rejected",
-        description: "The vendor will be notified to propose a new price.",
+        title: t("Price Rejected"),
+        description: t("The vendor will be notified to propose a new price."),
       });
       queryClient.invalidateQueries({ queryKey: ["custom-order", orderIdNum] });
       queryClient.invalidateQueries({ queryKey: ["my-custom-orders"] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message,
         variant: "destructive",
       });
@@ -223,8 +225,8 @@ function CustomerCustomOrderDetailContent() {
     },
     onSuccess: () => {
       toast({
-        title: "Order Cancelled",
-        description: "Your order was cancelled and refund processing has started.",
+        title: t("Order Cancelled"),
+        description: t("Your order was cancelled and refund processing has started."),
       });
       queryClient.invalidateQueries({ queryKey: ["custom-order", orderIdNum] });
       queryClient.invalidateQueries({ queryKey: ["my-custom-orders"] });
@@ -232,7 +234,7 @@ function CustomerCustomOrderDetailContent() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message,
         variant: "destructive",
       });
@@ -267,7 +269,7 @@ function CustomerCustomOrderDetailContent() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message,
         variant: "destructive",
       });
@@ -290,8 +292,8 @@ function CustomerCustomOrderDetailContent() {
       // Validate file type
       if (!file.type.startsWith("image/")) {
         toast({
-          title: "Error",
-          description: "Please select an image file",
+          title: t("Error"),
+          description: t("Please select an image file"),
           variant: "destructive",
         });
         return;
@@ -300,8 +302,8 @@ function CustomerCustomOrderDetailContent() {
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
-          title: "Error",
-          description: "Image must be less than 5MB",
+          title: t("Error"),
+          description: t("Image must be less than 5MB"),
           variant: "destructive",
         });
         return;
@@ -377,7 +379,7 @@ function CustomerCustomOrderDetailContent() {
     } catch (error: any) {
       setProcessingPaymentMethod(null);
       toast({
-        title: "Payment Error",
+        title: t("Payment Error"),
         description: error.message || "Failed to initialize payment",
         variant: "destructive",
       });
@@ -424,7 +426,7 @@ function CustomerCustomOrderDetailContent() {
             <ExternalLink className="h-4 w-4" />
           </a>
         ) : (
-          <p className="text-eagle-green/60">No image provided</p>
+          <p className="text-eagle-green/60">{t("No image provided")}</p>
         );
       case "VIDEO":
         return imageUrl ? (
@@ -439,7 +441,7 @@ function CustomerCustomOrderDetailContent() {
             <ExternalLink className="h-4 w-4" />
           </a>
         ) : (
-          <p className="text-eagle-green/60">No video provided</p>
+          <p className="text-eagle-green/60">{t("No video provided")}</p>
         );
       default:
         return <p className="text-eagle-green/60">-</p>;
@@ -452,16 +454,16 @@ function CustomerCustomOrderDetailContent() {
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-eagle-green mb-2">
-            Sign In Required
+            {t("Sign In Required")}
           </h2>
           <p className="font-light text-eagle-green/70 mb-4">
-            Please sign in to view your order.
+            {t("Please sign in to view your order.")}
           </p>
           <Button
             onClick={() => navigate("/signin")}
             className="bg-eagle-green hover:bg-viridian-green text-white"
           >
-            Sign In
+            {t("Sign In")}
           </Button>
         </div>
       </div>
@@ -482,16 +484,16 @@ function CustomerCustomOrderDetailContent() {
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-eagle-green mb-2">
-            Order Not Found
+            {t("Order Not Found")}
           </h2>
           <p className="font-light text-eagle-green/70 mb-4">
-            The order you're looking for doesn't exist.
+            {t("The order you're looking for doesn't exist.")}
           </p>
           <Button
             onClick={() => navigate("/my-custom-orders")}
             className="bg-eagle-green hover:bg-viridian-green text-white"
           >
-            Back to My Orders
+            {t("Back to My Orders")}
           </Button>
         </div>
       </div>
@@ -551,7 +553,7 @@ function CustomerCustomOrderDetailContent() {
               </Button>
               <div>
                 <h1 className="text-xl font-bold">
-                  Order #{order.orderNumber}
+                  {t("Order #")}{order.orderNumber}
                 </h1>
                 <p className="text-emerald-100 text-sm">{order.templateName}</p>
               </div>
@@ -675,10 +677,10 @@ function CustomerCustomOrderDetailContent() {
                 <XCircle className="h-10 w-10 text-red-500" />
                 <div>
                   <h3 className="font-semibold text-red-800">
-                    Order Cancelled
+                    {t("Order Cancelled")}
                   </h3>
                   <p className="text-red-600 text-sm">
-                    This order has been cancelled.
+                    {t("This order has been cancelled.")}
                   </p>
                 </div>
               </div>
@@ -697,7 +699,7 @@ function CustomerCustomOrderDetailContent() {
               value="details"
               className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
             >
-              Order Details
+              {t("Order Details")}
             </TabsTrigger>
             {!isNonNegotiable && (
               <TabsTrigger
@@ -705,20 +707,20 @@ function CustomerCustomOrderDetailContent() {
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
-                Chat with Vendor
+                {t("Chat with Vendor")}
               </TabsTrigger>
             )}
             <TabsTrigger
               value="history"
               className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
             >
-              History
+              {t("History")}
             </TabsTrigger>
             <TabsTrigger
               value="reviews"
               className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
             >
-              Reviews
+              {t("Reviews")}
             </TabsTrigger>
           </TabsList>
 
@@ -732,10 +734,10 @@ function CustomerCustomOrderDetailContent() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-eagle-green">
-                      Your Customizations
+                      {t("Your Customizations")}
                     </CardTitle>
                     <CardDescription>
-                      The values you provided for this order
+                      {t("The values you provided for this order")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -756,7 +758,7 @@ function CustomerCustomOrderDetailContent() {
                       ))
                     ) : (
                       <p className="text-eagle-green/60 text-center py-4">
-                        No customization values
+                        {t("No customization values")}
                       </p>
                     )}
                   </CardContent>
@@ -767,7 +769,7 @@ function CustomerCustomOrderDetailContent() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-eagle-green">
-                        Additional Notes
+                        {t("Additional Notes")}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -782,27 +784,27 @@ function CustomerCustomOrderDetailContent() {
                 <Card className="mt-6">
                   <CardHeader>
                     <CardTitle className="text-eagle-green text-lg">
-                      Order Info
+                      {t("Order Info")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 text-sm">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex justify-between md:flex-col md:items-start border-b md:border-b-0 md:border-r border-gray-100 pb-2 md:pb-0 md:pr-4">
                         <span className="text-eagle-green/70">
-                          Order Number
+                          {t("Order Number")}
                         </span>
                         <span className="text-eagle-green font-mono font-medium">
                           {order.orderNumber}
                         </span>
                       </div>
                       <div className="flex justify-between md:flex-col md:items-start border-b md:border-b-0 md:border-r border-gray-100 pb-2 md:pb-0 md:pr-4">
-                        <span className="text-eagle-green/70">Created</span>
+                        <span className="text-eagle-green/70">{t("Created")}</span>
                         <span className="text-eagle-green font-medium">
                           {new Date(order.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                       <div className="flex justify-between md:flex-col md:items-start">
-                        <span className="text-eagle-green/70">Template</span>
+                        <span className="text-eagle-green/70">{t("Template")}</span>
                         <span className="text-eagle-green font-medium">
                           {order.templateName}
                         </span>
@@ -812,7 +814,7 @@ function CustomerCustomOrderDetailContent() {
                       <div className="pt-4 border-t border-gray-100">
                         <div className="flex justify-between items-center">
                           <span className="text-eagle-green/70">
-                            Delivered On
+                            {t("Delivered On")}
                           </span>
                           <span className="text-eagle-green font-medium">
                             {new Date(order.deliveredAt).toLocaleDateString()}
@@ -830,10 +832,10 @@ function CustomerCustomOrderDetailContent() {
                   <Card className="h-[500px] flex flex-col">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-eagle-green text-lg">
-                        Chat with Vendor
+                        {t("Chat with Vendor")}
                       </CardTitle>
                       <CardDescription>
-                        Communicate with {order.vendorName}
+                        {t("Communicate with")} {order.vendorName}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col overflow-hidden">
@@ -846,7 +848,7 @@ function CustomerCustomOrderDetailContent() {
                           ) : messages.length === 0 ? (
                             <div className="text-center py-8 text-eagle-green/60">
                               <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                              <p>No messages yet. Start the conversation!</p>
+                              <p>{t("No messages yet. Start the conversation!")}</p>
                             </div>
                           ) : (
                             orderChatService
@@ -890,7 +892,7 @@ function CustomerCustomOrderDetailContent() {
                                             src={
                                               msg.fullImageUrl || msg.imageUrl
                                             }
-                                            alt="Chat image"
+                                            alt={t("Chat image")}
                                             className="rounded-lg max-w-full max-h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity"
                                             onClick={() =>
                                               window.open(
@@ -925,7 +927,7 @@ function CustomerCustomOrderDetailContent() {
                           <div className="relative inline-block">
                             <img
                               src={imagePreview}
-                              alt="Preview"
+                              alt={t("Preview")}
                               className="h-20 w-20 object-cover rounded-lg border-2 border-eagle-green/20"
                             />
                             <button
@@ -960,7 +962,7 @@ function CustomerCustomOrderDetailContent() {
                           <Input
                             value={chatMessage}
                             onChange={(e) => setChatMessage(e.target.value)}
-                            placeholder="Type your message..."
+                            placeholder={t("Type your message...")}
                             className="flex-1"
                             disabled={sendMessageMutation.isPending}
                           />
@@ -991,7 +993,7 @@ function CustomerCustomOrderDetailContent() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-eagle-green">
-                      Status History
+                      {t("Status History")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -1023,11 +1025,11 @@ function CustomerCustomOrderDetailContent() {
                                   </span>
                                 </div>
                                 <p className="text-sm text-eagle-green/70 mt-1">
-                                  Changed by {history.changedBy}
+                                  {t("Changed by")} {history.changedBy}
                                 </p>
                                 {history.reason && (
                                   <p className="text-sm text-eagle-green/60 mt-1 italic">
-                                    Reason: {history.reason}
+                                    {t("Reason:")} {history.reason}
                                   </p>
                                 )}
                               </div>
@@ -1036,7 +1038,7 @@ function CustomerCustomOrderDetailContent() {
                       </div>
                     ) : (
                       <p className="text-eagle-green/60 text-center py-4">
-                        No status history
+                        {t("No status history")}
                       </p>
                     )}
                   </CardContent>
@@ -1046,7 +1048,7 @@ function CustomerCustomOrderDetailContent() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-eagle-green">
-                      Price History
+                      {t("Price History")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -1075,7 +1077,7 @@ function CustomerCustomOrderDetailContent() {
                                   </span>
                                 </div>
                                 <p className="text-sm text-eagle-green/70 mt-1">
-                                  Set by {history.setBy}
+                                  {t("Set by")} {history.setBy}
                                 </p>
                                 {history.reason && (
                                   <p className="text-sm text-eagle-green/60 mt-1 italic">
@@ -1088,7 +1090,7 @@ function CustomerCustomOrderDetailContent() {
                       </div>
                     ) : (
                       <p className="text-eagle-green/60 text-center py-4">
-                        No price changes
+                        {t("No price changes")}
                       </p>
                     )}
                   </CardContent>
@@ -1098,7 +1100,7 @@ function CustomerCustomOrderDetailContent() {
               <TabsContent value="reviews" className="space-y-6">
                 <CustomReviewsSection
                   customOrderId={orderIdNum}
-                  title="Customer Review"
+                  title={t("Customer Review")}
                 />
               </TabsContent>
             </div>
@@ -1109,7 +1111,7 @@ function CustomerCustomOrderDetailContent() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-eagle-green text-lg">
-                    Vendor
+                    {t("Vendor")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1126,10 +1128,10 @@ function CustomerCustomOrderDetailContent() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-eagle-green text-lg flex items-center justify-between">
-                    Pricing
+                    {t("Pricing")}
                     {isNonNegotiable && (
                       <Badge className="bg-viridian-green/10 text-viridian-green border-viridian-green/30">
-                        Fixed Price
+                        {t("Fixed Price")}
                       </Badge>
                     )}
                   </CardTitle>
@@ -1137,11 +1139,11 @@ function CustomerCustomOrderDetailContent() {
                 <CardContent className="space-y-3">
                   {isNonNegotiable && (
                     <p className="text-sm text-viridian-green bg-viridian-green/5 p-2 rounded-md">
-                      This order has a fixed price with no negotiation required.
+                      {t("This order has a fixed price with no negotiation required.")}
                     </p>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-eagle-green/70">Base Price</span>
+                    <span className="text-eagle-green/70">{t("Base Price")}</span>
                     <span className="text-eagle-green">
                       {customOrderService.formatPrice(
                         order.basePrice ?? 0,
@@ -1151,7 +1153,7 @@ function CustomerCustomOrderDetailContent() {
                   </div>
                   {order.finalPriceMinor && (
                     <div className="flex justify-between">
-                      <span className="text-eagle-green/70">Final Price</span>
+                      <span className="text-eagle-green/70">{t("Final Price")}</span>
                       <span className="font-bold text-eagle-green">
                         {customOrderService.formatPrice(
                           order.finalPrice ?? 0,
@@ -1161,7 +1163,7 @@ function CustomerCustomOrderDetailContent() {
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-eagle-green/70">Shipping</span>
+                    <span className="text-eagle-green/70">{t("Shipping")}</span>
                     <span className="text-eagle-green">
                       {customOrderService.formatPrice(
                         shippingAmount,
@@ -1171,7 +1173,7 @@ function CustomerCustomOrderDetailContent() {
                   </div>
                   <Separator />
                   <div className="flex justify-between">
-                    <span className="font-medium text-eagle-green">Total</span>
+                    <span className="font-medium text-eagle-green">{t("Total")}</span>
                     <span className="font-bold text-eagle-green text-lg">
                       {customOrderService.formatPrice(
                         totalAmount,
@@ -1180,7 +1182,7 @@ function CustomerCustomOrderDetailContent() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="text-eagle-green/70">Payment:</span>
+                    <span className="text-eagle-green/70">{t("Payment:")}</span>
                     <Badge
                       className={
                         order.paymentStatus === "PAID"
@@ -1200,15 +1202,15 @@ function CustomerCustomOrderDetailContent() {
                   <CardHeader>
                     <CardTitle className="text-amber-800 text-lg flex items-center gap-2">
                       <DollarSign className="h-5 w-5" />
-                      Price Proposal
+                      {t("Price Proposal")}
                     </CardTitle>
                     <CardDescription className="text-amber-700">
-                      The vendor has proposed a final price
+                      {t("The vendor has proposed a final price")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="text-center py-2">
-                      <p className="text-sm text-amber-700">Proposed Price</p>
+                      <p className="text-sm text-amber-700">{t("Proposed Price")}</p>
                       <p className="text-3xl font-bold text-amber-900">
                         {customOrderService.formatPrice(
                           order.total ?? 0,
@@ -1230,7 +1232,7 @@ function CustomerCustomOrderDetailContent() {
                         ) : (
                           <CheckCircle className="h-4 w-4 mr-2" />
                         )}
-                        Accept
+                        {t("Accept")}
                       </Button>
                       <Button
                         variant="outline"
@@ -1246,11 +1248,11 @@ function CustomerCustomOrderDetailContent() {
                         ) : (
                           <XCircle className="h-4 w-4 mr-2" />
                         )}
-                        Reject
+                        {t("Reject")}
                       </Button>
                     </div>
                     <p className="text-xs text-amber-600 text-center">
-                      Rejecting will allow continued negotiation via chat
+                      {t("Rejecting will allow continued negotiation via chat")}
                     </p>
                   </CardContent>
                 </Card>
@@ -1262,15 +1264,15 @@ function CustomerCustomOrderDetailContent() {
                   <CardHeader>
                     <CardTitle className="text-green-800 text-lg flex items-center gap-2">
                       <CreditCard className="h-5 w-5" />
-                      Ready for Payment
+                      {t("Ready for Payment")}
                     </CardTitle>
                     <CardDescription className="text-green-700">
-                      Complete your payment to proceed
+                      {t("Complete your payment to proceed")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="text-center py-2">
-                      <p className="text-sm text-green-700">Amount Due</p>
+                      <p className="text-sm text-green-700">{t("Amount Due")}</p>
                       <p className="text-3xl font-bold text-green-900">
                         {customOrderService.formatPrice(
                           totalAmount,
@@ -1289,7 +1291,7 @@ function CustomerCustomOrderDetailContent() {
                         ) : (
                           <CreditCard className="h-4 w-4 mr-2" />
                         )}
-                        Pay with Chapa
+                        {t("Pay with Chapa")}
                       </Button>
                     )}
                     {/* {availablePaymentMethods.includes("telebirr") && (
@@ -1316,7 +1318,7 @@ function CustomerCustomOrderDetailContent() {
                         {processingPaymentMethod === "stripe" ? (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         ) : null}
-                        Pay with Stripe
+                        {t("Pay with Stripe")}
                       </Button>
                     )}
                   </CardContent>
@@ -1333,7 +1335,7 @@ function CustomerCustomOrderDetailContent() {
                       onClick={() => setCancelDialogOpen(true)}
                     >
                       <XCircle className="h-4 w-4 mr-2" />
-                      Cancel Order
+                      {t("Cancel Order")}
                     </Button>
                   </CardContent>
                 </Card>
@@ -1347,14 +1349,13 @@ function CustomerCustomOrderDetailContent() {
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+            <AlertDialogTitle>{t("Cancel Order")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to cancel this order? This action cannot be
-              undone.
+              {t("Are you sure you want to cancel this order? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep Order</AlertDialogCancel>
+            <AlertDialogCancel>{t("Keep Order")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => cancelMutation.mutate()}
               disabled={cancelMutation.isPending}
@@ -1363,7 +1364,7 @@ function CustomerCustomOrderDetailContent() {
               {cancelMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : null}
-              Cancel Order
+              {t("Cancel Order")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -15,6 +15,7 @@ import {
 } from "@/services/reviewService";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ProductReviewFormProps {
   productId: number;
@@ -31,6 +32,7 @@ export function ProductReviewForm({
   onCancel,
   compact = false,
 }: ProductReviewFormProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
@@ -49,14 +51,14 @@ export function ProductReviewForm({
         queryKey: ["product-rating-summary", productId],
       });
       toast({
-        title: "Review submitted!",
-        description: "Thank you for your feedback.",
+        title: t("Review submitted!"),
+        description: t("Thank you for your feedback."),
       });
       onSuccess?.();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.response?.data?.message || "Failed to submit review",
         variant: "destructive",
       });
@@ -66,7 +68,7 @@ export function ProductReviewForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      toast({ title: "Please select a rating", variant: "destructive" });
+      toast({ title: t("Please select a rating"), variant: "destructive" });
       return;
     }
     mutation.mutate({
@@ -81,7 +83,7 @@ export function ProductReviewForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label className="mb-2 block">Your Rating *</Label>
+        <Label className="mb-2 block">{t("Your Rating *")}</Label>
         <RatingInput value={rating} onChange={setRating} />
       </div>
 
@@ -91,7 +93,7 @@ export function ProductReviewForm({
           onClick={() => setShowDetails(true)}
           className="text-sm text-viridian-green hover:underline flex items-center gap-1"
         >
-          Add written review (optional)
+          {t("Add written review (optional)")}
           <ChevronDown className="h-4 w-4" />
         </button>
       )}
@@ -104,28 +106,28 @@ export function ProductReviewForm({
               onClick={() => setShowDetails(false)}
               className="text-sm text-gray-500 hover:underline flex items-center gap-1"
             >
-              Hide written review
+              {t("Hide written review")}
               <ChevronUp className="h-4 w-4" />
             </button>
           )}
           <div>
-            <Label htmlFor="title">Review Title (optional)</Label>
+            <Label htmlFor="title">{t("Review Title (optional)")}</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Summarize your experience"
+              placeholder={t("Summarize your experience")}
               maxLength={200}
             />
           </div>
 
           <div>
-            <Label htmlFor="comment">Your Review (optional)</Label>
+            <Label htmlFor="comment">{t("Your Review (optional)")}</Label>
             <Textarea
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your experience with this product..."
+              placeholder={t("Share your experience with this product...")}
               rows={4}
               maxLength={2000}
             />
@@ -146,7 +148,7 @@ export function ProductReviewForm({
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t("Cancel")}
           </Button>
         )}
       </div>
@@ -169,6 +171,7 @@ export function VendorReviewForm({
   onCancel,
   compact = false,
 }: VendorReviewFormProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
@@ -186,14 +189,14 @@ export function VendorReviewForm({
       });
       queryClient.invalidateQueries({ queryKey: ["vendor-profile", vendorId] });
       toast({
-        title: "Review submitted!",
-        description: "Thank you for your feedback.",
+        title: t("Review submitted!"),
+        description: t("Thank you for your feedback."),
       });
       onSuccess?.();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.response?.data?.message || "Failed to submit review",
         variant: "destructive",
       });
@@ -203,7 +206,7 @@ export function VendorReviewForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      toast({ title: "Please select a rating", variant: "destructive" });
+      toast({ title: t("Please select a rating"), variant: "destructive" });
       return;
     }
     mutation.mutate({
@@ -218,7 +221,7 @@ export function VendorReviewForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label className="mb-2 block">Your Rating *</Label>
+        <Label className="mb-2 block">{t("Your Rating *")}</Label>
         <RatingInput value={rating} onChange={setRating} />
       </div>
 
@@ -228,7 +231,7 @@ export function VendorReviewForm({
           onClick={() => setShowDetails(true)}
           className="text-sm text-viridian-green hover:underline flex items-center gap-1"
         >
-          Add written review (optional)
+          {t("Add written review (optional)")}
           <ChevronDown className="h-4 w-4" />
         </button>
       )}
@@ -241,28 +244,28 @@ export function VendorReviewForm({
               onClick={() => setShowDetails(false)}
               className="text-sm text-gray-500 hover:underline flex items-center gap-1"
             >
-              Hide written review
+              {t("Hide written review")}
               <ChevronUp className="h-4 w-4" />
             </button>
           )}
           <div>
-            <Label htmlFor="vendor-title">Review Title (optional)</Label>
+            <Label htmlFor="vendor-title">{t("Review Title (optional)")}</Label>
             <Input
               id="vendor-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Summarize your experience"
+              placeholder={t("Summarize your experience")}
               maxLength={200}
             />
           </div>
 
           <div>
-            <Label htmlFor="vendor-comment">Your Review (optional)</Label>
+            <Label htmlFor="vendor-comment">{t("Your Review (optional)")}</Label>
             <Textarea
               id="vendor-comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your experience with this vendor..."
+              placeholder={t("Share your experience with this vendor...")}
               rows={4}
               maxLength={2000}
             />
@@ -283,7 +286,7 @@ export function VendorReviewForm({
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t("Cancel")}
           </Button>
         )}
       </div>
@@ -308,6 +311,7 @@ export function EventReviewForm({
   onCancel,
   compact = false,
 }: EventReviewFormProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
@@ -324,14 +328,14 @@ export function EventReviewForm({
         queryKey: ["event-rating-summary", eventId],
       });
       toast({
-        title: "Review submitted!",
-        description: "Thank you for your feedback.",
+        title: t("Review submitted!"),
+        description: t("Thank you for your feedback."),
       });
       onSuccess?.();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.response?.data?.message || "Failed to submit review",
         variant: "destructive",
       });
@@ -341,7 +345,7 @@ export function EventReviewForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      toast({ title: "Please select a rating", variant: "destructive" });
+      toast({ title: t("Please select a rating"), variant: "destructive" });
       return;
     }
     mutation.mutate({
@@ -356,7 +360,7 @@ export function EventReviewForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label className="mb-2 block">Your Rating *</Label>
+        <Label className="mb-2 block">{t("Your Rating *")}</Label>
         <RatingInput value={rating} onChange={setRating} />
       </div>
 
@@ -366,7 +370,7 @@ export function EventReviewForm({
           onClick={() => setShowDetails(true)}
           className="text-sm text-viridian-green hover:underline flex items-center gap-1"
         >
-          Add written review (optional)
+          {t("Add written review (optional)")}
           <ChevronDown className="h-4 w-4" />
         </button>
       )}
@@ -379,28 +383,28 @@ export function EventReviewForm({
               onClick={() => setShowDetails(false)}
               className="text-sm text-gray-500 hover:underline flex items-center gap-1"
             >
-              Hide written review
+              {t("Hide written review")}
               <ChevronUp className="h-4 w-4" />
             </button>
           )}
           <div>
-            <Label htmlFor="event-title">Review Title (optional)</Label>
+            <Label htmlFor="event-title">{t("Review Title (optional)")}</Label>
             <Input
               id="event-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Summarize your experience"
+              placeholder={t("Summarize your experience")}
               maxLength={200}
             />
           </div>
 
           <div>
-            <Label htmlFor="event-comment">Your Review (optional)</Label>
+            <Label htmlFor="event-comment">{t("Your Review (optional)")}</Label>
             <Textarea
               id="event-comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your experience at this event..."
+              placeholder={t("Share your experience at this event...")}
               rows={4}
               maxLength={2000}
             />
@@ -421,7 +425,7 @@ export function EventReviewForm({
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t("Cancel")}
           </Button>
         )}
       </div>
@@ -446,6 +450,7 @@ export function ServiceReviewForm({
   onCancel,
   compact = false,
 }: ServiceReviewFormProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
@@ -464,14 +469,14 @@ export function ServiceReviewForm({
         queryKey: ["service-rating-summary", serviceId],
       });
       toast({
-        title: "Review submitted!",
-        description: "Thank you for your feedback.",
+        title: t("Review submitted!"),
+        description: t("Thank you for your feedback."),
       });
       onSuccess?.();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.response?.data?.message || "Failed to submit review",
         variant: "destructive",
       });
@@ -481,7 +486,7 @@ export function ServiceReviewForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      toast({ title: "Please select a rating", variant: "destructive" });
+      toast({ title: t("Please select a rating"), variant: "destructive" });
       return;
     }
     mutation.mutate({
@@ -496,7 +501,7 @@ export function ServiceReviewForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label className="mb-2 block">Your Rating *</Label>
+        <Label className="mb-2 block">{t("Your Rating *")}</Label>
         <RatingInput value={rating} onChange={setRating} />
       </div>
 
@@ -506,7 +511,7 @@ export function ServiceReviewForm({
           onClick={() => setShowDetails(true)}
           className="text-sm text-viridian-green hover:underline flex items-center gap-1"
         >
-          Add written review (optional)
+          {t("Add written review (optional)")}
           <ChevronDown className="h-4 w-4" />
         </button>
       )}
@@ -519,28 +524,28 @@ export function ServiceReviewForm({
               onClick={() => setShowDetails(false)}
               className="text-sm text-gray-500 hover:underline flex items-center gap-1"
             >
-              Hide written review
+              {t("Hide written review")}
               <ChevronUp className="h-4 w-4" />
             </button>
           )}
           <div>
-            <Label htmlFor="service-title">Review Title (optional)</Label>
+            <Label htmlFor="service-title">{t("Review Title (optional)")}</Label>
             <Input
               id="service-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Summarize your experience"
+              placeholder={t("Summarize your experience")}
               maxLength={200}
             />
           </div>
 
           <div>
-            <Label htmlFor="service-comment">Your Review (optional)</Label>
+            <Label htmlFor="service-comment">{t("Your Review (optional)")}</Label>
             <Textarea
               id="service-comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your experience with this service..."
+              placeholder={t("Share your experience with this service...")}
               rows={4}
               maxLength={2000}
             />
@@ -561,7 +566,7 @@ export function ServiceReviewForm({
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t("Cancel")}
           </Button>
         )}
       </div>
@@ -582,6 +587,7 @@ export function CustomReviewForm({
   onCancel,
   compact = false,
 }: CustomReviewFormProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
@@ -600,14 +606,14 @@ export function CustomReviewForm({
         queryKey: ["can-review-custom", customOrderId],
       });
       toast({
-        title: "Review submitted!",
-        description: "Thank you for your feedback.",
+        title: t("Review submitted!"),
+        description: t("Thank you for your feedback."),
       });
       onSuccess?.();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.response?.data?.message || "Failed to submit review",
         variant: "destructive",
       });
@@ -617,7 +623,7 @@ export function CustomReviewForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      toast({ title: "Please select a rating", variant: "destructive" });
+      toast({ title: t("Please select a rating"), variant: "destructive" });
       return;
     }
 
@@ -632,7 +638,7 @@ export function CustomReviewForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label className="mb-2 block">Your Rating *</Label>
+        <Label className="mb-2 block">{t("Your Rating *")}</Label>
         <RatingInput value={rating} onChange={setRating} />
       </div>
 
@@ -642,7 +648,7 @@ export function CustomReviewForm({
           onClick={() => setShowDetails(true)}
           className="text-sm text-viridian-green hover:underline flex items-center gap-1"
         >
-          Add written review (optional)
+          {t("Add written review (optional)")}
           <ChevronDown className="h-4 w-4" />
         </button>
       )}
@@ -655,28 +661,28 @@ export function CustomReviewForm({
               onClick={() => setShowDetails(false)}
               className="text-sm text-gray-500 hover:underline flex items-center gap-1"
             >
-              Hide written review
+              {t("Hide written review")}
               <ChevronUp className="h-4 w-4" />
             </button>
           )}
           <div>
-            <Label htmlFor="custom-title">Review Title (optional)</Label>
+            <Label htmlFor="custom-title">{t("Review Title (optional)")}</Label>
             <Input
               id="custom-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Summarize your experience"
+              placeholder={t("Summarize your experience")}
               maxLength={200}
             />
           </div>
 
           <div>
-            <Label htmlFor="custom-comment">Your Review (optional)</Label>
+            <Label htmlFor="custom-comment">{t("Your Review (optional)")}</Label>
             <Textarea
               id="custom-comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your experience with this custom order..."
+              placeholder={t("Share your experience with this custom order...")}
               rows={4}
               maxLength={2000}
             />
@@ -697,7 +703,7 @@ export function CustomReviewForm({
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t("Cancel")}
           </Button>
         )}
       </div>

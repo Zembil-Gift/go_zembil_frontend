@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProtectedRoute from "@/components/protected-route";
 import { formatPrice } from "@/lib/currency";
+import { useTranslation } from "react-i18next";
 
 function TrackContent() {
+  const { t } = useTranslation();
   const [trackingNumber, setTrackingNumber] = useState("");
   const [searchedOrder, setSearchedOrder] = useState<string | null>(null);
 
@@ -62,23 +64,23 @@ function TrackContent() {
         {/* Page Header */}
         <div className="text-center mb-12">
           <h1 className="font-display text-4xl font-bold text-charcoal mb-4">
-            Track Your Order
+            {t("Track Your Order")}
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Enter your order number or tracking ID to see the latest status of your gift delivery.
+            {t("Enter your order number or tracking ID to see the latest status of your gift delivery.")}
           </p>
         </div>
 
         {/* Search Form */}
         <Card className="mb-8 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl text-charcoal">Find Your Order</CardTitle>
+            <CardTitle className="text-2xl text-charcoal">{t("Find Your Order")}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSearch} className="flex gap-4">
               <Input
                 type="text"
-                placeholder="Enter order number or tracking ID"
+                placeholder={t("Enter order number or tracking ID")}
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
                 className="flex-1 h-12 text-lg"
@@ -102,9 +104,9 @@ function TrackContent() {
               <div className="text-red-500 mb-4">
                 <Package size={48} className="mx-auto" />
               </div>
-              <h3 className="text-xl font-semibold text-red-700 mb-2">Order Not Found</h3>
+              <h3 className="text-xl font-semibold text-red-700 mb-2">{t("Order Not Found")}</h3>
               <p className="text-red-600">
-                We couldn't find an order with that tracking number. Please check the number and try again.
+                {t("We couldn't find an order with that tracking number. Please check the number and try again.")}
               </p>
             </CardContent>
           </Card>
@@ -116,7 +118,7 @@ function TrackContent() {
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="text-2xl text-charcoal flex items-center justify-between">
-                  Order #{orderData.id}
+                  {t("Order #")}{orderData.id}
                   <span className="text-lg font-normal text-gray-600">
                     {new Date(orderData.createdAt).toLocaleDateString()}
                   </span>
@@ -125,7 +127,7 @@ function TrackContent() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <h4 className="font-semibold text-charcoal mb-2">Delivery Address</h4>
+                    <h4 className="font-semibold text-charcoal mb-2">{t("Delivery Address")}</h4>
                     <p className="text-gray-600">
                       {orderData.shippingAddress?.street}<br/>
                       {orderData.shippingAddress?.city}, {orderData.shippingAddress?.region}<br/>
@@ -133,13 +135,13 @@ function TrackContent() {
                     </p>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-charcoal mb-2">Order Total</h4>
+                    <h4 className="font-semibold text-charcoal mb-2">{t("Order Total")}</h4>
                     <p className="text-2xl font-bold text-ethiopian-gold">
                       {formatPrice(orderData.total, orderData.currency || 'ETB')}
                     </p>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-charcoal mb-2">Estimated Delivery</h4>
+                    <h4 className="font-semibold text-charcoal mb-2">{t("Estimated Delivery")}</h4>
                     <p className="text-gray-600">
                       {orderData.estimatedDelivery 
                         ? new Date(orderData.estimatedDelivery).toLocaleDateString()
@@ -154,7 +156,7 @@ function TrackContent() {
             {/* Order Status Timeline */}
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-2xl text-charcoal">Order Status</CardTitle>
+                <CardTitle className="text-2xl text-charcoal">{t("Order Status")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
@@ -165,7 +167,7 @@ function TrackContent() {
                         {getStatusText(orderData.status)}
                       </h3>
                       <p className="text-gray-600">
-                        Last updated: {new Date(orderData.updatedAt).toLocaleString()}
+                        {t("Last updated:")} {new Date(orderData.updatedAt).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -212,7 +214,7 @@ function TrackContent() {
             {orderData.items && orderData.items.length > 0 && (
               <Card className="shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-2xl text-charcoal">Order Items</CardTitle>
+                  <CardTitle className="text-2xl text-charcoal">{t("Order Items")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -221,7 +223,7 @@ function TrackContent() {
                         <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-charcoal">{item.product?.name}</h4>
-                          <p className="text-gray-600">Quantity: {item.quantity}</p>
+                          <p className="text-gray-600">{t("Quantity:")} {item.quantity}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-ethiopian-gold">

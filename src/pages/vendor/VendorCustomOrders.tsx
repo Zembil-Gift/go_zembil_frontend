@@ -30,8 +30,10 @@ import {useAuth} from '@/hooks/useAuth';
 
 import {customOrderService} from '@/services/customOrderService';
 import type {CustomOrder, CustomOrderStatus} from '@/types/customOrders';
+import { useTranslation } from "react-i18next";
 
 export default function VendorCustomOrders() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   
@@ -145,13 +147,13 @@ export default function VendorCustomOrders() {
                     </Badge>
                     {isNonNegotiable && (
                       <Badge className="bg-viridian-green/10 text-viridian-green border-viridian-green/20">
-                        Fixed Price
+                        {t("Fixed Price")}
                       </Badge>
                     )}
                     {order.paymentStatus === 'PAID' && (
                       <Badge className="bg-green-100 text-green-700 border-none">
                         <CheckCircle className="h-3 w-3 mr-1" />
-                        Paid
+                        {t("Paid")}
                       </Badge>
                     )}
                   </div>
@@ -161,7 +163,7 @@ export default function VendorCustomOrders() {
                   </h3>
                   
                   <p className="text-sm text-eagle-green/70 mb-1">
-                    Order #{order.orderNumber}
+                    {t("Order #")}{order.orderNumber}
                   </p>
                   
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-eagle-green/70">
@@ -190,7 +192,7 @@ export default function VendorCustomOrders() {
                   </p>
                 )}
                 <p className="text-xs text-eagle-green/60 mt-1">
-                  {order.values?.length || 0} customization{order.values?.length !== 1 ? 's' : ''}
+                  {order.values?.length || 0} {t("customization")}{order.values?.length !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>
@@ -207,7 +209,7 @@ export default function VendorCustomOrders() {
                 }}
               >
                 <Eye className="h-4 w-4 mr-1" />
-                View Details
+                {t("View Details")}
               </Button>
               
               {canProposePrice && (
@@ -220,7 +222,7 @@ export default function VendorCustomOrders() {
                   }}
                 >
                   <DollarSign className="h-4 w-4 mr-1" />
-                  Propose Price
+                  {t("Propose Price")}
                 </Button>
               )}
               
@@ -234,7 +236,7 @@ export default function VendorCustomOrders() {
                   }}
                 >
                   <Play className="h-4 w-4 mr-1" />
-                  Start Work
+                  {t("Start Work")}
                 </Button>
               )}
               
@@ -248,7 +250,7 @@ export default function VendorCustomOrders() {
                   }}
                 >
                   <CheckCircle className="h-4 w-4 mr-1" />
-                  Mark Complete
+                  {t("Mark Complete")}
                 </Button>
               )}
               
@@ -261,7 +263,7 @@ export default function VendorCustomOrders() {
                 }}
               >
                 <MessageSquare className="h-4 w-4 mr-1" />
-                Chat
+                {t("Chat")}
               </Button>
             </div>
           </CardContent>
@@ -281,10 +283,10 @@ export default function VendorCustomOrders() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You need to be a vendor to access this page.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
+        <p className="text-gray-600 mb-4">{t("You need to be a vendor to access this page.")}</p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -303,10 +305,10 @@ export default function VendorCustomOrders() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-eagle-green mb-1 truncate">
-                Custom Orders
+                {t("Custom Orders")}
               </h1>
               <p className="font-light text-eagle-green/70">
-                Track and manage custom orders from customers
+                {t("Track and manage custom orders from customers")}
               </p>
             </div>
             <Button
@@ -315,7 +317,7 @@ export default function VendorCustomOrders() {
               className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              {t("Refresh")}
             </Button>
           </div>
         </motion.div>
@@ -324,7 +326,7 @@ export default function VendorCustomOrders() {
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">New</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("New")}</CardTitle>
               <AlertCircle className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
@@ -333,7 +335,7 @@ export default function VendorCustomOrders() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Price Sent</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("Price Sent")}</CardTitle>
               <DollarSign className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
@@ -342,7 +344,7 @@ export default function VendorCustomOrders() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Confirmed</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("Confirmed")}</CardTitle>
               <CheckCircle className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
@@ -351,7 +353,7 @@ export default function VendorCustomOrders() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Paid</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("Paid")}</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
@@ -360,7 +362,7 @@ export default function VendorCustomOrders() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("In Progress")}</CardTitle>
               <Play className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
@@ -369,7 +371,7 @@ export default function VendorCustomOrders() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("Completed")}</CardTitle>
               <CheckCircle className="h-4 w-4 text-teal-500" />
             </CardHeader>
             <CardContent>
@@ -386,7 +388,7 @@ export default function VendorCustomOrders() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                   <Input
-                    placeholder="Search by order number, customer, or template..."
+                    placeholder={t("Search by order number, customer, or template...")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
@@ -396,19 +398,19 @@ export default function VendorCustomOrders() {
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t("Filter by status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                  <SelectItem value="PRICE_PROPOSED">Price Proposed</SelectItem>
-                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                  <SelectItem value="PAID">Paid</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="OUT_FOR_DELIVERY">Out for Delivery</SelectItem>
-                  <SelectItem value="DELIVERED">Delivered</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                  <SelectItem value="SUBMITTED">{t("Submitted")}</SelectItem>
+                  <SelectItem value="PRICE_PROPOSED">{t("Price Proposed")}</SelectItem>
+                  <SelectItem value="CONFIRMED">{t("Confirmed")}</SelectItem>
+                  <SelectItem value="PAID">{t("Paid")}</SelectItem>
+                  <SelectItem value="IN_PROGRESS">{t("In Progress")}</SelectItem>
+                  <SelectItem value="COMPLETED">{t("Completed")}</SelectItem>
+                  <SelectItem value="OUT_FOR_DELIVERY">{t("Out for Delivery")}</SelectItem>
+                  <SelectItem value="DELIVERED">{t("Delivered")}</SelectItem>
+                  <SelectItem value="CANCELLED">{t("Cancelled")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -439,25 +441,25 @@ export default function VendorCustomOrders() {
                 value="new"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
-                New ({submittedOrders.length})
+                {t("New (")}{submittedOrders.length})
               </TabsTrigger>
               <TabsTrigger 
                 value="negotiating"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
-                Negotiating ({priceProposedOrders.length + confirmedOrders.length})
+                {t("Negotiating (")}{priceProposedOrders.length + confirmedOrders.length})
               </TabsTrigger>
               <TabsTrigger 
                 value="active"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
-                Active ({paidOrders.length + inProgressOrders.length})
+                {t("Active (")}{paidOrders.length + inProgressOrders.length})
               </TabsTrigger>
               <TabsTrigger 
                 value="history"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
-                History ({completedOrders.length})
+                {t("History (")}{completedOrders.length})
               </TabsTrigger>
             </TabsList>
 

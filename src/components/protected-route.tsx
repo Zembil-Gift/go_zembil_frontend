@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -7,6 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, redirectPath = "/signin" }: ProtectedRouteProps) {
+  const { t } = useTranslation();
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
@@ -16,7 +18,7 @@ export default function ProtectedRoute({ children, redirectPath = "/signin" }: P
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-ethiopian-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">{t("Loading...")}</p>
         </div>
       </div>
     );

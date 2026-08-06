@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import GiftingHeartAnimation from "./GiftingHeartAnimation";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
+import { useTranslation } from "react-i18next";
 
 interface HeroAnimationProps {
   className?: string;
 }
 
 export default function HeroAnimation({ className = "" }: HeroAnimationProps) {
+  const { t } = useTranslation();
   return (
     <section className={`relative min-h-screen flex items-center justify-center bg-gradient-to-br from-cream to-gray-50 overflow-hidden ${className}`}>
       {/* Background decorative elements */}
@@ -55,7 +57,7 @@ export default function HeroAnimation({ className = "" }: HeroAnimationProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.2, duration: 0.8 }}
             >
-              Gifting with Heart
+              {t("Gifting with Heart")}
             </motion.p>
 
             {/* Description */}
@@ -65,7 +67,7 @@ export default function HeroAnimation({ className = "" }: HeroAnimationProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.5, duration: 0.8 }}
             >
-              Connect hearts across distances through meaningful Ethiopian gifts. From traditional crafts to custom creations, every gift tells a story of love and heritage.
+              {t("Connect hearts across distances through meaningful Ethiopian gifts. From traditional crafts to custom creations, every gift tells a story of love and heritage.")}
             </motion.p>
 
             {/* CTA Buttons */}
@@ -85,7 +87,7 @@ export default function HeroAnimation({ className = "" }: HeroAnimationProps) {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    Explore Gifts
+                    {t("Explore Gifts")}
                   </motion.span>
                 </Link>
               </Button>
@@ -100,7 +102,7 @@ export default function HeroAnimation({ className = "" }: HeroAnimationProps) {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    Browse Occasions
+                    {t("Browse Occasions")}
                   </motion.span>
                 </Link>
               </Button>
@@ -115,15 +117,15 @@ export default function HeroAnimation({ className = "" }: HeroAnimationProps) {
             >
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span>Authentic Ethiopian Products</span>
+                <span>{t("Authentic Ethiopian Products")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span>Reliable Delivery</span>
+                <span>{t("Reliable Delivery")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                <span>Cultural Heritage</span>
+                <span>{t("Cultural Heritage")}</span>
               </div>
             </motion.div>
           </motion.div>
@@ -162,7 +164,7 @@ export default function HeroAnimation({ className = "" }: HeroAnimationProps) {
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           />
         </motion.div>
-        <p className="text-xs text-gray-500 mt-2 text-center">Scroll to explore</p>
+        <p className="text-xs text-gray-500 mt-2 text-center">{t("Scroll to explore")}</p>
       </motion.div>
     </section>
   );

@@ -8,6 +8,7 @@ import { formatPrice } from "@/lib/currency";
 import { useQuery } from "@tanstack/react-query";
 import { reviewService } from "@/services/reviewService";
 import { CompactRating } from "@/components/reviews";
+import { useTranslation } from "react-i18next";
 
 interface EventCardProps {
   event: EventResponse;
@@ -15,6 +16,7 @@ interface EventCardProps {
 }
 
 export default function EventCard({ event, index = 0 }: EventCardProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const minPrice =
     event.ticketTypes?.length > 0
@@ -67,12 +69,12 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
           <div className="absolute top-3 left-3 flex flex-wrap gap-1">
             {event.isFeatured && (
               <Badge className="text-xs font-bold bg-yellow/20 text-eagle-green border-yellow">
-                Featured
+                {t("Featured")}
               </Badge>
             )}
             {event.isSoldOut && (
               <Badge className="text-xs font-bold bg-red-100 text-red-700 border-red-300">
-                Sold Out
+                {t("Sold Out")}
               </Badge>
             )}
           </div>
@@ -87,7 +89,7 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
           {/* Price */}
           <div className="absolute bottom-3 right-3">
             <Badge className="bg-eagle-green text-white border-none font-bold">
-              From {formatPrice(minPrice / 100, currency)}
+              {t("From")} {formatPrice(minPrice / 100, currency)}
             </Badge>
           </div>
         </div>
@@ -125,7 +127,7 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1 text-sm font-light text-eagle-green/70">
               <Ticket className="h-4 w-4" />
-              <span>{event.ticketTypes?.length || 0} ticket types</span>
+              <span>{event.ticketTypes?.length || 0} {t("ticket types")}</span>
             </div>
             <ChevronRight className="h-4 w-4 text-viridian-green group-hover:translate-x-1 transition-transform" />
           </div>

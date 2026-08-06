@@ -20,6 +20,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { formatPrice } from '@/lib/currency';
 import { ShoppingCart, User, CreditCard, CheckCircle, AlertCircle, Gift, MapPin } from 'lucide-react';
 import { deliveryService, type DeliveryModeResponse } from '@/services/deliveryService';
+import { useTranslation } from "react-i18next";
 
 const checkoutSchema = z.object({
   recipientName: z.string().min(2, 'Recipient name is required'),
@@ -49,6 +50,7 @@ interface CartItem {
 }
 
 export default function EnhancedCheckout() {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType>('stripe');
   const [paymentData, setPaymentData] = useState<any>(null);
@@ -157,14 +159,14 @@ export default function EnhancedCheckout() {
       setOrderData(data);
       setCurrentStep(3);
       toast({
-        title: "Order Created",
-        description: "Proceeding to payment...",
+        title: t("Order Created"),
+        description: t("Proceeding to payment..."),
       });
     },
     onError: (error) => {
       toast({
-        title: "Order Failed",
-        description: "Failed to create order. Please try again.",
+        title: t("Order Failed"),
+        description: t("Failed to create order. Please try again."),
         variant: "destructive",
       });
     },
@@ -186,8 +188,8 @@ export default function EnhancedCheckout() {
   const handlePaymentSuccess = (paymentResult: any) => {
     queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
     toast({
-      title: "Payment Successful!",
-      description: "Your order has been placed successfully.",
+      title: t("Payment Successful!"),
+      description: t("Your order has been placed successfully."),
     });
     // Redirect to order confirmation page
     window.location.href = `/order-success?orderId=${orderData?.id}`;
@@ -196,7 +198,7 @@ export default function EnhancedCheckout() {
   // Handle payment error
   const handlePaymentError = (error: string) => {
     toast({
-      title: "Payment Failed",
+      title: t("Payment Failed"),
       description: error,
       variant: "destructive",
     });
@@ -218,10 +220,10 @@ export default function EnhancedCheckout() {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-        <h2 className="text-2xl font-bold text-gray-700 mb-2">Your cart is empty</h2>
-        <p className="text-gray-500 mb-6">Add some items to your cart to proceed with checkout.</p>
+        <h2 className="text-2xl font-bold text-gray-700 mb-2">{t("Your cart is empty")}</h2>
+        <p className="text-gray-500 mb-6">{t("Add some items to your cart to proceed with checkout.")}</p>
         <Button asChild>
-          <a href="/shop">Continue Shopping</a>
+          <a href="/shop">{t("Continue Shopping")}</a>
         </Button>
       </div>
     );
@@ -265,7 +267,7 @@ export default function EnhancedCheckout() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <ShoppingCart className="w-5 h-5" />
-                <span>Order Summary</span>
+                <span>{t("Order Summary")}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -286,7 +288,7 @@ export default function EnhancedCheckout() {
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-sm">{item.product.name}</div>
-                      <div className="text-xs text-gray-500">Qty: {item.quantity}</div>
+                      <div className="text-xs text-gray-500">{t("Qty:")} {item.quantity}</div>
                     </div>
                     <div className="text-sm font-medium">
                       {formatPrice(parseFloat(item.product.price) * item.quantity, 'ETB')}
@@ -300,14 +302,14 @@ export default function EnhancedCheckout() {
               {/* Order Totals */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Subtotal</span>
+                  <span>{t("Subtotal")}</span>
                   <span>{formatPrice(calculateSubtotal(), 'ETB')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Delivery</span>
+                  <span>{t("Delivery")}</span>
                   <span>
                     {calculateDeliveryFee() === 0 ? (
-                      <Badge variant="secondary" className="text-xs">Free</Badge>
+                      <Badge variant="secondary" className="text-xs">{t("Free")}</Badge>
                     ) : (
                       formatPrice(calculateDeliveryFee(), 'ETB')
                     )}
@@ -315,13 +317,13 @@ export default function EnhancedCheckout() {
                 </div>
                 {calculateExtrasFee() > 0 && (
                   <div className="flex justify-between">
-                    <span>Gift Wrap</span>
+                    <span>{t("Gift Wrap")}</span>
                     <span>{formatPrice(calculateExtrasFee(), 'ETB')}</span>
                   </div>
                 )}
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
+                  <span>{t("Total")}</span>
                   <div className="text-right">
                     <div className="text-amber-600">{formattedTotal}</div>
                   </div>
@@ -339,18 +341,18 @@ export default function EnhancedCheckout() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <User className="w-5 h-5" />
-                  <span>Delivery Details</span>
+                  <span>{t("Delivery Details")}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="recipientName">Recipient Name *</Label>
+                      <Label htmlFor="recipientName">{t("Recipient Name *")}</Label>
                       <Input
                         id="recipientName"
                         {...form.register('recipientName')}
-                        placeholder="Full name"
+                        placeholder={t("Full name")}
                       />
                       {form.formState.errors.recipientName && (
                         <p className="text-sm text-red-600 mt-1">
@@ -360,12 +362,12 @@ export default function EnhancedCheckout() {
                     </div>
 
                     <div>
-                      <Label htmlFor="recipientEmail">Email Address *</Label>
+                      <Label htmlFor="recipientEmail">{t("Email Address *")}</Label>
                       <Input
                         id="recipientEmail"
                         type="email"
                         {...form.register('recipientEmail')}
-                        placeholder="recipient@example.com"
+                        placeholder={t("recipient@example.com")}
                       />
                       {form.formState.errors.recipientEmail && (
                         <p className="text-sm text-red-600 mt-1">
@@ -375,11 +377,11 @@ export default function EnhancedCheckout() {
                     </div>
 
                     <div>
-                      <Label htmlFor="recipientPhone">Phone Number *</Label>
+                      <Label htmlFor="recipientPhone">{t("Phone Number *")}</Label>
                       <Input
                         id="recipientPhone"
                         {...form.register('recipientPhone')}
-                        placeholder="+251 9XX XXX XXX"
+                        placeholder={t("+251 9XX XXX XXX")}
                       />
                       {form.formState.errors.recipientPhone && (
                         <p className="text-sm text-red-600 mt-1">
@@ -389,11 +391,11 @@ export default function EnhancedCheckout() {
                     </div>
 
                     <div>
-                      <Label htmlFor="recipientCity">City *</Label>
+                      <Label htmlFor="recipientCity">{t("City *")}</Label>
                       <Input
                         id="recipientCity"
                         {...form.register('recipientCity')}
-                        placeholder="Addis Ababa"
+                        placeholder={t("Addis Ababa")}
                       />
                       {form.formState.errors.recipientCity && (
                         <p className="text-sm text-red-600 mt-1">
@@ -403,11 +405,11 @@ export default function EnhancedCheckout() {
                     </div>
 
                     <div>
-                      <Label htmlFor="recipientCountry">Country *</Label>
+                      <Label htmlFor="recipientCountry">{t("Country *")}</Label>
                       <Input
                         id="recipientCountry"
                         {...form.register('recipientCountry')}
-                        placeholder="Ethiopia"
+                        placeholder={t("Ethiopia")}
                       />
                       {form.formState.errors.recipientCountry && (
                         <p className="text-sm text-red-600 mt-1">
@@ -418,11 +420,11 @@ export default function EnhancedCheckout() {
                   </div>
 
                   <div>
-                    <Label htmlFor="recipientAddress">Complete Address *</Label>
+                    <Label htmlFor="recipientAddress">{t("Complete Address *")}</Label>
                     <Textarea
                       id="recipientAddress"
                       {...form.register('recipientAddress')}
-                      placeholder="House number, street name, area, landmarks..."
+                      placeholder={t("House number, street name, area, landmarks...")}
                       className="h-20"
                     />
                     {form.formState.errors.recipientAddress && (
@@ -433,11 +435,11 @@ export default function EnhancedCheckout() {
                   </div>
 
                   <div>
-                    <Label htmlFor="personalMessage">Personal Message (Optional)</Label>
+                    <Label htmlFor="personalMessage">{t("Personal Message (Optional)")}</Label>
                     <Textarea
                       id="personalMessage"
                       {...form.register('personalMessage')}
-                      placeholder="Add a heartfelt message for your loved one..."
+                      placeholder={t("Add a heartfelt message for your loved one...")}
                       className="h-24"
                     />
                   </div>
@@ -450,7 +452,7 @@ export default function EnhancedCheckout() {
                         {...form.register('giftWrap')}
                         className="rounded border-gray-300"
                       />
-                      <Label htmlFor="giftWrap">Add gift wrapping (+30 ETB)</Label>
+                      <Label htmlFor="giftWrap">{t("Add gift wrapping (+30 ETB)")}</Label>
                     </div>
 
                     <div className="flex items-center space-x-2">
@@ -460,7 +462,7 @@ export default function EnhancedCheckout() {
                         {...form.register('anonymousGift')}
                         className="rounded border-gray-300"
                       />
-                      <Label htmlFor="anonymousGift">Send as anonymous gift</Label>
+                      <Label htmlFor="anonymousGift">{t("Send as anonymous gift")}</Label>
                     </div>
                   </div>
 
@@ -474,7 +476,7 @@ export default function EnhancedCheckout() {
                     className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                     size="lg"
                   >
-                    Continue to Payment
+                    {t("Continue to Payment")}
                   </Button>
                 </form>
               </CardContent>
@@ -487,7 +489,7 @@ export default function EnhancedCheckout() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <CreditCard className="w-5 h-5" />
-                  <span>Payment Method</span>
+                  <span>{t("Payment Method")}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -504,7 +506,7 @@ export default function EnhancedCheckout() {
                     onClick={() => setCurrentStep(1)}
                     className="flex-1"
                   >
-                    Back to Details
+                    {t("Back to Details")}
                   </Button>
                 </div>
               </CardContent>

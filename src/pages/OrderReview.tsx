@@ -28,6 +28,7 @@ import {
   storePendingPurchase,
   type AnalyticsItem,
 } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 interface OrderTotals {
   subtotalMinor: number;
@@ -88,6 +89,7 @@ interface OrderDetails {
 }
 
 export default function OrderReview() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -108,8 +110,8 @@ export default function OrderReview() {
 
     if (!orderId) {
       toast({
-        title: "Error",
-        description: "No order ID provided",
+        title: t("Error"),
+        description: t("No order ID provided"),
         variant: "destructive",
       });
       navigate('/cart');
@@ -173,8 +175,8 @@ export default function OrderReview() {
     } catch (error: any) {
       console.error('Failed to fetch order details:', error);
       toast({
-        title: "Error",
-        description: "Failed to load order details. Please try again.",
+        title: t("Error"),
+        description: t("Failed to load order details. Please try again."),
         variant: "destructive",
       });
     } finally {
@@ -229,7 +231,7 @@ export default function OrderReview() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-ethiopian-gold mx-auto mb-4" />
-          <p className="text-gray-600">Loading order details...</p>
+          <p className="text-gray-600">{t("Loading order details...")}</p>
         </div>
       </div>
     );
@@ -239,8 +241,8 @@ export default function OrderReview() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Order not found</p>
-          <Button onClick={() => navigate('/cart')}>Back to Cart</Button>
+          <p className="text-gray-600 mb-4">{t("Order not found")}</p>
+          <Button onClick={() => navigate('/cart')}>{t("Back to Cart")}</Button>
         </div>
       </div>
     );
@@ -259,14 +261,14 @@ export default function OrderReview() {
             className="mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Checkout
+            {t("Back to Checkout")}
           </Button>
 
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Review Your Order</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t("Review Your Order")}</h1>
               <p className="text-gray-600 mt-1">
-                Please review your order details before payment
+                {t("Please review your order details before payment")}
               </p>
             </div>
           </div>
@@ -280,7 +282,7 @@ export default function OrderReview() {
               <CardHeader>
                 <CardTitle className="flex flex-col items-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
-                  Order Items ({order.lines.length})
+                  {t("Order Items (")}{order.lines.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -289,12 +291,12 @@ export default function OrderReview() {
                     <div className="flex-1">
                       <h4 className="font-medium">{line.productName}</h4>
                       <p className="text-sm text-gray-500">
-                        Qty: {line.quantity} × {formatPrice(fromMinor(line.unitAmountMinor), currency)}
+                        {t("Qty:")} {line.quantity} × {formatPrice(fromMinor(line.unitAmountMinor), currency)}
                       </p>
                       {line.giftWrapping && (
                         <div className="mt-1 flex items-center gap-1 text-xs text-green-600 font-medium">
                           <Gift className="h-3 w-3" />
-                          <span>Gift wrapped</span>
+                          <span>{t("Gift wrapped")}</span>
                         </div>
                       )}
                       {line.giftMessage && (
@@ -315,7 +317,7 @@ export default function OrderReview() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
-                    Shipping Address
+                    {t("Shipping Address")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -355,7 +357,7 @@ export default function OrderReview() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
-                    Billing Address
+                    {t("Billing Address")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -391,25 +393,25 @@ export default function OrderReview() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Gift className="h-5 w-5" />
-                    Gift Options
+                    {t("Gift Options")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {order.lines.some(l => l.giftWrapping) && (
                     <div className="flex items-center gap-2 mb-2">
                       <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>Gift wrapping selected for {order.lines.filter(l => l.giftWrapping).length} item(s)</span>
+                      <span>{t("Gift wrapping selected for")} {order.lines.filter(l => l.giftWrapping).length} {t("item(s)")}</span>
                     </div>
                   )}
                   {order.giftWrap && !order.lines.some(l => l.giftWrapping) && (
                     <div className="flex items-center gap-2 mb-2">
                       <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>Gift wrapping included</span>
+                      <span>{t("Gift wrapping included")}</span>
                     </div>
                   )}
                   {order.cardMessage && (
                     <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-500 mb-1 font-medium">Gift Message:</p>
+                      <p className="text-xs text-gray-500 mb-1 font-medium">{t("Gift Message:")}</p>
                       <p className="text-sm text-gray-600 italic">"{order.cardMessage}"</p>
                     </div>
                   )}
@@ -422,12 +424,12 @@ export default function OrderReview() {
           <div className="lg:col-span-2">
             <Card className="sticky top-8">
               <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+                <CardTitle>{t("Order Summary")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Subtotal */}
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-600">{t("Subtotal")}</span>
                   <span>{formatPrice(fromMinor(order.totals.subtotalMinor), currency)}</span>
                 </div>
 
@@ -436,7 +438,7 @@ export default function OrderReview() {
                   <div className="flex justify-between">
                     <span className="text-gray-600 flex items-center gap-1">
                       <Gift className="h-4 w-4" />
-                      Gift Wrapping
+                      {t("Gift Wrapping")}
                     </span>
                     <span>{formatPrice(fromMinor(order.totals.giftWrapMinor), currency)}</span>
                   </div>
@@ -446,7 +448,7 @@ export default function OrderReview() {
                 {order.totals.salesTaxApplied && order.totals.salesTaxMinor && order.totals.salesTaxMinor > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">
-                      Sales Tax ({((order.totals.salesTaxRate || 0) * 100).toFixed(2)}%)
+                      {t("Sales Tax (")}{((order.totals.salesTaxRate || 0) * 100).toFixed(2)}%)
                     </span>
                     <span>{formatPrice(fromMinor(order.totals.salesTaxMinor), currency)}</span>
                   </div>
@@ -456,10 +458,10 @@ export default function OrderReview() {
                 <div className="flex justify-between">
                   <span className="text-gray-600 flex items-center gap-1">
                     {/*<Truck className="h-4 w-4" />*/}
-                    Shipping
+                    {t("Shipping")}
                   </span>
                   {order.totals.shippingMinor === 0 ? (
-                    <span className="text-green-600">Free</span>
+                    <span className="text-green-600">{t("Free")}</span>
                   ) : (
                     <span>{formatPrice(fromMinor(order.totals.shippingMinor), currency)}</span>
                   )}
@@ -469,7 +471,7 @@ export default function OrderReview() {
                 {order.totals.serviceFeeMinor != null && order.totals.serviceFeeMinor > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">
-                      Service fee
+                      {t("Service fee")}
                       {order.totals.serviceFeeRate != null &&
                         ` (${(order.totals.serviceFeeRate * 100).toFixed(0)}%)`}
                     </span>
@@ -482,7 +484,7 @@ export default function OrderReview() {
                   <div className="flex justify-between text-green-600">
                     <span className="flex items-center gap-1">
                       <Tag className="h-4 w-4" />
-                      Discount
+                      {t("Discount")}
                     </span>
                     <span>-{formatPrice(fromMinor(order.totals.discountMinor), currency)}</span>
                   </div>
@@ -492,7 +494,7 @@ export default function OrderReview() {
 
                 {/* Total */}
                 <div className="flex justify-between text-xl font-bold">
-                  <span>Total</span>
+                  <span>{t("Total")}</span>
                   <span className="text-ethiopian-gold">
                     {formatPrice(fromMinor(order.totals.totalMinor), currency)}
                   </span>
@@ -522,17 +524,17 @@ export default function OrderReview() {
                     {paymentMethod === 'chapa' ? (
                       <span className="flex items-center gap-2">
                         <Smartphone className="h-4 w-4" />
-                        Pay with Chapa
+                        {t("Pay with Chapa")}
                       </span>
                     ) : paymentMethod === 'telebirr' ? (
                       <span className="flex items-center gap-2">
                         <Smartphone className="h-4 w-4" />
-                        Pay with TeleBirr
+                        {t("Pay with TeleBirr")}
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
                         <CreditCard className="h-4 w-4" />
-                        Pay with Stripe
+                        {t("Pay with Stripe")}
                       </span>
                     )}
                   </Badge>
@@ -547,12 +549,12 @@ export default function OrderReview() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Processing...
+                      {t("Processing...")}
                     </>
                   ) : (
                     <>
                       <CreditCard className="mr-2 h-5 w-5" />
-                      Proceed to Payment
+                      {t("Proceed to Payment")}
                     </>
                   )}
                 </Button>

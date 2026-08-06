@@ -1,6 +1,7 @@
 import { StarRating } from './StarRating';
 import { RatingSummary as RatingSummaryType } from '@/services/reviewService';
 import { cn } from '@/lib/utils';
+import { useTranslation } from "react-i18next";
 
 interface RatingSummaryProps {
   summary: RatingSummaryType;
@@ -72,10 +73,11 @@ interface CompactRatingProps {
 }
 
 export function CompactRating({ rating, reviewCount, size = 'sm', className }: CompactRatingProps) {
+  const { t } = useTranslation();
   if (reviewCount === 0) {
     return (
       <span className={cn('text-sm text-gray-400', className)}>
-        No reviews yet
+        {t("No reviews yet")}
       </span>
     );
   }

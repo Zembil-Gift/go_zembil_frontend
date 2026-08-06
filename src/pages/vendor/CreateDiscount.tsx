@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Save } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const discountSchema = z.object({
   code: z
@@ -77,6 +78,7 @@ interface DiscountFormProps {
 }
 
 export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabel }: DiscountFormProps) {
+  const { t } = useTranslation();
   const { isAuthenticated, user } = useAuth();
   const isVendor = user?.role?.toUpperCase() === 'VENDOR';
 
@@ -292,15 +294,15 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
       {/* Basic Info */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Basic Information</CardTitle>
+          <CardTitle className="text-lg">{t("Basic Information")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="code">Discount Code *</Label>
+              <Label htmlFor="code">{t("Discount Code *")}</Label>
               <Input
                 id="code"
-                placeholder="e.g. SUMMER20"
+                placeholder={t("e.g. SUMMER20")}
                 {...register('code')}
                 className="font-mono uppercase"
               />
@@ -308,14 +310,14 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
                 <p className="text-xs text-red-600">{errors.code.message}</p>
               )}
               <p className="text-xs text-muted-foreground">
-                Uppercase letters, numbers, underscores, and hyphens only
+                {t("Uppercase letters, numbers, underscores, and hyphens only")}
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">Discount Name *</Label>
+              <Label htmlFor="name">{t("Discount Name *")}</Label>
               <Input
                 id="name"
-                placeholder="e.g. Summer Sale 20% Off"
+                placeholder={t("e.g. Summer Sale 20% Off")}
                 {...register('name')}
               />
               {errors.name && (
@@ -324,10 +326,10 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t("Description")}</Label>
             <Textarea
               id="description"
-              placeholder="Describe this discount..."
+              placeholder={t("Describe this discount...")}
               rows={3}
               {...register('description')}
             />
@@ -341,12 +343,12 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
       {/* Discount Value */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Discount Value</CardTitle>
+          <CardTitle className="text-lg">{t("Discount Value")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Discount Type *</Label>
+              <Label>{t("Discount Type *")}</Label>
               <Select
                 value={discountType}
                 onValueChange={(val) => setValue('discountType', val as DiscountType)}
@@ -355,8 +357,8 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
-                  <SelectItem value="FIXED_AMOUNT">Fixed Amount</SelectItem>
+                  <SelectItem value="PERCENTAGE">{t("Percentage (%)")}</SelectItem>
+                  <SelectItem value="FIXED_AMOUNT">{t("Fixed Amount")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -364,7 +366,7 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
 
             {discountType === 'PERCENTAGE' ? (
               <div className="space-y-2">
-                <Label htmlFor="discountPercentage">Percentage *</Label>
+                <Label htmlFor="discountPercentage">{t("Percentage *")}</Label>
                 <div className="relative">
                   <Input
                     id="discountPercentage"
@@ -383,7 +385,7 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="fixedAmount">Fixed Amount ({vendorCurrency}) *</Label>
+                <Label htmlFor="fixedAmount">{t("Fixed Amount (")}{vendorCurrency}) *</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{currencySymbol}</span>
                   <Input
@@ -399,13 +401,13 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
                 {errors.fixedAmount && (
                   <p className="text-xs text-red-600">{errors.fixedAmount.message}</p>
                 )}
-                <p className="text-xs text-muted-foreground">Enter amount in {vendorCurrency}.</p>
+                <p className="text-xs text-muted-foreground">{t("Enter amount in")} {vendorCurrency}.</p>
               </div>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="maxDiscountAmount">Max Discount Cap ({vendorCurrency})</Label>
+            <Label htmlFor="maxDiscountAmount">{t("Max Discount Cap (")}{vendorCurrency})</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{currencySymbol}</span>
               <Input
@@ -413,7 +415,7 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="Optional - max discount amount"
+                placeholder={t("Optional - max discount amount")}
                 className="pl-12"
                 {...register('maxDiscountAmount', { valueAsNumber: true })}
               />
@@ -421,7 +423,7 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
             {errors.maxDiscountAmount && (
               <p className="text-xs text-red-600">{errors.maxDiscountAmount.message}</p>
             )}
-            <p className="text-xs text-muted-foreground">Leave empty for no cap. Enter in {vendorCurrency}.</p>
+            <p className="text-xs text-muted-foreground">{t("Leave empty for no cap. Enter in")} {vendorCurrency}.</p>
           </div>
         </CardContent>
       </Card>
@@ -429,11 +431,11 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
       {/* Applicability */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Applicability</CardTitle>
+          <CardTitle className="text-lg">{t("Applicability")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Applies To *</Label>
+            <Label>{t("Applies To *")}</Label>
             <Select
               value={appliesTo}
               onValueChange={(val) => setValue('appliesTo', val as AppliesTo)}
@@ -454,9 +456,9 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
           {/* Product selection */}
           {appliesTo === 'SPECIFIC_PRODUCTS' && (
             <div className="space-y-2">
-              <Label>Select Products</Label>
+              <Label>{t("Select Products")}</Label>
               <Input
-                placeholder="Search your products..."
+                placeholder={t("Search your products...")}
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
               />
@@ -503,9 +505,9 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
           {/* Category selection */}
           {appliesTo === 'SPECIFIC_CATEGORIES' && (
             <div className="space-y-2">
-              <Label>Select Categories</Label>
+              <Label>{t("Select Categories")}</Label>
               <Input
-                placeholder="Search categories..."
+                placeholder={t("Search categories...")}
                 value={categorySearch}
                 onChange={(e) => setCategorySearch(e.target.value)}
               />
@@ -552,9 +554,9 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
           {/* Service selection */}
           {appliesTo === 'SPECIFIC_SERVICES' && (
             <div className="space-y-2">
-              <Label>Select Services</Label>
+              <Label>{t("Select Services")}</Label>
               <Input
-                placeholder="Search your services..."
+                placeholder={t("Search your services...")}
                 value={serviceSearch}
                 onChange={(e) => setServiceSearch(e.target.value)}
               />
@@ -601,9 +603,9 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
           {/* Custom order template selection */}
           {appliesTo === 'SPECIFIC_CUSTOM_ORDER_TEMPLATES' && (
             <div className="space-y-2">
-              <Label>Select Custom Order Templates</Label>
+              <Label>{t("Select Custom Order Templates")}</Label>
               <Input
-                placeholder="Search your templates..."
+                placeholder={t("Search your templates...")}
                 value={templateSearch}
                 onChange={(e) => setTemplateSearch(e.target.value)}
               />
@@ -648,7 +650,7 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="minOrderAmount">Minimum Order Amount ({vendorCurrency})</Label>
+            <Label htmlFor="minOrderAmount">{t("Minimum Order Amount (")}{vendorCurrency})</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{currencySymbol}</span>
               <Input
@@ -656,7 +658,7 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="Optional - minimum order to qualify"
+                placeholder={t("Optional - minimum order to qualify")}
                 className="pl-12"
                 {...register('minOrderAmount', { valueAsNumber: true })}
               />
@@ -664,7 +666,7 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
             {errors.minOrderAmount && (
               <p className="text-xs text-red-600">{errors.minOrderAmount.message}</p>
             )}
-            <p className="text-xs text-muted-foreground">Leave empty for no minimum. Enter in {vendorCurrency}.</p>
+            <p className="text-xs text-muted-foreground">{t("Leave empty for no minimum. Enter in")} {vendorCurrency}.</p>
           </div>
         </CardContent>
       </Card>
@@ -672,57 +674,57 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
       {/* Usage Limits & Validity */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Usage Limits & Validity</CardTitle>
+          <CardTitle className="text-lg">{t("Usage Limits & Validity")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="usageLimit">Total Usage Limit</Label>
+              <Label htmlFor="usageLimit">{t("Total Usage Limit")}</Label>
               <Input
                 id="usageLimit"
                 type="number"
                 min="1"
-                placeholder="Optional - total times code can be used"
+                placeholder={t("Optional - total times code can be used")}
                 {...register('usageLimit', { valueAsNumber: true })}
               />
               {errors.usageLimit && (
                 <p className="text-xs text-red-600">{errors.usageLimit.message}</p>
               )}
-              <p className="text-xs text-muted-foreground">Leave empty for unlimited</p>
+              <p className="text-xs text-muted-foreground">{t("Leave empty for unlimited")}</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="perUserLimit">Per User Limit</Label>
+              <Label htmlFor="perUserLimit">{t("Per User Limit")}</Label>
               <Input
                 id="perUserLimit"
                 type="number"
                 min="1"
-                placeholder="Optional - uses per customer"
+                placeholder={t("Optional - uses per customer")}
                 {...register('perUserLimit', { valueAsNumber: true })}
               />
               {errors.perUserLimit && (
                 <p className="text-xs text-red-600">{errors.perUserLimit.message}</p>
               )}
-              <p className="text-xs text-muted-foreground">Leave empty for unlimited per user</p>
+              <p className="text-xs text-muted-foreground">{t("Leave empty for unlimited per user")}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="validFrom">Valid From</Label>
+              <Label htmlFor="validFrom">{t("Valid From")}</Label>
               <Input
                 id="validFrom"
                 type="datetime-local"
                 {...register('validFrom')}
               />
-              <p className="text-xs text-muted-foreground">Leave empty for immediate start</p>
+              <p className="text-xs text-muted-foreground">{t("Leave empty for immediate start")}</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="validUntil">Valid Until</Label>
+              <Label htmlFor="validUntil">{t("Valid Until")}</Label>
               <Input
                 id="validUntil"
                 type="datetime-local"
                 {...register('validUntil')}
               />
-              <p className="text-xs text-muted-foreground">Leave empty for no expiry</p>
+              <p className="text-xs text-muted-foreground">{t("Leave empty for no expiry")}</p>
             </div>
           </div>
         </CardContent>
@@ -731,7 +733,7 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
       {/* Submit */}
       <div className="flex justify-end gap-3">
         <Button type="button" variant="outline" onClick={() => window.history.back()}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <Button type="submit" disabled={isSubmitting}>
           <Save className="h-4 w-4 mr-2" />
@@ -743,6 +745,7 @@ export function DiscountForm({ defaultValues, onSubmit, isSubmitting, submitLabe
 }
 
 export default function CreateDiscount() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -750,12 +753,12 @@ export default function CreateDiscount() {
   const createMutation = useMutation({
     mutationFn: (data: CreateDiscountRequest) => discountService.createDiscount(data),
     onSuccess: () => {
-      toast({ title: "Discount created", description: "Your new discount code is now active." });
+      toast({ title: t("Discount created"), description: t("Your new discount code is now active.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'discounts'] });
       navigate('/vendor/discounts');
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -766,8 +769,8 @@ export default function CreateDiscount() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h2 className="text-xl font-semibold">Create Discount</h2>
-          <p className="text-sm text-muted-foreground">Set up a new discount code for your products, services, or custom orders</p>
+          <h2 className="text-xl font-semibold">{t("Create Discount")}</h2>
+          <p className="text-sm text-muted-foreground">{t("Set up a new discount code for your products, services, or custom orders")}</p>
         </div>
       </div>
 

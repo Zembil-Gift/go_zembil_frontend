@@ -42,8 +42,10 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { trackViewItem } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 export default function EventDetail() {
+  const { t } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -156,8 +158,8 @@ export default function EventDetail() {
   const handleProceedToCheckout = () => {
     if (!isAPIEvent || getTotalTickets() === 0) {
       toast({
-        title: "No tickets selected",
-        description: "Please select at least one ticket to proceed.",
+        title: t("No tickets selected"),
+        description: t("Please select at least one ticket to proceed."),
         variant: "destructive",
       });
       return;
@@ -221,7 +223,7 @@ export default function EventDetail() {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-eagle-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="font-light text-eagle-green">
-            Loading event details...
+            {t("Loading event details...")}
           </p>
         </div>
       </div>
@@ -233,16 +235,16 @@ export default function EventDetail() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-eagle-green mb-2">
-            Event Not Found
+            {t("Event Not Found")}
           </h2>
           <p className="font-light text-eagle-green/70 mb-4">
-            The event you're looking for doesn't exist.
+            {t("The event you're looking for doesn't exist.")}
           </p>
           <Button
             onClick={() => navigate("/events")}
             className="bg-eagle-green hover:bg-viridian-green text-white"
           >
-            Browse All Events
+            {t("Browse All Events")}
           </Button>
         </div>
       </div>
@@ -408,7 +410,7 @@ export default function EventDetail() {
           className="mb-6 text-eagle-green hover:text-viridian-green hover:bg-june-bud/10"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Events
+          {t("Back to Events")}
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -473,7 +475,7 @@ export default function EventDetail() {
                 {isAPIEvent && (apiEvent as EventResponse).isFeatured && (
                   <div className="absolute top-4 left-4">
                     <Badge className="font-bold bg-yellow/20 text-eagle-green border-yellow">
-                      Featured
+                      {t("Featured")}
                     </Badge>
                   </div>
                 )}
@@ -499,7 +501,7 @@ export default function EventDetail() {
                 {/* Price */}
                 <div className="absolute bottom-4 right-4">
                   <Badge className="bg-eagle-green text-white border-none font-bold text-lg px-3 py-1">
-                    From{" "}
+                    {t("From")}{" "}
                     {eventOrderService.formatCurrency(minPrice, baseCurrency)}
                   </Badge>
                 </div>
@@ -566,7 +568,7 @@ export default function EventDetail() {
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4 text-viridian-green" />
                         <span className="font-light text-eagle-green">
-                          Your time: {userTime}
+                          {t("Your time:")} {userTime}
                           {endDateFormatted?.userTime && (
                             <> — {endDateFormatted.userTime}</>
                           )}
@@ -605,7 +607,7 @@ export default function EventDetail() {
               <Card>
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green">
-                    About This Event
+                    {t("About This Event")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -624,7 +626,7 @@ export default function EventDetail() {
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
                 <h3 className="font-bold text-eagle-green mb-3">
-                  Event Organizer
+                  {t("Event Organizer")}
                 </h3>
                 <VendorCard vendor={vendorProfile} />
               </motion.div>
@@ -641,7 +643,7 @@ export default function EventDetail() {
                   <CardHeader>
                     <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                       <Ticket className="h-5 w-5" />
-                      Select Your Tickets
+                      {t("Select Your Tickets")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -669,7 +671,7 @@ export default function EventDetail() {
                                     </h4>
                                     {!availability.available ? (
                                       <Badge variant="secondary">
-                                        Sold Out
+                                        {t("Sold Out")}
                                       </Badge>
                                     ) : (
                                       ticket.availableCount <= 10 && (
@@ -694,7 +696,7 @@ export default function EventDetail() {
                                       )}
                                     </p>
                                     <p className="font-light text-eagle-green/70 text-sm">
-                                      {ticket.availableCount} available
+                                      {ticket.availableCount} {t("available")}
                                     </p>
                                   </div>
 
@@ -761,7 +763,7 @@ export default function EventDetail() {
                   <CardHeader className="bg-gradient-to-r from-june-bud/10 to-white">
                     <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                       <ShoppingCart className="h-5 w-5" />
-                      Order Summary
+                      {t("Order Summary")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-6 space-y-4">
@@ -769,7 +771,7 @@ export default function EventDetail() {
                       <div className="text-center py-8">
                         <Ticket className="h-12 w-12 mx-auto text-eagle-green/30 mb-2" />
                         <p className="font-light text-eagle-green/70">
-                          Select tickets from the list to continue
+                          {t("Select tickets from the list to continue")}
                         </p>
                       </div>
                     ) : (
@@ -809,7 +811,7 @@ export default function EventDetail() {
                         <div className="bg-june-bud/10 rounded-lg p-4">
                           <div className="flex justify-between items-center">
                             <span className="font-light text-eagle-green">
-                              Total ({getTotalTickets()} tickets)
+                              {t("Total (")}{getTotalTickets()} {t("tickets)")}
                             </span>
                             <span className="font-bold text-eagle-green text-xl">
                               {eventOrderService.formatCurrency(
@@ -825,7 +827,7 @@ export default function EventDetail() {
                           onClick={handleProceedToCheckout}
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />
-                          Continue to Checkout
+                          {t("Continue to Checkout")}
                         </Button>
                       </>
                     )}

@@ -28,8 +28,10 @@ import {
   Timer,
 } from "lucide-react";
 import { deliveryService, OrderReadyForDeliveryDto } from "@/services/deliveryService";
+import { useTranslation } from "react-i18next";
 
 export default function AvailableOrders() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
@@ -46,8 +48,8 @@ export default function AvailableOrders() {
     mutationFn: (orderId: number) => deliveryService.selfAssignOrder(orderId),
     onSuccess: () => {
       toast({
-        title: "Order Accepted!",
-        description: "You have successfully accepted this order for delivery.",
+        title: t("Order Accepted!"),
+        description: t("You have successfully accepted this order for delivery."),
       });
       setShowConfirmDialog(false);
       setSelectedOrder(null);
@@ -57,7 +59,7 @@ export default function AvailableOrders() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to Accept Order",
+        title: t("Failed to Accept Order"),
         description: error.message || "This order may have been taken by another driver.",
         variant: "destructive",
       });
@@ -110,9 +112,9 @@ export default function AvailableOrders() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Available Orders</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t("Available Orders")}</h1>
           <p className="text-gray-500">
-            Accept orders ready for delivery
+            {t("Accept orders ready for delivery")}
           </p>
         </div>
         <Button
@@ -121,7 +123,7 @@ export default function AvailableOrders() {
           disabled={isRefetching}
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? "animate-spin" : ""}`} />
-          Refresh
+          {t("Refresh")}
         </Button>
       </div>
 
@@ -134,9 +136,9 @@ export default function AvailableOrders() {
           <CardContent className="py-16">
             <div className="text-center text-gray-500">
               <Package className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg font-medium">No Available Orders</p>
+              <p className="text-lg font-medium">{t("No Available Orders")}</p>
               <p className="mt-1">
-                Check back later for new orders to accept
+                {t("Check back later for new orders to accept")}
               </p>
             </div>
           </CardContent>
@@ -157,7 +159,7 @@ export default function AvailableOrders() {
                           {order.orderNumber}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          {order.itemCount} item{order.itemCount !== 1 ? "s" : ""}
+                          {order.itemCount} {t("item")}{order.itemCount !== 1 ? "s" : ""}
                         </p>
                       </div>
                       <Badge variant="secondary" className="ml-2">
@@ -171,7 +173,7 @@ export default function AvailableOrders() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <DollarSign className="h-5 w-5 text-green-600" />
-                            <span className="text-sm font-medium text-green-800">Your Delivery Earnings</span>
+                            <span className="text-sm font-medium text-green-800">{t("Your Delivery Earnings")}</span>
                           </div>
                           <span className="text-lg font-bold text-green-700">
                             {order.deliveryFeeCurrency === 'ETB' ? 'ETB ' : '$'}
@@ -212,7 +214,7 @@ export default function AvailableOrders() {
 
                     {order.shippingAddress && (
                       <p className="text-sm text-gray-500 mt-2">
-                        <span className="font-medium">Address:</span> {order.shippingAddress}
+                        <span className="font-medium">{t("Address:")}</span> {order.shippingAddress}
                       </p>
                     )}
 
@@ -226,7 +228,7 @@ export default function AvailableOrders() {
                         onClick={() => window.open(getMapsUrl(order), "_blank")}
                       >
                         <Navigation className="h-4 w-4 mr-2" />
-                        View Location on Map
+                        {t("View Location on Map")}
                       </Button>
                     ) : null}
                   </div>
@@ -242,7 +244,7 @@ export default function AvailableOrders() {
                       ) : (
                         <CheckCircle className="h-4 w-4 mr-2" />
                       )}
-                      Accept Order
+                      {t("Accept Order")}
                     </Button>
                   </div>
                 </div>
@@ -261,10 +263,10 @@ export default function AvailableOrders() {
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
           >
-            Previous
+            {t("Previous")}
           </Button>
           <span className="text-sm text-gray-500">
-            Page {page + 1} of {totalPages}
+            {t("Page")} {page + 1} of {totalPages}
           </span>
           <Button
             variant="outline"
@@ -272,7 +274,7 @@ export default function AvailableOrders() {
             onClick={() => setPage((p) => p + 1)}
             disabled={page >= totalPages - 1}
           >
-            Next
+            {t("Next")}
           </Button>
         </div>
       )}
@@ -281,28 +283,28 @@ export default function AvailableOrders() {
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Accept this order?</AlertDialogTitle>
+            <AlertDialogTitle>{t("Accept this order?")}</AlertDialogTitle>
             <AlertDialogDescription>
               {selectedOrder && (
                 <div className="space-y-2 mt-2">
                   <p>
-                    <strong>Order:</strong> {selectedOrder.orderNumber}
+                    <strong>{t("Order:")}</strong> {selectedOrder.orderNumber}
                   </p>
                   <p>
-                    <strong>Customer:</strong> {selectedOrder.customerName || "Unknown"}
+                    <strong>{t("Customer:")}</strong> {selectedOrder.customerName || "Unknown"}
                   </p>
                   <p>
-                    <strong>Delivery to:</strong> {selectedOrder.shippingCity || "Unknown"}
+                    <strong>{t("Delivery to:")}</strong> {selectedOrder.shippingCity || "Unknown"}
                   </p>
                   {selectedOrder.estimatedDeliveryFee && (
                     <div className="mt-3 p-3 bg-green-50 rounded-lg">
                       <p className="text-green-800 font-semibold">
-                        Delivery Earnings: {selectedOrder.deliveryFeeCurrency === 'ETB' ? 'ETB ' : '$'}
+                        {t("Delivery Earnings:")} {selectedOrder.deliveryFeeCurrency === 'ETB' ? 'ETB ' : '$'}
                         {Number(selectedOrder.estimatedDeliveryFee).toFixed(2)}
                       </p>
                       {selectedOrder.estimatedDistanceText && (
                         <p className="text-sm text-green-600">
-                          Distance: {selectedOrder.estimatedDistanceText} • Est. {selectedOrder.estimatedDurationText}
+                          {t("Distance:")} {selectedOrder.estimatedDistanceText} {t("• Est.")} {selectedOrder.estimatedDurationText}
                         </p>
                       )}
                     </div>
@@ -310,13 +312,13 @@ export default function AvailableOrders() {
                 </div>
               )}
               <p className="mt-4 text-amber-600">
-                Once accepted, you'll be responsible for picking up and delivering this order.
+                {t("Once accepted, you'll be responsible for picking up and delivering this order.")}
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={acceptOrderMutation.isPending}>
-              Cancel
+              {t("Cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmAccept}
@@ -326,7 +328,7 @@ export default function AvailableOrders() {
               {acceptOrderMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : null}
-              Yes, Accept Order
+              {t("Yes, Accept Order")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

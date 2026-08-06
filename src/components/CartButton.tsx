@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ShoppingCart, Plus, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface CartButtonProps {
   productId: number;
@@ -22,6 +23,7 @@ export function CartButton({
   className,
   onClick,
 }: CartButtonProps) {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { addToCart, isAddingToCart } = useCart();
   const [, navigate] = useLocation();
@@ -67,12 +69,12 @@ export function CartButton({
       {isAddingToCart ? (
         <>
           <Loader2 className="h-4 w-4 animate-spin" />
-          Adding...
+          {t("Adding...")}
         </>
       ) : (
         <>
           <ShoppingCart className="h-4 w-4" />
-          <span className="hidden sm:inline">Add to Cart</span>
+          <span className="hidden sm:inline">{t("Add to Cart")}</span>
           <span className="sm:hidden">
             <Plus className="h-3 w-3" />
           </span>

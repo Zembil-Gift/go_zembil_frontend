@@ -36,17 +36,19 @@ import { ExternalLink } from "lucide-react";
 import HeroSection from "@/components/landing/HeroSection";
 import CategoryCarousel from "@/components/landing/CategoryCarousel";
 import TrendingGiftsSection from "@/components/landing/TrendingGiftsSection";
-import GiftRecipientsSection from "@/components/landing/GiftRecipientsSection";
-import DiasporaSection from "@/components/landing/DiasporaSection";
+import ShopGridSection from "@/components/landing/ShopGridSection";
+import TrustStrip from "@/components/landing/TrustStrip";
+import ShopByRecipient from "@/components/landing/ShopByRecipient";
 import FeaturesSection from "@/components/landing/FeaturesSection";
+import SectionHeader from "@/components/landing/SectionHeader";
 import EventCard from "@/components/EventCard";
 import ServiceCard from "@/components/ServiceCard";
-import SectionTransition from "@/components/landing/SectionTransition";
 import CampaignBanner from "@/components/landing/CampaignBanner";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
-// import TestimonialsSection from "@/components/landing/TestimonialsSection";
+import { useTranslation } from "react-i18next";
 
 export default function Landing() {
+  const { t } = useTranslation();
   const location = useLocation();
   const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
@@ -379,7 +381,7 @@ export default function Landing() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Badge className="bg-june-bud/20 text-eagle-green border-june-bud/30">
-                    {searchCounts.total} results
+                    {searchCounts.total} {t("results")}
                   </Badge>
                 </div>
                 <Button
@@ -388,14 +390,13 @@ export default function Landing() {
                   onClick={clearCombinedSearch}
                   className="text-charcoal border-charcoal/30 hover:text-white"
                 >
-                  Clear
+                  {t("Clear")}
                 </Button>
               </div>
 
               {normalizedSearch.length < 2 && (
                 <p className="text-sm text-eagle-green/70">
-                  Type at least 2 characters and press Enter (or click search)
-                  to search products, services, events, and custom orders.
+                  {t("Type at least 2 characters and press Enter (or click search) to search products, services, events, and custom orders.")}
                 </p>
               )}
 
@@ -419,7 +420,7 @@ export default function Landing() {
                 !isSearchingCombined &&
                 combinedSearchError && (
                   <p className="text-sm text-red-600">
-                    Something went wrong while searching. Please try again.
+                    {t("Something went wrong while searching. Please try again.")}
                   </p>
                 )}
 
@@ -429,7 +430,7 @@ export default function Landing() {
                   <div className="space-y-4">
                     {searchCounts.total === 0 && (
                       <div className="rounded-lg border border-dashed border-eagle-green/20 p-4 text-center text-eagle-green/70 text-sm">
-                        No matches found. Try another keyword.
+                        {t("No matches found. Try another keyword.")}
                       </div>
                     )}
 
@@ -455,7 +456,7 @@ export default function Landing() {
                                   {product.name}
                                 </p>
                                 <p className="text-xs text-eagle-green/60">
-                                  Shop
+                                  {t("Shop")}
                                 </p>
                               </div>
                               <ExternalLink className="h-4 w-4 text-eagle-green/40 ml-auto" />
@@ -480,7 +481,7 @@ export default function Landing() {
                                     `Service #${service.id}`}
                                 </p>
                                 <p className="text-xs text-eagle-green/60">
-                                  Services
+                                  {t("Services")}
                                 </p>
                               </div>
                               <ExternalLink className="h-4 w-4 text-eagle-green/40 ml-auto" />
@@ -508,7 +509,7 @@ export default function Landing() {
                                   {event.title}
                                 </p>
                                 <p className="text-xs text-eagle-green/60">
-                                  Events
+                                  {t("Events")}
                                 </p>
                               </div>
                               <ExternalLink className="h-4 w-4 text-eagle-green/40 ml-auto" />
@@ -531,7 +532,7 @@ export default function Landing() {
                                   {template.name}
                                 </p>
                                 <p className="text-xs text-eagle-green/60">
-                                  Custom Orders
+                                  {t("Custom Orders")}
                                 </p>
                               </div>
                               <ExternalLink className="h-4 w-4 text-eagle-green/40 ml-auto" />
@@ -547,6 +548,8 @@ export default function Landing() {
         }
       />
 
+      <TrustStrip />
+
       <CampaignBanner />
 
       <CategoryCarousel
@@ -554,36 +557,29 @@ export default function Landing() {
         onCategoryChange={setActiveCategory}
       />
 
+      <ShopByRecipient />
+
       {/* Ad Banner Section - Enhanced UI */}
       {allAds.length > 0 && (
         <>
-          <SectionTransition
-            variant="gradient"
-            fromColor="from-light-cream"
-            toColor="to-gray-50"
-            className="mt-8"
-          />
-          <section className="py-20 relative overflow-hidden bg-gray-50">
+          <section className="py-10 relative overflow-hidden bg-gray-50">
             {/* Decorative background elements - Extremely subtle */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
               <div className="absolute top-[-10%] right-[-5%] w-[30%] h-[30%] rounded-full bg-ethiopian-gold/2 blur-[100px]"></div>
               <div className="absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-viridian-green/2 blur-[120px]"></div>
             </div>
 
-            <div className="container mx-auto px-4 relative z-10">
-              <div className="flex items-center justify-center gap-3 mb-10">
-                <span className="h-[1px] w-16 bg-gray-200"></span>
-                <span className="text-xs font-bold tracking-[0.25em] text-gray-400 uppercase">
-                  Sponsored
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="flex items-baseline gap-3 mb-5">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-charcoal tracking-tight">
+                  {t("Featured Highlights")}
+                </h2>
+                <span className="text-xs font-medium tracking-wide text-gray-400 uppercase">
+                  {t("Sponsored")}
                 </span>
-                <span className="h-[1px] w-16 bg-gray-200"></span>
               </div>
 
-              <h2 className="text-3xl md:text-5xl font-extrabold text-center mb-16 text-charcoal tracking-tight">
-                Featured Highlights
-              </h2>
-
-              <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {allAds.slice(0, 3).map((ad) => (
                   <div
                     key={`${ad.type}-${ad.id}`}
@@ -640,7 +636,7 @@ export default function Landing() {
                                 />
                               </div>
                               <span className="text-xs font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">
-                                View &rarr;
+                                {t("View →")}
                               </span>
                             </div>
                           </div>
@@ -654,7 +650,7 @@ export default function Landing() {
                           <div className="relative h-64 overflow-hidden">
                             <div className="absolute top-4 left-4 z-20">
                               <span className="px-3 py-1 text-[10px] font-bold tracking-widest text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
-                                Event
+                                {t("Event")}
                               </span>
                             </div>
                             <img
@@ -682,7 +678,7 @@ export default function Landing() {
                             </h3>
                             <div className="mt-auto pt-4 border-t border-gray-100">
                               <span className="inline-block px-2 py-1 bg-ethiopian-gold/10 text-ethiopian-gold rounded text-xs font-bold tracking-wide">
-                                GET TICKETS
+                                {t("GET TICKETS")}
                               </span>
                             </div>
                           </div>
@@ -696,7 +692,7 @@ export default function Landing() {
                           <div className="relative h-64 overflow-hidden">
                             <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
                               <span className="px-3 py-1 text-[10px] font-bold tracking-widest text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
-                                Service
+                                {t("Service")}
                               </span>
                               {ad.data.activeDiscount && (
                                 <DiscountBadge
@@ -730,7 +726,7 @@ export default function Landing() {
                                 />
                               </div>
                               <span className="text-xs font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">
-                                Book Now &rarr;
+                                {t("Book Now →")}
                               </span>
                             </div>
                           </div>
@@ -752,7 +748,7 @@ export default function Landing() {
                                 <div className="relative h-64 overflow-hidden">
                                   <div className="absolute top-4 left-4 z-20">
                                     <span className="px-3 py-1 text-[10px] font-bold tracking-widest text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
-                                      Package
+                                      {t("Package")}
                                     </span>
                                   </div>
                                   <img
@@ -777,7 +773,7 @@ export default function Landing() {
                                       />
                                     </div>
                                     <span className="text-xs font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">
-                                      View &rarr;
+                                      {t("View →")}
                                     </span>
                                   </div>
                                 </div>
@@ -795,29 +791,18 @@ export default function Landing() {
         </>
       )}
 
-      {/* Transition: Ads to Products */}
-      {allAds.length > 0 && trendingGifts.length > 0 && (
-        <div className="relative">
-          <SectionTransition
-            variant="wave"
-            fromColor="bg-gray-50"
-            toColor="bg-light-cream"
-          />
-        </div>
-      )}
-
       {/* Featured Products Section */}
       {isLoadingProducts ? (
-        <div className="py-24 text-center">
+        <div className="py-16 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ethiopian-gold mx-auto"></div>
           <p className="mt-6 text-gray-500 font-medium tracking-wide">
-            Curating collections...
+            {t("Curating collections...")}
           </p>
         </div>
       ) : productsError ? (
         <div className="py-24 text-center">
           <p className="text-red-500 font-medium">
-            Unable to load collections at this time.
+            {t("Unable to load collections at this time.")}
           </p>
         </div>
       ) : trendingGifts.length > 0 ? (
@@ -830,16 +815,11 @@ export default function Landing() {
 
       {/* Trending Packages Section */}
       {trendingPackages.length > 0 && (
-        <section className="py-20 bg-white relative">
+        <section className="py-10 bg-white relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-center mb-12">
-              <h2 className="text-4xl font-extrabold text-charcoal mb-4">
-                Trending Packages
-              </h2>
-              <div className="w-16 h-1 bg-ethiopian-gold rounded-full"></div>
-            </div>
+            <SectionHeader title={t("Trending Packages")} href="/packages" />
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
               {trendingPackages.map((pkg: ProductPackageResponse) => {
                 const packageImage =
                   pkg.images?.[0] ||
@@ -851,11 +831,12 @@ export default function Landing() {
                     href={`/packages/${pkg.id}`}
                     className="group block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300"
                   >
-                    <div className="h-48 bg-gray-100 overflow-hidden">
+                    <div className="aspect-square bg-gray-100 overflow-hidden">
                       {packageImage ? (
                         <img
                           src={packageImage}
                           alt={pkg.name}
+                          loading="lazy"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
@@ -864,11 +845,11 @@ export default function Landing() {
                         </div>
                       )}
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-charcoal line-clamp-2 mb-1">
+                    <div className="p-3">
+                      <h3 className="font-bold text-sm text-charcoal line-clamp-2">
                         {pkg.name}
                       </h3>
-                      <p className="text-sm text-gray-600 line-clamp-1">
+                      <p className="text-xs text-gray-600 line-clamp-1 mt-0.5">
                         {pkg.vendorName || "Zembil"}
                       </p>
                     </div>
@@ -880,86 +861,38 @@ export default function Landing() {
         </section>
       )}
 
-      {/* Transition: Products to Events */}
-      {(trendingGifts.length > 0 || trendingPackages.length > 0) &&
-        featuredEventsResponse?.content &&
-        featuredEventsResponse.content.length > 0 && (
-          <SectionTransition
-            variant="gradient"
-            fromColor="from-light-cream"
-            toColor="to-white"
-          />
-        )}
-
       {/* Featured Events Section */}
       {featuredEventsResponse?.content &&
         featuredEventsResponse.content.length > 0 && (
-          <section className="py-20 bg-white relative">
+          <section className="py-10 bg-white relative">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex flex-col items-center mb-12">
-                <h2 className="text-4xl font-extrabold text-charcoal mb-4">
-                  Upcoming Events
-                </h2>
-                <div className="w-16 h-1 bg-ethiopian-gold rounded-full"></div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+              <SectionHeader title={t("Upcoming Events")} href="/events" />
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                 {featuredEventsResponse.content.map(
                   (event: EventResponse, index: number) => (
-                    <div
-                      key={event.id}
-                      className="hover:-translate-y-2 transition-transform duration-300"
-                    >
-                      <EventCard event={event} index={index} />
-                    </div>
+                    <EventCard key={event.id} event={event} index={index} />
                   )
                 )}
               </div>
             </div>
           </section>
-        )}
-
-      {/* Transition: Events to Services */}
-      {featuredEventsResponse?.content &&
-        featuredEventsResponse.content.length > 0 &&
-        featuredServicesResponse?.content &&
-        featuredServicesResponse.content.length > 0 && (
-          <div className="relative">
-            <SectionTransition
-              variant="curve"
-              fromColor="bg-white"
-              toColor="bg-light-cream"
-            />
-          </div>
         )}
 
       {/* Featured Services Section */}
       {featuredServicesResponse?.content &&
         featuredServicesResponse.content.length > 0 && (
-          <section className="py-20 bg-light-cream relative">
-            {/* Subtle texture overlay */}
-            <div className="absolute inset-0 opacity-[0.4] mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none"></div>
-
+          <section className="py-10 bg-light-cream relative">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-              <div className="flex flex-col items-center mb-12">
-                <h2 className="text-4xl font-extrabold text-charcoal mb-4">
-                  Featured Services
-                </h2>
-                <div className="w-16 h-1 bg-ethiopian-gold rounded-full"></div>
-              </div>
+              <SectionHeader title={t("Featured Services")} href="/services" />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                 {featuredServicesResponse.content.map(
                   (service: ServiceResponse, index: number) => (
-                    <div
+                    <ServiceCard
                       key={service.id}
-                      className="hover:-translate-y-2 transition-transform duration-300"
-                    >
-                      <ServiceCard
-                        key={service.id}
-                        service={service}
-                        index={index}
-                      />
-                    </div>
+                      service={service}
+                      index={index}
+                    />
                   )
                 )}
               </div>
@@ -967,21 +900,10 @@ export default function Landing() {
           </section>
         )}
 
-      {/* Transition: Services to Gift Recipients */}
-      {featuredServicesResponse?.content &&
-        featuredServicesResponse.content.length > 0 && (
-          <SectionTransition variant="divider" />
-        )}
-
-      <GiftRecipientsSection />
-
-      <DiasporaSection />
-
-      {/* <SubscriptionBanner /> */}
-
       <FeaturesSection />
 
-      {/* <TestimonialsSection /> */}
+      {/* The page ends in the shop itself: browsable, filterable, paged */}
+      <ShopGridSection />
 
       {/* <LiveChatButton /> */}
     </div>

@@ -72,6 +72,7 @@ import {
   LocationPicker,
   type LocationData,
 } from "@/components/maps";
+import { useTranslation } from "react-i18next";
 
 const VENDOR_TYPES = [
   { value: "PRODUCT", label: "Product Vendor", description: "I sell physical goods that require delivery" },
@@ -113,6 +114,7 @@ const partnerSignupSchema = z.object({
 type PartnerSignupForm = z.infer<typeof partnerSignupSchema>;
 
 export default function PartnerSignup() {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState<"form" | "terms">("form");
   const [termsData, setTermsData] = useState<MouTermsResponse | null>(null);
   const [isLoadingTerms, setIsLoadingTerms] = useState(false);
@@ -165,8 +167,8 @@ export default function PartnerSignup() {
     },
     onSuccess: () => {
       toast({
-        title: "Application Submitted!",
-        description: "Your partnership application has been received. We'll review it and get back to you.",
+        title: t("Application Submitted!"),
+        description: t("Your partnership application has been received. We'll review it and get back to you."),
       });
       form.reset();
       setCurrentStep("form");
@@ -176,7 +178,7 @@ export default function PartnerSignup() {
     },
     onError: (error: any) => {
       toast({
-        title: "Submission Failed",
+        title: t("Submission Failed"),
         description: error.message || "Please try again later.",
         variant: "destructive",
       });
@@ -197,7 +199,7 @@ export default function PartnerSignup() {
       const errors = form.formState.errors;
       const errorCount = Object.keys(errors).length;
       toast({
-        title: "Validation Errors",
+        title: t("Validation Errors"),
         description: `Please fix ${errorCount} error${errorCount > 1 ? "s" : ""} before continuing.`,
         variant: "destructive",
       });
@@ -214,8 +216,8 @@ export default function PartnerSignup() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to load terms and conditions",
+        title: t("Error"),
+        description: t("Failed to load terms and conditions"),
         variant: "destructive",
       });
     } finally {
@@ -256,8 +258,8 @@ export default function PartnerSignup() {
   const handleSubmit = async () => {
     if (!allTermsAccepted) {
       toast({
-        title: "Terms Required",
-        description: "Please read and accept the Terms & Conditions.",
+        title: t("Terms Required"),
+        description: t("Please read and accept the Terms & Conditions."),
         variant: "destructive",
       });
       return;
@@ -275,18 +277,18 @@ export default function PartnerSignup() {
             <GoGeramiLogo size="lg" variant="icon" className="h-16 w-16" />
           </Link>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Partner Registration
+            {t("Partner Registration")}
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Register your business as a partner on goGerami's marketplace.
+            {t("Register your business as a partner on goGerami's marketplace.")}
           </p>
           <p className="text-sm text-gray-500 mt-2">
-            Want the full vendor experience?{" "}
+            {t("Want the full vendor experience?")}{" "}
             <Link
               to="/vendor-signup"
               className="text-emerald-600 hover:text-emerald-700 font-medium"
             >
-              Sign up as a vendor here
+              {t("Sign up as a vendor here")}
             </Link>
           </p>
         </div>
@@ -313,7 +315,7 @@ export default function PartnerSignup() {
                 )}
               </div>
               <span className="ml-2 font-medium text-sm">
-                Business Details
+                {t("Business Details")}
               </span>
             </div>
             <div className="w-16 h-0.5 bg-gray-300">
@@ -338,7 +340,7 @@ export default function PartnerSignup() {
                 <FileText className="w-5 h-5" />
               </div>
               <span className="ml-2 font-medium text-sm">
-                Terms & Submit
+                {t("Terms & Submit")}
               </span>
             </div>
           </div>
@@ -351,12 +353,12 @@ export default function PartnerSignup() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Building2 className="w-5 h-5" />
-                  <span>Business Information</span>
+                  <span>{t("Business Information")}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="businessName">Business Name *</Label>
+                  <Label htmlFor="businessName">{t("Business Name *")}</Label>
                   <Input id="businessName" {...form.register("businessName")} />
                   {form.formState.errors.businessName && (
                     <p className="text-sm text-red-600 mt-1">
@@ -366,10 +368,10 @@ export default function PartnerSignup() {
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Business Description</Label>
+                  <Label htmlFor="description">{t("Business Description")}</Label>
                   <Textarea
                     id="description"
-                    placeholder="Describe your business..."
+                    placeholder={t("Describe your business...")}
                     className="min-h-[100px]"
                     {...form.register("description")}
                   />
@@ -377,7 +379,7 @@ export default function PartnerSignup() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="vendorType">Vendor Type</Label>
+                    <Label htmlFor="vendorType">{t("Vendor Type")}</Label>
                     <Select
                       value={form.watch("vendorType")}
                       onValueChange={(value) =>
@@ -385,7 +387,7 @@ export default function PartnerSignup() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select vendor type" />
+                        <SelectValue placeholder={t("Select vendor type")} />
                       </SelectTrigger>
                       <SelectContent>
                         {VENDOR_TYPES.map((type) => (
@@ -405,7 +407,7 @@ export default function PartnerSignup() {
                   </div>
 
                   <div>
-                    <Label htmlFor="vendorCategoryId">Business Category</Label>
+                    <Label htmlFor="vendorCategoryId">{t("Business Category")}</Label>
                     <Select
                       value={form.watch("vendorCategoryId")}
                       onValueChange={(value) =>
@@ -413,7 +415,7 @@ export default function PartnerSignup() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select business category" />
+                        <SelectValue placeholder={t("Select business category")} />
                       </SelectTrigger>
                       <SelectContent>
                         {vendorCategories.map((cat) => (
@@ -431,7 +433,7 @@ export default function PartnerSignup() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="businessEmail">Business Email *</Label>
+                    <Label htmlFor="businessEmail">{t("Business Email *")}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
@@ -448,7 +450,7 @@ export default function PartnerSignup() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="businessPhone">Business Phone *</Label>
+                    <Label htmlFor="businessPhone">{t("Business Phone *")}</Label>
                     <PhoneInput
                       id="businessPhone"
                       value={form.watch("businessPhone")}
@@ -486,7 +488,7 @@ export default function PartnerSignup() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="country">Country *</Label>
+                    <Label htmlFor="country">{t("Country *")}</Label>
                     <Select
                       value={form.watch("country")}
                       onValueChange={(value) =>
@@ -494,7 +496,7 @@ export default function PartnerSignup() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select country" />
+                        <SelectValue placeholder={t("Select country")} />
                       </SelectTrigger>
                       <SelectContent>
                         {SUPPORTED_COUNTRIES.map((country) => (
@@ -511,10 +513,10 @@ export default function PartnerSignup() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="city">City *</Label>
+                    <Label htmlFor="city">{t("City *")}</Label>
                     <Input
                       id="city"
-                      placeholder="Enter City"
+                      placeholder={t("Enter City")}
                       {...form.register("city")}
                     />
                     {form.formState.errors.city && (
@@ -529,11 +531,10 @@ export default function PartnerSignup() {
                 <div className="space-y-2 pt-2">
                   <Label className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-emerald-600" />
-                    Business Location
+                    {t("Business Location")}
                   </Label>
                   <p className="text-xs text-gray-500">
-                    Pin your business location on the map. This helps with
-                    delivery pricing and connects you with nearby customers.
+                    {t("Pin your business location on the map. This helps with delivery pricing and connects you with nearby customers.")}
                   </p>
                   <GoogleMapsProvider>
                     <LocationPicker
@@ -557,7 +558,7 @@ export default function PartnerSignup() {
                         }
                       }}
                       height="300px"
-                      placeholder="Search for your business location..."
+                      placeholder={t("Search for your business location...")}
                     />
                   </GoogleMapsProvider>
                 </div>
@@ -570,7 +571,7 @@ export default function PartnerSignup() {
                 onClick={handleProceedToTerms}
                 className="bg-emerald-600 hover:bg-emerald-700 px-8"
               >
-                Continue to Terms & Conditions
+                {t("Continue to Terms & Conditions")}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -583,18 +584,17 @@ export default function PartnerSignup() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <FileText className="w-5 h-5 text-emerald-600" />
-                <span>Terms & Conditions</span>
+                <span>{t("Terms & Conditions")}</span>
               </CardTitle>
               <CardDescription>
-                Review the key points below and accept the full legal terms to
-                submit your partnership application.
+                {t("Review the key points below and accept the full legal terms to submit your partnership application.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {isLoadingTerms ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-                  <span className="ml-2">Loading terms...</span>
+                  <span className="ml-2">{t("Loading terms...")}</span>
                 </div>
               ) : termsData ? (
                 <>
@@ -638,7 +638,7 @@ export default function PartnerSignup() {
                                 setShowFullTermsModal(true);
                               }}
                             >
-                              Read full details{" "}
+                              {t("Read full details")}{" "}
                               <ExternalLink className="w-3 h-3 ml-1" />
                             </Button>
                           </div>
@@ -655,7 +655,7 @@ export default function PartnerSignup() {
                       <DialogTrigger asChild>
                         <Button variant="outline" className="gap-2">
                           <FileText className="w-4 h-4" />
-                          View Full Terms & Conditions
+                          {t("View Full Terms & Conditions")}
                           <ExternalLink className="w-4 h-4" />
                         </Button>
                       </DialogTrigger>
@@ -663,10 +663,10 @@ export default function PartnerSignup() {
                         <DialogHeader>
                           <DialogTitle className="flex items-center gap-2">
                             <FileText className="w-5 h-5 text-emerald-600" />
-                            goGerami MOU Terms & Conditions
+                            {t("goGerami MOU Terms & Conditions")}
                           </DialogTitle>
                           <DialogDescription>
-                            Please read carefully before accepting
+                            {t("Please read carefully before accepting")}
                           </DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="h-[60vh] pr-4">
@@ -716,14 +716,11 @@ export default function PartnerSignup() {
                                 : "text-gray-400"
                             }`}
                           />
-                          I have read and agree to the full goGerami MOU
-                          Terms & Conditions
+                          {t("I have read and agree to the full goGerami MOU Terms & Conditions")}
                         </label>
                         <p className="text-xs text-gray-500 mt-1">
-                          By checking this box, you acknowledge that you have
-                          read, understood, and agree to be bound by all{" "}
-                          {termsData.terms.length} sections of the Terms &
-                          Conditions.
+                          {t("By checking this box, you acknowledge that you have read, understood, and agree to be bound by all")}{" "}
+                          {termsData.terms.length} {t("sections of the Terms & Conditions.")}
                         </p>
                       </div>
                     </div>
@@ -731,7 +728,7 @@ export default function PartnerSignup() {
                 </>
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  No terms found.
+                  {t("No terms found.")}
                 </div>
               )}
 
@@ -743,7 +740,7 @@ export default function PartnerSignup() {
                   className="w-full sm:w-auto"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Details
+                  {t("Back to Details")}
                 </Button>
                 <Button
                   type="button"
@@ -754,7 +751,7 @@ export default function PartnerSignup() {
                   {createApplicationMutation.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Submitting...
+                      {t("Submitting...")}
                     </>
                   ) : (
                     "Submit Application"

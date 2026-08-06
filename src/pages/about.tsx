@@ -1,6 +1,7 @@
 // import { Link } from "react-router-dom";
 // import { motion } from "framer-motion";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
+import { useTranslation } from "react-i18next";
 // import { Card, CardContent } from "@/components/ui/card";
 // import { Badge } from "@/components/ui/badge";
 // import { Gift, Heart, Users, Truck, Star, ArrowRight } from "lucide-react";
@@ -8,6 +9,7 @@ import GoGeramiLogo from "@/components/GoGeramiLogo";
 // import { StaggerContainer, StaggerItem } from "@/components/animations/StaggerAnimations";
 
 export default function About() {
+  const { t } = useTranslation();
   // const founders = [
   //   {
   //     name: "Rekik",
@@ -57,7 +59,7 @@ export default function About() {
         </div>
         
         <h1 className="text-5xl md:text-6xl font-bold text-charcoal mb-4">
-          Coming Soon
+          {t("Coming Soon")}
         </h1>
  
         

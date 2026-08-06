@@ -22,8 +22,10 @@ import {
   Archive,
 } from 'lucide-react';
 import {RejectionReasonWithModal} from '@/components/RejectionReasonModal';
+import { useTranslation } from "react-i18next";
 
 export default function VendorServiceDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated } = useAuth();
   const serviceId = id ? parseInt(id, 10) : null;
@@ -86,16 +88,16 @@ export default function VendorServiceDetail() {
     return (
       <div className="space-y-1.5">
         {workingDays && (
-          <p className="text-sm"><span className="text-muted-foreground">Working Days:</span> {workingDays}</p>
+          <p className="text-sm"><span className="text-muted-foreground">{t("Working Days:")}</span> {workingDays}</p>
         )}
         {pkg.availabilityType === 'TIME_SLOTS' && config.timeSlots && config.timeSlots.length > 0 && (
-          <p className="text-sm"><span className="text-muted-foreground">Time Slots:</span> {config.timeSlots.join(', ')}</p>
+          <p className="text-sm"><span className="text-muted-foreground">{t("Time Slots:")}</span> {config.timeSlots.join(', ')}</p>
         )}
         {pkg.availabilityType === 'WORKING_HOURS' && config.workingHoursStart && config.workingHoursEnd && (
-          <p className="text-sm"><span className="text-muted-foreground">Hours:</span> {config.workingHoursStart} – {config.workingHoursEnd}</p>
+          <p className="text-sm"><span className="text-muted-foreground">{t("Hours:")}</span> {config.workingHoursStart} – {config.workingHoursEnd}</p>
         )}
         {config.advanceBookingDays != null && (
-          <p className="text-sm"><span className="text-muted-foreground">Advance Booking:</span> Up to {config.advanceBookingDays} days</p>
+          <p className="text-sm"><span className="text-muted-foreground">{t("Advance Booking:")}</span> {t("Up to")} {config.advanceBookingDays} {t("days")}</p>
         )}
       </div>
     );
@@ -113,11 +115,11 @@ export default function VendorServiceDetail() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Briefcase className="h-16 w-16 text-gray-300 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900">Service not found</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t("Service not found")}</h3>
         <Button asChild className="mt-4">
           <Link to="/vendor/services">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Services
+            {t("Back to Services")}
           </Link>
         </Button>
       </div>
@@ -144,7 +146,7 @@ export default function VendorServiceDetail() {
           <Button asChild variant="outline" size="sm" className="md:size-default">
             <Link to={`/vendor/services/${service.id}/edit`}>
               <Edit className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Edit</span>
+              <span className="hidden md:inline">{t("Edit")}</span>
             </Link>
           </Button>
         </div>
@@ -157,9 +159,9 @@ export default function VendorServiceDetail() {
             <div className="flex gap-3">
               <Clock className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-amber-900">Pending Approval</h3>
+                <h3 className="font-semibold text-amber-900">{t("Pending Approval")}</h3>
                 <p className="text-sm text-amber-700 mt-1">
-                  This service is currently under review by our team. You will be notified once it is approved or if changes are needed.
+                  {t("This service is currently under review by our team. You will be notified once it is approved or if changes are needed.")}
                 </p>
               </div>
             </div>
@@ -174,10 +176,10 @@ export default function VendorServiceDetail() {
             <div className="flex gap-3">
               <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-red-900">Rejection Reason</h3>
+                <h3 className="font-semibold text-red-900">{t("Rejection Reason")}</h3>
                 <RejectionReasonWithModal
                   reason={service.rejectionReason}
-                  title="Service rejection reason"
+                  title={t("Service rejection reason")}
                   className="text-red-700 mt-1"
                   truncateLength={120}
                 />
@@ -194,10 +196,10 @@ export default function VendorServiceDetail() {
             <div className="flex gap-3">
               <ShieldOff className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-orange-900">Suspension Reason</h3>
+                <h3 className="font-semibold text-orange-900">{t("Suspension Reason")}</h3>
                 <RejectionReasonWithModal
                   reason={service.rejectionReason}
-                  title="Service suspension reason"
+                  title={t("Service suspension reason")}
                   className="text-orange-700 mt-1"
                   truncateLength={120}
                 />
@@ -213,7 +215,7 @@ export default function VendorServiceDetail() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ImageIcon className="h-5 w-5" />
-              Service Images
+              {t("Service Images")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -227,14 +229,14 @@ export default function VendorServiceDetail() {
                       className="w-full h-48 object-cover rounded-lg"
                     />
                     {image.isPrimary && (
-                      <Badge className="absolute top-2 right-2 bg-blue-500">Primary</Badge>
+                      <Badge className="absolute top-2 right-2 bg-blue-500">{t("Primary")}</Badge>
                     )}
                   </div>
                 ))
               ) : (
                 <div className="col-span-2 flex flex-col items-center justify-center py-12 bg-gray-50 rounded-lg">
                   <ImageIcon className="h-12 w-12 text-gray-300 mb-2" />
-                  <p className="text-sm text-muted-foreground">No images uploaded</p>
+                  <p className="text-sm text-muted-foreground">{t("No images uploaded")}</p>
                 </div>
               )}
             </div>
@@ -246,12 +248,12 @@ export default function VendorServiceDetail() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Briefcase className="h-5 w-5" />
-              Service Information
+              {t("Service Information")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+              <Label className="text-sm font-medium text-muted-foreground">{t("Description")}</Label>
               <p className="mt-1 whitespace-pre-wrap">{service.description || 'No description provided'}</p>
             </div>
 
@@ -261,7 +263,7 @@ export default function VendorServiceDetail() {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
-                    Location
+                    {t("Location")}
                   </Label>
                   <p className="mt-1">
                     {[service.location, service.city].filter(Boolean).join(', ')}
@@ -276,9 +278,9 @@ export default function VendorServiceDetail() {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5" />
-                    Duration
+                    {t("Duration")}
                   </Label>
-                  <p className="mt-1">{service.durationMinutes} minutes</p>
+                  <p className="mt-1">{service.durationMinutes} {t("minutes")}</p>
                 </div>
               </>
             )}
@@ -287,7 +289,7 @@ export default function VendorServiceDetail() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Base Price</Label>
+                <Label className="text-sm font-medium text-muted-foreground">{t("Base Price")}</Label>
                 <p className="mt-1 text-lg font-semibold">
                   {serviceService.formatPrice(
                     service.basePrice ?? service.basePriceMinor / 100,
@@ -297,7 +299,7 @@ export default function VendorServiceDetail() {
               </div>
               {service.vendorPrice != null && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Your Price</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t("Your Price")}</Label>
                   <p className="mt-1 text-lg font-semibold">
                     {serviceService.formatPrice(service.vendorPrice, service.currency)}
                   </p>
@@ -309,16 +311,16 @@ export default function VendorServiceDetail() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Created</Label>
+                <Label className="text-sm font-medium text-muted-foreground">{t("Created")}</Label>
                 <p className="mt-1 text-sm">{service.createdAt ? new Date(service.createdAt).toLocaleDateString() : 'N/A'}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
+                <Label className="text-sm font-medium text-muted-foreground">{t("Last Updated")}</Label>
                 <p className="mt-1 text-sm">{service.updatedAt ? new Date(service.updatedAt).toLocaleDateString() : 'N/A'}</p>
               </div>
               {service.approvedAt && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Approved</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t("Approved")}</Label>
                   <p className="mt-1 text-sm">{new Date(service.approvedAt).toLocaleDateString()}</p>
                 </div>
               )}
@@ -332,7 +334,7 @@ export default function VendorServiceDetail() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            Service Packages ({service.packages?.length || 0})
+            {t("Service Packages (")}{service.packages?.length || 0})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -351,7 +353,7 @@ export default function VendorServiceDetail() {
                         <div className="flex items-center gap-2">
                           <h4 className="font-semibold text-base">{pkg.name}</h4>
                           {pkg.isDefault && (
-                            <Badge variant="secondary" className="text-xs">Default</Badge>
+                            <Badge variant="secondary" className="text-xs">{t("Default")}</Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
@@ -359,7 +361,7 @@ export default function VendorServiceDetail() {
                           {pkg.sessionDuration && (
                             <Badge variant="outline" className="text-xs">
                               <Clock className="h-3 w-3 mr-1" />
-                              {pkg.sessionDuration} min
+                              {pkg.sessionDuration} {t("min")}
                             </Badge>
                           )}
                         </div>
@@ -371,7 +373,7 @@ export default function VendorServiceDetail() {
                           <div className="flex gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs font-medium text-red-900">Rejection Reason</p>
+                              <p className="text-xs font-medium text-red-900">{t("Rejection Reason")}</p>
                               <RejectionReasonWithModal
                                 reason={pkg.rejectionReason}
                                 title={`Package "${pkg.name}" rejection reason`}
@@ -386,7 +388,7 @@ export default function VendorServiceDetail() {
                       {/* Package Description */}
                       {pkg.description && (
                         <div>
-                          <Label className="text-xs text-muted-foreground">Description</Label>
+                          <Label className="text-xs text-muted-foreground">{t("Description")}</Label>
                           <p className="text-sm mt-0.5 whitespace-pre-wrap">{pkg.description}</p>
                         </div>
                       )}
@@ -394,7 +396,7 @@ export default function VendorServiceDetail() {
                       {/* Pricing & Bookings */}
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         <div>
-                          <Label className="text-xs text-muted-foreground">Price</Label>
+                          <Label className="text-xs text-muted-foreground">{t("Price")}</Label>
                           <p className="text-lg font-semibold">
                             {serviceService.formatPrice(
                               pkg.vendorPrice ?? pkg.basePrice ?? pkg.basePriceMinor / 100,
@@ -404,12 +406,12 @@ export default function VendorServiceDetail() {
                         </div>
                         {pkg.durationMinutes && (
                           <div>
-                            <Label className="text-xs text-muted-foreground">Duration</Label>
-                            <p className="text-sm font-medium mt-0.5">{pkg.durationMinutes} minutes</p>
+                            <Label className="text-xs text-muted-foreground">{t("Duration")}</Label>
+                            <p className="text-sm font-medium mt-0.5">{pkg.durationMinutes} {t("minutes")}</p>
                           </div>
                         )}
                         <div>
-                          <Label className="text-xs text-muted-foreground">Max Bookings/Day</Label>
+                          <Label className="text-xs text-muted-foreground">{t("Max Bookings/Day")}</Label>
                           <p className="text-sm font-medium mt-0.5">{pkg.maxBookingsPerDay || 'Unlimited'}</p>
                         </div>
                       </div>
@@ -417,7 +419,7 @@ export default function VendorServiceDetail() {
                       {/* Package Attributes */}
                       {pkg.attributes && pkg.attributes.length > 0 && (
                         <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Details</Label>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">{t("Details")}</Label>
                           <div className="grid grid-cols-2 gap-2">
                             {pkg.attributes.map((attr) => (
                               <div key={attr.id} className="bg-gray-50 rounded px-3 py-2">
@@ -434,7 +436,7 @@ export default function VendorServiceDetail() {
                       {/* Features */}
                       {pkg.features && pkg.features.length > 0 && (
                         <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Features</Label>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">{t("Features")}</Label>
                           <ul className="list-disc list-inside space-y-1">
                             {pkg.features.map((feature, featureIndex) => (
                               <li key={featureIndex} className="text-sm">{feature}</li>
@@ -448,7 +450,7 @@ export default function VendorServiceDetail() {
                         <div>
                           <Label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            Availability
+                            {t("Availability")}
                           </Label>
                           {formatAvailability(pkg)}
                         </div>
@@ -457,7 +459,7 @@ export default function VendorServiceDetail() {
                       {/* Package Images */}
                       {pkg.images && pkg.images.length > 0 && (
                         <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Package Images</Label>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">{t("Package Images")}</Label>
                           <div className="grid grid-cols-3 gap-2">
                             {pkg.images.map((image, imgIdx) => (
                               <img
@@ -478,7 +480,7 @@ export default function VendorServiceDetail() {
           ) : (
             <div className="flex flex-col items-center justify-center py-12 bg-gray-50 rounded-lg">
               <Package className="h-12 w-12 text-gray-300 mb-2" />
-              <p className="text-sm text-muted-foreground">No packages configured</p>
+              <p className="text-sm text-muted-foreground">{t("No packages configured")}</p>
             </div>
           )}
         </CardContent>

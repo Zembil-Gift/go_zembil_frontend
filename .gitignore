@@ -11,6 +11,8 @@ dist/
 build/
 *.tsbuildinfo
 
+.claude/
+
 stats.html
 code.html
 

@@ -20,6 +20,7 @@ import {
   CreditCard,
   Shield,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Bank {
   id: string;
@@ -28,6 +29,7 @@ interface Bank {
 }
 
 export default function ChapaOnboarding() {
+  const { t } = useTranslation();
   useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -65,7 +67,7 @@ export default function ChapaOnboarding() {
     mutationFn: () => vendorService.setupChapaSubaccount(bankCode, accountNumber, accountName),
     onSuccess: (data) => {
       toast({
-        title: "Chapa Account Set Up!",
+        title: t("Chapa Account Set Up!"),
         description: data.message || "Your Chapa subaccount has been created successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'onboarding-status'] });
@@ -73,7 +75,7 @@ export default function ChapaOnboarding() {
     },
     onError: (error: any) => {
       toast({
-        title: "Setup Failed",
+        title: t("Setup Failed"),
         description: error.message || "Failed to set up Chapa account. Please try again.",
         variant: "destructive",
       });
@@ -91,8 +93,8 @@ export default function ChapaOnboarding() {
     
     if (!bankCode || !accountNumber || !accountName) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
+        title: t("Missing Information"),
+        description: t("Please fill in all required fields."),
         variant: "destructive",
       });
       return;
@@ -105,10 +107,10 @@ export default function ChapaOnboarding() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You need to be a vendor to access this page.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
+        <p className="text-gray-600 mb-4">{t("You need to be a vendor to access this page.")}</p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -127,8 +129,8 @@ export default function ChapaOnboarding() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Chapa Payment Setup</h1>
-            <p className="text-muted-foreground">Connect your bank account to receive ETB payments</p>
+            <h1 className="text-2xl font-bold">{t("Chapa Payment Setup")}</h1>
+            <p className="text-muted-foreground">{t("Connect your bank account to receive ETB payments")}</p>
           </div>
         </div>
 
@@ -138,13 +140,13 @@ export default function ChapaOnboarding() {
             <CardContent className="flex items-center gap-4 py-6">
               <CheckCircle className="h-10 w-10 text-green-600" />
               <div>
-                <h3 className="font-semibold text-green-800">Chapa Account Active</h3>
+                <h3 className="font-semibold text-green-800">{t("Chapa Account Active")}</h3>
                 <p className="text-green-700 text-sm">
-                  Your Chapa subaccount is set up and ready to receive ETB payments.
+                  {t("Your Chapa subaccount is set up and ready to receive ETB payments.")}
                 </p>
                 {onboardingStatus?.chapaSubaccountId && (
                   <p className="text-green-600 text-xs mt-1">
-                    Subaccount ID: {onboardingStatus.chapaSubaccountId}
+                    {t("Subaccount ID:")} {onboardingStatus.chapaSubaccountId}
                   </p>
                 )}
               </div>
@@ -157,21 +159,19 @@ export default function ChapaOnboarding() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              What is Chapa?
+              {t("What is Chapa?")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Chapa is Ethiopia's leading payment gateway. By connecting your bank account, 
-              you can receive payments in Ethiopian Birr (ETB) directly to your bank.
+              {t("Chapa is Ethiopia's leading payment gateway. By connecting your bank account, you can receive payments in Ethiopian Birr (ETB) directly to your bank.")}
             </p>
             <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
               <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
               <div className="text-sm">
-                <p className="font-medium text-blue-800">Secure & Verified</p>
+                <p className="font-medium text-blue-800">{t("Secure & Verified")}</p>
                 <p className="text-blue-700">
-                  Your bank details are securely stored and verified by Chapa. 
-                  We never store your bank credentials.
+                  {t("Your bank details are securely stored and verified by Chapa. We never store your bank credentials.")}
                 </p>
               </div>
             </div>
@@ -184,17 +184,17 @@ export default function ChapaOnboarding() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Bank Account Details
+                {t("Bank Account Details")}
               </CardTitle>
               <CardDescription>
-                Enter your Ethiopian bank account details to receive payments
+                {t("Enter your Ethiopian bank account details to receive payments")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Bank Selection */}
                 <div className="space-y-2">
-                  <Label htmlFor="bank">Bank *</Label>
+                  <Label htmlFor="bank">{t("Bank *")}</Label>
                   <Select
                     value={bankCode}
                     onValueChange={setBankCode}
@@ -215,11 +215,11 @@ export default function ChapaOnboarding() {
 
                 {/* Account Number */}
                 <div className="space-y-2">
-                  <Label htmlFor="accountNumber">Account Number *</Label>
+                  <Label htmlFor="accountNumber">{t("Account Number *")}</Label>
                   <Input
                     id="accountNumber"
                     type="text"
-                    placeholder="Enter your bank account number"
+                    placeholder={t("Enter your bank account number")}
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value)}
                   />
@@ -227,16 +227,16 @@ export default function ChapaOnboarding() {
 
                 {/* Account Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="accountName">Account Holder Name *</Label>
+                  <Label htmlFor="accountName">{t("Account Holder Name *")}</Label>
                   <Input
                     id="accountName"
                     type="text"
-                    placeholder="Name as it appears on your bank account"
+                    placeholder={t("Name as it appears on your bank account")}
                     value={accountName}
                     onChange={(e) => setAccountName(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    This must match the name registered with your bank exactly.
+                    {t("This must match the name registered with your bank exactly.")}
                   </p>
                 </div>
 
@@ -250,7 +250,7 @@ export default function ChapaOnboarding() {
                     asChild
                     className="flex-1"
                   >
-                    <Link to="/vendor">Cancel</Link>
+                    <Link to="/vendor">{t("Cancel")}</Link>
                   </Button>
                   <Button
                     type="submit"
@@ -260,7 +260,7 @@ export default function ChapaOnboarding() {
                     {setupChapaMutation.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Setting Up...
+                        {t("Setting Up...")}
                       </>
                     ) : (
                       "Set Up Chapa Account"
@@ -276,26 +276,26 @@ export default function ChapaOnboarding() {
         {isSetUp && (
           <Card>
             <CardHeader>
-              <CardTitle>Account Status</CardTitle>
+              <CardTitle>{t("Account Status")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <span>Provider</span>
-                <Badge>Chapa</Badge>
+                <span>{t("Provider")}</span>
+                <Badge>{t("Chapa")}</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span>Status</span>
+                <span>{t("Status")}</span>
                 <Badge className="bg-green-100 text-green-800">
                   {onboardingStatus?.chapaStatus || 'ACTIVE'}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span>Can Receive Payments</span>
-                <Badge className="bg-green-100 text-green-800">Yes</Badge>
+                <span>{t("Can Receive Payments")}</span>
+                <Badge className="bg-green-100 text-green-800">{t("Yes")}</Badge>
               </div>
               <Separator />
               <Button variant="outline" asChild className="w-full">
-                <Link to="/vendor">Back to Dashboard</Link>
+                <Link to="/vendor">{t("Back to Dashboard")}</Link>
               </Button>
             </CardContent>
           </Card>

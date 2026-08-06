@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import { paymentMethodConfigService } from "@/services/paymentMethodConfigService";
+import { useTranslation } from "react-i18next";
 
 export interface PaymentMethodSelectorProps {
   amount: number;
@@ -51,6 +52,7 @@ export default function PaymentMethodSelector({
   isLoading = false,
   error,
 }: PaymentMethodSelectorProps) {
+  const { t } = useTranslation();
   const [selectedMethod, setSelectedMethod] =
     useState<PaymentMethodType>("stripe");
   const [telebirrPhone, setTelebirrPhone] = useState("");
@@ -186,14 +188,13 @@ export default function PaymentMethodSelector({
 
       {/* Payment Methods */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Choose Payment Method</h3>
+        <h3 className="text-lg font-semibold">{t("Choose Payment Method")}</h3>
 
         {getVisibleMethods().length === 0 ? (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              No payment methods are currently available. Please try again later
-              or contact support.
+              {t("No payment methods are currently available. Please try again later or contact support.")}
             </AlertDescription>
           </Alert>
         ) : (
@@ -227,7 +228,7 @@ export default function PaymentMethodSelector({
                           </label>
                           {method.status === "placeholder" && (
                             <Badge variant="secondary" className="ml-2 text-xs">
-                              Coming Soon
+                              {t("Coming Soon")}
                             </Badge>
                           )}
                         </div>
@@ -254,11 +255,11 @@ export default function PaymentMethodSelector({
                     method.id === "telebirr" && (
                       <div className="ml-9 mt-4 space-y-2">
                         <Label htmlFor="telebirr-phone">
-                          Telebirr Phone Number
+                          {t("Telebirr Phone Number")}
                         </Label>
                         <Input
                           id="telebirr-phone"
-                          placeholder="09XXXXXXXX"
+                          placeholder={t("09XXXXXXXX")}
                           value={telebirrPhone}
                           onChange={(e) => setTelebirrPhone(e.target.value)}
                           className="max-w-xs"
@@ -275,16 +276,12 @@ export default function PaymentMethodSelector({
                           <div className="text-sm text-blue-700">
                             {method.id === "chapa" && (
                               <>
-                                <strong>Chapa Integration Ready:</strong> Add
-                                your Chapa API key (CHAPA_SECRET_KEY) from
-                                chapa.co to process Ethiopian payments.
+                                <strong>{t("Chapa Integration Ready:")}</strong> {t("Add your Chapa API key (CHAPA_SECRET_KEY) from chapa.co to process Ethiopian payments.")}
                               </>
                             )}
                             {method.id === "telebirr" && (
                               <>
-                                <strong>Telebirr Integration Ready:</strong> Add
-                                your Telebirr API key (TELEBIRR_API_KEY) to
-                                enable mobile money payments.
+                                <strong>{t("Telebirr Integration Ready:")}</strong> {t("Add your Telebirr API key (TELEBIRR_API_KEY) to enable mobile money payments.")}
                               </>
                             )}
                           </div>
@@ -304,10 +301,9 @@ export default function PaymentMethodSelector({
           <div className="flex items-center space-x-3">
             <Shield className="w-5 h-5 text-green-600" />
             <div>
-              <div className="font-medium text-green-800">Secure Payment</div>
+              <div className="font-medium text-green-800">{t("Secure Payment")}</div>
               <div className="text-sm text-green-700">
-                All transactions are encrypted and securely processed. Your
-                payment information is never stored.
+                {t("All transactions are encrypted and securely processed. Your payment information is never stored.")}
               </div>
             </div>
           </div>
@@ -328,12 +324,12 @@ export default function PaymentMethodSelector({
         {isLoading ? (
           <>
             <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
-            Processing...
+            {t("Processing...")}
           </>
         ) : (
           <>
             <Shield className="w-4 h-4 mr-2" />
-            Pay Securely
+            {t("Pay Securely")}
           </>
         )}
       </Button>

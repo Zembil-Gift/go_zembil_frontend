@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
   if (!vendorProfile) return false;
@@ -52,6 +53,7 @@ const priceUpdateSchema = z.object({
 type PriceUpdateFormData = z.infer<typeof priceUpdateSchema>;
 
 export default function ProductPriceUpdate() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const productId = id ? parseInt(id, 10) : null;
 
@@ -134,15 +136,15 @@ export default function ProductPriceUpdate() {
       queryClient.invalidateQueries({ queryKey: ['product', productId] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'product-price-requests'] });
       toast({
-        title: "Price Update Requested",
-        description: "Your price update request has been submitted for admin approval.",
+        title: t("Price Update Requested"),
+        description: t("Your price update request has been submitted for admin approval."),
       });
       setDialogOpen(false);
       form.reset();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to submit price update request",
         variant: "destructive",
       });
@@ -201,9 +203,9 @@ export default function ProductPriceUpdate() {
       <div className="container mx-auto py-8 px-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Access Denied</AlertTitle>
+          <AlertTitle>{t("Access Denied")}</AlertTitle>
           <AlertDescription>
-            You must be logged in as a vendor to access this page.
+            {t("You must be logged in as a vendor to access this page.")}
           </AlertDescription>
         </Alert>
       </div>
@@ -225,15 +227,15 @@ export default function ProductPriceUpdate() {
       <div className="container mx-auto py-8 px-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>{t("Error")}</AlertTitle>
           <AlertDescription>
-            Failed to load product. The product may not exist or you may not have permission to view it.
+            {t("Failed to load product. The product may not exist or you may not have permission to view it.")}
           </AlertDescription>
         </Alert>
         <Button asChild className="mt-4">
           <Link to="/vendor">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+            {t("Back to Dashboard")}
           </Link>
         </Button>
       </div>
@@ -245,15 +247,15 @@ export default function ProductPriceUpdate() {
       <div className="container mx-auto py-8 px-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Unauthorized</AlertTitle>
+          <AlertTitle>{t("Unauthorized")}</AlertTitle>
           <AlertDescription>
-            You can only update prices for your own products.
+            {t("You can only update prices for your own products.")}
           </AlertDescription>
         </Alert>
         <Button asChild className="mt-4">
           <Link to="/vendor">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+            {t("Back to Dashboard")}
           </Link>
         </Button>
       </div>
@@ -272,7 +274,7 @@ export default function ProductPriceUpdate() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Update Product Prices</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t("Update Product Prices")}</h1>
           <p className="text-muted-foreground text-sm sm:text-base">{product.name}</p>
         </div>
       </div>
@@ -280,10 +282,9 @@ export default function ProductPriceUpdate() {
       {/* Info Alert */}
       <Alert className="mb-6">
         <Info className="h-4 w-4" />
-        <AlertTitle>Price Update Process</AlertTitle>
+        <AlertTitle>{t("Price Update Process")}</AlertTitle>
         <AlertDescription>
-          Price updates require admin approval. Once you submit a price change request,
-          it will be reviewed by an administrator before taking effect.
+          {t("Price updates require admin approval. Once you submit a price change request, it will be reviewed by an administrator before taking effect.")}
         </AlertDescription>
       </Alert>
 
@@ -292,16 +293,16 @@ export default function ProductPriceUpdate() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            Product Variants (SKUs)
+            {t("Product Variants (SKUs)")}
           </CardTitle>
           <CardDescription>
-            Select a variant to request a price update
+            {t("Select a variant to request a price update")}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6">
           {skus.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No variants found for this product.
+              {t("No variants found for this product.")}
             </div>
           ) : (
             <div className="space-y-4">
@@ -326,15 +327,15 @@ export default function ProductPriceUpdate() {
                         </div>
                       )}
                       <p className="text-sm text-muted-foreground mt-1">
-                        Stock: {sku.stockQuantity}
+                        {t("Stock:")} {sku.stockQuantity}
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                     <div className="text-left sm:text-right">
-                      <p className="text-sm text-muted-foreground">Your Price</p>
+                      <p className="text-sm text-muted-foreground">{t("Your Price")}</p>
                       <p className="font-semibold text-green-600">{getSkuVendorPrice(sku)}</p>
-                      <p className="text-xs text-muted-foreground">Customer: {getSkuCurrentPrice(sku)}</p>
+                      <p className="text-xs text-muted-foreground">{t("Customer:")} {getSkuCurrentPrice(sku)}</p>
                     </div>
                     <Button
                       variant="outline"
@@ -343,7 +344,7 @@ export default function ProductPriceUpdate() {
                       className="self-start sm:self-auto"
                     >
                       <DollarSign className="h-4 w-4 mr-1" />
-                      Update Price
+                      {t("Update Price")}
                     </Button>
                   </div>
                 </div>
@@ -357,22 +358,22 @@ export default function ProductPriceUpdate() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Request Price Update</DialogTitle>
+            <DialogTitle>{t("Request Price Update")}</DialogTitle>
             <DialogDescription>
-              Submit a new price for {selectedSku?.skuCode}. This change requires admin approval.
+              {t("Submit a new price for")} {selectedSku?.skuCode}{t(". This change requires admin approval.")}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Current Vendor Price</Label>
+                <Label className="text-xs text-muted-foreground">{t("Current Vendor Price")}</Label>
                 <p className="text-lg font-semibold text-green-600">
                   {selectedSku && getSkuVendorPrice(selectedSku)}
                 </p>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Current Customer Price</Label>
+                <Label className="text-xs text-muted-foreground">{t("Current Customer Price")}</Label>
                 <p className="text-lg font-semibold">
                   {selectedSku && getSkuCurrentPrice(selectedSku)}
                 </p>
@@ -381,13 +382,13 @@ export default function ProductPriceUpdate() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="currencyCode">Currency</Label>
+                <Label htmlFor="currencyCode">{t("Currency")}</Label>
                 <Select
                   value={form.watch("currencyCode")}
                   onValueChange={(value) => form.setValue("currencyCode", value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
+                    <SelectValue placeholder={t("Select currency")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableCurrencies.map((currency) => (
@@ -405,7 +406,7 @@ export default function ProductPriceUpdate() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="vendorAmount">Your New Price</Label>
+                <Label htmlFor="vendorAmount">{t("Your New Price")}</Label>
                 <Input
                   id="vendorAmount"
                   type="number"
@@ -422,10 +423,10 @@ export default function ProductPriceUpdate() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason for Change (Optional)</Label>
+              <Label htmlFor="reason">{t("Reason for Change (Optional)")}</Label>
               <Textarea
                 id="reason"
-                placeholder="Explain why you're requesting this price change..."
+                placeholder={t("Explain why you're requesting this price change...")}
                 {...form.register("reason")}
                 rows={3}
               />
@@ -438,13 +439,13 @@ export default function ProductPriceUpdate() {
                 onClick={() => setDialogOpen(false)}
                 className="w-full sm:w-auto"
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button type="submit" disabled={priceUpdateMutation.isPending} className="w-full sm:w-auto">
                 {priceUpdateMutation.isPending ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
+                    {t("Submitting...")}
                   </>
                 ) : (
                   "Submit Request"

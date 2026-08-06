@@ -9,6 +9,7 @@ import { reviewService } from "@/services/reviewService";
 import { CompactRating } from "@/components/reviews";
 import { DiscountBadge } from "@/components/DiscountBadge";
 import { PriceWithDiscount } from "@/components/PriceWithDiscount";
+import { useTranslation } from "react-i18next";
 
 interface ServiceCardProps {
   service: ServiceResponse;
@@ -16,6 +17,7 @@ interface ServiceCardProps {
 }
 
 export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const [primaryImageLoaded, setPrimaryImageLoaded] = useState(false);
@@ -159,7 +161,7 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
                 </div>
               ) : (
                 <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
-                  From{" "}
+                  {t("From")}{" "}
                   {serviceService.formatPrice(
                     displayPriceMajor ?? 0,
                     displayCurrency
@@ -211,7 +213,7 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
                 service.durationMinutes > 0 && (
                   <div className="flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5" />
-                    <span>{service.durationMinutes} min</span>
+                    <span>{service.durationMinutes} {t("min")}</span>
                   </div>
                 )}
             </div>

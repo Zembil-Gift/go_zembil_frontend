@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useEventWishlist } from "@/hooks/useEventWishlist";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface EventWishlistButtonProps {
   eventId: number;
@@ -33,6 +34,7 @@ export function EventWishlistButton({
   showLabel = true,
   className = "",
 }: EventWishlistButtonProps) {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const {
@@ -56,8 +58,8 @@ export function EventWishlistButton({
   const handleToggleWishlist = () => {
     if (!isAuthenticated) {
       toast({
-        title: "Sign in required",
-        description: "Please sign in to add events to your wishlist.",
+        title: t("Sign in required"),
+        description: t("Please sign in to add events to your wishlist."),
         variant: "destructive",
       });
       return;
@@ -155,10 +157,10 @@ export function EventWishlistButton({
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="notes">Personal Notes (Optional)</Label>
+              <Label htmlFor="notes">{t("Personal Notes (Optional)")}</Label>
               <Textarea
                 id="notes"
-                placeholder="Why do you want to attend this event? Any special requirements?"
+                placeholder={t("Why do you want to attend this event? Any special requirements?")}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="min-h-[100px]"
@@ -166,16 +168,16 @@ export function EventWishlistButton({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notifications">Notification Preferences</Label>
+              <Label htmlFor="notifications">{t("Notification Preferences")}</Label>
               <Select value={notificationPreference} onValueChange={setNotificationPreference}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select notification preference" />
+                  <SelectValue placeholder={t("Select notification preference")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All updates</SelectItem>
-                  <SelectItem value="price_changes">Price changes only</SelectItem>
-                  <SelectItem value="date_changes">Date changes only</SelectItem>
-                  <SelectItem value="none">No notifications</SelectItem>
+                  <SelectItem value="all">{t("All updates")}</SelectItem>
+                  <SelectItem value="price_changes">{t("Price changes only")}</SelectItem>
+                  <SelectItem value="date_changes">{t("Date changes only")}</SelectItem>
+                  <SelectItem value="none">{t("No notifications")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -187,7 +189,7 @@ export function EventWishlistButton({
               onClick={() => setIsNotesDialogOpen(false)}
               disabled={isLoading}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={isInWishlist ? handleUpdateNotes : handleAddWithNotes}

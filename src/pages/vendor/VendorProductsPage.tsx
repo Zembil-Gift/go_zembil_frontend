@@ -42,8 +42,10 @@ import { useEffect, useState } from "react";
 import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
 import imageCompression from "browser-image-compression";
 import ProductPagination from "@/components/ProductPagination";
+import { useTranslation } from "react-i18next";
 
 export default function VendorProductsPage() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -107,9 +109,9 @@ export default function VendorProductsPage() {
       vendorService.deactivateProduct(productId),
     onSuccess: () => {
       toast({
-        title: "Product deactivated",
+        title: t("Product deactivated"),
         description:
-          "Your product has been deactivated and is no longer visible to customers.",
+          t("Your product has been deactivated and is no longer visible to customers."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "my-products"] });
       setDeactivateProductDialog({
@@ -120,7 +122,7 @@ export default function VendorProductsPage() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message,
         variant: "destructive",
       });
@@ -133,14 +135,14 @@ export default function VendorProductsPage() {
       vendorService.reactivateProduct(productId),
     onSuccess: () => {
       toast({
-        title: "Product reactivated",
-        description: "Your product is now active and visible to customers.",
+        title: t("Product reactivated"),
+        description: t("Your product is now active and visible to customers."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "my-products"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message,
         variant: "destructive",
       });
@@ -157,8 +159,8 @@ export default function VendorProductsPage() {
     }) => imageService.uploadProductImages(productId, [file]),
     onSuccess: () => {
       toast({
-        title: "Image uploaded",
-        description: "Product image updated successfully.",
+        title: t("Image uploaded"),
+        description: t("Product image updated successfully."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "my-products"] });
       setUploadImageDialog({
@@ -172,7 +174,7 @@ export default function VendorProductsPage() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error?.message || "Failed to upload product image.",
         variant: "destructive",
       });
@@ -195,8 +197,8 @@ export default function VendorProductsPage() {
 
     if (!file.type.startsWith("image/")) {
       toast({
-        title: "Invalid file",
-        description: "Please select a valid image file.",
+        title: t("Invalid file"),
+        description: t("Please select a valid image file."),
         variant: "destructive",
       });
       return;
@@ -229,8 +231,8 @@ export default function VendorProductsPage() {
       setPreviewUrl(URL.createObjectURL(compressedFile));
     } catch (error) {
       toast({
-        title: "Compression failed",
-        description: "Failed to compress image. Please try another file.",
+        title: t("Compression failed"),
+        description: t("Failed to compress image. Please try another file."),
         variant: "destructive",
       });
     } finally {
@@ -300,17 +302,17 @@ export default function VendorProductsPage() {
       case "ACTIVE":
       case "APPROVED":
       case "ENABLED":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Active")}</Badge>;
       case "PENDING":
       case "PENDING_APPROVAL":
-        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800">{t("Pending")}</Badge>;
       case "REJECTED":
       case "DISABLED":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Rejected")}</Badge>;
       case "DRAFT":
-        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t("Draft")}</Badge>;
       case "INACTIVE":
-        return <Badge className="bg-slate-100 text-slate-800">Inactive</Badge>;
+        return <Badge className="bg-slate-100 text-slate-800">{t("Inactive")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -328,16 +330,16 @@ export default function VendorProductsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div>
-          <h2 className="text-xl font-semibold">My Products</h2>
+          <h2 className="text-xl font-semibold">{t("My Products")}</h2>
           <p className="text-sm text-muted-foreground">
-            Manage your product catalog
+            {t("Manage your product catalog")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search products..."
+              placeholder={t("Search products...")}
               className="pl-9"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -347,7 +349,7 @@ export default function VendorProductsPage() {
             <Button asChild>
               <Link to="/vendor/products/new">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Product
+                {t("Add Product")}
               </Link>
             </Button>
           ) : (
@@ -357,7 +359,7 @@ export default function VendorProductsPage() {
               disabled
             >
               <Plus className="h-4 w-4 mr-2 text-gray-400" />
-              <span className="text-gray-400">Add Product</span>
+              <span className="text-gray-400">{t("Add Product")}</span>
             </Button>
           )}
         </div>
@@ -382,7 +384,7 @@ export default function VendorProductsPage() {
                 <Button asChild>
                   <Link to="/vendor/products/new">
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Product
+                    {t("Create Product")}
                   </Link>
                 </Button>
               ) : (
@@ -392,7 +394,7 @@ export default function VendorProductsPage() {
                   disabled
                 >
                   <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="text-gray-400">Create Product</span>
+                  <span className="text-gray-400">{t("Create Product")}</span>
                 </Button>
               ))}
           </CardContent>
@@ -425,14 +427,14 @@ export default function VendorProductsPage() {
                       {product.categoryName}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Subcategory: {getSubCategoryName(product)}
+                      {t("Subcategory:")} {getSubCategoryName(product)}
                     </p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {getStatusBadge(product.status || "")}
                       {product.rejectionReason && (
                         <RejectionReasonWithModal
                           reason={product.rejectionReason}
-                          title="Product rejection reason"
+                          title={t("Product rejection reason")}
                           truncateLength={50}
                         />
                       )}
@@ -442,7 +444,7 @@ export default function VendorProductsPage() {
                 <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                   <Button asChild variant="outline" size="sm">
                     <Link to={`/vendor/products/${product.id}`}>
-                      View Details
+                      {t("View Details")}
                     </Link>
                   </Button>
                   {product.status?.toUpperCase() === "REJECTED" ? (
@@ -450,19 +452,19 @@ export default function VendorProductsPage() {
                     // details, images) and resubmit directly for review.
                     <Button asChild size="sm">
                       <Link to={`/vendor/products/${product.id}/edit`}>
-                        Edit &amp; Resubmit
+                        {t("Edit & Resubmit")}
                       </Link>
                     </Button>
                   ) : (
                     <>
                       <Button asChild variant="outline" size="sm">
                         <Link to={`/vendor/products/${product.id}/edit`}>
-                          Edit
+                          {t("Edit")}
                         </Link>
                       </Button>
                       <Button asChild variant="outline" size="sm">
                         <Link to={`/vendor/products/${product.id}/price`}>
-                          Update Price
+                          {t("Update Price")}
                         </Link>
                       </Button>
                       <Button
@@ -481,7 +483,7 @@ export default function VendorProductsPage() {
                           })
                         }
                       >
-                        Update Image
+                        {t("Update Image")}
                       </Button>
                     </>
                   )}
@@ -496,7 +498,7 @@ export default function VendorProductsPage() {
                       className="text-green-600 hover:text-green-700"
                     >
                       <RotateCcw className="h-4 w-4 mr-1" />
-                      Reactivate
+                      {t("Reactivate")}
                     </Button>
                   ) : ["ACTIVE", "PENDING"].includes(
                       product.status?.toUpperCase() || ""
@@ -522,7 +524,7 @@ export default function VendorProductsPage() {
                       }`}
                     >
                       <XCircle className="h-4 w-4 mr-1" />
-                      Deactivate
+                      {t("Deactivate")}
                     </Button>
                   ) : null}
                 </div>
@@ -558,16 +560,15 @@ export default function VendorProductsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate Product</AlertDialogTitle>
+            <AlertDialogTitle>{t("Deactivate Product")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deactivate "
-              {deactivateProductDialog.productName}"? This will hide the product
-              from customers. You can reactivate it later.
+              {t("Are you sure you want to deactivate \"")}
+              {deactivateProductDialog.productName}{t("\"? This will hide the product from customers. You can reactivate it later.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deactivateProductMutation.isPending}>
-              Cancel
+              {t("Cancel")}
             </AlertDialogCancel>
             <Button
               variant="destructive"
@@ -605,33 +606,32 @@ export default function VendorProductsPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Product Image</DialogTitle>
+            <DialogTitle>{t("Update Product Image")}</DialogTitle>
             <DialogDescription>
-              Upload a new image for "{uploadImageDialog.productName}". The file
-              is compressed on your device before upload.
+              {t("Upload a new image for \"")}{uploadImageDialog.productName}{t("\". The file is compressed on your device before upload.")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <p className="text-sm font-medium">Current image</p>
+              <p className="text-sm font-medium">{t("Current image")}</p>
               <div className="h-32 w-32 rounded border bg-gray-50 overflow-hidden">
                 {uploadImageDialog.currentImageUrl ? (
                   <img
                     src={uploadImageDialog.currentImageUrl}
-                    alt="Current product"
+                    alt={t("Current product")}
                     className="h-full w-full object-cover"
                   />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-gray-400 text-xs">
-                    No image
+                    {t("No image")}
                   </div>
                 )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium">Select new image</p>
+              <p className="text-sm font-medium">{t("Select new image")}</p>
               <Input
                 type="file"
                 accept="image/*"
@@ -640,23 +640,23 @@ export default function VendorProductsPage() {
               {isCompressingImage && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Compressing image...
+                  {t("Compressing image...")}
                 </div>
               )}
             </div>
 
             {previewUrl && previewFile && (
               <div className="space-y-2">
-                <p className="text-sm font-medium">Preview (to be uploaded)</p>
+                <p className="text-sm font-medium">{t("Preview (to be uploaded)")}</p>
                 <div className="h-40 w-full rounded border bg-gray-50 overflow-hidden">
                   <img
                     src={previewUrl}
-                    alt="Upload preview"
+                    alt={t("Upload preview")}
                     className="h-full w-full object-contain"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {previewFile.name} • {(previewFile.size / 1024).toFixed(1)} KB
+                  {previewFile.name} • {(previewFile.size / 1024).toFixed(1)} {t("KB")}
                 </p>
               </div>
             )}
@@ -672,7 +672,7 @@ export default function VendorProductsPage() {
                 uploadProductImageMutation.isPending || isCompressingImage
               }
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={() => {

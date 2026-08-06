@@ -47,8 +47,10 @@ import {
   ProductPackageResponse,
   VendorPackageOrderResponse,
 } from "@/services/packageService";
+import { useTranslation } from "react-i18next";
 
 export default function VendorPackageOrders() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -105,8 +107,8 @@ export default function VendorPackageOrders() {
       packageService.acceptPackageOrder(packageId, orderId),
     onSuccess: async () => {
       toast({
-        title: "Order Accepted",
-        description: "The package order has been confirmed.",
+        title: t("Order Accepted"),
+        description: t("The package order has been confirmed."),
       });
       await queryClient.invalidateQueries({
         queryKey: ["vendor-package-orders"],
@@ -116,7 +118,7 @@ export default function VendorPackageOrders() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to accept package order",
         variant: "destructive",
       });
@@ -135,8 +137,8 @@ export default function VendorPackageOrders() {
     }) => packageService.denyPackageOrder(packageId, orderId, reason),
     onSuccess: async () => {
       toast({
-        title: "Order Rejected",
-        description: "The package order has been rejected.",
+        title: t("Order Rejected"),
+        description: t("The package order has been rejected."),
       });
       await queryClient.invalidateQueries({
         queryKey: ["vendor-package-orders"],
@@ -149,7 +151,7 @@ export default function VendorPackageOrders() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to reject package order",
         variant: "destructive",
       });
@@ -237,7 +239,7 @@ export default function VendorPackageOrders() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({
-      title: "Copied!",
+      title: t("Copied!"),
       description: `${label} copied to clipboard`,
     });
   };
@@ -268,12 +270,12 @@ export default function VendorPackageOrders() {
                     {getStatusBadge(order.orderStatus)}
                     <Badge className="bg-green-100 text-green-700 border-none">
                       <CheckCircle className="h-3 w-3 mr-1" />
-                      Paid
+                      {t("Paid")}
                     </Badge>
                   </div>
 
                   <h3 className="font-bold text-eagle-green text-base mb-1">
-                    Order #{order.orderNumber}
+                    {t("Order #")}{order.orderNumber}
                   </h3>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-eagle-green/70">
@@ -297,7 +299,7 @@ export default function VendorPackageOrders() {
                 <p className="font-bold text-eagle-green">
                   {orderService.formatPrice(order.totalPriceMinor, order.currency)}
                 </p>
-                <p className="text-xs text-eagle-green/60 mt-1">Order Total</p>
+                <p className="text-xs text-eagle-green/60 mt-1">{t("Order Total")}</p>
               </div>
             </div>
 
@@ -313,7 +315,7 @@ export default function VendorPackageOrders() {
                 ))}
                 {order.items.length > 3 && (
                   <span className="text-xs bg-eagle-green/5 text-eagle-green/70 px-2 py-1 rounded">
-                    +{order.items.length - 3} more
+                    +{order.items.length - 3} {t("more")}
                   </span>
                 )}
               </div>
@@ -366,10 +368,10 @@ export default function VendorPackageOrders() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-eagle-green mb-1 truncate">
-                Package Orders
+                {t("Package Orders")}
               </h1>
               <p className="font-light text-eagle-green/70">
-                Track and manage orders for your packages
+                {t("Track and manage orders for your packages")}
               </p>
             </div>
             <Button
@@ -378,7 +380,7 @@ export default function VendorPackageOrders() {
               className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              {t("Refresh")}
             </Button>
           </div>
         </motion.div>
@@ -387,19 +389,19 @@ export default function VendorPackageOrders() {
           <Card className="bg-yellow-50 border-yellow-200">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-yellow-700">{pendingOrders.length}</p>
-              <p className="text-sm text-yellow-600">Pending</p>
+              <p className="text-sm text-yellow-600">{t("Pending")}</p>
             </CardContent>
           </Card>
           <Card className="bg-purple-50 border-purple-200">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-purple-700">{processingOrders.length}</p>
-              <p className="text-sm text-purple-600">Processing</p>
+              <p className="text-sm text-purple-600">{t("Processing")}</p>
             </CardContent>
           </Card>
           <Card className="bg-indigo-50 border-indigo-200">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-indigo-700">{shippedOrders.length}</p>
-              <p className="text-sm text-indigo-600">Shipped</p>
+              <p className="text-sm text-indigo-600">{t("Shipped")}</p>
             </CardContent>
           </Card>
           <Card className="bg-green-50 border-green-200">
@@ -407,7 +409,7 @@ export default function VendorPackageOrders() {
               <p className="text-2xl font-bold text-green-700">
                 {completedOrders.filter((o) => o.orderStatus === "DELIVERED").length}
               </p>
-              <p className="text-sm text-green-600">Delivered</p>
+              <p className="text-sm text-green-600">{t("Delivered")}</p>
             </CardContent>
           </Card>
         </div>
@@ -419,7 +421,7 @@ export default function VendorPackageOrders() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                   <Input
-                    placeholder="Search orders, package, customers..."
+                    placeholder={t("Search orders, package, customers...")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
@@ -429,10 +431,10 @@ export default function VendorPackageOrders() {
               <Select value={packageFilter} onValueChange={setPackageFilter}>
                 <SelectTrigger className="w-full sm:w-[220px]">
                   <Package className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by package" />
+                  <SelectValue placeholder={t("Filter by package")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Packages</SelectItem>
+                  <SelectItem value="all">{t("All Packages")}</SelectItem>
                   {packages.map((pkg) => (
                     <SelectItem key={pkg.id} value={String(pkg.id)}>
                       {pkg.name}
@@ -443,17 +445,17 @@ export default function VendorPackageOrders() {
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t("Filter by status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="PLACED">Placed</SelectItem>
-                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                  <SelectItem value="PROCESSING">Processing</SelectItem>
-                  <SelectItem value="SHIPPED">Shipped</SelectItem>
-                  <SelectItem value="DELIVERED">Delivered</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                  <SelectItem value="PENDING">{t("Pending")}</SelectItem>
+                  <SelectItem value="PLACED">{t("Placed")}</SelectItem>
+                  <SelectItem value="CONFIRMED">{t("Confirmed")}</SelectItem>
+                  <SelectItem value="PROCESSING">{t("Processing")}</SelectItem>
+                  <SelectItem value="SHIPPED">{t("Shipped")}</SelectItem>
+                  <SelectItem value="DELIVERED">{t("Delivered")}</SelectItem>
+                  <SelectItem value="CANCELLED">{t("Cancelled")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -466,25 +468,25 @@ export default function VendorPackageOrders() {
               value="pending"
               className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
             >
-              New Orders ({pendingOrders.length})
+              {t("New Orders (")}{pendingOrders.length})
             </TabsTrigger>
             <TabsTrigger
               value="processing"
               className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
             >
-              Processing ({processingOrders.length})
+              {t("Processing (")}{processingOrders.length})
             </TabsTrigger>
             <TabsTrigger
               value="shipped"
               className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
             >
-              Shipped ({shippedOrders.length})
+              {t("Shipped (")}{shippedOrders.length})
             </TabsTrigger>
             <TabsTrigger
               value="completed"
               className="data-[state=active]:bg-eagle-green data-[state=active]:text-white whitespace-normal text-xs sm:text-sm text-center px-2 sm:px-4"
             >
-              Completed ({completedOrders.length})
+              {t("Completed (")}{completedOrders.length})
             </TabsTrigger>
           </TabsList>
 
@@ -551,7 +553,7 @@ export default function VendorPackageOrders() {
               <>
                 <DialogHeader>
                   <DialogTitle className="font-bold text-eagle-green flex items-center gap-2">
-                    Order #{selectedOrder.orderNumber}
+                    {t("Order #")}{selectedOrder.orderNumber}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -564,18 +566,18 @@ export default function VendorPackageOrders() {
                     </Button>
                   </DialogTitle>
                   <DialogDescription>
-                    Placed on {orderService.formatDateTime(selectedOrder.createdAt)}
+                    {t("Placed on")} {orderService.formatDateTime(selectedOrder.createdAt)}
                   </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-6">
                   <div className="flex items-center gap-4 flex-wrap">
                     <div>
-                      <span className="text-sm font-light text-eagle-green/70">Order Status</span>
+                      <span className="text-sm font-light text-eagle-green/70">{t("Order Status")}</span>
                       <span className="ml-2">{getStatusBadge(selectedOrder.orderStatus)}</span>
                     </div>
                     <div>
-                      <span className="text-sm font-light text-eagle-green/70">Package</span>
+                      <span className="text-sm font-light text-eagle-green/70">{t("Package")}</span>
                       <Badge className="ml-2 bg-blue-100 text-blue-700 border-none">
                         {selectedOrder.packageName}
                       </Badge>
@@ -586,10 +588,10 @@ export default function VendorPackageOrders() {
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                       <h4 className="font-bold text-purple-800 mb-2 flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        Order Awaiting Your Approval
+                        {t("Order Awaiting Your Approval")}
                       </h4>
                       <p className="text-sm text-purple-700 mb-4">
-                        This package order has been placed and paid. Please accept or reject it.
+                        {t("This package order has been placed and paid. Please accept or reject it.")}
                       </p>
                       <div className="flex flex-col sm:flex-row gap-3">
                         <Button
@@ -615,7 +617,7 @@ export default function VendorPackageOrders() {
                           className="border-red-300 text-red-600 hover:bg-red-50"
                         >
                           <XCircle className="h-4 w-4 mr-2" />
-                          Reject Order
+                          {t("Reject Order")}
                         </Button>
                       </div>
                     </div>
@@ -624,11 +626,11 @@ export default function VendorPackageOrders() {
                   <Separator />
 
                   <div>
-                    <h4 className="font-bold text-eagle-green mb-3">Customer Information</h4>
+                    <h4 className="font-bold text-eagle-green mb-3">{t("Customer Information")}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center gap-2 text-sm">
                         <User className="h-4 w-4 text-eagle-green/50" />
-                        <span className="text-eagle-green/70">Name:</span>
+                        <span className="text-eagle-green/70">{t("Name:")}</span>
                         <span className="font-medium text-eagle-green">
                           {selectedOrder.customerName || "N/A"}
                         </span>
@@ -636,7 +638,7 @@ export default function VendorPackageOrders() {
                       {selectedOrder.customerEmail && (
                         <div className="flex items-center gap-2 text-sm">
                           <Mail className="h-4 w-4 text-eagle-green/50" />
-                          <span className="text-eagle-green/70">Email:</span>
+                          <span className="text-eagle-green/70">{t("Email:")}</span>
                           <a
                             href={`mailto:${selectedOrder.customerEmail}`}
                             className="font-medium text-eagle-green hover:underline"
@@ -651,7 +653,7 @@ export default function VendorPackageOrders() {
                   <Separator />
 
                   <div>
-                    <h4 className="font-bold text-eagle-green mb-3">Package Items</h4>
+                    <h4 className="font-bold text-eagle-green mb-3">{t("Package Items")}</h4>
                     <div className="space-y-3">
                       {selectedOrder.items.map((item, index) => (
                         <div
@@ -664,10 +666,10 @@ export default function VendorPackageOrders() {
                           <div className="flex-1 min-w-0">
                             <h5 className="font-medium text-eagle-green">{item.productName}</h5>
                             {item.skuCode && (
-                              <p className="text-xs text-eagle-green/60">SKU: {item.skuCode}</p>
+                              <p className="text-xs text-eagle-green/60">{t("SKU:")} {item.skuCode}</p>
                             )}
                             <p className="text-sm text-eagle-green/70 mt-1">
-                              Qty: {item.quantity} x {orderService.formatPrice(item.unitPriceMinor, selectedOrder.currency)}
+                              {t("Qty:")} {item.quantity} x {orderService.formatPrice(item.unitPriceMinor, selectedOrder.currency)}
                             </p>
                           </div>
                           <div className="text-left sm:text-right flex-shrink-0">
@@ -683,27 +685,27 @@ export default function VendorPackageOrders() {
                   <Separator />
 
                   <div>
-                    <h4 className="font-bold text-eagle-green mb-3">Payment Summary</h4>
+                    <h4 className="font-bold text-eagle-green mb-3">{t("Payment Summary")}</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-eagle-green/70">Package Quantity</span>
+                        <span className="text-eagle-green/70">{t("Package Quantity")}</span>
                         <span className="text-eagle-green">{selectedOrder.packageQuantity}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-eagle-green/70">Platform Fee</span>
+                        <span className="text-eagle-green/70">{t("Platform Fee")}</span>
                         <span className="text-red-600">
                           -{orderService.formatPrice(selectedOrder.platformFeeMinor, selectedOrder.currency)}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-eagle-green/70">Delivery Fee</span>
+                        <span className="text-eagle-green/70">{t("Delivery Fee")}</span>
                         <span className="text-eagle-green">
                           {orderService.formatPrice(selectedOrder.deliveryFeeMinor, selectedOrder.currency)}
                         </span>
                       </div>
                       {selectedOrder.serviceFeeMinor && selectedOrder.serviceFeeMinor > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-eagle-green/70">Service Fee</span>
+                          <span className="text-eagle-green/70">{t("Service Fee")}</span>
                           <span className="text-eagle-green">
                             {orderService.formatPrice(selectedOrder.serviceFeeMinor, selectedOrder.currency)}
                           </span>
@@ -711,7 +713,7 @@ export default function VendorPackageOrders() {
                       )}
                       <Separator />
                       <div className="flex justify-between pt-2 border-t border-green-200 bg-green-50 -mx-2 px-2 py-2 rounded">
-                        <span className="font-bold text-green-700">Order Total</span>
+                        <span className="font-bold text-green-700">{t("Order Total")}</span>
                         <span className="font-bold text-green-700 text-lg">
                           {orderService.formatPrice(selectedOrder.totalPriceMinor, selectedOrder.currency)}
                         </span>
@@ -729,12 +731,12 @@ export default function VendorPackageOrders() {
             <DialogHeader>
               <DialogTitle className="font-bold text-red-600 flex items-center gap-2">
                 <XCircle className="h-5 w-5" />
-                Reject Order
+                {t("Reject Order")}
               </DialogTitle>
               <DialogDescription>
                 {orderToReject && (
                   <>
-                    Rejecting order #{orderToReject.orderNumber}. Please provide a reason for rejection.
+                    {t("Rejecting order #")}{orderToReject.orderNumber}{t(". Please provide a reason for rejection.")}
                   </>
                 )}
               </DialogDescription>
@@ -743,17 +745,17 @@ export default function VendorPackageOrders() {
             <div className="space-y-4 py-4">
               <div>
                 <label className="text-sm font-medium text-eagle-green mb-2 block">
-                  Rejection Reason <span className="text-red-500">*</span>
+                  {t("Rejection Reason")} <span className="text-red-500">*</span>
                 </label>
                 <Textarea
-                  placeholder="e.g., Package items out of stock"
+                  placeholder={t("e.g., Package items out of stock")}
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   className="min-h-[100px]"
                 />
               </div>
               <p className="text-xs text-eagle-green/60">
-                The customer will be notified of this rejection with the reason provided.
+                {t("The customer will be notified of this rejection with the reason provided.")}
               </p>
             </div>
 
@@ -766,7 +768,7 @@ export default function VendorPackageOrders() {
                   setOrderToReject(null);
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 variant="destructive"

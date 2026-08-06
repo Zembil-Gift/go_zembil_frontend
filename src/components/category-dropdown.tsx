@@ -4,12 +4,14 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import CategoriesList from "./CategoriesList";
+import { useTranslation } from "react-i18next";
 
 interface CategoryDropdownProps {
   isMobile?: boolean;
 }
 
 export default function CategoryDropdown({ isMobile = false }: CategoryDropdownProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -68,7 +70,7 @@ export default function CategoryDropdown({ isMobile = false }: CategoryDropdownP
         aria-controls="categories-dropdown"
         aria-haspopup="true"
       >
-        <span>Categories</span>
+        <span>{t("Categories")}</span>
         <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </Button>
 

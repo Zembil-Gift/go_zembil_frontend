@@ -17,6 +17,7 @@ import SocialShareButton from '@/components/SocialShareButton';
 import { format } from 'date-fns';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { useTranslation } from "react-i18next";
 
 // Initialize Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
@@ -78,6 +79,7 @@ interface GiftOrderData {
 }
 
 const GiftPaymentForm = ({onSuccess }: { clientSecret: string; onSuccess: () => void }) => {
+  const { t } = useTranslation();
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -99,21 +101,21 @@ const GiftPaymentForm = ({onSuccess }: { clientSecret: string; onSuccess: () => 
 
       if (error) {
         toast({
-          title: "Payment Failed",
+          title: t("Payment Failed"),
           description: error.message,
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Gift Order Successful! 🎁",
-          description: "Your gift has been processed and the recipient will be notified.",
+          title: t("Gift Order Successful! 🎁"),
+          description: t("Your gift has been processed and the recipient will be notified."),
         });
         onSuccess();
       }
     } catch (err) {
       toast({
-        title: "Payment Error",
-        description: "An unexpected error occurred during payment processing.",
+        title: t("Payment Error"),
+        description: t("An unexpected error occurred during payment processing."),
         variant: "destructive",
       });
     } finally {
@@ -124,9 +126,9 @@ const GiftPaymentForm = ({onSuccess }: { clientSecret: string; onSuccess: () => 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <h3 className="font-semibold text-amber-800 mb-2">🎁 Secure Gift Payment</h3>
+        <h3 className="font-semibold text-amber-800 mb-2">{t("🎁 Secure Gift Payment")}</h3>
         <p className="text-sm text-amber-700">
-          Complete your payment to send this beautiful experience as a gift. The recipient will receive a confirmation email with their gift details.
+          {t("Complete your payment to send this beautiful experience as a gift. The recipient will receive a confirmation email with their gift details.")}
         </p>
       </div>
       
@@ -144,12 +146,12 @@ const GiftPaymentForm = ({onSuccess }: { clientSecret: string; onSuccess: () => 
         {isProcessing ? (
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Processing Gift...
+            {t("Processing Gift...")}
           </div>
         ) : (
           <div className="flex items-center gap-2">
             <Gift className="w-4 h-4" />
-            Complete Gift Order
+            {t("Complete Gift Order")}
           </div>
         )}
       </Button>
@@ -168,6 +170,7 @@ const GiftModal = ({
   isOpen: boolean; 
   onClose: () => void; 
 }) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<'details' | 'payment'>('details');
@@ -188,13 +191,13 @@ const GiftModal = ({
       setClientSecret(response.paymentClientSecret);
       setStep('payment');
       toast({
-        title: "Gift Order Created! 🎁",
-        description: "Please complete the payment to finalize your gift.",
+        title: t("Gift Order Created! 🎁"),
+        description: t("Please complete the payment to finalize your gift."),
       });
     },
     onError: (error) => {
       toast({
-        title: "Failed to Create Gift Order",
+        title: t("Failed to Create Gift Order"),
         description: error.message,
         variant: "destructive",
       });
@@ -206,8 +209,8 @@ const GiftModal = ({
     
     if (!formData.recipientName || !formData.recipientEmail) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required recipient details.",
+        title: t("Missing Information"),
+        description: t("Please fill in all required recipient details."),
         variant: "destructive",
       });
       return;
@@ -245,10 +248,10 @@ const GiftModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Gift className="w-5 h-5 text-amber-500" />
-            Gift This {type === 'event' ? 'Event' : 'Service'}
+            {t("Gift This")} {type === 'event' ? 'Event' : 'Service'}
           </DialogTitle>
           <DialogDescription>
-            Send "{item.name}" as a thoughtful gift to someone special
+            {t("Send \"")}{item.name}{t("\" as a thoughtful gift to someone special")}
           </DialogDescription>
         </DialogHeader>
 
@@ -287,34 +290,34 @@ const GiftModal = ({
 
             {/* Recipient Details */}
             <div className="space-y-4">
-              <h4 className="font-semibold text-gray-800">Gift Recipient</h4>
+              <h4 className="font-semibold text-gray-800">{t("Gift Recipient")}</h4>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="recipientName">Recipient Name *</Label>
+                  <Label htmlFor="recipientName">{t("Recipient Name *")}</Label>
                   <Input
                     id="recipientName"
                     value={formData.recipientName || ''}
                     onChange={(e) => setFormData({ ...formData, recipientName: e.target.value })}
-                    placeholder="Enter recipient's full name"
+                    placeholder={t("Enter recipient's full name")}
                     required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="recipientEmail">Recipient Email *</Label>
+                  <Label htmlFor="recipientEmail">{t("Recipient Email *")}</Label>
                   <Input
                     id="recipientEmail"
                     type="email"
                     value={formData.recipientEmail || ''}
                     onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
-                    placeholder="recipient@example.com"
+                    placeholder={t("recipient@example.com")}
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="recipientPhone">Recipient Phone</Label>
+                <Label htmlFor="recipientPhone">{t("Recipient Phone")}</Label>
                 <Input
                   id="recipientPhone"
                   value={formData.recipientPhone || ''}
@@ -324,19 +327,19 @@ const GiftModal = ({
               </div>
 
               <div>
-                <Label htmlFor="personalMessage">Personal Message</Label>
+                <Label htmlFor="personalMessage">{t("Personal Message")}</Label>
                 <Textarea
                   id="personalMessage"
                   value={formData.personalMessage || ''}
                   onChange={(e) => setFormData({ ...formData, personalMessage: e.target.value })}
-                  placeholder="Write a heartfelt message to accompany your gift..."
+                  placeholder={t("Write a heartfelt message to accompany your gift...")}
                   rows={3}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="deliveryDate">Delivery Date (Optional)</Label>
+                  <Label htmlFor="deliveryDate">{t("Delivery Date (Optional)")}</Label>
                   <Input
                     id="deliveryDate"
                     type="date"
@@ -346,7 +349,7 @@ const GiftModal = ({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="paymentProvider">Payment Method</Label>
+                  <Label htmlFor="paymentProvider">{t("Payment Method")}</Label>
                   <Select 
                     value={formData.paymentProvider} 
                     onValueChange={(value: 'stripe' | 'chapa' | 'telebir') => 
@@ -360,19 +363,19 @@ const GiftModal = ({
                       <SelectItem value="stripe">
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-4 h-4" />
-                          International (Stripe)
+                          {t("International (Stripe)")}
                         </div>
                       </SelectItem>
                       <SelectItem value="chapa">
                         <div className="flex items-center gap-2">
                           <Smartphone className="w-4 h-4" />
-                          Ethiopian (Chapa)
+                          {t("Ethiopian (Chapa)")}
                         </div>
                       </SelectItem>
                       <SelectItem value="telebir">
                         <div className="flex items-center gap-2">
                           <Globe className="w-4 h-4" />
-                          Mobile Money (Telebir)
+                          {t("Mobile Money (Telebir)")}
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -382,7 +385,7 @@ const GiftModal = ({
 
               {isEvent && (
                 <div>
-                  <Label htmlFor="numberOfTickets">Number of Tickets</Label>
+                  <Label htmlFor="numberOfTickets">{t("Number of Tickets")}</Label>
                   <Input
                     id="numberOfTickets"
                     type="number"
@@ -410,18 +413,18 @@ const GiftModal = ({
                   className="rounded border-gray-300"
                 />
                 <Label htmlFor="isAnonymous" className="text-sm">
-                  Send this gift anonymously
+                  {t("Send this gift anonymously")}
                 </Label>
               </div>
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t">
               <div className="text-lg font-semibold">
-                Total: {item.currency} {formData.totalAmount}
+                {t("Total:")} {item.currency} {formData.totalAmount}
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
+                  {t("Cancel")}
                 </Button>
                 <Button 
                   type="submit" 
@@ -431,7 +434,7 @@ const GiftModal = ({
                   {createGiftOrder.isPending ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Creating Gift...
+                      {t("Creating Gift...")}
                     </div>
                   ) : (
                     "Continue to Payment"
@@ -453,6 +456,7 @@ const GiftModal = ({
 };
 
 export default function GiftExperiences() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
   const [selectedItem, setSelectedItem] = useState<Event | Service | null>(null);
@@ -480,8 +484,8 @@ export default function GiftExperiences() {
   const handleGiftClick = (item: Event | Service, type: 'event' | 'service') => {
     if (!isAuthenticated) {
       toast({
-        title: "Sign In Required",
-        description: "Please sign in to send gifts.",
+        title: t("Sign In Required"),
+        description: t("Please sign in to send gifts."),
         variant: "destructive",
       });
       return;
@@ -500,11 +504,11 @@ export default function GiftExperiences() {
           <div className="flex items-center gap-2 mb-2">
             <Gift className="h-6 w-6 text-amber-600" />
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Gift Experiences
+              {t("Gift Experiences")}
             </h1>
           </div>
           <p className="text-base text-gray-600 max-w-3xl">
-            Share the joy of Ethiopian culture with your loved ones
+            {t("Share the joy of Ethiopian culture with your loved ones")}
           </p>
         </div>
 
@@ -513,20 +517,20 @@ export default function GiftExperiences() {
           <div className="mb-8 p-4 bg-white rounded-lg shadow-sm border border-amber-200">
             <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
               <Heart className="w-5 h-5 text-red-500" />
-              Your Gift Summary
+              {t("Your Gift Summary")}
             </h2>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <div className="text-2xl font-bold text-amber-600">{userGifts.totalGifts || 0}</div>
-                <div className="text-sm text-gray-600">Total Gifts Sent</div>
+                <div className="text-sm text-gray-600">{t("Total Gifts Sent")}</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-600">{userGifts.eventGifts?.length || 0}</div>
-                <div className="text-sm text-gray-600">Event Gifts</div>
+                <div className="text-sm text-gray-600">{t("Event Gifts")}</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-600">{userGifts.serviceGifts?.length || 0}</div>
-                <div className="text-sm text-gray-600">Service Gifts</div>
+                <div className="text-sm text-gray-600">{t("Service Gifts")}</div>
               </div>
             </div>
           </div>
@@ -543,7 +547,7 @@ export default function GiftExperiences() {
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
               }`}
             >
-              🎁 Gift Events ({events?.length || 0})
+              {t("🎁 Gift Events (")}{events?.length || 0})
             </button>
             <button
               onClick={() => setActiveTab('services')}
@@ -553,7 +557,7 @@ export default function GiftExperiences() {
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
               }`}
             >
-              🎯 Professional Services ({services?.length || 0})
+              {t("🎯 Professional Services (")}{services?.length || 0})
             </button>
           </div>
 
@@ -567,14 +571,14 @@ export default function GiftExperiences() {
             />
             <Select value={locationFilter} onValueChange={setLocationFilter}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by location" />
+                <SelectValue placeholder={t("Filter by location")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                <SelectItem value="washington-dc">Washington DC</SelectItem>
-                <SelectItem value="dallas">Dallas</SelectItem>
-                <SelectItem value="seattle">Seattle</SelectItem>
-                <SelectItem value="addis-ababa">Addis Ababa</SelectItem>
+                <SelectItem value="all">{t("All Locations")}</SelectItem>
+                <SelectItem value="washington-dc">{t("Washington DC")}</SelectItem>
+                <SelectItem value="dallas">{t("Dallas")}</SelectItem>
+                <SelectItem value="seattle">{t("Seattle")}</SelectItem>
+                <SelectItem value="addis-ababa">{t("Addis Ababa")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -628,7 +632,7 @@ export default function GiftExperiences() {
                           </div>
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <Clock className="w-4 h-4" />
-                            {event.currentBookings}/{event.maxCapacity} spots filled
+                            {event.currentBookings}/{event.maxCapacity} {t("spots filled")}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -637,7 +641,7 @@ export default function GiftExperiences() {
                             className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                           >
                             <Gift className="w-4 h-4 mr-2" />
-                            Gift This Event
+                            {t("Gift This Event")}
                           </Button>
                           <SocialShareButton
                             title={`Gift Experience: ${event.name}`}
@@ -654,8 +658,8 @@ export default function GiftExperiences() {
               )}
               {!eventsLoading && events?.length === 0 && (
                 <div className="col-span-full text-center py-12">
-                  <div className="text-gray-500 text-lg">No gift events available at the moment.</div>
-                  <p className="text-gray-400 mt-2">Check back soon for exciting gifting experiences and special events!</p>
+                  <div className="text-gray-500 text-lg">{t("No gift events available at the moment.")}</div>
+                  <p className="text-gray-400 mt-2">{t("Check back soon for exciting gifting experiences and special events!")}</p>
                 </div>
               )}
             </div>
@@ -714,7 +718,7 @@ export default function GiftExperiences() {
                           )}
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <MapPin className="w-4 h-4" />
-                            {service.locations?.length || 0} location{service.locations?.length !== 1 ? 's' : ''} available
+                            {service.locations?.length || 0} {t("location")}{service.locations?.length !== 1 ? 's' : ''} {t("available")}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -723,7 +727,7 @@ export default function GiftExperiences() {
                             className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
                           >
                             <Gift className="w-4 h-4 mr-2" />
-                            Gift This Service
+                            {t("Gift This Service")}
                           </Button>
                           <SocialShareButton
                             title={`Professional Service: ${service.name}`}
@@ -740,8 +744,8 @@ export default function GiftExperiences() {
               )}
               {!servicesLoading && services?.length === 0 && (
                 <div className="col-span-full text-center py-12">
-                  <div className="text-gray-500 text-lg">No professional services available at the moment.</div>
-                  <p className="text-gray-400 mt-2">Check back soon for exciting Ethiopian professional services!</p>
+                  <div className="text-gray-500 text-lg">{t("No professional services available at the moment.")}</div>
+                  <p className="text-gray-400 mt-2">{t("Check back soon for exciting Ethiopian professional services!")}</p>
                 </div>
               )}
             </div>

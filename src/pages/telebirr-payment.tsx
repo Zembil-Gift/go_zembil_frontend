@@ -26,8 +26,10 @@ import { useToast } from "@/hooks/use-toast";
 import { paymentService } from "@/services/paymentService";
 import { apiService } from "@/services/apiService";
 import { eventOrderService } from "@/services/eventOrderService";
+import { useTranslation } from "react-i18next";
 
 export default function TelebirrPaymentPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -168,8 +170,8 @@ export default function TelebirrPaymentPage() {
       });
 
       toast({
-        title: "Payment Ready",
-        description: "Click the button below to proceed to TeleBirr payment.",
+        title: t("Payment Ready"),
+        description: t("Click the button below to proceed to TeleBirr payment."),
       });
     } catch (err: any) {
       console.error("❌ TeleBirr payment initialization failed:", err);
@@ -177,7 +179,7 @@ export default function TelebirrPaymentPage() {
       setError(errorMsg);
 
       toast({
-        title: "Initialization Failed",
+        title: t("Initialization Failed"),
         description: errorMsg,
         variant: "destructive",
       });
@@ -191,8 +193,8 @@ export default function TelebirrPaymentPage() {
 
     setIsRedirecting(true);
     toast({
-      title: "Redirecting to TeleBirr",
-      description: "You will be redirected to complete your payment.",
+      title: t("Redirecting to TeleBirr"),
+      description: t("You will be redirected to complete your payment."),
     });
 
     // Store order info for return
@@ -232,10 +234,10 @@ export default function TelebirrPaymentPage() {
               <Phone className="h-5 w-5 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-700" />
             </div>
             <p className="text-lg font-medium">
-              Initializing TeleBirr payment...
+              {t("Initializing TeleBirr payment...")}
             </p>
             <p className="text-sm text-gray-500">
-              Please wait while we prepare your payment
+              {t("Please wait while we prepare your payment")}
             </p>
           </CardContent>
         </Card>
@@ -251,7 +253,7 @@ export default function TelebirrPaymentPage() {
           <CardHeader>
             <CardTitle className="flex items-center text-red-600">
               <AlertCircle className="mr-2 h-6 w-6" />
-              Payment Initialization Failed
+              {t("Payment Initialization Failed")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -268,7 +270,7 @@ export default function TelebirrPaymentPage() {
                 className="flex-1"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Go Back
+                {t("Go Back")}
               </Button>
               <Button
                 onClick={() =>
@@ -276,7 +278,7 @@ export default function TelebirrPaymentPage() {
                 }
                 className="flex-1 bg-green-600 hover:bg-green-700"
               >
-                Try Again
+                {t("Try Again")}
               </Button>
             </div>
           </CardContent>
@@ -290,7 +292,7 @@ export default function TelebirrPaymentPage() {
     <div className="container max-w-2xl mx-auto px-4 py-8">
       <Button onClick={handleGoBack} variant="ghost" className="mb-4">
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back
+        {t("Back")}
       </Button>
 
       <Card className="border-green-200 shadow-lg">
@@ -301,14 +303,14 @@ export default function TelebirrPaymentPage() {
                 <Phone className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <CardTitle className="text-xl">TeleBirr Payment</CardTitle>
+                <CardTitle className="text-xl">{t("TeleBirr Payment")}</CardTitle>
                 <CardDescription className="text-green-100">
-                  Ethio Telecom Mobile Money
+                  {t("Ethio Telecom Mobile Money")}
                 </CardDescription>
               </div>
             </div>
             <Badge className="bg-white text-green-700 hover:bg-green-50">
-              Secure
+              {t("Secure")}
             </Badge>
           </div>
         </CardHeader>
@@ -318,23 +320,23 @@ export default function TelebirrPaymentPage() {
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <h3 className="font-semibold text-gray-700 flex items-center">
               <Wallet className="mr-2 h-4 w-4" />
-              Payment Summary
+              {t("Payment Summary")}
             </h3>
             <Separator />
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Order ID:</span>
+                <span className="text-gray-600">{t("Order ID:")}</span>
                 <span className="font-medium">#{paymentData.orderId}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Order Type:</span>
+                <span className="text-gray-600">{t("Order Type:")}</span>
                 <span className="font-medium capitalize">
                   {orderType || "Product"}
                 </span>
               </div>
               <Separator />
               <div className="flex justify-between items-center text-lg">
-                <span className="font-semibold">Total Amount:</span>
+                <span className="font-semibold">{t("Total Amount:")}</span>
                 <span className="font-bold text-green-600">
                   {formatAmount(paymentData.amount, paymentData.currency)}
                 </span>
@@ -345,24 +347,24 @@ export default function TelebirrPaymentPage() {
           {/* Payment Methods */}
           <div className="space-y-3">
             <h4 className="font-medium text-gray-700">
-              Accepted Payment Methods
+              {t("Accepted Payment Methods")}
             </h4>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm">TeleBirr Wallet</span>
+                <span className="text-sm">{t("TeleBirr Wallet")}</span>
               </div>
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm">Bank Account</span>
+                <span className="text-sm">{t("Bank Account")}</span>
               </div>
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm">Mobile Balance</span>
+                <span className="text-sm">{t("Mobile Balance")}</span>
               </div>
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm">Debit Card</span>
+                <span className="text-sm">{t("Debit Card")}</span>
               </div>
             </div>
           </div>
@@ -371,8 +373,7 @@ export default function TelebirrPaymentPage() {
           <div className="flex items-center space-x-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
             <Clock className="h-4 w-4" />
             <span>
-              Payment link expires in 2 hours. Please complete your payment
-              promptly.
+              {t("Payment link expires in 2 hours. Please complete your payment promptly.")}
             </span>
           </div>
 
@@ -381,7 +382,7 @@ export default function TelebirrPaymentPage() {
             <Alert className="bg-green-50 border-green-200">
               <Loader2 className="h-4 w-4 animate-spin text-green-600" />
               <AlertDescription className="text-green-700 ml-2">
-                Redirecting to TeleBirr checkout page...
+                {t("Redirecting to TeleBirr checkout page...")}
               </AlertDescription>
             </Alert>
           )}
@@ -397,21 +398,19 @@ export default function TelebirrPaymentPage() {
             {isRedirecting ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Redirecting...
+                {t("Redirecting...")}
               </>
             ) : (
               <>
                 <ExternalLink className="mr-2 h-5 w-5" />
-                Pay with TeleBirr -{" "}
+                {t("Pay with TeleBirr -")}{" "}
                 {formatAmount(paymentData.amount, paymentData.currency)}
               </>
             )}
           </Button>
 
           <p className="text-xs text-center text-gray-500">
-            By clicking "Pay with TeleBirr", you will be redirected to
-            TeleBirr's secure payment page. After completing the payment, you
-            will be redirected back to our site.
+            {t("By clicking \"Pay with TeleBirr\", you will be redirected to TeleBirr's secure payment page. After completing the payment, you will be redirected back to our site.")}
           </p>
         </CardFooter>
       </Card>
@@ -419,14 +418,14 @@ export default function TelebirrPaymentPage() {
       {/* Help Section */}
       <Card className="mt-6 border-gray-200">
         <CardContent className="pt-4">
-          <h4 className="font-medium text-gray-700 mb-3">Need Help?</h4>
+          <h4 className="font-medium text-gray-700 mb-3">{t("Need Help?")}</h4>
           <div className="space-y-2 text-sm text-gray-600">
             <p>
-              • Make sure you have sufficient balance in your TeleBirr wallet
+              {t("• Make sure you have sufficient balance in your TeleBirr wallet")}
             </p>
-            <p>• Your TeleBirr account must be active and verified</p>
-            <p>• For payment issues, contact TeleBirr support at *127#</p>
-            <p>• For order issues, contact our support team</p>
+            <p>{t("• Your TeleBirr account must be active and verified")}</p>
+            <p>{t("• For payment issues, contact TeleBirr support at *127#")}</p>
+            <p>{t("• For order issues, contact our support team")}</p>
           </div>
         </CardContent>
       </Card>

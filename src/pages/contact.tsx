@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function Contact() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -40,10 +42,10 @@ export default function Contact() {
             transition={{ duration: 0.8 }}
           >
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-              Contact Us
+              {t("Contact Us")}
             </h1>
             <p className="text-xl opacity-90 max-w-2xl mx-auto">
-              We're here to help you connect with your loved ones. Reach out with any questions or concerns.
+              {t("We're here to help you connect with your loved ones. Reach out with any questions or concerns.")}
             </p>
           </motion.div>
         </div>
@@ -59,14 +61,14 @@ export default function Contact() {
           >
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-2xl text-charcoal">Send us a Message</CardTitle>
+                <CardTitle className="text-2xl text-charcoal">{t("Send us a Message")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                        Name *
+                        {t("Name *")}
                       </label>
                       <Input
                         id="name"
@@ -75,12 +77,12 @@ export default function Contact() {
                         required
                         value={formData.name}
                         onChange={handleChange}
-                        placeholder="Your full name"
+                        placeholder={t("Your full name")}
                       />
                     </div>
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                        Email *
+                        {t("Email *")}
                       </label>
                       <Input
                         id="email"
@@ -89,14 +91,14 @@ export default function Contact() {
                         required
                         value={formData.email}
                         onChange={handleChange}
-                        placeholder="your@email.com"
+                        placeholder={t("your@email.com")}
                       />
                     </div>
                   </div>
                   
                   <div>
                     <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                      Subject *
+                      {t("Subject *")}
                     </label>
                     <Input
                       id="subject"
@@ -105,13 +107,13 @@ export default function Contact() {
                       required
                       value={formData.subject}
                       onChange={handleChange}
-                      placeholder="How can we help you?"
+                      placeholder={t("How can we help you?")}
                     />
                   </div>
                   
                   <div>
                     <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                      Message *
+                      {t("Message *")}
                     </label>
                     <Textarea
                       id="message"
@@ -120,7 +122,7 @@ export default function Contact() {
                       rows={6}
                       value={formData.message}
                       onChange={handleChange}
-                      placeholder="Tell us more about your inquiry..."
+                      placeholder={t("Tell us more about your inquiry...")}
                     />
                   </div>
                   
@@ -128,7 +130,7 @@ export default function Contact() {
                     type="submit"
                     className="w-full bg-ethiopian-gold hover:bg-amber text-white"
                   >
-                    Send Message
+                    {t("Send Message")}
                   </Button>
                 </form>
               </CardContent>
@@ -144,16 +146,16 @@ export default function Contact() {
           >
             {/* Contact Methods */}
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-charcoal mb-6">Get in Touch</h2>
+              <h2 className="text-2xl font-bold text-charcoal mb-6">{t("Get in Touch")}</h2>
               
               <div className="flex items-start space-x-4">
                 <div className="w-12 h-12 bg-ethiopian-gold/10 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Mail className="text-ethiopian-gold" size={24} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-charcoal mb-1">Email</h3>
-                  <p className="text-gray-600">info@gogerami.com</p>
-                  <p className="text-sm text-gray-500 mt-1">We'll respond within 24 hours</p>
+                  <h3 className="font-semibold text-charcoal mb-1">{t("Email")}</h3>
+                  <p className="text-gray-600">{t("info@gogerami.com")}</p>
+                  <p className="text-sm text-gray-500 mt-1">{t("We'll respond within 24 hours")}</p>
                 </div>
               </div>
 
@@ -162,11 +164,11 @@ export default function Contact() {
                   <Phone className="text-ethiopian-gold" size={24} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-charcoal mb-1">Phone</h3>
+                  <h3 className="font-semibold text-charcoal mb-1">{t("Phone")}</h3>
                   <p className="text-gray-600">+1 945 399 3809</p>
                   <p className="text-gray-600">+251 91 791 4528</p>
 
-                  <p className="text-sm text-gray-500 mt-1">Monday - Friday, 9 AM - 6 PM EAT</p>
+                  <p className="text-sm text-gray-500 mt-1">{t("Monday - Friday, 9 AM - 6 PM EAT")}</p>
                 </div>
               </div>
 {/* 
@@ -186,10 +188,10 @@ export default function Contact() {
                   <MapPin className="text-ethiopian-gold" size={24} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-charcoal mb-1">Address</h3>
+                  <h3 className="font-semibold text-charcoal mb-1">{t("Address")}</h3>
                   <p className="text-gray-600">
-                    Bole Subcity, Woreda 03<br />
-                    Addis Ababa, Ethiopia
+                    {t("Bole Subcity, Woreda 03")}<br />
+                    {t("Addis Ababa, Ethiopia")}
                   </p>
                 </div>
               </div>
@@ -200,23 +202,23 @@ export default function Contact() {
               <CardContent className="p-6">
                 <div className="flex items-center space-x-3 mb-4">
                   <Clock size={24} className="text-ethiopian-gold" />
-                  <h3 className="text-xl font-semibold">Business Hours</h3>
+                  <h3 className="text-xl font-semibold">{t("Business Hours")}</h3>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span>Monday - Friday</span>
-                    <span>9:00 AM - 6:00 PM</span>
+                    <span>{t("Monday - Friday")}</span>
+                    <span>{t("9:00 AM - 6:00 PM")}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Saturday</span>
-                    <span>10:00 AM - 4:00 PM</span>
+                    <span>{t("Saturday")}</span>
+                    <span>{t("10:00 AM - 4:00 PM")}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Sunday</span>
-                    <span>Closed</span>
+                    <span>{t("Sunday")}</span>
+                    <span>{t("Closed")}</span>
                   </div>
                   <div className="text-xs text-gray-300 mt-3">
-                    All times are in East Africa Time (EAT)
+                    {t("All times are in East Africa Time (EAT)")}
                   </div>
                 </div>
               </CardContent>
@@ -226,13 +228,13 @@ export default function Contact() {
             <Card className="border-ethiopian-gold/20">
               <CardContent className="p-6 text-center">
                 <h3 className="text-lg font-semibold text-charcoal mb-2">
-                  Looking for Quick Answers?
+                  {t("Looking for Quick Answers?")}
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Check out our frequently asked questions for instant help.
+                  {t("Check out our frequently asked questions for instant help.")}
                 </p>
                 <Button variant="outline" className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white">
-                  View FAQ
+                  {t("View FAQ")}
                 </Button>
               </CardContent>
             </Card>

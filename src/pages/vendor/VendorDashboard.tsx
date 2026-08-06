@@ -83,6 +83,7 @@ import {
   Briefcase,
   X,
   Award,
+  PlayCircle,
   Download,
   Loader2,
   ShoppingBag,
@@ -92,6 +93,7 @@ import {
   Menu,
   ChevronRight,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Helper function to check if vendor is Ethiopian
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
@@ -100,6 +102,7 @@ const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean =>
 };
 
 export default function VendorDashboardNew() {
+  const { t } = useTranslation();
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -200,11 +203,11 @@ export default function VendorDashboardNew() {
       if (data.onboardingUrl) {
         window.location.href = data.onboardingUrl;
       } else {
-        toast({ title: "Stripe onboarding started", description: data.message });
+        toast({ title: t("Stripe onboarding started"), description: data.message });
       }
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -217,7 +220,7 @@ export default function VendorDashboardNew() {
       }
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -234,12 +237,12 @@ export default function VendorDashboardNew() {
   const deactivateProductMutation = useMutation({
     mutationFn: (productId: number) => vendorService.deactivateProduct(productId),
     onSuccess: () => {
-      toast({ title: "Product deactivated", description: "Your product has been deactivated and is no longer visible to customers." });
+      toast({ title: t("Product deactivated"), description: t("Your product has been deactivated and is no longer visible to customers.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'my-products'] });
       setDeactivateProductDialog({ open: false, productId: null, productName: '' });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -247,11 +250,11 @@ export default function VendorDashboardNew() {
   const reactivateProductMutation = useMutation({
     mutationFn: (productId: number) => vendorService.reactivateProduct(productId),
     onSuccess: () => {
-      toast({ title: "Product reactivated", description: "Your product is now active and visible to customers." });
+      toast({ title: t("Product reactivated"), description: t("Your product is now active and visible to customers.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'my-products'] });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -260,13 +263,13 @@ export default function VendorDashboardNew() {
     mutationFn: ({ eventId, reason }: { eventId: number; reason: string }) => 
       vendorService.cancelEvent(eventId, reason),
     onSuccess: () => {
-      toast({ title: "Event cancelled", description: "Your event has been cancelled." });
+      toast({ title: t("Event cancelled"), description: t("Your event has been cancelled.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'events'] });
       setCancelEventDialog({ open: false, eventId: null, eventTitle: '' });
       setCancelReason('');
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -274,11 +277,11 @@ export default function VendorDashboardNew() {
   const reactivateEventMutation = useMutation({
     mutationFn: (eventId: number) => vendorService.reactivateEvent(eventId),
     onSuccess: () => {
-      toast({ title: "Event reactivated", description: "Your event has been reactivated and is now visible." });
+      toast({ title: t("Event reactivated"), description: t("Your event has been reactivated and is now visible.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'events'] });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t("Error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -294,10 +297,10 @@ export default function VendorDashboardNew() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You need to be a vendor to access this dashboard.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
+        <p className="text-gray-600 mb-4">{t("You need to be a vendor to access this dashboard.")}</p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -348,50 +351,50 @@ export default function VendorDashboardNew() {
   const getStatusBadge = (status: string, deliveryConfirmedAt?: string) => {
     // Special handling for DELIVERED orders awaiting admin confirmation
     if (status?.toUpperCase() === 'DELIVERED' && !deliveryConfirmedAt) {
-      return <Badge className="bg-purple-100 text-purple-800">Awaiting Confirmation</Badge>;
+      return <Badge className="bg-purple-100 text-purple-800">{t("Awaiting Confirmation")}</Badge>;
     }
     
     switch (status?.toUpperCase()) {
       case 'ACTIVE':
       case 'APPROVED':
       case 'ENABLED':
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Active")}</Badge>;
       case 'PENDING':
       case 'PENDING_APPROVAL':
-        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800">{t("Pending")}</Badge>;
       case 'PLACED':
-        return <Badge className="bg-purple-100 text-purple-800">Awaiting Confirmation</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800">{t("Awaiting Confirmation")}</Badge>;
       case 'CONFIRMED':
-        return <Badge className="bg-blue-100 text-blue-800">Confirmed</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t("Confirmed")}</Badge>;
       case 'DELIVERED':
-        return <Badge className="bg-green-100 text-green-800">Delivered</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Delivered")}</Badge>;
       case 'REJECTED':
       case 'DISABLED':
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Rejected")}</Badge>;
       case 'DRAFT':
-        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t("Draft")}</Badge>;
       case 'INACTIVE':
-        return <Badge className="bg-slate-100 text-slate-800">Inactive</Badge>;
+        return <Badge className="bg-slate-100 text-slate-800">{t("Inactive")}</Badge>;
       case 'CANCELLED':
-        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Cancelled")}</Badge>;
       case 'COMPLETED':
-        return <Badge className="bg-blue-100 text-blue-800">Completed</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t("Completed")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   const navigationItems = [
-    { value: 'overview', label: 'Overview', icon: BarChart3, show: true },
-    { value: 'products', label: 'Products', icon: Package, show: vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID' },
-    { value: 'events', label: 'Events', icon: Calendar, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
-    { value: 'services', label: 'Services', icon: Briefcase, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
-    { value: 'custom-templates', label: 'Custom Templates', icon: Layers, show: true },
-    { value: 'custom-orders', label: 'Custom Orders', icon: ShoppingBag, show: true, badge: customOrderStats.needsAction },
-    { value: 'check-in', label: 'Check-In', icon: ScanLine, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
-    { value: 'payments', label: 'Payments', icon: CreditCard, show: true },
-    { value: 'requests', label: 'Requests', icon: Clock, show: true },
-    { value: 'settings', label: 'Settings', icon: Settings, show: true },
+    { value: 'overview', label: t("Overview"), icon: BarChart3, show: true },
+    { value: 'products', label: t("Products"), icon: Package, show: vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID' },
+    { value: 'events', label: t("Events"), icon: Calendar, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
+    { value: 'services', label: t("Services"), icon: Briefcase, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
+    { value: 'custom-templates', label: t("Custom Templates"), icon: Layers, show: true },
+    { value: 'custom-orders', label: t("Custom Orders"), icon: ShoppingBag, show: true, badge: customOrderStats.needsAction },
+    { value: 'check-in', label: t("Check-In"), icon: ScanLine, show: vendorProfile?.vendorType === 'SERVICE' || vendorProfile?.vendorType === 'HYBRID' },
+    { value: 'payments', label: t("Payments"), icon: CreditCard, show: true },
+    { value: 'requests', label: t("Requests"), icon: Clock, show: true },
+    { value: 'settings', label: t("Settings"), icon: Settings, show: true },
   ].filter(item => item.show);
 
   const normalizedVendorStatus = (vendorProfile?.status || '').trim().toUpperCase();
@@ -416,11 +419,11 @@ export default function VendorDashboardNew() {
                 {vendorProfile?.businessName || 'Vendor'}
               </span>
               {isVendorApproved ? (
-                <Badge className="bg-green-500 text-white text-[10px] font-light h-4 px-1 w-fit">Approved</Badge>
+                <Badge className="bg-green-500 text-white text-[10px] font-light h-4 px-1 w-fit">{t("Approved")}</Badge>
               ) : isApplicationRejected ? (
-                <Badge className="bg-red-500 text-white text-[10px] font-light h-4 px-1 w-fit">Rejected</Badge>
+                <Badge className="bg-red-500 text-white text-[10px] font-light h-4 px-1 w-fit">{t("Rejected")}</Badge>
               ) : (
-                <Badge className="bg-amber-500 text-white text-[10px] font-light h-4 px-1 w-fit">Pending</Badge>
+                <Badge className="bg-amber-500 text-white text-[10px] font-light h-4 px-1 w-fit">{t("Pending")}</Badge>
               )}
             </div>
           </div>
@@ -439,13 +442,13 @@ export default function VendorDashboardNew() {
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{user?.firstName} {user?.lastName}</span>
-                    <span className="text-xs text-muted-foreground">Vendor</span>
+                    <span className="text-xs text-muted-foreground">{t("Vendor")}</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
+                  {t("Sign Out")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -484,16 +487,16 @@ export default function VendorDashboardNew() {
                 <h2 className="text-lg font-bold text-white truncate">
                   {vendorProfile?.businessName || 'Vendor Dashboard'}
                 </h2>
-                <p className="text-xs text-emerald-100 truncate">Manage your business</p>
+                <p className="text-xs text-emerald-100 truncate">{t("Manage your business")}</p>
               </div>
             </div>
             <div className="mt-2">
               {isVendorApproved ? (
-                <Badge className="bg-green-500 text-white text-xs">Approved</Badge>
+                <Badge className="bg-green-500 text-white text-xs">{t("Approved")}</Badge>
               ) : isApplicationRejected ? (
-                <Badge className="bg-red-500 text-white text-xs">Rejected</Badge>
+                <Badge className="bg-red-500 text-white text-xs">{t("Rejected")}</Badge>
               ) : (
-                <Badge className="bg-amber-500 text-white text-xs">Pending Approval</Badge>
+                <Badge className="bg-amber-500 text-white text-xs">{t("Pending Approval")}</Badge>
               )}
             </div>
           </div>
@@ -545,16 +548,16 @@ export default function VendorDashboardNew() {
                     <span className="text-sm text-start font-medium truncate w-full">
                       {user?.firstName} {user?.lastName}
                     </span>
-                    <span className="text-xs text-white/70">Vendor</span>
+                    <span className="text-xs text-white/70">{t("Vendor")}</span>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("My Account")}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
+                  {t("Sign Out")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -595,48 +598,47 @@ export default function VendorDashboardNew() {
                 {isApplicationRejected ? (
                   <>
                     <p className="mt-1 text-sm text-red-700">
-                      Please update your business details and resubmit your application from the Settings tab.
+                      {t("Please update your business details and resubmit your application from the Settings tab.")}
                     </p>
                     <div className="mt-3 rounded-md border border-red-200 bg-white p-3">
-                      <p className="text-xs font-medium uppercase tracking-wide text-red-700">Rejection message</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-red-700">{t("Rejection message")}</p>
                       <RejectionReasonWithModal
                         reason={vendorProfile.rejectionReason || 'No rejection reason provided.'}
-                        title="Vendor rejection reason"
+                        title={t("Vendor rejection reason")}
                         className="mt-1 text-sm text-red-800"
                         truncateLength={120}
                       />
                       {vendorProfile.rejectedAt && (
                         <p className="mt-1 text-xs text-red-600">
-                          Rejected on {new Date(vendorProfile.rejectedAt).toLocaleString()}
+                          {t("Rejected on")} {new Date(vendorProfile.rejectedAt).toLocaleString()}
                         </p>
                       )}
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <Badge className="bg-red-200 text-red-800 border-red-300">Action Required</Badge>
+                      <Badge className="bg-red-200 text-red-800 border-red-300">{t("Action Required")}</Badge>
                       <Button size="sm" onClick={() => setActiveTab('settings')}>
                         <Edit className="h-4 w-4 mr-2" />
-                        Edit & Resubmit
+                        {t("Edit & Resubmit")}
                       </Button>
                     </div>
                   </>
                 ) : (
                   <>
                     <p className="mt-1 text-sm text-amber-700">
-                      Thank you for registering as a vendor! Your account is currently being reviewed by our team.
-                      Once approved, you'll be able to create products, events, services, and custom order templates.
+                      {t("Thank you for registering as a vendor! Your account is currently being reviewed by our team. Once approved, you'll be able to create products, events, services, and custom order templates.")}
                     </p>
                     <p className="mt-2 text-sm text-amber-600">
-                      You'll receive an email notification once your account has been approved.
+                      {t("You'll receive an email notification once your account has been approved.")}
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Badge className="bg-amber-200 text-amber-800 border-amber-300">
                         <Clock className="h-3 w-3 mr-1" />
-                        Review in Progress
+                        {t("Review in Progress")}
                       </Badge>
-                      <Badge variant="outline" className="border-amber-300 text-amber-700">Products: Disabled</Badge>
-                      <Badge variant="outline" className="border-amber-300 text-amber-700">Events: Disabled</Badge>
-                      <Badge variant="outline" className="border-amber-300 text-amber-700">Services: Disabled</Badge>
-                      <Badge variant="outline" className="border-amber-300 text-amber-700">Custom Orders: Disabled</Badge>
+                      <Badge variant="outline" className="border-amber-300 text-amber-700">{t("Products: Disabled")}</Badge>
+                      <Badge variant="outline" className="border-amber-300 text-amber-700">{t("Events: Disabled")}</Badge>
+                      <Badge variant="outline" className="border-amber-300 text-amber-700">{t("Services: Disabled")}</Badge>
+                      <Badge variant="outline" className="border-amber-300 text-amber-700">{t("Custom Orders: Disabled")}</Badge>
                     </div>
                   </>
                 )}
@@ -655,13 +657,13 @@ export default function VendorDashboardNew() {
               {(vendorProfile?.vendorType === 'PRODUCT' || vendorProfile?.vendorType === 'HYBRID') && (
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+                    <CardTitle className="text-sm font-medium">{t("Total Products")}</CardTitle>
                     <Package className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{products.length}</div>
                     <p className="text-xs text-muted-foreground">
-                      {products.filter(p => p.status === 'ACTIVE').length} active
+                      {products.filter(p => p.status === 'ACTIVE').length} {t("active")}
                     </p>
                   </CardContent>
                 </Card>
@@ -669,57 +671,57 @@ export default function VendorDashboardNew() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Total Events")}</CardTitle>
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{vendorSummary?.totalEvents || events.length}</div>
                   <p className="text-xs text-muted-foreground">
-                    {vendorSummary?.activeEvents || events.filter(e => e.status === 'ACTIVE').length} active
+                    {vendorSummary?.activeEvents || events.filter(e => e.status === 'ACTIVE').length} {t("active")}
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Tickets Sold</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Tickets Sold")}</CardTitle>
                   <Ticket className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{vendorSummary?.totalTicketsSold || 0}</div>
-                  <p className="text-xs text-muted-foreground">All time</p>
+                  <p className="text-xs text-muted-foreground">{t("All time")}</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Service Bookings</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Service Bookings")}</CardTitle>
                   <Briefcase className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{serviceOrderStats.total}</div>
                   <p className="text-xs text-muted-foreground">
-                    {serviceOrderStats.pending} pending • {serviceOrderStats.confirmed} confirmed
+                    {serviceOrderStats.pending} {t("pending •")} {serviceOrderStats.confirmed} {t("confirmed")}
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Custom Templates</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Custom Templates")}</CardTitle>
                   <Layers className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{customTemplateStats.total}</div>
                   <p className="text-xs text-muted-foreground">
-                    {customTemplateStats.pending} pending • {customTemplateStats.approved} approved
+                    {customTemplateStats.pending} {t("pending •")} {customTemplateStats.approved} {t("approved")}
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Total Revenue")}</CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -727,11 +729,11 @@ export default function VendorDashboardNew() {
                     {vendorRevenue?.currencySymbol || '$'} {vendorRevenue?.totalRevenue?.toFixed(2) || '0.00'}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {vendorRevenue?.totalOrderCount || 0} orders • {vendorRevenue?.currencyCode || 'USD'}
+                    {vendorRevenue?.totalOrderCount || 0} {t("orders •")} {vendorRevenue?.currencyCode || 'USD'}
                   </p>
                   {vendorRevenue?.isVatRegistered && vendorRevenue?.vatIncluded > 0 && (
                     <p className="text-xs text-amber-600 mt-1">
-                      Includes {vendorRevenue.currencySymbol}{vendorRevenue.vatIncluded.toFixed(2)} VAT (pass-through)
+                      {t("Includes")} {vendorRevenue.currencySymbol}{vendorRevenue.vatIncluded.toFixed(2)} {t("VAT (pass-through)")}
                     </p>
                   )}
                 </CardContent>
@@ -744,15 +746,15 @@ export default function VendorDashboardNew() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-amber-800">
                     <AlertCircle className="h-5 w-5" />
-                    Payment Setup Required
+                    {t("Payment Setup Required")}
                   </CardTitle>
                   <CardDescription className="text-amber-700">
-                    Set up your payment accounts to receive payouts from sales.
+                    {t("Set up your payment accounts to receive payouts from sales.")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button onClick={() => setActiveTab('payments')} variant="outline" className="border-amber-600 text-amber-700">
-                    Set Up Payments
+                    {t("Set Up Payments")}
                   </Button>
                 </CardContent>
               </Card>
@@ -761,10 +763,10 @@ export default function VendorDashboardNew() {
             {/* Quick Actions */}
             <Card>
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle>{t("Quick Actions")}</CardTitle>
                 {!vendorProfile?.isApproved && (
                   <CardDescription className="text-amber-600">
-                    Some actions are disabled until your vendor account is approved.
+                    {t("Some actions are disabled until your vendor account is approved.")}
                   </CardDescription>
                 )}
               </CardHeader>
@@ -773,52 +775,52 @@ export default function VendorDashboardNew() {
                   <Button asChild variant="outline" className="h-20 flex-col">
                     <Link to="/vendor/products/new">
                       <Plus className="h-6 w-6 mb-2" />
-                      <span>Add Product</span>
+                      <span>{t("Add Product")}</span>
                     </Link>
                   </Button>
                 ) : (
                   <Button variant="outline" className="h-20 flex-col opacity-50 cursor-not-allowed" disabled>
                     <Plus className="h-6 w-6 mb-2 text-gray-400" />
-                    <span className="text-gray-400">Add Product</span>
+                    <span className="text-gray-400">{t("Add Product")}</span>
                   </Button>
                 )}
                 {vendorProfile?.isApproved ? (
                   <Button asChild variant="outline" className="h-20 flex-col">
                     <Link to="/vendor/events/new">
                       <Calendar className="h-6 w-6 mb-2" />
-                      <span>Create Event</span>
+                      <span>{t("Create Event")}</span>
                     </Link>
                   </Button>
                 ) : (
                   <Button variant="outline" className="h-20 flex-col opacity-50 cursor-not-allowed" disabled>
                     <Calendar className="h-6 w-6 mb-2 text-gray-400" />
-                    <span className="text-gray-400">Create Event</span>
+                    <span className="text-gray-400">{t("Create Event")}</span>
                   </Button>
                 )}
                 {vendorProfile?.isApproved ? (
                   <Button asChild variant="outline" className="h-20 flex-col">
                     <Link to="/vendor/custom-templates/new">
                       <Layers className="h-6 w-6 mb-2" />
-                      <span>Custom Template</span>
+                      <span>{t("Custom Template")}</span>
                     </Link>
                   </Button>
                 ) : (
                   <Button variant="outline" className="h-20 flex-col opacity-50 cursor-not-allowed" disabled>
                     <Layers className="h-6 w-6 mb-2 text-gray-400" />
-                    <span className="text-gray-400">Custom Template</span>
+                    <span className="text-gray-400">{t("Custom Template")}</span>
                   </Button>
                 )}
                 <Button variant="outline" className="h-20 flex-col" onClick={() => setActiveTab('requests')}>
                   <Clock className="h-6 w-6 mb-2" />
-                  <span>My Requests</span>
+                  <span>{t("My Requests")}</span>
                 </Button>
                 <Button variant="outline" className="h-20 flex-col" onClick={() => setActiveTab('requests')}>
                   <DollarSign className="h-6 w-6 mb-2" />
-                  <span>Price Update</span>
+                  <span>{t("Price Update")}</span>
                 </Button>
                 <Button variant="outline" className="h-20 flex-col" onClick={() => setActiveTab('payments')}>
                   <CreditCard className="h-6 w-6 mb-2" />
-                  <span>Payment Setup</span>
+                  <span>{t("Payment Setup")}</span>
                 </Button>
               </CardContent>
             </Card>
@@ -826,14 +828,14 @@ export default function VendorDashboardNew() {
             {/* Recent Products */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Recent Products</CardTitle>
+                <CardTitle>{t("Recent Products")}</CardTitle>
                 <Button asChild variant="ghost" size="sm">
-                  <Link to="/vendor/products">View All</Link>
+                  <Link to="/vendor/products">{t("View All")}</Link>
                 </Button>
               </CardHeader>
               <CardContent>
                 {products.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No products yet. Create your first product!</p>
+                  <p className="text-center text-muted-foreground py-8">{t("No products yet. Create your first product!")}</p>
                 ) : (
                   <div className="space-y-4">
                     {products.slice(0, 5).map((product) => (
@@ -856,7 +858,7 @@ export default function VendorDashboardNew() {
                         <div className="flex items-center space-x-2">
                           {getStatusBadge(product.status || '')}
                           <Button asChild variant="ghost" size="sm">
-                            <Link to={`/vendor/products/${product.id}/edit`}>Edit</Link>
+                            <Link to={`/vendor/products/${product.id}/edit`}>{t("Edit")}</Link>
                           </Button>
                         </div>
                       </div>
@@ -870,18 +872,18 @@ export default function VendorDashboardNew() {
           {/* Products Tab */}
           <TabsContent value="products" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">My Products</h2>
+              <h2 className="text-xl font-semibold">{t("My Products")}</h2>
               {vendorProfile?.isApproved ? (
                 <Button asChild>
                   <Link to="/vendor/products/new">
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Product
+                    {t("Add Product")}
                   </Link>
                 </Button>
               ) : (
                 <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
                   <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="text-gray-400">Add Product</span>
+                  <span className="text-gray-400">{t("Add Product")}</span>
                 </Button>
               )}
             </div>
@@ -890,19 +892,19 @@ export default function VendorDashboardNew() {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Package className="h-16 w-16 text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900">No products yet</h3>
-                  <p className="text-muted-foreground mb-4">Start by creating your first product</p>
+                  <h3 className="text-lg font-medium text-gray-900">{t("No products yet")}</h3>
+                  <p className="text-muted-foreground mb-4">{t("Start by creating your first product")}</p>
                   {vendorProfile?.isApproved ? (
                     <Button asChild>
                       <Link to="/vendor/products/new">
                         <Plus className="h-4 w-4 mr-2" />
-                        Create Product
+                        {t("Create Product")}
                       </Link>
                     </Button>
                   ) : (
                     <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
                       <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                      <span className="text-gray-400">Create Product</span>
+                      <span className="text-gray-400">{t("Create Product")}</span>
                     </Button>
                   )}
                 </CardContent>
@@ -930,7 +932,7 @@ export default function VendorDashboardNew() {
                             {product.rejectionReason && (
                               <RejectionReasonWithModal
                                 reason={product.rejectionReason}
-                                title="Product rejection reason"
+                                title={t("Product rejection reason")}
                                 truncateLength={50}
                               />
                             )}
@@ -939,10 +941,10 @@ export default function VendorDashboardNew() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <Button asChild variant="outline" size="sm">
-                          <Link to={`/vendor/products/${product.id}/edit`}>Edit</Link>
+                          <Link to={`/vendor/products/${product.id}/edit`}>{t("Edit")}</Link>
                         </Button>
                         <Button asChild variant="outline" size="sm">
-                          <Link to={`/vendor/products/${product.id}/price`}>Update Price</Link>
+                          <Link to={`/vendor/products/${product.id}/price`}>{t("Update Price")}</Link>
                         </Button>
                         {product.status?.toUpperCase() === 'INACTIVE' ? (
                           <Button
@@ -953,7 +955,7 @@ export default function VendorDashboardNew() {
                             className="text-green-600 hover:text-green-700"
                           >
                             <RotateCcw className="h-4 w-4 mr-1" />
-                            Reactivate
+                            {t("Reactivate")}
                           </Button>
                         ) : ['ACTIVE', 'PENDING'].includes(product.status?.toUpperCase() || '') ? (
                           <Button
@@ -967,7 +969,7 @@ export default function VendorDashboardNew() {
                             className="text-red-600 hover:text-red-700"
                           >
                             <XCircle className="h-4 w-4 mr-1" />
-                            Deactivate
+                            {t("Deactivate")}
                           </Button>
                         ) : null}
                       </div>
@@ -981,18 +983,18 @@ export default function VendorDashboardNew() {
           {/* Events Tab */}
           <TabsContent value="events" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">My Events</h2>
+              <h2 className="text-xl font-semibold">{t("My Events")}</h2>
               {vendorProfile?.isApproved ? (
                 <Button asChild>
                   <Link to="/vendor/events/new">
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Event
+                    {t("Create Event")}
                   </Link>
                 </Button>
               ) : (
                 <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
                   <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="text-gray-400">Create Event</span>
+                  <span className="text-gray-400">{t("Create Event")}</span>
                 </Button>
               )}
             </div>
@@ -1001,19 +1003,19 @@ export default function VendorDashboardNew() {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Calendar className="h-16 w-16 text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900">No events yet</h3>
-                  <p className="text-muted-foreground mb-4">Start by creating your first event</p>
+                  <h3 className="text-lg font-medium text-gray-900">{t("No events yet")}</h3>
+                  <p className="text-muted-foreground mb-4">{t("Start by creating your first event")}</p>
                   {vendorProfile?.isApproved ? (
                     <Button asChild>
                       <Link to="/vendor/events/new">
                         <Plus className="h-4 w-4 mr-2" />
-                        Create Event
+                        {t("Create Event")}
                       </Link>
                     </Button>
                   ) : (
                     <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
                       <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                      <span className="text-gray-400">Create Event</span>
+                      <span className="text-gray-400">{t("Create Event")}</span>
                     </Button>
                   )}
                 </CardContent>
@@ -1042,7 +1044,7 @@ export default function VendorDashboardNew() {
                           <div className="flex items-center gap-2 mt-1">
                             {getStatusBadge(event.status)}
                             <span className="text-xs text-muted-foreground">
-                              {event.totalSold || 0}/{event.totalCapacity || 0} sold
+                              {event.totalSold || 0}/{event.totalCapacity || 0} {t("sold")}
                             </span>
                           </div>
                         </div>
@@ -1051,14 +1053,14 @@ export default function VendorDashboardNew() {
                         <Button asChild variant="outline" size="sm">
                           <Link to={`/vendor/events/${event.id}/edit`}>
                             <Edit className="h-4 w-4 mr-1" />
-                            Edit
+                            {t("Edit")}
                           </Link>
                         </Button>
                         <Button asChild variant="outline" size="sm">
-                          <Link to={`/vendor/events/${event.id}/price`}>Update Price</Link>
+                          <Link to={`/vendor/events/${event.id}/price`}>{t("Update Price")}</Link>
                         </Button>
                         <Button asChild variant="outline" size="sm">
-                          <Link to={`/vendor/events/${event.id}/analytics`}>Analytics</Link>
+                          <Link to={`/vendor/events/${event.id}/analytics`}>{t("Analytics")}</Link>
                         </Button>
                         {event.status?.toUpperCase() === 'CANCELLED' ? (
                           <Button
@@ -1069,7 +1071,7 @@ export default function VendorDashboardNew() {
                             className="text-green-600 hover:text-green-700"
                           >
                             <RotateCcw className="h-4 w-4 mr-1" />
-                            Reactivate
+                            {t("Reactivate")}
                           </Button>
                         ) : event.status?.toUpperCase() === 'APPROVED' || event.status?.toUpperCase() === 'PENDING_APPROVAL' ? (
                           <Button
@@ -1083,7 +1085,7 @@ export default function VendorDashboardNew() {
                             className="text-red-600 hover:text-red-700"
                           >
                             <XCircle className="h-4 w-4 mr-1" />
-                            Cancel
+                            {t("Cancel")}
                           </Button>
                         ) : null}
                       </div>
@@ -1097,31 +1099,31 @@ export default function VendorDashboardNew() {
           {/* Services Tab */}
           <TabsContent value="services" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Service Bookings</h2>
+              <h2 className="text-xl font-semibold">{t("Service Bookings")}</h2>
               <div className="flex gap-2">
                 <Button asChild variant="outline">
                   <Link to="/vendor/service-calendar">
                     <Calendar className="h-4 w-4 mr-2" />
-                    Calendar View
+                    {t("Calendar View")}
                   </Link>
                 </Button>
                 <Button asChild variant="outline">
                   <Link to="/vendor/service-orders">
                     <Briefcase className="h-4 w-4 mr-2" />
-                    Manage Orders
+                    {t("Manage Orders")}
                   </Link>
                 </Button>
                 {vendorProfile?.isApproved ? (
                   <Button asChild>
                     <Link to="/vendor/services/new">
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Service
+                      {t("Add Service")}
                     </Link>
                   </Button>
                 ) : (
                   <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
                     <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                    <span className="text-gray-400">Add Service</span>
+                    <span className="text-gray-400">{t("Add Service")}</span>
                   </Button>
                 )}
               </div>
@@ -1179,14 +1181,14 @@ export default function VendorDashboardNew() {
             {/* Recent Service Orders */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Recent Service Orders</CardTitle>
+                <CardTitle>{t("Recent Service Orders")}</CardTitle>
                 <Button asChild variant="ghost" size="sm">
-                  <Link to="/vendor/service-orders">View All</Link>
+                  <Link to="/vendor/service-orders">{t("View All")}</Link>
                 </Button>
               </CardHeader>
               <CardContent>
                 {serviceOrders.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No service orders yet.</p>
+                  <p className="text-center text-muted-foreground py-8">{t("No service orders yet.")}</p>
                 ) : (
                   <div className="space-y-4">
                     {serviceOrders.slice(0, 5).map((order: ServiceOrderResponse) => {
@@ -1223,18 +1225,18 @@ export default function VendorDashboardNew() {
             {/* My Services */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>My Services</CardTitle>
+                <CardTitle>{t("My Services")}</CardTitle>
                 {vendorProfile?.isApproved ? (
                   <Button asChild variant="outline" size="sm">
                     <Link to="/vendor/services/new">
                       <Plus className="h-4 w-4 mr-1" />
-                      Add Service
+                      {t("Add Service")}
                     </Link>
                   </Button>
                 ) : (
                   <Button variant="outline" size="sm" className="opacity-50 cursor-not-allowed" disabled>
                     <Plus className="h-4 w-4 mr-1 text-gray-400" />
-                    <span className="text-gray-400">Add Service</span>
+                    <span className="text-gray-400">{t("Add Service")}</span>
                   </Button>
                 )}
               </CardHeader>
@@ -1242,18 +1244,18 @@ export default function VendorDashboardNew() {
                 {services.length === 0 ? (
                   <div className="text-center py-8">
                     <Briefcase className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-muted-foreground mb-4">No services created yet.</p>
+                    <p className="text-muted-foreground mb-4">{t("No services created yet.")}</p>
                     {vendorProfile?.isApproved ? (
                       <Button asChild>
                         <Link to="/vendor/services/new">
                           <Plus className="h-4 w-4 mr-2" />
-                          Create Your First Service
+                          {t("Create Your First Service")}
                         </Link>
                       </Button>
                     ) : (
                       <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
                         <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="text-gray-400">Create Your First Service</span>
+                        <span className="text-gray-400">{t("Create Your First Service")}</span>
                       </Button>
                     )}
                   </div>
@@ -1285,11 +1287,11 @@ export default function VendorDashboardNew() {
                           </span>
                           {service.hasPackages && (
                             <Badge variant="outline" className="text-xs">
-                              {service.packages?.length || 0} packages
+                              {service.packages?.length || 0} {t("packages")}
                             </Badge>
                           )}
                           <Button asChild variant="outline" size="sm">
-                            <Link to={`/vendor/services/${service.id}/edit`}>Edit</Link>
+                            <Link to={`/vendor/services/${service.id}/edit`}>{t("Edit")}</Link>
                           </Button>
                         </div>
                       </div>
@@ -1303,18 +1305,18 @@ export default function VendorDashboardNew() {
           {/* Custom Templates Tab */}
           <TabsContent value="custom-templates" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Custom Order Templates</h2>
+              <h2 className="text-xl font-semibold">{t("Custom Order Templates")}</h2>
               {vendorProfile?.isApproved ? (
                 <Button asChild>
                   <Link to="/vendor/custom-templates/new">
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Template
+                    {t("Create Template")}
                   </Link>
                 </Button>
               ) : (
                 <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
                   <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="text-gray-400">Create Template</span>
+                  <span className="text-gray-400">{t("Create Template")}</span>
                 </Button>
               )}
             </div>
@@ -1323,7 +1325,7 @@ export default function VendorDashboardNew() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total Templates</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Total Templates")}</CardTitle>
                   <Layers className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -1332,7 +1334,7 @@ export default function VendorDashboardNew() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Pending Approval")}</CardTitle>
                   <Clock className="h-4 w-4 text-amber-500" />
                 </CardHeader>
                 <CardContent>
@@ -1343,7 +1345,7 @@ export default function VendorDashboardNew() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Approved</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Approved")}</CardTitle>
                   <CheckCircle className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
@@ -1354,7 +1356,7 @@ export default function VendorDashboardNew() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Rejected")}</CardTitle>
                   <XCircle className="h-4 w-4 text-red-500" />
                 </CardHeader>
                 <CardContent>
@@ -1368,27 +1370,27 @@ export default function VendorDashboardNew() {
             {/* Recent Templates */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Recent Templates</CardTitle>
+                <CardTitle>{t("Recent Templates")}</CardTitle>
                 <Button asChild variant="ghost" size="sm">
-                  <Link to="/vendor/custom-templates">View All</Link>
+                  <Link to="/vendor/custom-templates">{t("View All")}</Link>
                 </Button>
               </CardHeader>
               <CardContent>
                 {customTemplates.length === 0 ? (
                   <div className="text-center py-8">
                     <Layers className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-muted-foreground mb-4">No custom templates created yet.</p>
+                    <p className="text-muted-foreground mb-4">{t("No custom templates created yet.")}</p>
                     {vendorProfile?.isApproved ? (
                       <Button asChild>
                         <Link to="/vendor/custom-templates/new">
                           <Plus className="h-4 w-4 mr-2" />
-                          Create Your First Template
+                          {t("Create Your First Template")}
                         </Link>
                       </Button>
                     ) : (
                       <Button variant="outline" className="opacity-50 cursor-not-allowed" disabled>
                         <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="text-gray-400">Create Your First Template</span>
+                        <span className="text-gray-400">{t("Create Your First Template")}</span>
                       </Button>
                     )}
                   </div>
@@ -1406,14 +1408,14 @@ export default function VendorDashboardNew() {
                               {customOrderTemplateService.formatTemplatePrice(template)}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {template.fields.length} field{template.fields.length !== 1 ? 's' : ''}
+                              {template.fields.length} {t("field")}{template.fields.length !== 1 ? 's' : ''}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           {getStatusBadge(template.status)}
                           <Button asChild variant="outline" size="sm">
-                            <Link to={`/vendor/custom-templates/${template.id}`}>View</Link>
+                            <Link to={`/vendor/custom-templates/${template.id}`}>{t("View")}</Link>
                           </Button>
                         </div>
                       </div>
@@ -1427,10 +1429,10 @@ export default function VendorDashboardNew() {
           {/* Custom Orders Tab */}
           <TabsContent value="custom-orders" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Custom Orders</h2>
+              <h2 className="text-xl font-semibold">{t("Custom Orders")}</h2>
               <Button asChild variant="outline">
                 <Link to="/vendor/custom-orders">
-                  View All Orders
+                  {t("View All Orders")}
                   <ExternalLink className="h-4 w-4 ml-2" />
                 </Link>
               </Button>
@@ -1440,50 +1442,50 @@ export default function VendorDashboardNew() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">New Orders</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("New Orders")}</CardTitle>
                   <Clock className="h-4 w-4 text-amber-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-amber-600">
                     {customOrderStats.submitted}
                   </div>
-                  <p className="text-xs text-muted-foreground">Awaiting your price proposal</p>
+                  <p className="text-xs text-muted-foreground">{t("Awaiting your price proposal")}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Price Proposed</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Price Proposed")}</CardTitle>
                   <DollarSign className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-blue-600">
                     {customOrderStats.priceProposed}
                   </div>
-                  <p className="text-xs text-muted-foreground">Awaiting customer response</p>
+                  <p className="text-xs text-muted-foreground">{t("Awaiting customer response")}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Paid</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("Paid")}</CardTitle>
                   <CreditCard className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-green-600">
                     {customOrderStats.paid}
                   </div>
-                  <p className="text-xs text-muted-foreground">Ready to start working</p>
+                  <p className="text-xs text-muted-foreground">{t("Ready to start working")}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("In Progress")}</CardTitle>
                   <Package className="h-4 w-4 text-purple-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-purple-600">
                     {customOrderStats.inProgress}
                   </div>
-                  <p className="text-xs text-muted-foreground">Currently being fulfilled</p>
+                  <p className="text-xs text-muted-foreground">{t("Currently being fulfilled")}</p>
                 </CardContent>
               </Card>
             </div>
@@ -1491,18 +1493,18 @@ export default function VendorDashboardNew() {
             {/* Recent Orders */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Recent Orders</CardTitle>
+                <CardTitle>{t("Recent Orders")}</CardTitle>
                 <Button asChild variant="ghost" size="sm">
-                  <Link to="/vendor/custom-orders">View All</Link>
+                  <Link to="/vendor/custom-orders">{t("View All")}</Link>
                 </Button>
               </CardHeader>
               <CardContent>
                 {customOrders.length === 0 ? (
                   <div className="text-center py-8">
                     <ShoppingBag className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-muted-foreground mb-4">No custom orders yet.</p>
+                    <p className="text-muted-foreground mb-4">{t("No custom orders yet.")}</p>
                     <p className="text-sm text-muted-foreground">
-                      Once customers order from your templates, they'll appear here.
+                      {t("Once customers order from your templates, they'll appear here.")}
                     </p>
                   </div>
                 ) : (
@@ -1551,26 +1553,26 @@ export default function VendorDashboardNew() {
                 <CardHeader>
                   <CardTitle className="text-amber-800 flex items-center gap-2">
                     <AlertCircle className="h-5 w-5" />
-                    Orders Needing Your Attention
+                    {t("Orders Needing Your Attention")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {customOrderStats.submitted > 0 && (
                       <p className="text-sm text-amber-700">
-                        • <strong>{customOrderStats.submitted}</strong> order{customOrderStats.submitted !== 1 ? 's' : ''} waiting for your price proposal
+                        • <strong>{customOrderStats.submitted}</strong> {t("order")}{customOrderStats.submitted !== 1 ? 's' : ''} {t("waiting for your price proposal")}
                       </p>
                     )}
                     {customOrderStats.paid > 0 && (
                       <p className="text-sm text-amber-700">
-                        • <strong>{customOrderStats.paid}</strong> paid order{customOrderStats.paid !== 1 ? 's' : ''} ready to start
+                        • <strong>{customOrderStats.paid}</strong> {t("paid order")}{customOrderStats.paid !== 1 ? 's' : ''} {t("ready to start")}
                       </p>
                     )}
                   </div>
                   <Button asChild className="mt-4">
                     <Link to="/vendor/custom-orders">
                       <MessageSquare className="h-4 w-4 mr-2" />
-                      Review Orders
+                      {t("Review Orders")}
                     </Link>
                   </Button>
                 </CardContent>
@@ -1582,9 +1584,9 @@ export default function VendorDashboardNew() {
           <TabsContent value="check-in" className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold">Ticket Check-In</h2>
+                <h2 className="text-xl font-semibold">{t("Ticket Check-In")}</h2>
                 <p className="text-muted-foreground">
-                  Validate and check in attendees at your events
+                  {t("Validate and check in attendees at your events")}
                 </p>
               </div>
             </div>
@@ -1593,7 +1595,7 @@ export default function VendorDashboardNew() {
 
           {/* Payments Tab */}
           <TabsContent value="payments" className="space-y-6">
-            <h2 className="text-xl font-semibold">Payment Setup</h2>
+            <h2 className="text-xl font-semibold">{t("Payment Setup")}</h2>
 
             <div className="grid gap-6 md:grid-cols-2">
               {/* Stripe Setup - Only show for non-Ethiopian vendors */}
@@ -1602,20 +1604,20 @@ export default function VendorDashboardNew() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
-                    Stripe Connect
+                    {t("Stripe Connect")}
                   </CardTitle>
                   <CardDescription>
-                    Accept international payments via Stripe
+                    {t("Accept international payments via Stripe")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span>Status:</span>
+                    <span>{t("Status:")}</span>
                     {getStatusBadge(onboardingStatus?.stripeStatus || 'NOT_STARTED')}
                   </div>
                   {onboardingStatus?.stripeAccountId && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Account ID:</span>
+                      <span className="text-muted-foreground">{t("Account ID:")}</span>
                       <code className="bg-gray-100 px-2 py-1 rounded text-xs">{onboardingStatus.stripeAccountId}</code>
                     </div>
                   )}
@@ -1642,7 +1644,7 @@ export default function VendorDashboardNew() {
                         className="flex-1"
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />
-                        Stripe Dashboard
+                        {t("Stripe Dashboard")}
                       </Button>
                     )}
                   </div>
@@ -1655,20 +1657,20 @@ export default function VendorDashboardNew() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <DollarSign className="h-5 w-5" />
-                    Chapa (Ethiopian Birr)
+                    {t("Chapa (Ethiopian Birr)")}
                   </CardTitle>
                   <CardDescription>
-                    Accept ETB payments via Chapa
+                    {t("Accept ETB payments via Chapa")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span>Status:</span>
+                    <span>{t("Status:")}</span>
                     {getStatusBadge(onboardingStatus?.chapaStatus || 'NOT_STARTED')}
                   </div>
                   {onboardingStatus?.chapaSubaccountId && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Subaccount ID:</span>
+                      <span className="text-muted-foreground">{t("Subaccount ID:")}</span>
                       <code className="bg-gray-100 px-2 py-1 rounded text-xs">{onboardingStatus.chapaSubaccountId}</code>
                     </div>
                   )}
@@ -1685,7 +1687,7 @@ export default function VendorDashboardNew() {
             {/* Payment Summary */}
             <Card>
               <CardHeader>
-                <CardTitle>Payout Status</CardTitle>
+                <CardTitle>{t("Payout Status")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4">
@@ -1693,9 +1695,9 @@ export default function VendorDashboardNew() {
                     <>
                       <CheckCircle className="h-8 w-8 text-green-500" />
                       <div>
-                        <p className="font-medium text-green-700">You can receive payments!</p>
+                        <p className="font-medium text-green-700">{t("You can receive payments!")}</p>
                         <p className="text-sm text-muted-foreground">
-                          Your payment setup is complete. Funds will be transferred to your connected accounts.
+                          {t("Your payment setup is complete. Funds will be transferred to your connected accounts.")}
                         </p>
                       </div>
                     </>
@@ -1703,9 +1705,9 @@ export default function VendorDashboardNew() {
                     <>
                       <AlertCircle className="h-8 w-8 text-amber-500" />
                       <div>
-                        <p className="font-medium text-amber-700">Payment setup incomplete</p>
+                        <p className="font-medium text-amber-700">{t("Payment setup incomplete")}</p>
                         <p className="text-sm text-muted-foreground">
-                          Complete your Stripe or Chapa setup to receive payouts from your sales.
+                          {t("Complete your Stripe or Chapa setup to receive payouts from your sales.")}
                         </p>
                       </div>
                     </>
@@ -1740,14 +1742,13 @@ export default function VendorDashboardNew() {
       }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate Product</AlertDialogTitle>
+            <AlertDialogTitle>{t("Deactivate Product")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deactivate "{deactivateProductDialog.productName}"? 
-              This will hide the product from customers. You can reactivate it later.
+              {t("Are you sure you want to deactivate \"")}{deactivateProductDialog.productName}{t("\"? This will hide the product from customers. You can reactivate it later.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deactivateProductMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deactivateProductMutation.isPending}>{t("Cancel")}</AlertDialogCancel>
             <Button
               variant="destructive"
               onClick={() => {
@@ -1772,17 +1773,16 @@ export default function VendorDashboardNew() {
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancel Event</DialogTitle>
+            <DialogTitle>{t("Cancel Event")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to cancel "{cancelEventDialog.eventTitle}"? 
-              Please provide a reason for cancellation.
+              {t("Are you sure you want to cancel \"")}{cancelEventDialog.eventTitle}{t("\"? Please provide a reason for cancellation.")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Label htmlFor="cancel-reason">Cancellation Reason</Label>
+            <Label htmlFor="cancel-reason">{t("Cancellation Reason")}</Label>
             <Textarea
               id="cancel-reason"
-              placeholder="Enter the reason for cancelling this event..."
+              placeholder={t("Enter the reason for cancelling this event...")}
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               className="mt-2"
@@ -1794,7 +1794,7 @@ export default function VendorDashboardNew() {
               setCancelEventDialog({ open: false, eventId: null, eventTitle: '' });
               setCancelReason('');
             }}>
-              Go Back
+              {t("Go Back")}
             </Button>
             <Button
               variant="destructive"
@@ -1935,6 +1935,7 @@ type ProductCategoryEditForm = z.infer<typeof productCategoryEditSchema>;
 type ServiceCategoryEditForm = z.infer<typeof serviceCategoryEditSchema>;
 
 function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: RequestsManagementProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("products");
 
@@ -2062,7 +2063,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     mutationFn: (data: { productId: number; product: Partial<Product> }) =>
       vendorService.editPendingProduct(data.productId, data.product as Product),
     onSuccess: () => {
-      toast({ title: "Success", description: "Product updated and resubmitted for review. Status reset to PENDING." });
+      toast({ title: t("Success"), description: t("Product updated and resubmitted for review. Status reset to PENDING.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'products'] });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-products'] });
       setEditProductOpen(false);
@@ -2070,7 +2071,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     },
     onError: (error: any) => {
       toast({ 
-        title: "Error", 
+        title: t("Error"), 
         description: error.response?.data?.message || error.message || "Failed to update product", 
         variant: "destructive" 
       });
@@ -2081,7 +2082,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     mutationFn: (data: { requestId: number; request: PriceUpdateRequest }) =>
       vendorService.editPriceUpdateRequest(data.requestId, data.request),
     onSuccess: () => {
-      toast({ title: "Success", description: "Price update request resubmitted for review. Status reset to PENDING." });
+      toast({ title: t("Success"), description: t("Price update request resubmitted for review. Status reset to PENDING.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'price-requests'] });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-price-requests'] });
       setEditPriceUpdateOpen(false);
@@ -2089,7 +2090,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     },
     onError: (error: any) => {
       toast({ 
-        title: "Error", 
+        title: t("Error"), 
         description: error.response?.data?.message || error.message || "Failed to update request", 
         variant: "destructive" 
       });
@@ -2102,7 +2103,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     mutationFn: (data: { requestId: number; request: any }) =>
       vendorService.editEventPriceUpdateRequest(data.requestId, data.request),
     onSuccess: () => {
-      toast({ title: "Success", description: "Event price update request resubmitted for review. Status reset to PENDING." });
+      toast({ title: t("Success"), description: t("Event price update request resubmitted for review. Status reset to PENDING.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'event-price-requests'] });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-event-price-requests'] });
       setEditEventPriceOpen(false);
@@ -2110,7 +2111,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     },
     onError: (error: any) => {
       toast({ 
-        title: "Error", 
+        title: t("Error"), 
         description: error.response?.data?.message || error.message || "Failed to update request", 
         variant: "destructive" 
       });
@@ -2122,7 +2123,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     mutationFn: (data: { serviceId: number; service: any }) =>
       serviceService.editPendingService(data.serviceId, data.service),
     onSuccess: () => {
-      toast({ title: "Success", description: "Service updated and resubmitted for review. Status reset to PENDING." });
+      toast({ title: t("Success"), description: t("Service updated and resubmitted for review. Status reset to PENDING.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'services'] });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-services'] });
       setEditServiceOpen(false);
@@ -2130,7 +2131,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     },
     onError: (error: any) => {
       toast({ 
-        title: "Error", 
+        title: t("Error"), 
         description: error.response?.data?.message || error.message || "Failed to update service", 
         variant: "destructive" 
       });
@@ -2142,7 +2143,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     mutationFn: (data: { requestId: number; request: { newPrice: any; reason?: string } }) =>
       vendorService.editServicePriceUpdateRequest(data.requestId, data.request),
     onSuccess: () => {
-      toast({ title: "Success", description: "Service price update request resubmitted for review. Status reset to PENDING." });
+      toast({ title: t("Success"), description: t("Service price update request resubmitted for review. Status reset to PENDING.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'service-price-requests'] });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-service-price-requests'] });
       setEditServicePriceOpen(false);
@@ -2150,7 +2151,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     },
     onError: (error: any) => {
       toast({ 
-        title: "Error", 
+        title: t("Error"), 
         description: error.response?.data?.message || error.message || "Failed to update request", 
         variant: "destructive" 
       });
@@ -2162,14 +2163,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     mutationFn: (data: { requestId: number; request: { newSubCategoryId: number; reason?: string } }) =>
       vendorService.editCategoryChangeRequest(data.requestId, data.request),
     onSuccess: () => {
-      toast({ title: "Success", description: "Category change request resubmitted for review. Status reset to PENDING." });
+      toast({ title: t("Success"), description: t("Category change request resubmitted for review. Status reset to PENDING.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-product-category-requests'] });
       setEditProductCategoryOpen(false);
       setSelectedProductCategoryRequest(null);
     },
     onError: (error: any) => {
       toast({ 
-        title: "Error", 
+        title: t("Error"), 
         description: error.response?.data?.message || error.message || "Failed to update request", 
         variant: "destructive" 
       });
@@ -2181,14 +2182,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     mutationFn: (data: { requestId: number; request: { newSubCategoryId: number; reason?: string } }) =>
       vendorService.editServiceCategoryChangeRequest(data.requestId, data.request),
     onSuccess: () => {
-      toast({ title: "Success", description: "Category change request resubmitted for review. Status reset to PENDING." });
+      toast({ title: t("Success"), description: t("Category change request resubmitted for review. Status reset to PENDING.") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-service-category-requests'] });
       setEditServiceCategoryOpen(false);
       setSelectedServiceCategoryRequest(null);
     },
     onError: (error: any) => {
       toast({ 
-        title: "Error", 
+        title: t("Error"), 
         description: error.response?.data?.message || error.message || "Failed to update request", 
         variant: "destructive" 
       });
@@ -2376,7 +2377,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       
       if (totalImages === 0) {
         toast({
-          title: "Image Required",
+          title: t("Image Required"),
           description: `Please upload at least one image for ${data.productSku.length === 1 ? 'your product' : `variant #${i + 1} (${data.productSku[i].skuCode || 'unnamed'})`}.`,
           variant: "destructive",
         });
@@ -2425,8 +2426,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
         } catch (imageError) {
           console.error("Failed to upload SKU images:", imageError);
           toast({
-            title: "Warning",
-            description: "Product updated but some images failed to upload.",
+            title: t("Warning"),
+            description: t("Product updated but some images failed to upload."),
             variant: "destructive",
           });
         } finally {
@@ -2466,8 +2467,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     const totalImages = currentEventImages.length + pendingEventImages.length;
     if (totalImages === 0) {
       toast({
-        title: "Image Required",
-        description: "Please upload at least one event image before saving.",
+        title: t("Image Required"),
+        description: t("Please upload at least one event image before saving."),
         variant: "destructive",
       });
       return;
@@ -2536,8 +2537,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
         } catch (imageError) {
           console.error("Failed to upload event images:", imageError);
           toast({
-            title: "Warning",
-            description: "Event updated but some images failed to upload.",
+            title: t("Warning"),
+            description: t("Event updated but some images failed to upload."),
             variant: "destructive",
           });
         } finally {
@@ -2546,8 +2547,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       }
       
       toast({ 
-        title: "Success", 
-        description: "Event updated and resubmitted for review. Price changes require admin approval." 
+        title: t("Success"), 
+        description: t("Event updated and resubmitted for review. Price changes require admin approval.") 
       });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'events'] });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'pending-rejected-events'] });
@@ -2559,7 +2560,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     } catch (error: any) {
       setIsUploadingEventImages(false);
       toast({ 
-        title: "Error", 
+        title: t("Error"), 
         description: error.response?.data?.message || error.message || "Failed to update event", 
         variant: "destructive" 
       });
@@ -2590,8 +2591,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     const totalImages = currentServiceImages.length + pendingServiceImages.length;
     if (totalImages === 0) {
       toast({
-        title: "Image Required",
-        description: "Please upload at least one service image before saving.",
+        title: t("Image Required"),
+        description: t("Please upload at least one service image before saving."),
         variant: "destructive",
       });
       return;
@@ -2619,8 +2620,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
         } catch (imageError) {
           console.error("Failed to upload service images:", imageError);
           toast({
-            title: "Warning",
-            description: "Service updated but some images failed to upload.",
+            title: t("Warning"),
+            description: t("Service updated but some images failed to upload."),
             variant: "destructive",
           });
         } finally {
@@ -2685,7 +2686,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
     <>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-semibold">All Requests</h2>
+          <h2 className="text-xl font-semibold">{t("All Requests")}</h2>
           <p className="text-sm text-muted-foreground">
             {isLoading ? (
               "Loading requests..."
@@ -2700,16 +2701,16 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
             <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Loading your requests...</p>
+            <p className="text-sm text-muted-foreground">{t("Loading your requests...")}</p>
           </CardContent>
         </Card>
       ) : hasNoRequests ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">All Caught Up!</h3>
+            <h3 className="text-lg font-semibold mb-2">{t("All Caught Up!")}</h3>
             <p className="text-sm text-muted-foreground text-center max-w-md">
-              You have no pending or rejected items at the moment. All your submissions are either approved or you haven't made any yet.
+              {t("You have no pending or rejected items at the moment. All your submissions are either approved or you haven't made any yet.")}
             </p>
           </CardContent>
         </Card>
@@ -2718,56 +2719,56 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
         <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 lg:w-auto lg:inline-grid">
           <TabsTrigger value="products" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">Products</span>
+            <span className="hidden sm:inline">{t("Products")}</span>
             {pendingProducts.length > 0 && (
               <Badge variant="secondary" className="ml-1">{pendingProducts.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="product-prices" className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
-            <span className="hidden sm:inline">Product Prices</span>
+            <span className="hidden sm:inline">{t("Product Prices")}</span>
             {pendingPriceRequests.length > 0 && (
               <Badge variant="secondary" className="ml-1">{pendingPriceRequests.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="product-categories" className="flex items-center gap-2">
             <Layers className="h-4 w-4" />
-            <span className="hidden sm:inline">Product Categories</span>
+            <span className="hidden sm:inline">{t("Product Categories")}</span>
             {pendingProductCategoryRequests.length > 0 && (
               <Badge variant="secondary" className="ml-1">{pendingProductCategoryRequests.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="events" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">Events</span>
+            <span className="hidden sm:inline">{t("Events")}</span>
             {pendingEvents.length > 0 && (
               <Badge variant="secondary" className="ml-1">{pendingEvents.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="event-prices" className="flex items-center gap-2">
             <Ticket className="h-4 w-4" />
-            <span className="hidden sm:inline">Event Prices</span>
+            <span className="hidden sm:inline">{t("Event Prices")}</span>
             {pendingEventPriceRequests.length > 0 && (
               <Badge variant="secondary" className="ml-1">{pendingEventPriceRequests.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="services" className="flex items-center gap-2">
             <Briefcase className="h-4 w-4" />
-            <span className="hidden sm:inline">Services</span>
+            <span className="hidden sm:inline">{t("Services")}</span>
             {pendingServices.length > 0 && (
               <Badge variant="secondary" className="ml-1">{pendingServices.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="service-prices" className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
-            <span className="hidden sm:inline">Service Prices</span>
+            <span className="hidden sm:inline">{t("Service Prices")}</span>
             {pendingServicePriceRequests.length > 0 && (
               <Badge variant="secondary" className="ml-1">{pendingServicePriceRequests.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="service-categories" className="flex items-center gap-2">
             <Layers className="h-4 w-4" />
-            <span className="hidden sm:inline">Service Categories</span>
+            <span className="hidden sm:inline">{t("Service Categories")}</span>
             {pendingServiceCategoryRequests.length > 0 && (
               <Badge variant="secondary" className="ml-1">{pendingServiceCategoryRequests.length}</Badge>
             )}
@@ -2780,10 +2781,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Product Creation Requests
+                {t("Product Creation Requests")}
               </CardTitle>
               <CardDescription>
-                Products pending approval or rejected by admin. Edit and resubmit rejected products.
+                {t("Products pending approval or rejected by admin. Edit and resubmit rejected products.")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -2794,7 +2795,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               ) : pendingProducts.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No pending or rejected products</p>
+                  <p className="text-muted-foreground">{t("No pending or rejected products")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -2817,7 +2818,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             <div className="flex items-center gap-2 mt-2">
                               {getStatusBadge(product.status || '')}
                               <span className="text-sm text-muted-foreground">
-                                Created: {new Date(product.createdAt || '').toLocaleDateString()}
+                                {t("Created:")} {new Date(product.createdAt || '').toLocaleDateString()}
                               </span>
                             </div>
                           </div>
@@ -2826,13 +2827,13 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                           <Button asChild variant="outline" size="sm">
                             <Link to={`/products/${product.id}`}>
                               <Eye className="h-4 w-4 mr-1" />
-                              View
+                              {t("View")}
                             </Link>
                           </Button>
                           <Button asChild variant="outline" size="sm">
                             <Link to={`/vendor/products/${product.id}/edit`}>
                               <Edit className="h-4 w-4 mr-1" />
-                              Edit
+                              {t("Edit")}
                             </Link>
                           </Button>
                         </div>
@@ -2842,10 +2843,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                              <p className="text-sm font-medium text-red-800">{t("Rejection Reason:")}</p>
                               <RejectionReasonWithModal
                                 reason={product.rejectionReason}
-                                title="Product rejection reason"
+                                title={t("Product rejection reason")}
                                 className="text-sm text-red-700"
                                 truncateLength={120}
                               />
@@ -2867,10 +2868,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                Product Price Update Requests
+                {t("Product Price Update Requests")}
               </CardTitle>
               <CardDescription>
-                Price change requests pending approval or rejected by admin.
+                {t("Price change requests pending approval or rejected by admin.")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -2881,7 +2882,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               ) : pendingPriceRequests.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No pending or rejected price update requests</p>
+                  <p className="text-muted-foreground">{t("No pending or rejected price update requests")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -2894,18 +2895,18 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                           <div>
                             <h3 className="font-semibold">{request.productName}</h3>
                             {request.skuCode && (
-                              <p className="text-sm text-muted-foreground">SKU: {request.skuCode}</p>
+                              <p className="text-sm text-muted-foreground">{t("SKU:")} {request.skuCode}</p>
                             )}
                             <div className="flex items-center gap-4 mt-2">
                               <div>
-                                <span className="text-sm text-muted-foreground">Current: </span>
+                                <span className="text-sm text-muted-foreground">{t("Current:")} </span>
                                 <span className="font-medium">
                                   {currentPrice?.currencyCode} {(currentPrice?.amount ?? (currentPrice?.unitAmountMinor ? currentPrice.unitAmountMinor / 100 : 0))?.toFixed(2)}
                                 </span>
                               </div>
                               <span className="text-muted-foreground">→</span>
                               <div>
-                                <span className="text-sm text-muted-foreground">New: </span>
+                                <span className="text-sm text-muted-foreground">{t("New:")} </span>
                                 <span className="font-medium text-blue-600">
                                   {newPrice?.currencyCode} {(newPrice?.amount ?? (newPrice?.unitAmountMinor ? newPrice.unitAmountMinor / 100 : 0))?.toFixed(2)}
                                 </span>
@@ -2914,16 +2915,16 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             <div className="flex items-center gap-2 mt-2">
                               {getStatusBadge(request.status || '')}
                               <span className="text-sm text-muted-foreground">
-                                Submitted: {new Date(request.createdAt || '').toLocaleDateString()}
+                                {t("Submitted:")} {new Date(request.createdAt || '').toLocaleDateString()}
                               </span>
                             </div>
                             {request.reason && (
-                              <p className="text-sm text-muted-foreground mt-1">Reason: {request.reason}</p>
+                              <p className="text-sm text-muted-foreground mt-1">{t("Reason:")} {request.reason}</p>
                             )}
                           </div>
                           <Button variant="outline" size="sm" onClick={() => openPriceUpdateEdit(request)}>
                             <Edit className="h-4 w-4 mr-1" />
-                            Edit
+                            {t("Edit")}
                           </Button>
                         </div>
                         {request.rejectionReason && (
@@ -2931,10 +2932,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             <div className="flex items-start gap-2">
                               <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                                <p className="text-sm font-medium text-red-800">{t("Rejection Reason:")}</p>
                                 <RejectionReasonWithModal
                                   reason={request.rejectionReason}
-                                  title="Request rejection reason"
+                                  title={t("Request rejection reason")}
                                   className="text-sm text-red-700"
                                   truncateLength={120}
                                 />
@@ -2957,10 +2958,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Event Creation Requests
+                {t("Event Creation Requests")}
               </CardTitle>
               <CardDescription>
-                Events pending approval or rejected by admin. Edit and resubmit rejected events.
+                {t("Events pending approval or rejected by admin. Edit and resubmit rejected events.")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -2971,7 +2972,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               ) : pendingEvents.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No pending or rejected events</p>
+                  <p className="text-muted-foreground">{t("No pending or rejected events")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -3002,7 +3003,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         <Button asChild variant="outline" size="sm">
                           <Link to={`/vendor/events/${event.id}/edit`}>
                             <Edit className="h-4 w-4 mr-1" />
-                            Edit
+                            {t("Edit")}
                           </Link>
                         </Button>
                       </div>
@@ -3011,10 +3012,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                              <p className="text-sm font-medium text-red-800">{t("Rejection Reason:")}</p>
                               <RejectionReasonWithModal
                                 reason={event.rejectionReason}
-                                title="Event rejection reason"
+                                title={t("Event rejection reason")}
                                 className="text-sm text-red-700"
                                 truncateLength={120}
                               />
@@ -3036,10 +3037,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Ticket className="h-5 w-5" />
-                Event Price Update Requests
+                {t("Event Price Update Requests")}
               </CardTitle>
               <CardDescription>
-                Ticket price change requests pending approval or rejected by admin.
+                {t("Ticket price change requests pending approval or rejected by admin.")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -3050,7 +3051,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               ) : pendingEventPriceRequests.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No pending or rejected event price update requests</p>
+                  <p className="text-muted-foreground">{t("No pending or rejected event price update requests")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -3063,17 +3064,17 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 className="font-semibold">{request.eventTitle}</h3>
-                            <p className="text-sm text-muted-foreground">Ticket Type: {request.ticketTypeName}</p>
+                            <p className="text-sm text-muted-foreground">{t("Ticket Type:")} {request.ticketTypeName}</p>
                             <div className="flex items-center gap-4 mt-2">
                               <div>
-                                <span className="text-sm text-muted-foreground">Current: </span>
+                                <span className="text-sm text-muted-foreground">{t("Current:")} </span>
                                 <span className="font-medium">
                                   {request.currentCurrencyCode} {currentPriceDisplay}
                                 </span>
                               </div>
                               <span className="text-muted-foreground">→</span>
                               <div>
-                                <span className="text-sm text-muted-foreground">New: </span>
+                                <span className="text-sm text-muted-foreground">{t("New:")} </span>
                                 <span className="font-medium text-blue-600">
                                   {request.newCurrencyCode} {newPriceDisplay}
                                 </span>
@@ -3082,16 +3083,16 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             <div className="flex items-center gap-2 mt-2">
                               {getStatusBadge(request.status)}
                               <span className="text-sm text-muted-foreground">
-                                Submitted: {new Date(request.createdAt).toLocaleDateString()}
+                                {t("Submitted:")} {new Date(request.createdAt).toLocaleDateString()}
                               </span>
                             </div>
                             {request.reason && (
-                              <p className="text-sm text-muted-foreground mt-1">Reason: {request.reason}</p>
+                              <p className="text-sm text-muted-foreground mt-1">{t("Reason:")} {request.reason}</p>
                             )}
                           </div>
                           <Button variant="outline" size="sm" onClick={() => openEventPriceEdit(request)}>
                             <Edit className="h-4 w-4 mr-1" />
-                            Edit
+                            {t("Edit")}
                           </Button>
                         </div>
                         {request.rejectionReason && (
@@ -3099,10 +3100,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             <div className="flex items-start gap-2">
                               <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                                <p className="text-sm font-medium text-red-800">{t("Rejection Reason:")}</p>
                                 <RejectionReasonWithModal
                                   reason={request.rejectionReason}
-                                  title="Request rejection reason"
+                                  title={t("Request rejection reason")}
                                   className="text-sm text-red-700"
                                   truncateLength={120}
                                 />
@@ -3125,10 +3126,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Briefcase className="h-5 w-5" />
-                Service Creation Requests
+                {t("Service Creation Requests")}
               </CardTitle>
               <CardDescription>
-                Services pending approval or rejected by admin.
+                {t("Services pending approval or rejected by admin.")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -3139,7 +3140,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               ) : pendingServices.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No pending or rejected services</p>
+                  <p className="text-muted-foreground">{t("No pending or rejected services")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -3164,7 +3165,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             <div className="flex items-center gap-2 mt-2">
                               {getStatusBadge(service.status)}
                               <span className="text-sm text-muted-foreground">
-                                Price: {serviceService.formatPrice(service.defaultPackage?.basePrice ?? service.basePrice ?? 0, service.defaultPackage?.currency ?? service.currency)}
+                                {t("Price:")} {serviceService.formatPrice(service.defaultPackage?.basePrice ?? service.basePrice ?? 0, service.defaultPackage?.currency ?? service.currency)}
                               </span>
                             </div>
                             {service.description && (
@@ -3174,7 +3175,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         </div>
                         <Button variant="outline" size="sm" onClick={() => openServiceEdit(service)}>
                           <Edit className="h-4 w-4 mr-1" />
-                          Edit
+                          {t("Edit")}
                         </Button>
                       </div>
                       {service.rejectionReason && (
@@ -3182,10 +3183,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                              <p className="text-sm font-medium text-red-800">{t("Rejection Reason:")}</p>
                               <RejectionReasonWithModal
                                 reason={service.rejectionReason}
-                                title="Service rejection reason"
+                                title={t("Service rejection reason")}
                                 className="text-sm text-red-700"
                                 truncateLength={120}
                               />
@@ -3207,10 +3208,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                Service Price Update Requests
+                {t("Service Price Update Requests")}
               </CardTitle>
               <CardDescription>
-                Service price change requests pending approval or rejected by admin.
+                {t("Service price change requests pending approval or rejected by admin.")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -3221,7 +3222,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               ) : pendingServicePriceRequests.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No pending or rejected service price update requests</p>
+                  <p className="text-muted-foreground">{t("No pending or rejected service price update requests")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -3236,17 +3237,17 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 className="font-semibold">{request.serviceName || `Service #${request.serviceId}`}</h3>
-                            <p className="text-sm text-muted-foreground">Vendor: {request.vendorName || `#${request.vendorId}`}</p>
+                            <p className="text-sm text-muted-foreground">{t("Vendor:")} {request.vendorName || `#${request.vendorId}`}</p>
                             <div className="flex items-center gap-4 mt-2">
                               <div>
-                                <span className="text-sm text-muted-foreground">Current: </span>
+                                <span className="text-sm text-muted-foreground">{t("Current:")} </span>
                                 <span className="font-medium">
                                   {currency} {currentPrice.toFixed(2)}
                                 </span>
                               </div>
                               <span className="text-muted-foreground">→</span>
                               <div>
-                                <span className="text-sm text-muted-foreground">New: </span>
+                                <span className="text-sm text-muted-foreground">{t("New:")} </span>
                                 <span className="font-medium text-blue-600">
                                   {currency} {newPrice.toFixed(2)}
                                 </span>
@@ -3256,17 +3257,17 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                               {getStatusBadge(request.status || 'PENDING')}
                               {request.createdAt && (
                                 <span className="text-sm text-muted-foreground">
-                                  Submitted: {new Date(request.createdAt).toLocaleDateString()}
+                                  {t("Submitted:")} {new Date(request.createdAt).toLocaleDateString()}
                                 </span>
                               )}
                             </div>
                             {request.reason && (
-                              <p className="text-sm text-muted-foreground mt-1">Reason: {request.reason}</p>
+                              <p className="text-sm text-muted-foreground mt-1">{t("Reason:")} {request.reason}</p>
                             )}
                           </div>
                           <Button variant="outline" size="sm" onClick={() => openServicePriceEdit(request)}>
                             <Edit className="h-4 w-4 mr-1" />
-                            Edit
+                            {t("Edit")}
                           </Button>
                         </div>
                         {request.rejectionReason && (
@@ -3274,10 +3275,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             <div className="flex items-start gap-2">
                               <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                                <p className="text-sm font-medium text-red-800">{t("Rejection Reason:")}</p>
                                 <RejectionReasonWithModal
                                   reason={request.rejectionReason}
-                                  title="Request rejection reason"
+                                  title={t("Request rejection reason")}
                                   className="text-sm text-red-700"
                                   truncateLength={120}
                                 />
@@ -3300,10 +3301,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Layers className="h-5 w-5" />
-                Product Category Change Requests
+                {t("Product Category Change Requests")}
               </CardTitle>
               <CardDescription>
-                Category change requests pending approval or rejected by admin.
+                {t("Category change requests pending approval or rejected by admin.")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -3314,7 +3315,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               ) : pendingProductCategoryRequests.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No pending or rejected category change requests</p>
+                  <p className="text-muted-foreground">{t("No pending or rejected category change requests")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -3340,22 +3341,22 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             </div>
                             <div className="mt-2 text-sm">
                               <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground">Current:</span>
+                                <span className="text-muted-foreground">{t("Current:")}</span>
                                 <span>{request.currentCategoryName} → {request.currentSubCategoryName}</span>
                               </div>
                               <div className="flex items-center gap-2 mt-1">
-                                <span className="text-muted-foreground">New:</span>
+                                <span className="text-muted-foreground">{t("New:")}</span>
                                 <span className="text-blue-600 font-medium">{request.newCategoryName} → {request.newSubCategoryName}</span>
                               </div>
                             </div>
                             {request.reason && (
-                              <p className="text-sm text-muted-foreground mt-2">Reason: {request.reason}</p>
+                              <p className="text-sm text-muted-foreground mt-2">{t("Reason:")} {request.reason}</p>
                             )}
                           </div>
                         </div>
                         <Button variant="outline" size="sm" onClick={() => openProductCategoryEdit(request)}>
                           <Edit className="h-4 w-4 mr-1" />
-                          Edit
+                          {t("Edit")}
                         </Button>
                       </div>
                       {request.rejectionReason && (
@@ -3363,10 +3364,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                              <p className="text-sm font-medium text-red-800">{t("Rejection Reason:")}</p>
                               <RejectionReasonWithModal
                                 reason={request.rejectionReason}
-                                title="Request rejection reason"
+                                title={t("Request rejection reason")}
                                 className="text-sm text-red-700"
                                 truncateLength={120}
                               />
@@ -3388,10 +3389,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Layers className="h-5 w-5" />
-                Service Category Change Requests
+                {t("Service Category Change Requests")}
               </CardTitle>
               <CardDescription>
-                Category change requests pending approval or rejected by admin.
+                {t("Category change requests pending approval or rejected by admin.")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -3402,7 +3403,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               ) : pendingServiceCategoryRequests.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No pending or rejected category change requests</p>
+                  <p className="text-muted-foreground">{t("No pending or rejected category change requests")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -3428,22 +3429,22 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             </div>
                             <div className="mt-2 text-sm">
                               <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground">Current:</span>
+                                <span className="text-muted-foreground">{t("Current:")}</span>
                                 <span>{request.currentCategoryName} → {request.currentSubCategoryName}</span>
                               </div>
                               <div className="flex items-center gap-2 mt-1">
-                                <span className="text-muted-foreground">New:</span>
+                                <span className="text-muted-foreground">{t("New:")}</span>
                                 <span className="text-blue-600 font-medium">{request.newCategoryName} → {request.newSubCategoryName}</span>
                               </div>
                             </div>
                             {request.reason && (
-                              <p className="text-sm text-muted-foreground mt-2">Reason: {request.reason}</p>
+                              <p className="text-sm text-muted-foreground mt-2">{t("Reason:")} {request.reason}</p>
                             )}
                           </div>
                         </div>
                         <Button variant="outline" size="sm" onClick={() => openServiceCategoryEdit(request)}>
                           <Edit className="h-4 w-4 mr-1" />
-                          Edit
+                          {t("Edit")}
                         </Button>
                       </div>
                       {request.rejectionReason && (
@@ -3451,10 +3452,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                              <p className="text-sm font-medium text-red-800">{t("Rejection Reason:")}</p>
                               <RejectionReasonWithModal
                                 reason={request.rejectionReason}
-                                title="Request rejection reason"
+                                title={t("Request rejection reason")}
                                 className="text-sm text-red-700"
                                 truncateLength={120}
                               />
@@ -3476,12 +3477,12 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       <Dialog open={editProductOpen} onOpenChange={setEditProductOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
+            <DialogTitle>{t("Edit Product")}</DialogTitle>
             <DialogDescription>
-              Update your product details and resubmit for review.
+              {t("Update your product details and resubmit for review.")}
               {selectedProduct?.status === 'REJECTED' && (
                 <span className="block mt-2 text-amber-600">
-                  This product was rejected. Editing will resubmit it for approval.
+                  {t("This product was rejected. Editing will resubmit it for approval.")}
                 </span>
               )}
             </DialogDescription>
@@ -3490,35 +3491,35 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             {/* Basic Information */}
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Product Name *</Label>
-                <Input id="name" {...productForm.register("name")} placeholder="Enter product name" />
+                <Label htmlFor="name">{t("Product Name *")}</Label>
+                <Input id="name" {...productForm.register("name")} placeholder={t("Enter product name")} />
                 {productForm.formState.errors.name && (
                   <p className="text-sm text-red-600 mt-1">{productForm.formState.errors.name.message}</p>
                 )}
               </div>
 
               <div>
-                <Label htmlFor="summary">Short Summary</Label>
-                <Input id="summary" {...productForm.register("summary")} placeholder="Brief product summary" />
+                <Label htmlFor="summary">{t("Short Summary")}</Label>
+                <Input id="summary" {...productForm.register("summary")} placeholder={t("Brief product summary")} />
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" {...productForm.register("description")} className="min-h-[100px]" placeholder="Detailed product description" />
+                <Label htmlFor="description">{t("Description")}</Label>
+                <Textarea id="description" {...productForm.register("description")} className="min-h-[100px]" placeholder={t("Detailed product description")} />
               </div>
             </div>
 
             {/* Category & Tags */}
             <div className="space-y-4">
               <div>
-                <Label>Sub-Category</Label>
+                <Label>{t("Sub-Category")}</Label>
                 <Controller
                   name="subCategoryId"
                   control={productForm.control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a sub-category" />
+                        <SelectValue placeholder={t("Select a sub-category")} />
                       </SelectTrigger>
                       <SelectContent>
                         {allSubCategories.map((subCategory) => (
@@ -3533,12 +3534,12 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               </div>
 
               <div>
-                <Label htmlFor="occasion">Occasion</Label>
-                <Input id="occasion" {...productForm.register("occasion")} placeholder="e.g., Birthday, Wedding, Christmas" />
+                <Label htmlFor="occasion">{t("Occasion")}</Label>
+                <Input id="occasion" {...productForm.register("occasion")} placeholder={t("e.g., Birthday, Wedding, Christmas")} />
               </div>
 
               <div>
-                <Label htmlFor="tags">Tags</Label>
+                <Label htmlFor="tags">{t("Tags")}</Label>
                 <Controller
                   name="tags"
                   control={productForm.control}
@@ -3546,7 +3547,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                     <TagInput
                       value={field.value}
                       onChange={field.onChange}
-                      placeholder="Enter tag"
+                      placeholder={t("Enter tag")}
                       maxTags={10}
                     />
                   )}
@@ -3559,7 +3560,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Layers className="h-4 w-4" />
-                  <Label className="text-base font-medium">Product Variants (SKUs) *</Label>
+                  <Label className="text-base font-medium">{t("Product Variants (SKUs) *")}</Label>
                 </div>
                 <Button
                   type="button"
@@ -3575,11 +3576,11 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                   })}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Variant
+                  {t("Add Variant")}
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                Manage stock and pricing for your product. Add multiple variants if you have different sizes, colors, etc.
+                {t("Manage stock and pricing for your product. Add multiple variants if you have different sizes, colors, etc.")}
               </p>
 
               <div className="space-y-4">
@@ -3608,7 +3609,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                       <CardContent className="space-y-4">
                         {/* SKU Name */}
                         <div>
-                          <Label>Variant Name (optional)</Label>
+                          <Label>{t("Variant Name (optional)")}</Label>
                           <Input
                             placeholder={productSkuFields.length === 1 ? "e.g., Default" : "e.g., Red Medium"}
                             {...productForm.register(`productSku.${skuIndex}.skuName`)}
@@ -3618,13 +3619,13 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                               {productForm.formState.errors.productSku[skuIndex]?.skuName?.message}
                             </p>
                           )}
-                          <p className="text-xs text-muted-foreground mt-1">A friendly name for this variant</p>
+                          <p className="text-xs text-muted-foreground mt-1">{t("A friendly name for this variant")}</p>
                         </div>
 
                         {/* SKU Code and Stock */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label>SKU Code (optional)</Label>
+                            <Label>{t("SKU Code (optional)")}</Label>
                             <Input
                               placeholder={productSkuFields.length === 1 ? "e.g., PROD-001" : "e.g., SHIRT-RED-M"}
                               {...productForm.register(`productSku.${skuIndex}.skuCode`)}
@@ -3636,7 +3637,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             )}
                           </div>
                           <div>
-                            <Label>Stock Quantity *</Label>
+                            <Label>{t("Stock Quantity *")}</Label>
                             <Controller
                               name={`productSku.${skuIndex}.stockQuantity`}
                               control={productForm.control}
@@ -3664,14 +3665,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         {/* SKU Price */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label>Currency *</Label>
+                            <Label>{t("Currency *")}</Label>
                             <Controller
                               name={`productSku.${skuIndex}.currencyCode`}
                               control={productForm.control}
                               render={({ field }) => (
                                 <Select value={field.value} onValueChange={field.onChange}>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select currency" />
+                                    <SelectValue placeholder={t("Select currency")} />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {availableCurrencies.map((currency) => (
@@ -3685,7 +3686,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             />
                           </div>
                           <div>
-                            <Label>Your Price *</Label>
+                            <Label>{t("Your Price *")}</Label>
                             <Controller
                               name={`productSku.${skuIndex}.amount`}
                               control={productForm.control}
@@ -3712,7 +3713,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                               )}
                             />
                             <p className="text-xs text-muted-foreground mt-1">
-                              This is what you'll receive. Platform fee will be added for customers.
+                              {t("This is what you'll receive. Platform fee will be added for customers.")}
                             </p>
                           </div>
                         </div>
@@ -3720,7 +3721,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         {/* Attributes */}
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <Label className="text-sm">Attributes (Size, Color, etc.)</Label>
+                            <Label className="text-sm">{t("Attributes (Size, Color, etc.)")}</Label>
                             <Button
                               type="button"
                               variant="ghost"
@@ -3734,20 +3735,20 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                               }}
                             >
                               <Plus className="h-4 w-4 mr-1" />
-                              Add Attribute
+                              {t("Add Attribute")}
                             </Button>
                           </div>
                           {attributes.map((_, attrIndex) => (
                             <div key={attrIndex} className="flex gap-2 items-end">
                               <div className="flex-1">
                                 <Input
-                                  placeholder="Name (e.g., Color)"
+                                  placeholder={t("Name (e.g., Color)")}
                                   {...productForm.register(`productSku.${skuIndex}.attributes.${attrIndex}.name`)}
                                 />
                               </div>
                               <div className="flex-1">
                                 <Input
-                                  placeholder="Value (e.g., Red)"
+                                  placeholder={t("Value (e.g., Red)")}
                                   {...productForm.register(`productSku.${skuIndex}.attributes.${attrIndex}.value`)}
                                 />
                               </div>
@@ -3773,10 +3774,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         <div className="space-y-3 border-t pt-4">
                           <div className="flex items-center gap-2">
                             <ImageIcon className="h-4 w-4" />
-                            <Label className="text-sm font-medium">Images *</Label>
+                            <Label className="text-sm font-medium">{t("Images *")}</Label>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Upload images for this {productSkuFields.length === 1 ? 'product' : 'variant'}. First image will be the cover.
+                            {t("Upload images for this")} {productSkuFields.length === 1 ? 'product' : 'variant'}{t(". First image will be the cover.")}
                           </p>
                           <ImageUpload
                             images={currentSkuImages[skuIndex] || []}
@@ -3794,7 +3795,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                           />
                           {pendingSkuImages[skuIndex] && pendingSkuImages[skuIndex].length > 0 && (
                             <p className="text-sm text-muted-foreground">
-                              {pendingSkuImages[skuIndex].length} new image(s) will be uploaded
+                              {pendingSkuImages[skuIndex].length} {t("new image(s) will be uploaded")}
                             </p>
                           )}
                         </div>
@@ -3807,7 +3808,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditProductOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button type="submit" disabled={editProductMutation.isPending || isUploadingProductImages}>
                 {editProductMutation.isPending || isUploadingProductImages ? (
@@ -3827,12 +3828,12 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       <Dialog open={editPriceUpdateOpen} onOpenChange={setEditPriceUpdateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Price Update Request</DialogTitle>
+            <DialogTitle>{t("Edit Price Update Request")}</DialogTitle>
             <DialogDescription>
-              Update the price change request for {selectedPriceUpdate?.productName}.
+              {t("Update the price change request for")} {selectedPriceUpdate?.productName}.
               {selectedPriceUpdate?.status === 'REJECTED' && (
                 <span className="block mt-2 text-amber-600">
-                  This request was rejected. Editing will resubmit it for approval.
+                  {t("This request was rejected. Editing will resubmit it for approval.")}
                 </span>
               )}
             </DialogDescription>
@@ -3841,7 +3842,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             <div className={isEthiopianVendor(vendorProfile) ? "" : "grid grid-cols-2 gap-4"}>
               {!isEthiopianVendor(vendorProfile) && (
                 <div>
-                  <Label>Currency *</Label>
+                  <Label>{t("Currency *")}</Label>
                   <Controller
                     name="currencyCode"
                     control={priceUpdateForm.control}
@@ -3891,11 +3892,11 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               </div>
             </div>
             <div>
-              <Label>Reason</Label>
-              <Textarea {...priceUpdateForm.register("reason")} placeholder="Explain the price change..." />
+              <Label>{t("Reason")}</Label>
+              <Textarea {...priceUpdateForm.register("reason")} placeholder={t("Explain the price change...")} />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditPriceUpdateOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setEditPriceUpdateOpen(false)}>{t("Cancel")}</Button>
               <Button type="submit" disabled={editPriceUpdateMutation.isPending}>
                 {editPriceUpdateMutation.isPending ? 'Submitting...' : 'Save & Resubmit'}
               </Button>
@@ -3908,12 +3909,12 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       <Dialog open={editEventOpen} onOpenChange={setEditEventOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Event</DialogTitle>
+            <DialogTitle>{t("Edit Event")}</DialogTitle>
             <DialogDescription>
-              Update your event details, images, and ticket types. Price changes require admin approval.
+              {t("Update your event details, images, and ticket types. Price changes require admin approval.")}
               {selectedEvent?.status === 'REJECTED' && (
                 <span className="block mt-2 text-amber-600">
-                  This event was rejected. Editing will resubmit it for approval.
+                  {t("This event was rejected. Editing will resubmit it for approval.")}
                 </span>
               )}
             </DialogDescription>
@@ -3922,56 +3923,56 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             {/* Basic Event Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Event Title *</Label>
+                <Label>{t("Event Title *")}</Label>
                 <Input {...eventForm.register("title")} />
                 {eventForm.formState.errors.title && (
                   <p className="text-sm text-red-600 mt-1">{eventForm.formState.errors.title.message}</p>
                 )}
               </div>
               <div>
-                <Label>City</Label>
-                <Input {...eventForm.register("city")} placeholder="Event city" />
+                <Label>{t("City")}</Label>
+                <Input {...eventForm.register("city")} placeholder={t("Event city")} />
               </div>
             </div>
 
             <div>
-              <Label>Description</Label>
-              <Textarea {...eventForm.register("description")} className="min-h-[100px]" placeholder="Event description" />
+              <Label>{t("Description")}</Label>
+              <Textarea {...eventForm.register("description")} className="min-h-[100px]" placeholder={t("Event description")} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Location/Venue</Label>
-                <Input {...eventForm.register("location")} placeholder="Event venue" />
+                <Label>{t("Location/Venue")}</Label>
+                <Input {...eventForm.register("location")} placeholder={t("Event venue")} />
               </div>
               <div>
-                <Label>Organizer Contact</Label>
-                <Input {...eventForm.register("organizerContact")} placeholder="Contact information" />
+                <Label>{t("Organizer Contact")}</Label>
+                <Input {...eventForm.register("organizerContact")} placeholder={t("Contact information")} />
               </div>
             </div>
 
             {/* Date & Time */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Start Date/Time</Label>
+                <Label>{t("Start Date/Time")}</Label>
                 <Input type="datetime-local" {...eventForm.register("eventDate")} />
               </div>
               <div>
-                <Label>End Date/Time</Label>
+                <Label>{t("End Date/Time")}</Label>
                 <Input type="datetime-local" {...eventForm.register("eventEndDate")} />
               </div>
             </div>
 
             {/* Category */}
             <div>
-              <Label>Category</Label>
+              <Label>{t("Category")}</Label>
               <Controller
                 name="eventTypeId"
                 control={eventForm.control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a category (optional)" />
+                      <SelectValue placeholder={t("Select a category (optional)")} />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((category) => (
@@ -3989,10 +3990,10 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             <div className="border rounded-lg p-4">
               <div className="flex items-center gap-2 mb-3">
                 <ImageIcon className="h-4 w-4" />
-                <Label className="text-base font-medium">Event Images</Label>
+                <Label className="text-base font-medium">{t("Event Images")}</Label>
               </div>
               <p className="text-sm text-muted-foreground mb-3">
-                Upload up to 10 images for your event. The first image will be the primary/cover image.
+                {t("Upload up to 10 images for your event. The first image will be the primary/cover image.")}
               </p>
               <ImageUpload
                 images={currentEventImages}
@@ -4007,7 +4008,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               />
               {pendingEventImages.length > 0 && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  {pendingEventImages.length} new image(s) will be uploaded when you save the event
+                  {pendingEventImages.length} {t("new image(s) will be uploaded when you save the event")}
                 </p>
               )}
             </div>
@@ -4017,7 +4018,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Ticket className="h-4 w-4" />
-                  <Label className="text-base font-medium">Ticket Types *</Label>
+                  <Label className="text-base font-medium">{t("Ticket Types *")}</Label>
                 </div>
                 <Button
                   type="button"
@@ -4034,7 +4035,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                   }
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Ticket Type
+                  {t("Add Ticket Type")}
                 </Button>
               </div>
 
@@ -4042,7 +4043,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                 {eventTicketFields.map((ticketField, ticketIndex) => (
                   <div key={ticketField.id} className="border rounded-lg p-4 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Ticket Type {ticketIndex + 1}</h4>
+                      <h4 className="font-medium">{t("Ticket Type")} {ticketIndex + 1}</h4>
                       {eventTicketFields.length > 1 && (
                         <Button
                           type="button"
@@ -4057,14 +4058,14 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label>Name *</Label>
+                        <Label>{t("Name *")}</Label>
                         <Input
-                          placeholder="e.g., General Admission, VIP"
+                          placeholder={t("e.g., General Admission, VIP")}
                           {...eventForm.register(`ticketTypes.${ticketIndex}.name`)}
                         />
                       </div>
                       <div>
-                        <Label>Capacity *</Label>
+                        <Label>{t("Capacity *")}</Label>
                         <Input
                           type="number"
                           min="1"
@@ -4075,16 +4076,16 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                     </div>
 
                     <div>
-                      <Label>Description</Label>
+                      <Label>{t("Description")}</Label>
                       <Input
-                        placeholder="What's included with this ticket"
+                        placeholder={t("What's included with this ticket")}
                         {...eventForm.register(`ticketTypes.${ticketIndex}.description`)}
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label>Currency *</Label>
+                        <Label>{t("Currency *")}</Label>
                         <Controller
                           name={`ticketTypes.${ticketIndex}.currencyCode`}
                           control={eventForm.control}
@@ -4094,7 +4095,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                               onValueChange={field.onChange}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select currency" />
+                                <SelectValue placeholder={t("Select currency")} />
                               </SelectTrigger>
                               <SelectContent>
                                 {availableCurrencies.map((currency) => (
@@ -4109,9 +4110,9 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                       </div>
                       <div>
                         <Label className="flex items-center gap-2">
-                          Price *
+                          {t("Price *")}
                           <DollarSign className="h-3 w-3 text-amber-500" />
-                          <span className="text-xs text-amber-600">Changes need approval</span>
+                          <span className="text-xs text-amber-600">{t("Changes need approval")}</span>
                         </Label>
                         <Input
                           type="number"
@@ -4133,13 +4134,13 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditEventOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button type="submit" disabled={isUploadingEventImages}>
                 {isUploadingEventImages ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading Images...
+                    {t("Uploading Images...")}
                   </>
                 ) : (
                   'Save & Resubmit'
@@ -4154,12 +4155,12 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       <Dialog open={editEventPriceOpen} onOpenChange={setEditEventPriceOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Event Price Update Request</DialogTitle>
+            <DialogTitle>{t("Edit Event Price Update Request")}</DialogTitle>
             <DialogDescription>
-              Update the ticket price change request for {selectedEventPriceUpdate?.ticketTypeName}.
+              {t("Update the ticket price change request for")} {selectedEventPriceUpdate?.ticketTypeName}.
               {selectedEventPriceUpdate?.status === 'REJECTED' && (
                 <span className="block mt-2 text-amber-600">
-                  This request was rejected. Editing will resubmit it for approval.
+                  {t("This request was rejected. Editing will resubmit it for approval.")}
                 </span>
               )}
             </DialogDescription>
@@ -4167,7 +4168,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
           <form onSubmit={eventPriceForm.handleSubmit(onEventPriceSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Currency *</Label>
+                <Label>{t("Currency *")}</Label>
                 <Controller
                   name="currencyCode"
                   control={eventPriceForm.control}
@@ -4182,7 +4183,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                 />
               </div>
               <div>
-                <Label>New Price *</Label>
+                <Label>{t("New Price *")}</Label>
                 <Controller
                   name="amount"
                   control={eventPriceForm.control}
@@ -4210,11 +4211,11 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               </div>
             </div>
             <div>
-              <Label>Reason</Label>
+              <Label>{t("Reason")}</Label>
               <Textarea {...eventPriceForm.register("reason")} />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditEventPriceOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setEditEventPriceOpen(false)}>{t("Cancel")}</Button>
               <Button type="submit" disabled={editEventPriceMutation.isPending}>
                 {editEventPriceMutation.isPending ? 'Submitting...' : 'Save & Resubmit'}
               </Button>
@@ -4227,41 +4228,41 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       <Dialog open={editServiceOpen} onOpenChange={setEditServiceOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Service Request</DialogTitle>
+            <DialogTitle>{t("Edit Service Request")}</DialogTitle>
             <DialogDescription>
-              Update your pending or rejected service request.
+              {t("Update your pending or rejected service request.")}
               {selectedService?.status === 'REJECTED' && (
                 <span className="block mt-2 text-amber-600">
-                  This service was rejected. Editing will resubmit it for approval.
+                  {t("This service was rejected. Editing will resubmit it for approval.")}
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={serviceForm.handleSubmit(onServiceSubmit)} className="space-y-4">
             <div>
-              <Label>Title *</Label>
+              <Label>{t("Title *")}</Label>
               <Input {...serviceForm.register("title")} />
               {serviceForm.formState.errors.title && (
                 <p className="text-sm text-red-500 mt-1">{serviceForm.formState.errors.title.message}</p>
               )}
             </div>
             <div>
-              <Label>Description</Label>
+              <Label>{t("Description")}</Label>
               <Textarea {...serviceForm.register("description")} rows={3} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Location</Label>
+                <Label>{t("Location")}</Label>
                 <Input {...serviceForm.register("location")} />
               </div>
               <div>
-                <Label>City</Label>
+                <Label>{t("City")}</Label>
                 <Input {...serviceForm.register("city")} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Duration (minutes)</Label>
+                <Label>{t("Duration (minutes)")}</Label>
                 <Input 
                   type="number" 
                   min="1" 
@@ -4269,7 +4270,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                 />
               </div>
               <div>
-                <Label>Category</Label>
+                <Label>{t("Category")}</Label>
                 <Controller
                   name="categoryId"
                   control={serviceForm.control}
@@ -4278,7 +4279,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                       value={field.value?.toString() || ''} 
                       onValueChange={(val) => field.onChange(val ? parseInt(val) : undefined)}
                     >
-                      <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t("Select category")} /></SelectTrigger>
                       <SelectContent>
                         {categories?.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id.toString()}>
@@ -4294,7 +4295,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             
             {/* Service Images */}
             <div>
-              <Label>Images</Label>
+              <Label>{t("Images")}</Label>
               <div className="mt-2">
                 {/* Current images */}
                 {currentServiceImages.length > 0 && (
@@ -4304,7 +4305,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         <img src={url} alt={`Service image ${idx + 1}`} className="h-full w-full object-cover rounded" />
                         <button
                           type="button"
-                          title="Remove image"
+                          title={t("Remove image")}
                           aria-label={`Remove service image ${idx + 1}`}
                           className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
                           onClick={() => setCurrentServiceImages(currentServiceImages.filter((_, i) => i !== idx))}
@@ -4323,7 +4324,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                         <img src={URL.createObjectURL(file)} alt={`New image ${idx + 1}`} className="h-full w-full object-cover rounded border-2 border-blue-500" />
                         <button
                           type="button"
-                          title="Remove image"
+                          title={t("Remove image")}
                           aria-label={`Remove new image ${idx + 1}`}
                           className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
                           onClick={() => setPendingServiceImages(pendingServiceImages.filter((_, i) => i !== idx))}
@@ -4347,7 +4348,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditServiceOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setEditServiceOpen(false)}>{t("Cancel")}</Button>
               <Button type="submit" disabled={editServiceMutation.isPending || isUploadingServiceImages}>
                 {(editServiceMutation.isPending || isUploadingServiceImages) ? 'Submitting...' : 'Save & Resubmit'}
               </Button>
@@ -4360,12 +4361,12 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       <Dialog open={editServicePriceOpen} onOpenChange={setEditServicePriceOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Service Price Update Request</DialogTitle>
+            <DialogTitle>{t("Edit Service Price Update Request")}</DialogTitle>
             <DialogDescription>
-              Update the price change request for {selectedServicePriceUpdate?.serviceName || 'this service'}.
+              {t("Update the price change request for")} {selectedServicePriceUpdate?.serviceName || 'this service'}.
               {selectedServicePriceUpdate?.status === 'REJECTED' && (
                 <span className="block mt-2 text-amber-600">
-                  This request was rejected. Editing will resubmit it for approval.
+                  {t("This request was rejected. Editing will resubmit it for approval.")}
                 </span>
               )}
             </DialogDescription>
@@ -4373,7 +4374,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
           <form onSubmit={servicePriceForm.handleSubmit(onServicePriceSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Currency *</Label>
+                <Label>{t("Currency *")}</Label>
                 <Controller
                   name="currencyCode"
                   control={servicePriceForm.control}
@@ -4388,7 +4389,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                 />
               </div>
               <div>
-                <Label>New Price *</Label>
+                <Label>{t("New Price *")}</Label>
                 <Controller
                   name="amount"
                   control={servicePriceForm.control}
@@ -4415,11 +4416,11 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               </div>
             </div>
             <div>
-              <Label>Reason</Label>
+              <Label>{t("Reason")}</Label>
               <Textarea {...servicePriceForm.register("reason")} />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditServicePriceOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setEditServicePriceOpen(false)}>{t("Cancel")}</Button>
               <Button type="submit" disabled={editServicePriceMutation.isPending}>
                 {editServicePriceMutation.isPending ? 'Submitting...' : 'Save & Resubmit'}
               </Button>
@@ -4432,25 +4433,25 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       <Dialog open={editProductCategoryOpen} onOpenChange={setEditProductCategoryOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Product Category Change Request</DialogTitle>
+            <DialogTitle>{t("Edit Product Category Change Request")}</DialogTitle>
             <DialogDescription>
-              Update the category change request for {selectedProductCategoryRequest?.productName || 'this product'}.
+              {t("Update the category change request for")} {selectedProductCategoryRequest?.productName || 'this product'}.
               {selectedProductCategoryRequest?.status === 'REJECTED' && (
                 <span className="block mt-2 text-amber-600">
-                  This request was rejected. Editing will resubmit it for approval.
+                  {t("This request was rejected. Editing will resubmit it for approval.")}
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={productCategoryForm.handleSubmit(onProductCategorySubmit)} className="space-y-4">
             <div>
-              <Label>New Category *</Label>
+              <Label>{t("New Category *")}</Label>
               <Controller
                 name="newSubCategoryId"
                 control={productCategoryForm.control}
                 render={({ field }) => (
                   <Select value={field.value?.toString()} onValueChange={(val) => field.onChange(Number(val))}>
-                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("Select category")} /></SelectTrigger>
                     <SelectContent>
                       {categories.map((category) => 
                         allSubCategories
@@ -4467,11 +4468,11 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               />
             </div>
             <div>
-              <Label>Reason</Label>
-              <Textarea {...productCategoryForm.register("reason")} placeholder="Explain why you want to change the category" />
+              <Label>{t("Reason")}</Label>
+              <Textarea {...productCategoryForm.register("reason")} placeholder={t("Explain why you want to change the category")} />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditProductCategoryOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setEditProductCategoryOpen(false)}>{t("Cancel")}</Button>
               <Button type="submit" disabled={editProductCategoryMutation.isPending}>
                 {editProductCategoryMutation.isPending ? 'Submitting...' : 'Save & Resubmit'}
               </Button>
@@ -4484,25 +4485,25 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
       <Dialog open={editServiceCategoryOpen} onOpenChange={setEditServiceCategoryOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Service Category Change Request</DialogTitle>
+            <DialogTitle>{t("Edit Service Category Change Request")}</DialogTitle>
             <DialogDescription>
-              Update the category change request for {selectedServiceCategoryRequest?.serviceName || 'this service'}.
+              {t("Update the category change request for")} {selectedServiceCategoryRequest?.serviceName || 'this service'}.
               {selectedServiceCategoryRequest?.status === 'REJECTED' && (
                 <span className="block mt-2 text-amber-600">
-                  This request was rejected. Editing will resubmit it for approval.
+                  {t("This request was rejected. Editing will resubmit it for approval.")}
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={serviceCategoryForm.handleSubmit(onServiceCategorySubmit)} className="space-y-4">
             <div>
-              <Label>New Category *</Label>
+              <Label>{t("New Category *")}</Label>
               <Controller
                 name="newSubCategoryId"
                 control={serviceCategoryForm.control}
                 render={({ field }) => (
                   <Select value={field.value?.toString()} onValueChange={(val) => field.onChange(Number(val))}>
-                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("Select category")} /></SelectTrigger>
                     <SelectContent>
                       {categories.map((category) => 
                         allSubCategories
@@ -4519,11 +4520,11 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
               />
             </div>
             <div>
-              <Label>Reason</Label>
-              <Textarea {...serviceCategoryForm.register("reason")} placeholder="Explain why you want to change the category" />
+              <Label>{t("Reason")}</Label>
+              <Textarea {...serviceCategoryForm.register("reason")} placeholder={t("Explain why you want to change the category")} />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditServiceCategoryOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setEditServiceCategoryOpen(false)}>{t("Cancel")}</Button>
               <Button type="submit" disabled={editServiceCategoryMutation.isPending}>
                 {editServiceCategoryMutation.isPending ? 'Submitting...' : 'Save & Resubmit'}
               </Button>
@@ -4542,6 +4543,7 @@ interface VendorSettingsProps {
 }
 
 function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [pendingLogo, setPendingLogo] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -4581,14 +4583,14 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
       return imageService.uploadVendorLogo(vendorProfile.id, file);
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "Logo uploaded successfully" });
+      toast({ title: t("Success"), description: t("Logo uploaded successfully") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'profile'] });
       setPendingLogo(null);
       setPreviewUrl(null);
     },
     onError: (error: any) => {
       toast({ 
-        title: "Error", 
+        title: t("Error"), 
         description: error.message || "Failed to upload logo", 
         variant: "destructive" 
       });
@@ -4602,12 +4604,12 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
       return imageService.deleteVendorLogo(vendorProfile.id);
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "Logo deleted successfully" });
+      toast({ title: t("Success"), description: t("Logo deleted successfully") });
       queryClient.invalidateQueries({ queryKey: ['vendor', 'profile'] });
     },
     onError: (error: any) => {
       toast({ 
-        title: "Error", 
+        title: t("Error"), 
         description: error.message || "Failed to delete logo", 
         variant: "destructive" 
       });
@@ -4626,7 +4628,7 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
       }),
     onSuccess: () => {
       toast({
-        title: "Profile updated",
+        title: t("Profile updated"),
         description: isApplicationRejected
           ? "Your application has been resubmitted for review."
           : "Your business profile has been updated.",
@@ -4636,7 +4638,7 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message || "Failed to update business profile",
         variant: "destructive",
       });
@@ -4660,12 +4662,12 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        toast({ title: "Error", description: "Please select an image file", variant: "destructive" });
+        toast({ title: t("Error"), description: t("Please select an image file"), variant: "destructive" });
         return;
       }
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast({ title: "Error", description: "File size must be less than 5MB", variant: "destructive" });
+        toast({ title: t("Error"), description: t("File size must be less than 5MB"), variant: "destructive" });
         return;
       }
       setPendingLogo(file);
@@ -4704,17 +4706,17 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <h2 className="text-xl font-semibold">Business Settings</h2>
+      <h2 className="text-xl font-semibold">{t("Business Settings")}</h2>
 
       {/* Business Logo */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5" />
-            Business Logo
+            {t("Business Logo")}
           </CardTitle>
           <CardDescription>
-            Upload your business logo. This will be displayed on your vendor profile and products.
+            {t("Upload your business logo. This will be displayed on your vendor profile and products.")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -4725,17 +4727,17 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
                 <div className="relative">
                   <img
                     src={previewUrl}
-                    alt="Logo preview"
+                    alt={t("Logo preview")}
                     className="w-32 h-32 object-cover rounded-lg border-2 border-dashed border-primary"
                   />
                   <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
-                    Preview
+                    {t("Preview")}
                   </span>
                 </div>
               ) : currentLogoUrl ? (
                 <img
                   src={currentLogoUrl}
-                  alt="Business logo"
+                  alt={t("Business logo")}
                   className="w-32 h-32 object-cover rounded-lg border"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
@@ -4759,7 +4761,7 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
               {pendingLogo ? (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Selected: <span className="font-medium">{pendingLogo.name}</span>
+                    {t("Selected:")} <span className="font-medium">{pendingLogo.name}</span>
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button
@@ -4770,17 +4772,17 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
                       {isUploading ? (
                         <>
                           <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Uploading...
+                          {t("Uploading...")}
                         </>
                       ) : (
                         <>
                           <Plus className="h-4 w-4 mr-2" />
-                          Upload Logo
+                          {t("Upload Logo")}
                         </>
                       )}
                     </Button>
                     <Button variant="outline" onClick={handleCancelUpload} className="w-full sm:w-auto">
-                      Cancel
+                      {t("Cancel")}
                     </Button>
                   </div>
                 </div>
@@ -4797,11 +4799,11 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
                       accept="image/jpeg,image/png,image/gif,image/webp"
                       onChange={handleFileSelect}
                       className="hidden"
-                      aria-label="Upload logo image"
+                      aria-label={t("Upload logo image")}
                     />
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Accepted formats: JPEG, PNG, GIF, WebP. Max size: 5MB.
+                    {t("Accepted formats: JPEG, PNG, GIF, WebP. Max size: 5MB.")}
                   </p>
                   {currentLogoUrl && (
                     <Button
@@ -4816,7 +4818,7 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
                       ) : (
                         <Trash2 className="h-4 w-4 mr-2" />
                       )}
-                      Delete Logo
+                      {t("Delete Logo")}
                     </Button>
                   )}
                 </div>
@@ -4831,7 +4833,7 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Store className="h-5 w-5" />
-            Business Information
+            {t("Business Information")}
           </CardTitle>
           <CardDescription>
             {isApplicationRejected
@@ -4842,20 +4844,20 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
         <CardContent className="space-y-4">
           {isApplicationRejected && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-              <p className="text-sm font-medium text-red-800">Application rejected</p>
+              <p className="text-sm font-medium text-red-800">{t("Application rejected")}</p>
               {vendorProfile?.rejectionReason ? (
                 <RejectionReasonWithModal
                   reason={vendorProfile.rejectionReason}
-                  title="Vendor rejection reason"
+                  title={t("Vendor rejection reason")}
                   className="mt-1 text-sm text-red-700"
                   truncateLength={120}
                 />
               ) : (
-                <p className="mt-1 text-sm text-red-700">No reason provided.</p>
+                <p className="mt-1 text-sm text-red-700">{t("No reason provided.")}</p>
               )}
               {vendorProfile?.rejectedAt && (
                 <p className="mt-1 text-xs text-red-600">
-                  Rejected on {new Date(vendorProfile.rejectedAt).toLocaleString()}
+                  {t("Rejected on")} {new Date(vendorProfile.rejectedAt).toLocaleString()}
                 </p>
               )}
             </div>
@@ -4864,35 +4866,35 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
           <form onSubmit={settingsForm.handleSubmit(onSubmitSettings)} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="settings-business-name">Business Name *</Label>
+                <Label htmlFor="settings-business-name">{t("Business Name *")}</Label>
                 <Input id="settings-business-name" {...settingsForm.register("businessName")} />
                 {settingsForm.formState.errors.businessName && (
                   <p className="text-sm text-red-600 mt-1">{settingsForm.formState.errors.businessName.message}</p>
                 )}
               </div>
               <div>
-                <Label htmlFor="settings-business-email">Business Email *</Label>
+                <Label htmlFor="settings-business-email">{t("Business Email *")}</Label>
                 <Input id="settings-business-email" type="email" {...settingsForm.register("businessEmail")} />
                 {settingsForm.formState.errors.businessEmail && (
                   <p className="text-sm text-red-600 mt-1">{settingsForm.formState.errors.businessEmail.message}</p>
                 )}
               </div>
               <div>
-                <Label htmlFor="settings-business-phone">Business Phone</Label>
+                <Label htmlFor="settings-business-phone">{t("Business Phone")}</Label>
                 <Input id="settings-business-phone" {...settingsForm.register("businessPhone")} />
               </div>
               <div>
-                <Label htmlFor="settings-city">City</Label>
+                <Label htmlFor="settings-city">{t("City")}</Label>
                 <Input id="settings-city" {...settingsForm.register("city")} />
               </div>
               <div>
-                <Label htmlFor="settings-country">Country</Label>
+                <Label htmlFor="settings-country">{t("Country")}</Label>
                 <Input id="settings-country" {...settingsForm.register("country")} />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="settings-description">Description</Label>
+              <Label htmlFor="settings-description">{t("Description")}</Label>
               <Textarea
                 id="settings-description"
                 className="min-h-[120px]"
@@ -4908,7 +4910,7 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
                 {updateVendorProfileMutation.isPending ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
+                    {t("Saving...")}
                   </>
                 ) : isApplicationRejected ? (
                   'Save & Resubmit'
@@ -4929,7 +4931,9 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
 
 // Vendor Certificate Card Component
 function VendorCertificateCard() {
+  const { t } = useTranslation();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
 
   const { data: certificate, isLoading, refetch, isRefetching } = useQuery({
@@ -4951,11 +4955,11 @@ function VendorCertificateCard() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast({ title: "Success", description: "Certificate downloaded successfully" });
+      toast({ title: t("Success"), description: t("Certificate downloaded successfully") });
     } catch (error) {
       console.error('Error downloading certificate:', error);
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error instanceof Error ? error.message : "Failed to download certificate. Please try again.",
         variant: "destructive",
       });
@@ -4970,13 +4974,13 @@ function VendorCertificateCard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-5 w-5" />
-            Onboarding Certificate
+            {t("Onboarding Certificate")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
-            <span className="ml-2">Loading certificate...</span>
+            <span className="ml-2">{t("Loading certificate...")}</span>
           </div>
         </CardContent>
       </Card>
@@ -4989,26 +4993,35 @@ function VendorCertificateCard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-5 w-5" />
-            Onboarding Certificate
+            {t("Onboarding Certificate")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-gray-500">
             <XCircle className="h-12 w-12 text-gray-300 mb-4" />
-            <p className="text-sm mb-2">No certificate found for your account.</p>
+            <p className="text-sm mb-2">{t("You haven't finished onboarding yet.")}</p>
             <p className="text-xs text-gray-400 mb-4 text-center max-w-xs">
-              If you completed the onboarding video, your certificate should appear here. 
-              Try refreshing if you just completed the process.
+              {t("Your account is saved. Watch the onboarding video to receive your certificate.")}
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              className="text-emerald-600"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => navigate("/vendor-signup?resume=1")}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                <PlayCircle className="h-4 w-4 mr-2" />
+                {t("Continue Onboarding")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                className="text-emerald-600"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {t("Refresh")}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -5020,19 +5033,19 @@ function VendorCertificateCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Award className="h-5 w-5 text-emerald-600" />
-          Onboarding Certificate
+          {t("Onboarding Certificate")}
         </CardTitle>
         <CardDescription>
-          Your vendor onboarding completion certificate.
+          {t("Your vendor onboarding completion certificate.")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
           <CheckCircle className="h-8 w-8 text-green-600 flex-shrink-0" />
           <div className="flex-1">
-            <h4 className="font-medium text-green-900">Certificate Verified</h4>
+            <h4 className="font-medium text-green-900">{t("Certificate Verified")}</h4>
             <p className="text-sm text-green-700">
-              Issued on {new Date(certificate.issuedAt).toLocaleDateString()}
+              {t("Issued on")} {new Date(certificate.issuedAt).toLocaleDateString()}
             </p>
           </div>
           <Button
@@ -5046,7 +5059,7 @@ function VendorCertificateCard() {
             ) : (
               <>
                 <Download className="h-4 w-4 mr-2" />
-                Download PDF
+                {t("Download PDF")}
               </>
             )}
           </Button>
@@ -5054,19 +5067,19 @@ function VendorCertificateCard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-3 bg-gray-50 rounded-lg border break-words">
-            <Label className="text-muted-foreground text-xs">Certificate Code</Label>
+            <Label className="text-muted-foreground text-xs">{t("Certificate Code")}</Label>
             <p className="font-mono font-bold text-emerald-600 break-all">{certificate.certificateCode}</p>
           </div>
           <div className="p-3 bg-gray-50 rounded-lg border break-words">
-            <Label className="text-muted-foreground text-xs">Vendor Type</Label>
+            <Label className="text-muted-foreground text-xs">{t("Vendor Type")}</Label>
             <p className="font-medium break-words">{certificate.vendorType}</p>
           </div>
           <div className="p-3 bg-gray-50 rounded-lg border break-words">
-            <Label className="text-muted-foreground text-xs">Full Name</Label>
+            <Label className="text-muted-foreground text-xs">{t("Full Name")}</Label>
             <p className="font-medium break-words">{certificate.fullName}</p>
           </div>
           <div className="p-3 bg-gray-50 rounded-lg border break-words">
-            <Label className="text-muted-foreground text-xs">Email</Label>
+            <Label className="text-muted-foreground text-xs">{t("Email")}</Label>
             <p className="font-medium break-all">{certificate.email}</p>
           </div>
         </div>

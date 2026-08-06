@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ReactNode } from "react";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -168,6 +169,7 @@ export function StaggerItem({ children, className }: { children: ReactNode; clas
 
 // Loading animation
 export function LoadingTransition() {
+  const { t } = useTranslation();
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-white"
@@ -192,7 +194,7 @@ export function LoadingTransition() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          Loading...
+          {t("Loading...")}
         </motion.p>
       </motion.div>
     </motion.div>

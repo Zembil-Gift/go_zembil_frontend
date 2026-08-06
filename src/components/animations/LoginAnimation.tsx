@@ -1,11 +1,13 @@
 import { motion } from "framer-motion";
 import GiftingHeartAnimation from "./GiftingHeartAnimation";
+import { useTranslation } from "react-i18next";
 
 interface LoginAnimationProps {
   className?: string;
 }
 
 export default function LoginAnimation({ className = "" }: LoginAnimationProps) {
+  const { t } = useTranslation();
   return (
     <div className={`flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-cream to-gray-50 ${className}`}>
       {/* Background Pattern */}
@@ -31,10 +33,10 @@ export default function LoginAnimation({ className = "" }: LoginAnimationProps) 
           transition={{ delay: 0.5, duration: 0.8 }}
         >
           <h2 className="font-display text-3xl md:text-4xl font-bold text-charcoal mb-2">
-            Welcome to goGerami
+            {t("Welcome to goGerami")}
           </h2>
           <p className="text-lg text-warm-gold font-medium">
-            Gifting with Heart
+            {t("Gifting with Heart")}
           </p>
         </motion.div>
 
@@ -75,7 +77,7 @@ export default function LoginAnimation({ className = "" }: LoginAnimationProps) 
           animate={{ opacity: 1 }}
           transition={{ delay: 2.5, duration: 0.8 }}
         >
-          Connecting hearts across distances...
+          {t("Connecting hearts across distances...")}
         </motion.p>
       </motion.div>
 

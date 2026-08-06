@@ -1,30 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { parseUrlParams } from "@shared/categories.ts";
 import { useCategories, SubCategoryResponse } from "@/hooks/useCategories";
 import { getIconByName } from "./iconMapping";
-
-const getImagePath = (slug: string): string | null => {
-  const imageMap: Record<string, string> = {
-    birthday: "birthday.png",
-    graduation: "graduation.png",
-    "new-baby": "new-baby.png",
-    wedding: "wedding.png",
-    housewarming: "housewarming.png",
-    "family-reunion": "family-reunion.png",
-    promotion: "promotion.png",
-    anniversary: "anniversary.png",
-    retirement: "retirement.png",
-    "first-day-school": "first-day-school.png",
-    engagement: "engagement.png",
-    "mothers-day": "mothers-day.png",
-    "fathers-day": "fathers-day.png",
-    "valentines-day": "valentines-day.png",
-  };
-
-  return imageMap[slug] ? `/attached_assets/${imageMap[slug]}` : null;
-};
+import SectionHeader from "@/components/landing/SectionHeader";
 
 interface CategoryCarouselProps {
   activeCategory: string;
@@ -37,6 +18,7 @@ export default function CategoryCarousel({
 }: CategoryCarouselProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
 
   // Fetch categories from API with fallback
   const { data: categories, isLoading } = useCategories();
@@ -82,14 +64,8 @@ export default function CategoryCarousel({
 
     // Sort subcategories to prioritize those with images
     return [...currentCategoryData.subcategories].sort((a, b) => {
-      const aHasImage =
-        selectedCategory === "occasions"
-          ? !!getImagePath(a.slug)
-          : !!a.imageUrl;
-      const bHasImage =
-        selectedCategory === "occasions"
-          ? !!getImagePath(b.slug)
-          : !!b.imageUrl;
+      const aHasImage = !!a.imageUrl;
+      const bHasImage = !!b.imageUrl;
 
       if (aHasImage && !bHasImage) return -1;
       if (!aHasImage && bHasImage) return 1;
@@ -97,7 +73,7 @@ export default function CategoryCarousel({
       // Secondary sort by display order if both have or both don't have images
       return (a.displayOrder || 0) - (b.displayOrder || 0);
     });
-  }, [currentCategoryData, selectedCategory]);
+  }, [currentCategoryData]);
 
   // Main category selection handler
   const handleCategorySelect = (categorySlug: string) => {
@@ -180,15 +156,14 @@ export default function CategoryCarousel({
         }
         break;
       case "Enter":
-      case " ":
+      case " ": {
         event.preventDefault();
-        const selectedSubcategory = currentSubcategories.find(
-          (item) => item.slug === slug
-        );
-        if (selectedSubcategory) {
-          handleSubcategoryClick(selectedSubcategory);
+        const target = currentSubcategories.find((item) => item.slug === slug);
+        if (target) {
+          handleSubcategoryClick(target);
         }
         break;
+      }
     }
   };
 
@@ -222,7 +197,7 @@ export default function CategoryCarousel({
     if (!carousel) return;
 
     const handleScroll = () => updateScrollButtons();
-    carousel.addEventListener("scroll", handleScroll);
+    carousel.addEventListener("scroll", handleScroll, { passive: true });
     updateScrollButtons();
 
     return () => carousel.removeEventListener("scroll", handleScroll);
@@ -257,19 +232,21 @@ export default function CategoryCarousel({
     id: cat.slug,
     label: cat.name,
   })) || [
-    { id: "occasions", label: "Occasions" },
-    { id: "cultural-religious", label: "Cultural & Religious" },
-    { id: "emotions", label: "Emotions" },
-    { id: "food-beverages", label: "Food & Beverages" },
+    { id: "occasions", label: t("Occasions") },
+    { id: "cultural-religious", label: t("Cultural & Religious") },
+    { id: "emotions", label: t("Emotions") },
+    { id: "food-beverages", label: t("Food & Beverages") },
   ];
 
   if (isLoading) {
     return (
-      <section id="perfect-gift" className="pt-6 pb-16 bg-white">
+      <section id="perfect-gift" className="py-8 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-eagle-green" />
-            <span className="ml-3 text-gray-600">Loading categories...</span>
+          <div className="flex items-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-eagle-green" />
+            <span className="ml-3 text-sm text-gray-600">
+              {t("common.loading")}
+            </span>
           </div>
         </div>
       </section>
@@ -277,34 +254,34 @@ export default function CategoryCarousel({
   }
 
   return (
-    <section id="perfect-gift" className="pt-6 pb-16 bg-white">
+    <section id="perfect-gift" className="py-8 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-eagle-green mb-4">
-            Find the Perfect Gift
-          </h2>
-          <p className="text-xl font-light text-viridian-green max-w-2xl mx-auto">
-            Discover meaningful gifts for every occasion and celebration
-          </p>
-        </div>
+        <SectionHeader
+          title={t("homepage.categories.title")}
+          subtitle={t("homepage.categories.subtitle")}
+          href="/gifts"
+        />
 
-        <div className="flex justify-center mb-8 sm:mb-12">
-          <div className="w-full max-w-md sm:max-w-none bg-white border border-eagle-green/20 p-1.5 sm:p-1 rounded-xl shadow-sm grid grid-cols-2 gap-1.5 sm:inline-flex sm:flex-wrap sm:w-auto sm:gap-2">
-            {categoryTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => handleCategorySelect(tab.id)}
-                className={`px-2.5 sm:px-6 py-2.5 sm:py-3 rounded-lg transition-all duration-200 text-xs sm:text-base leading-tight min-h-[44px] sm:min-h-0 ${
-                  selectedCategory === tab.id
-                    ? "bg-eagle-green text-white shadow-sm ring-2 ring-yellow/40"
-                    : "text-eagle-green hover:text-white hover:bg-viridian-green"
-                }`}
-                aria-pressed={selectedCategory === tab.id}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        <div
+          role="tablist"
+          aria-label={t("homepage.categories.title")}
+          className="flex gap-2 overflow-x-auto pb-1 mb-5 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap"
+        >
+          {categoryTabs.map((tab) => (
+            <button
+              key={tab.id}
+              role="tab"
+              onClick={() => handleCategorySelect(tab.id)}
+              className={`shrink-0 rounded-full px-5 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ethiopian-gold focus-visible:ring-offset-2 ${
+                selectedCategory === tab.id
+                  ? "bg-eagle-green text-white"
+                  : "bg-white text-eagle-green/70 border border-eagle-green/15 hover:border-viridian-green/50 hover:text-eagle-green"
+              }`}
+              aria-selected={selectedCategory === tab.id}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Horizontal Carousel */}
@@ -313,12 +290,12 @@ export default function CategoryCarousel({
           <button
             onClick={() => scrollCarousel("left")}
             disabled={!canScrollLeft}
-            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-eagle-green bg-white shadow-lg transition-all duration-200 ${
+            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full border border-eagle-green/20 bg-white shadow-md transition-all duration-200 ${
               canScrollLeft
                 ? "hover:bg-viridian-green hover:border-viridian-green hover:text-white text-eagle-green"
                 : "opacity-40 cursor-not-allowed text-gray-400"
             }`}
-            aria-label="Scroll subcategories left"
+            aria-label={t("Scroll subcategories left")}
           >
             <ChevronLeft className="w-5 h-5 mx-auto" />
           </button>
@@ -327,12 +304,12 @@ export default function CategoryCarousel({
           <button
             onClick={() => scrollCarousel("right")}
             disabled={!canScrollRight}
-            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-eagle-green bg-white shadow-lg transition-all duration-200 ${
+            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full border border-eagle-green/20 bg-white shadow-md transition-all duration-200 ${
               canScrollRight
                 ? "hover:bg-viridian-green hover:border-viridian-green hover:text-white text-eagle-green"
                 : "opacity-40 cursor-not-allowed text-gray-400"
             }`}
-            aria-label="Scroll subcategories right"
+            aria-label={t("Scroll subcategories right")}
           >
             <ChevronRight className="w-5 h-5 mx-auto" />
           </button>
@@ -340,80 +317,57 @@ export default function CategoryCarousel({
           {/* Carousel Container */}
           <div
             ref={carouselRef}
-            className="overflow-x-auto scrollbar-hide px-12 sm:px-14"
-            style={{
-              scrollSnapType: "x mandatory",
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-            }}
+            className="overflow-x-auto scrollbar-hide px-11"
+            style={{ scrollSnapType: "x mandatory" }}
           >
             <div
               key={selectedCategory}
-              className="flex gap-4 sm:gap-5 pb-2 transition-opacity duration-300 opacity-100"
+              className="flex gap-3 sm:gap-4 pb-1"
             >
               {currentSubcategories.map(
                 (item: SubCategoryResponse, index: number) => {
                   const Icon = getIconByName(item.iconName);
                   const isSelected = selectedSubcategory === item.slug;
-                  const imagePath =
-                    selectedCategory === "occasions"
-                      ? getImagePath(item.slug)
-                      : item.imageUrl || null;
+                  const imagePath = item.imageUrl || null;
 
                   return (
                     <button
                       key={item.slug || index}
                       data-card-index={index}
-                       onClick={() => handleSubcategoryClick(item)}
+                      onClick={() => handleSubcategoryClick(item)}
                       onKeyDown={(e) => handleKeyDown(e, index, item.slug)}
-                      className={`flex-shrink-0 w-60 sm:w-72 h-40 sm:h-48 group cursor-pointer transform transition-all duration-300 hover:scale-102 focus:outline-none focus:ring-2 focus:ring-yellow/40 focus:ring-offset-2 rounded-2xl ${
-                        isSelected ? "scale-102 ring-2 ring-yellow/60" : ""
-                      }`}
+                      className="flex-shrink-0 w-24 sm:w-28 group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ethiopian-gold focus-visible:ring-offset-2 rounded-xl"
                       style={{ scrollSnapAlign: "start" }}
                       aria-pressed={isSelected}
                       title={`Browse ${item.name} products`}
                       tabIndex={0}
                     >
-                      <div className="w-full h-full bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-viridian-green/30 overflow-hidden">
+                      <div
+                        className={`aspect-square rounded-xl overflow-hidden border transition-colors duration-200 ${
+                          isSelected
+                            ? "border-ethiopian-gold ring-2 ring-ethiopian-gold/40"
+                            : "border-gray-100 group-hover:border-viridian-green/40"
+                        }`}
+                      >
                         {imagePath ? (
-                          <div className="flex flex-col h-full">
-                            <div className="flex-1 relative overflow-hidden">
-                              <img
-                                src={imagePath}
-                                alt={item.name}
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                loading="lazy"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            </div>
-
-                            <div className="p-3 sm:p-4 bg-gradient-to-b from-june-bud/10 to-white">
-                              <h3 className="font-bold text-sm sm:text-base text-eagle-green mb-1 leading-tight text-center">
-                                {item.name}
-                              </h3>
-                              <p className="font-light text-xs sm:text-sm text-eagle-green/70 leading-tight line-clamp-2 text-center">
-                                {item.description}
-                              </p>
-                            </div>
-                          </div>
+                          <img
+                            src={imagePath}
+                            alt=""
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            loading="lazy"
+                          />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-b from-june-bud/30 to-white rounded-2xl p-4 sm:p-5">
-                            <div className="flex flex-col items-center justify-center h-full text-center">
-                              <div className="w-12 h-12 bg-eagle-green rounded-full flex items-center justify-center mb-3 shadow-sm">
-                                <Icon className="w-6 h-6 text-white" />
-                              </div>
-
-                              <h3 className="font-bold text-sm sm:text-base text-eagle-green mb-2 leading-tight">
-                                {item.name}
-                              </h3>
-
-                              <p className="font-light text-xs sm:text-sm text-eagle-green/70 leading-tight line-clamp-2">
-                                {item.description}
-                              </p>
-                            </div>
+                          <div className="w-full h-full bg-june-bud/20 flex items-center justify-center">
+                            <Icon
+                              className="w-7 h-7 text-eagle-green"
+                              strokeWidth={1.5}
+                            />
                           </div>
                         )}
                       </div>
+                      <h3 className="mt-2 font-medium text-xs sm:text-sm text-eagle-green leading-tight text-center line-clamp-2">
+                        {item.name}
+                      </h3>
                     </button>
                   );
                 }
@@ -422,16 +376,6 @@ export default function CategoryCarousel({
           </div>
         </div>
       </div>
-
-      <style>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </section>
   );
 }

@@ -71,6 +71,7 @@ import {
   storePendingPurchase,
   type AnalyticsItem,
 } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 function toAnalyticsItem(item: CartItem): AnalyticsItem {
   return {
@@ -110,6 +111,7 @@ interface AddressDto {
 }
 
 export default function Checkout() {
+  const { t } = useTranslation();
   const { isAuthenticated, user } = useAuth();
   const {
     cartItems,
@@ -355,7 +357,7 @@ export default function Checkout() {
           setAppliedDiscountCode(code);
           setDiscountError(null);
           toast({
-            title: "Discount Applied",
+            title: t("Discount Applied"),
             description: `Discount code "${code}" applied successfully!`,
           });
         } else {
@@ -643,7 +645,7 @@ export default function Checkout() {
       !isManualDelivery && deliveryEstimate?.withinDeliveryRadius === false;
     if (!contactPhone || !hasValidLocation) {
       toast({
-        title: "Missing Information",
+        title: t("Missing Information"),
         description: !contactPhone
           ? "Please enter your phone number."
           : isManualDelivery
@@ -655,7 +657,7 @@ export default function Checkout() {
     }
     if (isOutsideRadius) {
       toast({
-        title: "Outside Delivery Area",
+        title: t("Outside Delivery Area"),
         description: `Your delivery address is ${deliveryEstimate?.distanceKm?.toFixed(
           1
         )} km from the vendor, which exceeds their ${deliveryEstimate?.vendorDeliveryRadiusKm?.toFixed(
@@ -675,8 +677,8 @@ export default function Checkout() {
 
     if (addingNewBilling && !isBillingInfoComplete) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all billing address fields.",
+        title: t("Missing Information"),
+        description: t("Please fill in all billing address fields."),
         variant: "destructive",
       });
       return;
@@ -719,7 +721,7 @@ export default function Checkout() {
                 "Discount code is not valid for this order"
             );
             toast({
-              title: "Discount Invalid",
+              title: t("Discount Invalid"),
               description:
                 validationResult.reason ||
                 "Your discount code could not be applied. Please review it and try again.",
@@ -860,9 +862,9 @@ export default function Checkout() {
       }
 
       toast({
-        title: "Order Created",
+        title: t("Order Created"),
         description:
-          "Your order has been created. Please review the details before payment.",
+          t("Your order has been created. Please review the details before payment."),
       });
 
       const analyticsItems = cartItems.map(toAnalyticsItem);
@@ -893,7 +895,7 @@ export default function Checkout() {
     } catch (error: any) {
       console.error("Failed to create order:", error);
       toast({
-        title: "Order Creation Failed",
+        title: t("Order Creation Failed"),
         description:
           error.message || "Failed to create order. Please try again.",
         variant: "destructive",
@@ -928,12 +930,12 @@ export default function Checkout() {
             className="mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Cart
+            {t("Back to Cart")}
           </Button>
 
-          <h1 className="text-3xl font-bold text-gray-900">Checkout</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t("Checkout")}</h1>
           <p className="text-gray-600 mt-2">
-            Complete your order details and proceed to payment
+            {t("Complete your order details and proceed to payment")}
           </p>
         </div>
 
@@ -943,41 +945,41 @@ export default function Checkout() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Shipping Information</span>
+                  <span>{t("Shipping Information")}</span>
                   {isLoadingAddress && (
                     <span className="text-sm text-gray-500 flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading saved address...
+                      {t("Loading saved address...")}
                     </span>
                   )}
                   {!isLoadingAddress && savedShippingAddresses.length > 0 && (
                     <Badge variant="secondary">
-                      {savedShippingAddresses.length} saved
+                      {savedShippingAddresses.length} {t("saved")}
                     </Badge>
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="contactEmail">Contact Email</Label>
+                  <Label htmlFor="contactEmail">{t("Contact Email")}</Label>
                   <Input
                     id="contactEmail"
                     name="contactEmail"
                     type="email"
                     value={contactEmail}
                     onChange={(e) => setContactEmail(e.target.value)}
-                    placeholder="email@example.com"
+                    placeholder={t("email@example.com")}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Label htmlFor="phone">{t("Phone Number *")}</Label>
                   <Input
                     id="phone"
                     name="phone"
                     value={contactPhone}
                     onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder="+251 9XX XXX XXX"
+                    placeholder={t("+251 9XX XXX XXX")}
                     required
                   />
                 </div>
@@ -985,7 +987,7 @@ export default function Checkout() {
                 {/* Saved shipping addresses picker */}
                 {savedShippingAddresses.length > 0 && (
                   <div className="space-y-2">
-                    <Label>Choose a saved delivery address</Label>
+                    <Label>{t("Choose a saved delivery address")}</Label>
                     <div className="space-y-2">
                       {savedShippingAddresses.map((addr) => {
                         const selected = selectedShippingId === addr.id;
@@ -1017,7 +1019,7 @@ export default function Checkout() {
                                 </p>
                                 {addr.isDefault && (
                                   <span className="text-xs text-emerald-600">
-                                    Default
+                                    {t("Default")}
                                   </span>
                                 )}
                               </div>
@@ -1037,7 +1039,7 @@ export default function Checkout() {
                         }`}
                       >
                         <span className="text-sm font-medium text-emerald-700">
-                          + Add a new delivery address
+                          {t("+ Add a new delivery address")}
                         </span>
                       </div>
                     </div>
@@ -1068,11 +1070,10 @@ export default function Checkout() {
                     <>
                       <Label className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-emerald-600" />
-                        Delivery Location *
+                        {t("Delivery Location *")}
                       </Label>
                       <p className="text-xs text-gray-500">
-                        Click on the map or use search to pin your exact delivery
-                        location
+                        {t("Click on the map or use search to pin your exact delivery location")}
                       </p>
                       <GoogleMapsProvider>
                         <LocationPicker
@@ -1098,7 +1099,7 @@ export default function Checkout() {
                             }
                           }}
                           height="320px"
-                          placeholder="Search your delivery address..."
+                          placeholder={t("Search your delivery address...")}
                         />
                       </GoogleMapsProvider>
                       {shippingCoords.formattedAddress && (
@@ -1106,7 +1107,7 @@ export default function Checkout() {
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
                           <div>
                             <p className="text-sm font-medium text-emerald-800">
-                              Delivery location confirmed
+                              {t("Delivery location confirmed")}
                             </p>
                             <p className="text-sm text-emerald-700 mt-0.5">
                               {shippingCoords.formattedAddress}
@@ -1124,10 +1125,10 @@ export default function Checkout() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Billing Address</span>
+                  <span>{t("Billing Address")}</span>
                   {savedBillingAddresses.length > 0 && (
                     <Badge variant="secondary">
-                      {savedBillingAddresses.length} saved
+                      {savedBillingAddresses.length} {t("saved")}
                     </Badge>
                   )}
                 </CardTitle>
@@ -1136,7 +1137,7 @@ export default function Checkout() {
                 {/* Saved billing addresses picker */}
                 {savedBillingAddresses.length > 0 && (
                   <div className="space-y-2">
-                    <Label>Choose a saved billing address</Label>
+                    <Label>{t("Choose a saved billing address")}</Label>
                     <div className="space-y-2">
                       {savedBillingAddresses.map((addr) => {
                         const selected = selectedBillingId === addr.id;
@@ -1172,7 +1173,7 @@ export default function Checkout() {
                                 </p>
                                 {addr.isDefault && (
                                   <span className="text-xs text-emerald-600">
-                                    Default
+                                    {t("Default")}
                                   </span>
                                 )}
                               </div>
@@ -1189,7 +1190,7 @@ export default function Checkout() {
                         }`}
                       >
                         <span className="text-sm font-medium text-emerald-700">
-                          + Add a new billing address
+                          {t("+ Add a new billing address")}
                         </span>
                       </div>
                     </div>
@@ -1199,55 +1200,55 @@ export default function Checkout() {
                 {selectedBillingId === "new" && (
                   <div className="grid grid-cols-1 gap-4 pt-1">
                     <div>
-                      <Label htmlFor="billingStreet">Street Address *</Label>
+                      <Label htmlFor="billingStreet">{t("Street Address *")}</Label>
                       <Input
                         id="billingStreet"
                         name="street"
                         value={billingInfo.street}
                         onChange={handleBillingInputChange}
-                        placeholder="Billing street address"
+                        placeholder={t("Billing street address")}
                         required
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="billingCity">City *</Label>
+                        <Label htmlFor="billingCity">{t("City *")}</Label>
                         <Input
                           id="billingCity"
                           name="city"
                           value={billingInfo.city}
                           onChange={handleBillingInputChange}
-                          placeholder="City"
+                          placeholder={t("City")}
                           required
                         />
                       </div>
                       <div>
-                        <Label htmlFor="billingState">State / Region</Label>
+                        <Label htmlFor="billingState">{t("State / Region")}</Label>
                         <Input
                           id="billingState"
                           name="state"
                           value={billingInfo.state}
                           onChange={handleBillingInputChange}
-                          placeholder="State or region"
+                          placeholder={t("State or region")}
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="billingPostalCode">Postal Code *</Label>
+                        <Label htmlFor="billingPostalCode">{t("Postal Code *")}</Label>
                         <Input
                           id="billingPostalCode"
                           name="postalCode"
                           value={billingInfo.postalCode}
                           onChange={handleBillingInputChange}
-                          placeholder="Postal code"
+                          placeholder={t("Postal code")}
                           required
                         />
                       </div>
                       <div>
-                        <Label htmlFor="billingCountry">Country *</Label>
+                        <Label htmlFor="billingCountry">{t("Country *")}</Label>
                         <Select
                           value={billingInfo.country}
                           onValueChange={(value) => {
@@ -1258,7 +1259,7 @@ export default function Checkout() {
                           }}
                         >
                           <SelectTrigger id="billingCountry">
-                            <SelectValue placeholder="Select a country" />
+                            <SelectValue placeholder={t("Select a country")} />
                           </SelectTrigger>
                           <SelectContent>
                             {SUPPORTED_COUNTRIES.map((country) => (
@@ -1283,7 +1284,7 @@ export default function Checkout() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Gift className="h-5 w-5" />
-                  Gift Options
+                  {t("Gift Options")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1293,7 +1294,7 @@ export default function Checkout() {
                 ) && (
                   <div className="space-y-3">
                     <p className="text-sm text-gray-600 font-medium">
-                      Gift Wrapping
+                      {t("Gift Wrapping")}
                     </p>
                     {cartItems
                       .filter((item: CartItem) => item.product?.giftWrappable)
@@ -1339,14 +1340,14 @@ export default function Checkout() {
                                           item.product.giftWrapCurrencyCode ||
                                             cartCurrency
                                         )}{" "}
-                                        per item)
+                                        {t("per item)")}
                                       </span>
                                     )}
                                   {(!item.product?.giftWrapCustomerPrice ||
                                     item.product.giftWrapCustomerPrice ===
                                       0) && (
                                     <span className="text-green-600 font-medium ml-1">
-                                      — Free
+                                      {t("— Free")}
                                     </span>
                                   )}
                                 </Label>
@@ -1370,7 +1371,7 @@ export default function Checkout() {
                                       },
                                     });
                                   }}
-                                  placeholder="Write a personal gift message (optional)..."
+                                  placeholder={t("Write a personal gift message (optional)...")}
                                   rows={2}
                                   className="resize-none text-sm"
                                 />
@@ -1389,7 +1390,7 @@ export default function Checkout() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Tag className="h-5 w-5" />
-                  Discount Code
+                  {t("Discount Code")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1400,10 +1401,10 @@ export default function Checkout() {
                         <CheckCircle2 className="h-5 w-5 text-green-600" />
                         <div>
                           <p className="text-sm font-medium text-green-800">
-                            Code "{discountCode}" applied
+                            {t("Code \"")}{discountCode}{t("\" applied")}
                           </p>
                           <p className="text-xs text-green-600">
-                            You save{" "}
+                            {t("You save")}{" "}
                             {formatPrice(discountAmountDisplay, cartCurrency)}
                           </p>
                         </div>
@@ -1422,7 +1423,7 @@ export default function Checkout() {
                   <div className="space-y-2">
                     <div className="flex space-x-2">
                       <Input
-                        placeholder="Enter discount code"
+                        placeholder={t("Enter discount code")}
                         value={discountCode}
                         onChange={(e) => {
                           setDiscountCode(e.target.value);
@@ -1465,7 +1466,7 @@ export default function Checkout() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  Select Payment Method
+                  {t("Select Payment Method")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1494,13 +1495,13 @@ export default function Checkout() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <CreditCard className="h-5 w-5 text-blue-600" />
-                          <span className="font-medium">Stripe</span>
+                          <span className="font-medium">{t("Stripe")}</span>
                           <span className="text-xs text-gray-500">
-                            (International)
+                            {t("(International)")}
                           </span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
-                          Credit/Debit Cards, Apple Pay, Google Pay, PayPal
+                          {t("Credit/Debit Cards, Apple Pay, Google Pay, PayPal")}
                         </p>
                       </div>
                     </div>
@@ -1532,13 +1533,13 @@ export default function Checkout() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <Smartphone className="h-5 w-5 text-green-600" />
-                          <span className="font-medium">Chapa</span>
+                          <span className="font-medium">{t("Chapa")}</span>
                           <span className="text-xs text-gray-500">
-                            (Ethiopia)
+                            {t("(Ethiopia)")}
                           </span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
-                          CBE Birr, M-Pesa, Awash Bank, Bank Transfer
+                          {t("CBE Birr, M-Pesa, Awash Bank, Bank Transfer")}
                         </p>
                       </div>
                     </div>
@@ -1570,13 +1571,13 @@ export default function Checkout() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <Smartphone className="h-5 w-5 text-blue-600" />
-                          <span className="font-medium">TeleBirr</span>
+                          <span className="font-medium">{t("TeleBirr")}</span>
                           <span className="text-xs text-gray-500">
-                            (Ethiopia)
+                            {t("(Ethiopia)")}
                           </span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
-                          TeleBirr Wallet, Bank Account, Cards
+                          {t("TeleBirr Wallet, Bank Account, Cards")}
                         </p>
                       </div>
                     </div>
@@ -1588,8 +1589,7 @@ export default function Checkout() {
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      No payment methods are currently available. Please try
-                      again later or contact support.
+                      {t("No payment methods are currently available. Please try again later or contact support.")}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -1601,7 +1601,7 @@ export default function Checkout() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
-                  Order Summary ({totalItems} items)
+                  {t("Order Summary (")}{totalItems} {t("items)")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1648,7 +1648,7 @@ export default function Checkout() {
                           }`}
                         >
                           <div className="text-center text-gray-400">
-                            <p className="text-xs">No image</p>
+                            <p className="text-xs">{t("No image")}</p>
                           </div>
                         </div>
                       </div>
@@ -1676,7 +1676,7 @@ export default function Checkout() {
                             <div className="flex items-center gap-1 mt-0.5">
                               <Gift className="h-3 w-3 text-green-600" />
                               <span className="text-xs text-green-600 font-medium">
-                                Gift wrapped
+                                {t("Gift wrapped")}
                                 {item.product?.giftWrapCustomerPrice &&
                                   item.product.giftWrapCustomerPrice > 0 && (
                                     <>
@@ -1696,7 +1696,7 @@ export default function Checkout() {
                         })()}
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-sm text-gray-600">
-                            Qty: {item.quantity}
+                            {t("Qty:")} {item.quantity}
                           </span>
                           <div className="text-right">
                             {(() => {
@@ -1732,7 +1732,7 @@ export default function Checkout() {
 
                 {/* Subtotal */}
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-600">{t("Subtotal")}</span>
                   <span>
                     {selectedPaymentMethod === "telebirr" && telebirrConversion
                       ? formatPrice(telebirrConversion.convertedAmount, "ETB")
@@ -1755,9 +1755,9 @@ export default function Checkout() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 flex items-center gap-1">
                       <Gift className="h-3 w-3" />
-                      Gift Wrapping
+                      {t("Gift Wrapping")}
                     </span>
-                    <span className="text-green-600">Included in subtotal</span>
+                    <span className="text-green-600">{t("Included in subtotal")}</span>
                   </div>
                 )}
 
@@ -1765,13 +1765,13 @@ export default function Checkout() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
-                    Shipping Fee
+                    {t("Shipping Fee")}
                   </span>
                   <span className="font-medium">
                     {isEstimatingDelivery ? (
                       <span className="flex items-center gap-1 text-gray-400">
                         <Loader2 className="h-3 w-3 animate-spin" />{" "}
-                        Calculating...
+                        {t("Calculating...")}
                       </span>
                     ) : deliveryEstimate?.deliveryFee != null ? (
                       <span
@@ -1793,7 +1793,7 @@ export default function Checkout() {
                       </span>
                     ) : (
                       <span className="text-gray-400 text-xs">
-                        Select location
+                        {t("Select location")}
                       </span>
                     )}
                   </span>
@@ -1805,14 +1805,13 @@ export default function Checkout() {
                     <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-xs font-medium text-red-700">
-                        Outside delivery area
+                        {t("Outside delivery area")}
                       </p>
                       <p className="text-xs text-red-600">
-                        Your address is{" "}
-                        {deliveryEstimate.distanceKm?.toFixed(1)} km away. This
-                        vendor only delivers within{" "}
+                        {t("Your address is")}{" "}
+                        {deliveryEstimate.distanceKm?.toFixed(1)} {t("km away. This vendor only delivers within")}{" "}
                         {deliveryEstimate.vendorDeliveryRadiusKm?.toFixed(0)}{" "}
-                        km.
+                        {t("km.")}
                       </p>
                     </div>
                   </div>
@@ -1823,7 +1822,7 @@ export default function Checkout() {
                   <div className="flex justify-between text-sm text-green-600">
                     <span className="flex items-center gap-1">
                       <Tag className="h-3 w-3" />
-                      Discount ({discountCode})
+                      {t("Discount (")}{discountCode})
                     </span>
                     <span>
                       -{formatPrice(discountAmountDisplay, cartCurrency)}
@@ -1836,7 +1835,7 @@ export default function Checkout() {
                   <div className="flex justify-between text-sm text-viridian-green">
                     <span className="flex items-center gap-1">
                       <Wallet className="h-3 w-3" />
-                      Reward credits
+                      {t("Reward credits")}
                     </span>
                     <span>
                       -{formatPrice(walletCreditDisplay, cartCurrency)}
@@ -1846,7 +1845,7 @@ export default function Checkout() {
 
                 {/* Estimated Total */}
                 <div className="flex justify-between font-semibold text-lg pt-2">
-                  <span>Estimated Total</span>
+                  <span>{t("Estimated Total")}</span>
                   <span className="text-ethiopian-gold">
                     {selectedPaymentMethod === "telebirr" && telebirrConversion
                       ? formatPrice(
@@ -1864,8 +1863,7 @@ export default function Checkout() {
 
                 {walletCreditDisplay > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    Your reward credits cover part of this order. The rest is
-                    charged to your selected payment method.
+                    {t("Your reward credits cover part of this order. The rest is charged to your selected payment method.")}
                   </p>
                 )}
 
@@ -1873,18 +1871,17 @@ export default function Checkout() {
                   cartCurrency?.toUpperCase() !== "ETB" && (
                     <div className="text-xs text-blue-700 bg-blue-50 rounded-md p-2">
                       {isConvertingTelebirr && (
-                        <span>Converting total to ETB for TeleBirr...</span>
+                        <span>{t("Converting total to ETB for TeleBirr...")}</span>
                       )}
                       {!isConvertingTelebirr && telebirrConversion && (
                         <span>
-                          TeleBirr charges in ETB. Converted from {cartCurrency}{" "}
-                          at rate {telebirrConversion.rate}.
+                          {t("TeleBirr charges in ETB. Converted from")} {cartCurrency}{" "}
+                          {t("at rate")} {telebirrConversion.rate}.
                         </span>
                       )}
                       {!isConvertingTelebirr && !telebirrConversion && (
                         <span>
-                          TeleBirr charges in ETB. Unable to fetch conversion
-                          rate right now.
+                          {t("TeleBirr charges in ETB. Unable to fetch conversion rate right now.")}
                         </span>
                       )}
                     </div>
@@ -1905,12 +1902,12 @@ export default function Checkout() {
                   {isCreatingOrder ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Creating Order...
+                      {t("Creating Order...")}
                     </>
                   ) : (
                     <>
                       <CreditCard className="mr-2 h-5 w-5" />
-                      Proceed to Payment
+                      {t("Proceed to Payment")}
                     </>
                   )}
                 </Button>

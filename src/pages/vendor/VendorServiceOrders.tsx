@@ -40,8 +40,10 @@ import {
   ServiceOrderStatus 
 } from '@/services/serviceOrderService';
 import { serviceService } from '@/services/serviceService';
+import { useTranslation } from "react-i18next";
 
 export default function VendorServiceOrders() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
@@ -97,52 +99,52 @@ export default function VendorServiceOrders() {
   const confirmMutation = useMutation({
     mutationFn: (orderId: number) => serviceOrderService.confirmOrder(orderId),
     onSuccess: async () => {
-      toast({ title: 'Order Confirmed', description: 'The booking has been confirmed.' });
+      toast({ title: t("Order Confirmed"), description: t("The booking has been confirmed.") });
       await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setDetailDialogOpen(false);
       setSelectedOrder(null);
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
   const inProgressMutation = useMutation({
     mutationFn: (orderId: number) => serviceOrderService.markInProgress(orderId),
     onSuccess: async () => {
-      toast({ title: 'Status Updated', description: 'Service marked as in progress.' });
+      toast({ title: t("Status Updated"), description: t("Service marked as in progress.") });
       await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setDetailDialogOpen(false);
       setSelectedOrder(null);
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
   const completeMutation = useMutation({
     mutationFn: (orderId: number) => serviceOrderService.completeOrder(orderId),
     onSuccess: async () => {
-      toast({ title: 'Service Completed', description: 'The service has been marked as completed.' });
+      toast({ title: t("Service Completed"), description: t("The service has been marked as completed.") });
       await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setDetailDialogOpen(false);
       setSelectedOrder(null);
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
   const noShowMutation = useMutation({
     mutationFn: (orderId: number) => serviceOrderService.markNoShow(orderId),
     onSuccess: async () => {
-      toast({ title: 'No-Show Recorded', description: 'Customer has been marked as no-show.' });
+      toast({ title: t("No-Show Recorded"), description: t("Customer has been marked as no-show.") });
       await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setDetailDialogOpen(false);
       setSelectedOrder(null);
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
@@ -150,7 +152,7 @@ export default function VendorServiceOrders() {
     mutationFn: ({ orderId, reason, validReason }: { orderId: number; reason: string; validReason: boolean }) =>
       serviceOrderService.vendorCancelOrder(orderId, reason, validReason),
     onSuccess: async () => {
-      toast({ title: 'Order Cancelled', description: 'The booking has been cancelled.' });
+      toast({ title: t("Order Cancelled"), description: t("The booking has been cancelled.") });
       await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setCancelDialogOpen(false);
       setCancelReason('');
@@ -158,7 +160,7 @@ export default function VendorServiceOrders() {
       setSelectedOrder(null);
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
@@ -166,7 +168,7 @@ export default function VendorServiceOrders() {
     mutationFn: ({ orderId, newDateTime }: { orderId: number; newDateTime: string }) =>
       serviceOrderService.vendorRescheduleOrder(orderId, newDateTime),
     onSuccess: async () => {
-      toast({ title: 'Reschedule Requested', description: 'Waiting for customer approval.' });
+      toast({ title: t("Reschedule Requested"), description: t("Waiting for customer approval.") });
       await queryClient.invalidateQueries({ queryKey: ['vendor-service-orders'] });
       setRescheduleDialogOpen(false);
       setNewScheduledDate('');
@@ -174,7 +176,7 @@ export default function VendorServiceOrders() {
       setSelectedOrder(null);
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: t("Error"), description: error.message, variant: 'destructive' });
     },
   });
 
@@ -254,12 +256,12 @@ export default function VendorServiceOrders() {
                     {isUrgent && !isPast && order.status !== 'CANCELLED' && (
                       <Badge className="bg-amber-100 text-amber-700 border-none">
                         <Clock className="h-3 w-3 mr-1" />
-                        {hoursUntilService}h away
+                        {hoursUntilService}{t("h away")}
                       </Badge>
                     )}
                     {order.rescheduleInfo?.pendingRescheduleDateTime && (
                       <Badge className="bg-purple-100 text-purple-700 border-none">
-                        Reschedule Pending
+                        {t("Reschedule Pending")}
                       </Badge>
                     )}
                   </div>
@@ -269,7 +271,7 @@ export default function VendorServiceOrders() {
                   </h3>
                   
                   <p className="text-sm text-eagle-green/70 mb-1">
-                    Order #{order.orderNumber}
+                    {t("Order #")}{order.orderNumber}
                   </p>
                   
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-eagle-green/70">
@@ -290,7 +292,7 @@ export default function VendorServiceOrders() {
                   {serviceOrderService.formatPrice(order.vendorAmountMinor || order.totalAmountMinor, order.currency)}
                 </p>
                 <p className="text-xs text-eagle-green/60 mt-1">
-                  Your Earnings
+                  {t("Your Earnings")}
                 </p>
               </div>
             </div>
@@ -322,7 +324,7 @@ export default function VendorServiceOrders() {
                   disabled={confirmMutation.isPending}
                 >
                   <CheckCircle className="h-4 w-4 mr-1" />
-                  Confirm
+                  {t("Confirm")}
                 </Button>
                 <Button
                   size="sm"
@@ -335,7 +337,7 @@ export default function VendorServiceOrders() {
                   }}
                 >
                   <XCircle className="h-4 w-4 mr-1" />
-                  Decline
+                  {t("Decline")}
                 </Button>
               </div>
             )}
@@ -365,10 +367,10 @@ export default function VendorServiceOrders() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-eagle-green mb-1">
-                Service Orders
+                {t("Service Orders")}
               </h1>
               <p className="font-light text-eagle-green/70 text-sm sm:text-base">
-                Manage your service bookings
+                {t("Manage your service bookings")}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -378,7 +380,7 @@ export default function VendorServiceOrders() {
                   className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
                 >
                   <CalendarClock className="h-4 w-4 mr-2" />
-                  Service Calendar
+                  {t("Service Calendar")}
                 </Button>
               </Link>
               <Button
@@ -387,7 +389,7 @@ export default function VendorServiceOrders() {
                 className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
+                {t("Refresh")}
               </Button>
             </div>
           </div>
@@ -401,7 +403,7 @@ export default function VendorServiceOrders() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                   <Input
-                    placeholder="Search orders..."
+                    placeholder={t("Search orders...")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
@@ -411,16 +413,16 @@ export default function VendorServiceOrders() {
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t("Filter by status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="BOOKED">Pending</SelectItem>
-                  <SelectItem value="CONFIRMED_BY_VENDOR">Confirmed</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                  <SelectItem value="NO_SHOW">No Show</SelectItem>
+                  <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                  <SelectItem value="BOOKED">{t("Pending")}</SelectItem>
+                  <SelectItem value="CONFIRMED_BY_VENDOR">{t("Confirmed")}</SelectItem>
+                  <SelectItem value="IN_PROGRESS">{t("In Progress")}</SelectItem>
+                  <SelectItem value="COMPLETED">{t("Completed")}</SelectItem>
+                  <SelectItem value="CANCELLED">{t("Cancelled")}</SelectItem>
+                  <SelectItem value="NO_SHOW">{t("No Show")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -451,25 +453,25 @@ export default function VendorServiceOrders() {
                 value="pending"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
-                Pending ({pendingOrders.length})
+                {t("Pending (")}{pendingOrders.length})
               </TabsTrigger>
               <TabsTrigger 
                 value="confirmed"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
-                Confirmed ({confirmedOrders.length})
+                {t("Confirmed (")}{confirmedOrders.length})
               </TabsTrigger>
               <TabsTrigger 
                 value="in-progress"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
-                In Progress ({inProgressOrders.length})
+                {t("In Progress (")}{inProgressOrders.length})
               </TabsTrigger>
               <TabsTrigger 
                 value="completed"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
-                History ({completedOrders.length})
+                {t("History (")}{completedOrders.length})
               </TabsTrigger>
             </TabsList>
 
@@ -523,7 +525,7 @@ export default function VendorServiceOrders() {
               <>
                 <DialogHeader>
                   <DialogTitle className="font-bold text-eagle-green">
-                    Order #{selectedOrder.orderNumber}
+                    {t("Order #")}{selectedOrder.orderNumber}
                   </DialogTitle>
                   <DialogDescription>
                     {serviceOrderService.formatDateTime(selectedOrder.scheduledDateTime)}
@@ -572,13 +574,13 @@ export default function VendorServiceOrders() {
                   {/* Status */}
                   <div className="flex items-center gap-4">
                     <div>
-                      <span className="text-sm font-light text-eagle-green/70">Status</span>
+                      <span className="text-sm font-light text-eagle-green/70">{t("Status")}</span>
                       <Badge className={`ml-2 ${serviceOrderService.getStatusDisplay(selectedOrder.status).bgColor} ${serviceOrderService.getStatusDisplay(selectedOrder.status).color} border-none`}>
                         {serviceOrderService.getStatusDisplay(selectedOrder.status).text}
                       </Badge>
                     </div>
                     <div>
-                      <span className="text-sm font-light text-eagle-green/70">Payment</span>
+                      <span className="text-sm font-light text-eagle-green/70">{t("Payment")}</span>
                       <Badge className={`ml-2 ${serviceOrderService.getPaymentStatusDisplay(selectedOrder.paymentStatus).bgColor} ${serviceOrderService.getPaymentStatusDisplay(selectedOrder.paymentStatus).color} border-none`}>
                         {serviceOrderService.getPaymentStatusDisplay(selectedOrder.paymentStatus).text}
                       </Badge>
@@ -589,11 +591,11 @@ export default function VendorServiceOrders() {
 
                   {/* Customer Contact Info */}
                   <div>
-                    <h4 className="font-bold text-eagle-green mb-3">Customer Contact</h4>
+                    <h4 className="font-bold text-eagle-green mb-3">{t("Customer Contact")}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center gap-2 text-sm">
                         <User className="h-4 w-4 text-eagle-green/50" />
-                        <span className="text-eagle-green/70">Name:</span>
+                        <span className="text-eagle-green/70">{t("Name:")}</span>
                         <span className="font-medium text-eagle-green">
                           {selectedOrder.customerName || 'N/A'}
                         </span>
@@ -601,7 +603,7 @@ export default function VendorServiceOrders() {
                       {selectedOrder.contactEmail && (
                         <div className="flex items-center gap-2 text-sm">
                           <Mail className="h-4 w-4 text-eagle-green/50" />
-                          <span className="text-eagle-green/70">Email:</span>
+                          <span className="text-eagle-green/70">{t("Email:")}</span>
                           <a href={`mailto:${selectedOrder.contactEmail}`} className="font-medium text-eagle-green hover:underline">
                             {selectedOrder.contactEmail}
                           </a>
@@ -610,7 +612,7 @@ export default function VendorServiceOrders() {
                       {selectedOrder.contactPhone && (
                         <div className="flex items-center gap-2 text-sm">
                           <Phone className="h-4 w-4 text-eagle-green/50" />
-                          <span className="text-eagle-green/70">Phone:</span>
+                          <span className="text-eagle-green/70">{t("Phone:")}</span>
                           <a href={`tel:${selectedOrder.contactPhone}`} className="font-medium text-eagle-green hover:underline">
                             {selectedOrder.contactPhone}
                           </a>
@@ -624,11 +626,11 @@ export default function VendorServiceOrders() {
                     <>
                       <Separator />
                       <div>
-                        <h4 className="font-bold text-eagle-green mb-3">Recipient (Gift)</h4>
+                        <h4 className="font-bold text-eagle-green mb-3">{t("Recipient (Gift)")}</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="flex items-center gap-2 text-sm">
                             <User className="h-4 w-4 text-eagle-green/50" />
-                            <span className="text-eagle-green/70">Name:</span>
+                            <span className="text-eagle-green/70">{t("Name:")}</span>
                             <span className="font-medium text-eagle-green">
                               {selectedOrder.recipientName}
                             </span>
@@ -636,7 +638,7 @@ export default function VendorServiceOrders() {
                           {selectedOrder.recipientEmail && (
                             <div className="flex items-center gap-2 text-sm">
                               <Mail className="h-4 w-4 text-eagle-green/50" />
-                              <span className="text-eagle-green/70">Email:</span>
+                              <span className="text-eagle-green/70">{t("Email:")}</span>
                               <span className="font-medium text-eagle-green">
                                 {selectedOrder.recipientEmail}
                               </span>
@@ -645,7 +647,7 @@ export default function VendorServiceOrders() {
                           {selectedOrder.recipientPhone && (
                             <div className="flex items-center gap-2 text-sm">
                               <Phone className="h-4 w-4 text-eagle-green/50" />
-                              <span className="text-eagle-green/70">Phone:</span>
+                              <span className="text-eagle-green/70">{t("Phone:")}</span>
                               <span className="font-medium text-eagle-green">
                                 {selectedOrder.recipientPhone}
                               </span>
@@ -654,7 +656,7 @@ export default function VendorServiceOrders() {
                         </div>
                         {selectedOrder.giftMessage && (
                           <div className="mt-3 p-3 bg-yellow/10 rounded-lg">
-                            <p className="text-sm text-eagle-green/70 mb-1">Gift Message:</p>
+                            <p className="text-sm text-eagle-green/70 mb-1">{t("Gift Message:")}</p>
                             <p className="text-sm font-light text-eagle-green/80 italic">
                               "{selectedOrder.giftMessage}"
                             </p>
@@ -668,17 +670,17 @@ export default function VendorServiceOrders() {
 
                   {/* Payment Summary */}
                   <div>
-                    <h4 className="font-bold text-eagle-green mb-3">Payment Summary</h4>
+                    <h4 className="font-bold text-eagle-green mb-3">{t("Payment Summary")}</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-eagle-green/70">Customer Paid</span>
+                        <span className="text-eagle-green/70">{t("Customer Paid")}</span>
                         <span className="text-eagle-green">
                           {serviceOrderService.formatPrice(selectedOrder.totalAmountMinor, selectedOrder.currency)}
                         </span>
                       </div>
                       {selectedOrder.discountMinor && selectedOrder.discountMinor > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-eagle-green/70">Discount Applied</span>
+                          <span className="text-eagle-green/70">{t("Discount Applied")}</span>
                           <span className="text-eagle-green/70">
                             -{serviceOrderService.formatPrice(selectedOrder.discountMinor, selectedOrder.currency)}
                           </span>
@@ -686,7 +688,7 @@ export default function VendorServiceOrders() {
                       )}
                       {selectedOrder.vatAmountMinor && selectedOrder.vatAmountMinor > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-eagle-green/70">VAT</span>
+                          <span className="text-eagle-green/70">{t("VAT")}</span>
                           <span className="text-red-600">
                             -{serviceOrderService.formatPrice(selectedOrder.vatAmountMinor, selectedOrder.currency)}
                           </span>
@@ -694,7 +696,7 @@ export default function VendorServiceOrders() {
                       )}
                       {selectedOrder.platformFeeMinor && selectedOrder.platformFeeMinor > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-eagle-green/70">Platform Fee</span>
+                          <span className="text-eagle-green/70">{t("Platform Fee")}</span>
                           <span className="text-red-600">
                             -{serviceOrderService.formatPrice(selectedOrder.platformFeeMinor, selectedOrder.currency)}
                           </span>
@@ -702,7 +704,7 @@ export default function VendorServiceOrders() {
                       )}
                       {selectedOrder.serviceFeeMinor && selectedOrder.serviceFeeMinor > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-eagle-green/70">Service Fee</span>
+                          <span className="text-eagle-green/70">{t("Service Fee")}</span>
                           <span className="text-eagle-green">
                             {serviceOrderService.formatPrice(selectedOrder.serviceFeeMinor, selectedOrder.currency)}
                           </span>
@@ -710,7 +712,7 @@ export default function VendorServiceOrders() {
                       )}
                       <Separator />
                       <div className="flex justify-between">
-                        <span className="font-bold text-eagle-green">Your Earnings</span>
+                        <span className="font-bold text-eagle-green">{t("Your Earnings")}</span>
                         <span className="font-bold text-green-600 text-lg">
                           {serviceOrderService.formatPrice(selectedOrder.vendorAmountMinor || selectedOrder.totalAmountMinor, selectedOrder.currency)}
                         </span>
@@ -723,17 +725,17 @@ export default function VendorServiceOrders() {
                     <>
                       <Separator />
                       <div className="bg-red-50 rounded-lg p-4">
-                        <h4 className="font-bold text-red-700 mb-2">Cancellation Details</h4>
+                        <h4 className="font-bold text-red-700 mb-2">{t("Cancellation Details")}</h4>
                         <div className="space-y-1 text-sm">
                           <p className="text-red-600">
-                            <span className="font-bold">Cancelled:</span> {serviceOrderService.formatDateTime(selectedOrder.cancellationInfo.cancelledAt)}
+                            <span className="font-bold">{t("Cancelled:")}</span> {serviceOrderService.formatDateTime(selectedOrder.cancellationInfo.cancelledAt)}
                           </p>
                           <p className="text-red-600">
-                            <span className="font-bold">By:</span> {selectedOrder.cancellationInfo.cancelledBy}
+                            <span className="font-bold">{t("By:")}</span> {selectedOrder.cancellationInfo.cancelledBy}
                           </p>
                           {selectedOrder.cancellationInfo.reason && (
                             <p className="text-red-600">
-                              <span className="font-bold">Reason:</span> {selectedOrder.cancellationInfo.reason}
+                              <span className="font-bold">{t("Reason:")}</span> {selectedOrder.cancellationInfo.reason}
                             </p>
                           )}
                         </div>
@@ -751,7 +753,7 @@ export default function VendorServiceOrders() {
                       disabled={confirmMutation.isPending}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Confirm Booking
+                      {t("Confirm Booking")}
                     </Button>
                   )}
                   {serviceOrderService.canVendorMarkInProgress(selectedOrder) && (
@@ -761,7 +763,7 @@ export default function VendorServiceOrders() {
                       disabled={inProgressMutation.isPending}
                     >
                       <Play className="h-4 w-4 mr-2" />
-                      Start Service
+                      {t("Start Service")}
                     </Button>
                   )}
                   {serviceOrderService.canVendorComplete(selectedOrder) && (
@@ -771,7 +773,7 @@ export default function VendorServiceOrders() {
                       disabled={completeMutation.isPending}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Complete
+                      {t("Complete")}
                     </Button>
                   )}
                   {serviceOrderService.canVendorMarkNoShow(selectedOrder) && (
@@ -782,7 +784,7 @@ export default function VendorServiceOrders() {
                       disabled={noShowMutation.isPending}
                     >
                       <UserX className="h-4 w-4 mr-2" />
-                      No-Show
+                      {t("No-Show")}
                     </Button>
                   )}
                   {serviceOrderService.canVendorReschedule(selectedOrder) && (
@@ -795,7 +797,7 @@ export default function VendorServiceOrders() {
                       }}
                     >
                       <CalendarClock className="h-4 w-4 mr-2" />
-                      Reschedule
+                      {t("Reschedule")}
                     </Button>
                   )}
                   {serviceOrderService.canVendorCancel(selectedOrder) && (
@@ -808,7 +810,7 @@ export default function VendorServiceOrders() {
                       }}
                     >
                       <XCircle className="h-4 w-4 mr-2" />
-                      Cancel
+                      {t("Cancel")}
                     </Button>
                   )}
                 </DialogFooter>
@@ -821,19 +823,19 @@ export default function VendorServiceOrders() {
         <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
           <DialogContent className="bg-white">
             <DialogHeader>
-              <DialogTitle className="text-red-600">Cancel Booking</DialogTitle>
+              <DialogTitle className="text-red-600">{t("Cancel Booking")}</DialogTitle>
               <DialogDescription>
-                This will cancel the booking and issue a full refund to the customer.
+                {t("This will cancel the booking and issue a full refund to the customer.")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="cancelReason">Reason for cancellation *</Label>
+                <Label htmlFor="cancelReason">{t("Reason for cancellation *")}</Label>
                 <Textarea
                   id="cancelReason"
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
-                  placeholder="Please provide a reason..."
+                  placeholder={t("Please provide a reason...")}
                   className="mt-1"
                 />
               </div>
@@ -844,16 +846,16 @@ export default function VendorServiceOrders() {
                   onCheckedChange={(checked) => setValidReason(checked as boolean)}
                 />
                 <Label htmlFor="validReason" className="text-sm text-eagle-green/70">
-                  This is a valid reason (emergency, force majeure, system error)
+                  {t("This is a valid reason (emergency, force majeure, system error)")}
                 </Label>
               </div>
               <p className="text-xs text-eagle-green/60">
-                Note: Invalid cancellations may affect your reliability score.
+                {t("Note: Invalid cancellations may affect your reliability score.")}
               </p>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
-                Keep Booking
+                {t("Keep Booking")}
               </Button>
               <Button
                 variant="destructive"
@@ -870,14 +872,14 @@ export default function VendorServiceOrders() {
         <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
           <DialogContent className="bg-white">
             <DialogHeader>
-              <DialogTitle className="text-purple-600">Request Reschedule</DialogTitle>
+              <DialogTitle className="text-purple-600">{t("Request Reschedule")}</DialogTitle>
               <DialogDescription>
-                The customer will need to approve this reschedule request.
+                {t("The customer will need to approve this reschedule request.")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="newDate">New Date *</Label>
+                <Label htmlFor="newDate">{t("New Date *")}</Label>
                 <Input
                   id="newDate"
                   type="date"
@@ -888,7 +890,7 @@ export default function VendorServiceOrders() {
                 />
               </div>
               <div>
-                <Label htmlFor="newTime">New Time *</Label>
+                <Label htmlFor="newTime">{t("New Time *")}</Label>
                 <Input
                   id="newTime"
                   type="time"
@@ -900,7 +902,7 @@ export default function VendorServiceOrders() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setRescheduleDialogOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 className="bg-purple-600 hover:bg-purple-700 text-white"

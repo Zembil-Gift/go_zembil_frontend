@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useSeasonalTheme } from './SeasonalThemeProvider';
+import { useTranslation } from "react-i18next";
 
 interface SeasonalDecorationsProps {
   position?: 'header' | 'footer' | 'sidebar' | 'floating' | 'wishlist';
@@ -106,6 +107,7 @@ export function SeasonalDecorations({
 }
 
 export function SeasonalWishlistHeader() {
+  const { t } = useTranslation();
   const { currentTheme, isSeasonalMode } = useSeasonalTheme();
 
   if (!isSeasonalMode || currentTheme.id === 'default') {
@@ -140,7 +142,7 @@ export function SeasonalWishlistHeader() {
         className="text-xl font-semibold"
         style={{ color: currentTheme.colors.text }}
       >
-        {currentTheme.displayName} Wishlist
+        {currentTheme.displayName} {t("Wishlist")}
       </h2>
       <p 
         className="text-sm opacity-80"

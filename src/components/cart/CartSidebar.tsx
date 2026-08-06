@@ -9,8 +9,10 @@ import { useNavigate } from "react-router-dom";
 import { formatPrice, toMinorUnits } from "@/lib/currency";
 import { CartItem } from "@/services/cartService";
 import { FreeGiftLine } from "@/components/cart/FreeGiftLine";
+import { useTranslation } from "react-i18next";
 
 export function CartSidebar() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const {
@@ -62,20 +64,20 @@ export function CartSidebar() {
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
-              Shopping Cart
+              {t("Shopping Cart")}
             </SheetTitle>
           </SheetHeader>
           
           <div className="flex flex-col items-center justify-center h-full space-y-4">
             <ShoppingCart className="h-16 w-16 text-gray-300" />
             <div className="text-center space-y-2">
-              <h3 className="text-lg font-semibold">Sign in to view your cart</h3>
+              <h3 className="text-lg font-semibold">{t("Sign in to view your cart")}</h3>
               <p className="text-sm text-gray-600">
-                Create an account or sign in to save items to your cart
+                {t("Create an account or sign in to save items to your cart")}
               </p>
             </div>
             <Button onClick={handleSignIn} className="w-full max-w-xs">
-              Sign In
+              {t("Sign In")}
             </Button>
           </div>
         </SheetContent>
@@ -90,7 +92,7 @@ export function CartSidebar() {
           <SheetTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
-              Shopping Cart
+              {t("Shopping Cart")}
               {totalItems > 0 && (
                 <Badge variant="secondary" className="ml-1">
                   {totalItems}
@@ -119,13 +121,13 @@ export function CartSidebar() {
           <div className="flex-1 flex flex-col items-center justify-center space-y-4">
             <ShoppingCart className="h-16 w-16 text-gray-300" />
             <div className="text-center space-y-2">
-              <h3 className="text-lg font-semibold">Your cart is empty</h3>
+              <h3 className="text-lg font-semibold">{t("Your cart is empty")}</h3>
               <p className="text-sm text-gray-600">
-                Add some items to get started
+                {t("Add some items to get started")}
               </p>
             </div>
             <Button variant="outline" onClick={closeCart}>
-              Continue Shopping
+              {t("Continue Shopping")}
             </Button>
           </div>
         ) : (
@@ -228,16 +230,16 @@ export function CartSidebar() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Subtotal ({totalItems} items)</span>
+                  <span>{t("Subtotal (")}{totalItems} {t("items)")}</span>
                   <span>{formatPrice(totalPrice, cartCurrency)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Shipping</span>
-                  <span className="text-green-600">Free</span>
+                  <span>{t("Shipping")}</span>
+                  <span className="text-green-600">{t("Free")}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold">
-                  <span>Total</span>
+                  <span>{t("Total")}</span>
                   <span className="text-primary">{formatPrice(totalPrice, cartCurrency)}</span>
                 </div>
               </div>
@@ -249,7 +251,7 @@ export function CartSidebar() {
                 disabled={cartItems.length === 0}
               >
                 <CreditCard className="mr-2 h-5 w-5" />
-                Proceed to Checkout
+                {t("Proceed to Checkout")}
               </Button>
 
               <Button 
@@ -257,7 +259,7 @@ export function CartSidebar() {
                 onClick={closeCart}
                 className="w-full"
               >
-                Continue Shopping
+                {t("Continue Shopping")}
               </Button>
             </div>
           </>

@@ -25,6 +25,7 @@ import {
   type WalletTransactionType,
 } from "@/services/walletService";
 import { cashbackService } from "@/services/cashbackService";
+import { useTranslation } from "react-i18next";
 
 const PAGE_SIZE = 20;
 
@@ -66,6 +67,7 @@ function TransactionRow({
   transaction: WalletTransaction;
   currencyCode: string;
 }) {
+  const { t } = useTranslation();
   const meta = TYPE_META[transaction.type] ?? {
     label: transaction.type,
     icon: Wallet,
@@ -96,8 +98,7 @@ function TransactionRow({
         {transaction.expiresAt && transaction.remainingMinor
           ? (
             <p className="mt-0.5 text-xs text-amber-600">
-              {formatCurrency(minorToMajor(transaction.remainingMinor), currencyCode)} left,
-              expires {formatDate(transaction.expiresAt)}
+              {formatCurrency(minorToMajor(transaction.remainingMinor), currencyCode)} {t("left, expires")} {formatDate(transaction.expiresAt)}
             </p>
           )
           : null}
@@ -116,6 +117,7 @@ function TransactionRow({
 }
 
 export default function WalletMenu({ variant = "icon" }: { variant?: "icon" | "mobile" }) {
+  const { t } = useTranslation();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [page, setPage] = useState(0);
 
@@ -160,7 +162,7 @@ export default function WalletMenu({ variant = "icon" }: { variant?: "icon" | "m
         <DialogTrigger asChild>
           <Button variant="outline" size="sm" className="w-full justify-start h-9">
             <Wallet className="mr-2 h-4 w-4" />
-            Reward credits
+            {t("Reward credits")}
             <span className="ml-auto text-xs font-semibold text-viridian-green tabular-nums">
               {balanceLoading ? "…" : balanceLabel}
             </span>
@@ -183,7 +185,7 @@ export default function WalletMenu({ variant = "icon" }: { variant?: "icon" | "m
                   />
                 )}
                 <span className="sr-only">
-                  Reward wallet{hasCredits ? `, balance ${balanceLabel}` : ""}
+                  {t("Reward wallet")}{hasCredits ? `, balance ${balanceLabel}` : ""}
                 </span>
               </Button>
             </DialogTrigger>
@@ -191,7 +193,7 @@ export default function WalletMenu({ variant = "icon" }: { variant?: "icon" | "m
 
           <HoverCardContent align="end" className="w-72">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Reward credits
+              {t("Reward credits")}
             </p>
 
             {balanceLoading ? (
@@ -204,8 +206,7 @@ export default function WalletMenu({ variant = "icon" }: { variant?: "icon" | "m
               <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
                 <Hourglass className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  <span className="font-medium text-eagle-green">{pendingLabel}</span> on the way —
-                  cashback lands here once your order is delivered.
+                  <span className="font-medium text-eagle-green">{pendingLabel}</span> {t("on the way — cashback lands here once your order is delivered.")}
                 </span>
               </p>
             ) : null}
@@ -214,7 +215,7 @@ export default function WalletMenu({ variant = "icon" }: { variant?: "icon" | "m
               <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-600">
                 <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  {formatCurrency(minorToMajor(balance.expiringSoonMinor), currencyCode)} expires on{" "}
+                  {formatCurrency(minorToMajor(balance.expiringSoonMinor), currencyCode)} {t("expires on")}{" "}
                   {formatDate(balance.nextExpiryAt)}
                 </span>
               </p>
@@ -227,7 +228,7 @@ export default function WalletMenu({ variant = "icon" }: { variant?: "icon" | "m
             </p>
 
             <p className="mt-2 text-xs font-medium text-viridian-green">
-              Click to view your credit history
+              {t("Click to view your credit history")}
             </p>
           </HoverCardContent>
         </HoverCard>
@@ -237,10 +238,10 @@ export default function WalletMenu({ variant = "icon" }: { variant?: "icon" | "m
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-viridian-green" />
-            Reward credits
+            {t("Reward credits")}
           </DialogTitle>
           <DialogDescription>
-            Balance {balanceLabel}
+            {t("Balance")} {balanceLabel}
             {pendingMinor > 0 ? ` · ${pendingLabel} pending delivery` : ""}
             {balance?.nextExpiryAt && balance.expiringSoonMinor
               ? ` · ${formatCurrency(
@@ -278,9 +279,9 @@ export default function WalletMenu({ variant = "icon" }: { variant?: "icon" | "m
           ) : (
             <div className="py-10 text-center">
               <ArrowDownLeft className="mx-auto h-8 w-8 text-muted-foreground/50" />
-              <p className="mt-2 text-sm font-medium text-eagle-green">No credit activity yet</p>
+              <p className="mt-2 text-sm font-medium text-eagle-green">{t("No credit activity yet")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Credits you earn, spend or get refunded will show up here.
+                {t("Credits you earn, spend or get refunded will show up here.")}
               </p>
             </div>
           )}
@@ -294,10 +295,10 @@ export default function WalletMenu({ variant = "icon" }: { variant?: "icon" | "m
               disabled={history.first || historyLoading}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
             >
-              Previous
+              {t("Previous")}
             </Button>
             <span className="text-xs text-muted-foreground">
-              Page {history.number + 1} of {history.totalPages}
+              {t("Page")} {history.number + 1} of {history.totalPages}
             </span>
             <Button
               variant="outline"
@@ -305,7 +306,7 @@ export default function WalletMenu({ variant = "icon" }: { variant?: "icon" | "m
               disabled={history.last || historyLoading}
               onClick={() => setPage((p) => p + 1)}
             >
-              Next
+              {t("Next")}
             </Button>
           </div>
         )}

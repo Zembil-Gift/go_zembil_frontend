@@ -43,6 +43,7 @@ import {
   Loader2,
   Filter,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Helper function to check if vendor is Ethiopian
 const isEthiopianVendor = (
@@ -53,6 +54,7 @@ const isEthiopianVendor = (
 };
 
 export default function VendorPaymentsPage() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -127,14 +129,14 @@ export default function VendorPaymentsPage() {
         window.location.href = data.onboardingUrl;
       } else {
         toast({
-          title: "Stripe onboarding started",
+          title: t("Stripe onboarding started"),
           description: data.message,
         });
       }
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message,
         variant: "destructive",
       });
@@ -151,7 +153,7 @@ export default function VendorPaymentsPage() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.message,
         variant: "destructive",
       });
@@ -161,7 +163,7 @@ export default function VendorPaymentsPage() {
   const payoutRequestMutation = useMutation({
     mutationFn: () => vendorService.requestPayoutNow(),
     onSuccess: (data) => {
-      toast({ title: "Payout request submitted", description: data.message });
+      toast({ title: t("Payout request submitted"), description: data.message });
       queryClient.invalidateQueries({ queryKey: ["vendor-payout-overview"] });
       queryClient.invalidateQueries({ queryKey: ["vendor-payout-summary"] });
       queryClient.invalidateQueries({ queryKey: ["vendor-payout-history"] });
@@ -170,23 +172,23 @@ export default function VendorPaymentsPage() {
       const status = error?.response?.status;
       if (status === 401) {
         toast({
-          title: "Session expired",
-          description: "Please sign in again.",
+          title: t("Session expired"),
+          description: t("Please sign in again."),
           variant: "destructive",
         });
         return;
       }
       if (status === 403) {
         toast({
-          title: "Access denied",
-          description: "You are not allowed to request payouts.",
+          title: t("Access denied"),
+          description: t("You are not allowed to request payouts."),
           variant: "destructive",
         });
         return;
       }
       if (status === 400) {
         toast({
-          title: "Invalid request",
+          title: t("Invalid request"),
           description:
             error.message || "Unable to process payout sweep request.",
           variant: "destructive",
@@ -194,7 +196,7 @@ export default function VendorPaymentsPage() {
         return;
       }
       toast({
-        title: "Unable to request payout",
+        title: t("Unable to request payout"),
         description: error.message || "Please try again.",
         variant: "destructive",
       });
@@ -206,7 +208,7 @@ export default function VendorPaymentsPage() {
       vendorService.refreshProcessingPayout(payoutId),
     onSuccess: (data) => {
       toast({
-        title: "Payout status refreshed",
+        title: t("Payout status refreshed"),
         description:
           data.chapaMessage ||
           `Payout #${data.payoutId} is now ${data.payoutStatus}.`,
@@ -217,7 +219,7 @@ export default function VendorPaymentsPage() {
     },
     onError: (error: any) => {
       toast({
-        title: "Unable to refresh payout",
+        title: t("Unable to refresh payout"),
         description: error?.message || "Please try again.",
         variant: "destructive",
       });
@@ -257,25 +259,25 @@ export default function VendorPaymentsPage() {
   const getPayoutStatusBadge = (status: string) => {
     switch (status?.toUpperCase()) {
       case "COMPLETED":
-        return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Completed")}</Badge>;
       case "SCHEDULED":
-        return <Badge className="bg-slate-100 text-slate-800">Scheduled</Badge>;
+        return <Badge className="bg-slate-100 text-slate-800">{t("Scheduled")}</Badge>;
       case "PENDING":
-        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800">{t("Pending")}</Badge>;
       case "PROCESSING":
-        return <Badge className="bg-blue-100 text-blue-800">Processing</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t("Processing")}</Badge>;
       case "IN_TRANSIT":
         return (
-          <Badge className="bg-indigo-100 text-indigo-800">In Transit</Badge>
+          <Badge className="bg-indigo-100 text-indigo-800">{t("In Transit")}</Badge>
         );
       case "FAILED":
-        return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Failed")}</Badge>;
       case "CANCELLED":
         return (
-          <Badge className="bg-orange-100 text-orange-800">Cancelled</Badge>
+          <Badge className="bg-orange-100 text-orange-800">{t("Cancelled")}</Badge>
         );
       case "REVERSED":
-        return <Badge className="bg-rose-100 text-rose-800">Reversed</Badge>;
+        return <Badge className="bg-rose-100 text-rose-800">{t("Reversed")}</Badge>;
       default:
         return <Badge variant="outline">{status || "Unknown"}</Badge>;
     }
@@ -327,12 +329,12 @@ export default function VendorPaymentsPage() {
       case "ACTIVE":
       case "APPROVED":
       case "ENABLED":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Active")}</Badge>;
       case "PENDING":
       case "PENDING_APPROVAL":
-        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800">{t("Pending")}</Badge>;
       case "NOT_STARTED":
-        return <Badge className="bg-gray-100 text-gray-800">Not Started</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t("Not Started")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -348,7 +350,7 @@ export default function VendorPaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Payment Setup</h2>
+      <h2 className="text-xl font-semibold">{t("Payment Setup")}</h2>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Stripe Setup - Only show for non-Ethiopian vendors */}
@@ -357,22 +359,22 @@ export default function VendorPaymentsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Stripe Connect
+                {t("Stripe Connect")}
               </CardTitle>
               <CardDescription>
-                Accept international payments via Stripe
+                {t("Accept international payments via Stripe")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <span>Status:</span>
+                <span>{t("Status:")}</span>
                 {getStatusBadge(
                   onboardingStatus?.stripeStatus || "NOT_STARTED"
                 )}
               </div>
               {onboardingStatus?.stripeAccountId && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Account ID:</span>
+                  <span className="text-muted-foreground">{t("Account ID:")}</span>
                   <code className="bg-gray-100 px-2 py-1 rounded text-xs">
                     {onboardingStatus.stripeAccountId}
                   </code>
@@ -403,7 +405,7 @@ export default function VendorPaymentsPage() {
                     className="flex-1"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Stripe Dashboard
+                    {t("Stripe Dashboard")}
                   </Button>
                 )}
               </div>
@@ -418,18 +420,18 @@ export default function VendorPaymentsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Chapa (Ethiopian Birr)
+              {t("Chapa (Ethiopian Birr)")}
             </CardTitle>
-            <CardDescription>Accept ETB payments via Chapa</CardDescription>
+            <CardDescription>{t("Accept ETB payments via Chapa")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span>Status:</span>
+              <span>{t("Status:")}</span>
               {getStatusBadge(onboardingStatus?.chapaStatus || "NOT_STARTED")}
             </div>
             {onboardingStatus?.chapaSubaccountId && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Subaccount ID:</span>
+                <span className="text-muted-foreground">{t("Subaccount ID:")}</span>
                 <code className="bg-gray-100 px-2 py-1 rounded text-xs">
                   {onboardingStatus.chapaSubaccountId}
                 </code>
@@ -454,7 +456,7 @@ export default function VendorPaymentsPage() {
       {/* Payment Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Payout Status</CardTitle>
+          <CardTitle>{t("Payout Status")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">
@@ -463,11 +465,10 @@ export default function VendorPaymentsPage() {
                 <CheckCircle className="h-8 w-8 text-green-500" />
                 <div>
                   <p className="font-medium text-green-700">
-                    You can receive payments!
+                    {t("You can receive payments!")}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Your payment setup is complete. Funds will be transferred to
-                    your connected accounts.
+                    {t("Your payment setup is complete. Funds will be transferred to your connected accounts.")}
                   </p>
                 </div>
               </>
@@ -476,11 +477,10 @@ export default function VendorPaymentsPage() {
                 <AlertCircle className="h-8 w-8 text-amber-500" />
                 <div>
                   <p className="font-medium text-amber-700">
-                    Payment setup incomplete
+                    {t("Payment setup incomplete")}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Complete your Stripe or Chapa setup to receive payouts from
-                    your sales.
+                    {t("Complete your Stripe or Chapa setup to receive payouts from your sales.")}
                   </p>
                 </div>
               </>
@@ -494,11 +494,10 @@ export default function VendorPaymentsPage() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5" />
-              Vendor Payouts
+              {t("Vendor Payouts")}
             </CardTitle>
             <CardDescription>
-              Trigger an immediate sweep of all mature payouts eligible for
-              withdrawal.
+              {t("Trigger an immediate sweep of all mature payouts eligible for withdrawal.")}
             </CardDescription>
           </div>
           <Button
@@ -527,7 +526,7 @@ export default function VendorPaymentsPage() {
                   : ""
               }`}
             />
-            Refresh
+            {t("Refresh")}
           </Button>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -535,7 +534,7 @@ export default function VendorPaymentsPage() {
             <Card className="border-green-200">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground">
-                  Available To Request
+                  {t("Available To Request")}
                 </p>
                 <p className="text-lg font-semibold text-green-700">
                   {isPayoutOverviewLoading
@@ -543,47 +542,47 @@ export default function VendorPaymentsPage() {
                     : formatMoney(effectiveSummary?.availableToRequestAmount)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {effectiveSummary?.availableToRequestCount ?? 0} payouts
+                  {effectiveSummary?.availableToRequestCount ?? 0} {t("payouts")}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Total Completed</p>
+                <p className="text-xs text-muted-foreground">{t("Total Completed")}</p>
                 <p className="text-lg font-semibold">
                   {isPayoutOverviewLoading
                     ? "..."
                     : formatMoney(effectiveSummary?.totalCompletedAmount)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {effectiveSummary?.completedCount ?? 0} completed
+                  {effectiveSummary?.completedCount ?? 0} {t("completed")}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Pending Amount</p>
+                <p className="text-xs text-muted-foreground">{t("Pending Amount")}</p>
                 <p className="text-lg font-semibold text-amber-700">
                   {isPayoutOverviewLoading
                     ? "..."
                     : formatMoney(effectiveSummary?.totalPendingAmount)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {effectiveSummary?.pendingCount ?? 0} pending
+                  {effectiveSummary?.pendingCount ?? 0} {t("pending")}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground">
-                  Processing / Failed
+                  {t("Processing / Failed")}
                 </p>
                 <p className="text-lg font-semibold">
                   {(effectiveSummary?.processingCount ?? 0).toLocaleString()} /{" "}
                   {(effectiveSummary?.failedCount ?? 0).toLocaleString()}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Total payouts:{" "}
+                  {t("Total payouts:")}{" "}
                   {(effectiveSummary?.totalPayouts ?? 0).toLocaleString()}
                 </p>
               </CardContent>
@@ -592,21 +591,21 @@ export default function VendorPaymentsPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border p-4">
-              <p className="text-xs text-muted-foreground">Payout Provider</p>
+              <p className="text-xs text-muted-foreground">{t("Payout Provider")}</p>
               <p className="mt-1 text-sm font-medium">
                 {payoutOverview?.payoutPolicy?.provider || "-"}
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                Delay:{" "}
+                {t("Delay:")}{" "}
                 {(
                   payoutOverview?.payoutPolicy?.payoutDelayDays ?? 0
                 ).toLocaleString()}{" "}
-                days
+                {t("days")}
               </p>
             </div>
             <div className="rounded-lg border p-4">
               <p className="text-xs text-muted-foreground">
-                Next Eligible Payout
+                {t("Next Eligible Payout")}
               </p>
               <p className="mt-1 text-sm font-medium">
                 {formatDateTime(
@@ -614,7 +613,7 @@ export default function VendorPaymentsPage() {
                 )}
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                Stripe request payout supported:{" "}
+                {t("Stripe request payout supported:")}{" "}
                 {payoutOverview?.payoutPolicy?.stripeRequestPayoutSupported
                   ? "Yes"
                   : "No"}
@@ -625,8 +624,7 @@ export default function VendorPaymentsPage() {
           <div className="rounded-lg border p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
-                This action starts payout transfer for all currently eligible
-                mature payouts.
+                {t("This action starts payout transfer for all currently eligible mature payouts.")}
               </p>
               <Button
                 onClick={triggerPayoutRequest}
@@ -637,7 +635,7 @@ export default function VendorPaymentsPage() {
                 ) : (
                   <Clock3 className="h-4 w-4 mr-2" />
                 )}
-                Request Immediate Payout
+                {t("Request Immediate Payout")}
               </Button>
             </div>
             {!canRequestPayout && (
@@ -648,9 +646,9 @@ export default function VendorPaymentsPage() {
             )}
             {canRequestPayout && (
               <p className="mt-2 text-sm text-muted-foreground">
-                Eligible now:{" "}
+                {t("Eligible now:")}{" "}
                 {payoutOverview?.requestPayout?.eligiblePayoutCount ?? 0}{" "}
-                payouts (
+                {t("payouts (")}
                 {formatMoney(payoutOverview?.requestPayout?.eligibleAmount)})
               </p>
             )}
@@ -661,7 +659,7 @@ export default function VendorPaymentsPage() {
       <Card>
         <CardHeader className="space-y-3">
           <div className="flex items-center justify-between">
-            <CardTitle>Payout History</CardTitle>
+            <CardTitle>{t("Payout History")}</CardTitle>
             <Button
               variant="outline"
               size="sm"
@@ -670,13 +668,13 @@ export default function VendorPaymentsPage() {
                 setPayoutPage(0);
               }}
             >
-              Sort: {sortDirection === "desc" ? "Newest First" : "Oldest First"}
+              {t("Sort:")} {sortDirection === "desc" ? "Newest First" : "Oldest First"}
             </Button>
           </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-end">
             <div className="space-y-1">
               <label htmlFor="statusFilter" className="text-sm font-medium">
-                Status
+                {t("Status")}
               </label>
               <select
                 id="statusFilter"
@@ -687,20 +685,20 @@ export default function VendorPaymentsPage() {
                 }}
                 className="h-10 rounded-md border bg-background px-3 text-sm"
               >
-                <option value="ALL">All</option>
-                <option value="PENDING">Pending</option>
-                <option value="SCHEDULED">Scheduled</option>
-                <option value="PROCESSING">Processing</option>
-                <option value="IN_TRANSIT">In Transit</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="FAILED">Failed</option>
-                <option value="CANCELLED">Cancelled</option>
-                <option value="REVERSED">Reversed</option>
+                <option value="ALL">{t("All")}</option>
+                <option value="PENDING">{t("Pending")}</option>
+                <option value="SCHEDULED">{t("Scheduled")}</option>
+                <option value="PROCESSING">{t("Processing")}</option>
+                <option value="IN_TRANSIT">{t("In Transit")}</option>
+                <option value="COMPLETED">{t("Completed")}</option>
+                <option value="FAILED">{t("Failed")}</option>
+                <option value="CANCELLED">{t("Cancelled")}</option>
+                <option value="REVERSED">{t("Reversed")}</option>
               </select>
             </div>
             <div className="space-y-1">
               <label htmlFor="startDate" className="text-sm font-medium">
-                Start date
+                {t("Start date")}
               </label>
               <Input
                 id="startDate"
@@ -714,7 +712,7 @@ export default function VendorPaymentsPage() {
             </div>
             <div className="space-y-1">
               <label htmlFor="endDate" className="text-sm font-medium">
-                End date
+                {t("End date")}
               </label>
               <Input
                 id="endDate"
@@ -736,7 +734,7 @@ export default function VendorPaymentsPage() {
               }}
             >
               <Filter className="h-4 w-4 mr-2" />
-              Clear Filters
+              {t("Clear Filters")}
             </Button>
           </div>
         </CardHeader>
@@ -750,15 +748,15 @@ export default function VendorPaymentsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Method</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Net</TableHead>
-                    <TableHead>Order</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Eligible</TableHead>
-                    <TableHead>Reference</TableHead>
+                    <TableHead>{t("ID")}</TableHead>
+                    <TableHead>{t("Status")}</TableHead>
+                    <TableHead>{t("Method")}</TableHead>
+                    <TableHead>{t("Amount")}</TableHead>
+                    <TableHead>{t("Net")}</TableHead>
+                    <TableHead>{t("Order")}</TableHead>
+                    <TableHead>{t("Created")}</TableHead>
+                    <TableHead>{t("Eligible")}</TableHead>
+                    <TableHead>{t("Reference")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -768,7 +766,7 @@ export default function VendorPaymentsPage() {
                         colSpan={9}
                         className="text-center text-muted-foreground"
                       >
-                        No payout history found for the selected filters.
+                        {t("No payout history found for the selected filters.")}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -795,7 +793,7 @@ export default function VendorPaymentsPage() {
                             {typeof item.daysUntilEligible === "number" &&
                               item.daysUntilEligible > 0 && (
                                 <p className="text-xs text-muted-foreground">
-                                  In {item.daysUntilEligible} day(s)
+                                  {t("In")} {item.daysUntilEligible} {t("day(s)")}
                                 </p>
                               )}
                           </div>
@@ -834,9 +832,9 @@ export default function VendorPaymentsPage() {
 
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Showing page {(currentPageNumber ?? 0) + 1} of{" "}
+                  {t("Showing page")} {(currentPageNumber ?? 0) + 1} of{" "}
                   {Math.max(totalHistoryPages, 1)} (
-                  {totalPayoutElements.toLocaleString()} total payouts)
+                  {totalPayoutElements.toLocaleString()} {t("total payouts)")}
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
@@ -849,7 +847,7 @@ export default function VendorPaymentsPage() {
                       (currentPageNumber ?? 0) <= 0 || isPayoutHistoryFetching
                     }
                   >
-                    Previous
+                    {t("Previous")}
                   </Button>
                   <Button
                     variant="outline"
@@ -865,7 +863,7 @@ export default function VendorPaymentsPage() {
                       isPayoutHistoryFetching
                     }
                   >
-                    Next
+                    {t("Next")}
                   </Button>
                 </div>
               </div>

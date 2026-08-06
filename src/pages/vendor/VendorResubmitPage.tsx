@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { RejectionReasonWithModal } from "@/components/RejectionReasonModal";
+import { useTranslation } from "react-i18next";
 
 const VENDOR_TYPES = [
   { value: "PRODUCT", label: "Product Vendor" },
@@ -53,6 +54,7 @@ const resubmitSchema = z.object({
 type ResubmitForm = z.infer<typeof resubmitSchema>;
 
 export default function VendorResubmitPage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -124,15 +126,15 @@ export default function VendorResubmitPage() {
     }),
     onSuccess: () => {
       toast({
-        title: "Application resubmitted",
-        description: "Your vendor application was updated and sent for review.",
+        title: t("Application resubmitted"),
+        description: t("Your vendor application was updated and sent for review."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "profile"] });
       navigate("/vendor");
     },
     onError: (error: any) => {
       toast({
-        title: "Resubmission failed",
+        title: t("Resubmission failed"),
         description: error?.message || "Unable to resubmit application",
         variant: "destructive",
       });
@@ -148,7 +150,7 @@ export default function VendorResubmitPage() {
   }
 
   if (!vendorProfile) {
-    return <div className="text-center py-12 text-muted-foreground">Vendor profile not found.</div>;
+    return <div className="text-center py-12 text-muted-foreground">{t("Vendor profile not found.")}</div>;
   }
 
   return (
@@ -157,77 +159,77 @@ export default function VendorResubmitPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-red-800">
             <AlertTriangle className="h-5 w-5" />
-            Resubmit Vendor Application
+            {t("Resubmit Vendor Application")}
           </CardTitle>
           <CardDescription className="text-red-700">
-            Update your information and resubmit for admin review.
+            {t("Update your information and resubmit for admin review.")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {vendorProfile.rejectionReason ? (
             <RejectionReasonWithModal
               reason={vendorProfile.rejectionReason}
-              title="Vendor rejection reason"
+              title={t("Vendor rejection reason")}
               className="text-sm text-red-800"
               truncateLength={120}
             />
           ) : (
-            <p className="text-sm text-red-800">Your previous submission was rejected.</p>
+            <p className="text-sm text-red-800">{t("Your previous submission was rejected.")}</p>
           )}
           {vendorProfile.rejectedAt && (
-            <p className="text-xs text-red-700 mt-1">Rejected on {new Date(vendorProfile.rejectedAt).toLocaleString()}</p>
+            <p className="text-xs text-red-700 mt-1">{t("Rejected on")} {new Date(vendorProfile.rejectedAt).toLocaleString()}</p>
           )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Vendor Information</CardTitle>
+          <CardTitle>{t("Vendor Information")}</CardTitle>
           <CardDescription>
-            This form mirrors the vendor registration details and will update your existing vendor profile.
+            {t("This form mirrors the vendor registration details and will update your existing vendor profile.")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit((v) => resubmitMutation.mutate(v))} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Business Name *</Label>
+                <Label>{t("Business Name *")}</Label>
                 <Input {...form.register("businessName")} />
                 {form.formState.errors.businessName && <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessName.message}</p>}
               </div>
               <div>
-                <Label>Business Email *</Label>
+                <Label>{t("Business Email *")}</Label>
                 <Input type="email" {...form.register("businessEmail")} />
                 {form.formState.errors.businessEmail && <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessEmail.message}</p>}
               </div>
               <div>
-                <Label>Business Phone *</Label>
+                <Label>{t("Business Phone *")}</Label>
                 <Input {...form.register("businessPhone")} />
                 {form.formState.errors.businessPhone && <p className="text-sm text-red-600 mt-1">{form.formState.errors.businessPhone.message}</p>}
               </div>
               <div>
-                <Label>City *</Label>
+                <Label>{t("City *")}</Label>
                 <Input {...form.register("city")} />
                 {form.formState.errors.city && <p className="text-sm text-red-600 mt-1">{form.formState.errors.city.message}</p>}
               </div>
             </div>
 
             <div>
-              <Label>Description</Label>
+              <Label>{t("Description")}</Label>
               <Textarea className="min-h-[120px]" {...form.register("description")} />
               {form.formState.errors.description && <p className="text-sm text-red-600 mt-1">{form.formState.errors.description.message}</p>}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label>Country *</Label>
+                <Label>{t("Country *")}</Label>
                 <Controller
                   name="country"
                   control={form.control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select country" />
+                        <SelectValue placeholder={t("Select country")} />
                       </SelectTrigger>
                       <SelectContent>
                         {SUPPORTED_COUNTRIES.map((c) => (
@@ -240,14 +242,14 @@ export default function VendorResubmitPage() {
               </div>
 
               <div>
-                <Label>Business Category *</Label>
+                <Label>{t("Business Category *")}</Label>
                 <Controller
                   name="vendorCategoryId"
                   control={form.control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder={t("Select category")} />
                       </SelectTrigger>
                       <SelectContent>
                         {vendorCategories.map((cat) => (
@@ -261,14 +263,14 @@ export default function VendorResubmitPage() {
               </div>
 
               <div>
-                <Label>Vendor Type *</Label>
+                <Label>{t("Vendor Type *")}</Label>
                 <Controller
                   name="vendorType"
                   control={form.control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select vendor type" />
+                        <SelectValue placeholder={t("Select vendor type")} />
                       </SelectTrigger>
                       <SelectContent>
                         {VENDOR_TYPES.map((t) => (
@@ -283,14 +285,14 @@ export default function VendorResubmitPage() {
 
             {isEthiopia && (
               <div>
-                <Label>VAT Status *</Label>
+                <Label>{t("VAT Status *")}</Label>
                 <Controller
                   name="vatStatus"
                   control={form.control}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select VAT status" />
+                        <SelectValue placeholder={t("Select VAT status")} />
                       </SelectTrigger>
                       <SelectContent>
                         {VAT_STATUS_OPTIONS.map((v) => (
@@ -307,12 +309,12 @@ export default function VendorResubmitPage() {
         
 
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => navigate('/vendor')}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => navigate('/vendor')}>{t("Cancel")}</Button>
               <Button type="submit" disabled={resubmitMutation.isPending}>
                 {resubmitMutation.isPending ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Resubmitting...
+                    {t("Resubmitting...")}
                   </>
                 ) : (
                   'Submit Updated Application'

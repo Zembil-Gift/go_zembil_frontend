@@ -3,8 +3,13 @@ import { tokenManager } from './tokenManager';
 
 export interface CertificateGenerationRequest {
   email: string;
-  fullName: string;
+}
+
+export interface VendorOnboardingStatus {
+  email: string;
   vendorType: string;
+  certificateIssued: boolean;
+  certificateCode: string | null;
 }
 
 export interface CertificateResponse {
@@ -64,6 +69,19 @@ export const certificateService = {
     }
     
     return response.blob();
+  },
+
+  /**
+   * Where a logged-in vendor stopped in onboarding. Null when they have no vendor record.
+   */
+  getMyOnboardingStatus: async (): Promise<VendorOnboardingStatus | null> => {
+    try {
+      return await apiService.getRequest<VendorOnboardingStatus>(
+        '/api/vendor-certificates/my-onboarding-status'
+      );
+    } catch {
+      return null;
+    }
   },
 
   /**

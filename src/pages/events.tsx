@@ -51,9 +51,11 @@ import { eventOrderService, EventResponse } from "@/services/eventOrderService";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
+import { useTranslation } from "react-i18next";
 
 // Helper function for badge colors
 export default function Events() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { isInitialized } = useAuth();
@@ -187,11 +189,11 @@ export default function Events() {
             <div className="flex items-center gap-2 mb-2">
               <Ticket className="h-5 w-5 text-white" />
               <h1 className="text-2xl lg:text-3xl font-bold text-white">
-                Events & Experiences
+                {t("Events & Experiences")}
               </h1>
             </div>
             <p className="text-sm lg:text-base font-light text-white/80 max-w-2xl">
-              Gift unforgettable moments from concerts to cultural celebrations
+              {t("Gift unforgettable moments from concerts to cultural celebrations")}
             </p>
           </FadeIn>
         </div>
@@ -212,7 +214,7 @@ export default function Events() {
               <div className="relative bg-white rounded-2xl shadow-lg shadow-eagle-green/5 border border-eagle-green/10 overflow-hidden">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-eagle-green/40 h-5 w-5" />
                 <Input
-                  placeholder="Search events, cities or categories..."
+                  placeholder={t("Search events, cities or categories...")}
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-12 pr-4 h-14 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 font-light text-eagle-green placeholder:text-eagle-green/40 w-full"
@@ -250,7 +252,7 @@ export default function Events() {
                   className="w-56 rounded-xl border-eagle-green/10"
                 >
                   <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-eagle-green/50">
-                    Location
+                    {t("Location")}
                   </DropdownMenuLabel>
                   <DropdownMenuItem
                     onClick={() =>
@@ -258,11 +260,11 @@ export default function Events() {
                     }
                     className="text-sm"
                   >
-                    All Locations
+                    {t("All Locations")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-eagle-green/50">
-                    Ethiopia
+                    {t("Ethiopia")}
                   </DropdownMenuLabel>
                   {CITIES.ET.map((city) => (
                     <DropdownMenuItem
@@ -277,7 +279,7 @@ export default function Events() {
                   ))}
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-eagle-green/50">
-                    United States
+                    {t("United States")}
                   </DropdownMenuLabel>
                   {CITIES.US.map((city) => (
                     <DropdownMenuItem
@@ -321,25 +323,25 @@ export default function Events() {
                     onClick={() => updateEventFilters({ sort: "popular" })}
                     className="text-sm"
                   >
-                    Most Popular
+                    {t("Most Popular")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => updateEventFilters({ sort: "date" })}
                     className="text-sm"
                   >
-                    By Date
+                    {t("By Date")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => updateEventFilters({ sort: "price-low" })}
                     className="text-sm"
                   >
-                    Price: Low to High
+                    {t("Price: Low to High")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => updateEventFilters({ sort: "price-high" })}
                     className="text-sm"
                   >
-                    Price: High to Low
+                    {t("Price: High to Low")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -357,7 +359,7 @@ export default function Events() {
               >
                 <Sparkles className="h-4 w-4" />
                 <span className="text-xs font-semibold whitespace-nowrap">
-                  More Filters
+                  {t("More Filters")}
                 </span>
               </Button>
             </div>
@@ -384,10 +386,10 @@ export default function Events() {
                     }
                   >
                     <SelectTrigger className="bg-white border border-eagle-green/30">
-                      <SelectValue placeholder="Event Category" />
+                      <SelectValue placeholder={t("Event Category")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="all">{t("All Categories")}</SelectItem>
                       {EVENT_CATEGORIES.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
                           {cat.icon} {cat.name}
@@ -399,7 +401,7 @@ export default function Events() {
                   {/* Date From */}
                   <Input
                     type="date"
-                    placeholder="From Date"
+                    placeholder={t("From Date")}
                     value={eventFilters.dateFrom || ""}
                     onChange={(e) =>
                       updateEventFilters({ dateFrom: e.target.value })
@@ -410,7 +412,7 @@ export default function Events() {
                   {/* Date To */}
                   <Input
                     type="date"
-                    placeholder="To Date"
+                    placeholder={t("To Date")}
                     value={eventFilters.dateTo || ""}
                     onChange={(e) =>
                       updateEventFilters({ dateTo: e.target.value })
@@ -424,7 +426,7 @@ export default function Events() {
                     onClick={clearFilters}
                     className="text-eagle-green hover:text-viridian-green hover:bg-june-bud/10"
                   >
-                    Clear All Filters
+                    {t("Clear All Filters")}
                   </Button>
                 </div>
               </motion.div>
@@ -451,16 +453,16 @@ export default function Events() {
             <div className="text-center py-16">
               <Calendar className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-eagle-green mb-2">
-                No events found
+                {t("No events found")}
               </h3>
               <p className="text-eagle-green/70 font-light mb-4">
-                Try adjusting your filters to find more events.
+                {t("Try adjusting your filters to find more events.")}
               </p>
               <Button
                 onClick={clearFilters}
                 className="bg-eagle-green hover:bg-viridian-green text-white"
               >
-                Clear Filters
+                {t("Clear Filters")}
               </Button>
             </div>
           ) : (
@@ -501,6 +503,7 @@ function RealEventCard({
   event: EventResponse;
   index: number;
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const minPrice =
     event.ticketTypes?.length > 0
@@ -557,12 +560,12 @@ function RealEventCard({
           <div className="absolute top-3 left-3 flex flex-wrap gap-1">
             {event.isFeatured && (
               <Badge className="text-xs font-bold bg-yellow/20 text-eagle-green border-yellow">
-                Featured
+                {t("Featured")}
               </Badge>
             )}
             {event.isSoldOut && (
               <Badge className="text-xs font-bold bg-red-100 text-red-700 border-red-300">
-                Sold Out
+                {t("Sold Out")}
               </Badge>
             )}
           </div>
@@ -577,7 +580,7 @@ function RealEventCard({
           {/* Price */}
           <div className="absolute bottom-3 right-3">
             <Badge className="bg-eagle-green text-white border-none font-bold text-xs sm:text-sm">
-              From {formatPrice(minPrice / 100, currency)}
+              {t("From")} {formatPrice(minPrice / 100, currency)}
             </Badge>
           </div>
         </div>
@@ -615,7 +618,7 @@ function RealEventCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1 text-sm font-light text-eagle-green/70">
               <Ticket className="h-4 w-4" />
-              <span>{event.ticketTypes?.length || 0} ticket types</span>
+              <span>{event.ticketTypes?.length || 0} {t("ticket types")}</span>
             </div>
             <ChevronRight className="h-4 w-4 text-viridian-green group-hover:translate-x-1 transition-transform" />
           </div>

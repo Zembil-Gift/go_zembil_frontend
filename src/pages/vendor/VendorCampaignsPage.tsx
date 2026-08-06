@@ -42,6 +42,7 @@ import {
   Flag,
   CheckCircle,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -76,52 +77,54 @@ function formatMinorCurrency(
 }
 
 function CampaignStatusBadge({ campaign }: { campaign: EventCampaign }) {
+  const { t } = useTranslation();
   const now = Date.now();
   const start = new Date(campaign.startDateTime).getTime();
   const end = new Date(campaign.endDateTime).getTime();
 
   if (now < start)
-    return <Badge className="bg-blue-100 text-blue-800">Upcoming</Badge>;
+    return <Badge className="bg-blue-100 text-blue-800">{t("Upcoming")}</Badge>;
   if (now > end)
-    return <Badge className="bg-gray-100 text-gray-800">Ended</Badge>;
-  return <Badge className="bg-green-100 text-green-800">Live</Badge>;
+    return <Badge className="bg-gray-100 text-gray-800">{t("Ended")}</Badge>;
+  return <Badge className="bg-green-100 text-green-800">{t("Live")}</Badge>;
 }
 
 function ParticipationStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   switch (status) {
     case "PAID":
       return (
         <Badge className="bg-purple-100 text-purple-800">
           <Wallet className="h-3 w-3 mr-1" />
-          Paid
+          {t("Paid")}
         </Badge>
       );
     case "COMPLETED":
       return (
         <Badge className="bg-blue-100 text-blue-800">
           <CheckCircle className="h-3 w-3 mr-1" />
-          Completed
+          {t("Completed")}
         </Badge>
       );
     case "APPROVED":
       return (
         <Badge className="bg-green-100 text-green-800">
           <CheckCircle2 className="h-3 w-3 mr-1" />
-          Approved
+          {t("Approved")}
         </Badge>
       );
     case "REJECTED":
       return (
         <Badge className="bg-red-100 text-red-800">
           <XCircle className="h-3 w-3 mr-1" />
-          Rejected
+          {t("Rejected")}
         </Badge>
       );
     default:
       return (
         <Badge className="bg-amber-100 text-amber-800">
           <Clock className="h-3 w-3 mr-1" />
-          Pending
+          {t("Pending")}
         </Badge>
       );
   }
@@ -170,6 +173,7 @@ function formatActionProgress(
 }
 
 export default function VendorCampaignsPage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [statusTab, setStatusTab] = useState<StatusTabKey>("pending-rejected");
@@ -229,9 +233,9 @@ export default function VendorCampaignsPage() {
       }),
     onSuccess: (_, campaignId) => {
       toast({
-        title: "Participation submitted!",
+        title: t("Participation submitted!"),
         description:
-          "Your campaign participation request has been submitted for review.",
+          t("Your campaign participation request has been submitted for review."),
       });
       queryClient.invalidateQueries({
         queryKey: ["campaigns", "my-participations"],
@@ -249,7 +253,7 @@ export default function VendorCampaignsPage() {
         error?.response?.data?.error ||
         error?.message ||
         "Failed to submit participation";
-      toast({ title: "Error", description: message, variant: "destructive" });
+      toast({ title: t("Error"), description: message, variant: "destructive" });
     },
   });
 
@@ -294,11 +298,10 @@ export default function VendorCampaignsPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Megaphone className="h-6 w-6 text-eagle-green" />
-          Campaigns
+          {t("Campaigns")}
         </h1>
         <p className="text-muted-foreground mt-1">
-          Join campaigns to earn commission bonuses and other rewards on your
-          sales.
+          {t("Join campaigns to earn commission bonuses and other rewards on your sales.")}
         </p>
       </div>
 
@@ -312,7 +315,7 @@ export default function VendorCampaignsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <Gift className="h-5 w-5 text-ethiopian-gold" />
-              Available Campaigns
+              {t("Available Campaigns")}
             </h2>
 
             {availableCampaigns.length === 0 ? (
@@ -320,7 +323,7 @@ export default function VendorCampaignsPage() {
                 <CardContent className="text-center py-12">
                   <Megaphone className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-muted-foreground">
-                    No new campaigns available right now.
+                    {t("No new campaigns available right now.")}
                   </p>
                 </CardContent>
               </Card>
@@ -375,7 +378,7 @@ export default function VendorCampaignsPage() {
 
                       {campaign.rewardDurationType && (
                         <div className="text-xs text-muted-foreground ml-6">
-                          Duration:{" "}
+                          {t("Duration:")}{" "}
                           {REWARD_DURATION_LABELS[campaign.rewardDurationType]}
                           {campaign.rewardDurationDays
                             ? ` (${campaign.rewardDurationDays} days)`
@@ -395,7 +398,7 @@ export default function VendorCampaignsPage() {
                         className="w-full mt-2 text-white bg-eagle-green hover:bg-eagle-green/90"
                         onClick={() => openJoinDialog(campaign)}
                       >
-                        Join Campaign
+                        {t("Join Campaign")}
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
                     </CardContent>
@@ -409,7 +412,7 @@ export default function VendorCampaignsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-eagle-green" />
-              My Participations
+              {t("My Participations")}
               {statusItems.length > 0 && (
                 <Badge variant="secondary" className="ml-1">
                   {statusItems.length}
@@ -423,11 +426,11 @@ export default function VendorCampaignsPage() {
             >
               <TabsList className="grid w-full max-w-xl grid-cols-4">
                 <TabsTrigger value="pending-rejected">
-                  Pending/Rejected
+                  {t("Pending/Rejected")}
                 </TabsTrigger>
-                <TabsTrigger value="approved">Approved</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="paid">Paid</TabsTrigger>
+                <TabsTrigger value="approved">{t("Approved")}</TabsTrigger>
+                <TabsTrigger value="completed">{t("Completed")}</TabsTrigger>
+                <TabsTrigger value="paid">{t("Paid")}</TabsTrigger>
               </TabsList>
 
               {(
@@ -445,7 +448,7 @@ export default function VendorCampaignsPage() {
                       <CardContent className="text-center py-12">
                         <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                         <p className="text-muted-foreground">
-                          No participations in this status yet.
+                          {t("No participations in this status yet.")}
                         </p>
                       </CardContent>
                     </Card>
@@ -461,7 +464,7 @@ export default function VendorCampaignsPage() {
                                 </p>
                                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                   <span>
-                                    Submitted{" "}
+                                    {t("Submitted")}{" "}
                                     {formatDateTime(
                                       item.participation.createdAt
                                     )}
@@ -470,7 +473,7 @@ export default function VendorCampaignsPage() {
                                     <>
                                       <span>•</span>
                                       <span>
-                                        Campaign ends{" "}
+                                        {t("Campaign ends")}{" "}
                                         {formatDateTime(
                                           item.campaignEndDateTime
                                         )}
@@ -510,21 +513,21 @@ export default function VendorCampaignsPage() {
                               {item.status === "APPROVED" && (
                                 <>
                                   <p className="text-sm text-muted-foreground">
-                                    Next action:{" "}
+                                    {t("Next action:")}{" "}
                                     {item.nextRecommendedAction || "—"}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Approved at:{" "}
+                                    {t("Approved at:")}{" "}
                                     {formatDateTime(
                                       item.participation.approvedAt
                                     )}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Requirement progress:{" "}
+                                    {t("Requirement progress:")}{" "}
                                     {formatActionProgress(item.actionProgress)}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Reward window active:{" "}
+                                    {t("Reward window active:")}{" "}
                                     {item.rewardWindowActive ? "Yes" : "No"}
                                   </p>
                                 </>
@@ -533,23 +536,23 @@ export default function VendorCampaignsPage() {
                               {item.status === "COMPLETED" && (
                                 <>
                                   <p className="text-sm text-muted-foreground">
-                                    Reward start:{" "}
+                                    {t("Reward start:")}{" "}
                                     {formatDateTime(
                                       item.participation.rewardStartDate
                                     )}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Reward end:{" "}
+                                    {t("Reward end:")}{" "}
                                     {formatDateTime(
                                       item.participation.rewardEndDate
                                     )}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Reward window active:{" "}
+                                    {t("Reward window active:")}{" "}
                                     {item.rewardWindowActive ? "Yes" : "No"}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Reward:{" "}
+                                    {t("Reward:")}{" "}
                                     {item.rewardType
                                       ? REWARD_TYPE_LABELS[item.rewardType]
                                       : "—"}
@@ -563,16 +566,16 @@ export default function VendorCampaignsPage() {
                               {item.status === "PAID" && (
                                 <>
                                   <p className="text-sm text-muted-foreground">
-                                    Paid at: {formatDateTime(item.paidAt)}
+                                    {t("Paid at:")} {formatDateTime(item.paidAt)}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Payout amount:{" "}
+                                    {t("Payout amount:")}{" "}
                                     {formatMinorCurrency(
                                       item.payoutAmountMinor
                                     )}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Reward:{" "}
+                                    {t("Reward:")}{" "}
                                     {item.rewardType
                                       ? REWARD_TYPE_LABELS[item.rewardType]
                                       : "—"}
@@ -599,7 +602,7 @@ export default function VendorCampaignsPage() {
       <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Join Campaign</DialogTitle>
+            <DialogTitle>{t("Join Campaign")}</DialogTitle>
             <DialogDescription>{selectedCampaign?.name}</DialogDescription>
           </DialogHeader>
 
@@ -613,7 +616,7 @@ export default function VendorCampaignsPage() {
             {selectedCampaign?.rewardType && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-sm font-medium text-green-800">
-                  🎁 Reward: {REWARD_TYPE_LABELS[selectedCampaign.rewardType]}
+                  {t("🎁 Reward:")} {REWARD_TYPE_LABELS[selectedCampaign.rewardType]}
                   {selectedCampaign.rewardValue != null &&
                     ` — ${selectedCampaign.rewardValue}%`}
                 </p>
@@ -654,7 +657,7 @@ export default function VendorCampaignsPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setJoinDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleJoin}
@@ -664,7 +667,7 @@ export default function VendorCampaignsPage() {
               {joinMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Submitting…
+                  {t("Submitting…")}
                 </>
               ) : (
                 "Submit Participation"

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useGoogleMaps } from './GoogleMapsProvider';
 import { MapPin, Loader2 } from 'lucide-react';
+import { useTranslation } from "react-i18next";
 
 interface AddressAutocompleteProps {
   /** Called when user selects an address from suggestions */
@@ -56,6 +57,7 @@ export function AddressAutocomplete({
   label,
   required = false,
 }: AddressAutocompleteProps) {
+  const { t } = useTranslation();
   const { isLoaded } = useGoogleMaps();
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
@@ -157,7 +159,7 @@ export function AddressAutocomplete({
           <input
             type="text"
             disabled
-            placeholder="Loading address search..."
+            placeholder={t("Loading address search...")}
             className={`w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed ${className}`}
           />
         </div>

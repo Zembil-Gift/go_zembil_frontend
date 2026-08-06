@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import authService from "@/services/authService";
+import { useTranslation } from "react-i18next";
 
 const resetPasswordSchema = z.object({
   newPassword: z
@@ -30,6 +31,7 @@ const resetPasswordSchema = z.object({
 type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPassword() {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,8 +64,8 @@ export default function ResetPassword() {
       await authService.resetPassword(token, data.newPassword, data.confirmPassword);
       setIsSuccess(true);
       toast({
-        title: "Password reset successful",
-        description: "You can now sign in with your new password.",
+        title: t("Password reset successful"),
+        description: t("You can now sign in with your new password."),
       });
     } catch (error: any) {
       const message = error?.response?.data?.error ||
@@ -92,21 +94,20 @@ export default function ResetPassword() {
                 <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto">
                   <AlertCircle size={28} className="text-red-500" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900">Invalid Reset Link</h2>
+                <h2 className="text-xl font-bold text-gray-900">{t("Invalid Reset Link")}</h2>
                 <p className="text-gray-600 text-sm">
-                  This password reset link is invalid or has already been used.
-                  Please request a new one.
+                  {t("This password reset link is invalid or has already been used. Please request a new one.")}
                 </p>
                 <div className="flex flex-col gap-3 pt-2">
                   <Link to="/forgot-password">
                     <Button className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white">
-                      Request New Reset Link
+                      {t("Request New Reset Link")}
                     </Button>
                   </Link>
                   <Link to="/signin">
                     <Button variant="outline" className="w-full">
                       <ArrowLeft size={16} className="mr-2" />
-                      Back to Sign In
+                      {t("Back to Sign In")}
                     </Button>
                   </Link>
                 </div>
@@ -134,10 +135,10 @@ export default function ResetPassword() {
               <Lock size={28} className="text-primary-blue" />
             </div>
             <CardTitle className="text-2xl font-bold text-gray-900">
-              Set New Password
+              {t("Set New Password")}
             </CardTitle>
             <p className="text-gray-600 mt-2 text-sm">
-              Enter your new password below.
+              {t("Enter your new password below.")}
             </p>
           </CardHeader>
 
@@ -147,9 +148,9 @@ export default function ResetPassword() {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
                   <CheckCircle2 className="text-green-600 mt-0.5 flex-shrink-0" size={20} />
                   <div>
-                    <p className="text-sm font-medium text-green-800">Password reset successful!</p>
+                    <p className="text-sm font-medium text-green-800">{t("Password reset successful!")}</p>
                     <p className="text-sm text-green-700 mt-1">
-                      Your password has been updated. You can now sign in with your new password.
+                      {t("Your password has been updated. You can now sign in with your new password.")}
                     </p>
                   </div>
                 </div>
@@ -158,7 +159,7 @@ export default function ResetPassword() {
                   className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white"
                   onClick={() => navigate("/signin")}
                 >
-                  Go to Sign In
+                  {t("Go to Sign In")}
                 </Button>
               </div>
             ) : (
@@ -175,13 +176,13 @@ export default function ResetPassword() {
                     name="newPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>New Password</FormLabel>
+                        <FormLabel>{t("New Password")}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <Input
                               type={showPassword ? "text" : "password"}
-                              placeholder="Enter new password"
+                              placeholder={t("Enter new password")}
                               className="pl-10 pr-10"
                               disabled={isLoading}
                               {...field}
@@ -205,13 +206,13 @@ export default function ResetPassword() {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
+                        <FormLabel>{t("Confirm Password")}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <Input
                               type={showConfirmPassword ? "text" : "password"}
-                              placeholder="Confirm new password"
+                              placeholder={t("Confirm new password")}
                               className="pl-10 pr-10"
                               disabled={isLoading}
                               {...field}
@@ -232,13 +233,13 @@ export default function ResetPassword() {
 
                   {/* Password requirements hint */}
                   <div className="text-xs text-gray-500 space-y-1">
-                    <p>Password must contain:</p>
+                    <p>{t("Password must contain:")}</p>
                     <ul className="list-disc list-inside space-y-0.5 ml-1">
-                      <li>At least 8 characters</li>
-                      <li>One uppercase letter (A–Z)</li>
-                      <li>One lowercase letter (a–z)</li>
-                      <li>One number (0–9)</li>
-                      <li>One special character (@$!%*?&# etc.)</li>
+                      <li>{t("At least 8 characters")}</li>
+                      <li>{t("One uppercase letter (A–Z)")}</li>
+                      <li>{t("One lowercase letter (a–z)")}</li>
+                      <li>{t("One number (0–9)")}</li>
+                      <li>{t("One special character (@$!%*?&# etc.)")}</li>
                     </ul>
                   </div>
 
@@ -250,7 +251,7 @@ export default function ResetPassword() {
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Resetting...
+                        {t("Resetting...")}
                       </>
                     ) : (
                       "Reset Password"
@@ -263,7 +264,7 @@ export default function ResetPassword() {
                       className="text-sm text-gray-600 hover:text-primary-blue transition-colors inline-flex items-center gap-1"
                     >
                       <ArrowLeft size={14} />
-                      Back to Sign In
+                      {t("Back to Sign In")}
                     </Link>
                   </div>
                 </form>

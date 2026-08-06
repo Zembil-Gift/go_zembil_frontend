@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface CarouselSlide {
   id: number;
@@ -36,6 +37,7 @@ const slides: CarouselSlide[] = [
 ];
 
 export default function HeroCarousel() {
+  const { t } = useTranslation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
 
@@ -96,7 +98,7 @@ export default function HeroCarousel() {
           size="sm"
           onClick={goToPrevious}
           className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-md"
-          aria-label="Previous slide"
+          aria-label={t("Previous slide")}
         >
           <ChevronLeft size={18} className="text-gray-700" />
         </Button>
@@ -106,7 +108,7 @@ export default function HeroCarousel() {
           size="sm"
           onClick={goToNext}
           className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-md"
-          aria-label="Next slide"
+          aria-label={t("Next slide")}
         >
           <ChevronRight size={18} className="text-gray-700" />
         </Button>

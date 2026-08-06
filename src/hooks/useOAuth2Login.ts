@@ -35,7 +35,34 @@ declare global {
         };
       };
     };
+    AppleID?: {
+      auth: {
+        init: (config: {
+          clientId: string;
+          scope: string;
+          redirectURI: string;
+          state?: string;
+          nonce?: string;
+          usePopup?: boolean;
+        }) => void;
+        signIn: () => Promise<AppleSignInResponse>;
+      };
+    };
   }
+}
+
+export interface AppleSignInResponse {
+  authorization: {
+    id_token: string;
+    code: string;
+    state?: string;
+  };
+  // Present ONLY on the user's first authorization. Apple never sends it again,
+  // and it is not inside id_token, so it must be forwarded to the backend here.
+  user?: {
+    name?: { firstName?: string; lastName?: string };
+    email?: string;
+  };
 }
 
 export function useOAuth2Login() {

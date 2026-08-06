@@ -24,6 +24,7 @@ import { PriceWithDiscount } from '@/components/PriceWithDiscount';
 import { customOrderTemplateService } from '@/services/customOrderTemplateService';
 import type { CustomOrderTemplate, CustomOrderTemplateField } from '@/types/customOrders';
 import { getTemplateImageUrl } from '@/utils/imageUtils';
+import { useTranslation } from "react-i18next";
 
 // Field type icon mapping
 const getFieldTypeIcon = (fieldType: string) => {
@@ -43,6 +44,7 @@ const getFieldTypeIcon = (fieldType: string) => {
 
 // Template Card Component
 export function TemplateCard({ template }: { template: CustomOrderTemplate }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   
   const sortedFields = useMemo(() => 
@@ -91,7 +93,7 @@ export function TemplateCard({ template }: { template: CustomOrderTemplate }) {
             <div className="absolute bottom-3 right-3 flex gap-2">
               {template.negotiable === false && (
                 <Badge className="bg-viridian-green/90 text-white border-none font-medium backdrop-blur-sm">
-                  Fixed Price
+                  {t("Fixed Price")}
                 </Badge>
               )}
               {template.activeDiscount ? (
@@ -127,7 +129,7 @@ export function TemplateCard({ template }: { template: CustomOrderTemplate }) {
             {/* Customization Fields Preview */}
             {sortedFields.length > 0 && (
               <div className="mt-auto">
-                <p className="text-xs text-eagle-green/50 mb-2">Customization options:</p>
+                <p className="text-xs text-eagle-green/50 mb-2">{t("Customization options:")}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {sortedFields.slice(0, 4).map((field: CustomOrderTemplateField) => {
                     const IconComponent = getFieldTypeIcon(field.fieldType);
@@ -144,7 +146,7 @@ export function TemplateCard({ template }: { template: CustomOrderTemplate }) {
                   })}
                   {sortedFields.length > 4 && (
                     <Badge variant="outline" className="text-xs bg-gray-100 border-gray-200 text-eagle-green/50">
-                      +{sortedFields.length - 4} more
+                      +{sortedFields.length - 4} {t("more")}
                     </Badge>
                   )}
                 </div>
@@ -158,6 +160,7 @@ export function TemplateCard({ template }: { template: CustomOrderTemplate }) {
 }
 
 export default function CustomOrderTemplates() {
+  const { t } = useTranslation();
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
   const { user, isInitialized } = useAuth();
@@ -227,7 +230,7 @@ export default function CustomOrderTemplates() {
             className="mb-6 text-eagle-green hover:text-viridian-green hover:bg-june-bud/10"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Categories
+            {t("Back to Categories")}
           </Button>
         </FadeIn>
 
@@ -235,10 +238,10 @@ export default function CustomOrderTemplates() {
         <FadeIn delay={0.2}>
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-eagle-green mb-2">
-              Custom Order Templates
+              {t("Custom Order Templates")}
             </h1>
             <p className="font-light text-eagle-green/70">
-              {templates.length} {templates.length === 1 ? 'template' : 'templates'} available
+              {templates.length} {templates.length === 1 ? 'template' : 'templates'} {t("available")}
             </p>
           </div>
         </FadeIn>
@@ -283,15 +286,15 @@ export default function CustomOrderTemplates() {
         ) : (
           <div className="text-center py-20">
             <Package className="h-16 w-16 text-eagle-green/20 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-eagle-green mb-2">No Templates Available</h3>
+            <h3 className="text-xl font-bold text-eagle-green mb-2">{t("No Templates Available")}</h3>
             <p className="font-light text-eagle-green/60 mb-6">
-              There are no approved templates in this category yet.
+              {t("There are no approved templates in this category yet.")}
             </p>
             <Button
               onClick={() => navigate('/custom-orders')}
               className="bg-eagle-green hover:bg-viridian-green text-white"
             >
-              Browse Other Categories
+              {t("Browse Other Categories")}
             </Button>
           </div>
         )}
@@ -305,10 +308,10 @@ export default function CustomOrderTemplates() {
               disabled={currentPage === 0}
               className="border-eagle-green/30 text-eagle-green"
             >
-              Previous
+              {t("Previous")}
             </Button>
             <span className="flex items-center px-4 text-eagle-green/70">
-              Page {currentPage + 1} of {totalPages}
+              {t("Page")} {currentPage + 1} of {totalPages}
             </span>
             <Button
               variant="outline"
@@ -316,7 +319,7 @@ export default function CustomOrderTemplates() {
               disabled={currentPage >= totalPages - 1}
               className="border-eagle-green/30 text-eagle-green"
             >
-              Next
+              {t("Next")}
             </Button>
           </div>
         )}

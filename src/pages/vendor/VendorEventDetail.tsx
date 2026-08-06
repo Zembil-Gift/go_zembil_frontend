@@ -20,8 +20,10 @@ import {
   Ticket,
 } from 'lucide-react';
 import {RejectionReasonWithModal} from '@/components/RejectionReasonModal';
+import { useTranslation } from "react-i18next";
 
 export default function VendorEventDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated } = useAuth();
   const eventId = id ? parseInt(id, 10) : null;
@@ -66,11 +68,11 @@ export default function VendorEventDetail() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Calendar className="h-16 w-16 text-gray-300 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900">Event not found</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t("Event not found")}</h3>
         <Button asChild className="mt-4">
           <Link to="/vendor/events">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Events
+            {t("Back to Events")}
           </Link>
         </Button>
       </div>
@@ -97,13 +99,13 @@ export default function VendorEventDetail() {
           <Button asChild variant="outline" size="sm" className="md:size-default">
             <Link to={`/vendor/events/${event.id}/edit`}>
               <Edit className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Edit</span>
+              <span className="hidden md:inline">{t("Edit")}</span>
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm" className="md:size-default">
             <Link to={`/vendor/events/${event.id}/price`}>
               <DollarSign className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Update Price</span>
+              <span className="hidden md:inline">{t("Update Price")}</span>
             </Link>
           </Button>
         </div>
@@ -116,10 +118,10 @@ export default function VendorEventDetail() {
             <div className="flex gap-3">
               <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-red-900">Rejection Reason</h3>
+                <h3 className="font-semibold text-red-900">{t("Rejection Reason")}</h3>
                 <RejectionReasonWithModal
                   reason={event.rejectionReason}
-                  title="Event rejection reason"
+                  title={t("Event rejection reason")}
                   className="text-red-700 mt-1"
                   truncateLength={120}
                 />
@@ -135,7 +137,7 @@ export default function VendorEventDetail() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ImageIcon className="h-5 w-5" />
-              Event Image
+              {t("Event Image")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -148,7 +150,7 @@ export default function VendorEventDetail() {
             ) : (
               <div className="flex flex-col items-center justify-center py-12 bg-gray-50 rounded-lg">
                 <ImageIcon className="h-12 w-12 text-gray-300 mb-2" />
-                <p className="text-sm text-muted-foreground">No image uploaded</p>
+                <p className="text-sm text-muted-foreground">{t("No image uploaded")}</p>
               </div>
             )}
           </CardContent>
@@ -159,19 +161,19 @@ export default function VendorEventDetail() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Event Information
+              {t("Event Information")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label className="text-sm font-medium text-muted-foreground">Summary</Label>
+              <Label className="text-sm font-medium text-muted-foreground">{t("Summary")}</Label>
               <p className="mt-1">{event.summary || 'No summary provided'}</p>
             </div>
 
             <Separator />
 
             <div>
-              <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+              <Label className="text-sm font-medium text-muted-foreground">{t("Description")}</Label>
               <p className="mt-1 whitespace-pre-wrap">{event.description || 'No description provided'}</p>
             </div>
 
@@ -179,11 +181,11 @@ export default function VendorEventDetail() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
+                <Label className="text-sm font-medium text-muted-foreground">{t("Start Date")}</Label>
                 <p className="mt-1">{event.eventDate ? new Date(event.eventDate).toLocaleString() : 'N/A'}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">End Date</Label>
+                <Label className="text-sm font-medium text-muted-foreground">{t("End Date")}</Label>
                 <p className="mt-1">{event.eventEndDate ? new Date(event.eventEndDate).toLocaleString() : 'N/A'}</p>
               </div>
             </div>
@@ -194,7 +196,7 @@ export default function VendorEventDetail() {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
-                    Location
+                    {t("Location")}
                   </Label>
                   <p className="mt-1">{event.location || event.city}</p>
                 </div>
@@ -209,7 +211,7 @@ export default function VendorEventDetail() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Ticket className="h-5 w-5" />
-            Ticket Types ({event.ticketTypes?.length || 0})
+            {t("Ticket Types (")}{event.ticketTypes?.length || 0})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -226,24 +228,24 @@ export default function VendorEventDetail() {
 
                         {ticketType.description && (
                           <div>
-                            <Label className="text-xs text-muted-foreground">Description</Label>
+                            <Label className="text-xs text-muted-foreground">{t("Description")}</Label>
                             <p className="text-sm">{ticketType.description}</p>
                           </div>
                         )}
 
                         <div className="grid grid-cols-3 gap-4">
                           <div>
-                            <Label className="text-xs text-muted-foreground">Price</Label>
+                            <Label className="text-xs text-muted-foreground">{t("Price")}</Label>
                             <p className="text-lg font-semibold">
                               {ticketType.currency || 'ETB'} {(ticketType.vendorPrice || 0).toFixed(2)}
                             </p>
                           </div>
                           <div>
-                            <Label className="text-xs text-muted-foreground">Available</Label>
+                            <Label className="text-xs text-muted-foreground">{t("Available")}</Label>
                             <p className="text-lg font-semibold">{ticketType.availableCount ?? ticketType.capacity - ticketType.soldCount}</p>
                           </div>
                           <div>
-                            <Label className="text-xs text-muted-foreground">Sold</Label>
+                            <Label className="text-xs text-muted-foreground">{t("Sold")}</Label>
                             <p className="text-lg font-semibold">{ticketType.soldCount || 0}</p>
                           </div>
                         </div>
@@ -256,7 +258,7 @@ export default function VendorEventDetail() {
           ) : (
             <div className="flex flex-col items-center justify-center py-12 bg-gray-50 rounded-lg">
               <Ticket className="h-12 w-12 text-gray-300 mb-2" />
-              <p className="text-sm text-muted-foreground">No ticket types configured</p>
+              <p className="text-sm text-muted-foreground">{t("No ticket types configured")}</p>
             </div>
           )}
         </CardContent>

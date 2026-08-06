@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useLocalSeasonalTheme } from './LocalSeasonalTheme';
+import { useTranslation } from "react-i18next";
 
 interface LocalSeasonalDecorationsProps {
   position?: 'wishlist' | 'header' | 'footer';
@@ -67,6 +68,7 @@ export function LocalSeasonalDecorations({
 }
 
 export function LocalSeasonalWishlistHeader() {
+  const { t } = useTranslation();
   const { currentTheme, isSeasonalMode } = useLocalSeasonalTheme();
 
   if (!isSeasonalMode || currentTheme.id === 'default') {
@@ -86,12 +88,12 @@ export function LocalSeasonalWishlistHeader() {
       <div className="flex items-center justify-center gap-3 mb-2">
         <span className="text-3xl">{currentTheme.decorations.primary}</span>
         <h2 className="text-2xl font-bold" style={{ color: currentTheme.colors.primary }}>
-          {currentTheme.name} Wishlist
+          {currentTheme.name} {t("Wishlist")}
         </h2>
         <span className="text-3xl">{currentTheme.decorations.secondary}</span>
       </div>
       <p className="text-sm" style={{ color: currentTheme.colors.text + 'CC' }}>
-        Your wishlist is celebrating the spirit of {currentTheme.name.toLowerCase()}
+        {t("Your wishlist is celebrating the spirit of")} {currentTheme.name.toLowerCase()}
       </p>
     </motion.div>
   );

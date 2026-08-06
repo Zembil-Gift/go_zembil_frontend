@@ -20,8 +20,10 @@ import {
 import { Plus, Briefcase, Search, RotateCcw, XCircle } from "lucide-react";
 import { useState } from "react";
 import ProductPagination from "@/components/ProductPagination";
+import { useTranslation } from "react-i18next";
 
 export default function VendorServicesPage() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -68,9 +70,9 @@ export default function VendorServicesPage() {
       serviceService.deactivateService(serviceId),
     onSuccess: () => {
       toast({
-        title: "Service deactivated",
+        title: t("Service deactivated"),
         description:
-          "Your service has been archived and is no longer visible to customers.",
+          t("Your service has been archived and is no longer visible to customers."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "services"] });
       setDeactivateServiceDialog({
@@ -81,7 +83,7 @@ export default function VendorServicesPage() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error?.message || "Failed to deactivate service.",
         variant: "destructive",
       });
@@ -93,15 +95,15 @@ export default function VendorServicesPage() {
       serviceService.reactivateService(serviceId),
     onSuccess: () => {
       toast({
-        title: "Service reactivated",
+        title: t("Service reactivated"),
         description:
-          "Your service was reactivated and is pending approval again.",
+          t("Your service was reactivated and is pending approval again."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "services"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error?.message || "Failed to reactivate service.",
         variant: "destructive",
       });
@@ -128,21 +130,21 @@ export default function VendorServicesPage() {
       case "ACTIVE":
       case "APPROVED":
       case "ENABLED":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Active")}</Badge>;
       case "PENDING":
       case "PENDING_APPROVAL":
-        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800">{t("Pending")}</Badge>;
       case "REJECTED":
       case "DISABLED":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Rejected")}</Badge>;
       case "DRAFT":
-        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t("Draft")}</Badge>;
       case "INACTIVE":
-        return <Badge className="bg-slate-100 text-slate-800">Inactive</Badge>;
+        return <Badge className="bg-slate-100 text-slate-800">{t("Inactive")}</Badge>;
       case "CANCELLED":
-        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Cancelled")}</Badge>;
       case "COMPLETED":
-        return <Badge className="bg-blue-100 text-blue-800">Completed</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t("Completed")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -160,16 +162,16 @@ export default function VendorServicesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div>
-          <h2 className="text-xl font-semibold">My Services</h2>
+          <h2 className="text-xl font-semibold">{t("My Services")}</h2>
           <p className="text-sm text-muted-foreground">
-            Manage your service catalog
+            {t("Manage your service catalog")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search services..."
+              placeholder={t("Search services...")}
               className="pl-9"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -179,7 +181,7 @@ export default function VendorServicesPage() {
             <Button asChild>
               <Link to="/vendor/services/new">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Service
+                {t("Add Service")}
               </Link>
             </Button>
           ) : (
@@ -189,7 +191,7 @@ export default function VendorServicesPage() {
               disabled
             >
               <Plus className="h-4 w-4 mr-2 text-gray-400" />
-              <span className="text-gray-400">Add Service</span>
+              <span className="text-gray-400">{t("Add Service")}</span>
             </Button>
           )}
         </div>
@@ -214,7 +216,7 @@ export default function VendorServicesPage() {
                 <Button asChild>
                   <Link to="/vendor/services/new">
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Service
+                    {t("Create Service")}
                   </Link>
                 </Button>
               ) : (
@@ -224,7 +226,7 @@ export default function VendorServicesPage() {
                   disabled
                 >
                   <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="text-gray-400">Create Service</span>
+                  <span className="text-gray-400">{t("Create Service")}</span>
                 </Button>
               ))}
           </CardContent>
@@ -268,16 +270,16 @@ export default function VendorServicesPage() {
                   </span>
                   {service.hasPackages && (
                     <Badge variant="outline" className="text-xs">
-                      {service.packages?.length || 0} packages
+                      {service.packages?.length || 0} {t("packages")}
                     </Badge>
                   )}
                   <Button asChild variant="outline" size="sm">
                     <Link to={`/vendor/services/${service.id}`}>
-                      View Details
+                      {t("View Details")}
                     </Link>
                   </Button>
                   <Button asChild variant="outline" size="sm">
-                    <Link to={`/vendor/services/${service.id}/edit`}>Edit</Link>
+                    <Link to={`/vendor/services/${service.id}/edit`}>{t("Edit")}</Link>
                   </Button>
                   {service.status?.toUpperCase() === "ARCHIVED" ? (
                     <Button
@@ -290,7 +292,7 @@ export default function VendorServicesPage() {
                       className="text-green-600 hover:text-green-700"
                     >
                       <RotateCcw className="h-4 w-4 mr-1" />
-                      Reactivate
+                      {t("Reactivate")}
                     </Button>
                   ) : (
                     <Button
@@ -307,7 +309,7 @@ export default function VendorServicesPage() {
                       className="text-red-600 hover:text-red-700"
                     >
                       <XCircle className="h-4 w-4 mr-1" />
-                      Deactivate
+                      {t("Deactivate")}
                     </Button>
                   )}
                 </div>
@@ -342,17 +344,15 @@ export default function VendorServicesPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate Service</AlertDialogTitle>
+            <AlertDialogTitle>{t("Deactivate Service")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deactivate "
-              {deactivateServiceDialog.serviceTitle}"? This will hide the
-              service from customers. You can reactivate it later, but it will
-              require admin approval again.
+              {t("Are you sure you want to deactivate \"")}
+              {deactivateServiceDialog.serviceTitle}{t("\"? This will hide the service from customers. You can reactivate it later, but it will require admin approval again.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deactivateServiceMutation.isPending}>
-              Cancel
+              {t("Cancel")}
             </AlertDialogCancel>
             <Button
               variant="destructive"

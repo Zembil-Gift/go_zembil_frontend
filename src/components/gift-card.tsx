@@ -8,6 +8,12 @@ import { DiscountBadge } from '@/components/DiscountBadge';
 import { PriceWithDiscount } from '@/components/PriceWithDiscount';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
+import { cdnImage, cdnSrcSet } from '@/utils/imageUtils';
+import { useTranslation } from "react-i18next";
+
+// Card renders ~300px wide at lg, 50vw on mobile. Top width covers 2x DPR.
+const CARD_WIDTHS = [200, 300, 400, 600];
+const CARD_SIZES = '(min-width: 1024px) 300px, (min-width: 768px) 33vw, 50vw';
 
 interface GiftItemCardProps {
     product: any;
@@ -15,10 +21,14 @@ interface GiftItemCardProps {
 }
 
 const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
+  const { t } = useTranslation();
     const [imageLoaded, setImageLoaded] = useState(false);
     const [secondImageLoaded, setSecondImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [secondImageError, setSecondImageError] = useState(false);
+    // ponytail: if the resize layer 404s, fall back to the untransformed R2 url rather than
+    // showing nothing. Drop this once /cdn-cgi/image/ is confirmed healthy.
+    const [rawFallback, setRawFallback] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [addedToCart, setAddedToCart] = useState(false);
     
@@ -104,7 +114,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* Image Container */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-light-cream to-white rounded-t-md">
+            <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-light-cream to-white rounded-t-md">
                 {/* Elegant skeleton loader with shimmer */}
                 {!imageLoaded && !imageError && (
                     <div className="absolute inset-0 bg-gradient-to-r from-june-bud/10 via-white to-june-bud/10 animate-shimmer"
@@ -114,14 +124,21 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
 
                 {/* Primary Product Image */}
                 <img
-                    src={imageError ? '/placeholder-product.jpg' : primaryImage}
+                    src={imageError ? '/placeholder-product.jpg' : rawFallback ? primaryImage : cdnImage(primaryImage, 300)}
+                    srcSet={imageError || rawFallback ? undefined : cdnSrcSet(primaryImage, CARD_WIDTHS)}
+                    sizes={CARD_SIZES}
                     alt={name}
-                    className={`w-full h-[260px] object-cover transition-all duration-500 ease-out rounded-t-md
+                    className={`w-full h-full object-cover transition-all duration-500 ease-out rounded-t-md
                         ${imageLoaded ? 'opacity-100' : 'opacity-0'}
                         ${isHovered && hasSecondImage ? 'opacity-0' : 'opacity-100'}
                     `}
                     onLoad={() => setImageLoaded(true)}
                     onError={() => {
+                        if (!rawFallback) {
+                            console.warn('[img] resize failed, using origin:', cdnImage(primaryImage, 300));
+                            setRawFallback(true);
+                            return;
+                        }
                         setImageError(true);
                         setImageLoaded(true);
                     }}
@@ -131,9 +148,13 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                 {/* Secondary Product Image (shown on hover) */}
                 {secondaryImage && (
                     <img
-                        src={secondImageError ? primaryImage : secondaryImage}
+                        src={rawFallback
+                            ? (secondImageError ? primaryImage : secondaryImage)
+                            : cdnImage(secondImageError ? primaryImage : secondaryImage, 300)}
+                        srcSet={rawFallback ? undefined : cdnSrcSet(secondImageError ? primaryImage : secondaryImage, CARD_WIDTHS)}
+                        sizes={CARD_SIZES}
                         alt={`${name} - alternate view`}
-                        className={`absolute inset-0 w-full h-[260px] object-cover transition-all duration-500 ease-out rounded-t-md
+                        className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ease-out rounded-t-md
                             ${secondImageLoaded ? '' : 'opacity-0'}
                             ${isHovered && hasSecondImage ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}
                         `}
@@ -170,22 +191,22 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                                 shadow-lg shadow-warm-red/30 backdrop-blur-sm
                                 transform transition-transform duration-300 group-hover:scale-110">
                                 <Sparkles className="w-3 h-3" />
-                                <span>{discountLabel} OFF</span>
+                                <span>{discountLabel} {t("OFF")}</span>
                             </div>
                         </div>
                     )
                 )}
 
                 {/* Quick Action Buttons - Slide up on hover */}
-                <div className={`absolute bottom-0 left-0 right-0 p-4
-                    flex justify-center gap-3
+                <div className={`absolute bottom-0 left-0 right-0 p-3
+                    flex justify-center gap-2
                     transform transition-all duration-400 ease-out
                     ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}
                 >
                     <button
                         onClick={handleAddToCart}
                         disabled={isAddingToCart}
-                        className={`flex items-center justify-center w-12 h-12
+                        className={`flex items-center justify-center w-10 h-10
                             backdrop-blur-sm rounded-md
                             shadow-lg hover:shadow-xl
                             transition-all duration-300 transform hover:scale-110
@@ -193,7 +214,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                                 ? 'bg-green-500 text-white' 
                                 : 'bg-white/95 text-eagle-green hover:text-white hover:bg-gradient-to-br hover:from-eagle-green hover:to-viridian-green'}
                             ${isAddingToCart ? 'opacity-70 cursor-not-allowed' : ''}`}
-                        aria-label="Add to cart"
+                        aria-label={t("Add to cart")}
                     >
                         {isAddingToCart ? (
                             <Loader2 className="w-5 h-5 animate-spin" strokeWidth={1.5} />
@@ -208,7 +229,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                         <WishlistButton
                             productId={product.id}
                             size="sm"
-                            className="flex items-center justify-center w-12 h-12
+                            className="flex items-center justify-center w-10 h-10
                                 bg-white/95 backdrop-blur-sm rounded-md
                                 shadow-lg hover:shadow-xl
                                 transition-all duration-300 transform hover:scale-110"
@@ -218,7 +239,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
             </div>
 
             {/* Content Container */}
-            <div className="p-5">
+            <div className="p-3">
                 {/* Subcategory */}
                 {product.subCategoryName && (
                     <span className="text-xs font-medium text-viridian-green uppercase tracking-wide mb-1 block">
@@ -227,14 +248,14 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                 )}
 
                 {/* Product Name */}
-                <h3 className="font-medium text-base text-eagle-green leading-snug 
-                    line-clamp-2 min-h-[44px] mb-2
+                <h3 className="font-medium text-sm text-eagle-green leading-snug 
+                    line-clamp-2 min-h-[36px] mb-1.5
                     group-hover:text-viridian-green transition-colors duration-300">
                     {name}
                 </h3>
 
                 {/* Rating - always show, even with 0 reviews */}
-                <div className="flex items-center gap-1 mb-2">
+                <div className="flex items-center gap-1 mb-1.5">
                     <div className="flex items-center">
                         {Array.from({ length: 5 }).map((_, i) => {
                             const reviewCount = product.reviewCount || product.totalReviews || 0;
@@ -242,7 +263,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                             return (
                                 <Star
                                     key={i}
-                                    className={`w-3.5 h-3.5 ${
+                                    className={`w-3 h-3 ${
                                         i < Math.floor(rating)
                                             ? 'text-yellow-400 fill-yellow-400'
                                             : 'text-gray-300'
@@ -270,7 +291,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                         ) : (
 <div className="flex items-baseline gap-1.5">
                                     <div className="flex items-baseline gap-0.5">
-                                        <span className="text-sm sm:text-base lg:text-xl font-bold text-eagle-green break-all leading-tight">
+                                        <span className="text-sm sm:text-base font-bold text-eagle-green break-all leading-tight">
                                             {priceParts.symbol}{priceParts.whole}
                                         </span>
                                         {priceParts.decimal && (
@@ -291,7 +312,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                     {/* Subtle indicator for more */}
                     <div className={`hidden sm:flex items-center gap-1 text-xs font-medium text-viridian-green
                         transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
-                        <span>View</span>
+                        <span>{t("View")}</span>
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                         </svg>

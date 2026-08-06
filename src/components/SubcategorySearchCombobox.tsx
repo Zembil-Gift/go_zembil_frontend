@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { categoryService, SubCategoryResponse } from "@/services/categoryService";
+import { useTranslation } from "react-i18next";
 
 interface SubcategorySearchComboboxProps {
   /** The currently selected subcategory id (as string or number) */
@@ -30,6 +31,7 @@ export function SubcategorySearchCombobox({
   disabled = false,
   className,
 }: SubcategorySearchComboboxProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -103,7 +105,7 @@ export function SubcategorySearchCombobox({
             ref={inputRef}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search subcategories..."
+            placeholder={t("Search subcategories...")}
             className="h-8 border-0 p-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           />
           {isLoading && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />}
@@ -121,18 +123,18 @@ export function SubcategorySearchCombobox({
               }}
               className="w-full flex items-center gap-2 rounded-sm px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer"
             >
-              Clear selection
+              {t("Clear selection")}
             </button>
           )}
 
           {isLoading && subcategories.length === 0 ? (
             <div className="flex items-center justify-center py-6 gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading…
+              {t("Loading…")}
             </div>
           ) : subcategories.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
-              No subcategories found
+              {t("No subcategories found")}
             </div>
           ) : (
             subcategories.map((sub) => (

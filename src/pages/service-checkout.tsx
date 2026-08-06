@@ -56,8 +56,10 @@ import {
   storePendingPurchase,
   type AnalyticsItem,
 } from "@/lib/analytics";
+import { useTranslation } from "react-i18next";
 
 export default function ServiceCheckout() {
+  const { t } = useTranslation();
   const { serviceId } = useParams<{ serviceId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -334,7 +336,7 @@ export default function ServiceCheckout() {
         setDiscountResult(result);
         setDiscountError(null);
         toast({
-          title: "Discount Applied",
+          title: t("Discount Applied"),
           description: `Discount code "${code}" applied successfully!`,
         });
       } else {
@@ -483,8 +485,8 @@ export default function ServiceCheckout() {
     // Validation
     if (!selectedDate || !selectedSlotIso) {
       toast({
-        title: "Missing Date/Time",
-        description: "Please select a date and time for your service.",
+        title: t("Missing Date/Time"),
+        description: t("Please select a date and time for your service."),
         variant: "destructive",
       });
       return;
@@ -492,8 +494,8 @@ export default function ServiceCheckout() {
 
     if (!contactEmail) {
       toast({
-        title: "Missing Contact Email",
-        description: "Please enter your contact email.",
+        title: t("Missing Contact Email"),
+        description: t("Please enter your contact email."),
         variant: "destructive",
       });
       return;
@@ -556,7 +558,7 @@ export default function ServiceCheckout() {
         }
 
         toast({
-          title: "Discount Not Applied",
+          title: t("Discount Not Applied"),
           description: `The discount code "${order.discountCode}" could not be applied: ${errorMessage} Your order will proceed without the discount.`,
           variant: "destructive",
           duration: 6000, // Show for 6 seconds since it's important info
@@ -680,7 +682,7 @@ export default function ServiceCheckout() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-eagle-green mx-auto mb-4" />
-          <p className="font-light text-eagle-green">Loading checkout...</p>
+          <p className="font-light text-eagle-green">{t("Loading checkout...")}</p>
         </div>
       </div>
     );
@@ -700,7 +702,7 @@ export default function ServiceCheckout() {
               <AlertCircle className="h-8 w-8 text-red-500" />
             </div>
             <h2 className="text-2xl font-bold text-eagle-green mb-2">
-              Something Went Wrong
+              {t("Something Went Wrong")}
             </h2>
             <p className="text-sm font-light text-eagle-green/70 mb-6">
               {errorMessage}
@@ -710,14 +712,14 @@ export default function ServiceCheckout() {
                 onClick={() => refetch()}
                 className="bg-eagle-green hover:bg-viridian-green text-white"
               >
-                Try Again
+                {t("Try Again")}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => navigate("/services")}
                 className="border-eagle-green/30 text-eagle-green hover:bg-eagle-green/5"
               >
-                Back to Services
+                {t("Back to Services")}
               </Button>
             </div>
           </CardContent>
@@ -731,13 +733,13 @@ export default function ServiceCheckout() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-eagle-green mb-2">
-            Service Not Found
+            {t("Service Not Found")}
           </h2>
           <Button
             onClick={() => navigate("/services")}
             className="bg-eagle-green hover:bg-viridian-green text-white"
           >
-            Browse Services
+            {t("Browse Services")}
           </Button>
         </div>
       </div>
@@ -759,14 +761,14 @@ export default function ServiceCheckout() {
             className="mb-4 text-eagle-green hover:text-viridian-green"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Service
+            {t("Back to Service")}
           </Button>
 
           <h1 className="text-3xl font-bold text-eagle-green">
-            Book Your Service
+            {t("Book Your Service")}
           </h1>
           <p className="font-light text-eagle-green/70 mt-1">
-            Select your preferred date and time, then complete your booking
+            {t("Select your preferred date and time, then complete your booking")}
           </p>
         </motion.div>
 
@@ -809,7 +811,7 @@ export default function ServiceCheckout() {
                             {isFetchingAvailableSlots ? (
                               <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Refreshing...
+                                {t("Refreshing...")}
                               </>
                             ) : (
                               "Refresh Slots"
@@ -822,7 +824,7 @@ export default function ServiceCheckout() {
                             onClick={() => setCheckoutError(null)}
                             className="border-red-300 text-red-700 hover:bg-red-50"
                           >
-                            Dismiss
+                            {t("Dismiss")}
                           </Button>
                         </div>
                       </div>
@@ -874,7 +876,7 @@ export default function ServiceCheckout() {
                           service.durationMinutes > 0 && (
                             <p className="flex items-center gap-2">
                               <Clock className="h-4 w-4" />
-                              {service.durationMinutes} minutes
+                              {service.durationMinutes} {t("minutes")}
                             </p>
                           )}
                       </div>
@@ -894,7 +896,7 @@ export default function ServiceCheckout() {
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
-                    Select Date
+                    {t("Select Date")}
                   </CardTitle>
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center gap-2">
@@ -984,17 +986,17 @@ export default function ServiceCheckout() {
                     {(service?.availabilitySpotsPage?.days?.length || 0) ===
                       0 && (
                       <p className="text-sm font-light text-eagle-green/70 text-center mb-3">
-                        No available dates in this month window.
+                        {t("No available dates in this month window.")}
                       </p>
                     )}
                     <div className="flex flex-wrap gap-4 justify-center text-xs">
                       <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-eagle-green rounded"></div>
-                        <span className="text-eagle-green/70">Selected</span>
+                        <span className="text-eagle-green/70">{t("Selected")}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-gray-100 rounded border"></div>
-                        <span className="text-eagle-green/70">Available</span>
+                        <span className="text-eagle-green/70">{t("Available")}</span>
                       </div>
                     </div>
                   </div>
@@ -1012,13 +1014,13 @@ export default function ServiceCheckout() {
                   <CardHeader>
                     <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                       <Clock className="h-5 w-5" />
-                      Select Time
+                      {t("Select Time")}
                     </CardTitle>
                     {effectiveAvailabilityType === "WORKING_HOURS" &&
                       availability.workingHoursStart &&
                       availability.workingHoursEnd && (
                         <p className="text-sm font-light text-eagle-green/70">
-                          Available from{" "}
+                          {t("Available from")}{" "}
                           {formatTime(availability.workingHoursStart)} to{" "}
                           {formatTime(availability.workingHoursEnd)}
                         </p>
@@ -1045,7 +1047,7 @@ export default function ServiceCheckout() {
                       </div>
                     ) : (
                       <p className="text-sm font-light text-eagle-green/70">
-                        No available time slots for the selected date.
+                        {t("No available time slots for the selected date.")}
                       </p>
                     )}
                   </CardContent>
@@ -1063,22 +1065,22 @@ export default function ServiceCheckout() {
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Gift className="h-5 w-5" />
-                    Gift Recipient (Optional)
+                    {t("Gift Recipient (Optional)")}
                   </CardTitle>
                   <p className="text-sm font-light text-eagle-green/70">
-                    If this is a gift, enter the recipient's details
+                    {t("If this is a gift, enter the recipient's details")}
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-light">
-                        Recipient Name
+                        {t("Recipient Name")}
                       </Label>
                       <div className="relative mt-1">
                         <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                         <Input
-                          placeholder="Full name"
+                          placeholder={t("Full name")}
                           value={recipientName}
                           onChange={(e) => setRecipientName(e.target.value)}
                           className="pl-10 border-eagle-green/30"
@@ -1087,13 +1089,13 @@ export default function ServiceCheckout() {
                     </div>
                     <div>
                       <Label className="text-sm font-light">
-                        Recipient Email
+                        {t("Recipient Email")}
                       </Label>
                       <div className="relative mt-1">
                         <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                         <Input
                           type="email"
-                          placeholder="email@example.com"
+                          placeholder={t("email@example.com")}
                           value={recipientEmail}
                           onChange={(e) => setRecipientEmail(e.target.value)}
                           className="pl-10 border-eagle-green/30"
@@ -1103,7 +1105,7 @@ export default function ServiceCheckout() {
                   </div>
                   <div>
                     <Label className="text-sm font-light">
-                      Recipient Phone
+                      {t("Recipient Phone")}
                     </Label>
                     <div className="relative mt-1">
                       <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
@@ -1129,21 +1131,21 @@ export default function ServiceCheckout() {
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Mail className="h-5 w-5" />
-                    Your Contact Information
+                    {t("Your Contact Information")}
                   </CardTitle>
                   <p className="text-sm font-light text-eagle-green/70">
-                    We'll send the booking confirmation to this email
+                    {t("We'll send the booking confirmation to this email")}
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-light">Your Email *</Label>
+                      <Label className="text-sm font-light">{t("Your Email *")}</Label>
                       <div className="relative mt-1">
                         <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                         <Input
                           type="email"
-                          placeholder="your@email.com"
+                          placeholder={t("your@email.com")}
                           value={contactEmail}
                           onChange={(e) => setContactEmail(e.target.value)}
                           className="pl-10 border-eagle-green/30"
@@ -1152,7 +1154,7 @@ export default function ServiceCheckout() {
                       </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-light">Your Phone</Label>
+                      <Label className="text-sm font-light">{t("Your Phone")}</Label>
                       <div className="relative mt-1">
                         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-eagle-green/50" />
                         <Input
@@ -1178,19 +1180,19 @@ export default function ServiceCheckout() {
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Gift className="h-5 w-5" />
-                    Gift Message (Optional)
+                    {t("Gift Message (Optional)")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Textarea
-                    placeholder="Add a personal message..."
+                    placeholder={t("Add a personal message...")}
                     value={giftMessage}
                     onChange={(e) => setGiftMessage(e.target.value)}
                     className="border-eagle-green/30 min-h-[100px]"
                     maxLength={500}
                   />
                   <p className="text-xs text-eagle-green/50 mt-1">
-                    {giftMessage.length}/500 characters
+                    {giftMessage.length}{t("/500 characters")}
                   </p>
                 </CardContent>
               </Card>
@@ -1206,7 +1208,7 @@ export default function ServiceCheckout() {
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <Tag className="h-5 w-5" />
-                    Discount Code
+                    {t("Discount Code")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1217,10 +1219,10 @@ export default function ServiceCheckout() {
                           <CheckCircle2 className="h-5 w-5 text-green-600" />
                           <div>
                             <p className="text-sm font-medium text-green-800">
-                              Code "{discountCode}" applied
+                              {t("Code \"")}{discountCode}{t("\" applied")}
                             </p>
                             <p className="text-xs text-green-600">
-                              You save{" "}
+                              {t("You save")}{" "}
                               {formatPrice(
                                 manualDiscountAmountDisplay,
                                 displayCurrency
@@ -1242,7 +1244,7 @@ export default function ServiceCheckout() {
                     <div className="space-y-2">
                       <div className="flex space-x-2">
                         <Input
-                          placeholder="Enter discount code"
+                          placeholder={t("Enter discount code")}
                           value={discountCode}
                           onChange={(e) => {
                             setDiscountCode(e.target.value);
@@ -1281,7 +1283,7 @@ export default function ServiceCheckout() {
                         !discountCode.trim() &&
                         service?.activeDiscount && (
                           <p className="text-xs text-eagle-green/60 mt-1">
-                            A service discount will be applied automatically.
+                            {t("A service discount will be applied automatically.")}
                           </p>
                         )}
                     </div>
@@ -1300,7 +1302,7 @@ export default function ServiceCheckout() {
                 <CardHeader>
                   <CardTitle className="font-bold text-eagle-green flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
-                    Payment Method
+                    {t("Payment Method")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1334,7 +1336,7 @@ export default function ServiceCheckout() {
               <Card className="border-eagle-green/20">
                 <CardHeader className="bg-gradient-to-r from-june-bud/10 to-white">
                   <CardTitle className="font-bold text-eagle-green">
-                    Booking Summary
+                    {t("Booking Summary")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
@@ -1350,7 +1352,7 @@ export default function ServiceCheckout() {
                     )}
                     {bookingDurationMinutes > 0 && (
                       <p className="text-sm font-light text-eagle-green/70">
-                        {bookingDurationMinutes} minutes
+                        {bookingDurationMinutes} {t("minutes")}
                       </p>
                     )}
                   </div>
@@ -1380,13 +1382,13 @@ export default function ServiceCheckout() {
                       <div className="flex items-center gap-2 text-sm">
                         <CreditCard className="h-4 w-4 text-viridian-green" />
                         <span className="font-light text-eagle-green">
-                          Payment: {paymentProviderLabel}
+                          {t("Payment:")} {paymentProviderLabel}
                         </span>
                       </div>
                     </div>
                   ) : (
                     <p className="text-sm font-light text-eagle-green/50">
-                      Please select a date and time
+                      {t("Please select a date and time")}
                     </p>
                   )}
 
@@ -1405,7 +1407,7 @@ export default function ServiceCheckout() {
                   )}
                   <div className="bg-june-bud/10 rounded-lg p-4">
                     <div className="flex justify-between items-center">
-                      <span className="font-light text-eagle-green">Total</span>
+                      <span className="font-light text-eagle-green">{t("Total")}</span>
                       <div className="font-bold text-eagle-green text-2xl">
                         {hasManualDiscount && hasDiscountedTotal ? (
                           <div className="text-right leading-tight">
@@ -1450,19 +1452,18 @@ export default function ServiceCheckout() {
                     {isProcessing ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
+                        {t("Processing...")}
                       </>
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Book & Pay
+                        {t("Book & Pay")}
                       </>
                     )}
                   </Button>
 
                   <p className="text-xs font-light text-eagle-green/60 text-center">
-                    By completing this booking, you agree to our terms of
-                    service.
+                    {t("By completing this booking, you agree to our terms of service.")}
                   </p>
                 </CardContent>
               </Card>
@@ -1472,22 +1473,22 @@ export default function ServiceCheckout() {
                 <CardHeader className="pb-2">
                   <CardTitle className="font-bold text-eagle-green text-sm flex items-center gap-2">
                     <Shield className="h-4 w-4" />
-                    Cancellation Policy
+                    {t("Cancellation Policy")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <ul className="space-y-2 text-xs font-light text-eagle-green/70">
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span>48+ hours before: 100% refund</span>
+                      <span>{t("48+ hours before: 100% refund")}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <AlertCircle className="h-3 w-3 text-yellow-500 mt-0.5 flex-shrink-0" />
-                      <span>24-48 hours before: 50% refund</span>
+                      <span>{t("24-48 hours before: 50% refund")}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <AlertCircle className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
-                      <span>Less than 24 hours: No refund</span>
+                      <span>{t("Less than 24 hours: No refund")}</span>
                     </li>
                   </ul>
                 </CardContent>

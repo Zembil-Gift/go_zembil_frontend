@@ -15,8 +15,10 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import { Product, productService, extractPriceAmount } from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
 import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
+import { useTranslation } from "react-i18next";
 
 export default function Gifts() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const {isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
@@ -278,9 +280,9 @@ export default function Gifts() {
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-            <span>Home</span>
+            <span>{t("Home")}</span>
             <span>›</span>
-            <span>Gifts</span>
+            <span>{t("Gifts")}</span>
             {currentCategory && (
               <>
                 <span>›</span>
@@ -314,7 +316,7 @@ export default function Gifts() {
           
           {finalRecipientParam && (
             <p className="text-gray-600 text-lg max-w-3xl">
-              Perfect gifts curated specifically for {finalRecipientParam === 'mom' ? 'your mother' : 
+              {t("Perfect gifts curated specifically for")} {finalRecipientParam === 'mom' ? 'your mother' : 
                 finalRecipientParam === 'dad' ? 'your father' : 
                 finalRecipientParam === 'friends' ? 'your friends' :
                 finalRecipientParam === 'kids' ? 'children' :
@@ -345,7 +347,7 @@ export default function Gifts() {
             <div className="relative">
               <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <Input
-                placeholder="Search gifts..."
+                placeholder={t("Search gifts...")}
                 value={localSearchTerm}
                 onChange={(e) => setLocalSearchTerm(e.target.value)}
                 onKeyDown={(e) => {
@@ -361,29 +363,29 @@ export default function Gifts() {
             {/* Sort */}
             <Select value={sortParam} onValueChange={handleSortChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder={t("Sort by")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="popularity">Most Popular</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
+                <SelectItem value="popularity">{t("Most Popular")}</SelectItem>
+                <SelectItem value="price-low">{t("Price: Low to High")}</SelectItem>
+                <SelectItem value="price-high">{t("Price: High to Low")}</SelectItem>
+                <SelectItem value="newest">{t("Newest")}</SelectItem>
+                <SelectItem value="rating">{t("Highest Rated")}</SelectItem>
               </SelectContent>
             </Select>
 
             {/* Price Range */}
             <Select value={priceParam} onValueChange={handlePriceChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Price range" />
+                <SelectValue placeholder={t("Price range")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Prices</SelectItem>
-                <SelectItem value="0-500">Under 500 ETB</SelectItem>
-                <SelectItem value="500-1000">500 - 1,000 ETB</SelectItem>
-                <SelectItem value="1000-2000">1,000 - 2,000 ETB</SelectItem>
-                <SelectItem value="2000-5000">2,000 - 5,000 ETB</SelectItem>
-                <SelectItem value="5000+">Over 5,000 ETB</SelectItem>
+                <SelectItem value="all">{t("All Prices")}</SelectItem>
+                <SelectItem value="0-500">{t("Under 500 ETB")}</SelectItem>
+                <SelectItem value="500-1000">{t("500 - 1,000 ETB")}</SelectItem>
+                <SelectItem value="1000-2000">{t("1,000 - 2,000 ETB")}</SelectItem>
+                <SelectItem value="2000-5000">{t("2,000 - 5,000 ETB")}</SelectItem>
+                <SelectItem value="5000+">{t("Over 5,000 ETB")}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -397,10 +399,10 @@ export default function Gifts() {
           {/* Active Filters */}
           {(searchParam || priceParam !== 'all' || currentCategory || currentSubCategory || finalRecipientParam) && (
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
-              <span className="text-sm text-gray-600">Active filters:</span>
+              <span className="text-sm text-gray-600">{t("Active filters:")}</span>
               {searchParam && (
                 <Badge variant="secondary" className="bg-ethiopian-gold/10 text-ethiopian-gold">
-                  Search: {searchParam}
+                  {t("Search:")} {searchParam}
                   <button 
                     onClick={() => {
                       setLocalSearchTerm('');
@@ -429,7 +431,7 @@ export default function Gifts() {
               )}
               {finalRecipientParam && (
                 <Badge variant="secondary" className="bg-ethiopian-gold/10 text-ethiopian-gold">
-                  Recipient: {getRecipientDisplayName(finalRecipientParam)}
+                  {t("Recipient:")} {getRecipientDisplayName(finalRecipientParam)}
                   <button 
                     onClick={() => {
                       const newParams = new URLSearchParams(searchParams);
@@ -449,7 +451,7 @@ export default function Gifts() {
               )}
               {priceParam !== 'all' && (
                 <Badge variant="secondary" className="bg-ethiopian-gold/10 text-ethiopian-gold">
-                  Price: {priceParam === '0-500' ? 'Under 500 ETB' : 
+                  {t("Price:")} {priceParam === '0-500' ? 'Under 500 ETB' : 
                           priceParam === '500-1000' ? '500-1,000 ETB' :
                           priceParam === '1000-2000' ? '1,000-2,000 ETB' :
                           priceParam === '2000-5000' ? '2,000-5,000 ETB' : 
@@ -487,7 +489,7 @@ export default function Gifts() {
               className="flex items-center justify-between mb-6"
             >
               <p className="text-gray-600">
-                Showing {displayProducts.length} of {totalProducts} gift{totalProducts !== 1 ? 's' : ''}
+                {t("Showing")} {displayProducts.length} of {totalProducts} {t("gift")}{totalProducts !== 1 ? 's' : ''}
               </p>
             </motion.div>
             
@@ -526,7 +528,7 @@ export default function Gifts() {
             <div className="mx-auto w-32 h-32 bg-gradient-to-br from-gray-50 to-gray-100 rounded-full flex items-center justify-center mb-8 shadow-inner">
               <Search className="w-16 h-16 text-gray-300" />
             </div>
-            <h3 className="text-2xl font-semibold text-charcoal mb-4">No gifts found</h3>
+            <h3 className="text-2xl font-semibold text-charcoal mb-4">{t("No gifts found")}</h3>
             <div className="max-w-md mx-auto mb-8">
               <p className="text-gray-600 leading-relaxed">
                 {searchParam 
@@ -543,7 +545,7 @@ export default function Gifts() {
                 variant="outline"
                 className="border-ethiopian-gold text-ethiopian-gold hover:bg-ethiopian-gold hover:text-white"
               >
-                Clear All Filters
+                {t("Clear All Filters")}
               </Button>
             </div>
           </motion.div>

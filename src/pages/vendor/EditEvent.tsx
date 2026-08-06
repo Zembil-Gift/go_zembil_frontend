@@ -44,6 +44,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import { useTranslation } from "react-i18next";
 
 const isEthiopianVendor = (vendorProfile: VendorProfile | undefined): boolean => {
   if (!vendorProfile) return false;
@@ -88,6 +89,7 @@ const eventEditSchema = z.object({
 type EventEditFormData = z.infer<typeof eventEditSchema>;
 
 export default function EditEvent() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const eventId = id ? parseInt(id, 10) : null;
 
@@ -278,8 +280,8 @@ export default function EditEvent() {
       } catch (ticketError: any) {
         console.error("Failed to update some ticket types:", ticketError);
         toast({
-          title: "Warning",
-          description: "Event updated but some ticket types failed to update.",
+          title: t("Warning"),
+          description: t("Event updated but some ticket types failed to update."),
           variant: "destructive",
         });
       }
@@ -292,8 +294,8 @@ export default function EditEvent() {
         } catch (imageError) {
           console.error("Failed to upload event images:", imageError);
           toast({
-            title: "Warning",
-            description: "Event updated but some images failed to upload.",
+            title: t("Warning"),
+            description: t("Event updated but some images failed to upload."),
             variant: "destructive",
           });
         } finally {
@@ -302,7 +304,7 @@ export default function EditEvent() {
       }
 
       toast({
-        title: "Event Updated",
+        title: t("Event Updated"),
         description: event?.status === 'PENDING' || event?.status === 'REJECTED'
           ? "Your event has been updated and resubmitted for review."
           : "Your event has been updated successfully.",
@@ -317,7 +319,7 @@ export default function EditEvent() {
     onError: (error: any) => {
       setIsUploadingImages(false);
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error.response?.data?.message || error.message || "Failed to update event",
         variant: "destructive",
       });
@@ -329,8 +331,8 @@ export default function EditEvent() {
     const totalImages = currentImages.length + pendingImages.length;
     if (totalImages === 0) {
       toast({
-        title: "Image Required",
-        description: "Please upload at least one event image.",
+        title: t("Image Required"),
+        description: t("Please upload at least one event image."),
         variant: "destructive",
       });
       return;
@@ -342,8 +344,8 @@ export default function EditEvent() {
   const onError = (errors: any) => {
     console.log("Form validation errors:", errors);
     toast({
-      title: "Validation Error",
-      description: "Please fill in all required fields correctly.",
+      title: t("Validation Error"),
+      description: t("Please fill in all required fields correctly."),
       variant: "destructive",
     });
   };
@@ -352,10 +354,10 @@ export default function EditEvent() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You need to be a vendor to edit events.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
+        <p className="text-gray-600 mb-4">{t("You need to be a vendor to edit events.")}</p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -366,7 +368,7 @@ export default function EditEvent() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <RefreshCw className="h-12 w-12 animate-spin text-eagle-green mx-auto mb-4" />
-          <p className="text-gray-600">Loading event...</p>
+          <p className="text-gray-600">{t("Loading event...")}</p>
         </div>
       </div>
     );
@@ -376,10 +378,10 @@ export default function EditEvent() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Event Not Found</h1>
-        <p className="text-gray-600 mb-4">The event you're looking for doesn't exist or couldn't be loaded.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Event Not Found")}</h1>
+        <p className="text-gray-600 mb-4">{t("The event you're looking for doesn't exist or couldn't be loaded.")}</p>
         <Button asChild>
-          <Link to="/vendor">Back to Dashboard</Link>
+          <Link to="/vendor">{t("Back to Dashboard")}</Link>
         </Button>
       </div>
     );
@@ -389,10 +391,10 @@ export default function EditEvent() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Unauthorized</h1>
-        <p className="text-gray-600 mb-4">You can only edit your own events.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Unauthorized")}</h1>
+        <p className="text-gray-600 mb-4">{t("You can only edit your own events.")}</p>
         <Button asChild>
-          <Link to="/vendor">Back to Dashboard</Link>
+          <Link to="/vendor">{t("Back to Dashboard")}</Link>
         </Button>
       </div>
     );
@@ -402,13 +404,13 @@ export default function EditEvent() {
     switch (status?.toUpperCase()) {
       case 'ACTIVE':
       case 'APPROVED':
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Active")}</Badge>;
       case 'PENDING':
-        return <Badge className="bg-amber-100 text-amber-800">Pending Review</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800">{t("Pending Review")}</Badge>;
       case 'REJECTED':
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Rejected")}</Badge>;
       case 'CANCELLED':
-        return <Badge className="bg-gray-100 text-gray-800">Cancelled</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t("Cancelled")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -426,10 +428,10 @@ export default function EditEvent() {
           </Button>
           <div className="flex-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">Edit Event</h1>
+              <h1 className="text-2xl font-bold">{t("Edit Event")}</h1>
               {getStatusBadge(event.status)}
             </div>
-            <p className="text-muted-foreground">Update your event details (ticket prices require a separate request)</p>
+            <p className="text-muted-foreground">{t("Update your event details (ticket prices require a separate request)")}</p>
           </div>
         </div>
 
@@ -437,11 +439,11 @@ export default function EditEvent() {
         {event.status === 'REJECTED' && event.rejectionReason && (
           <Alert variant="destructive" className="mb-6">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Event Rejected</AlertTitle>
+            <AlertTitle>{t("Event Rejected")}</AlertTitle>
             <AlertDescription>
-              <strong>Reason:</strong> {event.rejectionReason}
+              <strong>{t("Reason:")}</strong> {event.rejectionReason}
               <br />
-              Please address this issue and save to resubmit for review.
+              {t("Please address this issue and save to resubmit for review.")}
             </AlertDescription>
           </Alert>
         )}
@@ -449,9 +451,9 @@ export default function EditEvent() {
         {event.status === 'PENDING' && (
           <Alert className="mb-6 border-amber-200 bg-amber-50">
             <Info className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-800">Pending Review</AlertTitle>
+            <AlertTitle className="text-amber-800">{t("Pending Review")}</AlertTitle>
             <AlertDescription className="text-amber-700">
-              This event is currently under review. Any changes will require re-approval.
+              {t("This event is currently under review. Any changes will require re-approval.")}
             </AlertDescription>
           </Alert>
         )}
@@ -460,13 +462,13 @@ export default function EditEvent() {
         {event.status === 'APPROVED' && (
           <Alert className="mb-6 border-blue-200 bg-blue-50">
             <DollarSign className="h-4 w-4 text-blue-600" />
-            <AlertTitle className="text-blue-800">Ticket Price Updates</AlertTitle>
+            <AlertTitle className="text-blue-800">{t("Ticket Price Updates")}</AlertTitle>
             <AlertDescription className="text-blue-700">
-              Ticket price changes for approved events require admin approval. Go to the{' '}
+              {t("Ticket price changes for approved events require admin approval. Go to the")}{' '}
               <Link to="/vendor" className="font-medium underline">
-                Requests tab
+                {t("Requests tab")}
               </Link>{' '}
-              in your dashboard to submit price change requests.
+              {t("in your dashboard to submit price change requests.")}
             </AlertDescription>
           </Alert>
         )}
@@ -475,9 +477,9 @@ export default function EditEvent() {
         {(event.status === 'PENDING' || event.status === 'REJECTED') && (
           <Alert className="mb-6 border-green-200 bg-green-50">
             <Info className="h-4 w-4 text-green-600" />
-            <AlertTitle className="text-green-800">Direct Price Updates Allowed</AlertTitle>
+            <AlertTitle className="text-green-800">{t("Direct Price Updates Allowed")}</AlertTitle>
             <AlertDescription className="text-green-700">
-              You can update ticket prices directly for pending or rejected events. Changes will be reviewed when you resubmit.
+              {t("You can update ticket prices directly for pending or rejected events. Changes will be reviewed when you resubmit.")}
             </AlertDescription>
           </Alert>
         )}
@@ -488,15 +490,15 @@ export default function EditEvent() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Event Details
+                {t("Event Details")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="title">Event Title *</Label>
+                <Label htmlFor="title">{t("Event Title *")}</Label>
                 <Input
                   id="title"
-                  placeholder="Enter event title"
+                  placeholder={t("Enter event title")}
                   {...form.register("title")}
                 />
                 {form.formState.errors.title && (
@@ -505,19 +507,19 @@ export default function EditEvent() {
               </div>
 
               <div>
-                <Label htmlFor="summary">Short Description</Label>
+                <Label htmlFor="summary">{t("Short Description")}</Label>
                 <Input
                   id="summary"
-                  placeholder="Brief event summary"
+                  placeholder={t("Brief event summary")}
                   {...form.register("summary")}
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Full Description *</Label>
+                <Label htmlFor="description">{t("Full Description *")}</Label>
                 <Textarea
                   id="description"
-                  placeholder="Detailed event description"
+                  placeholder={t("Detailed event description")}
                   className="min-h-[120px]"
                   {...form.register("description")}
                 />
@@ -531,10 +533,10 @@ export default function EditEvent() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <ImageIcon className="h-4 w-4" />
-                    Event Images
+                    {t("Event Images")}
                   </CardTitle>
                   <CardDescription>
-                    Upload up to 10 images for your event. The first image will be the primary/cover image.
+                    {t("Upload up to 10 images for your event. The first image will be the primary/cover image.")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -551,14 +553,14 @@ export default function EditEvent() {
                   />
                   {pendingImages.length > 0 && (
                     <p className="text-sm text-muted-foreground mt-2">
-                      {pendingImages.length} new image(s) will be uploaded when you save
+                      {pendingImages.length} {t("new image(s) will be uploaded when you save")}
                     </p>
                   )}
                 </CardContent>
               </Card>
 
               <div>
-                <Label>Category</Label>
+                <Label>{t("Category")}</Label>
                 <Controller
                   name="categoryId"
                   control={form.control}
@@ -566,17 +568,17 @@ export default function EditEvent() {
                     <SubcategorySearchCombobox
                       value={field.value}
                       onValueChange={field.onChange}
-                      placeholder="Search and select a category (optional)"
+                      placeholder={t("Search and select a category (optional)")}
                     />
                   )}
                 />
               </div>
 
               <div>
-                <Label htmlFor="organizerContact">Organizer Contact</Label>
+                <Label htmlFor="organizerContact">{t("Organizer Contact")}</Label>
                 <Input
                   id="organizerContact"
-                  placeholder="Contact information for attendees"
+                  placeholder={t("Contact information for attendees")}
                   {...form.register("organizerContact")}
                 />
               </div>
@@ -586,12 +588,12 @@ export default function EditEvent() {
           {/* Date & Time */}
           <Card>
             <CardHeader>
-              <CardTitle>Date & Time</CardTitle>
+              <CardTitle>{t("Date & Time")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="startDateTime">Start Date/Time *</Label>
+                  <Label htmlFor="startDateTime">{t("Start Date/Time *")}</Label>
                   <Input
                     id="startDateTime"
                     type="datetime-local"
@@ -602,7 +604,7 @@ export default function EditEvent() {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="endDateTime">End Date/Time *</Label>
+                  <Label htmlFor="endDateTime">{t("End Date/Time *")}</Label>
                   <Input
                     id="endDateTime"
                     type="datetime-local"
@@ -621,15 +623,15 @@ export default function EditEvent() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                Location
+                {t("Location")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="location">Location *</Label>
+                <Label htmlFor="location">{t("Location *")}</Label>
                 <Input
                   id="location"
-                  placeholder="Enter event location (venue, address, etc.)"
+                  placeholder={t("Enter event location (venue, address, etc.)")}
                   {...form.register("location")}
                 />
                 {form.formState.errors.location && (
@@ -638,10 +640,10 @@ export default function EditEvent() {
               </div>
 
               <div>
-                <Label htmlFor="city">City *</Label>
+                <Label htmlFor="city">{t("City *")}</Label>
                 <Input
                   id="city"
-                  placeholder="City"
+                  placeholder={t("City")}
                   {...form.register("city")}
                 />
                 {form.formState.errors.city && (
@@ -656,10 +658,10 @@ export default function EditEvent() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Ticket className="h-5 w-5" />
-                Ticket Types
+                {t("Ticket Types")}
               </CardTitle>
               <CardDescription>
-                Update ticket details. Price changes require a separate approval request.
+                {t("Update ticket details. Price changes require a separate approval request.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -671,7 +673,7 @@ export default function EditEvent() {
                 return (
                   <div key={ticketField.id} className="border rounded-lg p-4 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Ticket Type {ticketIndex + 1}</h4>
+                      <h4 className="font-medium">{t("Ticket Type")} {ticketIndex + 1}</h4>
                       {ticketFields.length > 1 && !ticketId && (
                         <Button
                           type="button"
@@ -686,14 +688,14 @@ export default function EditEvent() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label>Name *</Label>
+                        <Label>{t("Name *")}</Label>
                         <Input
-                          placeholder="e.g., General Admission, VIP"
+                          placeholder={t("e.g., General Admission, VIP")}
                           {...form.register(`ticketTypes.${ticketIndex}.name`)}
                         />
                       </div>
                       <div>
-                        <Label>Capacity *</Label>
+                        <Label>{t("Capacity *")}</Label>
                         <Input
                           type="number"
                           min="1"
@@ -704,9 +706,9 @@ export default function EditEvent() {
                     </div>
 
                     <div>
-                      <Label>Description</Label>
+                      <Label>{t("Description")}</Label>
                       <Input
-                        placeholder="What's included with this ticket"
+                        placeholder={t("What's included with this ticket")}
                         {...form.register(`ticketTypes.${ticketIndex}.description`)}
                       />
                     </div>
@@ -716,28 +718,28 @@ export default function EditEvent() {
                       <div className="space-y-2">
                         {(event.status === 'PENDING' || event.status === 'REJECTED') ? (
                           <div className="space-y-2">
-                            <Label>Price ({currencyCode}) *</Label>
+                            <Label>{t("Price (")}{currencyCode}) *</Label>
                             <Input
                               type="number"
                               step="0.01"
                               min="0"
-                              placeholder="Enter new price"
+                              placeholder={t("Enter new price")}
                               {...form.register(`ticketTypes.${ticketIndex}.newPrice`, { valueAsNumber: true })}
                             />
                             {currentPrice !== undefined && (
                               <p className="text-sm text-muted-foreground">
-                                Current: {currencyCode} {currentPrice?.toFixed(2)}
+                                {t("Current:")} {currencyCode} {currentPrice?.toFixed(2)}
                               </p>
                             )}
                             <p className="text-xs text-muted-foreground">
-                              You can update prices directly for pending/rejected events
+                              {t("You can update prices directly for pending/rejected events")}
                             </p>
                           </div>
                         ) : (
                           <div className="p-3 bg-gray-50 rounded-lg border">
                             <div className="flex items-center justify-between">
                               <div>
-                                <Label className="text-sm text-muted-foreground">Current Price</Label>
+                                <Label className="text-sm text-muted-foreground">{t("Current Price")}</Label>
                                 <p className="text-lg font-semibold">
                                   {currencyCode} {currentPrice?.toFixed(2)}
                                 </p>
@@ -748,14 +750,14 @@ export default function EditEvent() {
                                 size="sm"
                                 onClick={() => {
                                   toast({
-                                    title: "Price Change Request",
-                                    description: "Go to your dashboard's Requests tab to submit a ticket price change request.",
+                                    title: t("Price Change Request"),
+                                    description: t("Go to your dashboard's Requests tab to submit a ticket price change request."),
                                   });
                                   navigate("/vendor");
                                 }}
                               >
                                 <DollarSign className="h-4 w-4 mr-1" />
-                                Request Price Change
+                                {t("Request Price Change")}
                               </Button>
                             </div>
                           </div>
@@ -773,7 +775,7 @@ export default function EditEvent() {
               <Alert className="border-amber-200 bg-amber-50">
                 <Info className="h-4 w-4 text-amber-600" />
                 <AlertDescription className="text-amber-700">
-                  Adding new ticket types with pricing requires creating a new event or going through the admin approval process.
+                  {t("Adding new ticket types with pricing requires creating a new event or going through the admin approval process.")}
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -783,7 +785,7 @@ export default function EditEvent() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                  Link Supplier (Optional)
+                  {t("Link Supplier (Optional)")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -798,10 +800,10 @@ export default function EditEvent() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="No supplier" />
+                        <SelectValue placeholder={t("No supplier")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">No supplier</SelectItem>
+                        <SelectItem value="0">{t("No supplier")}</SelectItem>
                         {activeSuppliers.map((s) => (
                           <SelectItem key={s.id} value={s.id.toString()}>
                             {s.businessName}
@@ -818,7 +820,7 @@ export default function EditEvent() {
           {/* Submit */}
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" asChild>
-              <Link to="/vendor">Cancel</Link>
+              <Link to="/vendor">{t("Cancel")}</Link>
             </Button>
             <Button
               type="submit"

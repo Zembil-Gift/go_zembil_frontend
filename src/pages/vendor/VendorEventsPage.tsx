@@ -24,8 +24,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Calendar, Plus, Edit, RotateCcw, Search, XCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function VendorEventsPage() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -74,16 +76,16 @@ export default function VendorEventsPage() {
     mutationFn: (eventId: number) => vendorService.deactivateEvent(eventId),
     onSuccess: () => {
       toast({
-        title: "Event deactivated",
+        title: t("Event deactivated"),
         description:
-          "Your event has been deactivated and hidden from customers.",
+          t("Your event has been deactivated and hidden from customers."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "events"] });
       setDeactivateEventDialog({ open: false, eventId: null, eventTitle: "" });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error?.message || "Failed to deactivate event.",
         variant: "destructive",
       });
@@ -95,14 +97,14 @@ export default function VendorEventsPage() {
     mutationFn: (eventId: number) => vendorService.reactivateEvent(eventId),
     onSuccess: () => {
       toast({
-        title: "Event reactivated",
-        description: "Your event has been reactivated and is now visible.",
+        title: t("Event reactivated"),
+        description: t("Your event has been reactivated and is now visible."),
       });
       queryClient.invalidateQueries({ queryKey: ["vendor", "events"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("Error"),
         description: error?.message || "Failed to reactivate event.",
         variant: "destructive",
       });
@@ -127,21 +129,21 @@ export default function VendorEventsPage() {
       case "ACTIVE":
       case "APPROVED":
       case "ENABLED":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("Active")}</Badge>;
       case "PENDING":
       case "PENDING_APPROVAL":
-        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800">{t("Pending")}</Badge>;
       case "REJECTED":
       case "DISABLED":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Rejected")}</Badge>;
       case "DRAFT":
-        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t("Draft")}</Badge>;
       case "INACTIVE":
-        return <Badge className="bg-slate-100 text-slate-800">Inactive</Badge>;
+        return <Badge className="bg-slate-100 text-slate-800">{t("Inactive")}</Badge>;
       case "CANCELLED":
-        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t("Cancelled")}</Badge>;
       case "COMPLETED":
-        return <Badge className="bg-blue-100 text-blue-800">Completed</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t("Completed")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -159,16 +161,16 @@ export default function VendorEventsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div>
-          <h2 className="text-xl font-semibold">My Events</h2>
+          <h2 className="text-xl font-semibold">{t("My Events")}</h2>
           <p className="text-sm text-muted-foreground">
-            Manage your hosted events
+            {t("Manage your hosted events")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search events..."
+              placeholder={t("Search events...")}
               className="pl-9"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -178,7 +180,7 @@ export default function VendorEventsPage() {
             <Button asChild>
               <Link to="/vendor/events/new">
                 <Plus className="h-4 w-4 mr-2" />
-                Create Event
+                {t("Create Event")}
               </Link>
             </Button>
           ) : (
@@ -188,7 +190,7 @@ export default function VendorEventsPage() {
               disabled
             >
               <Plus className="h-4 w-4 mr-2 text-gray-400" />
-              <span className="text-gray-400">Create Event</span>
+              <span className="text-gray-400">{t("Create Event")}</span>
             </Button>
           )}
         </div>
@@ -211,7 +213,7 @@ export default function VendorEventsPage() {
                 <Button asChild>
                   <Link to="/vendor/events/new">
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Event
+                    {t("Create Event")}
                   </Link>
                 </Button>
               ) : (
@@ -221,7 +223,7 @@ export default function VendorEventsPage() {
                   disabled
                 >
                   <Plus className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="text-gray-400">Create Event</span>
+                  <span className="text-gray-400">{t("Create Event")}</span>
                 </Button>
               ))}
           </CardContent>
@@ -259,24 +261,24 @@ export default function VendorEventsPage() {
                     <div className="flex items-center gap-2 mt-1">
                       {getStatusBadge(event.status)}
                       <span className="text-xs text-muted-foreground">
-                        {event.totalSold || 0}/{event.totalCapacity || 0} sold
+                        {event.totalSold || 0}/{event.totalCapacity || 0} {t("sold")}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                   <Button asChild variant="outline" size="sm">
-                    <Link to={`/vendor/events/${event.id}`}>View Details</Link>
+                    <Link to={`/vendor/events/${event.id}`}>{t("View Details")}</Link>
                   </Button>
                   <Button asChild variant="outline" size="sm">
                     <Link to={`/vendor/events/${event.id}/edit`}>
                       <Edit className="h-4 w-4 mr-1" />
-                      Edit
+                      {t("Edit")}
                     </Link>
                   </Button>
                   <Button asChild variant="outline" size="sm">
                     <Link to={`/vendor/events/${event.id}/price`}>
-                      Update Price
+                      {t("Update Price")}
                     </Link>
                   </Button>
                   {event.status?.toUpperCase() === "CANCELLED" ? (
@@ -288,7 +290,7 @@ export default function VendorEventsPage() {
                       className="text-green-600 hover:text-green-700"
                     >
                       <RotateCcw className="h-4 w-4 mr-1" />
-                      Reactivate
+                      {t("Reactivate")}
                     </Button>
                   ) : event.status?.toUpperCase() === "APPROVED" ? (
                     <Button
@@ -305,7 +307,7 @@ export default function VendorEventsPage() {
                       className="text-red-600 hover:text-red-700"
                     >
                       <XCircle className="h-4 w-4 mr-1" />
-                      Deactivate
+                      {t("Deactivate")}
                     </Button>
                   ) : null}
                 </div>
@@ -341,16 +343,15 @@ export default function VendorEventsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate Event</AlertDialogTitle>
+            <AlertDialogTitle>{t("Deactivate Event")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deactivate "
-              {deactivateEventDialog.eventTitle}"? This will hide the event from
-              customers. You can reactivate it later.
+              {t("Are you sure you want to deactivate \"")}
+              {deactivateEventDialog.eventTitle}{t("\"? This will hide the event from customers. You can reactivate it later.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deactivateEventMutation.isPending}>
-              Cancel
+              {t("Cancel")}
             </AlertDialogCancel>
             <Button
               variant="destructive"

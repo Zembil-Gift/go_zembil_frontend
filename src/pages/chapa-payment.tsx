@@ -24,6 +24,7 @@ import { apiService } from "@/services/apiService";
 import { eventOrderService } from "@/services/eventOrderService";
 import { serviceOrderService } from "@/services/serviceOrderService";
 import { customOrderService } from "@/services/customOrderService";
+import { useTranslation } from "react-i18next";
 
 const CHAPA_CONTAINER_ID = "chapa-inline-form";
 const INLINE_PAYMENT_METHODS = [
@@ -142,6 +143,7 @@ const loadChapaInlineScript = async (): Promise<void> => {
 };
 
 export default function ChapaPaymentPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -271,16 +273,16 @@ export default function ChapaPaymentPage() {
           onPaymentFailure: (message: string) => {
             setError(message || "Chapa payment failed. Please try again.");
             toast({
-              title: "Payment Failed",
+              title: t("Payment Failed"),
               description: message || "Chapa payment failed. Please try again.",
               variant: "destructive",
             });
           },
           onClose: () => {
             toast({
-              title: "Checkout Closed",
+              title: t("Checkout Closed"),
               description:
-                "You can continue your payment whenever you are ready.",
+                t("You can continue your payment whenever you are ready."),
             });
           },
         });
@@ -463,8 +465,8 @@ export default function ChapaPaymentPage() {
       });
 
       toast({
-        title: "Payment Ready",
-        description: "Complete your payment below without leaving the app.",
+        title: t("Payment Ready"),
+        description: t("Complete your payment below without leaving the app."),
       });
     } catch (err: any) {
       console.error("❌ Chapa payment initialization failed:", err);
@@ -472,7 +474,7 @@ export default function ChapaPaymentPage() {
       setError(errorMsg);
 
       toast({
-        title: "Initialization Failed",
+        title: t("Initialization Failed"),
         description: errorMsg,
         variant: "destructive",
       });
@@ -489,10 +491,10 @@ export default function ChapaPaymentPage() {
           <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-green-600" />
             <p className="text-lg font-medium">
-              Preparing Chapa inline checkout...
+              {t("Preparing Chapa inline checkout...")}
             </p>
             <p className="text-sm text-gray-500">
-              Please wait while we prepare your payment
+              {t("Please wait while we prepare your payment")}
             </p>
           </CardContent>
         </Card>
@@ -508,7 +510,7 @@ export default function ChapaPaymentPage() {
           <CardHeader>
             <CardTitle className="flex items-center text-red-600">
               <AlertCircle className="mr-2 h-6 w-6" />
-              Payment Initialization Failed
+              {t("Payment Initialization Failed")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -525,13 +527,13 @@ export default function ChapaPaymentPage() {
                 className="flex-1"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                View Orders
+                {t("View Orders")}
               </Button>
               <Button
                 onClick={() => window.location.reload()}
                 className="flex-1"
               >
-                Try Again
+                {t("Try Again")}
               </Button>
             </div>
           </CardContent>
@@ -547,25 +549,25 @@ export default function ChapaPaymentPage() {
         <CardHeader>
           <CardTitle className="flex items-center text-2xl">
             <Smartphone className="mr-2 h-6 w-6 text-green-600" />
-            Complete Your Payment
+            {t("Complete Your Payment")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Order Summary */}
           <div className="bg-gray-50 p-4 rounded-lg space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Order ID:</span>
+              <span className="text-gray-600">{t("Order ID:")}</span>
               <span className="font-medium">#{paymentData.orderId}</span>
             </div>
 
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Order Type:</span>
+              <span className="text-gray-600">{t("Order Type:")}</span>
               <span className="font-medium">{paymentData.orderType}</span>
             </div>
             <Separator />
             {paymentData.walletAppliedMinor > 0 && (
               <div className="flex justify-between text-sm text-viridian-green">
-                <span>Reward credits applied</span>
+                <span>{t("Reward credits applied")}</span>
                 <span>
                   -
                   {new Intl.NumberFormat("en-US", {
@@ -576,7 +578,7 @@ export default function ChapaPaymentPage() {
               </div>
             )}
             <div className="flex justify-between">
-              <span className="font-semibold">Total Amount:</span>
+              <span className="font-semibold">{t("Total Amount:")}</span>
               <span className="font-bold text-lg">
                 {new Intl.NumberFormat("en-US", {
                   style: "currency",
@@ -589,7 +591,7 @@ export default function ChapaPaymentPage() {
           {isRenderingInline && (
             <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-600">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading Chapa checkout form...
+              {t("Loading Chapa checkout form...")}
             </div>
           )}
 
@@ -598,8 +600,7 @@ export default function ChapaPaymentPage() {
           </div>
 
           <p className="text-xs text-center text-gray-500">
-            Chapa will prompt for the selected payment method here. When payment
-            succeeds, you will be taken to the confirmation page automatically.
+            {t("Chapa will prompt for the selected payment method here. When payment succeeds, you will be taken to the confirmation page automatically.")}
           </p>
         </CardContent>
       </Card>
@@ -608,7 +609,7 @@ export default function ChapaPaymentPage() {
       <div className="mt-6 text-center">
         <Button variant="ghost" onClick={() => navigate("/checkout")}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Checkout
+          {t("Back to Checkout")}
         </Button>
       </div>
     </div>

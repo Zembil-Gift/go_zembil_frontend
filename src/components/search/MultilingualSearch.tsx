@@ -7,6 +7,7 @@ import { Search, X, Loader2, Volume2, Languages } from 'lucide-react';
 import VoiceSearchButton from '@/components/VoiceSearchButton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useTranslation } from "react-i18next";
 
 interface SearchResult {
   originalQuery: string;
@@ -28,6 +29,7 @@ export function MultilingualSearch({
   className,
   autoFocus = false 
 }: MultilingualSearchProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [query, setQuery] = useState('');
   const [translatedQuery, setTranslatedQuery] = useState('');
@@ -111,7 +113,7 @@ export function MultilingualSearch({
     onSearch?.(finalQuery, translatedQuery !== query ? translatedQuery : undefined);
     
     toast({
-      title: "Searching...",
+      title: t("Searching..."),
       description: `Finding products for "${finalQuery}"`,
     });
   };
@@ -223,10 +225,10 @@ export function MultilingualSearch({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Languages className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800">Translation:</span>
+                <span className="text-sm font-medium text-blue-800">{t("Translation:")}</span>
                 {detectedLanguage && (
                   <Badge variant="secondary" className="text-xs">
-                    {detectedLanguage.toUpperCase()} → EN
+                    {detectedLanguage.toUpperCase()} {t("→ EN")}
                   </Badge>
                 )}
               </div>
@@ -251,7 +253,7 @@ export function MultilingualSearch({
         <Card className="mt-3">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-gray-700">
-              Recent Searches
+              {t("Recent Searches")}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">

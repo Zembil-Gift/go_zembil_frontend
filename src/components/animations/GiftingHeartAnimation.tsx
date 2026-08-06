@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface GiftingHeartAnimationProps {
   className?: string;
@@ -12,6 +13,7 @@ export default function GiftingHeartAnimation({
   showText = true,
   size = "medium" 
 }: GiftingHeartAnimationProps) {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -254,7 +256,7 @@ export default function GiftingHeartAnimation({
             animate={{ opacity: 1 }}
             transition={{ delay: 4.5, duration: 1 }}
           >
-            Gifting with Heart
+            {t("Gifting with Heart")}
           </motion.h2>
           <motion.p
             className="text-gray-600 text-lg"
@@ -262,7 +264,7 @@ export default function GiftingHeartAnimation({
             animate={{ opacity: 1 }}
             transition={{ delay: 5, duration: 1 }}
           >
-            Connecting hearts across distances through meaningful Ethiopian gifts
+            {t("Connecting hearts across distances through meaningful Ethiopian gifts")}
           </motion.p>
         </motion.div>
       )}

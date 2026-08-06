@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "react-query";
+import { useTranslation } from "react-i18next";
 
 interface FilterBarProps {
   apiEndpoint: string;
@@ -18,6 +19,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
   dateProperty,
   onFilterChange,
 }) => {
+  const { t } = useTranslation();
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(20);
   const [sort, setSort] = useState(`${dateProperty},desc`);
@@ -42,26 +44,26 @@ const FilterBar: React.FC<FilterBarProps> = ({
     <div className="flex items-center justify-between p-4 bg-gray-100 border-b border-gray-300">
       <div className="flex items-center space-x-4">
         <label>
-          Sort by:
+          {t("Sort by:")}
           <select
             value={sort}
             onChange={handleSortChange}
             className="ml-2 p-2 border rounded"
           >
-            <option value={`${dateProperty},desc`}>Date (Newest)</option>
-            <option value={`${dateProperty},asc`}>Date (Oldest)</option>
+            <option value={`${dateProperty},desc`}>{t("Date (Newest)")}</option>
+            <option value={`${dateProperty},asc`}>{t("Date (Oldest)")}</option>
             <option value={`${alphabeticalProperty},asc`}>
-              Alphabetical (A-Z)
+              {t("Alphabetical (A-Z)")}
             </option>
             <option value={`${alphabeticalProperty},desc`}>
-              Alphabetical (Z-A)
+              {t("Alphabetical (Z-A)")}
             </option>
           </select>
         </label>
       </div>
       <div className="flex items-center space-x-4">
         <label>
-          Items per page:
+          {t("Items per page:")}
           <select
             value={size}
             onChange={handleSizeChange}
@@ -77,13 +79,13 @@ const FilterBar: React.FC<FilterBarProps> = ({
           disabled={page === 0}
           className="p-2 border rounded bg-gray-200 disabled:opacity-50"
         >
-          Previous
+          {t("Previous")}
         </button>
         <button
           onClick={() => handlePageChange(page + 1)}
           className="p-2 border rounded bg-gray-200"
         >
-          Next
+          {t("Next")}
         </button>
       </div>
     </div>

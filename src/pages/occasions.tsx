@@ -10,8 +10,10 @@ import {
   Home as HomeIcon,
   ArrowRight 
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function Occasions() {
+  const { t } = useTranslation();
   const occasions = [
     {
       slug: "birthday",
@@ -71,18 +73,17 @@ export default function Occasions() {
         {/* Page Header */}
         <div className="mb-12">
           <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-            <Link to="/" className="hover:text-ethiopian-gold">Home</Link>
+            <Link to="/" className="hover:text-ethiopian-gold">{t("Home")}</Link>
             <span>›</span>
-            <span className="text-ethiopian-gold">Occasions</span>
+            <span className="text-ethiopian-gold">{t("Occasions")}</span>
           </div>
           
           <h1 className="text-4xl sm:text-5xl font-bold text-charcoal mb-6">
-            Special Occasions
+            {t("Special Occasions")}
           </h1>
           
           <p className="text-xl text-gray-600 max-w-3xl">
-            Every moment deserves to be celebrated. Find the perfect gift for life's 
-            most meaningful occasions and create lasting memories with your loved ones.
+            {t("Every moment deserves to be celebrated. Find the perfect gift for life's most meaningful occasions and create lasting memories with your loved ones.")}
           </p>
         </div>
 
@@ -125,7 +126,7 @@ export default function Occasions() {
                           size="sm"
                           className="bg-white/20 text-white hover:bg-white/30 border-0"
                         >
-                          Browse
+                          {t("Browse")}
                         </Button>
                       </div>
                     </div>
@@ -140,11 +141,10 @@ export default function Occasions() {
         <div className="mt-16 bg-white rounded-3xl shadow-lg p-8 lg:p-12">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-charcoal mb-4">
-              Why Choose goGerami for Occasions?
+              {t("Why Choose goGerami for Occasions?")}
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              We understand that every occasion is unique and deserves a special touch 
-              that reflects your care and cultural connection.
+              {t("We understand that every occasion is unique and deserves a special touch that reflects your care and cultural connection.")}
             </p>
           </div>
 
@@ -153,9 +153,9 @@ export default function Occasions() {
               <div className="w-16 h-16 bg-ethiopian-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Heart size={32} className="text-ethiopian-gold" />
               </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Culturally Authentic</h3>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">{t("Culturally Authentic")}</h3>
               <p className="text-gray-600">
-                Every gift reflects genuine Ethiopian traditions and cultural significance.
+                {t("Every gift reflects genuine Ethiopian traditions and cultural significance.")}
               </p>
             </div>
 
@@ -163,9 +163,9 @@ export default function Occasions() {
               <div className="w-16 h-16 bg-ethiopian-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users size={32} className="text-ethiopian-gold" />
               </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Perfect Timing</h3>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">{t("Perfect Timing")}</h3>
               <p className="text-gray-600">
-                Reliable delivery ensures your gifts arrive exactly when they're needed most.
+                {t("Reliable delivery ensures your gifts arrive exactly when they're needed most.")}
               </p>
             </div>
 
@@ -173,9 +173,9 @@ export default function Occasions() {
               <div className="w-16 h-16 bg-ethiopian-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <GraduationCap size={32} className="text-ethiopian-gold" />
               </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Meaningful Selection</h3>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">{t("Meaningful Selection")}</h3>
               <p className="text-gray-600">
-                Curated gifts that tell a story and create lasting emotional connections.
+                {t("Curated gifts that tell a story and create lasting emotional connections.")}
               </p>
             </div>
           </div>
@@ -185,11 +185,10 @@ export default function Occasions() {
         <div className="mt-16 text-center">
           <div className="bg-gradient-to-r from-deep-forest to-ethiopian-gold rounded-3xl p-8 lg:p-12 text-white">
             <h2 className="text-3xl font-bold mb-4">
-              Can't Find the Perfect Occasion?
+              {t("Can't Find the Perfect Occasion?")}
             </h2>
             <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-              Browse our complete gift collection or create a custom order 
-              tailored to your specific celebration needs.
+              {t("Browse our complete gift collection or create a custom order tailored to your specific celebration needs.")}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -198,7 +197,7 @@ export default function Occasions() {
                   size="lg" 
                   className="bg-white text-deep-forest hover:bg-gray-100 min-w-[160px]"
                 >
-                  All Gifts
+                  {t("All Gifts")}
                 </Button>
               </Link>
               <Link to="/custom-orders">
@@ -207,7 +206,7 @@ export default function Occasions() {
                   variant="outline" 
                   className="border-white text-white hover:bg-white hover:text-deep-forest min-w-[160px]"
                 >
-                  Custom Orders
+                  {t("Custom Orders")}
                 </Button>
               </Link>
             </div>

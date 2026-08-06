@@ -15,8 +15,10 @@ import {
   ArrowRight,
   RefreshCw,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function StripeOnboardingReturn() {
+  const { t } = useTranslation();
   useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -42,13 +44,13 @@ export default function StripeOnboardingReturn() {
     if (stripeStatus) {
       if (stripeStatus.payoutsEnabled) {
         toast({
-          title: "Stripe Setup Complete!",
-          description: "Your Stripe account is fully set up. You can now receive payments.",
+          title: t("Stripe Setup Complete!"),
+          description: t("Your Stripe account is fully set up. You can now receive payments."),
         });
       } else if (stripeStatus.status === 'PENDING' || stripeStatus.status === 'RESTRICTED') {
         toast({
-          title: "Additional Steps Required",
-          description: "Please complete all required steps in Stripe to enable payouts.",
+          title: t("Additional Steps Required"),
+          description: t("Please complete all required steps in Stripe to enable payouts."),
           variant: "default",
         });
       }
@@ -59,10 +61,10 @@ export default function StripeOnboardingReturn() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You need to be a vendor to access this page.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Access Denied")}</h1>
+        <p className="text-gray-600 mb-4">{t("You need to be a vendor to access this page.")}</p>
         <Button asChild>
-          <Link to="/vendor-signup">Become a Vendor</Link>
+          <Link to="/vendor-signup">{t("Become a Vendor")}</Link>
         </Button>
       </div>
     );
@@ -74,9 +76,9 @@ export default function StripeOnboardingReturn() {
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center py-12">
             <Loader2 className="h-12 w-12 text-eagle-green animate-spin mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Checking Stripe Status</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("Checking Stripe Status")}</h2>
             <p className="text-muted-foreground text-center">
-              Please wait while we verify your Stripe account setup...
+              {t("Please wait while we verify your Stripe account setup...")}
             </p>
           </CardContent>
         </Card>
@@ -97,25 +99,25 @@ export default function StripeOnboardingReturn() {
               <div className="mx-auto mb-4">
                 <CheckCircle className="h-16 w-16 text-green-600" />
               </div>
-              <CardTitle className="text-2xl text-green-800">Setup Complete!</CardTitle>
+              <CardTitle className="text-2xl text-green-800">{t("Setup Complete!")}</CardTitle>
               <CardDescription className="text-green-700">
-                Your Stripe account is fully set up and ready to receive payments.
+                {t("Your Stripe account is fully set up and ready to receive payments.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <span className="font-medium">Account Status</span>
-                <Badge className="bg-green-600">Enabled</Badge>
+                <span className="font-medium">{t("Account Status")}</span>
+                <Badge className="bg-green-600">{t("Enabled")}</Badge>
               </div>
               {stripeStatus?.accountId && (
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-muted-foreground">Account ID</span>
+                  <span className="text-sm text-muted-foreground">{t("Account ID")}</span>
                   <code className="text-xs bg-gray-200 px-2 py-1 rounded">{stripeStatus.accountId}</code>
                 </div>
               )}
               <Button asChild className="w-full bg-eagle-green hover:bg-eagle-green/90">
                 <Link to="/vendor">
-                  Go to Dashboard
+                  {t("Go to Dashboard")}
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
               </Button>
@@ -130,14 +132,14 @@ export default function StripeOnboardingReturn() {
               <div className="mx-auto mb-4">
                 <AlertCircle className="h-16 w-16 text-amber-500" />
               </div>
-              <CardTitle className="text-2xl text-amber-800">Additional Steps Required</CardTitle>
+              <CardTitle className="text-2xl text-amber-800">{t("Additional Steps Required")}</CardTitle>
               <CardDescription className="text-amber-700">
-                Your Stripe account needs additional information before you can receive payments.
+                {t("Your Stripe account needs additional information before you can receive payments.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
-                <span className="font-medium">Account Status</span>
+                <span className="font-medium">{t("Account Status")}</span>
                 <Badge className="bg-amber-500">{stripeStatus?.status}</Badge>
               </div>
               <p className="text-sm text-muted-foreground text-center">
@@ -155,10 +157,10 @@ export default function StripeOnboardingReturn() {
                   ) : (
                     <RefreshCw className="h-4 w-4 mr-2" />
                   )}
-                  Check Status
+                  {t("Check Status")}
                 </Button>
                 <Button asChild className="flex-1">
-                  <Link to="/vendor">Dashboard</Link>
+                  <Link to="/vendor">{t("Dashboard")}</Link>
                 </Button>
               </div>
             </CardContent>
@@ -172,15 +174,15 @@ export default function StripeOnboardingReturn() {
               <div className="mx-auto mb-4">
                 <CreditCard className="h-16 w-16 text-gray-400" />
               </div>
-              <CardTitle className="text-2xl">Stripe Not Set Up</CardTitle>
+              <CardTitle className="text-2xl">{t("Stripe Not Set Up")}</CardTitle>
               <CardDescription>
-                You haven't started the Stripe onboarding process yet.
+                {t("You haven't started the Stripe onboarding process yet.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button asChild className="w-full bg-eagle-green hover:bg-eagle-green/90">
                 <Link to="/vendor">
-                  Go to Dashboard to Set Up
+                  {t("Go to Dashboard to Set Up")}
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
               </Button>

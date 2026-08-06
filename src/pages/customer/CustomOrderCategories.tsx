@@ -17,6 +17,7 @@ import FadeIn from '@/components/animations/FadeIn';
 import { customOrderTemplateService } from '@/services/customOrderTemplateService';
 import type { CategoryWithTemplateCount } from '@/types/customOrders';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from "react-i18next";
 
 // Category icon mapping
 const getCategoryIcon = (categoryName: string) => {
@@ -32,6 +33,7 @@ const getCategoryIcon = (categoryName: string) => {
 };
 
 export default function CustomOrderCategories() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isInitialized } = useAuth();
 
@@ -75,8 +77,8 @@ export default function CustomOrderCategories() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <Package className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-eagle-green mb-2">Unable to Load Categories</h2>
-          <p className="font-light text-eagle-green/70">Please try again later.</p>
+          <h2 className="text-2xl font-bold text-eagle-green mb-2">{t("Unable to Load Categories")}</h2>
+          <p className="font-light text-eagle-green/70">{t("Please try again later.")}</p>
         </div>
       </div>
     );
@@ -90,11 +92,11 @@ export default function CustomOrderCategories() {
           <FadeIn delay={0.1}>
             <div className="flex items-center gap-2 mb-2">
               <h1 className="text-2xl lg:text-3xl font-bold text-white">
-                Custom Order Categories
+                {t("Custom Order Categories")}
               </h1>
             </div>
             <p className="text-sm lg:text-base font-light text-white/80 max-w-2xl">
-              Browse categories and find talented vendors who can bring your custom ideas to life
+              {t("Browse categories and find talented vendors who can bring your custom ideas to life")}
             </p>
           </FadeIn>
         </div>
@@ -105,7 +107,7 @@ export default function CustomOrderCategories() {
         <FadeIn delay={0.2}>
           <div className="flex items-center gap-2 mb-8">
             <Package className="h-5 w-5 text-viridian-green" />
-            <span className="font-bold text-eagle-green">Browse Categories</span>
+            <span className="font-bold text-eagle-green">{t("Browse Categories")}</span>
           </div>
         </FadeIn>
 
@@ -153,7 +155,7 @@ export default function CustomOrderCategories() {
                       )}
                       
                       <div className="flex items-center text-viridian-green font-medium text-sm group-hover:gap-2 transition-all">
-                        <span>Browse Templates</span>
+                        <span>{t("Browse Templates")}</span>
                         <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
@@ -165,9 +167,9 @@ export default function CustomOrderCategories() {
         ) : (
           <div className="text-center py-20">
             <Package className="h-16 w-16 text-eagle-green/20 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-eagle-green mb-2">No Categories Available</h3>
+            <h3 className="text-xl font-bold text-eagle-green mb-2">{t("No Categories Available")}</h3>
             <p className="font-light text-eagle-green/60">
-              Check back soon for custom order options.
+              {t("Check back soon for custom order options.")}
             </p>
           </div>
         )}

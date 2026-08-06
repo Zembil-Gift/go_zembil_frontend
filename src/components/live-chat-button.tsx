@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Phone } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTranslation } from "react-i18next";
 
 export default function LiveChatButton() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -12,9 +14,9 @@ export default function LiveChatButton() {
         <Card className="mb-4 w-80 shadow-lg border-ethiopian-gold">
           <CardContent className="p-4">
             <div className="space-y-3">
-              <h3 className="font-semibold text-charcoal">Need Help?</h3>
+              <h3 className="font-semibold text-charcoal">{t("Need Help?")}</h3>
               <p className="text-sm text-gray-600">
-                Chat with our gift specialists for personalized recommendations
+                {t("Chat with our gift specialists for personalized recommendations")}
               </p>
               <div className="space-y-2">
                 <Button 
@@ -22,7 +24,7 @@ export default function LiveChatButton() {
                   onClick={() => window.open('https://wa.me/251911123456', '_blank')}
                 >
                   <MessageCircle size={16} className="mr-2" />
-                  WhatsApp Support
+                  {t("WhatsApp Support")}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -30,11 +32,11 @@ export default function LiveChatButton() {
                   onClick={() => window.open('tel:+251911123456')}
                 >
                   <Phone size={16} className="mr-2" />
-                  Call Us
+                  {t("Call Us")}
                 </Button>
               </div>
               <p className="text-xs text-gray-500 text-center">
-                Available 9 AM - 6 PM EAT
+                {t("Available 9 AM - 6 PM EAT")}
               </p>
             </div>
           </CardContent>

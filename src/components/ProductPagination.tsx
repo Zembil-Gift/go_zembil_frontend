@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface ProductPaginationProps {
   currentPage: number;
@@ -23,6 +24,7 @@ export default function ProductPagination({
   isLoading = false,
   className
 }: ProductPaginationProps) {
+  const { t } = useTranslation();
   const currentItemsShown = Math.min(currentPage * itemsPerPage, totalItems);
   
   const scrollToTop = () => {
@@ -35,7 +37,7 @@ export default function ProductPagination({
       {/* Statistics */}
       <div className="flex items-center justify-between text-sm text-gray-600 mb-8">
         <span>
-          Showing {currentItemsShown} of {totalItems > 0 ? totalItems : '...'} products
+          {t("Showing")} {currentItemsShown} of {totalItems > 0 ? totalItems : '...'} {t("products")}
         </span>
         <Button
           variant="ghost"
@@ -43,7 +45,7 @@ export default function ProductPagination({
           onClick={scrollToTop}
           className="text-gray-600 hover:text-ethiopian-gold transition-colors"
         >
-          Back to Top
+          {t("Back to Top")}
           <ChevronUp className="ml-1 h-4 w-4" />
         </Button>
       </div>
@@ -82,7 +84,7 @@ export default function ProductPagination({
             
             {/* End message */}
             <span className="px-6 py-2 text-gray-500 text-sm">
-              You've seen all products
+              {t("You've seen all products")}
             </span>
             
             {/* Decorative lines */}

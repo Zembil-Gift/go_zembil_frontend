@@ -25,8 +25,10 @@ import { TemplateCard } from "./customer/CustomOrderTemplates";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
+import { useTranslation } from "react-i18next";
 
 function CustomOrdersContent() {
+  const { t } = useTranslation();
   const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
 
@@ -117,12 +119,11 @@ function CustomOrdersContent() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <h1 className="text-2xl lg:text-3xl font--bold text-white">
-                    Custom Orders
+                    {t("Custom Orders")}
                   </h1>
                 </div>
                 <p className="text-sm lg:text-base font--light text-white/80 max-w-2xl">
-                  Commission unique, personalized pieces from talented Ethiopian
-                  artists
+                  {t("Commission unique, personalized pieces from talented Ethiopian artists")}
                 </p>
               </div>
               <Link to="/custom-orders/categories" className="hidden md:block">
@@ -130,7 +131,7 @@ function CustomOrdersContent() {
                   size="lg"
                   className="bg-june-bud hover:bg-june-bud/90 text-eagle-green font--bold px-6 py-3 h-auto rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
-                  <span>Browse Categories</span>
+                  <span>{t("Browse Categories")}</span>
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
@@ -148,7 +149,7 @@ function CustomOrdersContent() {
               <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-eagle-green/40 h-5 w-5" />
               <Input
                 type="text"
-                placeholder="Search custom order templates, artists, or categories..."
+                placeholder={t("Search custom order templates, artists, or categories...")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-12 pr-12 h-14 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 font-light text-eagle-green placeholder:text-eagle-green/40 w-full"
@@ -157,7 +158,7 @@ function CustomOrdersContent() {
                 <button
                   onClick={() => setSearchTerm("")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-light-cream rounded-xl transition-colors"
-                  aria-label="Clear search"
+                  aria-label={t("Clear search")}
                 >
                   <X className="h-5 w-5 text-eagle-green/40" />
                 </button>
@@ -188,7 +189,7 @@ function CustomOrdersContent() {
                 onClick={() => setSearchTerm("")}
                 className="text-eagle-green/60 hover:text-eagle-green text-sm flex items-center gap-1"
               >
-                Clear search
+                {t("Clear search")}
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -214,18 +215,17 @@ function CustomOrdersContent() {
                   <SearchIcon className="h-10 w-10 text-eagle-green/20" />
                 </div>
                 <h3 className="text-xl font--bold text-eagle-green mb-2">
-                  No templates found
+                  {t("No templates found")}
                 </h3>
                 <p className="text-eagle-green/60">
-                  Try adjusting your search terms or browse our categories
-                  below.
+                  {t("Try adjusting your search terms or browse our categories below.")}
                 </p>
               </div>
             )}
 
             <div className="mt-12 border-t border-eagle-green/10 pt-12">
               <h3 className="text-xl font-bold text-eagle-green mb-6 text-center">
-                Otherwise, browse by category
+                {t("Otherwise, browse by category")}
               </h3>
             </div>
           </motion.section>
@@ -427,11 +427,10 @@ function CustomOrdersContent() {
           <div className="mt-16">
             <div className="text-center mb-12">
               <h2 className="text-3xl lg:text-4xl font--bold text-eagle-green mb-4">
-                Browse Templates
+                {t("Browse Templates")}
               </h2>
               <p className="text-lg font--light text-eagle-green/70">
-                Discover approved custom order templates from our talented
-                vendors
+                {t("Discover approved custom order templates from our talented vendors")}
               </p>
             </div>
 
@@ -454,7 +453,7 @@ function CustomOrdersContent() {
               <div className="text-center py-12">
                 <Package className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
                 <p className="text-lg font--light text-eagle-green/70">
-                  No approved templates available yet. Check back soon!
+                  {t("No approved templates available yet. Check back soon!")}
                 </p>
               </div>
             )}

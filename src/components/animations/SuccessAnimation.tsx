@@ -3,6 +3,7 @@ import { CheckCircle, Heart, Sparkles, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import GiftingHeartAnimation from "./GiftingHeartAnimation";
+import { useTranslation } from "react-i18next";
 
 interface SuccessAnimationProps {
   title?: string;
@@ -19,6 +20,7 @@ export default function SuccessAnimation({
   continueLink = "/",
   className = ""
 }: SuccessAnimationProps) {
+  const { t } = useTranslation();
   return (
     <div className={`flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 relative overflow-hidden ${className}`}>
       {/* Background Pattern */}
@@ -100,7 +102,7 @@ export default function SuccessAnimation({
           </p>
           <div className="flex items-center justify-center space-x-2 text-warm-gold">
             <Heart size={20} className="text-warm-red" />
-            <span className="font-medium">Gifting with Heart</span>
+            <span className="font-medium">{t("Gifting with Heart")}</span>
             <Heart size={20} className="text-warm-red" />
           </div>
         </motion.div>
@@ -137,7 +139,7 @@ export default function SuccessAnimation({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Continue Shopping
+                  {t("Continue Shopping")}
                 </motion.span>
               </Link>
             </Button>
@@ -152,7 +154,7 @@ export default function SuccessAnimation({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Track Order
+                  {t("Track Order")}
                 </motion.span>
               </Link>
             </Button>
@@ -167,8 +169,7 @@ export default function SuccessAnimation({
           transition={{ delay: 2.5, duration: 0.8 }}
         >
           <p className="text-sm text-gray-500 max-w-md mx-auto">
-            Your thoughtful gift will bring joy and keep Ethiopian traditions alive. 
-            Thank you for spreading love across distances!
+            {t("Your thoughtful gift will bring joy and keep Ethiopian traditions alive. Thank you for spreading love across distances!")}
           </p>
         </motion.div>
       </motion.div>

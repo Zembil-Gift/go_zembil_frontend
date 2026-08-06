@@ -40,8 +40,10 @@ import {
   EventOrderResponse,
   TicketResponse,
 } from "@/services/eventOrderService";
+import { useTranslation } from "react-i18next";
 
 export default function MyEventTickets() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -148,9 +150,9 @@ export default function MyEventTickets() {
 
     if (!chosenProvider) {
       toast({
-        title: "Payment method unavailable",
+        title: t("Payment method unavailable"),
         description:
-          "No enabled payment method is available for your preferred currency.",
+          t("No enabled payment method is available for your preferred currency."),
         variant: "destructive",
       });
       return;
@@ -192,7 +194,7 @@ export default function MyEventTickets() {
       throw new Error("Payment initialization failed. Please try again.");
     } catch (error: any) {
       toast({
-        title: "Unable to continue checkout",
+        title: t("Unable to continue checkout"),
         description:
           error?.message ||
           "We could not initialize payment for this order. Please try again.",
@@ -306,7 +308,7 @@ export default function MyEventTickets() {
                 <div className="flex items-center gap-1">
                   <Ticket className="h-4 w-4 text-viridian-green" />
                   <span className="font-bold text-eagle-green">
-                    {order.totalTicketCount} ticket
+                    {order.totalTicketCount} {t("ticket")}
                     {order.totalTicketCount !== 1 ? "s" : ""}
                   </span>
                 </div>
@@ -333,7 +335,7 @@ export default function MyEventTickets() {
                       {processingOrderId === order.id ? (
                         <>
                           <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Initializing...
+                          {t("Initializing...")}
                         </>
                       ) : (
                         "Continue Checkout"
@@ -351,7 +353,7 @@ export default function MyEventTickets() {
                         setSelectedReviewOrder(order);
                       }}
                     >
-                      Add Review
+                      {t("Add Review")}
                     </Button>
                   )}
                 </div>
@@ -373,7 +375,7 @@ export default function MyEventTickets() {
         onClick={() => navigate("/events")}
         className="mt-4 bg-eagle-green hover:bg-viridian-green text-white"
       >
-        Browse Events
+        {t("Browse Events")}
       </Button>
     </div>
   );
@@ -391,10 +393,10 @@ export default function MyEventTickets() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-eagle-green mb-2">
-                My Event Tickets
+                {t("My Event Tickets")}
               </h1>
               <p className="font-light text-eagle-green/70">
-                View and manage your event tickets
+                {t("View and manage your event tickets")}
               </p>
             </div>
             <Button
@@ -403,7 +405,7 @@ export default function MyEventTickets() {
               className="border-eagle-green text-eagle-green hover:bg-eagle-green hover:text-white"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              {t("Refresh")}
             </Button>
           </div>
         </motion.div>
@@ -427,20 +429,20 @@ export default function MyEventTickets() {
                 value="upcoming"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
-                Upcoming ({upcomingOrders.length})
+                {t("Upcoming (")}{upcomingOrders.length})
               </TabsTrigger>
               <TabsTrigger
                 value="past"
                 className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
               >
-                Past ({pastOrders.length})
+                {t("Past (")}{pastOrders.length})
               </TabsTrigger>
               {pendingOrders.length > 0 && (
                 <TabsTrigger
                   value="pending"
                   className="font-bold data-[state=active]:bg-eagle-green data-[state=active]:text-white"
                 >
-                  Pending ({pendingOrders.length})
+                  {t("Pending (")}{pendingOrders.length})
                 </TabsTrigger>
               )}
             </TabsList>
@@ -500,7 +502,7 @@ export default function MyEventTickets() {
               <>
                 <DialogHeader>
                   <DialogTitle>
-                    Add Review for {selectedReviewOrder.eventTitle}
+                    {t("Add Review for")} {selectedReviewOrder.eventTitle}
                   </DialogTitle>
                 </DialogHeader>
                 <EventReviewForm
@@ -524,7 +526,7 @@ export default function MyEventTickets() {
               <>
                 <DialogHeader>
                   <DialogTitle className="font-bold text-eagle-green">
-                    Order #{selectedOrder.orderNumber}
+                    {t("Order #")}{selectedOrder.orderNumber}
                   </DialogTitle>
                 </DialogHeader>
 
@@ -550,7 +552,7 @@ export default function MyEventTickets() {
                   <div className="flex items-center gap-4">
                     <div>
                       <span className="text-sm font-light text-eagle-green/70">
-                        Payment
+                        {t("Payment")}
                       </span>
                       <Badge
                         className={`ml-2 ${getPaymentStatusColor(
@@ -562,7 +564,7 @@ export default function MyEventTickets() {
                     </div>
                     <div>
                       <span className="text-sm font-light text-eagle-green/70">
-                        Order
+                        {t("Order")}
                       </span>
                       <Badge
                         className={`ml-2 ${getStatusColor(
@@ -579,7 +581,7 @@ export default function MyEventTickets() {
                   {/* Tickets */}
                   <div>
                     <h4 className="font-bold text-eagle-green mb-4">
-                      Tickets ({selectedOrder.tickets?.length || 0})
+                      {t("Tickets (")}{selectedOrder.tickets?.length || 0})
                     </h4>
                     <div className="space-y-3">
                       {selectedOrder.tickets?.map((ticket: TicketResponse) => (
@@ -605,7 +607,7 @@ export default function MyEventTickets() {
                                   {ticket.recipientEmail}
                                 </p>
                                 <p className="text-xs font-light text-eagle-green/50 mt-1">
-                                  Code: {ticket.ticketCode}
+                                  {t("Code:")} {ticket.ticketCode}
                                 </p>
                               </div>
                               <div className="text-right">
@@ -634,7 +636,7 @@ export default function MyEventTickets() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="font-light text-eagle-green/70">
-                        Subtotal
+                        {t("Subtotal")}
                       </span>
                       <span className="font-light text-eagle-green">
                         {eventOrderService.formatCurrency(
@@ -646,7 +648,7 @@ export default function MyEventTickets() {
                     {selectedOrder.discountMinor > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="font-light text-eagle-green/70">
-                          Discount
+                          {t("Discount")}
                         </span>
                         <span className="font-light text-green-600">
                           -
@@ -660,7 +662,7 @@ export default function MyEventTickets() {
                     {selectedOrder.vatAmountMinor > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="font-light text-eagle-green/70">
-                          VAT (15%)
+                          {t("VAT (15%)")}
                         </span>
                         <span className="font-light text-eagle-green">
                           {eventOrderService.formatCurrency(
@@ -673,7 +675,7 @@ export default function MyEventTickets() {
                     {selectedOrder.salesTaxMinor > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="font-light text-eagle-green/70">
-                          Sales Tax
+                          {t("Sales Tax")}
                         </span>
                         <span className="font-light text-eagle-green">
                           {eventOrderService.formatCurrency(
@@ -685,7 +687,7 @@ export default function MyEventTickets() {
                     )}
                     <Separator />
                     <div className="flex justify-between">
-                      <span className="font-bold text-eagle-green">Total</span>
+                      <span className="font-bold text-eagle-green">{t("Total")}</span>
                       <span className="font-bold text-eagle-green text-xl">
                         {eventOrderService.formatCurrency(
                           selectedOrder.totalAmountMinor,
@@ -699,7 +701,7 @@ export default function MyEventTickets() {
                   {selectedOrder.giftMessage && (
                     <div className="bg-yellow/10 rounded-lg p-4">
                       <h5 className="font-bold text-eagle-green text-sm mb-1">
-                        Gift Message
+                        {t("Gift Message")}
                       </h5>
                       <p className="font-light text-eagle-green/80 text-sm italic">
                         "{selectedOrder.giftMessage}"
@@ -722,7 +724,7 @@ export default function MyEventTickets() {
               <>
                 <DialogHeader>
                   <DialogTitle className="font-bold text-eagle-green">
-                    Ticket Details
+                    {t("Ticket Details")}
                   </DialogTitle>
                 </DialogHeader>
 
@@ -746,7 +748,7 @@ export default function MyEventTickets() {
                       {selectedTicket.ticketTypeName}
                     </h3>
                     <p className="font-light text-eagle-green/70 text-sm">
-                      Code: {selectedTicket.ticketCode}
+                      {t("Code:")} {selectedTicket.ticketCode}
                     </p>
                     <Badge
                       className={`mt-2 ${
@@ -766,7 +768,7 @@ export default function MyEventTickets() {
                   {/* Recipient */}
                   <div className="space-y-2">
                     <h4 className="font-bold text-eagle-green text-sm">
-                      Recipient
+                      {t("Recipient")}
                     </h4>
                     <p className="font-light text-eagle-green">
                       {selectedTicket.recipientName}
@@ -785,7 +787,7 @@ export default function MyEventTickets() {
                   {selectedTicket.checkedInAt && (
                     <div className="bg-blue-50 rounded-lg p-3">
                       <p className="text-sm font-light text-blue-700">
-                        Checked in: {formatDate(selectedTicket.checkedInAt)}
+                        {t("Checked in:")} {formatDate(selectedTicket.checkedInAt)}
                       </p>
                     </div>
                   )}
@@ -860,7 +862,7 @@ export default function MyEventTickets() {
                       }}
                     >
                       <Download className="h-4 w-4 mr-2" />
-                      Download QR
+                      {t("Download QR")}
                     </Button>
                     <Button
                       variant="outline"
@@ -889,7 +891,7 @@ export default function MyEventTickets() {
                       }}
                     >
                       <Mail className="h-4 w-4 mr-2" />
-                      Share
+                      {t("Share")}
                     </Button>
                   </div>
                 </div>
