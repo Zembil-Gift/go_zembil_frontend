@@ -14,6 +14,7 @@ import {
   Store,
   ChevronDown,
   Calendar,
+  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +35,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIncompleteProfile } from "@/hooks/useIncompleteProfile";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useQuery } from "@tanstack/react-query";
-import CategoryDropdown from "@/components/category-dropdown";
+import HeaderSearch from "@/components/search/HeaderSearch";
 import { cartService } from "@/services/cartService";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
@@ -97,22 +98,24 @@ export default function StreamlinedHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b bg-white/95 justify-center backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container flex h-16 lg:h-20 items-center px-4 lg:px-6 max-w-full">
+      <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+        {/* Primary row: identity, search, account. Search wraps to its own
+            full-width line below md, where it cannot share a row legibly. */}
+        <div className="page-shell flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5 md:flex-nowrap md:gap-x-5 lg:h-16 lg:py-0">
           {/* Logo */}
-          <div className="flex-shrink-0 mr-4 lg:mr-8">
+          <div className="flex-shrink-0">
             <Link to="/" className="flex items-center space-x-0">
               <GoGeramiLogo
                 size="md"
                 variant="icon"
-                className="h-8 w-8 lg:h-14 lg:w-14"
+                className="h-8 w-8 lg:h-12 lg:w-12"
               />
               <div className="hidden sm:flex flex-col">
                 <div className="flex items-center">
-                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">
+                  <span className="text-lg lg:text-xl font-bold text-eagle-green">
                     Go
                   </span>
-                  <span className="text-lg lg:text-2xl font-bold text-eagle-green">
+                  <span className="text-lg lg:text-xl font-bold text-eagle-green">
                     Gerami
                   </span>
                 </div>
@@ -120,30 +123,23 @@ export default function StreamlinedHeader() {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center justify-center w-full space-x-1">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`px-2 py-2 text-sm font-medium transition-colors rounded-lg ${
-                  pathname === item.href
-                    ? "text-viridian-green bg-viridian-green/20"
-                    : "text-eagle-green hover:text-viridian-green hover:bg-viridian-green/10"
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
-
-            {/* Categories Dropdown */}
-            {/* <CategoryDropdown /> */}
-          </nav>
+          {/* Site-wide search */}
+          <HeaderSearch className="order-last w-full md:order-none md:w-auto md:flex-1 md:max-w-lg lg:max-w-2xl" />
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-1 ml-auto flex-shrink-0">
             {/* Desktop Actions - Hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-1">
+              {/* Get the App — sits before the icons so it reads as an offer,
+                  not another utility. Plain <a>: the target is a hash on "/". */}
+              <a
+                href="/#get-the-app"
+                className="mr-2 flex items-center gap-1.5 rounded-full bg-eagle-green px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-viridian-green"
+              >
+                <Smartphone className="h-4 w-4" />
+                {t("Get the App")}
+              </a>
+
               {/* Search */}
               {/* <TooltipProvider>
                 <Tooltip>
@@ -484,6 +480,28 @@ export default function StreamlinedHeader() {
             </div>
           </div>
         </div>
+
+        {/* Secondary row: catalogue navigation, so the primary row stays
+            reserved for search. Mobile keeps these in the hamburger menu. */}
+        <nav className="hidden lg:block border-t border-eagle-green/[0.07]">
+          {/* No negative margin: the link pill's left edge sits on the page
+              gutter, flush with the campaign banner and the product cards. */}
+          <div className="page-shell flex h-10 items-center gap-1">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  pathname === item.href
+                    ? "text-viridian-green bg-viridian-green/15"
+                    : "text-eagle-green hover:text-viridian-green hover:bg-viridian-green/10"
+                }`}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        </nav>
       </header>
 
       {/* Mobile Menu Overlay */}
@@ -558,6 +576,16 @@ export default function StreamlinedHeader() {
 
               {/* Actions */}
               <div className="p-3 border-t space-y-2 bg-white flex-shrink-0 max-h-[45vh] overflow-y-auto">
+                {/* Get the App */}
+                <a
+                  href="/#get-the-app"
+                  onClick={closeMobileMenu}
+                  className="flex h-9 w-full items-center justify-center gap-2 rounded-md bg-eagle-green text-sm font-semibold text-white"
+                >
+                  <Smartphone className="h-4 w-4" />
+                  {t("Get the App")}
+                </a>
+
                 {/* Search */}
                 {/* <Button
                   variant="outline"

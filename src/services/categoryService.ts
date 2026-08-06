@@ -36,6 +36,16 @@ export interface CategoryWithSubcategories extends CategoryResponse {
   subcategories: SubCategoryResponse[];
 }
 
+/** Category ranked by how many sellable products it holds, with preview images. */
+export interface CategoryProductSummary {
+  id: number;
+  name: string;
+  slug: string;
+  iconName?: string;
+  productCount: number;
+  imageUrls: string[];
+}
+
 class CategoryService {
   /**
    * Get all categories
@@ -48,6 +58,14 @@ class CategoryService {
       console.error('Failed to fetch categories:', error);
       throw error;
     }
+  }
+
+  /**
+   * Categories holding at least one sellable product, most products first.
+   * Server-ranked and server-cached, so the storefront needs a single request.
+   */
+  async getCategoriesWithProducts(): Promise<CategoryProductSummary[]> {
+    return apiService.getRequest<CategoryProductSummary[]>('/api/categories/with-products');
   }
 
   /**

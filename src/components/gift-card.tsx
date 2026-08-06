@@ -11,16 +11,19 @@ import { useAuth } from '@/hooks/useAuth';
 import { cdnImage, cdnSrcSet } from '@/utils/imageUtils';
 import { useTranslation } from "react-i18next";
 
-// Card renders ~300px wide at lg, 50vw on mobile. Top width covers 2x DPR.
-const CARD_WIDTHS = [200, 300, 400, 600];
-const CARD_SIZES = '(min-width: 1024px) 300px, (min-width: 768px) 33vw, 50vw';
+// Denser grids (up to 8 columns) render the card ~240px at xl, ~30vw on
+// mobile. Top width covers 2x DPR — asking for more just wastes bytes.
+const CARD_WIDTHS = [150, 240, 320, 480];
+const CARD_SIZES = '(min-width: 1280px) 240px, (min-width: 640px) 17vw, 30vw';
 
 interface GiftItemCardProps {
     product: any;
     className?: string;
+    /** Set on above-the-fold cards so the LCP image is not deferred. */
+    priority?: boolean;
 }
 
-const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
+const GiftItemCard = ({ product, className, priority = false }: GiftItemCardProps) => {
   const { t } = useTranslation();
     const [imageLoaded, setImageLoaded] = useState(false);
     const [secondImageLoaded, setSecondImageLoaded] = useState(false);
@@ -142,7 +145,7 @@ const GiftItemCard = ({ product, className }: GiftItemCardProps) => {
                         setImageError(true);
                         setImageLoaded(true);
                     }}
-                    loading="lazy"
+                    loading={priority ? "eager" : "lazy"}
                 />
 
                 {/* Secondary Product Image (shown on hover) */}

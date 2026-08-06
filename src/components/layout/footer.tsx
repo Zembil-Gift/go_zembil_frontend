@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, Mail, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
+import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, Smartphone } from "lucide-react";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
@@ -9,7 +9,7 @@ export default function Footer() {
   
   return (
     <footer className="bg-eagle-green text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="page-shell py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-1">
@@ -26,7 +26,15 @@ export default function Footer() {
             <p className="text-gray-300 mb-6 -mt-8">
               {t('footer.description')}
             </p>
-            <div className="flex space-x-4">
+            <div className="flex items-center space-x-4">
+              {/* Blue pill, first in the row — the one thing here meant to be clicked. */}
+              <a
+                href="/#get-the-app"
+                className="flex items-center gap-1.5 rounded-full bg-[#2E7DFF] px-3.5 py-1.5 text-sm font-semibold text-white shadow-[0_4px_14px_-2px_rgba(46,125,255,0.6)] transition-colors duration-200 hover:bg-[#1667F0]"
+              >
+                <Smartphone size={16} />
+                {t('Get the App')}
+              </a>
               <a href="#" className="text-gray-300 hover:text-ethiopian-gold transition-colors duration-200">
                 <Facebook size={20} />
               </a>

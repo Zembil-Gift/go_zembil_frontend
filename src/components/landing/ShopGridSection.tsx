@@ -100,7 +100,7 @@ export default function ShopGridSection() {
 
   return (
     <section id="shop" className="py-10 bg-light-cream">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="page-shell">
         <SectionHeader
           title={t("homepage.shopAll.title")}
           subtitle={t("homepage.shopAll.subtitle")}

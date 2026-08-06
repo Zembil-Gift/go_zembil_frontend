@@ -69,13 +69,13 @@ function useCountdown(endDateTime: string): TimeRemaining {
 function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center group/timer">
-      <div className="relative overflow-hidden bg-white/10 backdrop-blur-md rounded-2xl px-3 py-3 sm:px-5 sm:py-4 min-w-[60px] sm:min-w-[80px] border border-white/20 shadow-2xl transition-all duration-300 hover:bg-white/15 hover:border-white/30 hover:scale-105 hover:shadow-ethiopian-gold/10">
+      <div className="relative overflow-hidden bg-white/10 backdrop-blur-md rounded-xl px-2.5 py-1.5 sm:px-3.5 sm:py-2 min-w-[46px] sm:min-w-[56px] border border-white/20 shadow-xl transition-all duration-300 hover:bg-white/15 hover:border-white/30 hover:scale-105 hover:shadow-ethiopian-gold/10">
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover/timer:opacity-100 transition-opacity duration-500" />
-        <span className="relative z-10 text-3xl sm:text-4xl md:text-5xl font-bebas tracking-wider font-bold text-white tabular-nums leading-none drop-shadow-lg">
+        <span className="relative z-10 text-xl sm:text-2xl font-bebas tracking-wider font-bold text-white tabular-nums leading-none drop-shadow-lg">
           {String(value).padStart(2, "0")}
         </span>
       </div>
-      <span className="text-[10px] sm:text-xs font-bold text-white/90 mt-2 uppercase tracking-[0.2em] drop-shadow-md">
+      <span className="text-[9px] sm:text-[10px] font-bold text-white/90 mt-1.5 uppercase tracking-[0.2em] drop-shadow-md">
         {label}
       </span>
     </div>
@@ -88,17 +88,17 @@ function Countdown({ endDateTime }: { endDateTime: string }) {
   const countdown = useCountdown(endDateTime);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-5 sm:mb-10">
+    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 mb-4 sm:mb-6">
       <CountdownUnit value={countdown.days} label={t("Days")} />
-      <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
+      <span className="text-xl sm:text-2xl font-light text-white/40 pb-5">
         :
       </span>
       <CountdownUnit value={countdown.hours} label={t("Hours")} />
-      <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
+      <span className="text-xl sm:text-2xl font-light text-white/40 pb-5">
         :
       </span>
       <CountdownUnit value={countdown.minutes} label={t("Mins")} />
-      <span className="text-3xl sm:text-4xl font-light text-white/40 pb-6">
+      <span className="text-xl sm:text-2xl font-light text-white/40 pb-5">
         :
       </span>
       <CountdownUnit value={countdown.seconds} label={t("Secs")} />
@@ -131,7 +131,7 @@ function CampaignSlide({
   }, [slide.imageUrls.length]);
 
   return (
-    <div className="relative w-full min-h-[550px] sm:min-h-[600px] md:min-h-[650px] lg:min-h-[720px] group bg-charcoal overflow-hidden">
+    <div className="relative w-full min-h-[280px] sm:min-h-[320px] md:min-h-[360px] lg:min-h-[400px] group bg-charcoal overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         {slide.imageUrls.map((url, index) => (
           <img
@@ -154,43 +154,41 @@ function CampaignSlide({
 
       <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
-      <div className="relative z-30 flex flex-col justify-end min-h-[550px] sm:min-h-[600px] md:min-h-[650px] lg:min-h-[720px] px-5 sm:px-10 md:px-16 lg:px-24 pt-8 sm:pt-10 md:pt-12 lg:pt-16 pb-28 sm:pb-32 md:pb-36 lg:pb-32">
+      <div className="relative z-30 flex flex-col justify-end min-h-[280px] sm:min-h-[320px] md:min-h-[360px] lg:min-h-[400px] px-5 sm:px-8 md:px-12 lg:px-16 pt-6 sm:pt-8 pb-20 sm:pb-24">
         <div
           className={cn(
-            "max-w-4xl pt-3 sm:pt-4 md:pt-6 transition-all duration-1000 ease-out transform",
+            "max-w-2xl transition-all duration-1000 ease-out transform",
             isActive
               ? "opacity-100 translate-y-0 delay-300"
               : "opacity-0 translate-y-8"
           )}
         >
           {slide.badge && (
-            <span className="inline-block px-3 py-1 mb-4 text-xs font-semibold uppercase tracking-wider rounded-full bg-ethiopian-gold/20 text-ethiopian-gold border border-ethiopian-gold/30">
+            <span className="inline-block px-2.5 py-0.5 mb-3 text-[11px] font-semibold uppercase tracking-wider rounded-full bg-ethiopian-gold/20 text-ethiopian-gold border border-ethiopian-gold/30">
               {slide.badge}
             </span>
           )}
 
-          <h2 className="pt-1 sm:pt-2 lg:pt-3 text-[clamp(1.75rem,6vw,4.75rem)] font-serif font-bold text-white leading-[1.05] sm:leading-[1.08] tracking-tight mb-4 sm:mb-7 drop-shadow-2xl max-w-[20ch] break-words">
-            <span className="bg-clip-text font-serif font-bold text-transparent bg-gradient-to-b from-white via-white to-white/70">
-              {slide.name}
-            </span>
+          <h2 className="text-[clamp(1.5rem,3.5vw,2.75rem)] font-serif font-bold text-white leading-[1.1] tracking-tight mb-3 drop-shadow-2xl max-w-[20ch] break-words line-clamp-2">
+            {slide.name}
           </h2>
 
           {slide.description && (
-            <p className="hidden sm:block text-lg sm:text-xl text-gray-200 mb-10 max-w-2xl leading-relaxed font-light border-l-4 border-ethiopian-gold pl-6">
+            <p className="hidden sm:block text-sm sm:text-base text-gray-200 mb-5 max-w-xl leading-relaxed font-light border-l-2 border-ethiopian-gold pl-4 line-clamp-2">
               {slide.description}
             </p>
           )}
 
           {slide.endDateTime && <Countdown endDateTime={slide.endDateTime} />}
 
-          <div className="relative z-40 inline-block rounded-full bg-black/40 backdrop-blur-sm p-1.5 shadow-[0_0_40px_12px_rgba(0,0,0,0.4)]">
+          <div className="relative z-40 inline-block rounded-full bg-black/40 backdrop-blur-sm p-1 shadow-[0_0_30px_8px_rgba(0,0,0,0.35)]">
             <button
               onClick={() => navigate(slide.href)}
-              className="group/btn relative inline-flex items-center gap-3 sm:gap-4 bg-white hover:bg-ethiopian-gold text-charcoal text-base sm:text-xl font-bold px-6 sm:px-10 py-3.5 sm:py-5 rounded-full transition-all duration-500 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(253,203,45,0.6)] overflow-hidden"
+              className="group/btn relative inline-flex items-center gap-2 sm:gap-3 bg-white hover:bg-ethiopian-gold text-charcoal text-sm sm:text-base font-bold px-5 sm:px-7 py-2.5 sm:py-3 rounded-full transition-all duration-500 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(253,203,45,0.6)] overflow-hidden"
             >
-              <span className="relative z-10 flex items-center gap-2 sm:gap-3">
+              <span className="relative z-10 flex items-center gap-2">
                 {slide.ctaText}
-                <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 group-hover/btn:translate-x-2" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover/btn:translate-x-2" />
               </span>
 
               <div className="absolute inset-0 -translate-x-[100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/50 to-transparent skew-x-12" />
@@ -332,12 +330,14 @@ export default function CampaignBanner() {
 
   return (
     <section
-      className="w-full relative z-10 -mt-24 sm:-mt-32 lg:-mt-40 mb-16 px-4"
+      // The negative top margin this used to carry existed to tuck the banner
+      // under the hero's wave. The hero is gone, so it only bled into the navbar.
+      className="page-shell relative z-10 mt-4 sm:mt-6 mb-8 sm:mb-10"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      <div className="max-w-[1400px] mx-auto">
-        <div className="relative overflow-hidden rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl bg-charcoal ring-4 ring-white/10">
+      <div className="w-full">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-xl bg-charcoal ring-1 ring-eagle-green/10">
           <div className="relative bg-charcoal overflow-hidden">
             {liveCampaigns.map((slide, index) => (
               <div
@@ -354,8 +354,8 @@ export default function CampaignBanner() {
             ))}
           </div>
 
-          <div className="absolute inset-x-0 bottom-0 p-8 sm:p-12 z-50 flex justify-between items-end bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
-            <div className="flex gap-3 pointer-events-auto">
+          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 z-50 flex justify-between items-end bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+            <div className="flex gap-2 pointer-events-auto">
               {liveCampaigns.map((_, idx) => (
                 <button
                   key={idx}
@@ -363,26 +363,26 @@ export default function CampaignBanner() {
                   className={cn(
                     "h-1.5 rounded-full transition-all duration-300",
                     idx === currentSlide
-                      ? "w-12 bg-ethiopian-gold"
-                      : "w-4 bg-white/30 hover:bg-white/60"
+                      ? "w-8 bg-ethiopian-gold"
+                      : "w-3 bg-white/30 hover:bg-white/60"
                   )}
                   aria-label={`Go to slide ${idx + 1}`}
                 />
               ))}
             </div>
 
-            <div className="flex gap-4 pointer-events-auto">
+            <div className="flex gap-2 pointer-events-auto">
               <button
                 onClick={goPrev}
-                className="w-12 h-12 flex items-center justify-center rounded-full border border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-white hover:text-charcoal hover:scale-110 transition-all duration-300 group"
+                className="w-9 h-9 flex items-center justify-center rounded-full border border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-white hover:text-charcoal hover:scale-110 transition-all duration-300 group"
               >
-                <ChevronLeft className="w-6 h-6 group-hover:-translate-x-0.5 transition-transform" />
+                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
               </button>
               <button
                 onClick={goNext}
-                className="w-12 h-12 flex items-center justify-center rounded-full border border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-white hover:text-charcoal hover:scale-110 transition-all duration-300 group"
+                className="w-9 h-9 flex items-center justify-center rounded-full border border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-white hover:text-charcoal hover:scale-110 transition-all duration-300 group"
               >
-                <ChevronRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
           </div>

@@ -7,6 +7,10 @@ interface SectionHeaderProps {
   subtitle?: string;
   /** When set, renders a "See all" link on the same row as the title. */
   href?: string;
+  /** Same slot as `href`, but stays on the page (expand in place). */
+  onSeeAll?: () => void;
+  /** Overrides the "See all" wording for either variant. */
+  seeAllLabel?: string;
 }
 
 /**
@@ -18,8 +22,13 @@ export default function SectionHeader({
   title,
   subtitle,
   href,
+  onSeeAll,
+  seeAllLabel,
 }: SectionHeaderProps) {
   const { t } = useTranslation();
+
+  const seeAllClass =
+    "shrink-0 inline-flex items-center gap-0.5 text-sm font-medium text-viridian-green hover:text-eagle-green transition-colors whitespace-nowrap pb-1";
 
   return (
     <div className="flex items-end justify-between gap-4 mb-5">
@@ -35,15 +44,17 @@ export default function SectionHeader({
         )}
       </div>
 
-      {href && (
-        <Link
-          to={href}
-          className="shrink-0 inline-flex items-center gap-0.5 text-sm font-medium text-viridian-green hover:text-eagle-green transition-colors whitespace-nowrap pb-1"
-        >
-          {t("common.seeAll")}
+      {onSeeAll ? (
+        <button type="button" onClick={onSeeAll} className={seeAllClass}>
+          {seeAllLabel ?? t("common.seeAll")}
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      ) : href ? (
+        <Link to={href} className={seeAllClass}>
+          {seeAllLabel ?? t("common.seeAll")}
           <ChevronRight className="h-4 w-4" />
         </Link>
-      )}
+      ) : null}
     </div>
   );
 }
