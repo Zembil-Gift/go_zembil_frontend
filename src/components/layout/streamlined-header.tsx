@@ -41,6 +41,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import WalletMenu from "@/components/layout/WalletMenu";
+import { SHOW_APP_DOWNLOAD } from "@/lib/featureFlags";
 
 export default function StreamlinedHeader() {
   const { t } = useTranslation();
@@ -132,13 +133,15 @@ export default function StreamlinedHeader() {
             <div className="hidden lg:flex items-center space-x-1">
               {/* Get the App — sits before the icons so it reads as an offer,
                   not another utility. Plain <a>: the target is a hash on "/". */}
-              <a
-                href="/#get-the-app"
-                className="mr-2 flex items-center gap-1.5 rounded-full bg-eagle-green px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-viridian-green"
-              >
-                <Smartphone className="h-4 w-4" />
-                {t("Get the App")}
-              </a>
+              {SHOW_APP_DOWNLOAD && (
+                <a
+                  href="/#get-the-app"
+                  className="mr-2 flex items-center gap-1.5 rounded-full bg-eagle-green px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-viridian-green"
+                >
+                  <Smartphone className="h-4 w-4" />
+                  {t("Get the App")}
+                </a>
+              )}
 
               {/* Search */}
               {/* <TooltipProvider>
@@ -577,14 +580,16 @@ export default function StreamlinedHeader() {
               {/* Actions */}
               <div className="p-3 border-t space-y-2 bg-white flex-shrink-0 max-h-[45vh] overflow-y-auto">
                 {/* Get the App */}
-                <a
-                  href="/#get-the-app"
-                  onClick={closeMobileMenu}
-                  className="flex h-9 w-full items-center justify-center gap-2 rounded-md bg-eagle-green text-sm font-semibold text-white"
-                >
-                  <Smartphone className="h-4 w-4" />
-                  {t("Get the App")}
-                </a>
+                {SHOW_APP_DOWNLOAD && (
+                  <a
+                    href="/#get-the-app"
+                    onClick={closeMobileMenu}
+                    className="flex h-9 w-full items-center justify-center gap-2 rounded-md bg-eagle-green text-sm font-semibold text-white"
+                  >
+                    <Smartphone className="h-4 w-4" />
+                    {t("Get the App")}
+                  </a>
+                )}
 
                 {/* Search */}
                 {/* <Button

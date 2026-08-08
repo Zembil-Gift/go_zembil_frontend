@@ -34,6 +34,7 @@ import EventCard from "@/components/EventCard";
 import ServiceCard from "@/components/ServiceCard";
 import CampaignBanner from "@/components/landing/CampaignBanner";
 import AppDownloadSection from "@/components/landing/AppDownloadSection";
+import { SHOW_APP_DOWNLOAD } from "@/lib/featureFlags";
 import TopCategoriesSection from "@/components/landing/TopCategoriesSection";
 import SectionBoundary from "@/components/SectionBoundary";
 import { useTranslation } from "react-i18next";
@@ -590,9 +591,11 @@ export default function Landing() {
           </section>
         )}
 
-      <SectionBoundary name="AppDownload">
-        <AppDownloadSection />
-      </SectionBoundary>
+      {SHOW_APP_DOWNLOAD && (
+        <SectionBoundary name="AppDownload">
+          <AppDownloadSection />
+        </SectionBoundary>
+      )}
 
       <SectionBoundary name="Features">
         <FeaturesSection />

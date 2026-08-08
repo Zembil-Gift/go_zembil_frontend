@@ -59,11 +59,11 @@ export default function PaymentMethodSelector({
 
   const formattedAmount = formatPrice(amount, currency);
 
-  // Detect Ethiopian context from location OR currency
-  const isEthiopian = userLocation
+  // ponytail: unknown location shows every method rather than guessing "not Ethiopian"
+  const showAllMethods = userLocation
     ? userLocation.toLowerCase() === "ethiopia" ||
       userLocation.toLowerCase() === "et"
-    : currency === "ETB"; // Default to Ethiopian if currency is ETB
+    : true;
 
   const paymentMethods: PaymentMethodOption[] = [
     {
@@ -106,7 +106,7 @@ export default function PaymentMethodSelector({
   const getVisibleMethods = () => {
     // First filter by location
     let methods: PaymentMethodOption[];
-    if (isEthiopian) {
+    if (showAllMethods) {
       methods = paymentMethods;
     } else {
       methods = paymentMethods.filter(
@@ -339,7 +339,7 @@ export default function PaymentMethodSelector({
         <div className="flex items-center justify-center space-x-2">
           <CheckCircle className="w-4 h-4 text-green-500" />
           <span>
-            {isEthiopian
+            {showAllMethods
               ? "Ethiopian and international payment methods available"
               : "International payment methods available"}
           </span>

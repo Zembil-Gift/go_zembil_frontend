@@ -84,6 +84,7 @@ export function OAuth2Buttons({ onSuccess, disabled }: OAuth2ButtonsProps) {
             size: 'large',
             width: googleButtonRef.current.offsetWidth,
             text: 'continue_with',
+            logo_alignment: 'center',
           }
         );
       } catch (error) {

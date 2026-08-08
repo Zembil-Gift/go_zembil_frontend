@@ -3,6 +3,7 @@ import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, Smartphone } from "l
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
+import { SHOW_APP_DOWNLOAD } from "@/lib/featureFlags";
 
 export default function Footer() {
   const { t } = useTranslation();
@@ -28,13 +29,15 @@ export default function Footer() {
             </p>
             <div className="flex items-center space-x-4">
               {/* Blue pill, first in the row — the one thing here meant to be clicked. */}
-              <a
-                href="/#get-the-app"
-                className="flex items-center gap-1.5 rounded-full bg-[#2E7DFF] px-3.5 py-1.5 text-sm font-semibold text-white shadow-[0_4px_14px_-2px_rgba(46,125,255,0.6)] transition-colors duration-200 hover:bg-[#1667F0]"
-              >
-                <Smartphone size={16} />
-                {t('Get the App')}
-              </a>
+              {SHOW_APP_DOWNLOAD && (
+                <a
+                  href="/#get-the-app"
+                  className="flex items-center gap-1.5 rounded-full bg-[#2E7DFF] px-3.5 py-1.5 text-sm font-semibold text-white shadow-[0_4px_14px_-2px_rgba(46,125,255,0.6)] transition-colors duration-200 hover:bg-[#1667F0]"
+                >
+                  <Smartphone size={16} />
+                  {t('Get the App')}
+                </a>
+              )}
               <a href="#" className="text-gray-300 hover:text-ethiopian-gold transition-colors duration-200">
                 <Facebook size={20} />
               </a>
