@@ -32,7 +32,7 @@ export default function TrustStrip() {
       aria-label={t("homepage.diaspora.title")}
       className="bg-white border-y border-eagle-green/10"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="page-shell">
         <ul className="flex gap-6 overflow-x-auto py-3 sm:py-4 md:justify-between md:overflow-visible">
           {points.map(({ icon: Icon, label, detail }) => (
             <li

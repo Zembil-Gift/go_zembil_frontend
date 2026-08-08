@@ -21,7 +21,7 @@ export default function ShopByRecipient() {
 
   return (
     <section className="py-6 bg-light-cream">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="page-shell">
         <div className="flex items-baseline gap-3 mb-3">
           <h2 className="text-base font-bold text-eagle-green">
             {t("homepage.recipients.title")}

@@ -12,7 +12,7 @@ export default function FeaturesSection() {
 
   return (
     <section id="custom" className="py-10 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="page-shell">
         <div
           id="track"
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-eagle-green to-viridian-green rounded-2xl px-6 py-5 text-white"

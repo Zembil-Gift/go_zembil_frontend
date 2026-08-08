@@ -480,6 +480,20 @@
   animation-play-state: paused;
 }
 
+/* Gentle bob for the app-download phone mockup and its floating card */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.animate-float-y {
+  animation: float-y 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-y { animation: none; }
+}
+
 /* Hide scrollbar utilities */
 .scrollbar-hide {
   -ms-overflow-style: none;  /* Internet Explorer 10+ */

@@ -75,9 +75,13 @@ export function getCurrencyForCountry(country: string): string {
   return config?.currencyCode || 'USD';
 }
 
+export const ALL_PAYMENT_METHODS: PaymentMethod[] = ['stripe', 'chapa', 'telebirr'];
+
 export function getPaymentMethodsForCountry(country: string): PaymentMethod[] {
+  // ponytail: unknown country => offer everything and let the user pick.
+  // Callers still narrow this by the backend enabled-config.
   const config = getCountryConfig(country);
-  return config?.paymentMethods || ['stripe'];
+  return config?.paymentMethods || ALL_PAYMENT_METHODS;
 }
 
 export function isEthiopianCountry(country: string): boolean {

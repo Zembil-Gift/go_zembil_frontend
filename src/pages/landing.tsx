@@ -1,12 +1,10 @@
-import React, { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "react-router-dom";
+import React, { useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   extractPriceAmount,
   Product,
   productService,
 } from "@/services/productService";
-import { parseUrlParams } from "@/shared/categories";
 import {
   getProductImageUrl,
   getAllProductImages,
@@ -22,258 +20,130 @@ import {
   packageService,
   ProductPackageResponse,
 } from "@/services/packageService";
-import { customOrderTemplateService } from "@/services/customOrderTemplateService";
-import type { CustomOrderTemplate } from "@/types/customOrders";
-import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { DiscountBadge } from "@/components/DiscountBadge";
 import { PriceWithDiscount } from "@/components/PriceWithDiscount";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ExternalLink } from "lucide-react";
 
-import HeroSection from "@/components/landing/HeroSection";
-import CategoryCarousel from "@/components/landing/CategoryCarousel";
 import TrendingGiftsSection from "@/components/landing/TrendingGiftsSection";
 import ShopGridSection from "@/components/landing/ShopGridSection";
-import TrustStrip from "@/components/landing/TrustStrip";
 import ShopByRecipient from "@/components/landing/ShopByRecipient";
 import FeaturesSection from "@/components/landing/FeaturesSection";
 import SectionHeader from "@/components/landing/SectionHeader";
 import EventCard from "@/components/EventCard";
 import ServiceCard from "@/components/ServiceCard";
 import CampaignBanner from "@/components/landing/CampaignBanner";
-import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
+import AppDownloadSection from "@/components/landing/AppDownloadSection";
+import { SHOW_APP_DOWNLOAD } from "@/lib/featureFlags";
+import TopCategoriesSection from "@/components/landing/TopCategoriesSection";
+import SectionBoundary from "@/components/SectionBoundary";
 import { useTranslation } from "react-i18next";
+
+/**
+ * ponytail: every landing query used to wait on `isInitialized`, which is a
+ * full /auth/refresh round trip. Products are public, so they now fetch on
+ * mount and the page paints a grid a whole RTT earlier. Signed-in visitors
+ * whose preferred currency differs from the auto-detected guest currency get
+ * one refetch under the new cache key; keepPreviousData covers the gap.
+ */
+const publicFeedQuery = {
+  staleTime: 5 * 60 * 1000,
+  retry: 1,
+  placeholderData: keepPreviousData,
+} as const;
+
+/**
+ * Mirrors TrendingGiftsSection's grid so the first product row claims its space
+ * on the very first frame — no spinner, no layout shift when data lands.
+ */
+function ProductGridSkeleton() {
+  return (
+    <section className="py-10 bg-gray-50">
+      <div className="page-shell">
+        <div className="mb-5 space-y-2">
+          <div className="h-7 w-56 animate-pulse rounded bg-eagle-green/10" />
+          <div className="h-4 w-72 animate-pulse rounded bg-eagle-green/[0.07]" />
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2.5 sm:gap-3">
+          {Array.from({ length: 16 }).map((_, index) => (
+            <div
+              key={index}
+              className="overflow-hidden rounded-xl border border-eagle-green/[0.07] bg-white"
+            >
+              <div className="aspect-square animate-pulse bg-eagle-green/[0.06]" />
+              <div className="space-y-2 p-3">
+                <div className="h-3.5 w-5/6 animate-pulse rounded bg-eagle-green/10" />
+                <div className="h-3 w-1/3 animate-pulse rounded bg-eagle-green/[0.07]" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function Landing() {
   const { t } = useTranslation();
-  const location = useLocation();
-  const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
 
-  // Parse URL parameters to set initial category
-  const urlParams = new URLSearchParams(location.search);
-  const categoryFilters = parseUrlParams(urlParams);
-
-  const [activeCategory, setActiveCategory] = useState(
-    categoryFilters.category || "occasions"
-  );
-  const [searchTerm, setSearchTerm] = useState("");
-  const [submittedSearch, setSubmittedSearch] = useState("");
   const [selectedBudget, setSelectedBudget] = useState("all");
 
-  const normalizedSearch = useMemo(
-    () => submittedSearch.trim(),
-    [submittedSearch]
-  );
-
-  const handleSearchSubmit = () => {
-    setSubmittedSearch(searchTerm.trim());
-  };
-
-  const clearCombinedSearch = () => {
-    setSearchTerm("");
-    setSubmittedSearch("");
-  };
-
-  const {
-    data: combinedSearchResults,
-    isFetching: isSearchingCombined,
-    isError: combinedSearchError,
-  } = useQuery({
-    queryKey: ["landing", "combined-search", normalizedSearch, activeCurrency],
-    queryFn: async () => {
-      const [productsRes, servicesRes, eventsRes, templatesRes] =
-        await Promise.all([
-          productService.getFilteredProducts({
-            page: 0,
-            size: 6,
-            search: normalizedSearch,
-          }),
-          serviceService.getServices({
-            page: 0,
-            size: 6,
-            query: normalizedSearch,
-          }),
-          eventOrderService.searchEvents(
-            normalizedSearch,
-            undefined,
-            undefined,
-            0,
-            6
-          ),
-          customOrderTemplateService.searchTemplates(
-            normalizedSearch,
-            undefined,
-            0,
-            6
-          ),
-        ]);
-
-      return {
-        products: productsRes.content || [],
-        services: servicesRes.content || [],
-        events: eventsRes.content || [],
-        templates: templatesRes.content || [],
-      };
-    },
-    enabled: isInitialized && normalizedSearch.length >= 2,
-    staleTime: 60 * 1000,
-  });
-
-  const searchCounts = useMemo(() => {
-    const productsCount = combinedSearchResults?.products.length || 0;
-    const servicesCount = combinedSearchResults?.services.length || 0;
-    const eventsCount = combinedSearchResults?.events.length || 0;
-    const templatesCount = combinedSearchResults?.templates.length || 0;
-    return {
-      productsCount,
-      servicesCount,
-      eventsCount,
-      templatesCount,
-      total: productsCount + servicesCount + eventsCount + templatesCount,
-    };
-  }, [combinedSearchResults]);
-
-  useSearchAnalytics(
-    {
-      searchTerm: normalizedSearch,
-      pageName: "Landing",
-      pageType: "LANDING_SEARCH",
-      searchSource: "HERO_SEARCH_BAR",
-      resultCount: searchCounts.total,
-      context: {
-        filters: {
-          activeCategory,
-        },
-      },
-    },
-    {
-      enabled: !isSearchingCombined,
-    }
-  );
-
-  // Fetch featured products (wait for auth so currency is correct)
+  // Fetch featured products
   const {
     data: featuredProducts,
     isLoading: isLoadingProducts,
     error: productsError,
   } = useQuery({
     queryKey: ["products", "featured", activeCurrency],
-    queryFn: async () => {
-      try {
-        return await productService.getFeaturedProducts(10);
-      } catch (err) {
-        throw err;
-      }
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1,
-    enabled: isInitialized,
+    queryFn: () => productService.getFeaturedProducts(16),
+    ...publicFeedQuery,
   });
 
-  // Fetch featured events (wait for auth for consistent behaviour)
+  // Fetch featured events
   const { data: featuredEventsResponse } = useQuery({
     queryKey: ["events", "featured", activeCurrency],
-    queryFn: async () => {
-      try {
-        return await eventOrderService.getFeaturedEvents(0, 6);
-      } catch (err) {
-        throw err;
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-    enabled: isInitialized,
+    queryFn: () => eventOrderService.getFeaturedEvents(0, 12),
+    ...publicFeedQuery,
   });
 
-  // Fetch featured services (wait for auth for consistent behaviour)
+  // Fetch featured services
   const { data: featuredServicesResponse } = useQuery({
     queryKey: ["services", "featured", activeCurrency],
-    queryFn: async () => {
-      try {
-        return await serviceService.getFeaturedServices(0, 6);
-      } catch (err) {
-        throw err;
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-    enabled: isInitialized,
+    queryFn: () => serviceService.getFeaturedServices(0, 12),
+    ...publicFeedQuery,
   });
 
   // Fetch featured product packages
   const { data: featuredProductPackagesResponse } = useQuery({
     queryKey: ["packages", "featured", activeCurrency],
-    queryFn: async () => {
-      try {
-        return await packageService.getFeaturedPackages(0, 8);
-      } catch (err) {
-        throw err;
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-    enabled: isInitialized,
+    queryFn: () => packageService.getFeaturedPackages(0, 12),
+    ...publicFeedQuery,
   });
 
-  // Fetch ads (products, events, or services) — wait for auth so product currency is correct
+  // Fetch ads (products, events, services, or packages)
   const { data: adProducts } = useQuery({
     queryKey: ["products", "ads", activeCurrency],
-    queryFn: async () => {
-      try {
-        return await productService.getAdProducts(3);
-      } catch (err) {
-        return [];
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-    enabled: isInitialized,
+    queryFn: () => productService.getAdProducts(3).catch(() => []),
+    ...publicFeedQuery,
   });
 
   const { data: adEvents } = useQuery({
     queryKey: ["events", "ads", activeCurrency],
-    queryFn: async () => {
-      try {
-        return await eventOrderService.getAdEvents(2);
-      } catch (err) {
-        return [];
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-    enabled: isInitialized,
+    queryFn: () => eventOrderService.getAdEvents(2).catch(() => []),
+    ...publicFeedQuery,
   });
 
   const { data: adServices } = useQuery({
     queryKey: ["services", "ads", activeCurrency],
-    queryFn: async () => {
-      try {
-        return await serviceService.getAdServicePackages(2);
-      } catch (err) {
-        return [];
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-    enabled: isInitialized,
+    queryFn: () => serviceService.getAdServicePackages(2).catch(() => []),
+    ...publicFeedQuery,
   });
 
   const { data: adPackages } = useQuery({
     queryKey: ["packages", "ads", activeCurrency],
-    queryFn: async () => {
-      try {
-        return await packageService.getAdPackages(2);
-      } catch (err) {
-        return [];
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-    enabled: isInitialized,
+    queryFn: () => packageService.getAdPackages(2).catch(() => []),
+    ...publicFeedQuery,
   });
 
   const trendingGifts = React.useMemo(() => {
@@ -371,193 +241,36 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-light-cream">
-      <HeroSection
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        onSearchSubmit={handleSearchSubmit}
-        resultsPanel={
-          normalizedSearch.length > 0 ? (
-            <div className="rounded-2xl border border-eagle-green/10 bg-white shadow-xl p-4 sm:p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-june-bud/20 text-eagle-green border-june-bud/30">
-                    {searchCounts.total} {t("results")}
-                  </Badge>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearCombinedSearch}
-                  className="text-charcoal border-charcoal/30 hover:text-white"
-                >
-                  {t("Clear")}
-                </Button>
-              </div>
+      <SectionBoundary name="CampaignBanner">
+        <CampaignBanner />
+      </SectionBoundary>
 
-              {normalizedSearch.length < 2 && (
-                <p className="text-sm text-eagle-green/70">
-                  {t("Type at least 2 characters and press Enter (or click search) to search products, services, events, and custom orders.")}
-                </p>
-              )}
+      <SectionBoundary name="TopCategories">
+        <TopCategoriesSection />
+      </SectionBoundary>
 
-              {normalizedSearch.length >= 2 && isSearchingCombined && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <Skeleton className="h-12 rounded-lg" />
-                    <Skeleton className="h-12 rounded-lg" />
-                    <Skeleton className="h-12 rounded-lg" />
-                    <Skeleton className="h-12 rounded-lg" />
-                  </div>
-                  <div className="space-y-2">
-                    {Array.from({ length: 4 }).map((_, idx) => (
-                      <Skeleton key={idx} className="h-14 rounded-lg" />
-                    ))}
-                  </div>
-                </div>
-              )}
+      {/* Products come straight after the categories. */}
+      {isLoadingProducts ? (
+        <ProductGridSkeleton />
+      ) : productsError ? (
+        <div className="py-16 text-center">
+          <p className="text-red-500 font-medium">
+            {t("Unable to load collections at this time.")}
+          </p>
+        </div>
+      ) : trendingGifts.length > 0 ? (
+        <SectionBoundary name="TrendingGifts">
+          <TrendingGiftsSection
+            trendingGifts={trendingGifts}
+            selectedBudget={selectedBudget}
+            onBudgetChange={setSelectedBudget}
+          />
+        </SectionBoundary>
+      ) : null}
 
-              {normalizedSearch.length >= 2 &&
-                !isSearchingCombined &&
-                combinedSearchError && (
-                  <p className="text-sm text-red-600">
-                    {t("Something went wrong while searching. Please try again.")}
-                  </p>
-                )}
-
-              {normalizedSearch.length >= 2 &&
-                !isSearchingCombined &&
-                !combinedSearchError && (
-                  <div className="space-y-4">
-                    {searchCounts.total === 0 && (
-                      <div className="rounded-lg border border-dashed border-eagle-green/20 p-4 text-center text-eagle-green/70 text-sm">
-                        {t("No matches found. Try another keyword.")}
-                      </div>
-                    )}
-
-                    {searchCounts.total > 0 && (
-                      <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                        {(combinedSearchResults?.products || []).map(
-                          (product: Product) => (
-                            <a
-                              key={`product-${product.id}`}
-                              href={`/product/${product.id}`}
-                              className="rounded-lg border border-eagle-green/10 hover:border-viridian-green/40 transition-colors p-2.5 flex items-start gap-2.5"
-                            >
-                              <img
-                                src={getProductImageUrl(
-                                  product.images,
-                                  "/placeholder-product.jpg"
-                                )}
-                                alt={product.name}
-                                className="h-10 w-10 rounded-md object-cover"
-                              />
-                              <div className="min-w-0">
-                                <p className="font-semibold text-sm text-eagle-green truncate">
-                                  {product.name}
-                                </p>
-                                <p className="text-xs text-eagle-green/60">
-                                  {t("Shop")}
-                                </p>
-                              </div>
-                              <ExternalLink className="h-4 w-4 text-eagle-green/40 ml-auto" />
-                            </a>
-                          )
-                        )}
-
-                        {(combinedSearchResults?.services || []).map(
-                          (service: ServiceResponse) => (
-                            <a
-                              key={`service-${service.id}`}
-                              href={`/services/${service.id}`}
-                              className="rounded-lg border border-eagle-green/10 hover:border-viridian-green/40 transition-colors p-2.5 flex items-start gap-2.5"
-                            >
-                              <div className="h-10 w-10 rounded-md bg-viridian-green/10 flex items-center justify-center text-eagle-green font-bold text-sm">
-                                S
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-semibold text-sm text-eagle-green truncate">
-                                  {service.title ||
-                                    service.name ||
-                                    `Service #${service.id}`}
-                                </p>
-                                <p className="text-xs text-eagle-green/60">
-                                  {t("Services")}
-                                </p>
-                              </div>
-                              <ExternalLink className="h-4 w-4 text-eagle-green/40 ml-auto" />
-                            </a>
-                          )
-                        )}
-
-                        {(combinedSearchResults?.events || []).map(
-                          (event: EventResponse) => (
-                            <a
-                              key={`event-${event.id}`}
-                              href={`/events/${event.id}`}
-                              className="rounded-lg border border-eagle-green/10 hover:border-viridian-green/40 transition-colors p-2.5 flex items-start gap-2.5"
-                            >
-                              <img
-                                src={getEventImageUrl(
-                                  event.images,
-                                  event.bannerImageUrl || ""
-                                )}
-                                alt={event.title}
-                                className="h-10 w-10 rounded-md object-cover"
-                              />
-                              <div className="min-w-0">
-                                <p className="font-semibold text-sm text-eagle-green truncate">
-                                  {event.title}
-                                </p>
-                                <p className="text-xs text-eagle-green/60">
-                                  {t("Events")}
-                                </p>
-                              </div>
-                              <ExternalLink className="h-4 w-4 text-eagle-green/40 ml-auto" />
-                            </a>
-                          )
-                        )}
-
-                        {(combinedSearchResults?.templates || []).map(
-                          (template: CustomOrderTemplate) => (
-                            <a
-                              key={`template-${template.id}`}
-                              href={`/custom-orders/template/${template.id}`}
-                              className="rounded-lg border border-eagle-green/10 hover:border-viridian-green/40 transition-colors p-2.5 flex items-start gap-2.5"
-                            >
-                              <div className="h-10 w-10 rounded-md bg-june-bud/20 flex items-center justify-center text-eagle-green font-bold text-sm">
-                                C
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-semibold text-sm text-eagle-green truncate">
-                                  {template.name}
-                                </p>
-                                <p className="text-xs text-eagle-green/60">
-                                  {t("Custom Orders")}
-                                </p>
-                              </div>
-                              <ExternalLink className="h-4 w-4 text-eagle-green/40 ml-auto" />
-                            </a>
-                          )
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-            </div>
-          ) : null
-        }
-      />
-
-      <TrustStrip />
-
-      <CampaignBanner />
-
-      <CategoryCarousel
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
-      />
-
-      <ShopByRecipient />
+      <SectionBoundary name="ShopByRecipient">
+        <ShopByRecipient />
+      </SectionBoundary>
 
       {/* Ad Banner Section - Enhanced UI */}
       {allAds.length > 0 && (
@@ -569,7 +282,7 @@ export default function Landing() {
               <div className="absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-viridian-green/2 blur-[120px]"></div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="page-shell relative z-10">
               <div className="flex items-baseline gap-3 mb-5">
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-charcoal tracking-tight">
                   {t("Featured Highlights")}
@@ -579,23 +292,23 @@ export default function Landing() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {allAds.slice(0, 3).map((ad) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                {allAds.slice(0, 6).map((ad) => (
                   <div
                     key={`${ad.type}-${ad.id}`}
                     className="group relative h-full"
                   >
                     {/* Card Background & Border Effect - Very subtle border on hover */}
-                    <div className="absolute -inset-px bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                    <div className="absolute -inset-px bg-gray-100 rounded-xl opacity-0 group-hover:opacity-100 transition duration-500"></div>
 
-                    <div className="relative h-full bg-white rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl flex flex-col">
+                    <div className="relative h-full bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-2xl flex flex-col">
                       {ad.type === "product" && (
                         <a
                           href={`/product/${ad.data.id}`}
                           className="flex flex-col h-full"
                         >
-                          <div className="relative h-64 overflow-hidden">
-                            <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+                          <div className="relative aspect-square overflow-hidden">
+                            <div className="absolute top-2 left-2 z-20 flex flex-col gap-2">
                               {ad.data.activeDiscount && (
                                 <DiscountBadge
                                   discount={ad.data.activeDiscount}
@@ -612,11 +325,11 @@ export default function Landing() {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
                           </div>
-                          <div className="p-6 flex-1 flex flex-col relative">
-                            <h3 className="font-bold text-xl mb-2 text-gray-900 leading-tight group-hover:text-ethiopian-gold transition-colors line-clamp-2">
+                          <div className="p-3 flex-1 flex flex-col relative">
+                            <h3 className="font-bold text-sm mb-1 text-gray-900 leading-tight group-hover:text-ethiopian-gold transition-colors line-clamp-2">
                               {ad.data.name}
                             </h3>
-                            <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-end">
+                            <div className="mt-auto pt-2 border-t border-gray-100 flex justify-between items-end">
                               <div className="text-ethiopian-gold">
                                 <PriceWithDiscount
                                   originalPrice={
@@ -632,10 +345,10 @@ export default function Landing() {
                                     "ETB"
                                   }
                                   discount={ad.data.activeDiscount}
-                                  size="medium"
+                                  size="small"
                                 />
                               </div>
-                              <span className="text-xs font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">
+                              <span className="text-[10px] font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">
                                 {t("View →")}
                               </span>
                             </div>
@@ -647,9 +360,9 @@ export default function Landing() {
                           href={`/events/${ad.data.id}`}
                           className="flex flex-col h-full"
                         >
-                          <div className="relative h-64 overflow-hidden">
-                            <div className="absolute top-4 left-4 z-20">
-                              <span className="px-3 py-1 text-[10px] font-bold tracking-widest text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
+                          <div className="relative aspect-square overflow-hidden">
+                            <div className="absolute top-2 left-2 z-20">
+                              <span className="px-2 py-0.5 text-[9px] font-bold tracking-wider text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
                                 {t("Event")}
                               </span>
                             </div>
@@ -666,18 +379,18 @@ export default function Landing() {
                               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-70 group-hover:opacity-50 transition-opacity duration-300"></div>
-                            <div className="absolute bottom-4 left-4 text-white p-2">
-                              <p className="text-sm font-medium opacity-90 backdrop-blur-sm bg-white/10 px-2 py-1 rounded inline-block">
+                            <div className="absolute bottom-2 left-2 text-white p-1">
+                              <p className="text-[10px] font-medium opacity-90 backdrop-blur-sm bg-white/10 px-1.5 py-0.5 rounded inline-block">
                                 {ad.data.location}
                               </p>
                             </div>
                           </div>
-                          <div className="p-6 flex-1 flex flex-col relative">
-                            <h3 className="font-bold text-xl mb-3 text-gray-900 leading-tight group-hover:text-ethiopian-gold transition-colors line-clamp-2">
+                          <div className="p-3 flex-1 flex flex-col relative">
+                            <h3 className="font-bold text-sm mb-1 text-gray-900 leading-tight group-hover:text-ethiopian-gold transition-colors line-clamp-2">
                               {ad.data.title}
                             </h3>
-                            <div className="mt-auto pt-4 border-t border-gray-100">
-                              <span className="inline-block px-2 py-1 bg-ethiopian-gold/10 text-ethiopian-gold rounded text-xs font-bold tracking-wide">
+                            <div className="mt-auto pt-2 border-t border-gray-100">
+                              <span className="inline-block px-1.5 py-0.5 bg-ethiopian-gold/10 text-ethiopian-gold rounded text-[10px] font-bold tracking-wide">
                                 {t("GET TICKETS")}
                               </span>
                             </div>
@@ -689,9 +402,9 @@ export default function Landing() {
                           href={`/service-detail/${ad.data.serviceId}`}
                           className="flex flex-col h-full"
                         >
-                          <div className="relative h-64 overflow-hidden">
-                            <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
-                              <span className="px-3 py-1 text-[10px] font-bold tracking-widest text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
+                          <div className="relative aspect-square overflow-hidden">
+                            <div className="absolute top-2 left-2 z-20 flex flex-col gap-2">
+                              <span className="px-2 py-0.5 text-[9px] font-bold tracking-wider text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
                                 {t("Service")}
                               </span>
                               {ad.data.activeDiscount && (
@@ -710,11 +423,11 @@ export default function Landing() {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
                           </div>
-                          <div className="p-6 flex-1 flex flex-col relative">
-                            <h3 className="font-bold text-xl mb-2 text-gray-900 leading-tight group-hover:text-ethiopian-gold transition-colors line-clamp-2">
+                          <div className="p-3 flex-1 flex flex-col relative">
+                            <h3 className="font-bold text-sm mb-1 text-gray-900 leading-tight group-hover:text-ethiopian-gold transition-colors line-clamp-2">
                               {ad.data.name}
                             </h3>
-                            <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-end">
+                            <div className="mt-auto pt-2 border-t border-gray-100 flex justify-between items-end">
                               <div className="text-ethiopian-gold">
                                 <PriceWithDiscount
                                   originalPrice={serviceService.getPackagePrice(
@@ -722,10 +435,10 @@ export default function Landing() {
                                   )}
                                   currency={ad.data.currency || "ETB"}
                                   discount={ad.data.activeDiscount}
-                                  size="medium"
+                                  size="small"
                                 />
                               </div>
-                              <span className="text-xs font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">
+                              <span className="text-[10px] font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">
                                 {t("Book Now →")}
                               </span>
                             </div>
@@ -745,9 +458,9 @@ export default function Landing() {
                                 ?.productImage;
                             return (
                               <>
-                                <div className="relative h-64 overflow-hidden">
-                                  <div className="absolute top-4 left-4 z-20">
-                                    <span className="px-3 py-1 text-[10px] font-bold tracking-widest text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
+                                <div className="relative aspect-square overflow-hidden">
+                                  <div className="absolute top-2 left-2 z-20">
+                                    <span className="px-2 py-0.5 text-[9px] font-bold tracking-wider text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20 uppercase">
                                       {t("Package")}
                                     </span>
                                   </div>
@@ -758,21 +471,21 @@ export default function Landing() {
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
                                 </div>
-                                <div className="p-6 flex-1 flex flex-col relative">
-                                  <h3 className="font-bold text-xl mb-2 text-gray-900 leading-tight group-hover:text-ethiopian-gold transition-colors line-clamp-2">
+                                <div className="p-3 flex-1 flex flex-col relative">
+                                  <h3 className="font-bold text-sm mb-1 text-gray-900 leading-tight group-hover:text-ethiopian-gold transition-colors line-clamp-2">
                                     {packageData.name}
                                   </h3>
-                                  <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-end">
+                                  <div className="mt-auto pt-2 border-t border-gray-100 flex justify-between items-end">
                                     <div className="text-ethiopian-gold">
                                       <PriceWithDiscount
                                         originalPrice={
                                           (packageData.startingFromPriceMinor || 0) / 100
                                         }
                                         currency={packageData.displayCurrency || "ETB"}
-                                        size="medium"
+                                        size="small"
                                       />
                                     </div>
-                                    <span className="text-xs font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">
+                                    <span className="text-[10px] font-semibold text-ethiopian-gold uppercase tracking-wide group-hover:underline transition-all underline-offset-4">
                                       {t("View →")}
                                     </span>
                                   </div>
@@ -791,35 +504,13 @@ export default function Landing() {
         </>
       )}
 
-      {/* Featured Products Section */}
-      {isLoadingProducts ? (
-        <div className="py-16 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ethiopian-gold mx-auto"></div>
-          <p className="mt-6 text-gray-500 font-medium tracking-wide">
-            {t("Curating collections...")}
-          </p>
-        </div>
-      ) : productsError ? (
-        <div className="py-24 text-center">
-          <p className="text-red-500 font-medium">
-            {t("Unable to load collections at this time.")}
-          </p>
-        </div>
-      ) : trendingGifts.length > 0 ? (
-        <TrendingGiftsSection
-          trendingGifts={trendingGifts}
-          selectedBudget={selectedBudget}
-          onBudgetChange={setSelectedBudget}
-        />
-      ) : null}
-
       {/* Trending Packages Section */}
       {trendingPackages.length > 0 && (
         <section className="py-10 bg-white relative">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="page-shell">
             <SectionHeader title={t("Trending Packages")} href="/packages" />
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
               {trendingPackages.map((pkg: ProductPackageResponse) => {
                 const packageImage =
                   pkg.images?.[0] ||
@@ -865,9 +556,9 @@ export default function Landing() {
       {featuredEventsResponse?.content &&
         featuredEventsResponse.content.length > 0 && (
           <section className="py-10 bg-white relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="page-shell">
               <SectionHeader title={t("Upcoming Events")} href="/events" />
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
                 {featuredEventsResponse.content.map(
                   (event: EventResponse, index: number) => (
                     <EventCard key={event.id} event={event} index={index} />
@@ -882,10 +573,10 @@ export default function Landing() {
       {featuredServicesResponse?.content &&
         featuredServicesResponse.content.length > 0 && (
           <section className="py-10 bg-light-cream relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="page-shell relative z-10">
               <SectionHeader title={t("Featured Services")} href="/services" />
 
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
                 {featuredServicesResponse.content.map(
                   (service: ServiceResponse, index: number) => (
                     <ServiceCard
@@ -900,10 +591,20 @@ export default function Landing() {
           </section>
         )}
 
-      <FeaturesSection />
+      {SHOW_APP_DOWNLOAD && (
+        <SectionBoundary name="AppDownload">
+          <AppDownloadSection />
+        </SectionBoundary>
+      )}
+
+      <SectionBoundary name="Features">
+        <FeaturesSection />
+      </SectionBoundary>
 
       {/* The page ends in the shop itself: browsable, filterable, paged */}
-      <ShopGridSection />
+      <SectionBoundary name="ShopGrid">
+        <ShopGridSection />
+      </SectionBoundary>
 
       {/* <LiveChatButton /> */}
     </div>

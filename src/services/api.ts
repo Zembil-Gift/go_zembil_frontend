@@ -27,6 +27,9 @@ const processQueue = (error: any, token: string | null = null) => {
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
   withCredentials: true, // Important: sends cookies with requests
+  // No call may hang forever. Without this a stalled request never settles,
+  // its query never leaves the loading state, and the section spins for good.
+  timeout: 20000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -67,9 +70,14 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    const requestHadAuthHeader = Boolean((originalRequest?.headers as any)?.Authorization);
-    const hasActiveAuth = tokenManager.isAuthenticated();
-    const shouldHandleAuthFailure = requestHadAuthHeader || hasActiveAuth;
+    // A 401 only says something about the session when we actually presented a
+    // token. An anonymous request rejected by an endpoint that is protected —
+    // or that does not exist on this backend at all — must never clear the
+    // session and bounce the user to /signin: one unknown URL would then take
+    // down every page on the site.
+    const shouldHandleAuthFailure = Boolean(
+      (originalRequest?.headers as any)?.Authorization
+    );
     
     // Skip retry for auth endpoints
     const isAuthEndpoint = originalRequest?.url?.includes('/auth/');

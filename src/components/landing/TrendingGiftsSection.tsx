@@ -41,19 +41,21 @@ export default function TrendingGiftsSection({
   t('homepage.trending.over100');
   return (
     <section id="gifts" className="py-10 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="page-shell">
         <SectionHeader
           title={t('homepage.trending.title')}
           subtitle={t('homepage.trending.subtitle')}
           href="/shop"
         />
 
-        {/* Two Row Grid Layout */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-          {trendingGifts.slice(0, 8).map((product, index) => (
+        {/* Two rows at every breakpoint, so the count tracks the column count. */}
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2.5 sm:gap-3">
+          {trendingGifts.slice(0, 16).map((product, index) => (
             <GiftItemCard
               key={`${product.id}-${index}`}
               product={product}
+              // First row is above the fold now that this section opens the page.
+              priority={index < 8}
             />
           ))}
         </div>
