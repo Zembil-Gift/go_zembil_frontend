@@ -250,10 +250,11 @@ class EventOrderService {
 
   async initializePayment(
     orderId: number,
-    provider: string
+    provider: string,
+    hosted = false
   ): Promise<PaymentInitResponse> {
     return apiService.postRequest<PaymentInitResponse>(
-      `/api/events/orders/${orderId}/pay?provider=${provider}`
+      `/api/events/orders/${orderId}/pay?provider=${provider}&hosted=${hosted}`
     );
   }
 

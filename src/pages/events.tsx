@@ -6,8 +6,6 @@ import FadeIn from "@/components/animations/FadeIn";
 import {
   Calendar,
   ChevronDown,
-  ChevronRight,
-  Clock,
   Filter,
   MapPin,
   Search,
@@ -24,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -35,11 +32,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getEventImageUrl } from "@/utils/imageUtils";
-import { formatPrice } from "@/lib/currency";
 import PageNavigator from "@/components/PageNavigator";
-import { reviewService } from "@/services/reviewService";
-import { CompactRating } from "@/components/reviews";
+import EventCard from "@/components/EventCard";
 
 import {
   CITIES,
@@ -47,7 +41,7 @@ import {
   EVENT_CATEGORIES,
   EventFilters,
 } from "@/types/events";
-import { eventOrderService, EventResponse } from "@/services/eventOrderService";
+import { eventOrderService } from "@/services/eventOrderService";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
@@ -184,53 +178,47 @@ export default function Events() {
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
       {/* Simplified Hero Section */}
       <section className="bg-eagle-green">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="page-shell py-5">
           <FadeIn delay={0.1}>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2">
               <Ticket className="h-5 w-5 text-white" />
-              <h1 className="text-2xl lg:text-3xl font-bold text-white">
+              <h1 className="text-xl lg:text-2xl font-bold text-white">
                 {t("Events & Experiences")}
               </h1>
             </div>
-            <p className="text-sm lg:text-base font-light text-white/80 max-w-2xl">
+            <p className="mt-1 text-xs lg:text-sm font-light text-white/80">
               {t("Gift unforgettable moments from concerts to cultural celebrations")}
             </p>
           </FadeIn>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+      <div className="page-shell py-6 relative z-10">
         {/* Sticky Filter Bar */}
-        <motion.div
-          className="sticky top-0 z-20 bg-white border-b border-june-bud/20 py-4 mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <div className="flex flex-col lg:flex-row gap-4 items-center">
+        <div className="sticky top-0 z-20 bg-white border-b border-june-bud/20 py-3 mb-5 -mx-4 sm:-mx-6 lg:-mx-10 2xl:-mx-14 px-4 sm:px-6 lg:px-10 2xl:px-14">
+          <div className="flex flex-col lg:flex-row gap-2.5 items-center">
             {/* Search */}
-            <div className="flex-1 relative w-full group">
-              <div className="absolute inset-0 bg-gradient-to-r from-eagle-green/20 to-viridian-green/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative bg-white rounded-2xl shadow-lg shadow-eagle-green/5 border border-eagle-green/10 overflow-hidden">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-eagle-green/40 h-5 w-5" />
+            <div className="flex-1 relative w-full">
+              <div className="relative bg-white rounded-xl shadow-sm border border-eagle-green/10 overflow-hidden">
+                <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-eagle-green/40 h-4 w-4" />
                 <Input
                   placeholder={t("Search events, cities or categories...")}
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  className="pl-12 pr-4 h-14 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 font-light text-eagle-green placeholder:text-eagle-green/40 w-full"
+                  className="pl-10 pr-4 h-11 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 text-sm text-eagle-green placeholder:text-eagle-green/40 w-full"
                 />
               </div>
             </div>
 
             {/* Quick filters */}
-            <div className="flex gap-2 w-full lg:w-auto overflow-x-auto no-scrollbar pb-1 lg:pb-0">
+            <div className="flex gap-2 w-full lg:w-auto overflow-x-auto no-scrollbar">
               {/* Location Select (combines country and city) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-14 px-4 bg-white border-eagle-green/10 shadow-lg shadow-eagle-green/5 rounded-2xl gap-2 text-eagle-green hover:border-viridian-green hover:bg-viridian-green/5 flex-shrink-0"
+                    className="h-11 px-3.5 bg-white border-eagle-green/10 shadow-sm rounded-xl gap-1.5 text-eagle-green hover:border-viridian-green hover:bg-viridian-green/5 flex-shrink-0"
                   >
                     <MapPin className="h-4 w-4" />
                     <span className="text-xs font-semibold">
@@ -301,7 +289,7 @@ export default function Events() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-14 px-4 bg-white border-eagle-green/10 shadow-lg shadow-eagle-green/5 rounded-2xl gap-2 text-eagle-green hover:border-viridian-green hover:bg-viridian-green/5 flex-shrink-0"
+                    className="h-11 px-3.5 bg-white border-eagle-green/10 shadow-sm rounded-xl gap-1.5 text-eagle-green hover:border-viridian-green hover:bg-viridian-green/5 flex-shrink-0"
                   >
                     <Filter className="h-4 w-4" />
                     <span className="text-xs font-semibold">
@@ -351,7 +339,7 @@ export default function Events() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
-                className={`h-14 px-4 rounded-2xl gap-2 flex-shrink-0 shadow-lg shadow-eagle-green/5 border ${
+                className={`h-11 px-3.5 rounded-xl gap-1.5 flex-shrink-0 shadow-sm border ${
                   showFilters
                     ? "bg-eagle-green text-white border-eagle-green"
                     : "bg-white text-eagle-green border-eagle-green/10 hover:border-viridian-green hover:bg-viridian-green/5"
@@ -432,17 +420,17 @@ export default function Events() {
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
+        </div>
 
         {/* Events Content */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {isEventsLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[...Array(6)].map((_, i) => (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
+              {[...Array(12)].map((_, i) => (
                 <Card key={i} className="overflow-hidden">
-                  <Skeleton className="h-48 w-full bg-june-bud/20" />
+                  <Skeleton className="aspect-[4/3] w-full bg-june-bud/20" />
                   <CardContent className="p-4">
-                    <Skeleton className="h-6 w-3/4 mb-2 bg-june-bud/20" />
+                    <Skeleton className="h-5 w-3/4 mb-2 bg-june-bud/20" />
                     <Skeleton className="h-4 w-1/2 mb-2 bg-june-bud/20" />
                     <Skeleton className="h-4 w-2/3 bg-june-bud/20" />
                   </CardContent>
@@ -450,12 +438,12 @@ export default function Events() {
               ))}
             </div>
           ) : displayEvents.length === 0 ? (
-            <div className="text-center py-16">
-              <Calendar className="h-16 w-16 text-eagle-green/30 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-eagle-green mb-2">
+            <div className="text-center py-14">
+              <Calendar className="h-12 w-12 text-eagle-green/30 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-eagle-green mb-1">
                 {t("No events found")}
               </h3>
-              <p className="text-eagle-green/70 font-light mb-4">
+              <p className="text-sm text-eagle-green/70 font-light mb-4">
                 {t("Try adjusting your filters to find more events.")}
               </p>
               <Button
@@ -467,9 +455,9 @@ export default function Events() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
                 {realEventsData?.content?.map((event, index) => (
-                  <RealEventCard key={event.id} event={event} index={index} />
+                  <EventCard key={event.id} event={event} index={index} />
                 ))}
               </div>
 
@@ -492,138 +480,5 @@ export default function Events() {
         </div>
       </div>
     </div>
-  );
-}
-
-// Event Card Component
-function RealEventCard({
-  event,
-  index,
-}: {
-  event: EventResponse;
-  index: number;
-}) {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const minPrice =
-    event.ticketTypes?.length > 0
-      ? Math.min(...event.ticketTypes.map((t) => t.priceMinor))
-      : 0;
-  const currency = event.ticketTypes?.[0]?.currency || "ETB";
-
-  // Fetch event rating summary
-  const { data: ratingSummary } = useQuery({
-    queryKey: ["event-rating-summary", event.id],
-    queryFn: () => reviewService.getEventRatingSummary(event.id),
-    enabled: !!event.id,
-  });
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-    >
-      <Card
-        className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-eagle-green/10 overflow-hidden"
-        onClick={() => navigate(`/events/${event.id}`)}
-      >
-        <div className="relative aspect-[4/3] overflow-hidden">
-          <img
-            src={getEventImageUrl(event.images, event.bannerImageUrl)}
-            alt={event.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            loading="lazy"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              e.currentTarget.nextElementSibling?.classList.remove("hidden");
-            }}
-          />
-          <div className="w-full h-full bg-gradient-to-br from-eagle-green to-viridian-green flex items-center justify-center">
-            <Calendar className="h-16 w-16 text-white/50" />
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-          {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-wrap gap-1">
-            {event.isFeatured && (
-              <Badge className="text-xs font-bold bg-yellow/20 text-eagle-green border-yellow">
-                {t("Featured")}
-              </Badge>
-            )}
-            {event.isSoldOut && (
-              <Badge className="text-xs font-bold bg-red-100 text-red-700 border-red-300">
-                {t("Sold Out")}
-              </Badge>
-            )}
-          </div>
-
-          {/* Location badge */}
-          <div className="absolute top-3 right-3">
-            <Badge className="bg-white/90 text-eagle-green border-none font-bold">
-              📍 {event.city}
-            </Badge>
-          </div>
-
-          {/* Price */}
-          <div className="absolute bottom-3 right-3">
-            <Badge className="bg-eagle-green text-white border-none font-bold text-xs sm:text-sm">
-              {t("From")} {formatPrice(minPrice / 100, currency)}
-            </Badge>
-          </div>
-        </div>
-
-        <CardContent className="p-4">
-          <div className="mb-2">
-            <span className="text-sm font-light text-viridian-green">
-              {event.categoryName || "Event"}
-            </span>
-          </div>
-
-          <h3 className="font-bold text-eagle-green text-lg mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">
-            {event.title}
-          </h3>
-
-          <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-2">
-            <MapPin className="h-4 w-4" />
-            <span className="font-light">{event.location}</span>
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-3">
-            <Clock className="h-4 w-4" />
-            <span className="font-light">{formatDate(event.eventDate)}</span>
-          </div>
-
-          {/* Rating */}
-          <div className="mb-3">
-            <CompactRating
-              rating={ratingSummary?.averageRating || 0}
-              reviewCount={ratingSummary?.totalReviews || 0}
-              size="sm"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm font-light text-eagle-green/70">
-              <Ticket className="h-4 w-4" />
-              <span>{event.ticketTypes?.length || 0} {t("ticket types")}</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-viridian-green group-hover:translate-x-1 transition-transform" />
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
   );
 }

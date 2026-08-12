@@ -142,14 +142,22 @@ Then run a single test file/case with:
 - Follow existing responsive patterns (`sm:`, `md:`, etc.).
 - Preserve accessibility basics: labels for form fields, button text clarity, semantic structure.
 
-## 9) Files, Scope, and Safety for Agents
+## 9) Localization (Amharic)
+
+- Every new or edited customer-facing or vendor-facing string must go through `t()` from `react-i18next`, and get an Amharic entry in `src/locales/amharic.json`.
+- Admin-only pages and features do not need translation; leave those strings as plain English.
+- The translation key **is** the English source string (`t("Add to Cart")`), so `src/locales/english.json` needs no new entries — a missing Amharic entry falls back to readable English.
+- `keySeparator`/`nsSeparator` are off in `src/i18n.ts`, so periods and colons inside a key are safe.
+- Insert new keys in alphabetical position in `amharic.json`; do not re-sort or reformat the file.
+
+## 10) Files, Scope, and Safety for Agents
 
 - Keep changes scoped to the request; avoid broad refactors unless asked.
 - Do not edit generated/build artifacts in `dist/`.
 - Do not commit `.env` or secrets.
 - If you discover missing tooling (for example tests), document it in PR/summary and provide minimal setup guidance.
 
-## 10) Pre-Completion Checklist
+## 11) Pre-Completion Checklist
 
 Before finishing a coding task, run what is relevant:
 

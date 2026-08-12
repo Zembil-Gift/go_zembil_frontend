@@ -137,7 +137,7 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
 
             {/* Discount Badge */}
             {service.activeDiscount && (
-              <div className="absolute top-3 left-3">
+              <div className="absolute top-2 left-2">
                 <DiscountBadge
                   discount={service.activeDiscount}
                   variant="compact"
@@ -148,9 +148,9 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
             )}
 
             {/* Price Badge */}
-            <div className="absolute bottom-3 right-3">
+            <div className="absolute bottom-2 right-2">
               {service.activeDiscount ? (
-                <div className="bg-white/95 px-3 py-1.5 rounded-lg backdrop-blur-sm shadow-md">
+                <div className="bg-white/95 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg backdrop-blur-sm shadow-md">
                   <PriceWithDiscount
                     originalPrice={displayPriceMajor || 0}
                     currency={displayCurrency}
@@ -160,7 +160,7 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
                   />
                 </div>
               ) : (
-                <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
+                <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm text-[10px] sm:text-xs">
                   {t("From")}{" "}
                   {serviceService.formatPrice(
                     displayPriceMajor ?? 0,
@@ -172,28 +172,28 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
           </div>
 
           {/* Content */}
-          <div className="p-4 space-y-3">
+          <div className="p-2.5 sm:p-4 space-y-1.5 sm:space-y-3">
             {/* Category */}
             {service.categoryName && (
-              <span className="text-xs font-medium text-viridian-green uppercase tracking-wide">
+              <span className="text-[10px] sm:text-xs font-medium text-viridian-green uppercase tracking-wide line-clamp-1">
                 {service.categoryName}
               </span>
             )}
 
             {/* Title */}
-            <h3 className="font-bold text-eagle-green text-lg line-clamp-2 group-hover:text-viridian-green transition-colors">
+            <h3 className="font-bold text-eagle-green text-xs sm:text-lg line-clamp-2 group-hover:text-viridian-green transition-colors">
               {service.title}
             </h3>
 
             {/* Description */}
             {service.description && (
-              <p className="text-sm text-eagle-green/60 line-clamp-2">
+              <p className="hidden sm:block text-sm text-eagle-green/60 line-clamp-2">
                 {service.description}
               </p>
             )}
 
             {/* Rating */}
-            <div className="mb-2">
+            <div className="sm:mb-2">
               <CompactRating
                 rating={ratingSummary?.averageRating || 0}
                 reviewCount={ratingSummary?.totalReviews || 0}
@@ -202,17 +202,17 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
             </div>
 
             {/* Meta Info */}
-            <div className="flex items-center gap-4 text-sm text-eagle-green/70">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 sm:gap-4 text-[11px] sm:text-sm text-eagle-green/70">
               {service.city && (
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span>{service.city}</span>
+                <div className="flex items-center gap-1 min-w-0">
+                  <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                  <span className="line-clamp-1">{service.city}</span>
                 </div>
               )}
               {service.durationMinutes != null &&
                 service.durationMinutes > 0 && (
                   <div className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
+                    <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                     <span>{service.durationMinutes} {t("min")}</span>
                   </div>
                 )}
@@ -220,7 +220,7 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
 
             {/* Vendor */}
             {service.vendorName && (
-              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <div className="hidden sm:flex items-center gap-2 pt-2 border-t border-gray-100">
                 <Users className="h-4 w-4 text-viridian-green" />
                 <span className="text-sm text-eagle-green/70">
                   by {service.vendorName}

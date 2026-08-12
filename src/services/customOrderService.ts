@@ -116,12 +116,13 @@ class CustomOrderService {
    */
   async initPayment(
     orderId: number,
-    provider: string
+    provider: string,
+    hosted = false
   ): Promise<PaymentInitResponse> {
     return await apiService.postRequest<PaymentInitResponse>(
       `/api/custom-orders/${orderId}/payment/init?provider=${encodeURIComponent(
         provider
-      )}`
+      )}&hosted=${hosted}`
     );
   }
 

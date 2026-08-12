@@ -493,7 +493,7 @@ export default function TrackOrder() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                {statusSteps.map((step, index) => {
+                {statusSteps.map((step) => {
                   const Icon = step.icon;
                   return (
                     <div
@@ -520,14 +520,6 @@ export default function TrackOrder() {
                       >
                         {step.label}
                       </p>
-                      {index < statusSteps.length - 1 && (
-                        <div
-                          className={`absolute h-0.5 w-full top-6 left-1/2 transform translate-x-1/2 ${
-                            step.completed ? "bg-ethiopian-gold" : "bg-gray-200"
-                          }`}
-                          style={{ zIndex: -1 }}
-                        />
-                      )}
                     </div>
                   );
                 })}
@@ -814,8 +806,8 @@ export default function TrackOrder() {
                         <p className="text-base font-semibold text-gray-900 mb-3">
                           {t("Order Status")}
                         </p>
-                        <div className="relative flex items-center justify-between">
-                          {subOrderStatusSteps.map((step, stepIndex) => {
+                        <div className="flex items-center justify-between">
+                          {subOrderStatusSteps.map((step) => {
                             const Icon = step.icon;
                             return (
                               <div
@@ -846,16 +838,6 @@ export default function TrackOrder() {
                                 >
                                   {step.label}
                                 </p>
-                                {stepIndex < subOrderStatusSteps.length - 1 && (
-                                  <div
-                                    className={`absolute h-0.5 w-full top-6 left-1/2 transform translate-x-1/2 ${
-                                      step.completed
-                                        ? "bg-ethiopian-gold"
-                                        : "bg-gray-200"
-                                    }`}
-                                    style={{ zIndex: -1 }}
-                                  />
-                                )}
                               </div>
                             );
                           })}

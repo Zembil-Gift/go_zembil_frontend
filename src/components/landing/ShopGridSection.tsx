@@ -107,8 +107,11 @@ export default function ShopGridSection() {
           href="/shop"
         />
 
+        {/* ponytail: sm+ wraps, so cap the chip row at 2 rows (2 * 2.25rem +
+            0.5rem gap + 0.25rem pb) and clip the rest instead of pushing the
+            product grid down. Clipped categories stay reachable on /shop. */}
         {categories.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+          <div className="flex gap-2 overflow-x-auto pb-1 mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:max-h-[5.25rem] sm:overflow-hidden">
             <button
               type="button"
               onClick={() => setCategoryId(undefined)}
@@ -123,7 +126,7 @@ export default function ShopGridSection() {
                 onClick={() => setCategoryId(category.id)}
                 className={chipClass(categoryId === category.id)}
               >
-                {category.name}
+                {t(category.name)}
               </button>
             ))}
           </div>

@@ -230,7 +230,7 @@ export default function CategoryCarousel({
   // Build category tabs from API data
   const categoryTabs = categories?.map((cat) => ({
     id: cat.slug,
-    label: cat.name,
+    label: t(cat.name),
   })) || [
     { id: "occasions", label: t("Occasions") },
     { id: "cultural-religious", label: t("Cultural & Religious") },
@@ -339,7 +339,7 @@ export default function CategoryCarousel({
                       className="flex-shrink-0 w-24 sm:w-28 group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ethiopian-gold focus-visible:ring-offset-2 rounded-xl"
                       style={{ scrollSnapAlign: "start" }}
                       aria-pressed={isSelected}
-                      title={`Browse ${item.name} products`}
+                      title={`Browse ${t(item.name)} products`}
                       tabIndex={0}
                     >
                       <div
@@ -366,7 +366,7 @@ export default function CategoryCarousel({
                         )}
                       </div>
                       <h3 className="mt-2 font-medium text-xs sm:text-sm text-eagle-green leading-tight text-center line-clamp-2">
-                        {item.name}
+                        {t(item.name)}
                       </h3>
                     </button>
                   );

@@ -91,12 +91,12 @@ export default function TopCategoriesSection() {
                   <div className="aspect-square overflow-hidden bg-light-cream">
                     <Mosaic
                       images={category.imageUrls.slice(0, TILES)}
-                      name={category.name}
+                      name={t(category.name)}
                     />
                   </div>
                   <div className="p-3">
                     <h3 className="line-clamp-1 text-sm font-bold text-charcoal transition-colors group-hover:text-ethiopian-gold">
-                      {category.name}
+                      {t(category.name)}
                     </h3>
                     <p className="mt-0.5 text-[11px] text-gray-500">
                       {t("{{count}} items", { count: category.productCount })}

@@ -1,6 +1,7 @@
 import React, { useState, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Button } from "./ui/button";
 import { Plus, Minus } from "lucide-react";
 import { CATEGORIES, MainCategory, SubCategory, buildUrlParams } from "../shared/categories";
@@ -14,6 +15,7 @@ interface CategoriesListProps {
 const CategoriesList = forwardRef<HTMLDivElement, CategoriesListProps>(
   ({ isMobile = false, onNavigate, className }, ref) => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
     const toggleCategory = (categoryId: string, event: React.MouseEvent) => {
@@ -77,10 +79,10 @@ const CategoriesList = forwardRef<HTMLDivElement, CategoriesListProps>(
                   <Icon className="h-5 w-5 mr-2 text-blue-600 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-gray-900 group-hover:text-blue-700 text-base leading-tight transition-colors duration-200 truncate pr-2">
-                      {category.name}
+                      {t(category.name)}
                     </div>
                     <div className={`text-gray-500 leading-tight mt-1 line-clamp-2 break-words pr-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                      {category.description}
+                      {t(category.description)}
                     </div>
                   </div>
                 </Button>
@@ -131,10 +133,10 @@ const CategoriesList = forwardRef<HTMLDivElement, CategoriesListProps>(
                             <div className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-blue-500 mr-3 transition-colors duration-200" />
                             <div className="flex-1 min-w-0 max-w-full">
                               <div className={`font-medium text-gray-600 group-hover:text-blue-700 transition-colors duration-200 truncate ${isMobile ? 'text-sm' : 'text-sm'}`}>
-                                {subcategory.name}
+                                {t(subcategory.name)}
                               </div>
                               <div className="text-xs text-gray-500 truncate">
-                                {subcategory.description}
+                                {t(subcategory.description)}
                               </div>
                             </div>
                           </div>

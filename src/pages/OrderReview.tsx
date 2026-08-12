@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { 
   ShoppingCart, 
   ArrowLeft, 
@@ -97,6 +96,17 @@ export default function OrderReview() {
 
   const orderId = searchParams.get("orderId");
   const paymentMethod = searchParams.get("paymentMethod") || "stripe";
+
+  const payWithLabel =
+    paymentMethod === "chapa"
+      ? "Pay with Chapa"
+      : paymentMethod === "telebirr"
+      ? "Pay with TeleBirr"
+      : "Pay with Stripe";
+  const PaymentIcon =
+    paymentMethod === "chapa" || paymentMethod === "telebirr"
+      ? Smartphone
+      : CreditCard;
 
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -518,29 +528,7 @@ export default function OrderReview() {
                   </p>
                 )}
 
-                {/* Payment Method Badge */}
-                <div className="pt-2">
-                  <Badge variant="outline" className="w-full justify-center py-2">
-                    {paymentMethod === 'chapa' ? (
-                      <span className="flex items-center gap-2">
-                        <Smartphone className="h-4 w-4" />
-                        {t("Pay with Chapa")}
-                      </span>
-                    ) : paymentMethod === 'telebirr' ? (
-                      <span className="flex items-center gap-2">
-                        <Smartphone className="h-4 w-4" />
-                        {t("Pay with TeleBirr")}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        {t("Pay with Stripe")}
-                      </span>
-                    )}
-                  </Badge>
-                </div>
-
-                {/* Proceed to Payment Button */}
+                {/* Payment trigger — names the chosen provider, no separate badge */}
                 <Button
                   onClick={handleProceedToPayment}
                   disabled={isProcessing}
@@ -553,8 +541,8 @@ export default function OrderReview() {
                     </>
                   ) : (
                     <>
-                      <CreditCard className="mr-2 h-5 w-5" />
-                      {t("Proceed to Payment")}
+                      <PaymentIcon className="mr-2 h-5 w-5" />
+                      {t(payWithLabel)}
                     </>
                   )}
                 </Button>

@@ -119,6 +119,8 @@ export default function Checkout() {
     getTotalItems,
     appliedDiscountCode,
     setAppliedDiscountCode,
+    isLoading: isCartLoading,
+    isFetching: isCartFetching,
   } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -587,12 +589,15 @@ export default function Checkout() {
     }
   }, [isAuthenticated, navigate]);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty. Wait for the query to settle first — an in-flight
+  // fetch still reports the previous (often empty) cart, which is what bounced
+  // "Buy Now" straight back to /shop.
   useEffect(() => {
+    if (isCartLoading || isCartFetching) return;
     if (isAuthenticated && cartItems.length === 0) {
       navigate("/shop");
     }
-  }, [isAuthenticated, cartItems.length, navigate]);
+  }, [isAuthenticated, isCartLoading, isCartFetching, cartItems.length, navigate]);
 
   // Resolve delivery mode (Google Maps vs manual) for the current cart.
   useEffect(() => {

@@ -250,6 +250,7 @@ export function useCart() {
     cartPackageGroups,
     cartCurrency,
     isLoading,
+    isFetching,
     error,
     refetch,
 
