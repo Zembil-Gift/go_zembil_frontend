@@ -80,7 +80,7 @@ export function TemplateCard({ template }: { template: CustomOrderTemplate }) {
             
             {/* Discount Badge */}
             {template.activeDiscount && (
-              <div className="absolute top-3 left-3">
+              <div className="absolute top-2 left-2">
                 <DiscountBadge 
                   discount={template.activeDiscount} 
                   variant="compact" 
@@ -90,14 +90,14 @@ export function TemplateCard({ template }: { template: CustomOrderTemplate }) {
             )}
             
             {/* Price Badge */}
-            <div className="absolute bottom-3 right-3 flex gap-2">
+            <div className="absolute bottom-2 right-2 flex gap-1.5">
               {template.negotiable === false && (
-                <Badge className="bg-viridian-green/90 text-white border-none font-medium backdrop-blur-sm">
+                <Badge className="hidden sm:inline-flex bg-viridian-green/90 text-white border-none font-medium backdrop-blur-sm">
                   {t("Fixed Price")}
                 </Badge>
               )}
               {template.activeDiscount ? (
-                <div className="bg-gradient-to-r from-red-500 to-pink-500 px-3 py-1.5 rounded-lg backdrop-blur-sm shadow-md border border-red-500/70">
+                <div className="bg-gradient-to-r from-red-500 to-pink-500 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg backdrop-blur-sm shadow-md border border-red-500/70">
                   <PriceWithDiscount
                     originalPrice={template.price?.amount || 0}
                     currency={template.price?.currencyCode || template.currencyCode || 'ETB'}
@@ -107,7 +107,7 @@ export function TemplateCard({ template }: { template: CustomOrderTemplate }) {
                   />
                 </div>
               ) : (
-                <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm">
+                <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm text-[10px] sm:text-xs">
                   {template.negotiable === false ? '' : 'From '}{customOrderTemplateService.formatTemplatePrice(template)}
                 </Badge>
               )}
@@ -115,20 +115,20 @@ export function TemplateCard({ template }: { template: CustomOrderTemplate }) {
           </div>
 
           {/* Content */}
-          <div className="p-4 flex-1 flex flex-col">
-            <h3 className="font-bold text-eagle-green text-lg mb-2 group-hover:text-viridian-green transition-colors line-clamp-2">
+          <div className="p-2.5 sm:p-4 flex-1 flex flex-col">
+            <h3 className="font-bold text-eagle-green text-xs sm:text-lg mb-1.5 sm:mb-2 group-hover:text-viridian-green transition-colors line-clamp-2">
               {template.name}
             </h3>
-            
+
             {template.description && (
-              <p className="text-sm text-eagle-green/60 line-clamp-2 mb-3">
+              <p className="hidden sm:block text-sm text-eagle-green/60 line-clamp-2 mb-3">
                 {template.description}
               </p>
             )}
 
             {/* Customization Fields Preview */}
             {sortedFields.length > 0 && (
-              <div className="mt-auto">
+              <div className="hidden sm:block mt-auto">
                 <p className="text-xs text-eagle-green/50 mb-2">{t("Customization options:")}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {sortedFields.slice(0, 4).map((field: CustomOrderTemplateField) => {

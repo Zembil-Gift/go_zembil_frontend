@@ -155,9 +155,9 @@ export default function CategoryGrid() {
                   <div className={`bg-gradient-to-br ${gradient} rounded-2xl p-4 md:p-6 text-white transform group-hover:scale-105 transition-all duration-300 shadow-lg`}>
                     <div className="text-center">
                       <IconComponent size={28} className="mx-auto mb-3 md:mb-4" />
-                      <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{category.name}</h3>
+                      <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{t(category.name)}</h3>
                       {category.description && (
-                        <p className="text-xs md:text-sm opacity-90 line-clamp-2">{category.description}</p>
+                        <p className="text-xs md:text-sm opacity-90 line-clamp-2">{t(category.description)}</p>
                       )}
                     </div>
                   </div>

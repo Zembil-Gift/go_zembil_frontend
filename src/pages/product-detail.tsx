@@ -323,7 +323,7 @@ export default function ProductDetail() {
   });
 
   const addToCartMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (_opts: { buyNow?: boolean }) => {
       if (!isAuthenticated) {
         throw new Error('Authentication required');
       }
@@ -343,8 +343,10 @@ export default function ProductDetail() {
         })),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart', 'items'] });
+    onSuccess: async (_data, { buyNow }) => {
+      // Awaited so `mutateAsync` only resolves once the server cart is back —
+      // "Buy Now" navigates straight after and must not land on a stale cart.
+      await queryClient.invalidateQueries({ queryKey: ['cart', 'items'] });
       addItem({
         productId: Number(productId),
         name: product?.name || "",
@@ -369,6 +371,10 @@ export default function ProductDetail() {
           },
           currencyCode
         );
+      }
+      if (buyNow) {
+        // Heading to the cart page — the drawer would just cover it.
+        return;
       }
       toast({
         title: t("Added to cart"),
@@ -832,19 +838,19 @@ export default function ProductDetail() {
             <div className="space-y-4">
               <div className="flex space-x-4">
                 <Button
-                  onClick={() => addToCartMutation.mutate()}
+                  onClick={() => addToCartMutation.mutate({})}
                   disabled={addToCartMutation.isPending || stockQuantity === 0 || stockQuantity === null}
                   className="flex-1 bg-viridian-green hover:bg-viridian-green/90 text-white h-12"
                 >
-                  {addToCartMutation.isPending 
-                    ? "Adding..." 
-                    : stockQuantity === 0 
-                      ? "Out of Stock"
+                  {addToCartMutation.isPending
+                    ? t("Adding...")
+                    : stockQuantity === 0
+                      ? t("Out of Stock")
                       : selectableSkus.length > 1 && !selectedSku
-                        ? "Select a Variant First"
+                        ? t("Select a Variant First")
                       : hasAttributeSelectionUI && selectedAttributeOption.length === 0
-                        ? "Select an Option First"
-                      : "Add to Cart"}
+                        ? t("Select an Option First")
+                      : t("Add to Cart")}
                 </Button>
                 <Button
                   onClick={() => {
@@ -896,8 +902,10 @@ export default function ProductDetail() {
                     return;
                   }
                   try {
-                    await addToCartMutation.mutateAsync();
-                    navigate("/checkout");
+                    await addToCartMutation.mutateAsync({ buyNow: true });
+                    // Cart, not checkout: an existing cart would otherwise be
+                    // checked out along with this item without the user seeing it.
+                    navigate("/cart");
                   } catch (error) {
                     console.error('Failed to add to cart:', error);
                   }
@@ -906,7 +914,7 @@ export default function ProductDetail() {
                 variant="outline"
                 className="w-full h-12 border-deep-forest text-deep-forest hover:bg-deep-forest hover:text-white"
               >
-                {addToCartMutation.isPending ? "Processing..." : "Buy Now"}
+                {addToCartMutation.isPending ? t("Processing...") : t("Buy Now")}
               </Button>
             </div>
           </div>

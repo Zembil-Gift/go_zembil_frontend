@@ -205,10 +205,11 @@ class ServiceOrderService {
    */
   async initializePayment(
     orderId: number,
-    provider: "STRIPE" | "CHAPA"
+    provider: "STRIPE" | "CHAPA",
+    hosted = false
   ): Promise<PaymentInitResponse> {
     return await apiService.postRequest<PaymentInitResponse>(
-      `/api/service-orders/${orderId}/pay?provider=${provider}`
+      `/api/service-orders/${orderId}/pay?provider=${provider}&hosted=${hosted}`
     );
   }
 

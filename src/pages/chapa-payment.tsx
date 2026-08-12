@@ -70,6 +70,15 @@ interface CurrencyConversionDto {
 
 const chapaPublicKey = import.meta.env.VITE_CHAPA_PUBLIC_KEY?.trim();
 
+/**
+ * Mobile browsers reject the certificate the Chapa inline SDK loads behind, so
+ * phones and tablets get redirected to Chapa's hosted checkout page instead.
+ * Coarse pointer catches touch devices at any width; the width query covers a
+ * narrow desktop window, where the redirect is harmless anyway.
+ */
+const prefersHostedCheckout = () =>
+  window.matchMedia("(pointer: coarse), (max-width: 767px)").matches;
+
 const normalizeEthiopianPhone = (phone?: string | null): string => {
   if (!phone) return "";
 
@@ -315,6 +324,10 @@ export default function ChapaPaymentPage() {
     orderIdNum: number,
     type?: string | null
   ) => {
+    // Keeps the loading card up while the browser leaves for Chapa's page,
+    // instead of flashing the "no payment data" error state.
+    let redirecting = false;
+
     try {
       setIsInitializing(true);
       setError("");
@@ -326,7 +339,9 @@ export default function ChapaPaymentPage() {
         type
       );
 
-      if (!chapaPublicKey) {
+      const hosted = prefersHostedCheckout();
+
+      if (!hosted && !chapaPublicKey) {
         throw new Error(
           "Chapa public key is not configured. Set VITE_CHAPA_PUBLIC_KEY in your environment."
         );
@@ -341,25 +356,46 @@ export default function ChapaPaymentPage() {
         orderDetails = await eventOrderService.getOrder(orderIdNum);
         initResult = await eventOrderService.initializePayment(
           orderIdNum,
-          "CHAPA"
+          "CHAPA",
+          hosted
         );
       } else if (type === "service") {
         orderDetails = await serviceOrderService.getOrder(orderIdNum);
         initResult = await serviceOrderService.initializePayment(
           orderIdNum,
-          "CHAPA"
+          "CHAPA",
+          hosted
         );
       } else if (type === "custom") {
         orderDetails = await customOrderService.getById(orderIdNum);
-        initResult = await customOrderService.initPayment(orderIdNum, "CHAPA");
+        initResult = await customOrderService.initPayment(
+          orderIdNum,
+          "CHAPA",
+          hosted
+        );
       } else {
         orderDetails = await apiService.getRequest<any>(
           `/api/orders/${orderIdNum}`
         );
         initResult = await paymentService.initializePayment(
           orderIdNum,
-          "CHAPA"
+          "CHAPA",
+          hosted
         );
+      }
+
+      // Mobile: hand off to Chapa's own checkout page. The backend already put
+      // the return URL on the session, so the customer comes back to
+      // /payment-success with the tx_ref.
+      if (hosted) {
+        if (!initResult?.checkoutUrl) {
+          throw new Error(
+            "Backend did not return a Chapa checkout URL for this order."
+          );
+        }
+        redirecting = true;
+        window.location.replace(initResult.checkoutUrl);
+        return;
       }
 
       const normalizedType = (type || "").toLowerCase();
@@ -479,7 +515,9 @@ export default function ChapaPaymentPage() {
         variant: "destructive",
       });
     } finally {
-      setIsInitializing(false);
+      if (!redirecting) {
+        setIsInitializing(false);
+      }
     }
   };
 
@@ -491,7 +529,7 @@ export default function ChapaPaymentPage() {
           <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-green-600" />
             <p className="text-lg font-medium">
-              {t("Preparing Chapa inline checkout...")}
+              {t("Preparing your Chapa checkout...")}
             </p>
             <p className="text-sm text-gray-500">
               {t("Please wait while we prepare your payment")}

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import ServiceCard from "@/components/ServiceCard";
 import FadeIn from "@/components/animations/FadeIn";
 import SlideIn from "@/components/animations/SlideIn";
 import { Button } from "@/components/ui/button";
@@ -22,244 +23,15 @@ import {
   X,
   Filter,
   MapPin,
-  Clock,
   Calendar,
-  Image as ImageIcon,
-  Users,
 } from "lucide-react";
-import {
-  serviceService,
-  ServiceResponse,
-  PagedServiceResponse,
-} from "@/services/serviceService";
+import { serviceService, PagedServiceResponse } from "@/services/serviceService";
 import { categoryService } from "@/services/categoryService";
 import PageNavigator from "@/components/PageNavigator";
-import { reviewService } from "@/services/reviewService";
-import { CompactRating } from "@/components/reviews";
-import { DiscountBadge } from "@/components/DiscountBadge";
-import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { useTranslation } from "react-i18next";
-
-// Service Card Component with hover image effect
-function ServiceCard({ service }: { service: ServiceResponse }) {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [isHovered, setIsHovered] = useState(false);
-  const [primaryImageLoaded, setPrimaryImageLoaded] = useState(false);
-  const [secondaryImageLoaded, setSecondaryImageLoaded] = useState(false);
-  const [primaryImageError, setPrimaryImageError] = useState(false);
-  const [secondaryImageError, setSecondaryImageError] = useState(false);
-
-  // Get images sorted by sortOrder - prefer default package images if available
-  const sortedImages = useMemo(() => {
-    // First check if default package has images
-    if (
-      service.defaultPackage?.images &&
-      service.defaultPackage.images.length > 0
-    ) {
-      return [...service.defaultPackage.images].sort(
-        (a, b) => a.sortOrder - b.sortOrder
-      );
-    }
-    // Fall back to service images
-    if (!service.images || service.images.length === 0) return [];
-    return [...service.images].sort((a, b) => a.sortOrder - b.sortOrder);
-  }, [service.images, service.defaultPackage]);
-
-  const primaryImage =
-    sortedImages[0]?.fullUrl ||
-    service.defaultPackage?.primaryImageUrl ||
-    serviceService.getPrimaryImageUrl(service);
-  const secondaryImage = sortedImages[1]?.fullUrl || null;
-  const hasSecondImage = !!secondaryImage && !secondaryImageError;
-
-  // Get price from default package if available, otherwise use base price
-  // Prefer backend-calculated major units (basePrice) over minor units
-  const displayPriceMajor =
-    service.defaultPackage?.basePrice ?? service.basePrice;
-  const displayCurrency = service.defaultPackage?.currency ?? service.currency;
-
-  // Fetch service rating summary
-  const { data: ratingSummary } = useQuery({
-    queryKey: ["service-rating-summary", service.id],
-    queryFn: () => reviewService.getServiceRatingSummary(service.id),
-    enabled: !!service.id,
-  });
-
-  return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.2 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <Card
-        className="group overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-md cursor-pointer"
-        onClick={() => navigate(`/services/${service.id}`)}
-      >
-        <CardContent className="p-0">
-          <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
-            {!primaryImageLoaded && !primaryImageError && primaryImage && (
-              <div
-                className="absolute inset-0 bg-gradient-to-r from-june-bud/10 via-white to-june-bud/10 animate-shimmer"
-                style={{ backgroundSize: "200% 100%" }}
-              />
-            )}
-
-            {primaryImage ? (
-              <img
-                src={
-                  primaryImageError ? "/placeholder-service.jpg" : primaryImage
-                }
-                alt={service.title}
-                className={`w-full h-full object-cover transition-all duration-500 ease-out
-                  ${primaryImageLoaded ? "opacity-100" : "opacity-0"}
-                  ${isHovered && hasSecondImage ? "opacity-0" : "opacity-100"}
-                `}
-                onLoad={() => setPrimaryImageLoaded(true)}
-                onError={() => {
-                  setPrimaryImageError(true);
-                  setPrimaryImageLoaded(true);
-                }}
-                loading="lazy"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageIcon className="h-12 w-12 text-gray-300" />
-              </div>
-            )}
-
-            {/* Secondary Image (shown on hover) */}
-            {secondaryImage && (
-              <img
-                src={secondaryImageError ? primaryImage! : secondaryImage}
-                alt={`${service.title} - alternate view`}
-                className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ease-out
-                  ${secondaryImageLoaded ? "" : "opacity-0"}
-                  ${
-                    isHovered && hasSecondImage
-                      ? "opacity-100 scale-105"
-                      : "opacity-0 scale-100"
-                  }
-                `}
-                onLoad={() => setSecondaryImageLoaded(true)}
-                onError={() => {
-                  setSecondaryImageError(true);
-                  setSecondaryImageLoaded(true);
-                }}
-                loading="lazy"
-              />
-            )}
-
-            {/* Gradient overlay on hover */}
-            <div
-              className={`absolute inset-0 bg-gradient-to-t from-eagle-green/60 via-transparent to-transparent
-              transition-opacity duration-500 ${
-                isHovered ? "opacity-100" : "opacity-0"
-              }`}
-            />
-
-            {/* Discount Badge */}
-            {service.activeDiscount && (
-              <div className="absolute top-3 left-3">
-                <DiscountBadge
-                  discount={service.activeDiscount}
-                  variant="compact"
-                  size="small"
-                  targetCurrency={displayCurrency}
-                />
-              </div>
-            )}
-
-            {/* Price Badge */}
-            <div className="absolute bottom-3 right-3">
-              {service.activeDiscount ? (
-                <div className="bg-white/95 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg backdrop-blur-sm shadow-md">
-                  <PriceWithDiscount
-                    originalPrice={displayPriceMajor || 0}
-                    currency={displayCurrency}
-                    discount={service.activeDiscount}
-                    size="small"
-                    showSavings={false}
-                  />
-                </div>
-              ) : (
-                <Badge className="bg-eagle-green/90 text-white border-none font-bold backdrop-blur-sm text-xs sm:text-sm">
-                  {t("From")}{" "}
-                  {serviceService.formatPrice(
-                    displayPriceMajor ?? 0,
-                    displayCurrency
-                  )}
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-4 space-y-3">
-            {/* Category */}
-            {service.categoryName && (
-              <span className="text-xs font-medium text-viridian-green uppercase tracking-wide">
-                {service.categoryName}
-              </span>
-            )}
-
-            {/* Title */}
-            <h3 className="font-bold text-eagle-green text-lg line-clamp-2 group-hover:text-viridian-green transition-colors">
-              {service.title}
-            </h3>
-
-            {/* Description */}
-            {service.description && (
-              <p className="text-sm text-eagle-green/60 line-clamp-2">
-                {service.description}
-              </p>
-            )}
-
-            {/* Rating */}
-            <div className="mb-2">
-              <CompactRating
-                rating={ratingSummary?.averageRating || 0}
-                reviewCount={ratingSummary?.totalReviews || 0}
-                size="sm"
-              />
-            </div>
-
-            {/* Meta Info */}
-            <div className="flex items-center gap-4 text-sm text-eagle-green/70">
-              {service.city && (
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span>{service.city}</span>
-                </div>
-              )}
-              {service.durationMinutes != null &&
-                service.durationMinutes > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    <span>{service.durationMinutes} {t("min")}</span>
-                  </div>
-                )}
-            </div>
-
-            {/* Vendor */}
-            {service.vendorName && (
-              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                <Users className="h-4 w-4 text-viridian-green" />
-                <span className="text-sm text-eagle-green/70">
-                  by {service.vendorName}
-                </span>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
 
 // City options for filtering
 const CITY_OPTIONS = [
@@ -436,45 +208,41 @@ export default function Services() {
       <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
         {/* Hero skeleton */}
         <div className="relative bg-eagle-green">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <Skeleton className="h-12 w-96 mb-4 bg-white/20" />
-            <Skeleton className="h-6 w-80 bg-white/20" />
+          <div className="page-shell py-5">
+            <Skeleton className="h-7 w-72 mb-2 bg-white/20" />
+            <Skeleton className="h-4 w-80 bg-white/20" />
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="page-shell py-6">
           {/* Category pills skeleton */}
-          <div className="flex flex-wrap gap-3 mb-8">
-            {[...Array(5)].map((_, i) => (
+          <div className="flex flex-wrap gap-2 mb-5">
+            {[...Array(6)].map((_, i) => (
               <Skeleton
                 key={i}
-                className="h-12 w-36 rounded-full bg-june-bud/20"
+                className="h-9 w-28 rounded-full bg-june-bud/20"
               />
             ))}
           </div>
 
           {/* Search skeleton */}
-          <div className="flex flex-col lg:flex-row gap-4 mb-8">
-            <Skeleton className="flex-1 h-14 rounded-md bg-june-bud/20" />
-            <div className="flex gap-3">
-              <Skeleton className="w-48 h-14 rounded-xl bg-june-bud/20" />
-              <Skeleton className="w-28 h-14 rounded-xl bg-june-bud/20" />
-            </div>
+          <div className="flex gap-2 mb-5">
+            <Skeleton className="flex-1 h-11 rounded-xl bg-june-bud/20" />
+            <Skeleton className="w-11 h-11 rounded-xl bg-june-bud/20" />
           </div>
 
           {/* Services grid skeleton */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
+            {[...Array(12)].map((_, i) => (
               <Card
                 key={i}
                 className="group overflow-hidden border-0 shadow-md bg-white rounded-md"
               >
                 <CardContent className="p-0">
-                  <Skeleton className="h-48 w-full bg-june-bud/10" />
+                  <Skeleton className="aspect-[4/3] w-full bg-june-bud/10" />
                   <div className="p-4">
                     <Skeleton className="h-4 w-20 mb-2 bg-june-bud/20" />
                     <Skeleton className="h-5 w-3/4 mb-2 bg-june-bud/20" />
-                    <Skeleton className="h-4 w-full mb-3 bg-june-bud/20" />
                     <Skeleton className="h-4 w-1/2 bg-june-bud/20" />
                   </div>
                 </CardContent>
@@ -490,32 +258,32 @@ export default function Services() {
     <div className="min-h-screen bg-gradient-to-b from-light-cream to-white">
       {/* Simplified Hero Section */}
       <section className="bg-eagle-green">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="page-shell py-5">
           <FadeIn delay={0.1}>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-white" />
-              <h1 className="text-2xl lg:text-3xl font-bold text-white">
+              <h1 className="text-xl lg:text-2xl font-bold text-white">
                 {t("Services & Experiences")}
               </h1>
             </div>
-            <p className="text-sm lg:text-base font-light text-white/80 max-w-2xl">
+            <p className="mt-1 text-xs lg:text-sm font-light text-white/80">
               {t("Book services from photography to catering for any occasion")}
             </p>
           </FadeIn>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+      <div className="page-shell py-6 relative z-10">
         {/* Category Pills */}
         <FadeIn delay={0.2}>
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="h-5 w-5 text-viridian-green" />
-              <span className="font-bold text-eagle-green">
+          <div className="mb-5">
+            <div className="flex items-center gap-2 mb-2.5">
+              <Sparkles className="h-4 w-4 text-viridian-green" />
+              <h2 className="font-bold text-base text-eagle-green">
                 {t("Browse by Category")}
-              </span>
+              </h2>
             </div>
-            <div className="flex overflow-x-auto scrollbar-hide gap-3 py-2 -mx-4 px-4 sm:mx-0 sm:px-2 sm:flex-wrap">
+            <div className="flex overflow-x-auto scrollbar-hide gap-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
               {categories.map((category, index) => {
                 const isActive = selectedCategoryId === category.id;
 
@@ -530,16 +298,16 @@ export default function Services() {
                       variant={isActive ? "default" : "outline"}
                       onClick={() => handleCategorySelect(category.id)}
                       className={`
-                        flex items-center gap-2 px-5 py-3 h-12 rounded-full transition-all duration-300
+                        flex items-center px-3.5 h-9 rounded-full text-sm transition-colors
                         ${
                           isActive
-                            ? "bg-gradient-to-r from-eagle-green to-viridian-green text-white border-0 shadow-lg shadow-eagle-green/25 scale-105"
-                            : "bg-white border-2 border-eagle-green/20 text-eagle-green hover:border-viridian-green hover:bg-viridian-green/5 hover:text-viridian-green hover:scale-105"
+                            ? "bg-eagle-green text-white border-0"
+                            : "bg-white border border-eagle-green/20 text-eagle-green hover:border-viridian-green hover:bg-viridian-green/5 hover:text-viridian-green"
                         }
                       `}
                       aria-pressed={isActive}
                     >
-                      <span className="font-bold">{category.name}</span>
+                      <span className="font-semibold">{t(category.name)}</span>
                     </Button>
                   </motion.div>
                 );
@@ -550,17 +318,16 @@ export default function Services() {
 
         {/* Search and Filters */}
         <SlideIn direction="up" delay={0.3}>
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center gap-2 mb-5">
             {/* Search Bar */}
-            <div className="flex-1 relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-eagle-green/20 to-viridian-green/20 rounded-md blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative bg-white rounded-md shadow-lg shadow-eagle-green/5 border border-eagle-green/10 overflow-hidden">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-eagle-green/40 h-5 w-5" />
+            <div className="flex-1 relative">
+              <div className="relative bg-white rounded-xl shadow-sm border border-eagle-green/10 overflow-hidden">
+                <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-eagle-green/40 h-4 w-4" />
                 <Input
                   placeholder={t("Search for services, experiences...")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 pr-4 h-14 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 font-light text-eagle-green placeholder:text-eagle-green/40 w-full"
+                  className="pl-10 pr-4 h-11 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 text-sm text-eagle-green placeholder:text-eagle-green/40 w-full"
                 />
               </div>
             </div>
@@ -570,9 +337,9 @@ export default function Services() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="h-14 w-14 rounded-xl bg-white border-eagle-green/10 shadow-lg shadow-eagle-green/5 hover:border-viridian-green hover:bg-viridian-green/5 transition-all duration-300 p-0 shrink-0"
+                  className="h-11 w-11 rounded-xl bg-white border-eagle-green/10 shadow-sm hover:border-viridian-green hover:bg-viridian-green/5 transition-colors p-0 shrink-0"
                 >
-                  <MapPin className="h-5 w-5 text-viridian-green" />
+                  <MapPin className="h-4 w-4 text-viridian-green" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -608,7 +375,7 @@ export default function Services() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-wrap items-center gap-3 mb-8 p-4 bg-gradient-to-r from-june-bud/10 to-viridian-green/5 rounded-md border border-june-bud/20"
+            className="flex flex-wrap items-center gap-2 mb-5 px-3 py-2 bg-june-bud/10 rounded-xl border border-june-bud/20"
           >
             <span className="text-sm font-bold text-eagle-green flex items-center gap-2">
               <Filter className="h-4 w-4" />
@@ -687,9 +454,9 @@ export default function Services() {
         )}
 
         {/* Services Section */}
-        <div className="mb-12">
-          <div className="flex justify-between items-center mb-6">
-            <p className="font-light text-eagle-green/70">
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-sm font-light text-eagle-green/70">
               {isFetching ? (
                 <span className="flex items-center gap-2">
                   <span className="inline-block w-4 h-4 border-2 border-viridian-green/30 border-t-viridian-green rounded-full animate-spin"></span>
@@ -715,16 +482,16 @@ export default function Services() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-20 px-6"
+              className="text-center py-14 px-6"
             >
               <div className="max-w-md mx-auto">
-                <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-june-bud/20 to-viridian-green/10 rounded-3xl flex items-center justify-center">
-                  <Calendar className="h-12 w-12 text-eagle-green/40" />
+                <div className="w-16 h-16 mx-auto mb-4 bg-june-bud/20 rounded-2xl flex items-center justify-center">
+                  <Calendar className="h-8 w-8 text-eagle-green/40" />
                 </div>
-                <h3 className="text-2xl font-bold text-eagle-green mb-3">
+                <h3 className="text-lg font-bold text-eagle-green mb-2">
                   {t("No services found")}
                 </h3>
-                <p className="font-light text-eagle-green/60 mb-8 leading-relaxed">
+                <p className="text-sm font-light text-eagle-green/60 mb-5 leading-relaxed">
                   {hasFilters
                     ? "We couldn't find any services matching your criteria. Try adjusting your search or filters."
                     : "No services are available at the moment. Please check back soon!"}
@@ -743,9 +510,9 @@ export default function Services() {
           ) : (
             <>
               <div
-                className={`grid gap-6 ${
+                className={`grid gap-3 sm:gap-4 ${
                   viewMode === "grid"
-                    ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                    ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
                     : "grid-cols-1"
                 }`}
               >
@@ -763,7 +530,7 @@ export default function Services() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="mt-12">
+                <div className="mt-8">
                   <PageNavigator
                     currentPage={currentPage}
                     totalPages={totalPages}

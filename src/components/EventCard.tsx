@@ -66,57 +66,57 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
           {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-wrap gap-1">
+          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
             {event.isFeatured && (
-              <Badge className="text-xs font-bold bg-yellow/20 text-eagle-green border-yellow">
+              <Badge className="text-[10px] sm:text-xs font-bold bg-yellow/20 text-eagle-green border-yellow">
                 {t("Featured")}
               </Badge>
             )}
             {event.isSoldOut && (
-              <Badge className="text-xs font-bold bg-red-100 text-red-700 border-red-300">
+              <Badge className="text-[10px] sm:text-xs font-bold bg-red-100 text-red-700 border-red-300">
                 {t("Sold Out")}
               </Badge>
             )}
           </div>
 
           {/* Location badge */}
-          <div className="absolute top-3 right-3">
-            <Badge className="bg-white/90 text-eagle-green border-none font-bold">
+          <div className="absolute top-2 right-2">
+            <Badge className="bg-white/90 text-eagle-green border-none font-bold text-[10px] sm:text-xs">
               📍 {event.city}
             </Badge>
           </div>
 
           {/* Price */}
-          <div className="absolute bottom-3 right-3">
-            <Badge className="bg-eagle-green text-white border-none font-bold">
+          <div className="absolute bottom-2 right-2">
+            <Badge className="bg-eagle-green text-white border-none font-bold text-[10px] sm:text-xs">
               {t("From")} {formatPrice(minPrice / 100, currency)}
             </Badge>
           </div>
         </div>
 
-        <CardContent className="p-4">
-          <div className="mb-2">
-            <span className="text-sm font-light text-viridian-green">
-              {event.categoryName || "Event"}
-            </span>
-          </div>
+        <CardContent className="p-2.5 sm:p-4">
+          <span className="text-[10px] sm:text-sm font-light text-viridian-green">
+            {event.categoryName || "Event"}
+          </span>
 
-          <h3 className="font-bold text-eagle-green text-lg mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">
+          <h3 className="mt-0.5 font-bold text-eagle-green text-xs sm:text-lg mb-1.5 sm:mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">
             {event.title}
           </h3>
 
-          <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-2">
-            <MapPin className="h-4 w-4" />
-            <span className="font-light">{event.location}</span>
+          <div className="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-sm text-eagle-green/70 mb-1 sm:mb-2">
+            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+            <span className="font-light line-clamp-1">{event.location}</span>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-eagle-green/70 mb-3">
-            <Clock className="h-4 w-4" />
-            <span className="font-light">{formatDate(event.eventDate)}</span>
+          <div className="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-sm text-eagle-green/70 mb-2 sm:mb-3">
+            <Clock className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+            <span className="font-light line-clamp-1">
+              {formatDate(event.eventDate)}
+            </span>
           </div>
 
           {/* Rating */}
-          <div className="mb-3">
+          <div className="mb-2 sm:mb-3">
             <CompactRating
               rating={ratingSummary?.averageRating || 0}
               reviewCount={ratingSummary?.totalReviews || 0}
@@ -125,11 +125,13 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm font-light text-eagle-green/70">
-              <Ticket className="h-4 w-4" />
-              <span>{event.ticketTypes?.length || 0} {t("ticket types")}</span>
+            <div className="flex items-center gap-1 text-[11px] sm:text-sm font-light text-eagle-green/70">
+              <Ticket className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+              <span className="line-clamp-1">
+                {event.ticketTypes?.length || 0} {t("ticket types")}
+              </span>
             </div>
-            <ChevronRight className="h-4 w-4 text-viridian-green group-hover:translate-x-1 transition-transform" />
+            <ChevronRight className="hidden sm:block h-4 w-4 text-viridian-green group-hover:translate-x-1 transition-transform" />
           </div>
         </CardContent>
       </Card>

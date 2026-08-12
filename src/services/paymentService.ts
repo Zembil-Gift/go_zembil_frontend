@@ -38,7 +38,8 @@ class PaymentService {
    */
   async initializePayment(
     orderId: number,
-    provider: PaymentProvider = "STRIPE"
+    provider: PaymentProvider = "STRIPE",
+    hosted = false
   ): Promise<PaymentInitResponse> {
     try {
       console.log(
@@ -46,8 +47,9 @@ class PaymentService {
       );
 
       // Backend expects: POST /api/orders/{orderId}/payments/initialize?provider=STRIPE
+      // `hosted=true` asks Chapa for a redirect checkout URL instead of the inline SDK.
       const response = await apiService.postRequest<PaymentInitResponse>(
-        `/api/orders/${orderId}/payments/initialize?provider=${provider}`
+        `/api/orders/${orderId}/payments/initialize?provider=${provider}&hosted=${hosted}`
       );
 
       console.log("Payment initialization response:", response);

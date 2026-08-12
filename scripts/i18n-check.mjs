@@ -51,4 +51,19 @@ i18n.changeLanguage("en");
 assert.equal(i18n.t("Add to Cart"), "Add to Cart", "en did not fall back to the key");
 assert.equal(i18n.t("common.loading"), "Loading...");
 
+// 6. Category names come from the API, so the static scanner cannot see them.
+// Check them straight off the backend seed instead — a new category shipped
+// without an Amharic name shows up as English in the middle of an Amharic UI.
+const SEED =
+  "../zembil-gift-backend-service/src/main/resources/db/migration/change-log/2026-03-16/tables/_multi/seed_categories_and_subcategories/dml/20251225000655_seed_categories_and_subcategories.sql";
+if (fs.existsSync(SEED)) {
+  i18n.changeLanguage("am");
+  const seeded = [
+    ...fs.readFileSync(SEED, "utf8").matchAll(/\(\s*\d+,\s*'([^']+)',\s*'[a-z0-9-]+'/g),
+  ].map((m) => m[1]);
+  assert.ok(seeded.length > 40, "seed regex matched nothing — did the SQL change shape?");
+  const untranslated = seeded.filter((name) => i18n.t(name) === name);
+  assert.deepEqual(untranslated, [], `category names missing an Amharic entry: ${untranslated}`);
+}
+
 console.log("i18n self-check passed");

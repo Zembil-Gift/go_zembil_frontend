@@ -228,6 +228,21 @@ export default function PaymentSuccess() {
         return;
       }
 
+      // Ask the backend whenever we can identify the order. It re-verifies the
+      // transaction with Chapa, so the URL's `status` is never trusted — Chapa
+      // appends its own query string on redirect, which mangles whatever
+      // parameter happens to sit last.
+      if (
+        orderId &&
+        (orderType === "PRODUCT" ||
+          orderType === "SERVICE" ||
+          orderType === "EVENT" ||
+          orderType === "CUSTOM")
+      ) {
+        await verifyChapaOrderPayment(orderId, orderType, trxRef || "");
+        return;
+      }
+
       if (trxRef) {
         if (status !== "success") {
           setPaymentStatus("failed");
@@ -240,17 +255,6 @@ export default function PaymentSuccess() {
               t("Your Chapa payment was not successful. Please try again."),
             variant: "destructive",
           });
-          return;
-        }
-
-        if (
-          orderId &&
-          (orderType === "PRODUCT" ||
-            orderType === "SERVICE" ||
-            orderType === "EVENT" ||
-            orderType === "CUSTOM")
-        ) {
-          await verifyChapaOrderPayment(orderId, orderType, trxRef);
           return;
         }
 
