@@ -423,7 +423,7 @@ export default function PartnerSignup() {
                             key={cat.id}
                             value={cat.id.toString()}
                           >
-                            {cat.name}
+                            {t(cat.name)}
                           </SelectItem>
                         ))}
                       </SelectContent>

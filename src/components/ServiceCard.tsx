@@ -176,7 +176,7 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
             {/* Category */}
             {service.categoryName && (
               <span className="text-[10px] sm:text-xs font-medium text-viridian-green uppercase tracking-wide line-clamp-1">
-                {service.categoryName}
+                {t(service.categoryName)}
               </span>
             )}
 

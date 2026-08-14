@@ -139,7 +139,7 @@ export default function CustomOrderCategories() {
                       </div>
                       
                       <h3 className="font-bold text-eagle-green text-xl mb-2 group-hover:text-viridian-green transition-colors">
-                        {category.categoryName}
+                        {t(category.categoryName)}
                       </h3>
                       
                       {category.categoryDescription && (

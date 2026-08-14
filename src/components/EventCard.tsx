@@ -96,7 +96,7 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
 
         <CardContent className="p-2.5 sm:p-4">
           <span className="text-[10px] sm:text-sm font-light text-viridian-green">
-            {event.categoryName || "Event"}
+            {event.categoryName ? t(event.categoryName) : t("Event")}
           </span>
 
           <h3 className="mt-0.5 font-bold text-eagle-green text-xs sm:text-lg mb-1.5 sm:mb-2 line-clamp-2 group-hover:text-viridian-green transition-colors">

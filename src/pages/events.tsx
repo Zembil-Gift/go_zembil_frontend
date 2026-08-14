@@ -380,7 +380,7 @@ export default function Events() {
                       <SelectItem value="all">{t("All Categories")}</SelectItem>
                       {EVENT_CATEGORIES.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
-                          {cat.icon} {cat.name}
+                          {cat.icon} {t(cat.name)}
                         </SelectItem>
                       ))}
                     </SelectContent>
