@@ -156,10 +156,10 @@ export function SubcategorySearchCombobox({
                     String(sub.id) === selectedId ? "opacity-100" : "opacity-0"
                   )}
                 />
-                <span className="flex-1 truncate">{sub.name}</span>
+                <span className="flex-1 truncate">{t(sub.name)}</span>
                 {sub.categoryName && (
                   <span className="text-xs text-muted-foreground shrink-0">
-                    {sub.categoryName}
+                    {t(sub.categoryName)}
                   </span>
                 )}
               </button>

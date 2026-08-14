@@ -52,18 +52,39 @@ assert.equal(i18n.t("Add to Cart"), "Add to Cart", "en did not fall back to the 
 assert.equal(i18n.t("common.loading"), "Loading...");
 
 // 6. Category names come from the API, so the static scanner cannot see them.
-// Check them straight off the backend seed instead — a new category shipped
+// Check them straight off the backend seeds instead — a new category shipped
 // without an Amharic name shows up as English in the middle of an Amharic UI.
-const SEED =
-  "../zembil-gift-backend-service/src/main/resources/db/migration/change-log/2026-03-16/tables/_multi/seed_categories_and_subcategories/dml/20251225000655_seed_categories_and_subcategories.sql";
-if (fs.existsSync(SEED)) {
+// Every seeded row is `(... 'Name', 'slug', ...)`, product and vendor alike.
+const MIGRATIONS = "../zembil-gift-backend-service/src/main/resources/db/migration";
+if (fs.existsSync(MIGRATIONS)) {
   i18n.changeLanguage("am");
-  const seeded = [
-    ...fs.readFileSync(SEED, "utf8").matchAll(/\(\s*\d+,\s*'([^']+)',\s*'[a-z0-9-]+'/g),
-  ].map((m) => m[1]);
-  assert.ok(seeded.length > 40, "seed regex matched nothing — did the SQL change shape?");
-  const untranslated = seeded.filter((name) => i18n.t(name) === name);
+  const seeded = fs
+    .readdirSync(MIGRATIONS, { recursive: true })
+    .filter((f) => f.endsWith(".sql") && /categor/i.test(f))
+    .flatMap((f) => {
+      const sql = fs.readFileSync(`${MIGRATIONS}/${f}`, "utf8");
+      if (!/INSERT INTO \w*categor/i.test(sql)) return [];
+      // Name, then the description right after the slug — both render through t().
+      return [...sql.matchAll(/\(\s*(?:\d+,\s*)?'([^']+)',\s*'[a-z0-9-]+',\s*'([^']+)'/g)].flatMap(
+        (m) => [m[1], m[2]]
+      );
+    });
+  assert.ok(seeded.length > 60, `seed regex matched only ${seeded.length} — did the SQL change shape?`);
+  const untranslated = [...new Set(seeded.filter((name) => i18n.t(name) === name))];
   assert.deepEqual(untranslated, [], `category names missing an Amharic entry: ${untranslated}`);
 }
+
+// 7. Same blind spot for EVENT_CATEGORIES: rendered as {cat.name}, never a literal.
+i18n.changeLanguage("am");
+const eventCats = [
+  ...fs
+    .readFileSync("src/types/events.ts", "utf8")
+    .split("EVENT_CATEGORIES")[1]
+    .split("];")[0]
+    .matchAll(/name: '([^']+)'/g),
+].map((m) => m[1]);
+assert.ok(eventCats.length > 5, "EVENT_CATEGORIES regex matched nothing");
+const untranslatedEvents = eventCats.filter((name) => i18n.t(name) === name);
+assert.deepEqual(untranslatedEvents, [], `event categories missing Amharic: ${untranslatedEvents}`);
 
 console.log("i18n self-check passed");

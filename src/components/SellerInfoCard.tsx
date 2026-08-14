@@ -79,7 +79,7 @@ export function SellerInfoCard({ vendor, suppliers = [], className }: SellerInfo
                 )}
                 {vendor.categoryName && (
                   <Badge variant="outline" className="text-xs">
-                    {vendor.categoryName}
+                    {t(vendor.categoryName)}
                   </Badge>
                 )}
               </div>

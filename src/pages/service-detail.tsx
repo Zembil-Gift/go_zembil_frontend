@@ -453,7 +453,7 @@ export default function ServiceDetail() {
                 <div>
                   {service.categoryName && (
                     <span className="text-sm font-light text-viridian-green">
-                      {service.categoryName}
+                      {t(service.categoryName)}
                     </span>
                   )}
                   <h1 className="text-3xl lg:text-4xl font-bold text-eagle-green mt-1">

@@ -1290,7 +1290,7 @@ export default function VendorSignup() {
                           key={category.id}
                           value={category.id.toString()}
                         >
-                          {category.name}
+                          {t(category.name)}
                         </SelectItem>
                       ))}
                     </SelectContent>
