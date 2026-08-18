@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { tokenManager } from "@/services/tokenManager";
 import {
   Card,
   CardContent,
@@ -343,6 +344,24 @@ export default function Profile() {
     onSuccess: (updatedProfile, submittedPatch) => {
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+
+      // Backend clears emailVerified, revokes all refresh tokens and mails a new
+      // OTP when the address changes, so this session is already dead.
+      const newEmail = submittedPatch?.email;
+
+      if (typeof newEmail === "string" && newEmail !== (profile?.email || "")) {
+        tokenManager.clearTokenData();
+        toast({
+          title: t("Verify Your New Email"),
+          description: t(
+            "We sent a verification code to your new address. Please verify it to sign back in."
+          ),
+        });
+        window.location.href = `/verify-email?email=${encodeURIComponent(
+          newEmail
+        )}`;
+        return;
+      }
 
       const countryWasUpdated =
         typeof submittedPatch?.country === "string" &&
