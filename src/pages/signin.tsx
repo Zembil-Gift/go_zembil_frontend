@@ -25,6 +25,7 @@ import authService from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackLogin } from "@/lib/analytics";
 import { useTranslation } from "react-i18next";
+import { isRateLimited } from "@/lib/authUtils";
 
 const signinSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -163,6 +164,17 @@ export default function SignIn() {
             ? { email, vendorType: responseData?.details?.vendorType || "" }
             : null
         );
+      } else if (isRateLimited(err)) {
+        // Too many attempts from this IP, or the account is temporarily locked.
+        // The backend message says which and how long, and retrying now only
+        // keeps the window open.
+        toast({
+          title: t("Too many attempts"),
+          description:
+            err?.message ||
+            "Too many sign-in attempts. Please wait a few minutes and try again.",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: t("Sign in failed"),

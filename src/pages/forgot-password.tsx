@@ -46,8 +46,10 @@ export default function ForgotPassword() {
         description: t("If an account with that email exists, we've sent a password reset link."),
       });
     } catch (error: any) {
-      const message = error?.response?.data?.error ||
-        error?.response?.data?.message ||
+      // message before error: `error` is the machine code (TOO_MANY_REQUESTS,
+      // INVALID_CREDENTIALS), which is not something to show a person.
+      const message = error?.response?.data?.message ||
+        error?.message ||
         "Something went wrong. Please try again later.";
       setErrorMessage(message);
     } finally {

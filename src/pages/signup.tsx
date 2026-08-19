@@ -24,6 +24,7 @@ import OAuth2Buttons from "@/components/auth/OAuth2Buttons";
 import { trackSignUp } from "@/lib/analytics";
 import { useTranslation } from "react-i18next";
 import { passwordValidation } from "@/lib/passwordSchema";
+import { isRateLimited } from "@/lib/authUtils";
 
 // Phone number validation using libphonenumber (E.164 format)
 const phoneValidation = z
@@ -144,6 +145,19 @@ export default function SignUp() {
         response: error?.response,
         stack: error?.stack
       });
+      if (isRateLimited(error)) {
+        // Registration is rate limited per IP. Retrying immediately keeps the
+        // window open, so say to wait rather than to check the details.
+        toast({
+          title: t("Too many attempts"),
+          description:
+            error?.message || "Too many sign-up attempts. Please wait a minute and try again.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        return;
+      }
+
       // Use generic message for security - don't reveal if email/username exists
       const errorMsg = error?.message?.toLowerCase() || "";
       const isUserExistsError = errorMsg.includes("email") || errorMsg.includes("username") || errorMsg.includes("already");
