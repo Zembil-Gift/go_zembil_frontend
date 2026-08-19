@@ -23,6 +23,7 @@ import { SUPPORTED_COUNTRIES, getCurrencyForCountry } from "@/lib/countryConfig"
 import OAuth2Buttons from "@/components/auth/OAuth2Buttons";
 import { trackSignUp } from "@/lib/analytics";
 import { useTranslation } from "react-i18next";
+import { passwordValidation } from "@/lib/passwordSchema";
 
 // Phone number validation using libphonenumber (E.164 format)
 const phoneValidation = z
@@ -54,13 +55,7 @@ const signupSchema = z
     username: usernameValidation,
     email: z.string().email("Please enter a valid email address"),
     phoneNumber: phoneValidation,
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/^(?=.*[a-z])/, "Password must contain at least one lowercase letter")
-      .regex(/^(?=.*[A-Z])/, "Password must contain at least one uppercase letter")
-      .regex(/^(?=.*\d)/, "Password must contain at least one number")
-      .regex(/^(?=.*[@$!%*?&#^()_+=\-\[\]{}|;:',.<>/~`])/, "Password must contain at least one special character"),
+    password: passwordValidation,
     confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
     country: z.string().min(1, "Please select your country"),
     acceptedTerms: z.boolean().refine(val => val, {

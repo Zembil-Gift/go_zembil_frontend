@@ -13,15 +13,10 @@ import { useToast } from "@/hooks/use-toast";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import authService from "@/services/authService";
 import { useTranslation } from "react-i18next";
+import { passwordValidation } from "@/lib/passwordSchema";
 
 const resetPasswordSchema = z.object({
-  newPassword: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/^(?=.*[a-z])/, "Password must contain at least one lowercase letter")
-    .regex(/^(?=.*[A-Z])/, "Password must contain at least one uppercase letter")
-    .regex(/^(?=.*\d)/, "Password must contain at least one number")
-    .regex(/^(?=.*[@$!%*?&#^()_+=\-\[\]{}|;:',.<>/~`])/, "Password must contain at least one special character"),
+  newPassword: passwordValidation,
   confirmPassword: z.string().min(1, "Please confirm your password"),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "Passwords don't match",

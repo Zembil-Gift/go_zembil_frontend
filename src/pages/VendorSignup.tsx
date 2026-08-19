@@ -82,6 +82,7 @@ import {
   type LocationData,
 } from "@/components/maps";
 import { useTranslation } from "react-i18next";
+import { passwordValidation } from "@/lib/passwordSchema";
 
 interface CertificateResponse {
   certificateCode: string;
@@ -227,22 +228,7 @@ const vendorSignupSchema = z
     username: usernameValidation,
     email: z.string().email("Please enter a valid email address"),
     phoneNumber: phoneValidation,
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(
-        /^(?=.*[a-z])/,
-        "Password must contain at least one lowercase letter"
-      )
-      .regex(
-        /^(?=.*[A-Z])/,
-        "Password must contain at least one uppercase letter"
-      )
-      .regex(/^(?=.*\d)/, "Password must contain at least one number")
-      .regex(
-        /^(?=.*[@$!%*?&#^()_+=\-\[\]{}|;:',.<>/~`])/,
-        "Password must contain at least one special character"
-      ),
+    password: passwordValidation,
     confirmPassword: z
       .string()
       .min(8, "Password confirmation must be at least 8 characters"),
