@@ -8,33 +8,79 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
-      - type: header
-        source: /index.html
-        headers:
-          - key: Cache-Control
-            value: no-cache
-      - type: header
-        source: /sw.js
-        headers:
-          - key: Cache-Control
-            value: no-cache, no-store, must-revalidate
-      - type: header
-        source: /workbox-*.js
-        headers:
-          - key: Cache-Control
-            value: no-cache, no-store, must-revalidate
-      - type: header
-        source: /assets/*
-        headers:
-          - key: Cache-Control
-            value: public, max-age=31536000, immutable
-      - type: header
-        source: /registerSW.js
-        headers:
-          - key: Cache-Control
-            value: no-cache, no-store, must-revalidate
-      - type: header
-        source: /manifest.webmanifest
-        headers:
-          - key: Cache-Control
-            value: no-cache
+
+    # Render reads headers from this key, NOT from `routes`. They previously sat
+    # under `routes` as `type: header`, which is not a route type Render accepts
+    # (only `redirect` and `rewrite` are) -- so none of the caching rules below
+    # were actually being applied to responses.
+    headers:
+      # --- Security ---------------------------------------------------------
+      # Enforced immediately; none of these can break a working page.
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains; preload
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(self), microphone=(), geolocation=(self), payment=(self), interest-cohort=()
+      - path: /*
+        name: Cross-Origin-Opener-Policy
+        # same-origin-allow-popups, not same-origin: Google and Apple sign-in
+        # both run in a popup that must keep its handle on the opener.
+        value: same-origin-allow-popups
+
+      # --- Content Security Policy ------------------------------------------
+      # Report-Only for now. The origin list below is derived from the actual
+      # SDK loads in this codebase (Stripe, Chapa, Google Identity, Apple, Maps,
+      # GA4, OSM tiles, R2 images) -- but `connect-src` depends on VITE_API_URL,
+      # whose production value is set in the Render dashboard rather than here.
+      #
+      # TO ENFORCE: load the site once, confirm the console logs no CSP
+      # violations through sign-in and a full checkout, add the API origin to
+      # connect-src if it is not already listed, then rename this header to
+      # `Content-Security-Policy`. That rename is the whole change.
+      - path: /*
+        name: Content-Security-Policy-Report-Only
+        value: >-
+          default-src 'self';
+          base-uri 'self';
+          object-src 'none';
+          frame-ancestors 'none';
+          form-action 'self';
+          script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://js.chapa.co https://accounts.google.com https://appleid.cdn-apple.com https://maps.googleapis.com https://www.googletagmanager.com;
+          style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com;
+          font-src 'self' data: https://fonts.gstatic.com https://fonts.cdnfonts.com;
+          img-src 'self' data: blob: https:;
+          media-src 'self' https:;
+          connect-src 'self' https://*.onrender.com https://*.gogerami.com https://maps.googleapis.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://api.stripe.com https://api.chapa.co https://*.tile.openstreetmap.org https://nominatim.openstreetmap.org;
+          frame-src https://js.stripe.com https://js.chapa.co https://accounts.google.com https://appleid.apple.com https://www.youtube.com https://www.youtube-nocookie.com;
+          worker-src 'self' blob:;
+          manifest-src 'self'
+
+      # --- Caching ----------------------------------------------------------
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
+      - path: /registerSW.js
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
+      - path: /workbox-*.js
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
+      - path: /manifest.webmanifest
+        name: Cache-Control
+        value: no-cache
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable

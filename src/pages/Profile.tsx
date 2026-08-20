@@ -59,6 +59,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { passwordValidation } from "@/lib/passwordSchema";
 
 const MINIMUM_AGE_YEARS = 18;
 
@@ -125,7 +126,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 const passwordSchema = z
   .object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: passwordValidation,
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -138,9 +139,7 @@ type PasswordFormData = z.infer<typeof passwordSchema>;
 const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Current password is required"),
-    newPassword: z
-      .string()
-      .min(8, "New password must be at least 8 characters"),
+    newPassword: passwordValidation,
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
