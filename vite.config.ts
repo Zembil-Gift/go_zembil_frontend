@@ -21,7 +21,12 @@ export default defineConfig({
       workbox: {
         cacheId: CACHE_PREFIX,
         globPatterns: ["**/*.{js,css,ico,png,svg,json,webmanifest,woff2}"],
-        globIgnores: ["**/attached_assets/**", "**/videos/**", "stats.html"],
+        // banner/ holds full-size campaign artwork -- several files are 4-5 MB.
+        // Precaching those would push ~9 MB into every visitor's service worker
+        // on first load, and workbox fails the build outright above its 2 MB
+        // per-file limit. They are still built and served normally, just not
+        // precached.
+        globIgnores: ["**/attached_assets/**", "**/videos/**", "**/banner/**", "stats.html"],
         navigateFallbackDenylist: [
           /^\/\.well-known(?:\/|$)/,
           /^\/api\//,
