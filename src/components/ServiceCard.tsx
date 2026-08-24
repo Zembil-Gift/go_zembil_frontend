@@ -67,13 +67,13 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
     <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="transition-transform duration-200 hover:-translate-y-1"
+      className="h-full transition-transform duration-200 hover:-translate-y-1"
     >
       <Card
-        className="group overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-md cursor-pointer"
+        className="group h-full flex flex-col overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-md cursor-pointer"
         onClick={() => navigate(`/services/${service.id}`)}
       >
-        <CardContent className="p-0">
+        <CardContent className="p-0 flex flex-col flex-1">
           <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
             {!primaryImageLoaded && !primaryImageError && primaryImage && (
               <div
@@ -172,7 +172,7 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
           </div>
 
           {/* Content */}
-          <div className="p-2.5 sm:p-4 space-y-1.5 sm:space-y-3">
+          <div className="p-2.5 sm:p-4 flex flex-col flex-1 gap-1.5 sm:gap-3">
             {/* Category */}
             {service.categoryName && (
               <span className="text-[10px] sm:text-xs font-medium text-viridian-green uppercase tracking-wide line-clamp-1">
@@ -187,13 +187,25 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
 
             {/* Description */}
             {service.description && (
-              <p className="hidden sm:block text-sm text-eagle-green/60 line-clamp-2">
-                {service.description}
-              </p>
+              <div className="hidden sm:block">
+                <p className="text-sm text-eagle-green/60 line-clamp-4">
+                  {service.description}
+                </p>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/services/${service.id}`);
+                  }}
+                  className="mt-1 text-xs font-medium text-viridian-green hover:underline"
+                >
+                  {t("View more")}
+                </button>
+              </div>
             )}
 
-            {/* Rating */}
-            <div className="sm:mb-2">
+            {/* Rating - mt-auto keeps the bottom half aligned across cards */}
+            <div className="mt-auto sm:mb-2">
               <CompactRating
                 rating={ratingSummary?.averageRating || 0}
                 reviewCount={ratingSummary?.totalReviews || 0}
