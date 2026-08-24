@@ -267,6 +267,17 @@ function PackageItemRow({
             </span>
           </div>
         )}
+
+        {item.productId != null && (
+          <Link
+            to={`/product/${item.productId}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-medium text-viridian-green hover:underline"
+          >
+            {t("View product")}
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -435,7 +446,19 @@ export default function PackageDetailPage() {
 
         {/* ── Header card ── */}
         <Card>
-          <CardContent className="p-5 sm:p-6 space-y-4">
+          <CardContent
+            className={`p-5 sm:p-6 grid gap-5 md:items-start ${
+              packageDetail.images && packageDetail.images.length > 0
+                ? "md:grid-cols-[320px_minmax(0,1fr)]"
+                : ""
+            }`}
+          >
+            {/* LEFT: main image */}
+            {packageDetail.images && packageDetail.images.length > 0 && (
+              <ImageCarousel images={packageDetail.images} altBase={packageDetail.name} />
+            )}
+
+            {/* RIGHT: details */}
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <h1 className="text-xl sm:text-2xl font-bold text-eagle-green leading-tight">
@@ -481,18 +504,6 @@ export default function PackageDetailPage() {
               </div>
             </div>
 
-            {packageDetail.images && packageDetail.images.length > 0 && (
-              <div className="flex flex-row gap-2 overflow-x-auto pb-1">
-                {packageDetail.images.map((image, index) => (
-                  <img
-                    key={`${image}-${index}`}
-                    src={image}
-                    alt={`${packageDetail.name} ${index + 1}`}
-                    className="h-28 w-28 shrink-0 rounded-lg object-contain bg-white border border-slate-100"
-                  />
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
 
