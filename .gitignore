@@ -36,6 +36,9 @@ campaign.json
 *.swo
 *~
 
+CLAUDE.md
+public/banner/
+
 # OS generated files
 .DS_Store
 .DS_Store?

@@ -116,6 +116,25 @@ class AuthService {
   }
 
   /**
+   * Cancel a pending account deletion and sign in. Same credentials as login; the
+   * backend refuses once the restore window has lapsed.
+   */
+  async restoreAccount(emailOrPhone: string, password: string): Promise<AuthResponse> {
+    const loginData: LoginRequest = { emailOrPhone, password };
+    const response = await apiService.postRequest<AuthResponse>('/auth/restore-account', loginData);
+
+    if (response.accessToken) {
+      const normalizedUser = {
+        ...response.user,
+        id: response.user.id || (response.user as any).userId,
+      };
+      tokenManager.setTokenData(response.accessToken, response.expiresIn, normalizedUser);
+    }
+
+    return response;
+  }
+
+  /**
    * OAuth2 login/signup (Google, Facebook or Apple)
    */
   async loginWithOAuth2(
