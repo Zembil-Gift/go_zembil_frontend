@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -7,10 +7,6 @@ import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  ProductGridStagger,
-  ProductGridItem,
-} from "@/components/animations/StaggerAnimations";
 import GiftItemCard from "@/components/gift-card";
 import { productService, PagedProductResponse } from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
@@ -158,13 +154,23 @@ export default function ShopGridSection() {
           </div>
         ) : (
           <>
-            <ProductGridStagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-              {products.map((product) => (
-                <ProductGridItem key={product.id}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+              {products.map((product, index) => (
+                <div
+                  key={product.id}
+                  className="animate-rise-in"
+                  // Delay resets each page so "load more" rows don't inherit an
+                  // ever-growing offset.
+                  style={
+                    {
+                      "--stagger-index": index % PAGE_SIZE,
+                    } as React.CSSProperties
+                  }
+                >
                   <GiftItemCard product={product} />
-                </ProductGridItem>
+                </div>
               ))}
-            </ProductGridStagger>
+            </div>
 
             <div className="mt-8 text-center">
               {hasNextPage ? (

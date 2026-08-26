@@ -276,6 +276,19 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
 
+          // ponytail: these are a few hundred bytes each, but every component
+          // imports cn(). Left unnamed, rollup folded them into whichever heavy
+          // vendor chunk also used them -- clsx landed inside vendor-charts, so
+          // the entry statically imported 440 KB of recharts on the homepage
+          // just to call cn(). Naming them keeps them out of the heavy chunks.
+          if (
+            id.includes("/node_modules/clsx/") ||
+            id.includes("/node_modules/tailwind-merge/") ||
+            id.includes("/node_modules/class-variance-authority/")
+          ) {
+            return "vendor-cn";
+          }
+
           if (
             id.includes("/node_modules/react/") ||
             id.includes("/node_modules/react-dom/") ||
@@ -288,12 +301,14 @@ export default defineConfig({
             return "vendor-router";
           }
 
-          if (
-            id.includes("@tanstack/react-query") ||
-            id.includes("axios") ||
-            id.includes("zod")
-          ) {
+          if (id.includes("@tanstack/react-query") || id.includes("axios")) {
             return "vendor-data";
+          }
+
+          // zod only shows up in form/checkout pages, all of them lazy. Bundled
+          // with react-query it rode along on every first paint.
+          if (id.includes("/node_modules/zod/")) {
+            return "vendor-zod";
           }
 
           if (id.includes("recharts")) {
@@ -308,9 +323,11 @@ export default defineConfig({
             return "vendor-carousel";
           }
 
-          if (id.includes("@radix-ui")) {
-            return "vendor-radix";
-          }
+          // ponytail: no blanket @radix-ui chunk. Grouping every Radix package
+          // together meant the admin/vendor dashboards' primitives shipped in
+          // the same chunk as the toaster, so the homepage downloaded all of
+          // Radix. Rollup's default shared-chunk splitting keeps each route to
+          // the primitives it actually uses.
 
           if (
             id.includes("leaflet") ||
@@ -324,11 +341,10 @@ export default defineConfig({
             return "vendor-qr-scanner";
           }
 
-          if (
-            id.includes("@stripe") ||
-            id.includes("@chapa_et") ||
-            id.includes("qrcode.react")
-          ) {
+          // qrcode.react is deliberately not in here: the landing page shows an
+          // app-download QR, and grouping it with Stripe/Chapa dragged the
+          // whole payments chunk onto the homepage's critical path.
+          if (id.includes("@stripe") || id.includes("@chapa_et")) {
             return "vendor-payments";
           }
         },
