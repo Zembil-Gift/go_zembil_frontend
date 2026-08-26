@@ -15,10 +15,10 @@ import AnalyticsPageviewTracker from "./AnalyticsPageviewTracker";
 import Layout from "./layout/layout";
 
 import Landing from "@/pages/landing";
-import Gifts from "@/pages/gifts";
-import Shop from "@/pages/shop";
-import Cart from "@/pages/cart";
-import ProductDetail from "@/pages/product-detail";
+const Gifts = React.lazy(() => import("@/pages/gifts"));
+const Shop = React.lazy(() => import("@/pages/shop"));
+const Cart = React.lazy(() => import("@/pages/cart"));
+const ProductDetail = React.lazy(() => import("@/pages/product-detail"));
 import { useTranslation } from "react-i18next";
 // import Search from "@/pages/Search";
 const About = React.lazy(() => import("@/pages/about"));
@@ -325,6 +325,28 @@ function OfflineFallback() {
 function RoleBasedPrefetch() {
   const { isAuthenticated, isLoading, user } = useAuth();
 
+  // ponytail: the shop routes are lazy so they stay off the homepage's first
+  // paint, then get pulled in while the browser is idle. By the time anyone
+  // clicks through, the chunk is already cached and the Suspense spinner never
+  // shows. requestIdleCallback is missing on Safari, hence the timeout.
+  React.useEffect(() => {
+    const prefetch = () => {
+      void import("@/pages/shop");
+      void import("@/pages/gifts");
+      void import("@/pages/product-detail");
+      void import("@/pages/cart");
+    };
+
+    const idle = window.requestIdleCallback;
+    if (idle) {
+      const handle = idle(prefetch, { timeout: 3000 });
+      return () => window.cancelIdleCallback?.(handle);
+    }
+
+    const handle = window.setTimeout(prefetch, 1500);
+    return () => window.clearTimeout(handle);
+  }, []);
+
   React.useEffect(() => {
     if (isLoading || !isAuthenticated) {
       return;
@@ -518,20 +540,12 @@ function DeliveryRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// ponytail: no auth gate here. Waiting on isLoading meant every first-time /
+// incognito visitor stared at a spinner for a whole /auth/refresh round trip
+// before the landing skeletons could paint. The landing page is public, so it
+// renders immediately; the admin redirect just fires once auth resolves.
 function HomeRoute() {
-  const { t } = useTranslation();
-  const { isAuthenticated, isLoading, user } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-eagle-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">{t("Loading...")}</p>
-        </div>
-      </div>
-    );
-  }
+  const { isAuthenticated, user } = useAuth();
 
   const role = user?.role?.toUpperCase();
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";

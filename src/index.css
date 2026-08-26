@@ -494,6 +494,23 @@
   .animate-float-y { animation: none; }
 }
 
+/* ponytail: staggered grid entrance. Was framer-motion's ProductGridStagger,
+   which put 114 KB of JS on the homepage's critical path for a fade-up. The
+   per-card delay is set inline via --stagger-index. */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to   { opacity: 1; transform: none; }
+}
+
+.animate-rise-in {
+  animation: rise-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  animation-delay: calc(var(--stagger-index, 0) * 80ms + 100ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise-in { animation: none; }
+}
+
 /* Hide scrollbar utilities */
 .scrollbar-hide {
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
