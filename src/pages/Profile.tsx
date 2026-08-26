@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useIncompleteProfile } from "@/hooks/useIncompleteProfile";
 import { apiService } from "@/services/apiService";
+import { userService } from "@/services/userService";
 import { SUPPORTED_COUNTRIES } from "@/lib/countryConfig";
 import {
   AlertCircle,
@@ -55,6 +56,7 @@ import {
   Save,
   ShoppingBag,
   Store,
+  Trash2,
   User,
   X,
 } from "lucide-react";
@@ -176,7 +178,7 @@ export default function Profile() {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const queryClient = useQueryClient();
   const { isIncomplete, missingFields, isOAuth2User } = useIncompleteProfile();
   const maxBirthDate = getMaxBirthDateForMinimumAge(MINIMUM_AGE_YEARS);
@@ -241,6 +243,10 @@ export default function Profile() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const passwordForm = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),
@@ -435,6 +441,31 @@ export default function Profile() {
     }
 
     updateProfileMutation.mutate(patch as ProfileFormData);
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      const status = await userService.deleteOwnAccount(
+        profile?.hasPassword ? deletePassword : undefined
+      );
+      setIsDeleteDialogOpen(false);
+      toast({
+        title: t("Your account is closing"),
+        description: t("You have {{days}} days to restore it by signing in again.", {
+          days: status.daysRemaining,
+        }),
+      });
+      await logout();
+    } catch (err: any) {
+      toast({
+        title: t("Could not close your account"),
+        description: err?.message || t("Please try again."),
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   const handleCancel = () => {
@@ -1188,6 +1219,111 @@ export default function Profile() {
                       </Badge>
                     </div>
                   </div>
+
+                  {/* Danger zone. Admins close accounts through another admin, not here. */}
+                  {!isAdmin && (
+                    <>
+                      <Separator className="my-6" />
+                      <Alert className="border-red-200 bg-red-50">
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                        <AlertTitle className="text-red-900 font-semibold">
+                          {t("Close your account")}
+                        </AlertTitle>
+                        <AlertDescription className="text-red-800">
+                          {/*<p className="mb-3">
+          
+                         {t("Your account is deactivated straight away. You have 30 days to restore it by signing in again; after that it cannot be reopened. Your order history is kept for our records.")}
+                          </p>*/}
+                          <Dialog
+                            open={isDeleteDialogOpen}
+                            onOpenChange={(open) => {
+                              setIsDeleteDialogOpen(open);
+                              if (!open) {
+                                setDeletePassword("");
+                                setDeleteConfirmation("");
+                              }
+                            }}
+                          >
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="border-none"
+                              >
+                                <Trash2 className="w-3 h-3 mr-2" />
+                                {t("Close my account")}
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>{t("Close my account")}</DialogTitle>
+                                <DialogDescription>
+                                  {t("You have 30 days to change your mind — just sign in again. After that the account is closed for good. Any orders still in progress must be finished first.")}
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                {profile?.hasPassword && (
+                                  <div className="space-y-2">
+                                    <Label htmlFor="deletePassword">
+                                      {t("Current Password")}
+                                    </Label>
+                                    <Input
+                                      id="deletePassword"
+                                      type="password"
+                                      autoComplete="current-password"
+                                      value={deletePassword}
+                                      onChange={(e) =>
+                                        setDeletePassword(e.target.value)
+                                      }
+                                    />
+                                  </div>
+                                )}
+                                <div className="space-y-2">
+                                  <Label htmlFor="deleteConfirmation">
+                                    {t("Type DELETE to confirm")}
+                                  </Label>
+                                  <Input
+                                    id="deleteConfirmation"
+                                    value={deleteConfirmation}
+                                    onChange={(e) =>
+                                      setDeleteConfirmation(e.target.value)
+                                    }
+                                    placeholder="DELETE"
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setIsDeleteDialogOpen(false)}
+                                >
+                                  {t("Cancel")}
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  onClick={handleDeleteAccount}
+                                  disabled={
+                                    isDeletingAccount ||
+                                    deleteConfirmation !== "DELETE" ||
+                                    (profile?.hasPassword && !deletePassword)
+                                  }
+                                >
+                                  {isDeletingAccount ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      {t("Closing...")}
+                                    </>
+                                  ) : (
+                                    t("Close my account")
+                                  )}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </AlertDescription>
+                      </Alert>
+                    </>
+                  )}
                 </TabsContent>
               </Tabs>
             </CardContent>

@@ -49,6 +49,12 @@ export default function SignIn() {
     vendorType: string;
   } | null>(null);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [pendingDeletion, setPendingDeletion] = useState<{
+    email: string;
+    password: string;
+    daysRemaining: number;
+  } | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
   const { toast } = useToast();
   const { refreshUser } = useAuth();
   const queryClient = useQueryClient();
@@ -129,6 +135,8 @@ export default function SignIn() {
   const onSubmit = async (data: SigninForm) => {
     console.log("Form submitted with data:", data);
 
+    setPendingDeletion(null);
+
     try {
       console.log("Attempting login...");
       const result = await signinMutation.mutateAsync({
@@ -155,7 +163,14 @@ export default function SignIn() {
         responseData?.details?.requiresVerification === true ||
         err?.message?.toLowerCase().includes("verify your email");
 
-      if (isEmailNotVerified) {
+      if (responseData?.error === "ACCOUNT_PENDING_DELETION") {
+        // Password was right: this is the owner, and the account is still restorable.
+        setPendingDeletion({
+          email: data.email,
+          password: data.password,
+          daysRemaining: responseData?.details?.daysRemaining ?? 0,
+        });
+      } else if (isEmailNotVerified) {
         const email = responseData?.details?.email || data.email;
         setUnverifiedEmail(email);
         // Vendor who stopped before the onboarding video: offer the certificate first.
@@ -183,6 +198,32 @@ export default function SignIn() {
           variant: "destructive",
         });
       }
+    }
+  };
+
+  const handleRestoreAccount = async () => {
+    if (!pendingDeletion) return;
+    setIsRestoring(true);
+    try {
+      const result = await authService.restoreAccount(
+        pendingDeletion.email,
+        pendingDeletion.password
+      );
+      setPendingDeletion(null);
+      toast({
+        title: t("Welcome back"),
+        description: t("Your account has been restored."),
+      });
+      trackLogin("email");
+      await finishSigninNavigation(result.user?.role);
+    } catch (err: any) {
+      toast({
+        title: t("Could not restore your account"),
+        description: err?.message || t("Please contact support."),
+        variant: "destructive",
+      });
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -300,6 +341,39 @@ export default function SignIn() {
                 </Button>
               </form>
             </Form>
+
+            {pendingDeletion && (
+              <Alert className="mt-4 border-red-300 bg-red-50">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  <p className="font-medium mb-1">
+                    {t("This account is scheduled for closure")}
+                  </p>
+                  <p className="text-sm mb-3">
+                    {t("You asked us to close this account. You have")}{" "}
+                    <span className="font-medium">
+                      {pendingDeletion.daysRemaining}
+                    </span>{" "}
+                    {t("day(s) left to change your mind. Restore it now and everything comes back.")}
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={handleRestoreAccount}
+                    disabled={isRestoring}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {isRestoring ? (
+                      <>
+                        <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                        {t("Restoring...")}
+                      </>
+                    ) : (
+                      t("Restore my account")
+                    )}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
 
             {unverifiedEmail && (
               <Alert className="mt-4 border-amber-300 bg-amber-50">

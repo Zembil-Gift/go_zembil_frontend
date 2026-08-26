@@ -21,6 +21,12 @@ export interface User {
   hasPassword?: boolean;
 }
 
+export interface AccountDeletionStatus {
+  deletionRequestedAt: string;
+  restorableUntil: string;
+  daysRemaining: number;
+}
+
 export interface Address {
   id: number;
   type: 'home' | 'work' | 'other';
@@ -337,6 +343,17 @@ class UserService {
     queryParams.append('limit', limit.toString());
     
     return await apiService.getRequest(`/users/${userId}/activity?${queryParams.toString()}`);
+  }
+
+  /**
+   * Close your own account. Soft delete: the account is deactivated and can be
+   * restored by signing in during the grace window, after which it is closed for good.
+   */
+  async deleteOwnAccount(password?: string): Promise<AccountDeletionStatus> {
+    return await apiService.postRequest<AccountDeletionStatus>('/api/users/me/delete', {
+      password,
+      confirmation: 'DELETE',
+    });
   }
 }
 
