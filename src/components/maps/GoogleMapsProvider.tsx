@@ -1,5 +1,6 @@
 import { useJsApiLoader } from '@react-google-maps/api';
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, useEffect, ReactNode } from 'react';
+import { reportEvent } from '@/lib/telemetry';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
@@ -36,6 +37,17 @@ export function GoogleMapsProvider({ children }: GoogleMapsProviderProps) {
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: LIBRARIES,
   });
+
+  // Checkout pins the delivery address on a map and offers no way past it, so
+  // a failure here stops orders while every backend metric stays green. This
+  // is the only place that failure is observable at all.
+  useEffect(() => {
+    if (loadError) {
+      reportEvent('maps_load_failed');
+    } else if (isLoaded) {
+      reportEvent('maps_loaded');
+    }
+  }, [isLoaded, loadError]);
 
   return (
     <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>

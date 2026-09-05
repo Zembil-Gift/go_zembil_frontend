@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { GoogleMap, Marker } from '@react-google-maps/api';
 import { useGoogleMaps } from './GoogleMapsProvider';
+import { reportEvent } from '@/lib/telemetry';
 import { geocodingService, type GeocodeResponse } from '@/services/geocodingService.ts';
 import { MapPin, Loader2, Search, LocateFixed } from 'lucide-react';
 import { useTranslation } from "react-i18next";
@@ -199,6 +200,12 @@ export function LocationPicker({
       },
       (error) => {
         console.error('Geolocation error:', error);
+        // A refusal is a choice, not a fault -- counted so a sudden jump is
+        // visible, since it usually means a permissions-policy or HTTPS
+        // regression rather than customers changing their minds at once.
+        if (error.code === error.PERMISSION_DENIED) {
+          reportEvent('maps_geolocation_denied');
+        }
         alert('Could not get your location. Please allow location access or drop a pin manually.');
         setIsLocating(false);
       },
