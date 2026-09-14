@@ -960,31 +960,20 @@ export default function VendorProductOrders() {
                     </div>
                   )}
 
-                  {/* Action Buttons for PROCESSING orders */}
+                  {/* PROCESSING orders: informational only. Shipping is not a vendor
+                      transition - the order moves to SHIPPED when the assigned delivery
+                      person confirms pickup, so there is no button here to offer. */}
                   {selectedOrder.status === "PROCESSING" && (
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                       <h4 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
                         <Package className="h-4 w-4" />
                         {t("Order in Processing")}
                       </h4>
-                      <p className="text-sm text-orange-700 mb-4">
-                        {t("Once you've handed over the items to the delivery service, mark the order as shipped.")}
+                      <p className="text-sm text-orange-700">
+                        {selectedOrder.deliveryInfo
+                          ? t("Prepare the items and hand them to the delivery person below. The order moves to Shipped once they confirm pickup.")
+                          : t("Prepare the items for pickup. An admin will assign a delivery person, and the order moves to Shipped once they confirm pickup.")}
                       </p>
-                      <Button
-                        onClick={() =>
-                          updateStatusMutation.mutate({
-                            orderId: selectedOrder.orderId,
-                            status: "SHIPPED",
-                          })
-                        }
-                        disabled={updateStatusMutation.isPending}
-                        className="bg-orange-600 hover:bg-orange-600 text-white"
-                      >
-                        <Truck className="h-4 w-4 mr-2" />
-                        {updateStatusMutation.isPending
-                          ? "Updating..."
-                          : "Mark as Shipped"}
-                      </Button>
                     </div>
                   )}
 
