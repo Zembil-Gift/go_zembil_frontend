@@ -1,6 +1,8 @@
 
 import { useTranslation } from "react-i18next";
+import { useStaticSeo } from "@/hooks/useSeo";
 export default function Terms() {
+  useStaticSeo("/terms");
   const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gray-50">

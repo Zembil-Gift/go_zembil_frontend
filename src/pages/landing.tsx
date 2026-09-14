@@ -38,6 +38,7 @@ import { SHOW_APP_DOWNLOAD } from "@/lib/featureFlags";
 import TopCategoriesSection from "@/components/landing/TopCategoriesSection";
 import SectionBoundary from "@/components/SectionBoundary";
 import { useTranslation } from "react-i18next";
+import { useStaticSeo } from "@/hooks/useSeo";
 
 /**
  * ponytail: every landing query used to wait on `isInitialized`, which is a
@@ -85,6 +86,7 @@ function ProductGridSkeleton() {
 
 export default function Landing() {
   const { t } = useTranslation();
+  useStaticSeo("/");
   const activeCurrency = useActiveCurrency();
 
   const [selectedBudget, setSelectedBudget] = useState("all");
@@ -241,6 +243,13 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-light-cream">
+      {/* The hero is a rotating campaign graphic with no heading of its own, so
+          this page had no <h1> at all. Hiding it visually keeps the design
+          untouched while giving crawlers and screen readers the page subject. */}
+      <h1 className="sr-only">
+        {t("Send gifts to Ethiopia, from anywhere in the world")}
+      </h1>
+
       <SectionBoundary name="CampaignBanner">
         <CampaignBanner />
       </SectionBoundary>

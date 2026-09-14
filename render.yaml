@@ -5,6 +5,72 @@ services:
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
     routes:
+      # --- Prerendered routes (scripts/prerender.mjs) ------------------------
+      # These MUST come before the catch-all below.
+      #
+      # `npm run build` writes a real HTML file per static route --
+      # dist/shop/index.html and so on -- each carrying its own <title>,
+      # description, canonical, OG/Twitter card, JSON-LD and a no-JS content
+      # fallback. That is the only thing a crawler which does not execute
+      # JavaScript ever sees: every AI crawler, and every social link-preview
+      # bot (WhatsApp, Facebook, LinkedIn, Slack).
+      #
+      # Render documents that it "does not apply redirect or rewrite rules to a
+      # path if a resource exists at that path", but it does NOT document
+      # whether a request for /shop resolves to dist/shop/index.html by
+      # directory index. If it does not, the catch-all below swallows /shop and
+      # serves the generic shell instead -- silently, with no error anywhere,
+      # and every prerendered file becomes dead weight.
+      #
+      # Naming each path removes the guess: first match wins, so these resolve
+      # correctly whether or not Render's directory-index behaviour cooperates.
+      # If it does cooperate, these rules simply never fire.
+      #
+      # Keep in sync with src/lib/seo-routes.json -- the postbuild step fails
+      # the build if a prerendered route is missing here.
+      - type: rewrite
+        source: /about
+        destination: /about/index.html
+      - type: rewrite
+        source: /collections
+        destination: /collections/index.html
+      - type: rewrite
+        source: /contact
+        destination: /contact/index.html
+      - type: rewrite
+        source: /events
+        destination: /events/index.html
+      - type: rewrite
+        source: /gifts
+        destination: /gifts/index.html
+      - type: rewrite
+        source: /occasions
+        destination: /occasions/index.html
+      - type: rewrite
+        source: /packages
+        destination: /packages/index.html
+      - type: rewrite
+        source: /partner-signup
+        destination: /partner-signup/index.html
+      - type: rewrite
+        source: /privacy
+        destination: /privacy/index.html
+      - type: rewrite
+        source: /services
+        destination: /services/index.html
+      - type: rewrite
+        source: /shop
+        destination: /shop/index.html
+      - type: rewrite
+        source: /terms
+        destination: /terms/index.html
+      - type: rewrite
+        source: /vendor-signup
+        destination: /vendor-signup/index.html
+
+      # --- SPA fallback -----------------------------------------------------
+      # Everything else is a client-side route (/product/:id, /events/:slug,
+      # the dashboards) and is served the app shell.
       - type: rewrite
         source: /*
         destination: /index.html

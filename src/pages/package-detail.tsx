@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useSeo } from "@/hooks/useSeo";
+import { breadcrumbJsonLd } from "@/lib/seo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -299,6 +301,23 @@ export default function PackageDetailPage() {
     queryKey: ["packages", "detail", numericPackageId],
     queryFn: () => packageService.getPackageDetail(numericPackageId),
     enabled: Number.isFinite(numericPackageId) && numericPackageId > 0,
+  });
+
+  useSeo({
+    enabled: !isLoading,
+    noindex: !packageDetail,
+    title: packageDetail?.name || "Package not found",
+    description: packageDetail?.description,
+    image: packageDetail?.images?.[0],
+    type: "product",
+    canonicalPath: `/packages/${packageId}`,
+    jsonLd: packageDetail
+      ? breadcrumbJsonLd([
+          { name: "Home", path: "/" },
+          { name: "Packages", path: "/packages" },
+          { name: packageDetail.name, path: `/packages/${packageId}` },
+        ])
+      : null,
   });
 
   useEffect(() => {

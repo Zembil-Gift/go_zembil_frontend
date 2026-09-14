@@ -80,7 +80,17 @@ i18n
 
 i18n.on('languageChanged', (lng) => {
   void loadBundle(lng);
+  // <html lang> was hardcoded to "en" in index.html. Search engines and screen
+  // readers both read it, so Amharic content was being announced and indexed as
+  // English.
+  if (typeof document !== 'undefined' && lng) {
+    document.documentElement.lang = lng;
+  }
 });
+
+if (typeof document !== 'undefined' && i18n.resolvedLanguage) {
+  document.documentElement.lang = i18n.resolvedLanguage;
+}
 
 /** Resolves once the initial language's translations are in place. */
 export const i18nReady = loadBundle(i18n.resolvedLanguage);

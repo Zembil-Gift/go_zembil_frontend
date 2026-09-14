@@ -12,6 +12,7 @@ import { tokenManager } from "@/services/tokenManager";
 import { Mail, RefreshCw, CheckCircle2, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { useSeo } from "@/hooks/useSeo";
 
 z.object({
   otp: z.string().length(6, "Please enter the 6-digit code"),
@@ -39,6 +40,7 @@ interface OtpResponse {
 }
 
 export default function VerifyEmail() {
+  useSeo({ title: "Verify Your Email", noindex: true });
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const location = useLocation();

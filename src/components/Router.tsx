@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import ScrollToTop from "./ScrollToTop";
 import AnalyticsPageviewTracker from "./AnalyticsPageviewTracker";
 import Layout from "./layout/layout";
+import { useNoindex } from "@/hooks/useSeo";
 
 import Landing from "@/pages/landing";
 const Gifts = React.lazy(() => import("@/pages/gifts"));
@@ -382,6 +383,10 @@ function RoleBasedPrefetch() {
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  // Every page behind a login is noindex, set once here rather than on each of
+  // the ~80 routes these guards wrap. useNoindex owns only its own <meta> tag,
+  // so a wrapped page is still free to set its own title via useSeo.
+  useNoindex();
   const { t } = useTranslation();
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
@@ -407,6 +412,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
+  useNoindex();
   const { t } = useTranslation();
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
@@ -451,6 +457,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 function VendorRoute({ children }: { children: React.ReactNode }) {
+  useNoindex();
   const { t } = useTranslation();
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
@@ -496,6 +503,7 @@ function VendorRoute({ children }: { children: React.ReactNode }) {
 }
 
 function DeliveryRoute({ children }: { children: React.ReactNode }) {
+  useNoindex();
   const { t } = useTranslation();
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();

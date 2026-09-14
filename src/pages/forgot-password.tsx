@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import authService from "@/services/authService";
 import { useTranslation } from "react-i18next";
+import { useSeo } from "@/hooks/useSeo";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -21,6 +22,7 @@ const forgotPasswordSchema = z.object({
 type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPassword() {
+  useSeo({ title: "Reset Your Password", noindex: true });
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);

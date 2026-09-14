@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -48,8 +48,35 @@ import { getIconByName } from "@/components/admin/IconPicker";
 import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { useTranslation } from "react-i18next";
+import { useSeo } from "@/hooks/useSeo";
+import { STATIC_ROUTES, slugToLabel } from "@/lib/seo";
 
 export default function Shop() {
+  // Three routes render this page: /shop, /shop/:categorySlug and
+  // /shop/category/:subcategorySlug. Each needs its own title, and the
+  // canonical must drop ?search=/?sort= so filtered views collapse onto the
+  // clean category URL instead of competing with it (useSeo defaults the
+  // canonical to the pathname, which is exactly that).
+  const { categorySlug, subcategorySlug } = useParams<{
+    categorySlug?: string;
+    subcategorySlug?: string;
+  }>();
+  const slug = subcategorySlug || categorySlug;
+  const label = slug ? slugToLabel(slug) : null;
+
+  useSeo(
+    label
+      ? {
+          title: `${label} — Ethiopian Gifts Delivered`,
+          description: `Shop ${label.toLowerCase()} from verified Ethiopian vendors on goGerami. Ordered from anywhere, delivered anywhere in Ethiopia.`,
+        }
+      : {
+          title: STATIC_ROUTES["/shop"].title,
+          description: STATIC_ROUTES["/shop"].description,
+          canonicalPath: "/shop",
+        }
+  );
+
   return <ShopContent />;
 }
 

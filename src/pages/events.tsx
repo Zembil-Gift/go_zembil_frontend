@@ -46,9 +46,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { useTranslation } from "react-i18next";
+import { useStaticSeo } from "@/hooks/useSeo";
 
 // Helper function for badge colors
 export default function Events() {
+  useStaticSeo("/events");
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();

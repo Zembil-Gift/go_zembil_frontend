@@ -9,6 +9,7 @@ import ProductPagination from '@/components/ProductPagination';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Search as SearchIcon, Mic, Languages } from 'lucide-react';
 import { useTranslation } from "react-i18next";
+import { useSeo } from "@/hooks/useSeo";
 
 interface Product {
   id: number;
@@ -29,6 +30,7 @@ interface Product {
 }
 
 export default function Search() {
+  useSeo({ title: "Search", noindex: true });
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');

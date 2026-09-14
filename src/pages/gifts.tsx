@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import { useSeo } from "@/hooks/useSeo";
+import { STATIC_ROUTES, slugToLabel } from "@/lib/seo";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
@@ -45,6 +47,28 @@ export default function Gifts() {
     
   const pathRecipient = params.categorySlug && knownRecipients.includes(params.categorySlug) ? params.categorySlug : null;
   const finalRecipientParam = recipientParam || pathRecipient;
+
+  // /gifts/:categorySlug carries two different things: a product category, or
+  // a recipient ("mom", "birthday"). They read as different pages to a
+  // searcher, so they get different titles.
+  const seoLabel = slugToLabel(pathRecipient || categorySlug || "");
+  useSeo(
+    pathRecipient
+      ? {
+          title: `Gifts for ${seoLabel} — Delivered in Ethiopia`,
+          description: `Thoughtful gift ideas for ${seoLabel.toLowerCase()}, sourced from Ethiopian vendors and delivered anywhere in Ethiopia.`,
+        }
+      : categorySlug
+        ? {
+            title: `${seoLabel} Gifts — Delivered in Ethiopia`,
+            description: `Browse ${seoLabel.toLowerCase()} gifts from verified Ethiopian vendors on goGerami, delivered anywhere in Ethiopia.`,
+          }
+        : {
+            title: STATIC_ROUTES["/gifts"].title,
+            description: STATIC_ROUTES["/gifts"].description,
+            canonicalPath: "/gifts",
+          }
+  );
 
   // Local state for interactive elements that haven't been committed to URL yet (like typing in search)
   const [localSearchTerm, setLocalSearchTerm] = useState(searchParam);

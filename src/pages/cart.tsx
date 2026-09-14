@@ -50,6 +50,7 @@ import {
   type AnalyticsItem,
 } from "@/lib/analytics";
 import { useTranslation } from "react-i18next";
+import { useSeo } from "@/hooks/useSeo";
 
 function toAnalyticsItem(item: CartItem): AnalyticsItem {
   return {
@@ -62,6 +63,7 @@ function toAnalyticsItem(item: CartItem): AnalyticsItem {
 }
 
 export default function Cart() {
+  useSeo({ title: "Your Cart", noindex: true });
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
