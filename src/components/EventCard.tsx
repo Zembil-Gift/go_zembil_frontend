@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { MapPin, Clock, Calendar, ChevronRight, Ticket } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,6 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
   // before giving up and hiding the image -- same guard as gift-card.tsx.
   const [rawFallback, setRawFallback] = useState(false);
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const minPrice =
     event.ticketTypes?.length > 0
       ? Math.min(...event.ticketTypes.map((t) => t.priceMinor))
@@ -54,9 +53,12 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
 
   return (
     <div>
+      {/* A real <a href>, not an onClick on a div: this card is how a crawler
+          discovers every event detail page, and an onClick leaves no link to
+          follow -- nor a middle-click or "open in new tab" for anyone else. */}
+      <Link to={`/events/${event.id}`} className="block">
       <Card
         className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-eagle-green/10 overflow-hidden"
-        onClick={() => navigate(`/events/${event.id}`)}
       >
         <div className="relative aspect-[4/3] overflow-hidden">
           <img
@@ -165,6 +167,7 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
           </div>
         </CardContent>
       </Card>
+      </Link>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { MapPin, Clock, Users, ImageIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,6 @@ interface ServiceCardProps {
 
 export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const [primaryImageLoaded, setPrimaryImageLoaded] = useState(false);
   const [secondaryImageLoaded, setSecondaryImageLoaded] = useState(false);
@@ -78,9 +77,12 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
       onMouseLeave={() => setIsHovered(false)}
       className="h-full transition-transform duration-200 hover:-translate-y-1"
     >
+      {/* A real <a href>, not an onClick on a div: this card is how a crawler
+          discovers every service detail page, and an onClick leaves no link to
+          follow -- nor a middle-click or "open in new tab" for anyone else. */}
+      <Link to={`/services/${service.id}`} className="block h-full">
       <Card
         className="group h-full flex flex-col overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-md cursor-pointer"
-        onClick={() => navigate(`/services/${service.id}`)}
       >
         <CardContent className="p-0 flex flex-col flex-1">
           <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
@@ -230,16 +232,9 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
                 <p className="text-sm text-eagle-green/60 line-clamp-4">
                   {service.description}
                 </p>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/services/${service.id}`);
-                  }}
-                  className="mt-1 text-xs font-medium text-viridian-green hover:underline"
-                >
+                <span className="mt-1 text-xs font-medium text-viridian-green group-hover:underline">
                   {t("View more")}
-                </button>
+                </span>
               </div>
             )}
 
@@ -281,6 +276,7 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
           </div>
         </CardContent>
       </Card>
+      </Link>
     </div>
   );
 }
