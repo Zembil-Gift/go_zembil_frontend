@@ -14,8 +14,16 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- The Gotham stylesheet had no preconnect, so it paid a full DNS + TLS
+         handshake on the critical path while the Google faces reused theirs. -->
+    <link rel="preconnect" href="https://fonts.cdnfonts.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/gotham" />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Playfair+Display:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- DM Sans previously requested the opsz (optical size) axis and the full
+         100..1000 weight range. Nothing in the app varies optical size, and the
+         weights actually used are 300-800 (font-light .. font-extrabold), so
+         the narrower range below is the same type at a smaller download. The
+         italic axis stays: `italic` is used in ~20 places. -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300..800;1,300..800&family=Playfair+Display:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>
