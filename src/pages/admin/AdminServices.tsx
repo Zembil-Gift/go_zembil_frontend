@@ -613,6 +613,8 @@ export default function AdminServices() {
                                   src={service.primaryImageUrl}
                                   alt={service.title}
                                   className="h-10 w-10 rounded object-cover"
+                                loading="lazy"
+                                decoding="async"
                                 />
                               ) : (
                                 <div className="h-10 w-10 rounded bg-eagle-green/10 flex items-center justify-center">
@@ -770,6 +772,8 @@ export default function AdminServices() {
                                 src={service.primaryImageUrl}
                                 alt={service.title}
                                 className="h-16 w-16 rounded-lg object-cover"
+                              loading="lazy"
+                              decoding="async"
                               />
                             ) : (
                               <div className="h-16 w-16 rounded-lg bg-eagle-green/10 flex items-center justify-center">
@@ -1116,6 +1120,8 @@ export default function AdminServices() {
                                 src={pkg.primaryImageUrl}
                                 alt={pkg.name}
                                 className="h-16 w-16 rounded-lg object-cover"
+                              loading="lazy"
+                              decoding="async"
                               />
                             ) : (
                               <div className="h-16 w-16 rounded-lg bg-orange-100 flex items-center justify-center">
@@ -1275,6 +1281,8 @@ export default function AdminServices() {
                                     src={request.serviceCover}
                                     alt={request.serviceName}
                                     className="h-10 w-10 rounded object-cover"
+                                  loading="lazy"
+                                  decoding="async"
                                   />
                                 ) : (
                                   <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center">
@@ -1424,6 +1432,8 @@ export default function AdminServices() {
                     src={selectedService.primaryImageUrl}
                     alt={selectedService.title}
                     className="h-24 w-24 rounded-lg object-cover"
+                  loading="lazy"
+                  decoding="async"
                   />
                 ) : (
                   <div className="h-24 w-24 rounded-lg bg-eagle-green/10 flex items-center justify-center">

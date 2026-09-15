@@ -362,6 +362,8 @@ export default function MyServiceOrders() {
                     src={serviceService.getPrimaryImageUrl(order.service)}
                     alt={order.service.title}
                     className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                  loading="lazy"
+                  decoding="async"
                   />
                 ) : (
                   <div className="w-20 h-20 rounded-lg bg-eagle-green/10 flex items-center justify-center flex-shrink-0">
@@ -661,6 +663,8 @@ export default function MyServiceOrders() {
                           )}
                           alt={selectedOrder.service.title}
                           className="w-24 h-24 rounded-lg object-cover"
+                        loading="lazy"
+                        decoding="async"
                         />
                       ) : (
                         <div className="w-24 h-24 rounded-lg bg-eagle-green/10 flex items-center justify-center">

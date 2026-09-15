@@ -146,6 +146,8 @@ export default function VendorEventDetail() {
                 src={getEventImageUrl(event.images, event.bannerImageUrl)}
                 alt={event.title}
                 className="w-full h-64 object-cover rounded-lg"
+              loading="lazy"
+              decoding="async"
               />
             ) : (
               <div className="flex flex-col items-center justify-center py-12 bg-gray-50 rounded-lg">

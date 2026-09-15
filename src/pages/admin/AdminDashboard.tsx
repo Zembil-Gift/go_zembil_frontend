@@ -896,6 +896,8 @@ export default function AdminDashboard() {
                         alt={product.name}
                         className="h-12 w-12 rounded-lg object-cover flex-shrink-0"
                         onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                      loading="lazy"
+                      decoding="async"
                       />
                       <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center flex-shrink-0 hidden">
                         <Package className="h-6 w-6 text-blue-500" />

@@ -167,6 +167,8 @@ export default function ServiceConfirmation() {
                       src={serviceService.getPrimaryImageUrl(order.service)} 
                       alt={order.service.title}
                       className="w-20 h-20 rounded-lg object-cover"
+                    loading="lazy"
+                    decoding="async"
                     />
                   ) : (
                     <div className="w-20 h-20 rounded-lg bg-eagle-green/10 flex items-center justify-center">

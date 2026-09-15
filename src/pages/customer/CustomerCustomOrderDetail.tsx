@@ -422,6 +422,8 @@ function CustomerCustomOrderDetailContent() {
               src={imageUrl}
               alt={value.fieldName}
               className="w-20 h-20 object-cover rounded-lg"
+            loading="lazy"
+            decoding="async"
             />
             <ExternalLink className="h-4 w-4" />
           </a>
@@ -901,6 +903,8 @@ function CustomerCustomOrderDetailContent() {
                                                 "_blank"
                                               )
                                             }
+                                          loading="lazy"
+                                          decoding="async"
                                           />
                                         </div>
                                       )}
@@ -929,6 +933,8 @@ function CustomerCustomOrderDetailContent() {
                               src={imagePreview}
                               alt={t("Preview")}
                               className="h-20 w-20 object-cover rounded-lg border-2 border-eagle-green/20"
+                            loading="lazy"
+                            decoding="async"
                             />
                             <button
                               type="button"

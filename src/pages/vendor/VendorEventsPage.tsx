@@ -244,6 +244,8 @@ export default function VendorEventsPage() {
                       const fallback = e.currentTarget.nextElementSibling;
                       if (fallback) fallback.classList.remove("hidden");
                     }}
+                  loading="lazy"
+                  decoding="async"
                   />
                   <div className="h-16 w-24 rounded bg-gray-200 hidden items-center justify-center">
                     <Calendar className="h-8 w-8 text-gray-400" />

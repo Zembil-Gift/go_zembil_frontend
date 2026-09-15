@@ -664,6 +664,8 @@ export default function VendorDashboard() {
                           src={product.images[0]} 
                           alt={product.name}
                           className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

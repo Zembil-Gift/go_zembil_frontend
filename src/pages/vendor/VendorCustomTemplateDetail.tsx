@@ -409,6 +409,8 @@ export default function VendorCustomTemplateDetail() {
                             src={imageUrl}
                             alt={`Template image ${index + 1}`}
                             className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
                           />
                         </div>
                       ))}

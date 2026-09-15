@@ -205,6 +205,8 @@ export default function Collections() {
                                 src={product.images[0]?.fullUrl || product.images[0]?.url} 
                                 alt={product.name}
                                 className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"
+                              loading="lazy"
+                              decoding="async"
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-200 flex items-center justify-center">

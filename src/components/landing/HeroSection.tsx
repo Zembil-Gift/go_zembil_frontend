@@ -100,6 +100,8 @@ export default function HeroSection({
                 src="/attached_assets/landing_page_img.png"
                 alt={t("Ethiopian Gifts - Send Love Through Meaningful Gifts")}
                 className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
               />
             </div>
           </div>

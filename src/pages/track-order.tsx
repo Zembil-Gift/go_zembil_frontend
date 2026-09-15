@@ -244,6 +244,8 @@ export default function TrackOrder() {
                           src={item.product?.images?.[0] || "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"}
                           alt={item.product?.name || "Product"}
                           className="w-full h-full object-cover rounded"
+                        loading="lazy"
+                        decoding="async"
                         />
                       </div>
                       <div className="flex-1">

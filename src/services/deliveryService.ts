@@ -231,8 +231,32 @@ export interface PagedResponse<T> {
   last: boolean;
 }
 
+export interface DeliveryAutoAssignSettingDto {
+  enabled: boolean;
+  deliveryPersonId?: number | null;
+  deliveryPersonName?: string | null;
+  /** False when the configured person was deactivated: auto-assignment then falls back to emailing admins. */
+  deliveryPersonActive?: boolean | null;
+  /** Hours from assignment to the promised delivery. */
+  etaHours?: number | null;
+}
+
 // Admin Delivery Person Service
 export const adminDeliveryService = {
+  getAutoAssignSetting: () =>
+    apiService.getRequest<DeliveryAutoAssignSettingDto>(
+      "/api/admin/delivery/auto-assign"
+    ),
+
+  updateAutoAssignSetting: (data: {
+    enabled: boolean;
+    deliveryPersonId?: number | null;
+    etaHours?: number | null;
+  }) =>
+    apiService.putRequest<DeliveryAutoAssignSettingDto>(
+      "/api/admin/delivery/auto-assign",
+      data
+    ),
   setOrderEta: (orderId: number, eta: string) =>
     apiService.patchRequest<{ id: number; orderNumber?: string; eta?: string }>(
       `/api/admin/orders/${orderId}/eta`,

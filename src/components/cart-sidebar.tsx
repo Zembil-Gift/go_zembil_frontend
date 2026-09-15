@@ -91,6 +91,8 @@ export default function CartSidebar() {
                           console.error('Image failed to load:', imageUrl);
                           (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1447933601403-0c6688de566e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100";
                         }}
+                      loading="lazy"
+                      decoding="async"
                       />
                     </div>
                     

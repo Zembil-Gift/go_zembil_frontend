@@ -294,6 +294,8 @@ export default function FreeGiftCampaigns() {
                   src={tier.imageUrl}
                   alt={tier.code}
                   className="w-full h-28 object-cover"
+                loading="lazy"
+                decoding="async"
                 />
               )}
               <CardHeader className="pb-3">
@@ -350,6 +352,8 @@ export default function FreeGiftCampaigns() {
                         src={tier.giftProductCover}
                         alt={tier.giftProductName ?? 'Gift'}
                         className="w-12 h-12 rounded-lg object-cover shrink-0"
+                      loading="lazy"
+                      decoding="async"
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">

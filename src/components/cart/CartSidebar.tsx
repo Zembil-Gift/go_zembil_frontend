@@ -145,6 +145,8 @@ export function CartSidebar() {
                       onError={(e) => {
                         e.currentTarget.src = "/api/placeholder/100/100";
                       }}
+                    loading="lazy"
+                    decoding="async"
                     />
                   </div>
 

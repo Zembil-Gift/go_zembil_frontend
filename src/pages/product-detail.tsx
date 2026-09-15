@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSeo } from "@/hooks/useSeo";
-import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, productJsonLd, productPath, productIdFromParam } from "@/lib/seo";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -45,13 +45,16 @@ function ProductImage({
   alt,
   className,
   onClick,
-  width = 900
+  width = 900,
+  priority = false,
 }: {
   src: string;
   alt: string;
   className?: string;
   onClick?: () => void;
   width?: number;
+  /** The gallery's main frame is this page's LCP element -- it must not be lazy. */
+  priority?: boolean;
 }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -85,6 +88,9 @@ function ProductImage({
           loaded ? 'opacity-100' : 'opacity-0',
           className
         )}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
+        decoding={priority ? "sync" : "async"}
         onLoad={() => setLoaded(true)}
         onError={() => {
           if (!rawFallback) {
@@ -104,7 +110,10 @@ export default function ProductDetail() {
   const { t } = useTranslation();
   const params = useParams();
   const navigate = useNavigate();
-  const productId = params.id;
+  // The route param is now "ethiopian-coffee-gift-set-42"; the id is the
+  // trailing number. Bare "/product/42" links -- every one ever shared, plus
+  // the cart and wishlist, which have an id but no product name -- still parse.
+  const productId = productIdFromParam(params.id);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -269,6 +278,17 @@ export default function ProductDetail() {
     enabled: !!product?.vendorId,
   });
 
+  // One product, one indexable URL: if the visitor arrived on a bare id or a
+  // stale slug, swap the address bar for the canonical form. `replace` so the
+  // back button still leaves the page instead of bouncing off the redirect.
+  useEffect(() => {
+    if (!product || !productId) return;
+    const canonical = productPath(productId, product.name);
+    if (window.location.pathname !== canonical) {
+      navigate(canonical, { replace: true });
+    }
+  }, [product, productId, navigate]);
+
   // The catalogue's highest-value page for both search and generative engines:
   // the Product block is what produces price/stock/star rich results and what
   // an assistant quotes when asked where to buy something.
@@ -288,7 +308,7 @@ export default function ProductDetail() {
       (product ? `Send ${product.name} to family and friends in Ethiopia with goGerami.` : undefined),
     image: displayImages[0],
     type: "product",
-    canonicalPath: `/product/${productId}`,
+    canonicalPath: productPath(productId!, product?.name),
     jsonLd: product
       ? [
           productJsonLd({
@@ -303,7 +323,7 @@ export default function ProductDetail() {
             price: currentPrice ?? undefined,
             currency: currencyCode,
             inStock: stockQuantity === null || stockQuantity > 0,
-            path: `/product/${productId}`,
+            path: productPath(productId!, product.name),
             ratingValue: ratingSummary?.averageRating,
             reviewCount: ratingSummary?.totalReviews,
           }),
@@ -313,7 +333,7 @@ export default function ProductDetail() {
             ...(product.subCategoryName
               ? [{ name: product.subCategoryName, path: "/shop" }]
               : []),
-            { name: product.name, path: `/product/${productId}` },
+            { name: product.name, path: productPath(productId!, product.name) },
           ]),
         ]
       : null,
@@ -611,6 +631,7 @@ export default function ProductDetail() {
                     src={displayImages[selectedImageIndex]}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    priority
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
                     <ZoomIn className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -1014,17 +1035,67 @@ export default function ProductDetail() {
             <TabsContent value="reviews" className="space-y-6 mt-6">
               <ProductReviewsSection productId={Number(productId)} />
             </TabsContent>
-            <TabsContent value="details" className="space-y-6">
+            {/* forceMount: Radix unmounts an inactive tab, so everything below
+                was absent from the DOM on load. Crawlers that do not execute
+                JavaScript -- every AI crawler, every social preview bot -- read
+                only the delivered HTML, and specs and delivery terms are among
+                the most-quoted facts in generative shopping answers. Radix
+                still sets `hidden` when the tab is not selected, so this is
+                invisible to the eye and unchanged for a mouse. */}
+            <TabsContent value="details" className="space-y-6" forceMount>
               <div className="bg-white rounded-lg p-6">
                 <h3 className="font-semibold text-lg mb-4">{t("Product Details")}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {product.subCategoryName && (
+                    <div>
+                      <span className="font-medium">{t("Category:")}</span>
+                      <span className="ml-2 text-gray-600">{product.subCategoryName}</span>
+                    </div>
+                  )}
                   {selectedSku?.skuName && (
                     <div>
                       <span className="font-medium">{t("Variant:")}</span>
                       <span className="ml-2 text-gray-600">{selectedSku.skuName}</span>
                     </div>
                   )}
+                  {vendorProfile?.businessName && (
+                    <div>
+                      <span className="font-medium">{t("Sold by:")}</span>
+                      <span className="ml-2 text-gray-600">{vendorProfile.businessName}</span>
+                    </div>
+                  )}
                 </div>
+                {product.description && (
+                  <p className="mt-4 text-gray-600 leading-relaxed">
+                    {product.description}
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+            {/* The trigger for this tab existed with no TabsContent behind it,
+                so selecting "Shipping & Returns" rendered nothing at all. Copy
+                is quoted from /terms rather than restated, so there is one
+                source of truth for what the business actually promises. */}
+            <TabsContent value="shipping" className="space-y-6" forceMount>
+              <div className="bg-white rounded-lg p-6 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">{t("Delivery")}</h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {t("We strive to deliver all orders within the estimated timeframe. However, delivery times may vary due to factors beyond our control, including weather conditions, local circumstances, and vendor availability.")}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">{t("Returns")}</h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {t("Due to the nature of our service and products, returns are generally not accepted. However, we will work with customers to resolve any issues with damaged or significantly misdescribed items.")}
+                  </p>
+                </div>
+                <Link
+                  to="/terms"
+                  className="inline-block text-sm font-semibold text-viridian-green hover:underline"
+                >
+                  {t("Read the full terms")}
+                </Link>
               </div>
             </TabsContent>
           </Tabs>

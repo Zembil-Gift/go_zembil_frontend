@@ -643,6 +643,8 @@ export default function AdminCustomOrderAssignments() {
                       src={selectedAssignment.pickupImageUrl}
                       alt="Pickup proof"
                       className="w-full max-h-96 object-contain bg-gray-100"
+                    loading="lazy"
+                    decoding="async"
                     />
                   </div>
                   {selectedAssignment.pickupUploadedAt && (
@@ -668,6 +670,8 @@ export default function AdminCustomOrderAssignments() {
                       src={selectedAssignment.proofImageUrl}
                       alt="Delivery proof"
                       className="w-full max-h-96 object-contain bg-gray-100"
+                    loading="lazy"
+                    decoding="async"
                     />
                   </div>
                   {selectedAssignment.proofUploadedAt && (

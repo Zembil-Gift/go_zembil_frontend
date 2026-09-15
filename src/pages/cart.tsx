@@ -995,6 +995,8 @@ export default function Cart() {
                                         "Product"
                                       }
                                       className="w-full h-full object-cover rounded-lg"
+                                    loading="lazy"
+                                    decoding="async"
                                     />
                                   ) : (
                                     <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
@@ -1130,6 +1132,8 @@ export default function Cart() {
                                       "Product"
                                     }
                                     className="w-full h-full object-cover rounded-lg"
+                                  loading="lazy"
+                                  decoding="async"
                                   />
                                 ) : (
                                   <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">

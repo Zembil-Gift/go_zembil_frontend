@@ -1184,6 +1184,8 @@ export default function CreateService() {
                               src={URL.createObjectURL(file)}
                               alt={file.name}
                               className="w-16 h-16 object-cover rounded-md border"
+                            loading="lazy"
+                            decoding="async"
                             />
                             <button
                               type="button"
@@ -1792,6 +1794,8 @@ export default function CreateService() {
                                         src={URL.createObjectURL(file)}
                                         alt={`Preview ${fileIndex + 1}`}
                                         className="w-full h-full object-cover rounded-md border"
+                                      loading="lazy"
+                                      decoding="async"
                                       />
                                       <Button
                                         type="button"

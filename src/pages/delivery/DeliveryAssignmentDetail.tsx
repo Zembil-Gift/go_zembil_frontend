@@ -857,6 +857,8 @@ export default function DeliveryAssignmentDetail() {
                     src={proofImagePreview}
                     alt={t("Delivery proof preview")}
                     className="w-full max-h-64 object-cover rounded-lg border"
+                  loading="lazy"
+                  decoding="async"
                   />
                   <Button
                     type="button"
@@ -1026,6 +1028,8 @@ export default function DeliveryAssignmentDetail() {
                     src={pickupImagePreview}
                     alt={t("Pickup proof preview")}
                     className="w-full max-h-64 object-cover rounded-lg border"
+                  loading="lazy"
+                  decoding="async"
                   />
                   <Button
                     type="button"

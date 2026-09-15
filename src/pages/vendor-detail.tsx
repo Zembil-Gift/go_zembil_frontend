@@ -143,6 +143,8 @@ export default function VendorDetail() {
                   src={vendor.logoUrl}
                   alt={vendor.businessName}
                   className="w-24 h-24 rounded-full object-cover border-4 border-gray-100 shadow-md"
+                loading="lazy"
+                decoding="async"
                 />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-viridian-green/10 flex items-center justify-center">
@@ -284,7 +286,11 @@ export default function VendorDetail() {
             )}
           </TabsContent>
 
-          <TabsContent value="about" className="mt-6">
+          {/* forceMount: the vendor's own description, location and contact
+              details live in this tab, and Radix leaves an inactive tab out of
+              the DOM entirely -- so the LocalBusiness facts a crawler most
+              wants were never in the delivered HTML. */}
+          <TabsContent value="about" className="mt-6" forceMount>
             <Card>
               <CardContent className="p-6 space-y-4">
                 <h3 className="font-semibold text-lg">{t("About")} {vendor.businessName}</h3>

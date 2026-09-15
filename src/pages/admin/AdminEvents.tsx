@@ -396,6 +396,8 @@ export default function AdminEvents() {
                                   "hidden"
                                 );
                               }}
+                            loading="lazy"
+                            decoding="async"
                             />
                             <div className="h-12 w-12 rounded bg-gray-100 flex items-center justify-center">
                               <Calendar className="h-6 w-6 text-gray-400" />
@@ -573,6 +575,8 @@ export default function AdminEvents() {
                                 "hidden"
                               );
                             }}
+                          loading="lazy"
+                          decoding="async"
                           />
                           <div className="h-20 w-20 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
                             <Calendar className="h-10 w-10 text-gray-400" />
@@ -844,6 +848,8 @@ export default function AdminEvents() {
                       "hidden"
                     );
                   }}
+                loading="lazy"
+                decoding="async"
                 />
                 <div className="h-32 w-32 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
                   <Calendar className="h-16 w-16 text-gray-400" />

@@ -26,6 +26,8 @@ export function VendorCard({ vendor, compact = false }: VendorCardProps) {
             src={vendor.logoUrl}
             alt={vendor.businessName}
             className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+          loading="lazy"
+          decoding="async"
           />
         ) : (
           <div className="w-12 h-12 rounded-full bg-viridian-green/10 flex items-center justify-center">
@@ -58,6 +60,8 @@ export function VendorCard({ vendor, compact = false }: VendorCardProps) {
               src={vendor.logoUrl}
               alt={vendor.businessName}
               className="w-16 h-16 rounded-full object-cover border-2 border-gray-100 shadow-sm"
+            loading="lazy"
+            decoding="async"
             />
           ) : (
             <div className="w-16 h-16 rounded-full bg-viridian-green/10 flex items-center justify-center">

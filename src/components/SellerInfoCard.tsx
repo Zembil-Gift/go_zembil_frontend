@@ -50,6 +50,8 @@ export function SellerInfoCard({ vendor, suppliers = [], className }: SellerInfo
                 src={vendor.logoUrl}
                 alt={vendor.businessName}
                 className="w-14 h-14 rounded-full object-cover border-2 border-gray-100 shadow-sm shrink-0"
+              loading="lazy"
+              decoding="async"
               />
             ) : (
               <div className="w-14 h-14 rounded-full bg-viridian-green/10 flex items-center justify-center shrink-0">

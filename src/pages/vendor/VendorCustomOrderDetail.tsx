@@ -339,6 +339,8 @@ export default function VendorCustomOrderDetail() {
               src={imageUrl} 
               alt={value.fieldName}
               className="w-20 h-20 object-cover rounded-lg"
+            loading="lazy"
+            decoding="async"
             />
             <ExternalLink className="h-4 w-4" />
           </a>
@@ -646,6 +648,8 @@ export default function VendorCustomOrderDetail() {
                                         alt={t("Chat image")} 
                                         className="rounded-lg max-w-full max-h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity"
                                         onClick={() => window.open(msg.fullImageUrl || msg.imageUrl, '_blank')}
+                                      loading="lazy"
+                                      decoding="async"
                                       />
                                     </div>
                                   )}
@@ -669,6 +673,8 @@ export default function VendorCustomOrderDetail() {
                             src={imagePreview} 
                             alt={t("Preview")} 
                             className="h-20 w-20 object-cover rounded-lg border-2 border-eagle-green/20"
+                          loading="lazy"
+                          decoding="async"
                           />
                           <button
                             type="button"

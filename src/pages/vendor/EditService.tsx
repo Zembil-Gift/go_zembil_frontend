@@ -1865,6 +1865,8 @@ export default function EditService() {
                                 src={image.fullUrl || image.url}
                                 alt={image.altText || image.originalFilename || "Package image"}
                                 className="w-16 h-16 object-cover rounded-md border"
+                              loading="lazy"
+                              decoding="async"
                               />
                               {image.isPrimary && (
                                 <Badge className="absolute -top-2 -left-2 text-[10px] px-1.5 py-0.5 bg-primary text-primary-foreground">
@@ -1939,6 +1941,8 @@ export default function EditService() {
                               src={URL.createObjectURL(file)}
                               alt={file.name}
                               className="w-16 h-16 object-cover rounded-md border"
+                            loading="lazy"
+                            decoding="async"
                             />
                             <button
                               type="button"

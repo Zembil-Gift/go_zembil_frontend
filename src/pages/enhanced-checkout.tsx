@@ -281,6 +281,8 @@ export default function EnhancedCheckout() {
                           src={item.product.imageUrl} 
                           alt={item.product.name}
                           className="w-full h-full object-cover rounded-lg"
+                        loading="lazy"
+                        decoding="async"
                         />
                       ) : (
                         <Gift className="w-6 h-6 text-gray-400" />

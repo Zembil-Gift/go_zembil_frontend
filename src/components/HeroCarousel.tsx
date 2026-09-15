@@ -85,6 +85,8 @@ export default function HeroCarousel() {
               src={slides[currentSlide].image}
               alt={slides[currentSlide].alt}
               className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
             />
             
             {/* Gradient overlay for better text visibility */}

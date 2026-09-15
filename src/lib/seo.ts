@@ -281,3 +281,35 @@ export function slugToLabel(slug: string): string {
     .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+/** "Ethiopian Coffee Gift Set!" -> "ethiopian-coffee-gift-set" */
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")   // strip accents
+    .replace(/[^a-z0-9]+/g, "-")       // non-Latin scripts collapse to "-"
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60)
+    .replace(/-+$/, "");
+}
+
+/**
+ * Canonical product URL: "/product/ethiopian-coffee-gift-set-42".
+ *
+ * The numeric id stays on the end so lookups need no slug column and no
+ * uniqueness guarantee, and so every old /product/42 link keeps resolving --
+ * `productIdFromParam` reads the id off the last segment either way. An
+ * Amharic-only name slugifies to nothing, which degrades to /product/42.
+ */
+export function productPath(id: number | string, name?: string): string {
+  const slug = name ? slugify(name) : "";
+  return slug ? `/product/${slug}-${id}` : `/product/${id}`;
+}
+
+/** Reads the trailing numeric id out of "ethiopian-coffee-gift-set-42" or "42". */
+export function productIdFromParam(param?: string): number | undefined {
+  if (!param) return undefined;
+  const id = Number(/(\d+)$/.exec(param)?.[1]);
+  return Number.isFinite(id) && id > 0 ? id : undefined;
+}

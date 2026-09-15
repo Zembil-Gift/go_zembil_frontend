@@ -10,6 +10,7 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 import { cdnImage, cdnSrcSet } from '@/utils/imageUtils';
 import { useTranslation } from "react-i18next";
+import { productPath } from "@/lib/seo";
 
 // Denser grids (up to 8 columns) render the card ~240px at xl, ~30vw on
 // mobile. Top width covers 2x DPR — asking for more just wastes bytes.
@@ -107,7 +108,7 @@ const GiftItemCard = ({ product, className, priority = false }: GiftItemCardProp
 
     return (
         <Link
-            to={`/product/${product.id}`}
+            to={productPath(product.id, name)}
             className={`group block bg-white rounded-md overflow-hidden
                 shadow-md hover:shadow-2xl hover:shadow-eagle-green/15
                 border border-transparent hover:border-june-bud/30

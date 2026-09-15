@@ -415,6 +415,8 @@ export default function EventCheckout() {
                         fallback?.classList.remove("hidden");
                         fallback?.classList.add("flex");
                       }}
+                    loading="lazy"
+                    decoding="async"
                     />
                     <div className="w-24 h-24 rounded-lg bg-eagle-green/10 items-center justify-center hidden">
                       <Calendar className="h-8 w-8 text-eagle-green/50" />
@@ -682,6 +684,8 @@ export default function EventCheckout() {
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
                             }}
+                          loading="lazy"
+                          decoding="async"
                           />
                         </div>
                       )}
@@ -712,6 +716,8 @@ export default function EventCheckout() {
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
                             }}
+                          loading="lazy"
+                          decoding="async"
                           />
                         </div>
                       )}
@@ -742,6 +748,8 @@ export default function EventCheckout() {
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
                             }}
+                          loading="lazy"
+                          decoding="async"
                           />
                         </div>
                       )}

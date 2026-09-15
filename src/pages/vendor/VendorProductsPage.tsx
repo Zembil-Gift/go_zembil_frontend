@@ -415,6 +415,8 @@ export default function VendorProductsPage() {
                       const fallback = e.currentTarget.nextElementSibling;
                       if (fallback) fallback.classList.remove("hidden");
                     }}
+                  loading="lazy"
+                  decoding="async"
                   />
                   <div className="h-16 w-16 rounded bg-gray-200 hidden items-center justify-center">
                     <Package className="h-8 w-8 text-gray-400" />
@@ -621,6 +623,8 @@ export default function VendorProductsPage() {
                     src={uploadImageDialog.currentImageUrl}
                     alt={t("Current product")}
                     className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                   />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-gray-400 text-xs">
@@ -653,6 +657,8 @@ export default function VendorProductsPage() {
                     src={previewUrl}
                     alt={t("Upload preview")}
                     className="h-full w-full object-contain"
+                  loading="lazy"
+                  decoding="async"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">

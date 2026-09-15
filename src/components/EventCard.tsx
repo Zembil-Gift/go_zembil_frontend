@@ -1,14 +1,20 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { MapPin, Clock, Calendar, ChevronRight, Ticket } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EventResponse } from "@/services/eventOrderService";
-import { getEventImageUrl } from "@/utils/imageUtils";
+import { getEventImageUrl, cdnImage, cdnSrcSet } from "@/utils/imageUtils";
 import { formatPrice } from "@/lib/currency";
 import { useQuery } from "@tanstack/react-query";
 import { reviewService } from "@/services/reviewService";
 import { CompactRating } from "@/components/reviews";
 import { useTranslation } from "react-i18next";
+
+// Event cards run wider than product cards -- roughly a third of the row on
+// desktop -- so they ask the resize layer for correspondingly larger frames.
+const CARD_WIDTHS = [320, 480, 640, 960];
+const CARD_SIZES = "(min-width: 1024px) 32vw, (min-width: 640px) 48vw, 92vw";
 
 interface EventCardProps {
   event: EventResponse;
@@ -16,8 +22,10 @@ interface EventCardProps {
 }
 
 export default function EventCard({ event, index = 0 }: EventCardProps) {
+  // ponytail: if the resize layer 404s, retry the untransformed R2 url once
+  // before giving up and hiding the image -- same guard as gift-card.tsx.
+  const [rawFallback, setRawFallback] = useState(false);
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const minPrice =
     event.ticketTypes?.length > 0
       ? Math.min(...event.ticketTypes.map((t) => t.priceMinor))
@@ -45,17 +53,41 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
 
   return (
     <div>
+      {/* A real <a href>, not an onClick on a div: this card is how a crawler
+          discovers every event detail page, and an onClick leaves no link to
+          follow -- nor a middle-click or "open in new tab" for anyone else. */}
+      <Link to={`/events/${event.id}`} className="block">
       <Card
         className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-eagle-green/10 overflow-hidden"
-        onClick={() => navigate(`/events/${event.id}`)}
       >
         <div className="relative aspect-[4/3] overflow-hidden">
           <img
-            src={getEventImageUrl(event.images, event.bannerImageUrl)}
+            src={
+              rawFallback
+                ? getEventImageUrl(event.images, event.bannerImageUrl)
+                : cdnImage(
+                    getEventImageUrl(event.images, event.bannerImageUrl),
+                    480
+                  )
+            }
+            srcSet={
+              rawFallback
+                ? undefined
+                : cdnSrcSet(
+                    getEventImageUrl(event.images, event.bannerImageUrl),
+                    CARD_WIDTHS
+                  )
+            }
+            sizes={CARD_SIZES}
             alt={event.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             loading="lazy"
+            decoding="async"
             onError={(e) => {
+              if (!rawFallback) {
+                setRawFallback(true);
+                return;
+              }
               e.currentTarget.style.display = "none";
               e.currentTarget.nextElementSibling?.classList.remove("hidden");
             }}
@@ -135,6 +167,7 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
           </div>
         </CardContent>
       </Card>
+      </Link>
     </div>
   );
 }
