@@ -1014,17 +1014,67 @@ export default function ProductDetail() {
             <TabsContent value="reviews" className="space-y-6 mt-6">
               <ProductReviewsSection productId={Number(productId)} />
             </TabsContent>
-            <TabsContent value="details" className="space-y-6">
+            {/* forceMount: Radix unmounts an inactive tab, so everything below
+                was absent from the DOM on load. Crawlers that do not execute
+                JavaScript -- every AI crawler, every social preview bot -- read
+                only the delivered HTML, and specs and delivery terms are among
+                the most-quoted facts in generative shopping answers. Radix
+                still sets `hidden` when the tab is not selected, so this is
+                invisible to the eye and unchanged for a mouse. */}
+            <TabsContent value="details" className="space-y-6" forceMount>
               <div className="bg-white rounded-lg p-6">
                 <h3 className="font-semibold text-lg mb-4">{t("Product Details")}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {product.subCategoryName && (
+                    <div>
+                      <span className="font-medium">{t("Category:")}</span>
+                      <span className="ml-2 text-gray-600">{product.subCategoryName}</span>
+                    </div>
+                  )}
                   {selectedSku?.skuName && (
                     <div>
                       <span className="font-medium">{t("Variant:")}</span>
                       <span className="ml-2 text-gray-600">{selectedSku.skuName}</span>
                     </div>
                   )}
+                  {vendorProfile?.businessName && (
+                    <div>
+                      <span className="font-medium">{t("Sold by:")}</span>
+                      <span className="ml-2 text-gray-600">{vendorProfile.businessName}</span>
+                    </div>
+                  )}
                 </div>
+                {product.description && (
+                  <p className="mt-4 text-gray-600 leading-relaxed">
+                    {product.description}
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+            {/* The trigger for this tab existed with no TabsContent behind it,
+                so selecting "Shipping & Returns" rendered nothing at all. Copy
+                is quoted from /terms rather than restated, so there is one
+                source of truth for what the business actually promises. */}
+            <TabsContent value="shipping" className="space-y-6" forceMount>
+              <div className="bg-white rounded-lg p-6 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">{t("Delivery")}</h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {t("We strive to deliver all orders within the estimated timeframe. However, delivery times may vary due to factors beyond our control, including weather conditions, local circumstances, and vendor availability.")}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">{t("Returns")}</h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {t("Due to the nature of our service and products, returns are generally not accepted. However, we will work with customers to resolve any issues with damaged or significantly misdescribed items.")}
+                  </p>
+                </div>
+                <Link
+                  to="/terms"
+                  className="inline-block text-sm font-semibold text-viridian-green hover:underline"
+                >
+                  {t("Read the full terms")}
+                </Link>
               </div>
             </TabsContent>
           </Tabs>

@@ -284,7 +284,11 @@ export default function VendorDetail() {
             )}
           </TabsContent>
 
-          <TabsContent value="about" className="mt-6">
+          {/* forceMount: the vendor's own description, location and contact
+              details live in this tab, and Radix leaves an inactive tab out of
+              the DOM entirely -- so the LocalBusiness facts a crawler most
+              wants were never in the delivered HTML. */}
+          <TabsContent value="about" className="mt-6" forceMount>
             <Card>
               <CardContent className="p-6 space-y-4">
                 <h3 className="font-semibold text-lg">{t("About")} {vendor.businessName}</h3>
