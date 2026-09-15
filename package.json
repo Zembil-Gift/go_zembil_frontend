@@ -8,7 +8,7 @@
     "prebuild": "node scripts/generate-sitemap.mjs",
     "build": "vite build",
     "postbuild": "node scripts/prerender.mjs",
-    "build:version": "vite build && vite preview --host",
+    "build:version": "vite build && vite preview --host --port 3000",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
