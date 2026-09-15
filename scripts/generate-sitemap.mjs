@@ -18,6 +18,12 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 // Imported, not reimplemented: the sitemap must emit the exact URL the app
 // treats as canonical, or every catalogue entry redirects on arrival.
+//
+// Reaching into a .ts file is why "prebuild" runs node with
+// --experimental-strip-types. Node 23.6+ strips types unflagged, but Render
+// builds on Node 22, which throws ERR_UNKNOWN_FILE_EXTENSION without it.
+// Keep seo.ts free of enum/namespace/parameter properties -- type stripping
+// erases annotations, it does not compile non-erasable syntax.
 import { productPath, slugify } from "../src/lib/seo.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
