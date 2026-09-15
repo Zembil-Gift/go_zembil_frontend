@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSeo } from "@/hooks/useSeo";
-import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, productJsonLd, productPath, productIdFromParam } from "@/lib/seo";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -110,7 +110,10 @@ export default function ProductDetail() {
   const { t } = useTranslation();
   const params = useParams();
   const navigate = useNavigate();
-  const productId = params.id;
+  // The route param is now "ethiopian-coffee-gift-set-42"; the id is the
+  // trailing number. Bare "/product/42" links -- every one ever shared, plus
+  // the cart and wishlist, which have an id but no product name -- still parse.
+  const productId = productIdFromParam(params.id);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -275,6 +278,17 @@ export default function ProductDetail() {
     enabled: !!product?.vendorId,
   });
 
+  // One product, one indexable URL: if the visitor arrived on a bare id or a
+  // stale slug, swap the address bar for the canonical form. `replace` so the
+  // back button still leaves the page instead of bouncing off the redirect.
+  useEffect(() => {
+    if (!product || !productId) return;
+    const canonical = productPath(productId, product.name);
+    if (window.location.pathname !== canonical) {
+      navigate(canonical, { replace: true });
+    }
+  }, [product, productId, navigate]);
+
   // The catalogue's highest-value page for both search and generative engines:
   // the Product block is what produces price/stock/star rich results and what
   // an assistant quotes when asked where to buy something.
@@ -294,7 +308,7 @@ export default function ProductDetail() {
       (product ? `Send ${product.name} to family and friends in Ethiopia with goGerami.` : undefined),
     image: displayImages[0],
     type: "product",
-    canonicalPath: `/product/${productId}`,
+    canonicalPath: productPath(productId!, product?.name),
     jsonLd: product
       ? [
           productJsonLd({
@@ -309,7 +323,7 @@ export default function ProductDetail() {
             price: currentPrice ?? undefined,
             currency: currencyCode,
             inStock: stockQuantity === null || stockQuantity > 0,
-            path: `/product/${productId}`,
+            path: productPath(productId!, product.name),
             ratingValue: ratingSummary?.averageRating,
             reviewCount: ratingSummary?.totalReviews,
           }),
@@ -319,7 +333,7 @@ export default function ProductDetail() {
             ...(product.subCategoryName
               ? [{ name: product.subCategoryName, path: "/shop" }]
               : []),
-            { name: product.name, path: `/product/${productId}` },
+            { name: product.name, path: productPath(productId!, product.name) },
           ]),
         ]
       : null,

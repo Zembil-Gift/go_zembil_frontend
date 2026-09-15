@@ -4,8 +4,11 @@ import assert from 'node:assert/strict';
 import {
   absoluteUrl,
   clampDescription,
+  productIdFromParam,
   productJsonLd,
+  productPath,
   slugToLabel,
+  slugify,
   withBrand,
 } from './seo.ts';
 
@@ -94,4 +97,42 @@ test('productJsonLd absolutises every image and drops empty ones', () => {
     'https://gogerami.com/a.jpg',
     'https://img.gogerami.com/b.jpg',
   ]);
+});
+
+test('slugify strips punctuation, accents and collapses separators', () => {
+  assert.equal(slugify('Ethiopian Coffee Gift Set!'), 'ethiopian-coffee-gift-set');
+  assert.equal(slugify('  Café  &  Cake  '), 'cafe-cake');
+  assert.equal(slugify('A---B'), 'a-b');
+  // a non-Latin name has nothing to slugify; the URL degrades to the bare id
+  assert.equal(slugify('ስጦታ'), '');
+});
+
+test('slugify never leaves a trailing dash after the length cap', () => {
+  const out = slugify('word '.repeat(40));
+  assert.ok(out.length <= 60);
+  assert.ok(!out.endsWith('-'), out);
+});
+
+test('productPath falls back to the bare id when the name yields no slug', () => {
+  assert.equal(productPath(42, 'Ethiopian Coffee Gift Set'), '/product/ethiopian-coffee-gift-set-42');
+  assert.equal(productPath(42, 'ስጦታ'), '/product/42');
+  assert.equal(productPath(42), '/product/42');
+});
+
+// Every /product/42 link ever shared has to keep working, and the cart and
+// wishlist build links from an id with no product name to hand.
+test('productIdFromParam reads the id from both URL shapes', () => {
+  assert.equal(productIdFromParam('ethiopian-coffee-gift-set-42'), 42);
+  assert.equal(productIdFromParam('42'), 42);
+  assert.equal(productIdFromParam('product-2-pack-7'), 7);
+  assert.equal(productIdFromParam(undefined), undefined);
+  assert.equal(productIdFromParam('no-digits'), undefined);
+  assert.equal(productIdFromParam('0'), undefined);
+});
+
+test('productPath and productIdFromParam round-trip', () => {
+  for (const name of ['Coffee Set', 'Café & Cake', 'ስጦታ', '2-in-1 Gift Box']) {
+    const path = productPath(99, name);
+    assert.equal(productIdFromParam(path.split('/').pop()), 99, name);
+  }
 });
