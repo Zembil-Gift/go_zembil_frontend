@@ -525,6 +525,8 @@ export default function VendorOverview() {
                         const fallback = e.currentTarget.nextElementSibling;
                         if (fallback) fallback.classList.remove("hidden");
                       }}
+                    loading="lazy"
+                    decoding="async"
                     />
                     <div className="h-12 w-12 rounded bg-gray-200 hidden items-center justify-center">
                       <Package className="h-6 w-6 text-gray-400" />

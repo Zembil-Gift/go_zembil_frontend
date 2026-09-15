@@ -76,6 +76,8 @@ function PhoneMockup() {
                 src="/attached_assets/go-gerami.png"
                 alt=""
                 className="h-6 w-6 object-contain"
+              loading="lazy"
+              decoding="async"
               />
               <span className="text-sm font-extrabold tracking-tight">
                 goGerami

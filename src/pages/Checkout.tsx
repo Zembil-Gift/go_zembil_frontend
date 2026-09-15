@@ -1645,6 +1645,8 @@ export default function Checkout() {
                                 e.currentTarget.nextElementSibling;
                               if (fallback) fallback.classList.remove("hidden");
                             }}
+                          loading="lazy"
+                          decoding="async"
                           />
                         ) : null}
                         <div

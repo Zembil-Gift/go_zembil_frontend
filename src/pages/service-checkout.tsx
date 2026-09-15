@@ -848,6 +848,8 @@ export default function ServiceCheckout() {
                         src={serviceService.getPrimaryImageUrl(service)}
                         alt={service.title}
                         className="w-24 h-24 rounded-lg object-cover"
+                      loading="lazy"
+                      decoding="async"
                       />
                     ) : (
                       <div className="w-24 h-24 rounded-lg bg-eagle-green/10 flex items-center justify-center">

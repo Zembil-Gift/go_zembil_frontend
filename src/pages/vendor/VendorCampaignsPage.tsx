@@ -340,6 +340,8 @@ export default function VendorCampaignsPage() {
                           src={campaign.imageUrl}
                           alt={campaign.name}
                           className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                         />
                       </div>
                     )}

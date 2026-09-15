@@ -71,6 +71,8 @@ export function TemplateCard({ template }: { template: CustomOrderTemplate }) {
                 src={primaryImage}
                 alt={template.name}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              decoding="async"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-june-bud/10 to-viridian-green/5">

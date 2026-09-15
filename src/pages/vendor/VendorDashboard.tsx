@@ -846,6 +846,8 @@ export default function VendorDashboardNew() {
                             alt={product.name} 
                             className="h-12 w-12 rounded object-cover"
                             onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
+                          loading="lazy"
+                          decoding="async"
                           />
                           <div className="h-12 w-12 rounded bg-gray-200 hidden items-center justify-center">
                             <Package className="h-6 w-6 text-gray-400" />
@@ -920,6 +922,8 @@ export default function VendorDashboardNew() {
                           alt={product.name} 
                           className="h-16 w-16 rounded object-cover"
                           onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
+                        loading="lazy"
+                        decoding="async"
                         />
                         <div className="h-16 w-16 rounded bg-gray-200 hidden items-center justify-center">
                           <Package className="h-8 w-8 text-gray-400" />
@@ -1031,6 +1035,8 @@ export default function VendorDashboardNew() {
                           alt={event.title} 
                           className="h-16 w-24 rounded object-cover"
                           onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
+                        loading="lazy"
+                        decoding="async"
                         />
                         <div className="h-16 w-24 rounded bg-gray-200 hidden items-center justify-center">
                           <Calendar className="h-8 w-8 text-gray-400" />
@@ -1269,6 +1275,8 @@ export default function VendorDashboardNew() {
                               src={service.primaryImageUrl} 
                               alt={service.title} 
                               className="h-12 w-12 rounded object-cover"
+                            loading="lazy"
+                            decoding="async"
                             />
                           ) : (
                             <div className="h-12 w-12 rounded bg-eagle-green/10 flex items-center justify-center">
@@ -2808,6 +2816,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             alt={product.name} 
                             className="h-16 w-16 rounded object-cover"
                             onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
+                          loading="lazy"
+                          decoding="async"
                           />
                           <div className="h-16 w-16 rounded bg-gray-200 hidden items-center justify-center">
                             <Package className="h-8 w-8 text-gray-400" />
@@ -2985,6 +2995,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                             alt={event.title} 
                             className="h-16 w-24 rounded object-cover"
                             onError={(e) => { e.currentTarget.classList.add('hidden'); const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.classList.remove('hidden'); }}
+                          loading="lazy"
+                          decoding="async"
                           />
                           <div className="h-16 w-24 rounded bg-gray-200 hidden items-center justify-center">
                             <Calendar className="h-8 w-8 text-gray-400" />
@@ -3153,6 +3165,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                               src={service.primaryImageUrl} 
                               alt={service.title}
                               className="h-16 w-16 rounded object-cover"
+                            loading="lazy"
+                            decoding="async"
                             />
                           ) : (
                             <div className="h-16 w-16 rounded bg-gray-100 flex items-center justify-center">
@@ -3328,6 +3342,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                               src={request.productCover} 
                               alt={request.productName}
                               className="h-16 w-16 rounded object-cover"
+                            loading="lazy"
+                            decoding="async"
                             />
                           ) : (
                             <div className="h-16 w-16 rounded bg-gray-100 flex items-center justify-center">
@@ -3416,6 +3432,8 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                               src={request.serviceCover} 
                               alt={request.serviceName}
                               className="h-16 w-16 rounded object-cover"
+                            loading="lazy"
+                            decoding="async"
                             />
                           ) : (
                             <div className="h-16 w-16 rounded bg-gray-100 flex items-center justify-center">
@@ -4302,7 +4320,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                   <div className="flex flex-wrap gap-2 mb-4">
                     {currentServiceImages.map((url, idx) => (
                       <div key={idx} className="relative h-20 w-20">
-                        <img src={url} alt={`Service image ${idx + 1}`} className="h-full w-full object-cover rounded" />
+                        <img src={url} alt={`Service image ${idx + 1}`} className="h-full w-full object-cover rounded" loading="lazy" decoding="async" />
                         <button
                           type="button"
                           title={t("Remove image")}
@@ -4321,7 +4339,7 @@ function RequestsManagement({ vendorProfile, getStatusBadge, queryClient }: Requ
                   <div className="flex flex-wrap gap-2 mb-4">
                     {pendingServiceImages.map((file, idx) => (
                       <div key={idx} className="relative h-20 w-20">
-                        <img src={URL.createObjectURL(file)} alt={`New image ${idx + 1}`} className="h-full w-full object-cover rounded border-2 border-blue-500" />
+                        <img src={URL.createObjectURL(file)} alt={`New image ${idx + 1}`} className="h-full w-full object-cover rounded border-2 border-blue-500" loading="lazy" decoding="async" />
                         <button
                           type="button"
                           title={t("Remove image")}
@@ -4729,6 +4747,8 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
                     src={previewUrl}
                     alt={t("Logo preview")}
                     className="w-32 h-32 object-cover rounded-lg border-2 border-dashed border-primary"
+                  loading="lazy"
+                  decoding="async"
                   />
                   <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
                     {t("Preview")}
@@ -4743,6 +4763,8 @@ function VendorSettings({ vendorProfile, queryClient }: VendorSettingsProps) {
                     e.currentTarget.style.display = 'none';
                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
                   }}
+                loading="lazy"
+                decoding="async"
                 />
               ) : null}
               {!previewUrl && !currentLogoUrl && (

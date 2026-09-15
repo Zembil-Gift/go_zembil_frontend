@@ -414,6 +414,8 @@ export default function VendorSettingsPage() {
                     src={previewUrl}
                     alt={t("Logo preview")}
                     className="w-32 h-32 object-cover rounded-lg border-2 border-dashed border-primary"
+                  loading="lazy"
+                  decoding="async"
                   />
                   <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
                     {t("Preview")}
@@ -430,6 +432,8 @@ export default function VendorSettingsPage() {
                       "hidden"
                     );
                   }}
+                loading="lazy"
+                decoding="async"
                 />
               ) : null}
               {!previewUrl && !currentLogoUrl && (

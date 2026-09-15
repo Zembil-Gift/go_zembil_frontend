@@ -1458,6 +1458,8 @@ export default function AdminCampaigns() {
                                   (e.target as HTMLImageElement).src =
                                     "/placeholder.svg";
                                 }}
+                              loading="lazy"
+                              decoding="async"
                               />
                             ) : (
                               <Upload className="h-4 w-4 text-muted-foreground" />
@@ -1695,6 +1697,8 @@ export default function AdminCampaigns() {
                             src={editingCampaign.imageUrl}
                             alt="Current banner"
                             className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
                           />
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Button

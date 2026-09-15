@@ -143,6 +143,8 @@ export default function VendorDetail() {
                   src={vendor.logoUrl}
                   alt={vendor.businessName}
                   className="w-24 h-24 rounded-full object-cover border-4 border-gray-100 shadow-md"
+                loading="lazy"
+                decoding="async"
                 />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-viridian-green/10 flex items-center justify-center">

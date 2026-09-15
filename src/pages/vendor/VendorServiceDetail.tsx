@@ -227,6 +227,8 @@ export default function VendorServiceDetail() {
                       src={image.fullUrl || image.url}
                       alt={image.altText || service.title}
                       className="w-full h-48 object-cover rounded-lg"
+                    loading="lazy"
+                    decoding="async"
                     />
                     {image.isPrimary && (
                       <Badge className="absolute top-2 right-2 bg-blue-500">{t("Primary")}</Badge>
@@ -467,6 +469,8 @@ export default function VendorServiceDetail() {
                                 src={image.fullUrl || image.url}
                                 alt={image.altText || pkg.name}
                                 className="w-full h-24 object-cover rounded-md"
+                              loading="lazy"
+                              decoding="async"
                               />
                             ))}
                           </div>

@@ -245,6 +245,8 @@ export function ImageUpload({
                 src={image.fullUrl || image.url}
                 alt={image.altText || image.originalFilename}
                 className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
               />
               
               {/* Overlay with actions */}
@@ -301,6 +303,8 @@ export function ImageUpload({
                   src={preview.preview}
                   alt={preview.file.name}
                   className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
                 />
                 
                 {isUploading ? (

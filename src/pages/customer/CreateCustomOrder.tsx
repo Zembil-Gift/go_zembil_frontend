@@ -736,6 +736,8 @@ function CreateCustomOrderContent() {
                         target.src = value.fileUrl || "";
                       }
                     }}
+                  loading="lazy"
+                  decoding="async"
                   />
                 ) : (
                   <div className="w-32 h-32 bg-gray-100 rounded-lg border flex items-center justify-center">
@@ -912,6 +914,8 @@ function CreateCustomOrderContent() {
                         alt={`${template.name} ${selectedImageIndex + 1}`}
                         className="w-full h-full object-cover cursor-pointer"
                         onClick={() => openLightbox(selectedImageIndex)}
+                      loading="lazy"
+                      decoding="async"
                       />
 
                       {/* Navigation Arrows */}
@@ -956,6 +960,8 @@ function CreateCustomOrderContent() {
                                 src={imageUrl}
                                 alt={`Thumbnail ${index + 1}`}
                                 className="w-full h-full object-cover"
+                              loading="lazy"
+                              decoding="async"
                               />
                             </button>
                           ))}
@@ -1103,6 +1109,8 @@ function CreateCustomOrderContent() {
                 src={templateImages[selectedImageIndex]}
                 alt={`${template?.name} ${selectedImageIndex + 1}`}
                 className="max-w-full max-h-[90vh] object-contain"
+              loading="lazy"
+              decoding="async"
               />
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/60 text-white text-sm rounded-full">
                 {selectedImageIndex + 1} / {templateImages.length}

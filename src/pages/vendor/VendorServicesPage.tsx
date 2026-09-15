@@ -243,6 +243,8 @@ export default function VendorServicesPage() {
                       src={service.primaryImageUrl}
                       alt={service.title}
                       className="h-12 w-12 rounded object-cover flex-shrink-0"
+                    loading="lazy"
+                    decoding="async"
                     />
                   ) : (
                     <div className="h-12 w-12 rounded bg-eagle-green/10 flex items-center justify-center">

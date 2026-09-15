@@ -147,6 +147,8 @@ export default function VendorProductDetail() {
                       src={image.fullUrl || image.url}
                       alt={image.altText || product.name}
                       className="w-full h-40 sm:h-48 object-cover rounded-lg"
+                    loading="lazy"
+                    decoding="async"
                     />
                     {image.isPrimary && (
                       <Badge className="absolute top-2 right-2 bg-blue-500">{t("Primary")}</Badge>
@@ -337,6 +339,8 @@ export default function VendorProductDetail() {
                             src={sku.images[0].fullUrl || sku.images[0].url}
                             alt={sku.skuName || 'Product variant'}
                             className="w-24 h-24 object-cover rounded-lg"
+                          loading="lazy"
+                          decoding="async"
                           />
                         </div>
                       )}

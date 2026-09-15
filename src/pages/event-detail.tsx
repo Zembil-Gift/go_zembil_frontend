@@ -481,6 +481,8 @@ export default function EventDetail() {
                       src={eventImages[selectedImageIndex]}
                       alt={eventTitle}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                       <ZoomIn className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -579,6 +581,8 @@ export default function EventDetail() {
                         src={img}
                         alt={`${eventTitle} thumbnail ${index + 1}`}
                         className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                       />
                     </button>
                   ))}

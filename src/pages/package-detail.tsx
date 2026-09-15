@@ -67,6 +67,8 @@ function ImageCarousel({ images, altBase }: { images: string[]; altBase: string 
           src={images[idx]}
           alt={`${altBase} ${idx + 1}`}
           className="h-full w-full object-contain transition-all duration-300"
+        loading="lazy"
+        decoding="async"
         />
         {images.length > 1 && (
           <>
@@ -101,7 +103,7 @@ function ImageCarousel({ images, altBase }: { images: string[]; altBase: string 
                 i === idx ? "border-eagle-green opacity-100" : "border-transparent opacity-40 hover:opacity-70"
               }`}
             >
-              <img src={img} alt={`thumb ${i + 1}`} className="h-full w-full object-contain" />
+              <img src={img} alt={`thumb ${i + 1}`} className="h-full w-full object-contain" loading="lazy" decoding="async" />
             </button>
           ))}
         </div>
@@ -569,6 +571,8 @@ export default function PackageDetailPage() {
                               src={thumb}
                               alt={item.productName || ""}
                               className="h-8 w-8 rounded object-contain bg-slate-50 border border-slate-100 shrink-0 mt-0.5"
+                            loading="lazy"
+                            decoding="async"
                             />
                           ) : (
                             <div className="h-8 w-8 rounded bg-slate-100 shrink-0 mt-0.5 flex items-center justify-center">

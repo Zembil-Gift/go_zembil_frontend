@@ -145,6 +145,13 @@ function CampaignSlide({
               isActive ? "scale-110" : "scale-100",
               index === imageIndex ? "opacity-100" : "opacity-0"
             )}
+            // This carousel is the homepage LCP element. Only the first frame
+            // is raced to the screen: the rest are lazy, since they are not
+            // shown until the slide rotates and would otherwise compete with
+            // the one frame that decides the LCP score.
+            loading={index === 0 ? "eager" : "lazy"}
+            fetchPriority={index === 0 ? "high" : "low"}
+            decoding={index === 0 ? "sync" : "async"}
           />
         ))}
       </div>

@@ -445,6 +445,8 @@ export default function AdminFeaturedAds() {
                                     src={skuImage}
                                     alt={sku.skuCode}
                                     className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
@@ -545,6 +547,8 @@ export default function AdminFeaturedAds() {
                                     src={packageImage}
                                     alt={pkg.name}
                                     className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
@@ -636,6 +640,8 @@ export default function AdminFeaturedAds() {
                                   src={event.bannerImageUrl}
                                   alt={event.title}
                                   className="w-full h-full object-cover"
+                                loading="lazy"
+                                decoding="async"
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
@@ -727,6 +733,8 @@ export default function AdminFeaturedAds() {
                                   src={pkg.primaryImageUrl}
                                   alt={pkg.name}
                                   className="w-full h-full object-cover"
+                                loading="lazy"
+                                decoding="async"
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">

@@ -273,6 +273,8 @@ export default function OrderChat({
               src={pendingImage.preview} 
               alt={t("Pending upload")} 
               className="h-20 w-20 object-cover rounded-lg border-2 border-eagle-green/20"
+            loading="lazy"
+            decoding="async"
             />
             <button
               type="button"
@@ -403,6 +405,8 @@ function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
                 src={imageUrl} 
                 alt={t("Chat image")}
                 className="max-w-full max-h-48 rounded-lg object-cover"
+              loading="lazy"
+              decoding="async"
               />
               <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                 <ExternalLink className="h-6 w-6 text-white" />

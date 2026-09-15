@@ -281,7 +281,7 @@ export default function CashbackCampaigns() {
                 className={`absolute top-0 left-0 right-0 h-1 ${campaign.activeNow ? 'bg-green-500' : 'bg-gray-300'}`}
               />
               {campaign.imageUrl && (
-                <img src={campaign.imageUrl} alt={campaign.code} className="w-full h-28 object-cover" />
+                <img src={campaign.imageUrl} alt={campaign.code} className="w-full h-28 object-cover" loading="lazy" decoding="async" />
               )}
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-3">
@@ -484,6 +484,8 @@ export default function CashbackCampaigns() {
                             src={url}
                             alt=""
                             className="h-14 w-20 rounded object-cover border"
+                          loading="lazy"
+                          decoding="async"
                           />
                         ))}
                       </div>

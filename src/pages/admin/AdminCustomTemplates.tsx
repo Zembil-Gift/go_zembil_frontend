@@ -615,6 +615,8 @@ export default function AdminCustomTemplates() {
                           src={image.fullUrl}
                           alt={image.originalFilename || "Template image"}
                           className="w-full h-24 object-cover rounded-lg border"
+                        loading="lazy"
+                        decoding="async"
                         />
                       ))}
                     </div>

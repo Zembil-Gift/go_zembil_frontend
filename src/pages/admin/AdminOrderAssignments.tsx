@@ -51,6 +51,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 import {
   adminDeliveryService,
   AdminDeliveryAssignmentDto,
@@ -70,6 +71,10 @@ export default function AdminOrderAssignments() {
     number | null
   >(null);
   const [selectedEta, setSelectedEta] = useState<string>("");
+  const [autoAssignPersonId, setAutoAssignPersonId] = useState<number | null>(
+    null
+  );
+  const [autoAssignEtaHours, setAutoAssignEtaHours] = useState<string>("");
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -96,6 +101,59 @@ export default function AdminOrderAssignments() {
     queryFn: () =>
       adminDeliveryService.getOrdersReadyForDelivery({ page: 0, size: 100 }),
     enabled: showAssignDialog,
+  });
+
+  // Auto-assignment settings. Active rather than "available" persons: a standing
+  // target is still the right one while they are out on a delivery.
+  const { data: autoAssign } = useQuery({
+    queryKey: ["admin", "delivery-auto-assign"],
+    queryFn: () => adminDeliveryService.getAutoAssignSetting(),
+  });
+
+  const { data: activePersonsData } = useQuery({
+    queryKey: ["admin", "active-delivery-persons"],
+    queryFn: () =>
+      adminDeliveryService.getAllDeliveryPersons({ active: true, size: 100 }),
+  });
+  const activePersons = activePersonsData?.content ?? [];
+
+  // The saved values are the source of truth; local state only holds edits made
+  // before saving, so a reload after saving shows what the server kept.
+  const autoAssignPerson = autoAssignPersonId ?? autoAssign?.deliveryPersonId ?? null;
+  const autoAssignEta =
+    autoAssignEtaHours !== ""
+      ? autoAssignEtaHours
+      : autoAssign?.etaHours != null
+      ? String(autoAssign.etaHours)
+      : "";
+
+  const autoAssignMutation = useMutation({
+    mutationFn: (data: {
+      enabled: boolean;
+      deliveryPersonId?: number | null;
+      etaHours?: number | null;
+    }) => adminDeliveryService.updateAutoAssignSetting(data),
+    onSuccess: (saved) => {
+      toast({
+        title: "Success",
+        description: saved.enabled
+          ? "Orders will be assigned automatically once a vendor starts processing"
+          : "Automatic assignment turned off",
+      });
+      setAutoAssignPersonId(null);
+      setAutoAssignEtaHours("");
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "delivery-auto-assign"],
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to update automatic assignment",
+        variant: "destructive",
+      });
+    },
   });
 
   // Assign order mutation
@@ -185,6 +243,105 @@ export default function AdminOrderAssignments() {
           </Button>
         </div>
       </div>
+
+      {/* Automatic assignment. Sits above the assignment list because it decides
+          whether that list fills up at all. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Truck className="h-4 w-4" />
+            Automatic Assignment
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <Label htmlFor="auto-assign-toggle" className="font-medium">
+                Assign a delivery person automatically
+              </Label>
+              <p className="text-sm text-gray-500">
+                Applies the moment a vendor moves an order to processing. Admins are
+                emailed instead whenever it cannot assign.
+              </p>
+            </div>
+            <Switch
+              id="auto-assign-toggle"
+              checked={!!autoAssign?.enabled}
+              disabled={autoAssignMutation.isPending}
+              onCheckedChange={(enabled) =>
+                autoAssignMutation.mutate({
+                  enabled,
+                  deliveryPersonId: autoAssignPerson,
+                  etaHours: autoAssignEta ? Number(autoAssignEta) : null,
+                })
+              }
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2 space-y-2">
+              <Label htmlFor="auto-assign-person">Delivery person</Label>
+              <Select
+                value={autoAssignPerson ? String(autoAssignPerson) : ""}
+                onValueChange={(value) => setAutoAssignPersonId(Number(value))}
+              >
+                <SelectTrigger id="auto-assign-person">
+                  <SelectValue placeholder="Select a delivery person" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activePersons.map((person) => (
+                    <SelectItem key={person.id} value={String(person.id)}>
+                      {person.firstName} {person.lastName} ({person.employeeId})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="auto-assign-eta">Delivery window (hours)</Label>
+              <Input
+                id="auto-assign-eta"
+                type="number"
+                min={1}
+                max={720}
+                placeholder="24"
+                value={autoAssignEta}
+                onChange={(e) => setAutoAssignEtaHours(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {autoAssign?.enabled && autoAssign.deliveryPersonActive === false && (
+            <p className="text-sm text-red-600 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              {autoAssign.deliveryPersonName} is deactivated, so orders are being left
+              for an admin. Pick someone else.
+            </p>
+          )}
+
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              disabled={
+                autoAssignMutation.isPending ||
+                (autoAssignPersonId === null && autoAssignEtaHours === "")
+              }
+              onClick={() =>
+                autoAssignMutation.mutate({
+                  enabled: !!autoAssign?.enabled,
+                  deliveryPersonId: autoAssignPerson,
+                  etaHours: autoAssignEta ? Number(autoAssignEta) : null,
+                })
+              }
+            >
+              {autoAssignMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Save
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -782,6 +939,8 @@ export default function AdminOrderAssignments() {
                       src={selectedAssignment.pickupImageUrl}
                       alt="Pickup proof"
                       className="w-full max-h-96 object-contain bg-gray-100"
+                    loading="lazy"
+                    decoding="async"
                     />
                   </div>
                   {selectedAssignment.pickupUploadedAt && (
@@ -810,6 +969,8 @@ export default function AdminOrderAssignments() {
                       src={selectedAssignment.proofImageUrl}
                       alt="Delivery proof"
                       className="w-full max-h-96 object-contain bg-gray-100"
+                    loading="lazy"
+                    decoding="async"
                     />
                   </div>
                   {selectedAssignment.proofUploadedAt && (

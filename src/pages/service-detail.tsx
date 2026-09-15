@@ -366,6 +366,8 @@ export default function ServiceDetail() {
                         src={displayImages[selectedImageIndex]}
                         alt={service.title}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                      decoding="async"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
                         <ZoomIn className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -443,6 +445,8 @@ export default function ServiceDetail() {
                               src={image}
                               alt={`${service.title} thumbnail ${index + 1}`}
                               className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
                             />
                           </button>
                         ))}

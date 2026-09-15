@@ -1045,6 +1045,8 @@ function ParticipationTabContent({
                     )}
                     alt={selectedProgressProduct.name}
                     className="h-32 w-32 rounded-lg object-cover"
+                  loading="lazy"
+                  decoding="async"
                   />
                 ) : (
                   <div className="h-32 w-32 rounded-lg bg-gray-100 flex items-center justify-center">

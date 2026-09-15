@@ -277,6 +277,8 @@ export default function OrderSuccess() {
                         }
                         alt={item.product?.name || "Product"}
                         className="w-full h-full object-cover rounded"
+                      loading="lazy"
+                      decoding="async"
                       />
                     </div>
                     <div className="flex-1">

@@ -139,6 +139,8 @@ export function AuthenticatedImage({ src, alt, className, onClick }: Authenticat
       alt={alt}
       className={className}
       onClick={onClick}
+    loading="lazy"
+    decoding="async"
     />
   );
 }
@@ -163,7 +165,7 @@ export function useAuthenticatedImageViewer() {
       
       if (newWindow) {
         newWindow.document.write(
-          `<html><head><title>Image Viewer</title></head><body style="margin:0;display:flex;align-items:center;justify-content:center;background:#000;"><img src="${blobUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;" /></body></html>`
+          `<html><head><title>Image Viewer</title></head><body style="margin:0;display:flex;align-items:center;justify-content:center;background:#000;"><img src="${blobUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;" loading="lazy" decoding="async" /></body></html>`
         );
         newWindow.document.close();
         

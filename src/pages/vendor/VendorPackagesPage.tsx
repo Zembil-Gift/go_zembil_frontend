@@ -794,6 +794,8 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                               src={img}
                               alt={`Package image ${idx + 1}`}
                               className="w-20 h-20 object-cover rounded-md border"
+                            loading="lazy"
+                            decoding="async"
                             />
                             <button
                               type="button"
@@ -841,6 +843,8 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                           src={URL.createObjectURL(file)}
                           alt={file.name}
                           className="w-20 h-20 object-cover rounded-md border"
+                        loading="lazy"
+                        decoding="async"
                         />
                         <button
                           type="button"
@@ -1155,6 +1159,8 @@ const openEditDialog = (pkg: ProductPackageResponse) => {
                       src={img}
                       alt={`Package image ${idx + 1}`}
                       className="w-24 h-24 object-cover rounded-md border"
+                    loading="lazy"
+                    decoding="async"
                     />
                   ))}
                 </div>

@@ -43,6 +43,8 @@ export function FreeGiftLine({
             src={imageUrl}
             alt={gift.giftProductName ?? "Free gift"}
             className="w-full h-full object-cover rounded-lg"
+          loading="lazy"
+          decoding="async"
           />
         ) : (
           <div className="w-full h-full bg-green-100 rounded-lg flex items-center justify-center">

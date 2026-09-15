@@ -697,6 +697,8 @@ export default function AdminProducts() {
                                   )}
                                   alt={product.name}
                                   className="h-10 w-10 rounded object-cover"
+                                loading="lazy"
+                                decoding="async"
                                 />
                               ) : (
                                 <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center">
@@ -851,6 +853,8 @@ export default function AdminProducts() {
                                 )}
                                 alt={product.name}
                                 className="h-16 w-16 rounded-lg object-cover"
+                              loading="lazy"
+                              decoding="async"
                               />
                             ) : (
                               <div className="h-16 w-16 rounded-lg bg-gray-100 flex items-center justify-center">
@@ -1180,6 +1184,8 @@ export default function AdminProducts() {
                                     request.entityName || request.productName
                                   }
                                   className="h-10 w-10 rounded object-cover"
+                                loading="lazy"
+                                decoding="async"
                                 />
                               ) : (
                                 <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center">
@@ -1299,6 +1305,8 @@ export default function AdminProducts() {
                     )}
                     alt={selectedProduct.name}
                     className="h-32 w-32 rounded-lg object-cover"
+                  loading="lazy"
+                  decoding="async"
                   />
                 ) : (
                   <div className="h-32 w-32 rounded-lg bg-gray-100 flex items-center justify-center">
@@ -1520,6 +1528,8 @@ export default function AdminProducts() {
                                               src={imgUrl}
                                               alt={sku.skuName || sku.skuCode}
                                               className="h-8 w-8 rounded-md object-cover cursor-zoom-in"
+                                            loading="lazy"
+                                            decoding="async"
                                             />
                                           </button>
                                         );
@@ -1613,6 +1623,8 @@ export default function AdminProducts() {
                 src={selectedImagePreview.url}
                 alt={selectedImagePreview.alt}
                 className="w-full h-full object-contain"
+              loading="lazy"
+              decoding="async"
               />
             </div>
           )}

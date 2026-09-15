@@ -897,6 +897,8 @@ export default function CreateCustomTemplate() {
                               src={URL.createObjectURL(file)}
                               alt={file.name}
                               className="w-16 h-16 object-cover rounded-md border"
+                            loading="lazy"
+                            decoding="async"
                             />
                             <button
                               type="button"

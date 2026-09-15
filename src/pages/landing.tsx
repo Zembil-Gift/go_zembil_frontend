@@ -331,6 +331,8 @@ export default function Landing() {
                               )}
                               alt={ad.data.name}
                               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            loading="lazy"
+                            decoding="async"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
                           </div>
@@ -386,6 +388,8 @@ export default function Landing() {
                               }
                               alt={ad.data.title}
                               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            loading="lazy"
+                            decoding="async"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-70 group-hover:opacity-50 transition-opacity duration-300"></div>
                             <div className="absolute bottom-2 left-2 text-white p-1">
@@ -429,6 +433,8 @@ export default function Landing() {
                               }
                               alt={ad.data.name}
                               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            loading="lazy"
+                            decoding="async"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
                           </div>
@@ -477,6 +483,8 @@ export default function Landing() {
                                     src={packageImage || "/placeholder-product.jpg"}
                                     alt={packageData.name}
                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                  loading="lazy"
+                                  decoding="async"
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
                                 </div>

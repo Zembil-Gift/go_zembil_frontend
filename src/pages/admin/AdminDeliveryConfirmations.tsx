@@ -604,6 +604,8 @@ export default function AdminDeliveryConfirmations() {
                 src={getImageUrl(selectedImageUrl)}
                 alt="Proof image"
                 className="max-w-full max-h-[70vh] object-contain rounded-lg"
+              loading="lazy"
+              decoding="async"
               />
             </div>
           )}

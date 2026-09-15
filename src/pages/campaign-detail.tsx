@@ -636,6 +636,8 @@ export default function CampaignDetailPage() {
               src={campaign.imageUrl}
               alt={campaign.name}
               className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />

@@ -45,13 +45,16 @@ function ProductImage({
   alt,
   className,
   onClick,
-  width = 900
+  width = 900,
+  priority = false,
 }: {
   src: string;
   alt: string;
   className?: string;
   onClick?: () => void;
   width?: number;
+  /** The gallery's main frame is this page's LCP element -- it must not be lazy. */
+  priority?: boolean;
 }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -85,6 +88,9 @@ function ProductImage({
           loaded ? 'opacity-100' : 'opacity-0',
           className
         )}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
+        decoding={priority ? "sync" : "async"}
         onLoad={() => setLoaded(true)}
         onError={() => {
           if (!rawFallback) {
@@ -611,6 +617,7 @@ export default function ProductDetail() {
                     src={displayImages[selectedImageIndex]}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    priority
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
                     <ZoomIn className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
