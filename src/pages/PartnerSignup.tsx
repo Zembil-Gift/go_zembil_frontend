@@ -73,6 +73,7 @@ import {
   type LocationData,
 } from "@/components/maps";
 import { useTranslation } from "react-i18next";
+import { useStaticSeo } from "@/hooks/useSeo";
 
 const VENDOR_TYPES = [
   { value: "PRODUCT", label: "Product Vendor", description: "I sell physical goods that require delivery" },
@@ -114,6 +115,7 @@ const partnerSignupSchema = z.object({
 type PartnerSignupForm = z.infer<typeof partnerSignupSchema>;
 
 export default function PartnerSignup() {
+  useStaticSeo("/partner-signup");
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState<"form" | "terms">("form");
   const [termsData, setTermsData] = useState<MouTermsResponse | null>(null);

@@ -6,8 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useStaticSeo } from "@/hooks/useSeo";
 
 export default function Contact() {
+  useStaticSeo("/contact");
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",

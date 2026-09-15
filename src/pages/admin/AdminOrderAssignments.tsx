@@ -100,15 +100,18 @@ export default function AdminOrderAssignments() {
 
   // Assign order mutation
   const assignMutation = useMutation({
-    mutationFn: (data: {
+    // Sequential, not Promise.all: the ETA call is the one with server-side
+    // validation (@Future, vendor-acceptance, ORDER_VIEW). Running it first means
+    // a rejection leaves the order unassigned and the retry clean. In parallel,
+    // the assignment committed anyway and every retry hit "already assigned".
+    mutationFn: async (data: {
       orderId: number;
       deliveryPersonId: number;
       expectedDeliveryAt: string;
-    }) =>
-      Promise.all([
-        adminDeliveryService.setOrderEta(data.orderId, data.expectedDeliveryAt),
-        adminDeliveryService.assignOrderToDeliveryPerson(data),
-      ]),
+    }) => {
+      await adminDeliveryService.setOrderEta(data.orderId, data.expectedDeliveryAt);
+      return adminDeliveryService.assignOrderToDeliveryPerson(data);
+    },
     onSuccess: () => {
       toast({
         title: "Success",

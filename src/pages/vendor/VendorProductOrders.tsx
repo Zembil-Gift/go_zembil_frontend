@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -61,6 +62,8 @@ export default function VendorProductOrders() {
   const { toast } = useToast();
   const { openImage } = useAuthenticatedImageViewer();
   const queryClient = useQueryClient();
+
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [selectedOrder, setSelectedOrder] = useState<VendorOrder | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -154,6 +157,46 @@ export default function VendorProductOrders() {
       });
     },
   });
+
+  // Order deep-linked from the "New Order" email. Fetched by id instead of being
+  // looked up in the list below, which is paged and status-filtered so a given
+  // order is not guaranteed to be in it. The endpoint is vendor-scoped, so a
+  // forwarded link opened by the wrong vendor errors instead of resolving.
+  const deepLinkOrderId = Number(searchParams.get("orderId")) || null;
+
+  const { data: deepLinkOrder, error: deepLinkError } = useQuery({
+    queryKey: ["vendor-product-order", deepLinkOrderId],
+    queryFn: () => orderService.getVendorOrderById(deepLinkOrderId as number),
+    enabled: deepLinkOrderId !== null,
+    retry: false,
+  });
+
+  const clearDeepLink = () =>
+    setSearchParams(
+      (prev) => {
+        prev.delete("orderId");
+        return prev;
+      },
+      { replace: true }
+    );
+
+  useEffect(() => {
+    if (!deepLinkOrder) return;
+    setSelectedOrder(deepLinkOrder);
+    setDetailDialogOpen(true);
+    // Drop the param, otherwise closing the dialog just reopens it.
+    clearDeepLink();
+  }, [deepLinkOrder]);
+
+  useEffect(() => {
+    if (!deepLinkError) return;
+    toast({
+      title: t("Order not available"),
+      description: t("This order could not be opened. It may belong to another vendor account."),
+      variant: "destructive",
+    });
+    clearDeepLink();
+  }, [deepLinkError]);
 
   // Fetch vendor's product orders
   const {
@@ -960,31 +1003,20 @@ export default function VendorProductOrders() {
                     </div>
                   )}
 
-                  {/* Action Buttons for PROCESSING orders */}
+                  {/* PROCESSING orders: informational only. Shipping is not a vendor
+                      transition - the order moves to SHIPPED when the assigned delivery
+                      person confirms pickup, so there is no button here to offer. */}
                   {selectedOrder.status === "PROCESSING" && (
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                       <h4 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
                         <Package className="h-4 w-4" />
                         {t("Order in Processing")}
                       </h4>
-                      <p className="text-sm text-orange-700 mb-4">
-                        {t("Once you've handed over the items to the delivery service, mark the order as shipped.")}
+                      <p className="text-sm text-orange-700">
+                        {selectedOrder.deliveryInfo
+                          ? t("Prepare the items and hand them to the delivery person below. The order moves to Shipped once they confirm pickup.")
+                          : t("Prepare the items for pickup. An admin will assign a delivery person, and the order moves to Shipped once they confirm pickup.")}
                       </p>
-                      <Button
-                        onClick={() =>
-                          updateStatusMutation.mutate({
-                            orderId: selectedOrder.orderId,
-                            status: "SHIPPED",
-                          })
-                        }
-                        disabled={updateStatusMutation.isPending}
-                        className="bg-orange-600 hover:bg-orange-600 text-white"
-                      >
-                        <Truck className="h-4 w-4 mr-2" />
-                        {updateStatusMutation.isPending
-                          ? "Updating..."
-                          : "Mark as Shipped"}
-                      </Button>
                     </div>
                   )}
 

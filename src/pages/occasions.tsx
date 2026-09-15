@@ -11,8 +11,10 @@ import {
   ArrowRight 
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useStaticSeo } from "@/hooks/useSeo";
 
 export default function Occasions() {
+  useStaticSeo("/occasions");
   const { t } = useTranslation();
   const occasions = [
     {

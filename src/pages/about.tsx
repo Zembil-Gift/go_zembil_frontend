@@ -2,6 +2,7 @@
 // import { motion } from "framer-motion";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import { useTranslation } from "react-i18next";
+import { useStaticSeo } from "@/hooks/useSeo";
 // import { Card, CardContent } from "@/components/ui/card";
 // import { Badge } from "@/components/ui/badge";
 // import { Gift, Heart, Users, Truck, Star, ArrowRight } from "lucide-react";
@@ -9,6 +10,7 @@ import { useTranslation } from "react-i18next";
 // import { StaggerContainer, StaggerItem } from "@/components/animations/StaggerAnimations";
 
 export default function About() {
+  useStaticSeo("/about");
   const { t } = useTranslation();
   // const founders = [
   //   {

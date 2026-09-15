@@ -1,0 +1,100 @@
+{
+  "/": {
+    "title": "Send Gifts to Ethiopia — Delivered to Their Door | goGerami",
+    "description": "goGerami delivers authentic Ethiopian gifts, flowers, cakes and hampers to family and friends across Ethiopia. Order from anywhere in the world and track every delivery.",
+    "h1": "Send gifts to Ethiopia, from anywhere in the world",
+    "priority": 1.0,
+    "changefreq": "daily"
+  },
+  "/shop": {
+    "title": "Shop Ethiopian Gifts Online | goGerami",
+    "description": "Browse hundreds of gifts from verified Ethiopian vendors — coffee sets, traditional clothing, jewellery, homeware and more, delivered across Ethiopia.",
+    "h1": "Shop Ethiopian gifts",
+    "priority": 0.9,
+    "changefreq": "daily"
+  },
+  "/gifts": {
+    "title": "Gift Ideas for Every Occasion in Ethiopia | goGerami",
+    "description": "Find the right gift by category — birthdays, weddings, new babies, holidays and thank-yous — all delivered anywhere in Ethiopia by goGerami.",
+    "h1": "Gifts for every occasion",
+    "priority": 0.9,
+    "changefreq": "daily"
+  },
+  "/occasions": {
+    "title": "Gifts by Occasion — Birthdays, Weddings, Holidays | goGerami",
+    "description": "Shop Ethiopian gifts by occasion. Birthday gifts, wedding presents, Easter and Christmas hampers, graduation and new-baby gifts delivered across Ethiopia.",
+    "h1": "Shop gifts by occasion",
+    "priority": 0.8,
+    "changefreq": "weekly"
+  },
+  "/collections": {
+    "title": "Curated Ethiopian Gift Collections | goGerami",
+    "description": "Hand-picked collections of Ethiopian gifts — coffee ceremony sets, traditional textiles, artisan crafts and seasonal hampers, ready to send.",
+    "h1": "Curated gift collections",
+    "priority": 0.8,
+    "changefreq": "weekly"
+  },
+  "/packages": {
+    "title": "Ethiopian Gift Packages & Hampers | goGerami",
+    "description": "Ready-made gift packages and hampers combining Ethiopian coffee, sweets, flowers and keepsakes — one order, delivered complete.",
+    "h1": "Gift packages and hampers",
+    "priority": 0.8,
+    "changefreq": "daily"
+  },
+  "/events": {
+    "title": "Events & Experiences in Ethiopia | goGerami",
+    "description": "Book tickets to concerts, cultural events and experiences in Addis Ababa and across Ethiopia, and gift them to someone you love.",
+    "h1": "Events and experiences",
+    "priority": 0.8,
+    "changefreq": "daily"
+  },
+  "/services": {
+    "title": "Gift Services in Ethiopia — Catering, Décor & More | goGerami",
+    "description": "Book Ethiopian gift services — event catering, decoration, photography and personal shopping — arranged on your behalf and delivered on the day.",
+    "h1": "Gift services in Ethiopia",
+    "priority": 0.8,
+    "changefreq": "daily"
+  },
+  "/about": {
+    "title": "About goGerami — Connecting the Ethiopian Diaspora",
+    "description": "goGerami is an Ethiopian gift marketplace built so people abroad can send meaningful, authentic gifts home. Learn how we work with local vendors and delivery partners.",
+    "h1": "About goGerami",
+    "priority": 0.6,
+    "changefreq": "monthly"
+  },
+  "/contact": {
+    "title": "Contact goGerami — Support & Enquiries",
+    "description": "Get in touch with the goGerami team about an order, a delivery, or partnering with us. Email info@gogerami.com or use the contact form.",
+    "h1": "Contact us",
+    "priority": 0.5,
+    "changefreq": "monthly"
+  },
+  "/vendor-signup": {
+    "title": "Sell on goGerami — Vendor Signup",
+    "description": "Join goGerami as a vendor and reach Ethiopian customers and diaspora buyers worldwide. Free to list, paid out per order, with delivery handled for you.",
+    "h1": "Sell on goGerami",
+    "priority": 0.6,
+    "changefreq": "monthly"
+  },
+  "/partner-signup": {
+    "title": "Partner With goGerami",
+    "description": "Partner with goGerami as a delivery, logistics or corporate partner and help connect the Ethiopian diaspora with home.",
+    "h1": "Partner with goGerami",
+    "priority": 0.5,
+    "changefreq": "monthly"
+  },
+  "/privacy": {
+    "title": "Privacy Policy | goGerami",
+    "description": "How goGerami collects, uses, stores and deletes your personal data, and how to request deletion of your account.",
+    "h1": "Privacy policy",
+    "priority": 0.3,
+    "changefreq": "yearly"
+  },
+  "/terms": {
+    "title": "Terms of Service | goGerami",
+    "description": "The terms that govern use of the goGerami marketplace, orders, payments, delivery and refunds.",
+    "h1": "Terms of service",
+    "priority": 0.3,
+    "changefreq": "yearly"
+  }
+}

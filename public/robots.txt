@@ -1,0 +1,138 @@
+# goGerami — https://gogerami.com
+# Two audiences here: classic search crawlers, and generative engines whose
+# crawlers never execute JavaScript. Both are allowed; see docs/SEO.md.
+
+# ---------------------------------------------------------------------------
+# Default: everything public is open, everything behind a login is not.
+# These paths hold no indexable content and only burn crawl budget.
+# ---------------------------------------------------------------------------
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /vendor/dashboard
+Disallow: /delivery
+Disallow: /employee
+Disallow: /cart
+Disallow: /checkout
+Disallow: /order-review
+Disallow: /profile
+Disallow: /wishlist
+Disallow: /my-orders
+Disallow: /my-tickets
+Disallow: /my-service-orders
+Disallow: /my-custom-orders
+Disallow: /track
+Disallow: /payment
+Disallow: /payment-success
+Disallow: /order-success
+Disallow: /event-order-success
+Disallow: /service-order-success
+Disallow: /service-confirmation
+Disallow: /service-checkout
+Disallow: /signin
+Disallow: /signup
+Disallow: /verify-email
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /onboarding
+
+# Faceted/search URLs generate near-infinite duplicate combinations.
+# The category pages they filter are indexed on their own clean URLs.
+Disallow: /*?q=
+Disallow: /*?sort=
+Disallow: /*?page=
+Disallow: /search
+
+# ---------------------------------------------------------------------------
+# Generative engines.
+#
+# These crawlers do not run JavaScript, so they only ever see what is in the
+# HTML response. Allowing them is deliberate: it is what makes goGerami
+# citable when someone asks an assistant how to send a gift to Ethiopia.
+#
+# GPTBot        — OpenAI training corpus
+# OAI-SearchBot — OpenAI live retrieval; this is what earns ChatGPT citations
+# ChatGPT-User  — fetches a page because a user asked about it right now
+# To decline training use while keeping citations, set `Disallow: /` for
+# GPTBot only and leave OAI-SearchBot as it is.
+# ---------------------------------------------------------------------------
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+# Gates AI Overviews and Gemini grounding SEPARATELY from Googlebot.
+# Disallowing this removes goGerami from AI Overviews while leaving normal
+# Google Search results untouched.
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+# ---------------------------------------------------------------------------
+# Social link previews. These fetch a single URL to build a card and ignore
+# crawl rules, but listing them documents that they are expected traffic.
+# ---------------------------------------------------------------------------
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+# ---------------------------------------------------------------------------
+# Aggressive SEO-tool crawlers with no upside for us.
+# ---------------------------------------------------------------------------
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+Sitemap: https://gogerami.com/sitemap.xml

@@ -25,6 +25,7 @@ import { trackSignUp } from "@/lib/analytics";
 import { useTranslation } from "react-i18next";
 import { passwordValidation } from "@/lib/passwordSchema";
 import { isRateLimited } from "@/lib/authUtils";
+import { useSeo } from "@/hooks/useSeo";
 
 // Phone number validation using libphonenumber (E.164 format)
 const phoneValidation = z
@@ -71,6 +72,7 @@ const signupSchema = z
 type SignupForm = z.infer<typeof signupSchema>;
 
 export default function SignUp() {
+  useSeo({ title: "Create Account", noindex: true });
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);

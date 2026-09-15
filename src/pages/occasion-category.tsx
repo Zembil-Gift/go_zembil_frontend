@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "react-i18next";
+import { useSeo } from "@/hooks/useSeo";
+import { breadcrumbJsonLd, slugToLabel } from "@/lib/seo";
 
 interface Product {
   id: number;
@@ -66,6 +68,22 @@ function OccasionCategoryContent() {
   });
 
   const currentCategory = categories.find((cat: Category) => cat.slug === categorySlug);
+
+  // Falls back to the slug so the title is right on the first paint, before the
+  // categories query resolves -- a crawler that renders fast would otherwise
+  // capture a generic title.
+  const occasionName = currentCategory?.name || slugToLabel(categorySlug);
+  useSeo({
+    title: `${occasionName} Gifts — Delivered in Ethiopia`,
+    description:
+      currentCategory?.description ||
+      `Send ${occasionName.toLowerCase()} gifts to family and friends in Ethiopia. Ordered from anywhere, delivered locally by goGerami.`,
+    jsonLd: breadcrumbJsonLd([
+      { name: "Home", path: "/" },
+      { name: "Occasions", path: "/occasions" },
+      { name: occasionName, path: `/occasions/${categorySlug}` },
+    ]),
+  });
 
   // Filter products by price range
   const filteredProducts = products.filter((product: Product) => {

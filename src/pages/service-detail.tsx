@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSeo } from "@/hooks/useSeo";
+import { breadcrumbJsonLd, serviceJsonLd } from "@/lib/seo";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -157,6 +159,35 @@ export default function ServiceDetail() {
   const displayCurrency = useMemo(() => {
     return selectedPackage?.currency ?? service?.currency ?? "ETB";
   }, [selectedPackage, service]);
+
+  useSeo({
+    enabled: !isLoading,
+    noindex: !service,
+    title: service
+      ? `${service.title}${service.city ? ` in ${service.city}` : ""}`
+      : "Service not found",
+    description: service?.description,
+    image: displayImages[0],
+    canonicalPath: `/services/${id}`,
+    jsonLd: service
+      ? [
+          serviceJsonLd({
+            name: service.title,
+            description: service.description,
+            image: displayImages[0],
+            price: displayPriceMajor,
+            currency: displayCurrency,
+            providerName: service.vendorName,
+            path: `/services/${id}`,
+          }),
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Services", path: "/services" },
+            { name: service.title, path: `/services/${id}` },
+          ]),
+        ]
+      : null,
+  });
 
   useEffect(() => {
     if (!service) return;

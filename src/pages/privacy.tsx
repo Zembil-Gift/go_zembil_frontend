@@ -1,5 +1,8 @@
 
-import { useTranslation } from "react-i18next";const privacyCommitments = [
+import { useTranslation } from "react-i18next";
+import { useStaticSeo } from "@/hooks/useSeo";
+
+const privacyCommitments = [
   {
     title: "We do not sell personal data",
     description:
@@ -57,6 +60,7 @@ const googlePlayDisclosures = [
 ];
 
 export default function Privacy() {
+  useStaticSeo("/privacy");
   const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gray-50">

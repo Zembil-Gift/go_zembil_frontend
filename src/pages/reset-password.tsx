@@ -14,6 +14,7 @@ import GoGeramiLogo from "@/components/GoGeramiLogo";
 import authService from "@/services/authService";
 import { useTranslation } from "react-i18next";
 import { passwordValidation } from "@/lib/passwordSchema";
+import { useSeo } from "@/hooks/useSeo";
 
 const resetPasswordSchema = z.object({
   newPassword: passwordValidation,
@@ -26,6 +27,7 @@ const resetPasswordSchema = z.object({
 type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPassword() {
+  useSeo({ title: "Set a New Password", noindex: true });
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);

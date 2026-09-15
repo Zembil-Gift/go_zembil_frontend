@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Home, ArrowLeft, Search, Gift } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useSeo } from "@/hooks/useSeo";
 
 export default function NotFound() {
+  useSeo({ title: "Page not found", noindex: true });
   const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">

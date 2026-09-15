@@ -19,6 +19,7 @@ import {
 import { formatPrice } from "@/lib/currency";
 import type { Product } from "@/services/productService";
 import { useTranslation } from "react-i18next";
+import { useStaticSeo } from "@/hooks/useSeo";
 
 interface Collection {
   id: string;
@@ -32,6 +33,7 @@ interface Collection {
 }
 
 export default function Collections() {
+  useStaticSeo("/collections");
   const { t } = useTranslation();
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
 
