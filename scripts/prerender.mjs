@@ -12,10 +12,11 @@
  *
  * ponytail: string replacement over the built index.html, not a headless
  * browser and not an SSR build. It needs no new dependency, no browser
- * download in CI and no component to be SSR-safe. The ceiling is that only
- * static routes are covered -- /product/:id and friends need real server
- * rendering (see docs/SEO.md Part 2) because their content is per-entity and
- * lives behind the API.
+ * download in CI and no component to be SSR-safe. Products are covered too,
+ * from the list the prebuild already fetched. The ceiling is that a page is
+ * only as fresh as the last build: a product added or repriced afterwards has
+ * no file until the next deploy. Events and services still need real server
+ * rendering (see docs/SEO.md Part 2).
  *
  * The fallback markup goes INSIDE #root, so React's createRoot().render()
  * replaces it on mount. Visitors never see it; crawlers without JS see only it.
@@ -26,6 +27,10 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
+// Same reason the prebuild reaches into seo.ts, and the same constraint: the
+// JSON-LD a crawler reads must be built by the code the app uses, not a second
+// copy that drifts. "postbuild" therefore also runs with type stripping.
+import { productJsonLd, clampDescription } from "../src/lib/seo.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
@@ -87,7 +92,7 @@ const webSite = {
   },
 };
 
-function head(path, meta) {
+function head(path, meta, { image = OG_IMAGE, ogType = "website", extraLd = [] } = {}) {
   const url = `${SITE_URL}${path}`;
   // Unmarked: site-wide and true on every route, so they must outlive any
   // client-side navigation.
@@ -95,7 +100,7 @@ function head(path, meta) {
   // Marked with data-seo: page-specific, so useSeo must be able to clear it --
   // otherwise navigating /shop -> /product/5 leaves the shop breadcrumb behind
   // on the product page. useStaticSeo re-emits the identical block on mount.
-  const pageLd = [];
+  const pageLd = [...extraLd];
 
   if (path !== "/") {
     pageLd.push({
@@ -113,15 +118,15 @@ function head(path, meta) {
     `<meta property="og:title" content="${esc(meta.title)}" />`,
     `<meta property="og:description" content="${esc(meta.description)}" />`,
     `<meta property="og:url" content="${url}" />`,
-    `<meta property="og:type" content="website" />`,
+    `<meta property="og:type" content="${ogType}" />`,
     `<meta property="og:site_name" content="${SITE_NAME}" />`,
-    `<meta property="og:image" content="${OG_IMAGE}" />`,
+    `<meta property="og:image" content="${esc(image)}" />`,
     `<meta property="og:locale" content="en" />`,
     `<meta property="og:locale:alternate" content="am" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${esc(meta.title)}" />`,
     `<meta name="twitter:description" content="${esc(meta.description)}" />`,
-    `<meta name="twitter:image" content="${OG_IMAGE}" />`,
+    `<meta name="twitter:image" content="${esc(image)}" />`,
     // The fallback below sits inside #root and is visually hidden, not
     // display:none. React removes it on mount, so any crawler that runs JS
     // (Googlebot included) never sees it -- it exists purely for the ones that
@@ -153,8 +158,7 @@ function fallbackBody(path, meta) {
   );
 }
 
-let written = 0;
-for (const [path, meta] of Object.entries(routes)) {
+function writePage(path, meta, opts) {
   let html = template;
 
   html = html.replace(
@@ -165,7 +169,7 @@ for (const [path, meta] of Object.entries(routes)) {
     /<meta\s+name="description"\s+content="[\s\S]*?"\s*\/?>/,
     `<meta name="description" content="${esc(meta.description)}" />`
   );
-  html = html.replace("</head>", `  ${head(path, meta)}\n  </head>`);
+  html = html.replace("</head>", `  ${head(path, meta, opts)}\n  </head>`);
   html = html.replace(
     '<div id="root"></div>',
     `<div id="root">${fallbackBody(path, meta)}</div>`
@@ -174,7 +178,49 @@ for (const [path, meta] of Object.entries(routes)) {
   const outDir = path === "/" ? dist : join(dist, path);
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "index.html"), html);
+}
+
+let written = 0;
+for (const [path, meta] of Object.entries(routes)) {
+  writePage(path, meta);
   written++;
+}
+
+// Products are per-entity and live behind the API, so they cannot come from
+// seo-routes.json. The prebuild already fetched them and wrote the list; using
+// that same list is what guarantees a prerendered page exists at every product
+// URL the sitemap advertises.
+const manifest = resolve(root, ".seo-catalogue.json");
+const products = existsSync(manifest)
+  ? JSON.parse(readFileSync(manifest, "utf8"))
+  : [];
+
+for (const p of products) {
+  const meta = {
+    title: `${p.name} | ${SITE_NAME}`,
+    description: clampDescription(
+      p.description ||
+        `${p.name}, delivered anywhere in Ethiopia by ${SITE_NAME}.`
+    ),
+    h1: p.name,
+  };
+
+  writePage(p.path, meta, {
+    image: p.image || OG_IMAGE,
+    ogType: "product",
+    extraLd: [
+      productJsonLd({
+        name: p.name,
+        description: p.description || undefined,
+        image: p.image || undefined,
+        sku: p.id,
+        price: p.price,
+        currency: p.currency,
+        inStock: p.inStock,
+        path: p.path,
+      }),
+    ],
+  });
 }
 
 // A prerendered file that Render never serves is worse than not having it: the
@@ -196,6 +242,19 @@ if (unserved.length) {
   process.exit(1);
 }
 
+// Products need one wildcard rule, not one per product. That rule is pending a
+// live probe of what Render does when a rewrite's destination file is missing
+// (/prerender-probe/* in render.yaml). Until it lands these files are written
+// but never served, so say it out loud instead of letting a green build imply
+// otherwise. Turn this into a hard failure, like the check above, once the rule
+// is in place.
+if (products.length && !/^\s*source:\s*\/product\/\*\s*$/m.test(renderYaml)) {
+  console.warn(
+    `prerender: ${products.length} product pages written, but render.yaml has no` +
+      ` "/product/*" rewrite -- nothing serves them yet.`
+  );
+}
+
 // These are served from the dist root by filename, so the catch-all cannot
 // swallow them -- but a missing one silently delists the whole site.
 for (const f of ["robots.txt", "sitemap.xml", "llms.txt"]) {
@@ -206,5 +265,5 @@ for (const f of ["robots.txt", "sitemap.xml", "llms.txt"]) {
 }
 
 console.log(
-  `prerender: ${written} routes -> dist/**/index.html (all served by render.yaml)`
+  `prerender: ${written} routes + ${products.length} products -> dist/**/index.html`
 );

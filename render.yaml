@@ -73,6 +73,22 @@ services:
         source: /vendor-signup
         destination: /vendor-signup/index.html
 
+      # --- Prerender probe (temporary) ---------------------------------------
+      # Question this answers: when a rewrite's destination file does not exist,
+      # does Render 404, or fall through to the SPA catch-all below?
+      #
+      # It decides whether /product/* may be rewritten to a prerendered file. A
+      # product created after the last build has no file yet, and a 404 for a
+      # real customer is far worse than an unindexed page. Nothing is published
+      # under /prerender-probe/, so this rule cannot affect a real path.
+      #
+      #   curl -sI https://gogerami.com/prerender-probe/x | head -1
+      #
+      # Delete once the answer is recorded in docs/SEO.md.
+      - type: rewrite
+        source: /prerender-probe/*
+        destination: /prerender-probe/*/index.html
+
       # --- SPA fallback -----------------------------------------------------
       # Everything else is a client-side route (/product/:id, /events/:slug,
       # the dashboards) and is served the app shell.

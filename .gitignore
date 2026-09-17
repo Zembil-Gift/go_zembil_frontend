@@ -135,3 +135,6 @@ coverage/
 # daily, so committing these produces a spurious diff per build).
 public/sitemap.xml
 public/llms.txt
+
+# Written by the sitemap prebuild, consumed by the prerender postbuild.
+.seo-catalogue.json
