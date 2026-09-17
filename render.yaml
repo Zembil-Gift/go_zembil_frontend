@@ -1,6 +1,11 @@
 services:
   - type: web
-    name: go-zembil-frontend
+    # Must match the existing Render service name exactly. The service was
+    # created by hand in the dashboard, so Render ignored this file entirely
+    # until it was adopted into the Blueprint -- every rewrite and header below
+    # was dead. A name that does not match creates a second service instead of
+    # adopting this one.
+    name: go_zembil_frontend
     env: static
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
