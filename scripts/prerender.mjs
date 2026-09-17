@@ -242,12 +242,12 @@ if (unserved.length) {
   process.exit(1);
 }
 
-// Products need one wildcard rule, not one per product. That rule is pending a
-// live probe of what Render does when a rewrite's destination file is missing
-// (/prerender-probe/* in render.yaml). Until it lands these files are written
-// but never served, so say it out loud instead of letting a green build imply
-// otherwise. Turn this into a hard failure, like the check above, once the rule
-// is in place.
+// Measured on Render: a rewrite to a file that does not exist returns 200 with
+// an empty body, so the obvious `/product/*` wildcard would serve a blank page
+// for every product added after the last build. Until a serving mechanism that
+// degrades gracefully is in place (see SEO.md 1.8), these files are written but
+// never reached -- say it out loud rather than letting a green build imply
+// otherwise.
 if (products.length && !/^\s*source:\s*\/product\/\*\s*$/m.test(renderYaml)) {
   console.warn(
     `prerender: ${products.length} product pages written, but render.yaml has no` +

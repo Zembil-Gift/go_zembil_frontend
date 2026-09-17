@@ -152,9 +152,21 @@ there is no way to tell whether any of this worked.
 - **Reviews in the initial HTML** — the most-quoted element in generative shopping answers,
   currently client-fetched by `ProductReviewsSection`.
 - **Per-visitor currency** correctness on any cached page.
-- Metadata on **dynamic routes** for crawlers that do not run JS. `/product/42` shared into
-  WhatsApp still shows the homepage card, because the prerenderer cannot know the product at
-  build time.
+- Metadata on **dynamic routes** for crawlers that do not run JS. The postbuild now writes a
+  real file per product (`dist/product/<slug>-<id>/index.html`, from the same list the sitemap
+  uses), but nothing on a Render static site serves it:
+
+  - `/product/foo-42` matches no file, so the `/*` catch-all returns the app shell.
+  - A wildcard `/product/* -> /product/*/index.html` would serve those files, but **measured
+    2026-09-17: a rewrite whose destination is missing returns HTTP 200 with an empty body**,
+    not a 404 and not a fall-through. Every product created after the last build would be a
+    blank white page. Unacceptable.
+  - Enumerating one rewrite per product degrades gracefully — an unmatched path falls to the
+    catch-all — but the list has to be regenerated and committed whenever the catalogue
+    changes, since Render reads `render.yaml` from the repo, not from build output.
+
+  So this stays blocked on either a scheduled job that regenerates those rules, or the move to
+  a real server in Part 2.
 
 ### 1.9 Locale URLs — recommended against, for now
 
