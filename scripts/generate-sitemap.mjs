@@ -41,8 +41,11 @@ const routes = JSON.parse(
 const lastmod = new Date().toISOString().slice(0, 10);
 
 const API = (process.env.SITEMAP_API_URL || process.env.VITE_API_URL || "").replace(/\/$/, "");
-const PAGE_SIZE = 200;
-const MAX_PAGES = 50; // 10k entities per type; raise when the catalogue does
+// 100, not 200: /api/v1/products rejects size=200 with HTTP 400, which the
+// best-effort catch below swallowed -- every product silently missing from the
+// sitemap while services and packages came through fine.
+const PAGE_SIZE = 100;
+const MAX_PAGES = 50; // 5k entities per type; raise when the catalogue does
 
 async function fetchPaged(path) {
   const items = [];
