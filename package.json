@@ -7,7 +7,7 @@
     "dev": "vite",
     "prebuild": "node --experimental-strip-types scripts/generate-sitemap.mjs",
     "build": "vite build",
-    "postbuild": "node scripts/prerender.mjs",
+    "postbuild": "node --experimental-strip-types scripts/prerender.mjs",
     "build:version": "vite build && vite preview --host --port 3000",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",

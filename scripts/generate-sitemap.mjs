@@ -66,6 +66,29 @@ async function fetchPaged(path) {
 }
 
 /**
+ * The subset scripts/prerender.mjs needs, collected here because this is where
+ * the catalogue is already fetched -- and because a prerendered page must sit
+ * at exactly the URL the sitemap lists. One fetch, one list, no drift.
+ */
+const prerenderable = [];
+
+function productMeta(e, path) {
+  const skus = e.productSku ?? [];
+  return {
+    path,
+    id: e.id,
+    name: e.name,
+    description: e.summary || e.description || "",
+    image: e.images?.[0]?.fullUrl || "",
+    price: e.price?.amount,
+    currency: e.price?.currencyCode,
+    inStock: skus.length
+      ? skus.some((s) => (s.stockQuantity ?? 0) > 0)
+      : e.status === "ACTIVE",
+  };
+}
+
+/**
  * Entity URLs, or [] if the API is unset or unreachable.
  * `updatedAt` is used for lastmod where the entity carries one.
  */
@@ -76,7 +99,7 @@ async function catalogueUrls() {
   }
 
   const sources = [
-    { path: "/api/v1/products", url: (e) => productPath(e.id, e.name), changefreq: "weekly", priority: 0.7 },
+    { path: "/api/v1/products", url: (e) => productPath(e.id, e.name), changefreq: "weekly", priority: 0.7, prerender: true },
     { path: "/api/services",    url: (e) => `/services/${e.id}`, changefreq: "weekly", priority: 0.7 },
     { path: "/api/events",      url: (e) => `/events/${e.slug ?? e.id}`, changefreq: "daily", priority: 0.7 },
     { path: "/api/v1/packages", url: (e) => `/packages/${e.id}`, changefreq: "weekly", priority: 0.6 },
@@ -88,6 +111,7 @@ async function catalogueUrls() {
       const items = await fetchPaged(src.path);
       for (const e of items) {
         if (e?.id == null) continue;
+        if (src.prerender) prerenderable.push(productMeta(e, src.url(e)));
         urls.push({
           loc: src.url(e),
           lastmod: (e.updatedAt ?? e.createdAt ?? "").slice(0, 10) || lastmod,
@@ -104,6 +128,14 @@ async function catalogueUrls() {
 }
 
 const catalogue = await catalogueUrls();
+
+// Written unconditionally: an empty file is how the prerenderer learns the API
+// gave nothing this build. A stale one left from an earlier run would publish
+// product pages for a catalogue that no longer matches the sitemap.
+writeFileSync(
+  resolve(root, ".seo-catalogue.json"),
+  JSON.stringify(prerenderable)
+);
 
 const entry = (loc, mod, changefreq, priority) =>
   `  <url>\n` +
@@ -143,5 +175,5 @@ const llms =
 writeFileSync(resolve(root, "public/llms.txt"), llms);
 
 console.log(
-  `sitemap.xml: ${Object.keys(routes).length} static + ${catalogue.length} catalogue urls · llms.txt written`
+  `sitemap.xml: ${Object.keys(routes).length} static + ${catalogue.length} catalogue urls · ${prerenderable.length} prerenderable · llms.txt written`
 );
