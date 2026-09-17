@@ -14,6 +14,9 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- The Google Identity script is appended from a React effect, so its DNS +
+         TLS handshake only starts after the bundle parses. This pulls it forward. -->
+    <link rel="preconnect" href="https://accounts.google.com" crossorigin>
     <!-- The Gotham stylesheet had no preconnect, so it paid a full DNS + TLS
          handshake on the critical path while the Google faces reused theirs. -->
     <link rel="preconnect" href="https://fonts.cdnfonts.com" crossorigin>
