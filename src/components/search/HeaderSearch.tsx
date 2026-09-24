@@ -26,6 +26,7 @@ import { serviceService, ServiceResponse } from "@/services/serviceService";
 import { eventOrderService, EventResponse } from "@/services/eventOrderService";
 import { customOrderTemplateService } from "@/services/customOrderTemplateService";
 import type { CustomOrderTemplate } from "@/types/customOrders";
+import { eventPath, servicePath } from "@/lib/seo";
 
 const MIN_CHARS = 2;
 const DEBOUNCE_MS = 250;
@@ -141,7 +142,7 @@ export default function HeaderSearch({ className }: HeaderSearchProps) {
 
     const serviceHits: Hit[] = data.services.map((service: ServiceResponse) => ({
       key: `service-${service.id}`,
-      href: `/services/${service.id}`,
+      href: servicePath(service.id, service.title || service.name),
       title: service.title || service.name || `#${service.id}`,
       meta: service.categoryName || service.city || service.location,
       image: service.primaryImageUrl,
@@ -150,7 +151,7 @@ export default function HeaderSearch({ className }: HeaderSearchProps) {
 
     const eventHits: Hit[] = data.events.map((event: EventResponse) => ({
       key: `event-${event.id}`,
-      href: `/events/${event.id}`,
+      href: eventPath(event.id, event.title),
       title: event.title,
       meta: event.location,
       image: getEventImageUrl(event.images, event.bannerImageUrl || ""),

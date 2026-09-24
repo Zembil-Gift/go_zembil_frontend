@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSeo } from "@/hooks/useSeo";
-import { breadcrumbJsonLd, eventJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, eventJsonLd, eventPath, idFromParam } from "@/lib/seo";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -63,13 +63,15 @@ export default function EventDetail() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  // Determine if slug is numeric (API event) or string (mock event)
-  const isNumericId = slug ? !isNaN(Number(slug)) : false;
+  // "/events/timket-concert-3" or a bare "/events/3" is an API event; a slug
+  // with no trailing id ("teddy-afro-addis") is a mock event.
+  const eventId = idFromParam(slug);
+  const isNumericId = eventId !== undefined;
 
   // Fetch real event from API (by ID) - wait for auth so currency is correct
   const { data: apiEvent, isLoading: apiLoading } = useQuery({
-    queryKey: ["api-event", slug, activeCurrency],
-    queryFn: () => eventOrderService.getEvent(Number(slug!)),
+    queryKey: ["api-event", eventId, activeCurrency],
+    queryFn: () => eventOrderService.getEvent(eventId!),
     enabled: !!slug && isNumericId && isInitialized,
   });
 
@@ -109,6 +111,20 @@ export default function EventDetail() {
       }
     | undefined;
 
+  const canonicalPath = eventId
+    ? eventPath(eventId, seoEvent?.title)
+    : `/events/${slug}`;
+
+  // One event, one indexable URL: a bare id or a stale slug is swapped for the
+  // canonical form. `replace` so back still leaves the page.
+  useEffect(() => {
+    if (!apiEvent || !eventId) return;
+    const canonical = eventPath(eventId, apiEvent.title);
+    if (window.location.pathname !== canonical) {
+      navigate(canonical, { replace: true });
+    }
+  }, [apiEvent, eventId, navigate]);
+
   useSeo({
     enabled: !isLoading,
     noindex: !event,
@@ -117,7 +133,7 @@ export default function EventDetail() {
       : "Event not found",
     description: seoEvent?.description,
     type: "article",
-    canonicalPath: `/events/${slug}`,
+    canonicalPath,
     jsonLd: seoEvent
       ? [
           eventJsonLd({
@@ -126,12 +142,12 @@ export default function EventDetail() {
             startDate: seoEvent.eventDate || seoEvent.startDate,
             venue: seoEvent.location || seoEvent.venue,
             city: seoEvent.city,
-            path: `/events/${slug}`,
+            path: canonicalPath,
           }),
           breadcrumbJsonLd([
             { name: "Home", path: "/" },
             { name: "Events", path: "/events" },
-            { name: seoEvent.title || "", path: `/events/${slug}` },
+            { name: seoEvent.title || "", path: canonicalPath },
           ]),
         ]
       : null,
@@ -212,7 +228,7 @@ export default function EventDetail() {
     }
 
     // Navigate to checkout page with selected tickets
-    navigate(`/events/${slug}/checkout`, {
+    navigate(`/events/${eventId}/checkout`, {
       state: {
         selectedTickets: selectedTickets,
       },
@@ -798,7 +814,7 @@ export default function EventDetail() {
                 transition={{ duration: 0.6, delay: 0.45 }}
               >
                 <EventReviewsSection
-                  eventId={Number(slug)}
+                  eventId={eventId!}
                   allowWriteReview={false}
                 />
               </motion.div>

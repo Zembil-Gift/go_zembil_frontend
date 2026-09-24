@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useSeo } from "@/hooks/useSeo";
-import { breadcrumbJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, packagePath, idFromParam } from "@/lib/seo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -297,13 +297,24 @@ export default function PackageDetailPage() {
   const { isAuthenticated } = useAuth();
   const [skuSelections, setSkuSelections] = useState<Record<number, number>>({});
 
-  const numericPackageId = Number(packageId);
+  // "/packages/coffee-hamper-9" or a bare "/packages/9".
+  const numericPackageId = idFromParam(packageId) ?? 0;
 
   const { data: packageDetail, isLoading } = useQuery({
     queryKey: ["packages", "detail", numericPackageId],
     queryFn: () => packageService.getPackageDetail(numericPackageId),
     enabled: Number.isFinite(numericPackageId) && numericPackageId > 0,
   });
+
+  // One packageDetail, one indexable URL: a bare id or a stale slug is swapped for
+  // the canonical form. `replace` so back still leaves the page.
+  useEffect(() => {
+    if (!packageDetail || !numericPackageId) return;
+    const canonical = packagePath(numericPackageId, packageDetail.name);
+    if (window.location.pathname !== canonical) {
+      navigate(canonical, { replace: true });
+    }
+  }, [packageDetail, numericPackageId, navigate]);
 
   useSeo({
     enabled: !isLoading,
@@ -312,12 +323,12 @@ export default function PackageDetailPage() {
     description: packageDetail?.description,
     image: packageDetail?.images?.[0],
     type: "product",
-    canonicalPath: `/packages/${packageId}`,
+    canonicalPath: packagePath(numericPackageId, packageDetail?.name),
     jsonLd: packageDetail
       ? breadcrumbJsonLd([
           { name: "Home", path: "/" },
           { name: "Packages", path: "/packages" },
-          { name: packageDetail.name, path: `/packages/${packageId}` },
+          { name: packageDetail.name, path: packagePath(numericPackageId, packageDetail.name) },
         ])
       : null,
   });

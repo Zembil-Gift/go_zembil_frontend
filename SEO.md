@@ -134,11 +134,13 @@ order-tracking pages, all `noindex`. The "Back to Events" / "Back to Services" b
 the detail pages are the only public ones left, and both destinations are already linked
 from the header and footer, so converting them buys close to nothing.
 
-### 1.6 Slug URLs for services, packages and vendors
+### 1.6 Slug URLs for services, events, packages — **done**; vendors left
 
-Products are done. `productPath`/`productIdFromParam` in `src/lib/seo.ts` generalise to
-`/services/:id`, `/packages/:id` and `/vendor/:id` with the same trailing-id trick and the
-same canonical redirect. Lower value than products, same shape of work.
+`/services/wedding-decor-7`, `/events/timket-concert-3` and `/packages/coffee-hamper-9`
+use the product shape: `slugPath` + `idFromParam` in `src/lib/seo.ts`, the same canonical
+redirect, and bare-id links keep resolving. Event params with no trailing id still route to
+the mock-event lookup. `/custom-orders` joined the prerendered static routes. `/vendor/:id`
+is the one catalogue route still on bare ids.
 
 ### 1.7 Search Console
 
@@ -153,8 +155,9 @@ there is no way to tell whether any of this worked.
   currently client-fetched by `ProductReviewsSection`.
 - **Per-visitor currency** correctness on any cached page.
 - Metadata on **dynamic routes** for crawlers that do not run JS. The postbuild now writes a
-  real file per product (`dist/product/<slug>-<id>/index.html`, from the same list the sitemap
-  uses), but nothing on a Render static site serves it:
+  real file per product, service, event and package (`dist/product/<slug>-<id>/index.html`
+  and so on, from the same list the sitemap uses), but nothing on a Render static site serves
+  it:
 
   - `/product/foo-42` matches no file, so the `/*` catch-all returns the app shell.
   - A wildcard `/product/* -> /product/*/index.html` would serve those files, but **measured

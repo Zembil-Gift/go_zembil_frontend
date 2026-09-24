@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSeo } from "@/hooks/useSeo";
-import { breadcrumbJsonLd, productJsonLd, productPath, productIdFromParam } from "@/lib/seo";
+import { breadcrumbJsonLd, productJsonLd, productPath, idFromParam } from "@/lib/seo";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -113,7 +113,7 @@ export default function ProductDetail() {
   // The route param is now "ethiopian-coffee-gift-set-42"; the id is the
   // trailing number. Bare "/product/42" links -- every one ever shared, plus
   // the cart and wishlist, which have an id but no product name -- still parse.
-  const productId = productIdFromParam(params.id);
+  const productId = idFromParam(params.id);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);

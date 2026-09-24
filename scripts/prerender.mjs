@@ -13,10 +13,9 @@
  * ponytail: string replacement over the built index.html, not a headless
  * browser and not an SSR build. It needs no new dependency, no browser
  * download in CI and no component to be SSR-safe. Products are covered too,
- * from the list the prebuild already fetched. The ceiling is that a page is
- * only as fresh as the last build: a product added or repriced afterwards has
- * no file until the next deploy. Events and services still need real server
- * rendering (see docs/SEO.md Part 2).
+ * from the list the prebuild already fetched, as are services, events and
+ * packages. The ceiling is that a page is only as fresh as the last build: an
+ * entity added or repriced afterwards has no file until the next deploy.
  *
  * The fallback markup goes INSIDE #root, so React's createRoot().render()
  * replaces it on mount. Visitors never see it; crawlers without JS see only it.
@@ -30,7 +29,12 @@ import { dirname, resolve, join } from "node:path";
 // Same reason the prebuild reaches into seo.ts, and the same constraint: the
 // JSON-LD a crawler reads must be built by the code the app uses, not a second
 // copy that drifts. "postbuild" therefore also runs with type stripping.
-import { productJsonLd, clampDescription } from "../src/lib/seo.ts";
+import {
+  productJsonLd,
+  serviceJsonLd,
+  eventJsonLd,
+  clampDescription,
+} from "../src/lib/seo.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
@@ -63,7 +67,7 @@ const esc = (s) =>
 
 // Mirrors the footer/header nav so a crawler without JS still has a path to
 // every other indexable page. Anything added here must exist in seo-routes.json.
-const NAV = ["/shop", "/gifts", "/occasions", "/collections", "/packages", "/events", "/services", "/about", "/contact"];
+const NAV = ["/shop", "/gifts", "/occasions", "/collections", "/packages", "/events", "/services", "/custom-orders", "/about", "/contact"];
 
 const organization = {
   "@context": "https://schema.org",
@@ -186,40 +190,74 @@ for (const [path, meta] of Object.entries(routes)) {
   written++;
 }
 
-// Products are per-entity and live behind the API, so they cannot come from
-// seo-routes.json. The prebuild already fetched them and wrote the list; using
-// that same list is what guarantees a prerendered page exists at every product
-// URL the sitemap advertises.
+// Catalogue entities are per-entity and live behind the API, so they cannot
+// come from seo-routes.json. The prebuild already fetched them and wrote the
+// list; using that same list is what guarantees a prerendered page exists at
+// every catalogue URL the sitemap advertises.
 const manifest = resolve(root, ".seo-catalogue.json");
-const products = existsSync(manifest)
+const catalogue = existsSync(manifest)
   ? JSON.parse(readFileSync(manifest, "utf8"))
   : [];
 
-for (const p of products) {
+// kind -> [og:type, JSON-LD builder]. Same builders the pages use via useSeo.
+const ENTITY = {
+  product: ["product", (e) =>
+    productJsonLd({
+      name: e.name,
+      description: e.description || undefined,
+      image: e.image || undefined,
+      sku: e.id,
+      price: e.price,
+      currency: e.currency,
+      inStock: e.inStock,
+      path: e.path,
+    })],
+  service: ["website", (e) =>
+    serviceJsonLd({
+      name: e.name,
+      description: e.description || undefined,
+      image: e.image || undefined,
+      providerName: e.providerName,
+      path: e.path,
+    })],
+  event: ["article", (e) =>
+    eventJsonLd({
+      name: e.name,
+      description: e.description || undefined,
+      image: e.image || undefined,
+      startDate: e.startDate,
+      endDate: e.endDate,
+      venue: e.venue,
+      city: e.city,
+      path: e.path,
+    })],
+  // No Package builder in seo.ts: a package is a bundle of products sold as
+  // one item, so it is a Product without an Offer until the live page adds one.
+  package: ["product", (e) =>
+    productJsonLd({
+      name: e.name,
+      description: e.description || undefined,
+      image: e.image || undefined,
+      sku: e.id,
+      path: e.path,
+    })],
+};
+
+for (const e of catalogue) {
+  const [ogType, jsonLd] = ENTITY[e.kind ?? "product"];
+  const place = e.city ? ` in ${e.city}` : "";
   const meta = {
-    title: `${p.name} | ${SITE_NAME}`,
+    title: `${e.name} | ${SITE_NAME}`,
     description: clampDescription(
-      p.description ||
-        `${p.name}, delivered anywhere in Ethiopia by ${SITE_NAME}.`
+      e.description || `${e.name}${place}, arranged anywhere in Ethiopia by ${SITE_NAME}.`
     ),
-    h1: p.name,
+    h1: e.name,
   };
 
-  writePage(p.path, meta, {
-    image: p.image || OG_IMAGE,
-    ogType: "product",
-    extraLd: [
-      productJsonLd({
-        name: p.name,
-        description: p.description || undefined,
-        image: p.image || undefined,
-        sku: p.id,
-        price: p.price,
-        currency: p.currency,
-        inStock: p.inStock,
-        path: p.path,
-      }),
-    ],
+  writePage(e.path, meta, {
+    image: e.image || OG_IMAGE,
+    ogType,
+    extraLd: [jsonLd(e)],
   });
 }
 
@@ -244,14 +282,14 @@ if (unserved.length) {
 
 // Measured on Render: a rewrite to a file that does not exist returns 200 with
 // an empty body, so the obvious `/product/*` wildcard would serve a blank page
-// for every product added after the last build. Until a serving mechanism that
+// for every entity added after the last build. Until a serving mechanism that
 // degrades gracefully is in place (see SEO.md 1.8), these files are written but
 // never reached -- say it out loud rather than letting a green build imply
 // otherwise.
-if (products.length && !/^\s*source:\s*\/product\/\*\s*$/m.test(renderYaml)) {
+if (catalogue.length) {
   console.warn(
-    `prerender: ${products.length} product pages written, but render.yaml has no` +
-      ` "/product/*" rewrite -- nothing serves them yet.`
+    `prerender: ${catalogue.length} catalogue pages written (products, services,` +
+      ` events, packages), but render.yaml serves none of them yet -- see SEO.md 1.8.`
   );
 }
 
@@ -265,5 +303,5 @@ for (const f of ["robots.txt", "sitemap.xml", "llms.txt"]) {
 }
 
 console.log(
-  `prerender: ${written} routes + ${products.length} products -> dist/**/index.html`
+  `prerender: ${written} routes + ${catalogue.length} catalogue entities -> dist/**/index.html`
 );

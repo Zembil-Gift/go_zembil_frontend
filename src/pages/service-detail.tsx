@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSeo } from "@/hooks/useSeo";
-import { breadcrumbJsonLd, serviceJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, serviceJsonLd, servicePath, idFromParam } from "@/lib/seo";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -39,7 +39,8 @@ import { useTranslation } from "react-i18next";
 
 export default function ServiceDetail() {
   const { t } = useTranslation();
-  const { id } = useParams<{ id: string }>();
+  // "/services/wedding-decor-7" or a bare "/services/7"; the id is the trailing number.
+  const id = idFromParam(useParams<{ id: string }>().id);
   const navigate = useNavigate();
   const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
@@ -55,7 +56,7 @@ export default function ServiceDetail() {
     error,
   } = useQuery({
     queryKey: ["service", id, activeCurrency],
-    queryFn: () => (id ? serviceService.getService(parseInt(id)) : null),
+    queryFn: () => (id ? serviceService.getService(id) : null),
     enabled: !!id && isInitialized,
   });
 
@@ -160,6 +161,16 @@ export default function ServiceDetail() {
     return selectedPackage?.currency ?? service?.currency ?? "ETB";
   }, [selectedPackage, service]);
 
+  // One service, one indexable URL: a bare id or a stale slug is swapped for
+  // the canonical form. `replace` so back still leaves the page.
+  useEffect(() => {
+    if (!service || !id) return;
+    const canonical = servicePath(id, service.title);
+    if (window.location.pathname !== canonical) {
+      navigate(canonical, { replace: true });
+    }
+  }, [service, id, navigate]);
+
   useSeo({
     enabled: !isLoading,
     noindex: !service,
@@ -168,7 +179,7 @@ export default function ServiceDetail() {
       : "Service not found",
     description: service?.description,
     image: displayImages[0],
-    canonicalPath: `/services/${id}`,
+    canonicalPath: servicePath(id!, service?.title),
     jsonLd: service
       ? [
           serviceJsonLd({
@@ -178,12 +189,12 @@ export default function ServiceDetail() {
             price: displayPriceMajor,
             currency: displayCurrency,
             providerName: service.vendorName,
-            path: `/services/${id}`,
+            path: servicePath(id!, service.title),
           }),
           breadcrumbJsonLd([
             { name: "Home", path: "/" },
             { name: "Services", path: "/services" },
-            { name: service.title, path: `/services/${id}` },
+            { name: service.title, path: servicePath(id!, service.title) },
           ]),
         ]
       : null,

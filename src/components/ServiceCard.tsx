@@ -11,6 +11,7 @@ import { DiscountBadge } from "@/components/DiscountBadge";
 import { PriceWithDiscount } from "@/components/PriceWithDiscount";
 import { useTranslation } from "react-i18next";
 import { cdnImage, cdnSrcSet } from "@/utils/imageUtils";
+import { servicePath } from "@/lib/seo";
 
 // Mirrors gift-card.tsx: service cards render at the same grid widths, and the
 // top width covers 2x DPR. Asking the resize layer for more just wastes bytes.
@@ -80,7 +81,7 @@ export default function ServiceCard({ service, index = 0 }: ServiceCardProps) {
       {/* A real <a href>, not an onClick on a div: this card is how a crawler
           discovers every service detail page, and an onClick leaves no link to
           follow -- nor a middle-click or "open in new tab" for anyone else. */}
-      <Link to={`/services/${service.id}`} className="block h-full">
+      <Link to={servicePath(service.id, service.title)} className="block h-full">
       <Card
         className="group h-full flex flex-col overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-md cursor-pointer"
       >

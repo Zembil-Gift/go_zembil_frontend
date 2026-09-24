@@ -24,7 +24,7 @@ import { dirname, resolve } from "node:path";
 // builds on Node 22, which throws ERR_UNKNOWN_FILE_EXTENSION without it.
 // Keep seo.ts free of enum/namespace/parameter properties -- type stripping
 // erases annotations, it does not compile non-erasable syntax.
-import { productPath, slugify } from "../src/lib/seo.ts";
+import { productPath, servicePath, eventPath, packagePath } from "../src/lib/seo.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
@@ -75,6 +75,7 @@ const prerenderable = [];
 function productMeta(e, path) {
   const skus = e.productSku ?? [];
   return {
+    kind: "product",
     path,
     id: e.id,
     name: e.name,
@@ -88,6 +89,40 @@ function productMeta(e, path) {
   };
 }
 
+// Services, events and packages carry prices in per-type shapes (minor units,
+// per-ticket, per-item), so their records leave price out and the prerendered
+// JSON-LD emits no Offer -- no Offer beats a wrong one. The live page adds it.
+const serviceMeta = (e, path) => ({
+  kind: "service",
+  path,
+  name: e.title || e.name,
+  description: e.summary || e.description || "",
+  image: e.images?.[0]?.fullUrl || e.primaryImageUrl || "",
+  city: e.city,
+  providerName: e.vendorName,
+});
+
+const eventMeta = (e, path) => ({
+  kind: "event",
+  path,
+  name: e.title,
+  description: e.description || "",
+  image: e.images?.[0]?.fullUrl || e.bannerImageUrl || "",
+  city: e.city,
+  venue: e.location,
+  startDate: e.eventDate,
+  endDate: e.eventEndDate,
+});
+
+const packageMeta = (e, path) => ({
+  kind: "package",
+  path,
+  id: e.id,
+  name: e.name,
+  description: e.summary || e.description || "",
+  image: e.images?.[0] || "",
+});
+
 /**
  * Entity URLs, or [] if the API is unset or unreachable.
  * `updatedAt` is used for lastmod where the entity carries one.
@@ -99,10 +134,10 @@ async function catalogueUrls() {
   }
 
   const sources = [
-    { path: "/api/v1/products", url: (e) => productPath(e.id, e.name), changefreq: "weekly", priority: 0.7, prerender: true },
-    { path: "/api/services",    url: (e) => `/services/${e.id}`, changefreq: "weekly", priority: 0.7 },
-    { path: "/api/events",      url: (e) => `/events/${e.slug ?? e.id}`, changefreq: "daily", priority: 0.7 },
-    { path: "/api/v1/packages", url: (e) => `/packages/${e.id}`, changefreq: "weekly", priority: 0.6 },
+    { path: "/api/v1/products", url: (e) => productPath(e.id, e.name), changefreq: "weekly", priority: 0.7, meta: productMeta },
+    { path: "/api/services",    url: (e) => servicePath(e.id, e.title || e.name), changefreq: "weekly", priority: 0.7, meta: serviceMeta },
+    { path: "/api/events",      url: (e) => eventPath(e.id, e.title), changefreq: "daily", priority: 0.7, meta: eventMeta },
+    { path: "/api/v1/packages", url: (e) => packagePath(e.id, e.name), changefreq: "weekly", priority: 0.6, meta: packageMeta },
   ];
 
   const urls = [];
@@ -111,7 +146,7 @@ async function catalogueUrls() {
       const items = await fetchPaged(src.path);
       for (const e of items) {
         if (e?.id == null) continue;
-        if (src.prerender) prerenderable.push(productMeta(e, src.url(e)));
+        prerenderable.push(src.meta(e, src.url(e)));
         urls.push({
           loc: src.url(e),
           lastmod: (e.updatedAt ?? e.createdAt ?? "").slice(0, 10) || lastmod,

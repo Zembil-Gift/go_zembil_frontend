@@ -55,6 +55,13 @@
     "priority": 0.8,
     "changefreq": "daily"
   },
+  "/custom-orders": {
+    "title": "Custom Gifts Made to Order in Ethiopia | goGerami",
+    "description": "Commission unique, personalised gifts from talented Ethiopian artists and makers — made to your brief and delivered to family and friends across Ethiopia.",
+    "h1": "Custom orders",
+    "priority": 0.7,
+    "changefreq": "weekly"
+  },
   "/about": {
     "title": "About goGerami — Connecting the Ethiopian Diaspora",
     "description": "goGerami is an Ethiopian gift marketplace built so people abroad can send meaningful, authentic gifts home. Learn how we work with local vendors and delivery partners.",

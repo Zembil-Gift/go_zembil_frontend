@@ -295,20 +295,26 @@ export function slugify(text: string): string {
 }
 
 /**
- * Canonical product URL: "/product/ethiopian-coffee-gift-set-42".
+ * Canonical catalogue URL: "/product/ethiopian-coffee-gift-set-42",
+ * "/services/wedding-decor-7", "/events/timket-concert-3", "/packages/coffee-hamper-9".
  *
  * The numeric id stays on the end so lookups need no slug column and no
  * uniqueness guarantee, and so every old /product/42 link keeps resolving --
- * `productIdFromParam` reads the id off the last segment either way. An
- * Amharic-only name slugifies to nothing, which degrades to /product/42.
+ * `idFromParam` reads the id off the last segment either way. An Amharic-only
+ * name slugifies to nothing, which degrades to /product/42.
  */
-export function productPath(id: number | string, name?: string): string {
+export function slugPath(base: string, id: number | string, name?: string): string {
   const slug = name ? slugify(name) : "";
-  return slug ? `/product/${slug}-${id}` : `/product/${id}`;
+  return slug ? `${base}/${slug}-${id}` : `${base}/${id}`;
 }
 
+export const productPath = (id: number | string, name?: string) => slugPath("/product", id, name);
+export const servicePath = (id: number | string, name?: string) => slugPath("/services", id, name);
+export const eventPath = (id: number | string, name?: string) => slugPath("/events", id, name);
+export const packagePath = (id: number | string, name?: string) => slugPath("/packages", id, name);
+
 /** Reads the trailing numeric id out of "ethiopian-coffee-gift-set-42" or "42". */
-export function productIdFromParam(param?: string): number | undefined {
+export function idFromParam(param?: string): number | undefined {
   if (!param) return undefined;
   const id = Number(/(\d+)$/.exec(param)?.[1]);
   return Number.isFinite(id) && id > 0 ? id : undefined;
