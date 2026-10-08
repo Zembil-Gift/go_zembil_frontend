@@ -9,7 +9,7 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const DIST = path.join(path.dirname(fileURLToPath(import.meta.url)), "dist");
+const DIST = path.join(path.dirname(fileURLToPath(import.meta.url)), "build", "client");
 const PORT = Number(process.env.PORT) || 3000;
 const SHA = process.env.GIT_SHA || "dev";
 // Set on every host that is not the canonical one (frontend.gogerami-api.online

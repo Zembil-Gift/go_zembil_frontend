@@ -5,10 +5,10 @@ import reactRefresh from "eslint-plugin-react-refresh";
 
 export default [
   {
-    ignores: ["dist/**", "node_modules/**", "stats.html"],
+    ignores: ["dist/**", "build/**", ".react-router/**", "node_modules/**", "stats.html"],
   },
   {
-    files: ["src/**/*.{ts,tsx}"],
+    files: ["src/**/*.{ts,tsx}", "*.ts"],
     languageOptions: {
       parser: tsParser,
       parserOptions: {

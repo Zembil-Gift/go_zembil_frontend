@@ -138,3 +138,7 @@ public/llms.txt
 
 # Written by the sitemap prebuild, consumed by the prerender postbuild.
 .seo-catalogue.json
+
+# React Router framework mode
+/build
+.react-router

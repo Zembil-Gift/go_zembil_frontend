@@ -27,7 +27,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
-COPY --from=build /app/dist ./dist
+COPY --from=build /app/build/client ./build/client
 COPY server.mjs ./
 ARG GIT_SHA=dev
 ENV GIT_SHA=$GIT_SHA
