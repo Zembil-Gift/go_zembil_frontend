@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { ShoppingCart, Plus, Loader2 } from "lucide-react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -26,7 +26,7 @@ export function CartButton({
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { addToCart, isAddingToCart } = useCart();
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();

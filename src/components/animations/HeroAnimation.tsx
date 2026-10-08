@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import GiftingHeartAnimation from "./GiftingHeartAnimation";
 import GoGeramiLogo from "@/components/GoGeramiLogo";
 import { useTranslation } from "react-i18next";
@@ -82,7 +82,7 @@ export default function HeroAnimation({ className = "" }: HeroAnimationProps) {
                 size="lg"
                 className="bg-ethiopian-gold hover:bg-yellow-600 text-white text-lg px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                <Link href="/gifts">
+                <Link to="/gifts">
                   <motion.span
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -97,7 +97,7 @@ export default function HeroAnimation({ className = "" }: HeroAnimationProps) {
                 size="lg"
                 className="border-2 border-deep-forest text-deep-forest hover:bg-deep-forest hover:text-white text-lg px-8 py-4 rounded-xl font-semibold transition-all duration-300"
               >
-                <Link href="/occasions">
+                <Link to="/occasions">
                   <motion.span
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}

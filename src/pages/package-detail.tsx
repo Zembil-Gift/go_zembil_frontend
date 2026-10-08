@@ -118,7 +118,7 @@ function SkuDropdown({
   selectedSkuId,
   onSkuChange,
 }: {
-  options: ProductPackageItemResponse["availableSkus"];
+  options: NonNullable<ProductPackageItemResponse["availableSkus"]>;
   selectedSkuId: number | undefined;
   onSkuChange: (id: number) => void;
 }) {
@@ -391,7 +391,7 @@ export default function PackageDetailPage() {
       },
       packageEstimatedTotal.currency
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [packageDetail?.id]);
 
   const addToCartMutation = useMutation({

@@ -382,7 +382,7 @@ export default function EventDetail() {
       },
       baseCurrency
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [isAPIEvent ? (apiEvent as EventResponse)?.id : (mockEvent as Event)?.id]);
 
   const nextImage = () => {

@@ -47,7 +47,7 @@ Current repository status:
 
 - There is no `test` script in `package.json`.
 - No test framework config files (`vitest`, `jest`, `playwright`) were found.
-- CI workflow `node.js.yml` references `npm test`, but this repo currently does not define it.
+- CI workflow `node.js.yml` runs `type-check`, `lint` and `build` on Node 22.
 
 What to do now:
 
@@ -67,9 +67,8 @@ Then run a single test file/case with:
 
 ## CI Notes
 
-- GitHub Actions use Node 18/20/22 for CI build job.
-- Deploy workflows build with Node 18.
-- Keep changes compatible with Node 18+.
+- GitHub Actions use Node 22 (the build scripts need `--experimental-strip-types`, Node >= 22.6).
+- Keep changes compatible with Node 22+.
 
 ## Code Style Guidelines
 

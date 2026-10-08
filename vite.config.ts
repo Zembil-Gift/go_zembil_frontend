@@ -244,7 +244,7 @@ export default defineConfig({
         ],
       },
     }),
-    visualizer({ open: true }),
+    visualizer({ open: !process.env.CI }),
     {
       name: "exclude-public-videos",
       apply: "build",
@@ -297,7 +297,7 @@ export default defineConfig({
             return "vendor-react";
           }
 
-          if (id.includes("react-router") || id.includes("wouter")) {
+          if (id.includes("react-router")) {
             return "vendor-router";
           }
 

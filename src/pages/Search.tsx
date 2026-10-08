@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,7 @@ interface Product {
 export default function Search() {
   useSeo({ title: "Search", noindex: true });
   const { t } = useTranslation();
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [translatedQuery, setTranslatedQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);

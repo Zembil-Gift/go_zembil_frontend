@@ -353,7 +353,7 @@ export default function ProductDetail() {
       currencyCode
     );
     // Fire once per product load; variant/vendor changes don't need a new view_item.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [product?.id]);
 
   const wishlistMutation = useMutation({
