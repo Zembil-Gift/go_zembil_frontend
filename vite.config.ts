@@ -5,6 +5,7 @@ import { visualizer } from "rollup-plugin-visualizer";
 import { VitePWA } from "vite-plugin-pwa";
 
 const CACHE_VERSION =
+  process.env.GIT_SHA?.slice(0, 8) ||
   process.env.RENDER_GIT_COMMIT?.slice(0, 8) ||
   process.env.VITE_APP_VERSION ||
   process.env.npm_package_version ||

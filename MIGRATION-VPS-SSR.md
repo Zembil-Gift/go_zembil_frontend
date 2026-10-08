@@ -171,9 +171,10 @@ today, so Phase 2/3 failures can only be code.
 - [ ] `deploy/docker-compose.yml`: `x-web` anchor, `web-blue`/`web-green` with profiles,
       `mem_limit: 384m`, `stop_grace_period: 20s`, external `zembil` network.
 - [ ] `.github/workflows/deploy.yml`, copied in shape from the backend's: type-check/lint/build
-      on every branch; on the deploy branch build + push `ghcr.io/zembil-gift/go-zembil-frontend:<sha>`
+      on every branch; on the deploy branch build + push `ghcr.io/zembil-gift/go_zembil_frontend:<sha>`
       and `:latest`, rsync `deploy/` (no `--delete`), rewrite `IMAGE_TAG`, ensure the
-      network, swap colours with `--wait`, stop (don't remove) the old colour. `concurrency`
+      network, log in to GHCR with `GITHUB_TOKEN` into `DOCKER_CONFIG=/opt/zembil-web/.docker`
+      (token over stdin), swap colours with `--wait`, stop (don't remove) the old colour. `concurrency`
       group. Deploy branch: `serdesiyon`.
       `VITE_*` values come from GitHub Actions *variables* — they're public by nature
       (inlined in the JS) and Render's dashboard has the current production values.
@@ -294,7 +295,7 @@ Nothing later needs root. The Cloudflare origin certificate (Phase 4) goes in
 | Stripe Dashboard | *Payment method domains* + `frontend.gogerami-api.online` (only if Apple/Google Pay buttons are used) |
 | GitHub `Zembil-Gift/go_zembil_frontend` → Settings → Secrets | `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (same values as the backend repo) |
 | Same repo → *Variables* | Every `VITE_*` value from the Render dashboard's production environment, plus `VITE_SITE_URL=https://gogerami.com` |
-| GHCR | After the first image push: make sure the box's `docker login ghcr.io` credential can pull `go-zembil-frontend` (org package visibility/access) |
+| GHCR | Nothing on the box. Each deploy logs in with the job's own `GITHUB_TOKEN` into a private `DOCKER_CONFIG` (`/opt/zembil-web/.docker`) — the shared `~/.docker` login was wiped by another pipeline on 2026-10-03 and broke the backend deploy; the backend workflow now does the same (`cb2d77d`) |
 
 ---
 

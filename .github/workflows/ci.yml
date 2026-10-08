@@ -1,0 +1,158 @@
+name: CI
+
+# Every branch builds the image (which type-checks, lints and builds the app);
+# only serdesiyon pushes it and deploys. Same shape as the backend's ci.yml.
+on:
+  push:
+  pull_request:
+    branches: [ "main", "serdesiyon" ]
+  workflow_dispatch:
+
+# Blue/green reads which colour is live and acts on the other. Two deploys at
+# once would pick the same idle colour and race to stop each other's live one.
+# Queued, never cancelled: cancelling mid-swap could leave both stopped.
+concurrency:
+  group: deploy-zembil-web
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/zembil-gift/go_zembil_frontend
+  DEPLOY: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/serdesiyon' }}
+  PUBLIC_URL: https://frontend.gogerami-api.online
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up SSH to the VPS
+        if: env.DEPLOY == 'true'
+        env:
+          KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          [ -n "$HOST" ] && [ -n "$VPS_USER" ] && [ -n "$KEY" ] \
+            || { echo "::error::VPS_HOST, VPS_USER and VPS_SSH_KEY must all be set"; exit 1; }
+          install -m600 -D /dev/stdin ~/.ssh/id_deploy <<<"${KEY//$'\r'/}"
+          ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null \
+            || { echo "::error::VPS_SSH_KEY is not a valid private key"; exit 1; }
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts \
+            || { echo "::error::VPS_HOST is unreachable: $HOST"; exit 1; }
+
+      # VITE_* are inlined into the bundle at build time. Their source of truth
+      # is /opt/zembil-web/.env on the box, like every other repo's config; only
+      # the VITE_ lines leave it, and only into a build secret (never a layer).
+      # Branches that don't deploy build with none -- the app falls back to its
+      # localhost defaults, which is enough to prove it compiles.
+      - name: Read VITE_* from the VPS
+        run: |
+          : > vite.env
+          if [ "$DEPLOY" = true ]; then
+            ssh -i ~/.ssh/id_deploy -o BatchMode=yes "$VPS_USER@$HOST" \
+              "grep -E '^VITE_[A-Za-z0-9_]+=' /opt/zembil-web/.env" > vite.env \
+              || { echo "::error::could not read VITE_* from /opt/zembil-web/.env"; exit 1; }
+            grep -q '^VITE_API_URL=.' vite.env \
+              || { echo "::error::VITE_API_URL is missing from /opt/zembil-web/.env"; exit 1; }
+            echo "read $(wc -l < vite.env) VITE_* values"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+      - if: env.DEPLOY == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # No layer cache, on purpose: BuildKit does not key cache on secret
+      # contents, so a cached build would keep shipping the old VITE_* values
+      # after one changes on the box.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ env.DEPLOY == 'true' }}
+          secret-files: vite_env=vite.env
+          build-args: GIT_SHA=${{ github.sha }}
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+
+      - name: Deploy to VPS
+        if: env.DEPLOY == 'true'
+        run: |
+          # No --delete: /opt/zembil-web also holds .env and .docker.
+          rsync -az --exclude '.env*' \
+            -e "ssh -i ~/.ssh/id_deploy -o BatchMode=yes" \
+            deploy/ "$VPS_USER@$HOST:/opt/zembil-web/"
+
+          # Log in with this job's token into a docker config private to this
+          # project. The shared ~/.docker login is one `docker logout` in another
+          # repo's pipeline away from breaking every pull (it happened on
+          # 2026-10-03). Token over stdin: never in a process list on the box.
+          echo "${{ secrets.GITHUB_TOKEN }}" | ssh -i ~/.ssh/id_deploy -o BatchMode=yes "$VPS_USER@$HOST" \
+            "DOCKER_CONFIG=/opt/zembil-web/.docker docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+
+          ssh -i ~/.ssh/id_deploy -o BatchMode=yes "$VPS_USER@$HOST" \
+            "IMAGE_SHA='${{ github.sha }}' bash -s" <<'EOF'
+          set -euo pipefail
+          cd /opt/zembil-web
+          export DOCKER_CONFIG=/opt/zembil-web/.docker
+
+          # .env is written by hand and may end without a newline, so append
+          # with one in front rather than trusting the last line is complete.
+          if grep -q '^IMAGE_TAG=' .env; then
+            sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_SHA}|" .env
+          else
+            printf '\nIMAGE_TAG=%s\n' "$IMAGE_SHA" >> .env
+          fi
+
+          docker network inspect zembil >/dev/null 2>&1 || docker network create zembil
+
+          # Empty on the first deploy, which correctly means "start blue, stop nothing".
+          LIVE=$(docker ps \
+                   --filter label=com.docker.compose.project=zembil-web \
+                   --filter status=running \
+                   --format '{{.Label "com.docker.compose.service"}}' \
+                 | grep -m1 -E '^web-(blue|green)$' || true)
+          if [ "$LIVE" = web-blue ]; then IDLE=web-green; else IDLE=web-blue; fi
+          echo "live=${LIVE:-<none>} -> deploying ${IDLE}"
+
+          docker compose --profile "${IDLE#web-}" pull "$IDLE"
+
+          # --wait blocks on the image HEALTHCHECK, so a broken build fails here
+          # with the old colour still serving. Stop the failed one rather than
+          # let restart: unless-stopped crash-loop it.
+          if ! docker compose --profile "${IDLE#web-}" up -d --wait --wait-timeout 120 "$IDLE"; then
+            docker compose --profile "${IDLE#web-}" logs --tail=100 "$IDLE"
+            docker compose --profile "${IDLE#web-}" stop "$IDLE" || true
+            exit 1
+          fi
+
+          # Caddy's active health check runs every 3s; give it time to see the
+          # new colour before the old one goes.
+          sleep 10
+
+          # stop, not rm: the stopped container is the rollback.
+          if [ -n "$LIVE" ]; then
+            docker compose --profile "${LIVE#web-}" stop "$LIVE"
+          fi
+          EOF
+
+      # Proves the whole path -- DNS, TLS, Caddy, the new colour -- not just the
+      # container's own health check: the public /healthz must report this SHA.
+      - name: Check the public URL serves this build
+        if: env.DEPLOY == 'true'
+        run: |
+          for i in $(seq 1 12); do
+            sha=$(curl -fsS "$PUBLIC_URL/healthz" | sed -n 's/.*"sha":"\([^"]*\)".*/\1/p' || true)
+            [ "$sha" = "${{ github.sha }}" ] && { echo "live: $sha"; exit 0; }
+            echo "attempt $i: got '${sha:-nothing}'"; sleep 5
+          done
+          echo "::error::$PUBLIC_URL/healthz never reported ${{ github.sha }}"
+          exit 1

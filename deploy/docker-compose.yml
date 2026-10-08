@@ -1,0 +1,42 @@
+# Lives at /opt/zembil-web on the VPS. Images come from GHCR; nothing is built
+# here. Same shape as /opt/zembil (the backend), on purpose: one way to deploy,
+# swap and roll back on this box. See zembil-observability/DEPLOYMENT.md.
+#
+# Serves no public port. Caddy (reverse-proxy repo) proxies to web-blue:3000 /
+# web-green:3000 over the shared `zembil` network.
+#
+# .env here holds IMAGE_TAG (rewritten by every deploy) and the VITE_* values
+# the CI build reads. It is deliberately NOT an env_file: VITE_* are baked into
+# the bundle at build time and mean nothing to the running server.
+name: zembil-web
+
+x-web: &web
+  image: ghcr.io/zembil-gift/go_zembil_frontend:${IMAGE_TAG}
+  restart: unless-stopped
+  environment:
+    # 1 until gogerami.com points here (MIGRATION-VPS-SSR.md §10 step 5).
+    ROBOTS_NOINDEX: ${ROBOTS_NOINDEX:-1}
+    NODE_OPTIONS: --max-old-space-size=256
+  # Both colours are up together during a deploy. Sized against the 8GB box
+  # that also runs two JVM colours, Postgres and the monitoring stack.
+  mem_limit: 384m
+  # Long enough for in-flight requests to finish after SIGTERM.
+  stop_grace_period: 20s
+
+services:
+  # profiles: keep a bare `docker compose up -d` from starting both colours.
+  # Act on one by name: `docker compose --profile blue up -d web-blue`.
+  web-blue:
+    <<: *web
+    profiles: [blue]
+
+  web-green:
+    <<: *web
+    profiles: [green]
+
+# External and owned by no project, so a `down` here cannot delete it from
+# under Caddy, the backend and the monitoring stack.
+networks:
+  default:
+    external: true
+    name: zembil

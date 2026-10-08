@@ -47,7 +47,7 @@ Current repository status:
 
 - There is no `test` script in `package.json`.
 - No test framework config files (`vitest`, `jest`, `playwright`) were found.
-- CI workflow `node.js.yml` runs `type-check`, `lint` and `build` on Node 22.
+- CI workflow `ci.yml` builds the Docker image (which runs `type-check`, `lint` and `build` on Node 22); on `serdesiyon` it also pushes to GHCR and deploys blue/green to the VPS.
 
 What to do now:
 
