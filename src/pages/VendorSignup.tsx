@@ -83,7 +83,6 @@ import {
 } from "@/components/maps";
 import { useTranslation } from "react-i18next";
 import { passwordValidation } from "@/lib/passwordSchema";
-import { useStaticSeo } from "@/hooks/useSeo";
 
 interface CertificateResponse {
   certificateCode: string;
@@ -295,7 +294,6 @@ const vendorSignupSchema = z
 type VendorSignupForm = z.infer<typeof vendorSignupSchema>;
 
 export default function VendorSignup() {
-  useStaticSeo("/vendor-signup");
   const { t } = useTranslation();
   const initialDraft = getInitialVendorSignupDraft();
   const isBrowserUnloadingRef = useRef(false);

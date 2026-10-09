@@ -4,10 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Home, ArrowLeft, Search, Gift } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useSeo } from "@/hooks/useSeo";
+import { data, type MetaFunction } from "react-router";
+import { noindexMeta } from "@/lib/seo-meta";
+
+// A real 404 status for any URL no route matches, not a 200 "soft 404".
+export const loader = () => data(null, { status: 404 });
+
+export const meta: MetaFunction = ({ location }) => noindexMeta("Page not found", location.pathname);
 
 export default function NotFound() {
-  useSeo({ title: "Page not found", noindex: true });
   const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">

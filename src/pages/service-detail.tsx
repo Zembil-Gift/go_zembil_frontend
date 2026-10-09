@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useSeo } from "@/hooks/useSeo";
-import { breadcrumbJsonLd, serviceJsonLd, servicePath, idFromParam } from "@/lib/seo";
+import { servicePath, idFromParam } from "@/lib/seo";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -171,34 +170,6 @@ export default function ServiceDetail() {
     }
   }, [service, id, navigate]);
 
-  useSeo({
-    enabled: !isLoading,
-    noindex: !service,
-    title: service
-      ? `${service.title}${service.city ? ` in ${service.city}` : ""}`
-      : "Service not found",
-    description: service?.description,
-    image: displayImages[0],
-    canonicalPath: servicePath(id!, service?.title),
-    jsonLd: service
-      ? [
-          serviceJsonLd({
-            name: service.title,
-            description: service.description,
-            image: displayImages[0],
-            price: displayPriceMajor,
-            currency: displayCurrency,
-            providerName: service.vendorName,
-            path: servicePath(id!, service.title),
-          }),
-          breadcrumbJsonLd([
-            { name: "Home", path: "/" },
-            { name: "Services", path: "/services" },
-            { name: service.title, path: servicePath(id!, service.title) },
-          ]),
-        ]
-      : null,
-  });
 
   useEffect(() => {
     if (!service) return;

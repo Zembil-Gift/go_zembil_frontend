@@ -50,7 +50,10 @@ import {
   type AnalyticsItem,
 } from "@/lib/analytics";
 import { useTranslation } from "react-i18next";
-import { useSeo } from "@/hooks/useSeo";
+import type { MetaFunction } from "react-router";
+import { noindexMeta } from "@/lib/seo-meta";
+
+export const meta: MetaFunction = ({ location }) => noindexMeta("Your Cart", location.pathname);
 
 function toAnalyticsItem(item: CartItem): AnalyticsItem {
   return {
@@ -63,7 +66,6 @@ function toAnalyticsItem(item: CartItem): AnalyticsItem {
 }
 
 export default function Cart() {
-  useSeo({ title: "Your Cart", noindex: true });
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();

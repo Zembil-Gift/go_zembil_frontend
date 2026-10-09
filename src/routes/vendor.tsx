@@ -1,3 +1,4 @@
+export { clientLoader, HydrateFallback, meta } from "./client-only";
 import { VendorRoute } from "@/components/route-guards";
 import VendorDashboardLayout from "@/pages/vendor/VendorDashboardLayout";
 

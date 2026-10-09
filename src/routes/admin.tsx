@@ -1,3 +1,4 @@
+export { clientLoader, HydrateFallback, meta } from "./client-only";
 import { Outlet } from "react-router-dom";
 import { AdminRoute } from "@/components/route-guards";
 

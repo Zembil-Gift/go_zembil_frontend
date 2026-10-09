@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useSeo } from "@/hooks/useSeo";
-import { breadcrumbJsonLd, packagePath, idFromParam } from "@/lib/seo";
+import { packagePath, idFromParam } from "@/lib/seo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -316,22 +315,6 @@ export default function PackageDetailPage() {
     }
   }, [packageDetail, numericPackageId, navigate]);
 
-  useSeo({
-    enabled: !isLoading,
-    noindex: !packageDetail,
-    title: packageDetail?.name || "Package not found",
-    description: packageDetail?.description,
-    image: packageDetail?.images?.[0],
-    type: "product",
-    canonicalPath: packagePath(numericPackageId, packageDetail?.name),
-    jsonLd: packageDetail
-      ? breadcrumbJsonLd([
-          { name: "Home", path: "/" },
-          { name: "Packages", path: "/packages" },
-          { name: packageDetail.name, path: packagePath(numericPackageId, packageDetail.name) },
-        ])
-      : null,
-  });
 
   useEffect(() => {
     if (!packageDetail?.items?.length) return;

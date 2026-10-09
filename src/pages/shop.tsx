@@ -48,23 +48,19 @@ import { getIconByName } from "@/components/admin/IconPicker";
 import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { useTranslation } from "react-i18next";
-import { useSeo } from "@/hooks/useSeo";
+import type { MetaFunction } from "react-router";
+import { seoMeta } from "@/lib/seo-meta";
 import { STATIC_ROUTES, slugToLabel } from "@/lib/seo";
 
-export default function Shop() {
-  // Three routes render this page: /shop, /shop/:categorySlug and
-  // /shop/category/:subcategorySlug. Each needs its own title, and the
-  // canonical must drop ?search=/?sort= so filtered views collapse onto the
-  // clean category URL instead of competing with it (useSeo defaults the
-  // canonical to the pathname, which is exactly that).
-  const { categorySlug, subcategorySlug } = useParams<{
-    categorySlug?: string;
-    subcategorySlug?: string;
-  }>();
-  const slug = subcategorySlug || categorySlug;
+// Three routes render this page: /shop, /shop/:categorySlug and
+// /shop/category/:subcategorySlug. Each needs its own title, and the canonical
+// must drop ?search=/?sort= so filtered views collapse onto the clean category
+// URL instead of competing with it (seoMeta defaults the canonical to the
+// pathname, which is exactly that).
+export const meta: MetaFunction = ({ params, location }) => {
+  const slug = params.subcategorySlug || params.categorySlug;
   const label = slug ? slugToLabel(slug) : null;
-
-  useSeo(
+  return seoMeta(
     label
       ? {
           title: `${label} — Ethiopian Gifts Delivered`,
@@ -74,9 +70,12 @@ export default function Shop() {
           title: STATIC_ROUTES["/shop"].title,
           description: STATIC_ROUTES["/shop"].description,
           canonicalPath: "/shop",
-        }
+        },
+    location.pathname,
   );
+};
 
+export default function Shop() {
   return <ShopContent />;
 }
 

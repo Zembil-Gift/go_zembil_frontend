@@ -2,8 +2,7 @@
 /**
  * Writes public/sitemap.xml and public/llms.txt.
  *
- * Static routes come from src/lib/seo-routes.json, which the app and the
- * prerenderer read too. Catalogue entities (products, services, events,
+ * Static routes come from src/lib/seo-routes.json, which the app reads too. Catalogue entities (products, services, events,
  * packages) are fetched from the API when SITEMAP_API_URL or VITE_API_URL
  * points at a reachable backend.
  *
@@ -66,64 +65,6 @@ async function fetchPaged(path) {
 }
 
 /**
- * The subset scripts/prerender.mjs needs, collected here because this is where
- * the catalogue is already fetched -- and because a prerendered page must sit
- * at exactly the URL the sitemap lists. One fetch, one list, no drift.
- */
-const prerenderable = [];
-
-function productMeta(e, path) {
-  const skus = e.productSku ?? [];
-  return {
-    kind: "product",
-    path,
-    id: e.id,
-    name: e.name,
-    description: e.summary || e.description || "",
-    image: e.images?.[0]?.fullUrl || "",
-    price: e.price?.amount,
-    currency: e.price?.currencyCode,
-    inStock: skus.length
-      ? skus.some((s) => (s.stockQuantity ?? 0) > 0)
-      : e.status === "ACTIVE",
-  };
-}
-
-// Services, events and packages carry prices in per-type shapes (minor units,
-// per-ticket, per-item), so their records leave price out and the prerendered
-// JSON-LD emits no Offer -- no Offer beats a wrong one. The live page adds it.
-const serviceMeta = (e, path) => ({
-  kind: "service",
-  path,
-  name: e.title || e.name,
-  description: e.summary || e.description || "",
-  image: e.images?.[0]?.fullUrl || e.primaryImageUrl || "",
-  city: e.city,
-  providerName: e.vendorName,
-});
-
-const eventMeta = (e, path) => ({
-  kind: "event",
-  path,
-  name: e.title,
-  description: e.description || "",
-  image: e.images?.[0]?.fullUrl || e.bannerImageUrl || "",
-  city: e.city,
-  venue: e.location,
-  startDate: e.eventDate,
-  endDate: e.eventEndDate,
-});
-
-const packageMeta = (e, path) => ({
-  kind: "package",
-  path,
-  id: e.id,
-  name: e.name,
-  description: e.summary || e.description || "",
-  image: e.images?.[0] || "",
-});
-
-/**
  * Entity URLs, or [] if the API is unset or unreachable.
  * `updatedAt` is used for lastmod where the entity carries one.
  */
@@ -134,10 +75,10 @@ async function catalogueUrls() {
   }
 
   const sources = [
-    { path: "/api/v1/products", url: (e) => productPath(e.id, e.name), changefreq: "weekly", priority: 0.7, meta: productMeta },
-    { path: "/api/services",    url: (e) => servicePath(e.id, e.title || e.name), changefreq: "weekly", priority: 0.7, meta: serviceMeta },
-    { path: "/api/events",      url: (e) => eventPath(e.id, e.title), changefreq: "daily", priority: 0.7, meta: eventMeta },
-    { path: "/api/v1/packages", url: (e) => packagePath(e.id, e.name), changefreq: "weekly", priority: 0.6, meta: packageMeta },
+    { path: "/api/v1/products", url: (e) => productPath(e.id, e.name), changefreq: "weekly", priority: 0.7 },
+    { path: "/api/services",    url: (e) => servicePath(e.id, e.title || e.name), changefreq: "weekly", priority: 0.7 },
+    { path: "/api/events",      url: (e) => eventPath(e.id, e.title), changefreq: "daily", priority: 0.7 },
+    { path: "/api/v1/packages", url: (e) => packagePath(e.id, e.name), changefreq: "weekly", priority: 0.6 },
   ];
 
   const urls = [];
@@ -146,7 +87,6 @@ async function catalogueUrls() {
       const items = await fetchPaged(src.path);
       for (const e of items) {
         if (e?.id == null) continue;
-        prerenderable.push(src.meta(e, src.url(e)));
         urls.push({
           loc: src.url(e),
           lastmod: (e.updatedAt ?? e.createdAt ?? "").slice(0, 10) || lastmod,
@@ -163,14 +103,6 @@ async function catalogueUrls() {
 }
 
 const catalogue = await catalogueUrls();
-
-// Written unconditionally: an empty file is how the prerenderer learns the API
-// gave nothing this build. A stale one left from an earlier run would publish
-// product pages for a catalogue that no longer matches the sitemap.
-writeFileSync(
-  resolve(root, ".seo-catalogue.json"),
-  JSON.stringify(prerenderable)
-);
 
 const entry = (loc, mod, changefreq, priority) =>
   `  <url>\n` +
@@ -210,5 +142,5 @@ const llms =
 writeFileSync(resolve(root, "public/llms.txt"), llms);
 
 console.log(
-  `sitemap.xml: ${Object.keys(routes).length} static + ${catalogue.length} catalogue urls · ${prerenderable.length} prerenderable · llms.txt written`
+  `sitemap.xml: ${Object.keys(routes).length} static + ${catalogue.length} catalogue urls · llms.txt written`
 );

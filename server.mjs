@@ -1,20 +1,22 @@
-// Production server for the VPS (deploy/docker-compose.yml). Replaces what
-// Render's static hosting did -- render.yaml's headers and rewrites -- and adds
-// the one thing Render could not do: serve a prerendered page when one exists
-// and fall back to the app shell when it does not (SEO-HOSTING.md §3).
-//
-// Phase 2 of MIGRATION-VPS-SSR.md swaps the shell fallback at the bottom for
-// React Router's request handler; everything above it stays.
+// Production server for the VPS (deploy/docker-compose.yml): static assets with
+// render.yaml's headers, and every page rendered by React Router on the server
+// (MIGRATION-VPS-SSR.md Phase 3).
+import { timingSafeEqual } from "node:crypto";
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequestHandler } from "@react-router/express";
 
-const DIST = path.join(path.dirname(fileURLToPath(import.meta.url)), "build", "client");
+const ROOT = path.dirname(fileURLToPath(import.meta.url));
+const DIST = path.join(ROOT, "build", "client");
 const PORT = Number(process.env.PORT) || 3000;
 const SHA = process.env.GIT_SHA || "dev";
 // Set on every host that is not the canonical one (frontend.gogerami-api.online
 // until cutover), so it never competes with gogerami.com in the index.
 const NOINDEX = process.env.ROBOTS_NOINDEX === "1";
+
+// Unset disables POST /internal/purge entirely.
+const PURGE_TOKEN = process.env.INTERNAL_PURGE_TOKEN || "";
 
 const NO_CACHE = "no-cache";
 const NO_STORE = "no-cache, no-store, must-revalidate";
@@ -90,8 +92,8 @@ app.use((_req, res, next) => {
 
 app.use(
   express.static(DIST, {
-    // /shop must fall through to the prerendered /shop/index.html below, not
-    // be 301'd to /shop/ -- the canonical URLs have no trailing slash.
+    // /shop is a page for the router below, not a directory to 301 to /shop/
+    // -- the canonical URLs have no trailing slash.
     redirect: false,
     setHeaders(res, file) {
       const rel = path.relative(DIST, file);
@@ -109,21 +111,41 @@ app.use(
 // from, not HTML parsed as JavaScript.
 app.use("/assets", (_req, res) => res.status(404).end());
 
-const shell = (req, res, next) => {
-  if (req.method !== "GET" && req.method !== "HEAD") return next();
-  // nginx's `try_files $uri/index.html /index.html`. sendFile with `root`
-  // decodes the path and refuses anything that escapes it.
-  res.sendFile(
-    `${req.path.replace(/\/+$/, "")}/index.html`,
-    { root: DIST, headers: { "Cache-Control": NO_CACHE } },
-    (err) => {
-      // headersSent: the client went away mid-response; nothing left to do.
-      if (!err || res.headersSent) return;
-      res.sendFile("index.html", { root: DIST, headers: { "Cache-Control": NO_CACHE } }, (e) => e && next(e));
-    },
-  );
-};
-app.use(shell);
+// Evicts server-side API responses (src/lib/ssr.server.ts) so a price or
+// stock change shows on the next render instead of up to a minute later.
+// Reachable only on the zembil network: Caddy 404s /internal/* on every public
+// host. The token is the second lock.
+app.post("/internal/purge", express.json(), (req, res) => {
+  const given = Buffer.from(req.get("x-purge-token") || "");
+  const want = Buffer.from(PURGE_TOKEN);
+  if (!PURGE_TOKEN || given.length !== want.length || !timingSafeEqual(given, want)) {
+    return res.status(404).end();
+  }
+  const cache = globalThis.__ssrApiCache;
+  const prefix = typeof req.body?.prefix === "string" ? req.body.prefix : "";
+  let purged = 0;
+  for (const key of cache?.keys() ?? []) {
+    if (req.body?.all === true || (prefix && key.includes(prefix))) {
+      cache.delete(key);
+      purged++;
+    }
+  }
+  res.json({ purged });
+});
+
+// Pages: rendered per request, in the visitor's currency and language, so
+// shared caches must not keep them. The response cache that keeps this cheap
+// is inside the app, keyed by currency (src/lib/ssr.server.ts).
+app.use((_req, res, next) => {
+  res.set("Cache-Control", "private, no-cache");
+  next();
+});
+app.use(
+  createRequestHandler({
+    build: () => import("./build/server/index.js"),
+    mode: process.env.NODE_ENV,
+  }),
+);
 
 const server = app.listen(PORT, () => {
   console.log(JSON.stringify({ level: "info", msg: "listening", port: PORT, sha: SHA, noindex: NOINDEX }));

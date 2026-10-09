@@ -26,7 +26,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { trackLogin } from "@/lib/analytics";
 import { useTranslation } from "react-i18next";
 import { isRateLimited } from "@/lib/authUtils";
-import { useSeo } from "@/hooks/useSeo";
+import type { MetaFunction } from "react-router";
+import { noindexMeta } from "@/lib/seo-meta";
+
+export const meta: MetaFunction = ({ location }) => noindexMeta("Sign In", location.pathname);
 
 const signinSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -42,7 +45,6 @@ const NON_ADMIN_LOGIN_ROLES = new Set([
 ]);
 
 export default function SignIn() {
-  useSeo({ title: "Sign In", noindex: true });
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);

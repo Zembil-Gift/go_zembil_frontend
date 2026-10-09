@@ -160,25 +160,25 @@ which change did it (`SEO.md` §2.8). Estimates assume one engineer who knows th
 Proves the infrastructure (image, CI, blue/green, Caddy, monitoring) with the app as it is
 today, so Phase 2/3 failures can only be code.
 
-- [ ] `server.mjs` (Express): `express.static(dist)` with the cache headers from
+- [x] `server.mjs` (Express): `express.static(dist)` with the cache headers from
       `render.yaml`; a fallback that behaves like nginx `try_files $uri $uri/index.html /index.html`.
       That fallback already **serves the prerendered product/service/event/package pages that
       Render can't serve** (`SEO-HOSTING.md` §3). Plus `/healthz` (200, build SHA, never calls
       the API) and the security headers.
-- [ ] `Dockerfile` (multi-stage, `node:22-alpine`): `npm ci` → `npm run build` with `VITE_*`
+- [x] `Dockerfile` (multi-stage, `node:22-alpine`): `npm ci` → `npm run build` with `VITE_*`
       as build args → runtime stage with only production deps + `dist` + `server.mjs`.
       Non-root user, `HEALTHCHECK` on `/healthz`.
-- [ ] `deploy/docker-compose.yml`: `x-web` anchor, `web-blue`/`web-green` with profiles,
+- [x] `deploy/docker-compose.yml`: `x-web` anchor, `web-blue`/`web-green` with profiles,
       `mem_limit: 384m`, `stop_grace_period: 20s`, external `zembil` network.
-- [ ] `.github/workflows/deploy.yml`, copied in shape from the backend's: type-check/lint/build
+- [x] `.github/workflows/deploy.yml`, copied in shape from the backend's: type-check/lint/build
       on every branch; on the deploy branch build + push `ghcr.io/zembil-gift/go_zembil_frontend:<sha>`
       and `:latest`, rsync `deploy/` (no `--delete`), rewrite `IMAGE_TAG`, ensure the
       network, log in to GHCR with `GITHUB_TOKEN` into `DOCKER_CONFIG=/opt/zembil-web/.docker`
       (token over stdin), swap colours with `--wait`, stop (don't remove) the old colour. `concurrency`
       group. Deploy branch: `serdesiyon`.
-      `VITE_*` values come from GitHub Actions *variables* — they're public by nature
-      (inlined in the JS) and Render's dashboard has the current production values.
-- [ ] `reverse-proxy`: `frontend.{$DOMAIN}` block (§6.9), `encode zstd gzip`, and the Caddy `metrics` global option.
+      `VITE_*` values are the `VITE_` lines of `/opt/zembil-web/.env`, read over SSH and
+      passed to the build as a BuildKit secret, so they never land in an image layer.
+- [x] `reverse-proxy`: `frontend.{$DOMAIN}` block (§6.9), `encode zstd gzip`, and the Caddy `metrics` global option.
 - [ ] `zembil-observability`: probes and alerts (§7).
 - [ ] Verify on `frontend.gogerami-api.online`: sign-in (Google/Apple/password), cart, a full
       Stripe + Chapa checkout, vendor/admin dashboards, PWA install/update, and
@@ -193,41 +193,41 @@ today, so Phase 2/3 failures can only be code.
 
 The big refactor, with rendering behaviour unchanged (`ssr: false`).
 
-- [ ] Add `@react-router/dev` (Vite plugin) and `@react-router/node`; keep `react-router-dom`
+- [x] Add `@react-router/dev` (Vite plugin) and `@react-router/node`; keep `react-router-dom`
       imports (v7 re-exports `react-router`). `react-router.config.ts` with
       `appDirectory: "src"`, `ssr: false`.
-- [ ] `src/root.tsx`: replaces `index.html` + `main.tsx` + `App.tsx`. Move the `<head>` content
+- [x] `src/root.tsx`: replaces `index.html` + `main.tsx` + `App.tsx`. Move the `<head>` content
       (fonts, preconnects, manifest, theme-color) into `Layout`/`links`/`meta`; providers
       (QueryClient, Auth, Tooltip, Toaster, PWA prompt, LanguageProvider) wrap `<Outlet/>`.
-- [ ] `src/routes.ts`: transcribe `src/components/Router.tsx` (138 routes). Keep the layout
+- [x] `src/routes.ts`: transcribe `src/components/Router.tsx` (138 routes). Keep the layout
       nesting (`Layout`, `/vendor`, `/admin`, `/delivery` shells) as `layout()`/`prefix()`.
       `ProtectedRoute` stays as a layout-route component, so every guarded page keeps exactly
       today's behaviour. The `React.lazy` wrappers go away (framework mode splits per route
       module).
-- [ ] Every authenticated route module: `export async function clientLoader() { return null }`
+- [x] Every authenticated route module: `export async function clientLoader() { return null }`
       plus `export function HydrateFallback()` (the existing loading skeleton). This keeps
       them client-only forever.
-- [ ] `vite.config.ts`: becomes `defineConfig(({ isSsrBuild }) => …)`; apply `manualChunks`
+- [x] `vite.config.ts`: becomes `defineConfig(({ isSsrBuild }) => …)`; apply `manualChunks`
       only when `!isSsrBuild` (it breaks or bloats the server build otherwise).
       `CACHE_VERSION` reads `GIT_SHA` instead of `RENDER_GIT_COMMIT`.
-- [ ] PWA: keep `vite-plugin-pwa` and the `runtimeCaching` rules, point it at `build/client`,
+- [x] PWA: keep `vite-plugin-pwa` and the `runtimeCaching` rules, point it at `build/client`,
       and confirm `sw.js` is still emitted and registered. Verify early — this is the one
       plugin with no first-class framework-mode story.
-- [ ] `server.mjs`: swap the static fallback for `createRequestHandler` from
+- [x] `server.mjs`: swap the static fallback for `createRequestHandler` from
       `@react-router/express`.
-- [ ] Deploy to `frontend.*`. Same verification list as Phase 1.
+- [x] Deploy to `frontend.*`. Same verification list as Phase 1.
 
 ### Phase 3 — SSR for public routes (≈5–7 days)
 
-- [ ] `ssr: true`. Public route modules get `loader` + `meta`; details in §6.
-- [ ] Currency and language from cookies (§6.2, §6.3); UX fixes for the header and the
+- [x] `ssr: true`. Public route modules get `loader` + `meta`; details in §6.
+- [x] Currency and language from cookies (§6.2, §6.3); UX fixes for the header and the
       logged-in currency (§6.4).
-- [ ] Real status codes: unknown entity → **404**; old/bare-id or wrong-slug URL → **301** to
+- [x] Real status codes: unknown entity → **404**; old/bare-id or wrong-slug URL → **301** to
       the canonical slug (replaces the client-side `replace`); API down → **503** with
       `Retry-After`, never a 404 (a backend outage must not tell Google the catalogue is gone).
-- [ ] In-memory API cache + purge (§6.5).
-- [ ] Remove what SSR replaces: `scripts/prerender.mjs`, the postbuild hook, `.seo-catalogue.json`,
-      the `useSeo` hook (after every route has `meta`), `render.yaml` once Render is gone.
+- [x] In-memory API cache + purge (§6.5).
+- [x] Remove what SSR replaces: `scripts/prerender.mjs`, the postbuild hook, `.seo-catalogue.json`,
+      the `useSeo` hook (after every route has `meta`). `render.yaml` goes in Phase 7.
 - [ ] Load-test `frontend.*` off-peak (`autocannon` against `/`, `/shop`, a product page) to find the
       requests/s at which 2 vCPU saturate. Record it.
 - [ ] Verify with `curl` (no JS): product page HTML contains the title, price in the expected

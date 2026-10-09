@@ -7,7 +7,9 @@ import {
 
 // The route table, transcribed from the old components/Router.tsx. Page files
 // are route modules as they are: each already default-exports its component.
-// Paths are relative to src/ (appDirectory in react-router.config.ts).
+// Paths are relative to src/ (appDirectory in react-router.config.ts). The
+// catalogue detail pages go through src/routes/*.tsx, which add the server
+// loader and metadata and re-export the page.
 //
 // A file used by more than one URL needs an explicit id; the first use keeps
 // the default one.
@@ -31,18 +33,18 @@ export default [
     route("shop/:categorySlug", "pages/shop.tsx", { id: "shop-categorySlug" }),
     route("shop/category/:subcategorySlug", "pages/shop.tsx", { id: "shop-category-subcategorySlug" }),
     route("packages", "pages/packages.tsx"),
-    route("packages/:packageId", "pages/package-detail.tsx"),
+    route("packages/:packageId", "routes/package.tsx"),
     route("gift-experiences", "routes/gift-experiences.tsx"),
     route("occasions", "pages/occasions.tsx"),
     route("occasions/:categorySlug", "pages/occasion-category.tsx"),
     route("collections", "pages/collections.tsx"),
     route("events", "pages/events.tsx"),
-    route("events/:slug", "pages/event-detail.tsx"),
+    route("events/:slug", "routes/event.tsx"),
     route("services", "pages/services.tsx"),
-    route("services/:id", "pages/service-detail.tsx"),
+    route("services/:id", "routes/service.tsx"),
     route("campaigns/:id", "pages/campaign-detail.tsx"),
-    route("product/:id", "pages/product-detail.tsx"),
-    route("vendor/:id", "pages/vendor-detail.tsx"),
+    route("product/:id", "routes/product.tsx"),
+    route("vendor/:id", "routes/vendor-profile.tsx"),
     route("cart", "pages/cart.tsx"),
     route("custom-orders", "pages/custom-orders.tsx"),
     route("custom-orders/categories", "pages/customer/CustomOrderCategories.tsx"),

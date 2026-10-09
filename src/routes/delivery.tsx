@@ -1,3 +1,4 @@
+export { clientLoader, HydrateFallback, meta } from "./client-only";
 import { DeliveryRoute } from "@/components/route-guards";
 import DeliveryLayout from "@/pages/delivery/DeliveryLayout";
 

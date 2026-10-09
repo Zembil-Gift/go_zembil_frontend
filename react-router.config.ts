@@ -3,8 +3,9 @@ import type { Config } from "@react-router/dev/config";
 export default {
   // Pages, routes and root live in src/, as they did before framework mode.
   appDirectory: "src",
-  // Phase 2 of MIGRATION-VPS-SSR.md: framework mode, still client-rendered.
-  // The build emits build/client/index.html (root Layout + HydrateFallback)
-  // and server.mjs serves it as the shell. Phase 3 turns this on.
-  ssr: false,
+  // Server rendering (MIGRATION-VPS-SSR.md Phase 3). Public pages render on
+  // the server; everything behind a login opts out with a clientLoader +
+  // HydrateFallback in its layout route (src/routes/protected.tsx and the
+  // admin/vendor/delivery modules), exactly as it rendered before.
+  ssr: true,
 } satisfies Config;

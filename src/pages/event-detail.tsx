@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useSeo } from "@/hooks/useSeo";
-import { breadcrumbJsonLd, eventJsonLd, eventPath, idFromParam } from "@/lib/seo";
+import { eventPath, idFromParam } from "@/lib/seo";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -95,26 +94,6 @@ export default function EventDetail() {
     enabled: !!vendorId,
   });
 
-  // Must sit above the isLoading/!event early returns below, so it cannot use
-  // the isAPIEvent-branched consts defined further down. `event` is a union of
-  // the API shape and the mock shape; these fields exist on both under the same
-  // names, and one narrow view over the two is all the metadata needs.
-  const seoEvent = event as
-    | {
-        title?: string;
-        description?: string;
-        city?: string;
-        location?: string;
-        venue?: string;
-        eventDate?: string;
-        startDate?: string;
-      }
-    | undefined;
-
-  const canonicalPath = eventId
-    ? eventPath(eventId, seoEvent?.title)
-    : `/events/${slug}`;
-
   // One event, one indexable URL: a bare id or a stale slug is swapped for the
   // canonical form. `replace` so back still leaves the page.
   useEffect(() => {
@@ -125,33 +104,6 @@ export default function EventDetail() {
     }
   }, [apiEvent, eventId, navigate]);
 
-  useSeo({
-    enabled: !isLoading,
-    noindex: !event,
-    title: seoEvent
-      ? `${seoEvent.title}${seoEvent.city ? ` — ${seoEvent.city}` : ""}`
-      : "Event not found",
-    description: seoEvent?.description,
-    type: "article",
-    canonicalPath,
-    jsonLd: seoEvent
-      ? [
-          eventJsonLd({
-            name: seoEvent.title || "",
-            description: seoEvent.description,
-            startDate: seoEvent.eventDate || seoEvent.startDate,
-            venue: seoEvent.location || seoEvent.venue,
-            city: seoEvent.city,
-            path: canonicalPath,
-          }),
-          breadcrumbJsonLd([
-            { name: "Home", path: "/" },
-            { name: "Events", path: "/events" },
-            { name: seoEvent.title || "", path: canonicalPath },
-          ]),
-        ]
-      : null,
-  });
 
   // Helper to get ticket count for a type
   const getTicketCount = (ticketTypeId: number) => {

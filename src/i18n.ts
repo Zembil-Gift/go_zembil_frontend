@@ -28,7 +28,7 @@ const lazyBundles: Record<string, () => Promise<{ default: Record<string, unknow
 
 const inFlight = new Map<string, Promise<void>>();
 
-function loadBundle(lng?: string): Promise<void> {
+export function loadBundle(lng?: string): Promise<void> {
   const load = lng ? lazyBundles[lng] : undefined;
   if (!lng || !load) return Promise.resolve();
 
@@ -67,9 +67,15 @@ i18n
       escapeValue: false, // React already escapes values
     },
 
+    // <html lang> first: the server already chose the language (from the
+    // `lang` cookie, else Accept-Language -- src/lib/prefs.ts), and hydration
+    // must render exactly what it sent. Nothing is cached on detection: that
+    // would overwrite a returning visitor's saved localStorage choice with the
+    // server's default before LanguageProvider can restore it. A switch is
+    // saved by LanguageProvider.changeLanguage instead (cookie + localStorage).
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
+      order: ['htmlTag', 'localStorage', 'navigator'],
+      caches: [],
     },
 
     // Re-render once a lazily fetched bundle lands.

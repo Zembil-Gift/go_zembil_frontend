@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useSeo } from "@/hooks/useSeo";
+import type { MetaFunction } from "react-router";
+import { seoMeta } from "@/lib/seo-meta";
 import { STATIC_ROUTES, slugToLabel } from "@/lib/seo";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +19,42 @@ import { Product, productService, extractPriceAmount } from "@/services/productS
 import { categoryService } from "@/services/categoryService";
 import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
 import { useTranslation } from "react-i18next";
+
+// Same known-recipient list the page uses to read /gifts/:categorySlug.
+const KNOWN_RECIPIENTS = [
+  'mom', 'dad', 'friends', 'kids', 'couples', 'colleagues',
+  'anniversary', 'birthday', 'wedding', 'graduation', 'housewarming',
+  'christmas', 'holiday', 'valentine'
+];
+
+// /gifts/:categorySlug carries two different things: a product category, or a
+// recipient ("mom", "birthday"). They read as different pages to a searcher, so
+// they get different titles.
+export const meta: MetaFunction = ({ params, location }) => {
+  const slug = params.categorySlug;
+  const pathRecipient = slug && KNOWN_RECIPIENTS.includes(slug) ? slug : null;
+  const categorySlug =
+    slug && !pathRecipient ? slug : new URLSearchParams(location.search).get("category");
+  const seoLabel = slugToLabel(pathRecipient || categorySlug || "");
+  return seoMeta(
+    pathRecipient
+      ? {
+          title: `Gifts for ${seoLabel} — Delivered in Ethiopia`,
+          description: `Thoughtful gift ideas for ${seoLabel.toLowerCase()}, sourced from Ethiopian vendors and delivered anywhere in Ethiopia.`,
+        }
+      : categorySlug
+        ? {
+            title: `${seoLabel} Gifts — Delivered in Ethiopia`,
+            description: `Browse ${seoLabel.toLowerCase()} gifts from verified Ethiopian vendors on goGerami, delivered anywhere in Ethiopia.`,
+          }
+        : {
+            title: STATIC_ROUTES["/gifts"].title,
+            description: STATIC_ROUTES["/gifts"].description,
+            canonicalPath: "/gifts",
+          },
+    location.pathname,
+  );
+};
 
 export default function Gifts() {
   const { t } = useTranslation();
@@ -48,27 +85,6 @@ export default function Gifts() {
   const pathRecipient = params.categorySlug && knownRecipients.includes(params.categorySlug) ? params.categorySlug : null;
   const finalRecipientParam = recipientParam || pathRecipient;
 
-  // /gifts/:categorySlug carries two different things: a product category, or
-  // a recipient ("mom", "birthday"). They read as different pages to a
-  // searcher, so they get different titles.
-  const seoLabel = slugToLabel(pathRecipient || categorySlug || "");
-  useSeo(
-    pathRecipient
-      ? {
-          title: `Gifts for ${seoLabel} — Delivered in Ethiopia`,
-          description: `Thoughtful gift ideas for ${seoLabel.toLowerCase()}, sourced from Ethiopian vendors and delivered anywhere in Ethiopia.`,
-        }
-      : categorySlug
-        ? {
-            title: `${seoLabel} Gifts — Delivered in Ethiopia`,
-            description: `Browse ${seoLabel.toLowerCase()} gifts from verified Ethiopian vendors on goGerami, delivered anywhere in Ethiopia.`,
-          }
-        : {
-            title: STATIC_ROUTES["/gifts"].title,
-            description: STATIC_ROUTES["/gifts"].description,
-            canonicalPath: "/gifts",
-          }
-  );
 
   // Local state for interactive elements that haven't been committed to URL yet (like typing in search)
   const [localSearchTerm, setLocalSearchTerm] = useState(searchParam);

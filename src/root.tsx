@@ -1,15 +1,26 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Links,
   Meta,
   Outlet,
   Scripts,
   isRouteErrorResponse,
+  useLoaderData,
+  useMatches,
   useRouteError,
+  useRouteLoaderData,
+  type HeadersFunction,
   type LinksFunction,
+  type LoaderFunctionArgs,
+  type MetaFunction,
 } from "react-router";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
+import {
+  HydrationBoundary,
+  QueryClient,
+  QueryClientProvider,
+  type DehydratedState,
+} from "@tanstack/react-query";
+import { I18nextProvider, useTranslation } from "react-i18next";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -22,20 +33,48 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useGuestCurrencyStore } from "@/stores/currency-store";
 import { initAnalytics, identifyUser, clearUserIdentity } from "@/lib/analytics";
+import { detectGuestCurrency } from "@/lib/detectGuestCurrency";
+import {
+  AUTH_HINT_COOKIE,
+  CURRENCY_COOKIE,
+  resolvePrefs,
+  writeCookie,
+  type Prefs,
+} from "@/lib/prefs";
+import { noindexMeta, staticMeta } from "@/lib/seo-meta";
+import i18n, { loadBundle } from "./i18n";
 import stylesheet from "./index.css?url";
-import "./i18n";
 
-// Root of the app: what index.html, main.tsx, App.tsx and the providers/global
-// listeners of the old components/Router.tsx used to be, in one route module.
+// Root of the app: the document shell, providers and global listeners that
+// index.html, main.tsx, App.tsx and the old components/Router.tsx used to be.
 
-// Guest currency detection runs before the first render so the very first API
-// call already carries X-Currency -- an effect would be too late, since child
-// effects (the first queries) run before a parent's. Browser-only: this module
-// is also evaluated at build time to render the HTML shell.
+// Browser-only: this module is also evaluated on the server for every render.
 if (typeof window !== "undefined") {
-  useGuestCurrencyStore.getState().detectCurrency();
   initAnalytics();
 }
+
+const DEFAULT_TITLE = "goGerami - Ethiopian Gift Delivery Platform";
+const DEFAULT_DESCRIPTION =
+  "goGerami connects hearts across distances through meaningful Ethiopian gifts. Send authentic cultural items, custom products, and heartfelt surprises to your loved ones in Ethiopia.";
+
+/** The visitor's currency, language and auth hint, from cookies and headers. */
+export async function loader({ request }: LoaderFunctionArgs): Promise<Prefs> {
+  const prefs = resolvePrefs(request);
+  // The Amharic bundle is lazy in the browser; the server must have it before
+  // it renders, or an Amharic visitor gets English HTML and a hydration flip.
+  await loadBundle(prefs.lang);
+  return prefs;
+}
+
+// What the root loader answers only changes when the browser changes a cookie,
+// and then the browser already holds the new value -- refetching it on every
+// navigation would just add a server round trip to pages that need none.
+export const shouldRevalidate = () => false;
+
+// Errors render in this route's boundary, and React Router drops a thrown
+// response's headers unless the boundary route forwards them -- this is what
+// gets the 503's Retry-After (lib/ssr.server.ts) to the crawler.
+export const headers: HeadersFunction = ({ errorHeaders }) => errorHeaders ?? new Headers();
 
 export const links: LinksFunction = () => [
   { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
@@ -59,10 +98,34 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
 ];
 
-export function Layout({ children }: { children: React.ReactNode }) {
+// Every route without its own `meta` lands here: the pages whose copy is in
+// seo-routes.json by pathname, otherwise the site defaults.
+export const meta: MetaFunction = ({ location, error }) => {
+  if (error) {
+    const missing = isRouteErrorResponse(error) && error.status === 404;
+    return noindexMeta(missing ? "Page not found" : "Something went wrong", location.pathname);
+  }
   return (
-    // i18n sets <html lang> from the visitor's language before hydration.
-    <html lang="en" suppressHydrationWarning>
+    staticMeta(location.pathname) ?? [
+      { title: DEFAULT_TITLE },
+      { name: "description", content: DEFAULT_DESCRIPTION },
+    ]
+  );
+};
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  // Undefined when the root loader itself failed; the error page still needs a document.
+  const prefs = useRouteLoaderData<typeof loader>("root");
+  return (
+    // data-currency carries the server's choice to entry.client.tsx, which
+    // seeds the browser's currency store with it before hydrating, so the
+    // first client render asks for exactly the prices the server rendered.
+    <html
+      lang={prefs?.lang ?? "en"}
+      data-currency={prefs?.currency}
+      // Extensions (translators, password managers) add attributes here.
+      suppressHydrationWarning
+    >
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
@@ -70,11 +133,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="goGerami" />
-        <title>goGerami - Ethiopian Gift Delivery Platform</title>
-        <meta
-          name="description"
-          content="goGerami connects hearts across distances through meaningful Ethiopian gifts. Send authentic cultural items, custom products, and heartfelt surprises to your loved ones in Ethiopia."
-        />
         <Meta />
         <Links />
       </head>
@@ -103,6 +161,39 @@ function AnalyticsIdentity() {
       clearUserIdentity();
     }
   }, [isAuthenticated, user]);
+
+  return null;
+}
+
+/**
+ * Writes the cookies the next server render reads (src/lib/prefs.ts).
+ * MIGRATION-VPS-SSR.md §6.3 and §6.4.
+ */
+function PrefsSync({ currency, currencySource }: Pick<Prefs, "currency" | "currencySource">) {
+  const { user, isAuthenticated, isInitialized } = useAuth();
+
+  // The server only guessed (country, or USD) unless the cookie told it. The
+  // browser's timezone is the better guess: switch to it if it disagrees --
+  // prices refetch, since every price query is keyed on the currency -- and
+  // remember the answer so the next page renders in it straight away.
+  useEffect(() => {
+    if (currencySource === "cookie") return;
+    const fromTimezone = detectGuestCurrency();
+    if (fromTimezone && fromTimezone !== currency) {
+      useGuestCurrencyStore.getState().setGuestCurrency(fromTimezone);
+    }
+    writeCookie(CURRENCY_COOKIE, fromTimezone ?? currency);
+  }, [currency, currencySource]);
+
+  // A signed-in visitor's saved currency wins; the server renders in it next time.
+  useEffect(() => {
+    if (user?.preferredCurrencyCode) writeCookie(CURRENCY_COOKIE, user.preferredCurrencyCode);
+  }, [user?.preferredCurrencyCode]);
+
+  // Lets the server draw the signed-in header's shape (streamlined-header.tsx).
+  useEffect(() => {
+    if (isInitialized) writeCookie(AUTH_HINT_COOKIE, isAuthenticated ? "1" : null);
+  }, [isInitialized, isAuthenticated]);
 
   return null;
 }
@@ -166,27 +257,62 @@ function RoleBasedPrefetch() {
   return null;
 }
 
-export default function App() {
-  return (
-    <LanguageProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <AnalyticsIdentity />
-          <TooltipProvider>
-            <ScrollToTop />
-            <AnalyticsPageviewTracker />
-            <RoleBasedPrefetch />
-            <Outlet />
-            <Toaster />
-            <PwaUpdatePrompt />
-          </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </LanguageProvider>
+/** Everything the matched routes' loaders fetched, for React Query. */
+function useLoaderQueries(): DehydratedState {
+  const matches = useMatches();
+  return useMemo(
+    () => ({
+      mutations: [],
+      queries: matches.flatMap(
+        (m) => (m.data as { dehydratedState?: DehydratedState } | undefined)?.dehydratedState?.queries ?? [],
+      ),
+    }),
+    [matches],
   );
 }
 
-// What the HTML shell shows until the bundle has loaded and hydrated.
+export default function App() {
+  const prefs = useLoaderData<typeof loader>();
+  const isServer = typeof window === "undefined";
+
+  // The browser has one cache and one i18n instance for the whole visit. On
+  // the server those module-level singletons would be shared by every
+  // concurrent request -- one visitor's prices or language leaking into
+  // another's page -- so each server render gets its own.
+  const [client] = useState(() =>
+    isServer ? new QueryClient({ defaultOptions: queryClient.getDefaultOptions() }) : queryClient,
+  );
+  const i18nInstance = useMemo(
+    () => (isServer ? i18n.cloneInstance({ lng: prefs.lang }) : i18n),
+    [isServer, prefs.lang],
+  );
+  const loaderQueries = useLoaderQueries();
+
+  return (
+    <I18nextProvider i18n={i18nInstance}>
+      <LanguageProvider>
+        <QueryClientProvider client={client}>
+          <HydrationBoundary state={loaderQueries}>
+            <AuthProvider>
+              <AnalyticsIdentity />
+              <PrefsSync currency={prefs.currency} currencySource={prefs.currencySource} />
+              <TooltipProvider>
+                <ScrollToTop />
+                <AnalyticsPageviewTracker />
+                <RoleBasedPrefetch />
+                <Outlet />
+                <Toaster />
+                <PwaUpdatePrompt />
+              </TooltipProvider>
+            </AuthProvider>
+          </HydrationBoundary>
+        </QueryClientProvider>
+      </LanguageProvider>
+    </I18nextProvider>
+  );
+}
+
+// Shown while a client-only route (everything behind a login) loads.
 export function HydrateFallback() {
   return <RouteLoading message="Loading page..." />;
 }

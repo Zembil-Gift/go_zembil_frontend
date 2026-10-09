@@ -3,11 +3,11 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useNoindex } from "@/hooks/useSeo";
 
 // Moved verbatim from the old components/Router.tsx. The route modules in
 // src/routes/ wrap these around <Outlet />, so every guarded page behaves
-// exactly as it did when each <Route element> wrapped it individually.
+// exactly as it did when each <Route element> wrapped it individually. They
+// also own what used to be useNoindex() here: a `noindex` meta export.
 
 export function RouteLoading({ message }: { message: string }) {
   return (
@@ -21,10 +21,6 @@ export function RouteLoading({ message }: { message: string }) {
 }
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  // Every page behind a login is noindex, set once here rather than on each of
-  // the ~80 routes these guards wrap. useNoindex owns only its own <meta> tag,
-  // so a wrapped page is still free to set its own title via useSeo.
-  useNoindex();
   const { t } = useTranslation();
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
@@ -50,7 +46,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export function AdminRoute({ children }: { children: React.ReactNode }) {
-  useNoindex();
   const { t } = useTranslation();
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
@@ -95,7 +90,6 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 export function VendorRoute({ children }: { children: React.ReactNode }) {
-  useNoindex();
   const { t } = useTranslation();
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
@@ -141,7 +135,6 @@ export function VendorRoute({ children }: { children: React.ReactNode }) {
 }
 
 export function DeliveryRoute({ children }: { children: React.ReactNode }) {
-  useNoindex();
   const { t } = useTranslation();
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();

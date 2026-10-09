@@ -17,6 +17,11 @@ x-web: &web
     # 1 until gogerami.com points here (MIGRATION-VPS-SSR.md §10 step 5).
     ROBOTS_NOINDEX: ${ROBOTS_NOINDEX:-1}
     NODE_OPTIONS: --max-old-space-size=256
+    # Server-side renders call the API through Caddy's internal listener on
+    # the zembil network, never leaving the box.
+    API_INTERNAL_URL: http://caddy:8080
+    # Enables POST /internal/purge (server.mjs). Unset: disabled.
+    INTERNAL_PURGE_TOKEN: ${INTERNAL_PURGE_TOKEN:-}
   # Both colours are up together during a deploy. Sized against the 8GB box
   # that also runs two JVM colours, Postgres and the monitoring stack.
   mem_limit: 384m

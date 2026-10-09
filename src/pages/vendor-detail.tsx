@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useSeo } from '@/hooks/useSeo';
-import { breadcrumbJsonLd, vendorJsonLd } from '@/lib/seo';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { Store, MapPin, Package, Calendar, ChevronLeft, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,35 +39,6 @@ export default function VendorDetail() {
 
   // LocalBusiness rather than Organization: these are real shops with a city,
   // which is what lets an assistant answer "who sells X in Addis Ababa".
-  useSeo({
-    enabled: !vendorLoading,
-    noindex: !vendor,
-    title: vendor
-      ? `${vendor.businessName} — Ethiopian Gifts & Delivery`
-      : 'Vendor not found',
-    description: vendor?.description,
-    image: vendor?.logoUrl,
-    type: 'profile',
-    canonicalPath: `/vendor/${vendorId}`,
-    jsonLd: vendor
-      ? [
-          vendorJsonLd({
-            name: vendor.businessName,
-            description: vendor.description,
-            image: vendor.logoUrl,
-            city: vendor.city,
-            ratingValue: ratingSummary?.averageRating,
-            reviewCount: ratingSummary?.totalReviews,
-            path: `/vendor/${vendorId}`,
-          }),
-          breadcrumbJsonLd([
-            { name: 'Home', path: '/' },
-            { name: 'Shop', path: '/shop' },
-            { name: vendor.businessName, path: `/vendor/${vendorId}` },
-          ]),
-        ]
-      : null,
-  });
 
   const {
     data: reviewsData,

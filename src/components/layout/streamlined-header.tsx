@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useRouteLoaderData } from "react-router-dom";
 import {
   Heart,
   ShoppingCart,
@@ -46,7 +46,13 @@ import { SHOW_APP_DOWNLOAD } from "@/lib/featureFlags";
 export default function StreamlinedHeader() {
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage, availableLanguages } = useLanguage();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  // The server cannot see the session (it lives in the browser), so it renders
+  // signed out. auth_hint says this browser was signed in last time: hold the
+  // signed-in slots empty until auth settles instead of flashing "Sign In".
+  const authHint = useRouteLoaderData<{ authHint?: boolean }>("root")?.authHint === true;
+  const authPending = isLoading && authHint;
+  const iconSlot = <span className="inline-block h-9 w-9" aria-hidden="true" />;
   const location = useLocation();
   const pathname = location.pathname;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -162,7 +168,7 @@ export default function StreamlinedHeader() {
               </TooltipProvider> */}
 
               {/* Reward wallet */}
-              {isAuthenticated && <WalletMenu />}
+              {isAuthenticated ? <WalletMenu /> : authPending && iconSlot}
 
               {/* Wishlist */}
               <TooltipProvider>
@@ -257,7 +263,9 @@ export default function StreamlinedHeader() {
               </DropdownMenu>
 
               {/* User Profile / Sign In */}
-              {isAuthenticated ? (
+              {authPending ? (
+                iconSlot
+              ) : isAuthenticated ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

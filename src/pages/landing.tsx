@@ -38,7 +38,6 @@ import { SHOW_APP_DOWNLOAD } from "@/lib/featureFlags";
 import TopCategoriesSection from "@/components/landing/TopCategoriesSection";
 import SectionBoundary from "@/components/SectionBoundary";
 import { useTranslation } from "react-i18next";
-import { useStaticSeo } from "@/hooks/useSeo";
 import { eventPath, packagePath, productPath } from "@/lib/seo";
 
 /**
@@ -87,7 +86,6 @@ function ProductGridSkeleton() {
 
 export default function Landing() {
   const { t } = useTranslation();
-  useStaticSeo("/");
   const activeCurrency = useActiveCurrency();
 
   const [selectedBudget, setSelectedBudget] = useState("all");

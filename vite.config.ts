@@ -42,6 +42,10 @@ export default defineConfig(({ isSsrBuild }) => ({
           /^\/auth\//,
           /^\/payment\//,
         ],
+        // Pages are rendered per request now; there is no index.html app
+        // shell to fall back to. Offline navigations are served by the
+        // NetworkFirst rule below from pages already visited.
+        navigateFallback: null,
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,

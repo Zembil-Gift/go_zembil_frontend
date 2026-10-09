@@ -32,7 +32,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { useTranslation } from "react-i18next";
-import { useStaticSeo } from "@/hooks/useSeo";
 
 // City options for filtering
 const CITY_OPTIONS = [
@@ -45,7 +44,6 @@ const CITY_OPTIONS = [
 ];
 
 export default function Services() {
-  useStaticSeo("/services");
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();

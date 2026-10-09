@@ -14,7 +14,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { useTranslation } from "react-i18next";
-import { useStaticSeo } from "@/hooks/useSeo";
 
 function CustomOrdersContent() {
   const { t } = useTranslation();
@@ -231,6 +230,5 @@ function CustomOrdersContent() {
 }
 
 export default function CustomOrders() {
-  useStaticSeo("/custom-orders");
   return <CustomOrdersContent />;
 }
