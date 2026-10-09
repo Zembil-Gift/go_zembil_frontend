@@ -110,10 +110,10 @@ Also, not urgent: the CSP in `render.yaml` doesn't list `https://gogerami-api.on
 - **New compose project `zembil-web`** at `/opt/zembil-web`, joining the external `zembil`
   network, deployed by this repo only. It follows the `DEPLOYMENT.md` rules: the network is
   external, only Caddy publishes ports, and `.env` stays on the box.
-- **Runtime env, not rebuilds, for per-host behaviour.** `VITE_*` values are baked at build
-  time; anything that differs per host is server env: `ROBOTS_NOINDEX=1` on `frontend.*`
-  until cutover. Canonical URLs stay `https://gogerami.com` everywhere, which is what you
-  want on a non-canonical host. (A future staging container reuses the same image.)
+- **Per-host behaviour lives in Caddy, not the build.** `VITE_*` values are baked at build
+  time, and the same containers serve every hostname, so `frontend.*`'s
+  `X-Robots-Tag: noindex` is set in its Caddy block. Canonical URLs stay
+  `https://gogerami.com` everywhere, which is what you want on a non-canonical host.
 - **Static assets** are served by the same Node process (`build/client`, `immutable` for
   hashed files). No shared volume with Caddy. Cloudflare caches them after cutover.
 - **Security headers move from `render.yaml` into the Node server.** The frontend repo keeps
@@ -237,6 +237,19 @@ The big refactor, with rendering behaviour unchanged (`ssr: false`).
 ### Phase 4 — Cutover `gogerami.com` (≈1 day + 2 weeks watching)
 
 §9 and §10.
+
+- [x] `ROBOTS_NOINDEX` removed from the app; `frontend.*` gets `noindex` from Caddy instead,
+      so the same containers can serve `gogerami.com`.
+- [x] Pages send `Cache-Control: … no-transform`, which stops Cloudflare's HTML rewrites
+      (email obfuscation, Rocket Loader) whatever the dashboard says.
+- [x] Caddy: Cloudflare ranges in `trusted_proxies`, visitor IP from `Cf-Connecting-Ip`,
+      passed to the app as `X-Forwarded-For`; `/opt/reverse-proxy/certs` mounted at `/certs`.
+- [x] `gogerami.com` site block, committed in `reverse-proxy` but **not pushed**: it needs the
+      origin certificate on the box first (the deploy validates and stops without it).
+- [ ] You: Origin CA certificate onto the box (§9.2, first row).
+- [ ] Push the `gogerami.com` block; `curl --resolve` check (§10 preconditions).
+- [ ] You: Cloudflare settings and the DNS switch (§10).
+- [ ] Post-switch checks (§10 step 3), Search Console (step 4).
 
 ### Phase 5 — SEO/commerce extras (≈4–6 days, any order)
 
@@ -395,7 +408,7 @@ client:  seed store with loader currency before hydrate
 
 `meta` exports replace `useSeo`. `src/lib/seo-routes.json` (static routes) and the JSON-LD
 builders in `src/lib/seo.ts` move across unchanged. `seo.check.ts` keeps running in CI.
-`frontend.*` adds `X-Robots-Tag: noindex` from `ROBOTS_NOINDEX`.
+`frontend.*` gets `X-Robots-Tag: noindex` from its Caddy block (§6.9).
 
 ### 6.8 Headers and CSP
 
@@ -424,17 +437,18 @@ frontend.{$DOMAIN} {
 	import web
 }
 
-# Phase 4 — gogerami.com behind Cloudflare (§9)
-# gogerami.com, www.gogerami.com {
-#	tls /certs/cf-origin.pem /certs/cf-origin.key   # Cloudflare Origin CA cert
-#	@notcf not remote_ip <Cloudflare IPv4/IPv6 ranges>
-#	abort @notcf                                    # origin reachable only via Cloudflare
-#	@www host www.gogerami.com
-#	redir @www https://gogerami.com{uri} 301
-#	import web
-# }
-# global: servers { trusted_proxies static <Cloudflare ranges> } so logs and
-# X-Forwarded-For carry the visitor's IP, not Cloudflare's.
+# Phase 4. www and http:// redirect at Cloudflare's edge, so only the apex arrives.
+gogerami.com {
+	tls /certs/gogerami.com.pem /certs/gogerami.com.key   # Cloudflare Origin CA
+	encode zstd gzip
+	import web
+}
+# global: servers { trusted_proxies static <Cloudflare ranges>
+#                   client_ip_headers Cf-Connecting-Ip }
+# and in (web): header_up X-Forwarded-For {client_ip}
+#
+# ponytail: no origin lock (abort non-Cloudflare IPs) on gogerami.com while frontend.*
+# serves the same app unproxied -- it would protect nothing. Add it when frontend.* goes.
 ```
 
 ---
@@ -494,6 +508,15 @@ probes, alerts, dashboard. Staging is deferred.
 
 ### 9.1 Please check and tell me (screenshots are fine)
 
+**Seen from outside, 2026-10-09:** `gogerami.com` and `www` are proxied; `www` → apex and
+`http` → `https` 301s already happen at the edge (path and query kept); `robots.txt` is ours
+(not managed); Rocket Loader off; GPTBot, ClaudeBot, PerplexityBot, Googlebot, WhatsApp and
+facebookexternalhit all get 200; the `google-site-verification` TXT is on the apex.
+**Email Address Obfuscation is on** (`/contact` carries `cdn-cgi/l/email-protection`) — turn
+it off. `gogerami-api.online` is on Hostinger DNS, not Cloudflare. Still unknown from outside:
+the SSL/TLS mode (must not be Flexible, which would loop against Caddy's HTTPS redirect),
+IP Geolocation, and Bot Fight Mode.
+
 1. **Plan** for `gogerami.com`: Free / Pro / Business? *(Dashboard → Overview, right column)*
 2. **SSL/TLS encryption mode**: Off / Flexible / Full / Full (strict)? *(SSL/TLS → Overview)*
 3. **DNS records** for `gogerami.com` and `www`: type and target (probably a CNAME to Render),
@@ -513,7 +536,7 @@ probes, alerts, dashboard. Staging is deferred.
 
 | Setting | Value | Why |
 |---|---|---|
-| Origin certificate | *SSL/TLS → Origin Server → Create certificate*, hostnames `gogerami.com, *.gogerami.com`, 15 years, PEM. Place on the box at `/opt/reverse-proxy/certs/` (chmod 600, never in git) | Caddy can't reliably get Let's Encrypt certs for an orange-clouded hostname; Origin CA certs are free and trusted by Cloudflare |
+| Origin certificate | *SSL/TLS → Origin Server → Create certificate*, hostnames `gogerami.com, *.gogerami.com`, 15 years, PEM. Place on the box as `/opt/reverse-proxy/certs/gogerami.com.pem` and `gogerami.com.key` (chmod 600, never in git) | Caddy can't reliably get Let's Encrypt certs for an orange-clouded hostname; Origin CA certs are free and trusted by Cloudflare |
 | SSL/TLS mode | **Full (strict)** | Encrypted and verified Cloudflare → box |
 | Always Use HTTPS | On | |
 | Minimum TLS | 1.2; TLS 1.3 on | |
@@ -549,8 +572,8 @@ returns the SSR page. Backend `ALLOWED_ORIGINS` still contains `https://gogerami
    Telebirr return, a WhatsApp link preview, `robots.txt` and `sitemap.xml` byte-compared
    with the old ones.
 4. Search Console: URL-inspect 5 product URLs, resubmit the sitemap.
-5. Remove `ROBOTS_NOINDEX` from the prod colours. `frontend.*` keeps serving the same app;
-   its `noindex` header and `gogerami.com` canonical keep it out of the index.
+5. Nothing to change on `frontend.*`: it keeps serving the same app, and its Caddy
+   `noindex` header and `gogerami.com` canonical keep it out of the index.
 
 **Rollback:** put the Render CNAME back in Cloudflare. That's instant, and Render is still
 deployed and untouched. Keep it that way for **2 weeks**. Within the VPS, rolling back a
