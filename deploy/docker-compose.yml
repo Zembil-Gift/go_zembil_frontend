@@ -14,8 +14,6 @@ x-web: &web
   image: ghcr.io/zembil-gift/go_zembil_frontend:${IMAGE_TAG}
   restart: unless-stopped
   environment:
-    # 1 until gogerami.com points here (MIGRATION-VPS-SSR.md §10 step 5).
-    ROBOTS_NOINDEX: ${ROBOTS_NOINDEX:-1}
     NODE_OPTIONS: --max-old-space-size=256
     # Server-side renders call the API through Caddy's internal listener on
     # the zembil network, never leaving the box.

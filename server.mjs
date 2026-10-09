@@ -11,9 +11,6 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(ROOT, "build", "client");
 const PORT = Number(process.env.PORT) || 3000;
 const SHA = process.env.GIT_SHA || "dev";
-// Set on every host that is not the canonical one (frontend.gogerami-api.online
-// until cutover), so it never competes with gogerami.com in the index.
-const NOINDEX = process.env.ROBOTS_NOINDEX === "1";
 
 // Unset disables POST /internal/purge entirely.
 const PURGE_TOKEN = process.env.INTERNAL_PURGE_TOKEN || "";
@@ -86,7 +83,6 @@ app.use((_req, res, next) => {
     "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
     "Content-Security-Policy-Report-Only": CSP,
   });
-  if (NOINDEX) res.set("X-Robots-Tag", "noindex, nofollow");
   next();
 });
 
@@ -136,8 +132,11 @@ app.post("/internal/purge", express.json(), (req, res) => {
 // Pages: rendered per request, in the visitor's currency and language, so
 // shared caches must not keep them. The response cache that keeps this cheap
 // is inside the app, keyed by currency (src/lib/ssr.server.ts).
+// no-transform: Cloudflare's HTML rewrites (email obfuscation, Rocket Loader)
+// change the markup React hydrates against, and this turns them off for pages
+// whatever the dashboard says.
 app.use((_req, res, next) => {
-  res.set("Cache-Control", "private, no-cache");
+  res.set("Cache-Control", "private, no-cache, no-transform");
   next();
 });
 app.use(
@@ -148,7 +147,7 @@ app.use(
 );
 
 const server = app.listen(PORT, () => {
-  console.log(JSON.stringify({ level: "info", msg: "listening", port: PORT, sha: SHA, noindex: NOINDEX }));
+  console.log(JSON.stringify({ level: "info", msg: "listening", port: PORT, sha: SHA }));
 });
 
 // Compose sends SIGTERM on stop; finish in-flight requests before exiting.
