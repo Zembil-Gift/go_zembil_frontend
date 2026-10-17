@@ -42,7 +42,6 @@ import {
   EventFilters,
 } from "@/types/events";
 import { eventOrderService } from "@/services/eventOrderService";
-import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { useTranslation } from "react-i18next";
@@ -52,7 +51,6 @@ export default function Events() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
 
   // Parse URL parameters for filters
@@ -81,7 +79,7 @@ export default function Events() {
   const [eventsPage, setEventsPage] = useState(0);
   const eventsPerPage = 12;
 
-  // Fetch real events from API with currency conversion (wait for auth so currency is correct)
+  // Fetch real events from API with currency conversion
   const {
     data: realEventsData,
     isLoading: realEventsLoading,
@@ -104,7 +102,6 @@ export default function Events() {
       }
     },
     staleTime: 30000, // 30 seconds
-    enabled: isInitialized,
   });
 
   // Display events from API

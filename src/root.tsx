@@ -135,6 +135,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="apple-mobile-web-app-title" content="goGerami" />
         <Meta />
         <Links />
+        {/* framer-motion writes its entrance animation's `initial` state into
+            the HTML (`opacity:0;transform:...`) and only animates it to visible
+            once JavaScript runs, so with scripts off that content would stay
+            invisible. Undo it. The `;`/end anchors keep a deliberate
+            `opacity:0.5` from matching; everything else that hides by default
+            in this app (menus, sheets, the cart sidebar) hides by class or by
+            Radix's `[hidden]`, not an inline style, so it is untouched. */}
+        <noscript
+          dangerouslySetInnerHTML={{
+            __html:
+              '<style>[style*="opacity:0;"],[style$="opacity:0"],[style*="visibility:hidden"]{opacity:1!important;visibility:visible!important;transform:none!important}</style>',
+          }}
+        />
       </head>
       <body>
         {children}

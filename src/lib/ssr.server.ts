@@ -90,11 +90,26 @@ export async function fetchEntity<T>(fn: () => Promise<T | null | undefined> | n
   return value;
 }
 
-/** Secondary data (ratings, reviews, vendor): the page renders without it. */
+/**
+ * Secondary data (ratings, reviews, a catalogue feed the page can render
+ * without). An empty section beats failing the whole page -- but never
+ * silently: a loader whose feed returns `undefined` produces exactly the same
+ * HTML as a healthy one, so a broken loader looks identical to a working one
+ * once the response is served. That trace is the only one there is.
+ */
 export async function optional<T>(fn: () => Promise<T>): Promise<T | undefined> {
   try {
     return await fn();
-  } catch {
+  } catch (error) {
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    console.warn(
+      JSON.stringify({
+        level: "warn",
+        msg: "optional feed failed; section renders empty",
+        status,
+        error: String(error),
+      }),
+    );
     return undefined;
   }
 }

@@ -28,7 +28,6 @@ import {
 import { serviceService, PagedServiceResponse } from "@/services/serviceService";
 import { categoryService } from "@/services/categoryService";
 import PageNavigator from "@/components/PageNavigator";
-import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { useTranslation } from "react-i18next";
@@ -47,7 +46,6 @@ export default function Services() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
 
   // Parse URL parameters
@@ -82,7 +80,7 @@ export default function Services() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch services with filters (wait for auth so currency is correct)
+  // Fetch services with filters
   const {
     data: servicesData,
     isLoading: servicesLoading,
@@ -107,7 +105,6 @@ export default function Services() {
         city: selectedCity === "all" ? undefined : selectedCity || undefined,
         categoryId: selectedCategoryId,
       }),
-    enabled: isInitialized,
   });
 
   const services = useMemo(() => {

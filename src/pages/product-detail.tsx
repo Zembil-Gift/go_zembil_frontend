@@ -82,11 +82,11 @@ function ProductImage({
       <img
         src={error ? '/placeholder-product.jpg' : rawFallback ? src : cdnImage(src, width)}
         alt={alt}
-        className={cn(
-          'transition-opacity duration-300',
-          loaded ? 'opacity-100' : 'opacity-0',
-          className
-        )}
+        // Visible from the first paint and stacked over the preview (relative),
+        // not faded in on onLoad: without JavaScript, or when the image lands
+        // before hydration, that event never reaches React and the image
+        // would stay invisible.
+        className={cn('relative', className)}
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : undefined}
         decoding={priority ? "sync" : "async"}

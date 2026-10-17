@@ -4,7 +4,6 @@ import type { MetaFunction } from "react-router";
 import { seoMeta } from "@/lib/seo-meta";
 import { STATIC_ROUTES, slugToLabel } from "@/lib/seo";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { motion } from "framer-motion";
 
@@ -59,7 +58,6 @@ export const meta: MetaFunction = ({ params, location }) => {
 export default function Gifts() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const {isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
   
   // Get path parameters
@@ -129,11 +127,13 @@ export default function Gifts() {
     categoryId: currentSubCategory ? undefined : currentCategory?.id,
   }), [itemsPerPage, searchParam, currentSubCategory, currentCategory]);
 
-  // Fetch products from backend filter endpoint (wait for auth so currency is correct)
+  // Fetch products from backend filter endpoint. Public catalogue data, so it
+  // does not wait on the /auth/refresh handshake (see landing.tsx); the SSR
+  // loader seeds this same key.
   const { data: initialData, isLoading, isFetching } = useQuery({
     queryKey: ['gifts', 'products', baseFilterParams, finalRecipientParam, sortParam, priceParam, activeCurrency],
     queryFn: () => productService.getFilteredProducts(baseFilterParams),
-    enabled: isInitialized && ((!categorySlug || !!currentCategory || !!currentSubCategory) && !!categoriesWithSubcategories.length),
+    enabled: (!categorySlug || !!currentCategory || !!currentSubCategory) && !!categoriesWithSubcategories.length,
   });
 
   const products = initialData?.content || [];
