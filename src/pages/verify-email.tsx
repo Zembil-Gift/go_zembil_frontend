@@ -12,7 +12,10 @@ import { tokenManager } from "@/services/tokenManager";
 import { Mail, RefreshCw, CheckCircle2, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { useSeo } from "@/hooks/useSeo";
+import type { MetaFunction } from "react-router";
+import { noindexMeta } from "@/lib/seo-meta";
+
+export const meta: MetaFunction = ({ location }) => noindexMeta("Verify Your Email", location.pathname);
 
 z.object({
   otp: z.string().length(6, "Please enter the 6-digit code"),
@@ -40,7 +43,6 @@ interface OtpResponse {
 }
 
 export default function VerifyEmail() {
-  useSeo({ title: "Verify Your Email", noindex: true });
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const location = useLocation();

@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { reviewService } from "@/services/reviewService";
 import { CompactRating } from "@/components/reviews";
 import { useTranslation } from "react-i18next";
+import { eventPath } from "@/lib/seo";
 
 // Event cards run wider than product cards -- roughly a third of the row on
 // desktop -- so they ask the resize layer for correspondingly larger frames.
@@ -56,7 +57,7 @@ export default function EventCard({ event, index = 0 }: EventCardProps) {
       {/* A real <a href>, not an onClick on a div: this card is how a crawler
           discovers every event detail page, and an onClick leaves no link to
           follow -- nor a middle-click or "open in new tab" for anyone else. */}
-      <Link to={`/events/${event.id}`} className="block">
+      <Link to={eventPath(event.id, event.title)} className="block">
       <Card
         className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-eagle-green/10 overflow-hidden"
       >

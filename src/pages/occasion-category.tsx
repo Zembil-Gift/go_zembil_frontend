@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "react-i18next";
-import { useSeo } from "@/hooks/useSeo";
+import type { MetaFunction } from "react-router";
+import { seoMeta } from "@/lib/seo-meta";
 import { breadcrumbJsonLd, slugToLabel } from "@/lib/seo";
 
 interface Product {
@@ -73,17 +74,6 @@ function OccasionCategoryContent() {
   // categories query resolves -- a crawler that renders fast would otherwise
   // capture a generic title.
   const occasionName = currentCategory?.name || slugToLabel(categorySlug);
-  useSeo({
-    title: `${occasionName} Gifts — Delivered in Ethiopia`,
-    description:
-      currentCategory?.description ||
-      `Send ${occasionName.toLowerCase()} gifts to family and friends in Ethiopia. Ordered from anywhere, delivered locally by goGerami.`,
-    jsonLd: breadcrumbJsonLd([
-      { name: "Home", path: "/" },
-      { name: "Occasions", path: "/occasions" },
-      { name: occasionName, path: `/occasions/${categorySlug}` },
-    ]),
-  });
 
   // Filter products by price range
   const filteredProducts = products.filter((product: Product) => {
@@ -310,6 +300,25 @@ function OccasionCategoryContent() {
     </div>
   );
 }
+
+// The page's categories query has no queryFn, so it never resolves and the
+// name has always come from the slug -- the server says the same thing.
+export const meta: MetaFunction = ({ params, location }) => {
+  const categorySlug = params.categorySlug ?? "";
+  const occasionName = slugToLabel(categorySlug);
+  return seoMeta(
+    {
+      title: `${occasionName} Gifts — Delivered in Ethiopia`,
+      description: `Send ${occasionName.toLowerCase()} gifts to family and friends in Ethiopia. Ordered from anywhere, delivered locally by goGerami.`,
+      jsonLd: breadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Occasions", path: "/occasions" },
+        { name: occasionName, path: `/occasions/${categorySlug}` },
+      ]),
+    },
+    location.pathname,
+  );
+};
 
 export default function OccasionCategory() {
   return (

@@ -35,13 +35,14 @@ const getCategoryIcon = (categoryName: string) => {
 export default function CustomOrderCategories() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, isInitialized } = useAuth();
+  const { user } = useAuth();
 
-  // Fetch categories with template counts (wait for auth so template prices have correct currency)
+  // Fetch categories with template counts. Public catalogue data, so it does not
+  // wait on the /auth/refresh handshake (see landing.tsx); the SSR loader seeds
+  // this same key -- "default", the guest value the page uses pre-auth.
   const { data: categories, isLoading, error } = useQuery({
     queryKey: ['custom-order-categories', user?.preferredCurrencyCode ?? 'default'],
     queryFn: () => customOrderTemplateService.getCategoriesWithTemplates(),
-    enabled: isInitialized,
   });
 
   if (isLoading) {

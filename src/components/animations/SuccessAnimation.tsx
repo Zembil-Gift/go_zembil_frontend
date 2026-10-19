@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { CheckCircle, Heart, Sparkles, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import GiftingHeartAnimation from "./GiftingHeartAnimation";
 import { useTranslation } from "react-i18next";
 
@@ -134,7 +134,7 @@ export default function SuccessAnimation({
               size="lg"
               className="bg-ethiopian-gold hover:bg-yellow-600 text-white text-lg px-8 py-4 rounded-xl font-semibold"
             >
-              <Link href={continueLink}>
+              <Link to={continueLink}>
                 <motion.span
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -149,7 +149,7 @@ export default function SuccessAnimation({
               size="lg"
               className="border-2 border-deep-forest text-deep-forest hover:bg-deep-forest hover:text-white text-lg px-8 py-4 rounded-xl font-semibold"
             >
-              <Link href="/orders">
+              <Link to="/orders">
                 <motion.span
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}

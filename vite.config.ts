@@ -1,20 +1,29 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { reactRouter } from "@react-router/dev/vite";
 import path from "path";
 import { visualizer } from "rollup-plugin-visualizer";
 import { VitePWA } from "vite-plugin-pwa";
 
 const CACHE_VERSION =
+  process.env.GIT_SHA?.slice(0, 8) ||
   process.env.RENDER_GIT_COMMIT?.slice(0, 8) ||
   process.env.VITE_APP_VERSION ||
   process.env.npm_package_version ||
   "v1";
 const CACHE_PREFIX = `gozembil-${CACHE_VERSION}`;
 
-export default defineConfig({
+// The React Router plugin builds twice: the client bundle and a server bundle
+// (with ssr: false that one only renders the HTML shell at build time). The
+// service worker, the bundle report and the chunk layout belong to the client
+// build only -- in the server build they would emit a second sw.js and split
+// code that is never downloaded.
+export default defineConfig(({ isSsrBuild }) => ({
   plugins: [
-    react(),
+    reactRouter(),
     VitePWA({
+      // Off in the server build: no second sw.js, but `virtual:pwa-register`
+      // still resolves (to a no-op) for PwaUpdatePrompt, which the root imports.
+      disable: Boolean(isSsrBuild),
       registerType: "autoUpdate",
       injectRegister: false,
       manifest: false,
@@ -33,6 +42,10 @@ export default defineConfig({
           /^\/auth\//,
           /^\/payment\//,
         ],
+        // Pages are rendered per request now; there is no index.html app
+        // shell to fall back to. Offline navigations are served by the
+        // NetworkFirst rule below from pages already visited.
+        navigateFallback: null,
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
@@ -244,7 +257,7 @@ export default defineConfig({
         ],
       },
     }),
-    visualizer({ open: true }),
+    !isSsrBuild && visualizer({ open: !process.env.CI }),
     {
       name: "exclude-public-videos",
       apply: "build",
@@ -268,10 +281,9 @@ export default defineConfig({
     port: 3000,
     host: true,
   },
+  // Output goes to build/client and build/server (React Router's buildDirectory).
   build: {
-    outDir: "dist",
-    emptyOutDir: true,
-    rollupOptions: {
+    rollupOptions: isSsrBuild ? undefined : {
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
@@ -297,7 +309,7 @@ export default defineConfig({
             return "vendor-react";
           }
 
-          if (id.includes("react-router") || id.includes("wouter")) {
+          if (id.includes("react-router")) {
             return "vendor-router";
           }
 
@@ -351,4 +363,4 @@ export default defineConfig({
       },
     },
   },
-}); 
+}));

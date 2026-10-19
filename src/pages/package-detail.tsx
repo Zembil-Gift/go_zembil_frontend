@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useSeo } from "@/hooks/useSeo";
-import { breadcrumbJsonLd } from "@/lib/seo";
+import { packagePath, idFromParam } from "@/lib/seo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -118,7 +117,7 @@ function SkuDropdown({
   selectedSkuId,
   onSkuChange,
 }: {
-  options: ProductPackageItemResponse["availableSkus"];
+  options: NonNullable<ProductPackageItemResponse["availableSkus"]>;
   selectedSkuId: number | undefined;
   onSkuChange: (id: number) => void;
 }) {
@@ -297,7 +296,8 @@ export default function PackageDetailPage() {
   const { isAuthenticated } = useAuth();
   const [skuSelections, setSkuSelections] = useState<Record<number, number>>({});
 
-  const numericPackageId = Number(packageId);
+  // "/packages/coffee-hamper-9" or a bare "/packages/9".
+  const numericPackageId = idFromParam(packageId) ?? 0;
 
   const { data: packageDetail, isLoading } = useQuery({
     queryKey: ["packages", "detail", numericPackageId],
@@ -305,22 +305,16 @@ export default function PackageDetailPage() {
     enabled: Number.isFinite(numericPackageId) && numericPackageId > 0,
   });
 
-  useSeo({
-    enabled: !isLoading,
-    noindex: !packageDetail,
-    title: packageDetail?.name || "Package not found",
-    description: packageDetail?.description,
-    image: packageDetail?.images?.[0],
-    type: "product",
-    canonicalPath: `/packages/${packageId}`,
-    jsonLd: packageDetail
-      ? breadcrumbJsonLd([
-          { name: "Home", path: "/" },
-          { name: "Packages", path: "/packages" },
-          { name: packageDetail.name, path: `/packages/${packageId}` },
-        ])
-      : null,
-  });
+  // One packageDetail, one indexable URL: a bare id or a stale slug is swapped for
+  // the canonical form. `replace` so back still leaves the page.
+  useEffect(() => {
+    if (!packageDetail || !numericPackageId) return;
+    const canonical = packagePath(numericPackageId, packageDetail.name);
+    if (window.location.pathname !== canonical) {
+      navigate(canonical, { replace: true });
+    }
+  }, [packageDetail, numericPackageId, navigate]);
+
 
   useEffect(() => {
     if (!packageDetail?.items?.length) return;
@@ -380,7 +374,7 @@ export default function PackageDetailPage() {
       },
       packageEstimatedTotal.currency
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [packageDetail?.id]);
 
   const addToCartMutation = useMutation({

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LANG_COOKIE, writeCookie } from '@/lib/prefs';
 
 interface LanguageContextType {
   currentLanguage: string;
@@ -34,6 +35,8 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     i18n.changeLanguage(language);
     setCurrentLanguage(language);
     localStorage.setItem('i18nextLng', language);
+    // The server reads this to render the next page in the same language.
+    writeCookie(LANG_COOKIE, language);
   };
 
   useEffect(() => {

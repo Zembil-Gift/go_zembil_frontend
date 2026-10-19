@@ -37,6 +37,20 @@ const api = axios.create({
 
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    // Server render: this request's API URL, currency and language, never the
+    // browser globals below -- on a server they are shared by every concurrent
+    // request. Set by withApi() in src/lib/ssr.server.ts; anonymous on purpose.
+    const ssr = typeof window === 'undefined'
+      ? (globalThis as { __ssrApiContext?: { getStore(): import('@/lib/ssr.server').SsrApiContext | undefined } }).__ssrApiContext?.getStore()
+      : undefined;
+    if (ssr) {
+      config.baseURL = ssr.baseURL;
+      config.adapter = ssr.adapter;
+      config.headers[CURRENCY_HEADER] = ssr.currency;
+      config.headers['Accept-Language'] = ssr.lang;
+      return config;
+    }
+
     if (config.url?.includes('/auth/refresh')) {
       return config;
     }

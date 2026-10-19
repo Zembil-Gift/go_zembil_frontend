@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   keepPreviousData,
   useInfiniteQuery,
   useQuery,
 } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,23 +47,19 @@ import { getIconByName } from "@/components/admin/IconPicker";
 import GeramiSignatureSets from "@/components/ZembilSignatureSets.tsx";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { useTranslation } from "react-i18next";
-import { useSeo } from "@/hooks/useSeo";
+import type { MetaFunction } from "react-router";
+import { seoMeta } from "@/lib/seo-meta";
 import { STATIC_ROUTES, slugToLabel } from "@/lib/seo";
 
-export default function Shop() {
-  // Three routes render this page: /shop, /shop/:categorySlug and
-  // /shop/category/:subcategorySlug. Each needs its own title, and the
-  // canonical must drop ?search=/?sort= so filtered views collapse onto the
-  // clean category URL instead of competing with it (useSeo defaults the
-  // canonical to the pathname, which is exactly that).
-  const { categorySlug, subcategorySlug } = useParams<{
-    categorySlug?: string;
-    subcategorySlug?: string;
-  }>();
-  const slug = subcategorySlug || categorySlug;
+// Three routes render this page: /shop, /shop/:categorySlug and
+// /shop/category/:subcategorySlug. Each needs its own title, and the canonical
+// must drop ?search=/?sort= so filtered views collapse onto the clean category
+// URL instead of competing with it (seoMeta defaults the canonical to the
+// pathname, which is exactly that).
+export const meta: MetaFunction = ({ params, location }) => {
+  const slug = params.subcategorySlug || params.categorySlug;
   const label = slug ? slugToLabel(slug) : null;
-
-  useSeo(
+  return seoMeta(
     label
       ? {
           title: `${label} — Ethiopian Gifts Delivered`,
@@ -74,9 +69,12 @@ export default function Shop() {
           title: STATIC_ROUTES["/shop"].title,
           description: STATIC_ROUTES["/shop"].description,
           canonicalPath: "/shop",
-        }
+        },
+    location.pathname,
   );
+};
 
+export default function Shop() {
   return <ShopContent />;
 }
 
@@ -106,7 +104,14 @@ function ShopContent() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isInitialized } = useAuth();
+  // /shop/:categorySlug and /shop/category/:subcategorySlug carry the category
+  // filter in the path. The pills below link to those URLs, so a category is
+  // selectable before hydration and with scripts off; ?categoryId= is the older
+  // form other pages link to and still resolves.
+  const { categorySlug, subcategorySlug } = useParams<{
+    categorySlug?: string;
+    subcategorySlug?: string;
+  }>();
   const activeCurrency = useActiveCurrency();
 
   // Parse URL parameters
@@ -120,26 +125,12 @@ function ShopContent() {
   const [searchTerm, setSearchTerm] = useState(searchParam);
   const [debouncedSearch, setDebouncedSearch] = useState(searchParam);
   const [itemsPerPage] = useState(12);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<
-    number | undefined
-  >(categoryIdParam ? parseInt(categoryIdParam) : undefined);
-  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<
-    number | undefined
-  >(subCategoryIdParam ? parseInt(subCategoryIdParam) : undefined);
+  const selectedCategoryId = categoryIdParam ? parseInt(categoryIdParam) : undefined;
+  const selectedSubCategoryId = subCategoryIdParam
+    ? parseInt(subCategoryIdParam)
+    : undefined;
   const [showAllSubCategories, setShowAllSubCategories] = useState(false);
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
-
-  // Reset showAllSubCategories when category changes
-  useEffect(() => {
-    setShowAllSubCategories(false);
-  }, [selectedCategoryId]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   // Fetch categories from backend
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
@@ -148,30 +139,72 @@ function ShopContent() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Turn the path slugs into the ids the filters and the query key are built
+  // from. The slug wins over ?categoryId=.
+  const slugCategory = useMemo(
+    () => (categorySlug ? categories.find((c) => c.slug === categorySlug) : undefined),
+    [categorySlug, categories]
+  );
+
+  // Only /shop/category/:subcategorySlug needs the whole tree, to find which
+  // category the subcategory slug belongs to.
+  const { data: categoriesWithSubcategories = [] } = useQuery({
+    queryKey: ["categories", "with-subcategories"],
+    queryFn: () => categoryService.getCategoriesWithSubcategories(),
+    enabled: !!subcategorySlug,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const slugSubCategory = useMemo(() => {
+    if (!subcategorySlug) return undefined;
+    for (const category of categoriesWithSubcategories) {
+      const sub = category.subcategories?.find((item) => item.slug === subcategorySlug);
+      if (sub) return sub;
+    }
+    return undefined;
+  }, [subcategorySlug, categoriesWithSubcategories]);
+
+  const activeCategoryId = slugSubCategory?.categoryId ?? slugCategory?.id ?? selectedCategoryId;
+  const activeSubCategoryId = slugSubCategory?.id ?? selectedSubCategoryId;
+
+  // Reset showAllSubCategories when category changes
+  useEffect(() => {
+    setShowAllSubCategories(false);
+  }, [activeCategoryId]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Fetch subcategories when a category is selected
   const { data: subCategories = [], isLoading: subCategoriesLoading } =
     useQuery({
-      queryKey: ["subCategories", selectedCategoryId],
+      queryKey: ["subCategories", activeCategoryId],
       queryFn: () =>
-        selectedCategoryId
-          ? categoryService.getSubCategories(selectedCategoryId)
+        activeCategoryId
+          ? categoryService.getSubCategories(activeCategoryId)
           : Promise.resolve([]),
-      enabled: !!selectedCategoryId,
+      enabled: !!activeCategoryId,
       staleTime: 5 * 60 * 1000,
     });
 
   // Get current category and subcategory objects
   const currentCategory = useMemo(
-    () => categories.find((c) => c.id === selectedCategoryId),
-    [categories, selectedCategoryId]
+    () => categories.find((c) => c.id === activeCategoryId),
+    [categories, activeCategoryId]
   );
 
   const currentSubCategory = useMemo(
-    () => subCategories.find((s) => s.id === selectedSubCategoryId),
-    [subCategories, selectedSubCategoryId]
+    () => subCategories.find((s) => s.id === activeSubCategoryId),
+    [subCategories, activeSubCategoryId]
   );
 
-  // Fetch products with filters (wait for auth so currency is correct)
+  // Fetch products with filters. Public catalogue data, so it does not wait on
+  // the /auth/refresh handshake (see landing.tsx); the SSR loader in
+  // routes/shop.tsx seeds this same key and is what paints the first page.
   const {
     data: productsData,
     isFetching,
@@ -185,8 +218,8 @@ function ShopContent() {
       {
         size: itemsPerPage,
         search: debouncedSearch,
-        categoryId: selectedCategoryId,
-        subCategoryId: selectedSubCategoryId,
+        categoryId: activeCategoryId,
+        subCategoryId: activeSubCategoryId,
         sortBy,
         currency: activeCurrency,
       },
@@ -196,13 +229,12 @@ function ShopContent() {
         page: pageParam as number,
         size: itemsPerPage,
         search: debouncedSearch || undefined,
-        categoryId: selectedCategoryId,
-        subCategoryId: selectedSubCategoryId,
+        categoryId: activeCategoryId,
+        subCategoryId: activeSubCategoryId,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.last ? undefined : lastPage.number + 1,
-    enabled: isInitialized,
     // ponytail: keeps the page mounted while a new search fetches, so the
     // input never unmounts (that was the "full page refresh" while typing)
     placeholderData: keepPreviousData,
@@ -214,55 +246,34 @@ function ShopContent() {
   );
   const totalProducts = productsData?.pages[0]?.totalElements || 0;
 
-  // Update URL when filters change
+  // Keep the search term in the query string. The category filters live in the
+  // path, so this must navigate to the current pathname -- rewriting it to
+  // /shop would drop a /shop/:categorySlug the user is standing on.
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (selectedCategoryId)
-      params.set("categoryId", selectedCategoryId.toString());
-    if (selectedSubCategoryId)
-      params.set("subCategoryId", selectedSubCategoryId.toString());
+    const params = new URLSearchParams(location.search);
     if (debouncedSearch) params.set("search", debouncedSearch);
+    else params.delete("search");
 
     const newSearch = params.toString();
     const currentSearch = location.search.replace("?", "");
 
     if (newSearch !== currentSearch) {
-      navigate(`/shop${newSearch ? `?${newSearch}` : ""}`, { replace: true });
+      navigate(`${location.pathname}${newSearch ? `?${newSearch}` : ""}`, {
+        replace: true,
+      });
     }
-  }, [
-    selectedCategoryId,
-    selectedSubCategoryId,
-    debouncedSearch,
-    navigate,
-    location.search,
-  ]);
+  }, [debouncedSearch, location.pathname, location.search, navigate]);
 
-  // Handle category selection
-  const handleCategorySelect = (categoryId: number) => {
-    if (selectedCategoryId === categoryId) {
-      setSelectedCategoryId(undefined);
-      setSelectedSubCategoryId(undefined);
-    } else {
-      setSelectedCategoryId(categoryId);
-      setSelectedSubCategoryId(undefined);
-    }
-  };
-
-  // Handle subcategory selection
-  const handleSubCategorySelect = (subCategoryId: number) => {
-    if (selectedSubCategoryId === subCategoryId) {
-      setSelectedSubCategoryId(undefined);
-    } else {
-      setSelectedSubCategoryId(subCategoryId);
-    }
-  };
-
-  // Clear all filters
-  const handleClearFilters = () => {
+  // Clear all filters: the category filters are path segments, so this is a
+  // navigation; the search box is local state.
+  const clearSearch = () => {
     setSearchTerm("");
     setDebouncedSearch("");
-    setSelectedCategoryId(undefined);
-    setSelectedSubCategoryId(undefined);
+  };
+
+  const handleClearFilters = () => {
+    clearSearch();
+    navigate("/shop");
   };
 
   const displayProducts = products.map((product: Product) => ({
@@ -274,7 +285,7 @@ function ShopContent() {
   // Fetching a new filter/search result (not appending the next page)
   const isSearching = isFetching && !isFetchingNextPage;
   const hasFilters =
-    selectedCategoryId || selectedSubCategoryId || debouncedSearch;
+    activeCategoryId || activeSubCategoryId || debouncedSearch;
 
   useEffect(() => {
     if (!hasNextPage) return;
@@ -304,8 +315,8 @@ function ShopContent() {
       resultCount: totalProducts,
       context: {
         filters: {
-          categoryId: selectedCategoryId,
-          subCategoryId: selectedSubCategoryId,
+          categoryId: activeCategoryId,
+          subCategoryId: activeSubCategoryId,
         },
         sort: sortBy,
         routeParams: {
@@ -386,7 +397,7 @@ function ShopContent() {
             <div className="flex overflow-x-auto scrollbar-hide gap-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
               {categories.map((category, index) => {
                 const Icon = getIconByName(category.iconName);
-                const isActive = selectedCategoryId === category.id;
+                const isActive = activeCategoryId === category.id;
 
                 return (
                   <motion.div
@@ -395,9 +406,12 @@ function ShopContent() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
+                    {/* A link, not a button: the category URL works before
+                        hydration and with scripts off. Clicking the active pill
+                        clears the filter. */}
                     <Button
+                      asChild
                       variant={isActive ? "default" : "outline"}
-                      onClick={() => handleCategorySelect(category.id)}
                       className={`
                         flex items-center gap-1.5 px-3.5 h-9 rounded-full text-sm transition-colors
                         ${
@@ -406,12 +420,16 @@ function ShopContent() {
                             : "bg-white border border-eagle-green/20 text-eagle-green hover:border-viridian-green hover:bg-viridian-green/5 hover:text-viridian-green"
                         }
                       `}
-                      aria-pressed={isActive}
                     >
-                      <Icon
-                        className={`h-4 w-4 ${isActive ? "text-june-bud" : ""}`}
-                      />
-                      <span className="font-semibold">{t(category.name)}</span>
+                      <Link
+                        to={isActive ? "/shop" : `/shop/${category.slug}`}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        <Icon
+                          className={`h-4 w-4 ${isActive ? "text-june-bud" : ""}`}
+                        />
+                        <span className="font-semibold">{t(category.name)}</span>
+                      </Link>
                     </Button>
                   </motion.div>
                 );
@@ -438,15 +456,17 @@ function ShopContent() {
                 })()}
                 <span>{currentCategory.name} {t("Categories")}</span>
               </h2>
-              {selectedSubCategoryId && (
+              {activeSubCategoryId && currentCategory && (
                 <Button
+                  asChild
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSelectedSubCategoryId(undefined)}
                   className="h-8 text-eagle-green/70 hover:text-viridian-green hover:bg-viridian-green/10 font-medium rounded-full px-3"
                 >
-                  <X className="h-4 w-4 mr-1" />
-                  {t("Clear")}
+                  <Link to={`/shop/${currentCategory.slug}`}>
+                    <X className="h-4 w-4 mr-1" />
+                    {t("Clear")}
+                  </Link>
                 </Button>
               )}
             </div>
@@ -468,7 +488,7 @@ function ShopContent() {
                     : subCategories.slice(0, 7)
                   ).map((subcategory, index) => {
                     const Icon = getIconByName(subcategory.iconName);
-                    const isSelected = selectedSubCategoryId === subcategory.id;
+                    const isSelected = activeSubCategoryId === subcategory.id;
 
                     return (
                       <motion.div
@@ -477,11 +497,11 @@ function ShopContent() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: index * 0.03 }}
                       >
+                        {/* Same deal as the category pills: a real link to the
+                            subcategory URL, so it filters without scripts. */}
                         <Button
+                          asChild
                           variant="ghost"
-                          onClick={() =>
-                            handleSubCategorySelect(subcategory.id)
-                          }
                           className={`
                             flex flex-col items-center gap-1 p-2 h-[70px] w-full rounded-xl transition-colors border
                             ${
@@ -490,24 +510,34 @@ function ShopContent() {
                                 : "bg-white border-transparent text-eagle-green/70 hover:border-june-bud/30 hover:bg-june-bud/5"
                             }
                           `}
-                          aria-pressed={isSelected}
                         >
-                          <Icon
-                            className={`h-5 w-5 shrink-0 ${
+                          <Link
+                            to={
                               isSelected
-                                ? "text-viridian-green"
-                                : "text-eagle-green/60"
-                            }`}
-                          />
-                          <span
-                            className={`text-[11px] font-semibold text-center leading-tight line-clamp-2 ${
-                              isSelected
-                                ? "text-eagle-green"
-                                : "text-eagle-green/70"
-                            }`}
+                                ? currentCategory
+                                  ? `/shop/${currentCategory.slug}`
+                                  : "/shop"
+                                : `/shop/category/${subcategory.slug}`
+                            }
+                            aria-current={isSelected ? "page" : undefined}
                           >
-                            {t(subcategory.name)}
-                          </span>
+                            <Icon
+                              className={`h-5 w-5 shrink-0 ${
+                                isSelected
+                                  ? "text-viridian-green"
+                                  : "text-eagle-green/60"
+                              }`}
+                            />
+                            <span
+                              className={`text-[11px] font-semibold text-center leading-tight line-clamp-2 ${
+                                isSelected
+                                  ? "text-eagle-green"
+                                  : "text-eagle-green/70"
+                              }`}
+                            >
+                              {t(subcategory.name)}
+                            </span>
+                          </Link>
                         </Button>
                       </motion.div>
                     );
@@ -653,12 +683,14 @@ function ShopContent() {
             {/* Breadcrumb trail */}
             <div className="flex items-center gap-2 flex-wrap">
               <Button
+                asChild
                 variant="ghost"
                 size="sm"
-                onClick={handleClearFilters}
                 className="px-3 h-8 text-xs font-medium text-eagle-green/70 hover:text-viridian-green hover:bg-transparent"
               >
-                {t("All Products")}
+                <Link to="/shop" onClick={clearSearch}>
+                  {t("All Products")}
+                </Link>
               </Button>
 
               {currentCategory && (
@@ -666,15 +698,14 @@ function ShopContent() {
                   <ChevronRight className="h-3 w-3 text-eagle-green/30" />
                   <Badge className="flex items-center gap-1.5 bg-gradient-to-r from-eagle-green to-viridian-green text-white border-0 px-3 py-1 rounded-full font-medium">
                     {currentCategory.name}
-                    <button
-                      onClick={() => {
-                        setSelectedCategoryId(undefined);
-                        setSelectedSubCategoryId(undefined);
-                      }}
+                    <Link
+                      to="/shop"
+                      onClick={clearSearch}
                       className="ml-1 hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                      aria-label={t("Clear")}
                     >
                       <X className="h-3 w-3" />
-                    </button>
+                    </Link>
                   </Badge>
                 </>
               )}
@@ -684,12 +715,14 @@ function ShopContent() {
                   <ChevronRight className="h-3 w-3 text-eagle-green/30" />
                   <Badge className="flex items-center gap-1.5 bg-viridian-green/20 text-viridian-green border border-viridian-green/30 px-3 py-1 rounded-full font-medium">
                     {currentSubCategory.name}
-                    <button
-                      onClick={() => setSelectedSubCategoryId(undefined)}
+                    <Link
+                      to={currentCategory ? `/shop/${currentCategory.slug}` : "/shop"}
+                      onClick={clearSearch}
                       className="ml-1 hover:bg-viridian-green/20 rounded-full p-0.5 transition-colors"
+                      aria-label={t("Clear")}
                     >
                       <X className="h-3 w-3" />
-                    </button>
+                    </Link>
                   </Badge>
                 </>
               )}
@@ -700,10 +733,7 @@ function ShopContent() {
                   <Badge className="flex items-center gap-1.5 bg-june-bud/20 text-eagle-green border border-june-bud/30 px-3 py-1 rounded-full font-medium">
                     "{debouncedSearch}"
                     <button
-                      onClick={() => {
-                        setSearchTerm("");
-                        setDebouncedSearch("");
-                      }}
+                      onClick={clearSearch}
                       className="ml-1 hover:bg-june-bud/30 rounded-full p-0.5 transition-colors"
                     >
                       <X className="h-3 w-3" />
@@ -714,12 +744,14 @@ function ShopContent() {
             </div>
 
             <Button
+              asChild
               variant="ghost"
               size="sm"
-              onClick={handleClearFilters}
               className="ml-auto text-eagle-green/70 hover:text-viridian-green hover:bg-viridian-green/10 font-medium rounded-full px-4"
             >
-              {t("Clear all")}
+              <Link to="/shop" onClick={clearSearch}>
+                {t("Clear all")}
+              </Link>
             </Button>
           </motion.div>
         )}

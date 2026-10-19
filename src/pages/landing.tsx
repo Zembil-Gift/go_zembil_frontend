@@ -38,7 +38,7 @@ import { SHOW_APP_DOWNLOAD } from "@/lib/featureFlags";
 import TopCategoriesSection from "@/components/landing/TopCategoriesSection";
 import SectionBoundary from "@/components/SectionBoundary";
 import { useTranslation } from "react-i18next";
-import { useStaticSeo } from "@/hooks/useSeo";
+import { eventPath, packagePath, productPath } from "@/lib/seo";
 
 /**
  * ponytail: every landing query used to wait on `isInitialized`, which is a
@@ -86,7 +86,6 @@ function ProductGridSkeleton() {
 
 export default function Landing() {
   const { t } = useTranslation();
-  useStaticSeo("/");
   const activeCurrency = useActiveCurrency();
 
   const [selectedBudget, setSelectedBudget] = useState("all");
@@ -313,7 +312,7 @@ export default function Landing() {
                     <div className="relative h-full bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-2xl flex flex-col">
                       {ad.type === "product" && (
                         <a
-                          href={`/product/${ad.data.id}`}
+                          href={productPath(ad.data.id, ad.data.name)}
                           className="flex flex-col h-full"
                         >
                           <div className="relative aspect-square overflow-hidden">
@@ -368,7 +367,7 @@ export default function Landing() {
                       )}
                       {ad.type === "event" && (
                         <a
-                          href={`/events/${ad.data.id}`}
+                          href={eventPath(ad.data.id, ad.data.title)}
                           className="flex flex-col h-full"
                         >
                           <div className="relative aspect-square overflow-hidden">
@@ -462,7 +461,7 @@ export default function Landing() {
                       )}
                       {ad.type === "package" && (
                         <a
-                          href={`/packages/${ad.data.id}`}
+                          href={packagePath(ad.data.id, ad.data.name)}
                           className="flex flex-col h-full"
                         >
                           {(() => {
@@ -536,7 +535,7 @@ export default function Landing() {
                 return (
                   <a
                     key={pkg.id}
-                    href={`/packages/${pkg.id}`}
+                    href={packagePath(pkg.id, pkg.name)}
                     className="group block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300"
                   >
                     <div className="aspect-square bg-gray-100 overflow-hidden">

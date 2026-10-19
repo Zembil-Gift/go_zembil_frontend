@@ -4,9 +4,12 @@ import assert from 'node:assert/strict';
 import {
   absoluteUrl,
   clampDescription,
-  productIdFromParam,
+  idFromParam,
   productJsonLd,
   productPath,
+  servicePath,
+  eventPath,
+  packagePath,
   slugToLabel,
   slugify,
   withBrand,
@@ -121,18 +124,27 @@ test('productPath falls back to the bare id when the name yields no slug', () =>
 
 // Every /product/42 link ever shared has to keep working, and the cart and
 // wishlist build links from an id with no product name to hand.
-test('productIdFromParam reads the id from both URL shapes', () => {
-  assert.equal(productIdFromParam('ethiopian-coffee-gift-set-42'), 42);
-  assert.equal(productIdFromParam('42'), 42);
-  assert.equal(productIdFromParam('product-2-pack-7'), 7);
-  assert.equal(productIdFromParam(undefined), undefined);
-  assert.equal(productIdFromParam('no-digits'), undefined);
-  assert.equal(productIdFromParam('0'), undefined);
+test('idFromParam reads the id from both URL shapes', () => {
+  assert.equal(idFromParam('ethiopian-coffee-gift-set-42'), 42);
+  assert.equal(idFromParam('42'), 42);
+  assert.equal(idFromParam('product-2-pack-7'), 7);
+  assert.equal(idFromParam(undefined), undefined);
+  assert.equal(idFromParam('no-digits'), undefined);
+  assert.equal(idFromParam('0'), undefined);
 });
 
-test('productPath and productIdFromParam round-trip', () => {
+test('productPath and idFromParam round-trip', () => {
   for (const name of ['Coffee Set', 'Café & Cake', 'ስጦታ', '2-in-1 Gift Box']) {
     const path = productPath(99, name);
-    assert.equal(productIdFromParam(path.split('/').pop()), 99, name);
+    assert.equal(idFromParam(path.split('/').pop()), 99, name);
   }
+});
+
+// event-detail routes a param with no trailing id to the mock-event lookup, so
+// the demo slugs must never parse as an id.
+test('services, events and packages share the product URL shape', () => {
+  assert.equal(servicePath(7, 'Wedding Décor'), '/services/wedding-decor-7');
+  assert.equal(eventPath(3, 'Timket Concert'), '/events/timket-concert-3');
+  assert.equal(packagePath(9), '/packages/9');
+  assert.equal(idFromParam('teddy-afro-addis'), undefined);
 });

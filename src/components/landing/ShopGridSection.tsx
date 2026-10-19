@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,7 +38,6 @@ function ProductCardSkeletons({ count }: { count: number }) {
 
 export default function ShopGridSection() {
   const { t } = useTranslation();
-  const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
   const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
 
@@ -80,7 +78,6 @@ export default function ShopGridSection() {
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.last ? undefined : lastPage.number + 1,
-    enabled: isInitialized,
     placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
   });

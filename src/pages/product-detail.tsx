@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useSeo } from "@/hooks/useSeo";
-import { breadcrumbJsonLd, productJsonLd, productPath, productIdFromParam } from "@/lib/seo";
+import { productPath, idFromParam } from "@/lib/seo";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -83,11 +82,11 @@ function ProductImage({
       <img
         src={error ? '/placeholder-product.jpg' : rawFallback ? src : cdnImage(src, width)}
         alt={alt}
-        className={cn(
-          'transition-opacity duration-300',
-          loaded ? 'opacity-100' : 'opacity-0',
-          className
-        )}
+        // Visible from the first paint and stacked over the preview (relative),
+        // not faded in on onLoad: without JavaScript, or when the image lands
+        // before hydration, that event never reaches React and the image
+        // would stay invisible.
+        className={cn('relative', className)}
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : undefined}
         decoding={priority ? "sync" : "async"}
@@ -113,7 +112,7 @@ export default function ProductDetail() {
   // The route param is now "ethiopian-coffee-gift-set-42"; the id is the
   // trailing number. Bare "/product/42" links -- every one ever shared, plus
   // the cart and wishlist, which have an id but no product name -- still parse.
-  const productId = productIdFromParam(params.id);
+  const productId = idFromParam(params.id);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -297,47 +296,6 @@ export default function ProductDetail() {
   // built from `undefined` would let a fast crawler capture "| goGerami" as the
   // page title, and the noindex on the not-found branch is what stops a dead
   // product id from being indexed as a soft 404.
-  useSeo({
-    enabled: !isLoading,
-    noindex: !product,
-    title: product
-      ? `${product.name}${vendorProfile?.businessName ? ` — ${vendorProfile.businessName}` : ""}`
-      : "Product not found",
-    description:
-      product?.description ||
-      (product ? `Send ${product.name} to family and friends in Ethiopia with goGerami.` : undefined),
-    image: displayImages[0],
-    type: "product",
-    canonicalPath: productPath(productId!, product?.name),
-    jsonLd: product
-      ? [
-          productJsonLd({
-            name: product.name,
-            description: product.description,
-            image: displayImages.slice(0, 5),
-            sku: selectedSku?.id ?? product.id,
-            brand: vendorProfile?.businessName,
-            // Price and currency are whatever this visitor is being shown --
-            // the backend converts per request via the X-Currency header, so a
-            // hardcoded currency here would advertise a price nobody sees.
-            price: currentPrice ?? undefined,
-            currency: currencyCode,
-            inStock: stockQuantity === null || stockQuantity > 0,
-            path: productPath(productId!, product.name),
-            ratingValue: ratingSummary?.averageRating,
-            reviewCount: ratingSummary?.totalReviews,
-          }),
-          breadcrumbJsonLd([
-            { name: "Home", path: "/" },
-            { name: "Shop", path: "/shop" },
-            ...(product.subCategoryName
-              ? [{ name: product.subCategoryName, path: "/shop" }]
-              : []),
-            { name: product.name, path: productPath(productId!, product.name) },
-          ]),
-        ]
-      : null,
-  });
 
   useEffect(() => {
     if (!product) return;
@@ -353,7 +311,7 @@ export default function ProductDetail() {
       currencyCode
     );
     // Fire once per product load; variant/vendor changes don't need a new view_item.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [product?.id]);
 
   const wishlistMutation = useMutation({

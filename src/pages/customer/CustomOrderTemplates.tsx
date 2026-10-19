@@ -165,15 +165,17 @@ export default function CustomOrderTemplates() {
   const { t } = useTranslation();
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
-  const { user, isInitialized } = useAuth();
+  const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(0);
   const categoryIdNum = categoryId ? parseInt(categoryId) : 0;
 
-  // Fetch templates for category - wait for auth so currency is correct
+  // Fetch templates for category. Public catalogue data, so it does not wait on
+  // the /auth/refresh handshake (see landing.tsx); the SSR loader seeds this
+  // same key -- "default", the guest value the page uses pre-auth.
   const { data: templatesData, isLoading } = useQuery({
     queryKey: ['custom-order-templates', categoryIdNum, currentPage, user?.preferredCurrencyCode ?? 'default'],
     queryFn: () => customOrderTemplateService.getByCategory(categoryIdNum, currentPage, 20),
-    enabled: categoryIdNum > 0 && isInitialized,
+    enabled: categoryIdNum > 0,
   });
 
   const templates = templatesData?.content || [];

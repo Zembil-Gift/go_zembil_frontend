@@ -10,14 +10,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { Search as SearchIcon, X } from "lucide-react";
 import { TemplateCard } from "./customer/CustomOrderTemplates";
-import { useAuth } from "@/hooks/useAuth";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { useTranslation } from "react-i18next";
 
 function CustomOrdersContent() {
   const { t } = useTranslation();
-  const { isInitialized } = useAuth();
   const activeCurrency = useActiveCurrency();
 
   // Search state
@@ -45,15 +43,16 @@ function CustomOrdersContent() {
         0,
         20
       ),
-    enabled: debouncedSearchTerm.length > 0 && isInitialized,
+    enabled: debouncedSearchTerm.length > 0,
   });
 
-  // Fetch approved templates for default browse section
+  // Fetch approved templates for default browse section. Public catalogue data,
+  // so it does not wait on the /auth/refresh handshake (see landing.tsx); the
+  // SSR loader seeds this same key.
   const { data: approvedTemplatesData, isLoading: isApprovedTemplatesLoading } =
     useQuery({
       queryKey: ["custom-order-templates-approved", activeCurrency],
       queryFn: () => customOrderTemplateService.getApproved(0, 20),
-      enabled: isInitialized,
     });
 
   const approvedTemplates = approvedTemplatesData?.content || [];

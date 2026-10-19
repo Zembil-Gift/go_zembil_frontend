@@ -2,8 +2,7 @@
 /**
  * Writes public/sitemap.xml and public/llms.txt.
  *
- * Static routes come from src/lib/seo-routes.json, which the app and the
- * prerenderer read too. Catalogue entities (products, services, events,
+ * Static routes come from src/lib/seo-routes.json, which the app reads too. Catalogue entities (products, services, events,
  * packages) are fetched from the API when SITEMAP_API_URL or VITE_API_URL
  * points at a reachable backend.
  *
@@ -24,7 +23,7 @@ import { dirname, resolve } from "node:path";
 // builds on Node 22, which throws ERR_UNKNOWN_FILE_EXTENSION without it.
 // Keep seo.ts free of enum/namespace/parameter properties -- type stripping
 // erases annotations, it does not compile non-erasable syntax.
-import { productPath, slugify } from "../src/lib/seo.ts";
+import { productPath, servicePath, eventPath, packagePath } from "../src/lib/seo.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
@@ -66,29 +65,6 @@ async function fetchPaged(path) {
 }
 
 /**
- * The subset scripts/prerender.mjs needs, collected here because this is where
- * the catalogue is already fetched -- and because a prerendered page must sit
- * at exactly the URL the sitemap lists. One fetch, one list, no drift.
- */
-const prerenderable = [];
-
-function productMeta(e, path) {
-  const skus = e.productSku ?? [];
-  return {
-    path,
-    id: e.id,
-    name: e.name,
-    description: e.summary || e.description || "",
-    image: e.images?.[0]?.fullUrl || "",
-    price: e.price?.amount,
-    currency: e.price?.currencyCode,
-    inStock: skus.length
-      ? skus.some((s) => (s.stockQuantity ?? 0) > 0)
-      : e.status === "ACTIVE",
-  };
-}
-
-/**
  * Entity URLs, or [] if the API is unset or unreachable.
  * `updatedAt` is used for lastmod where the entity carries one.
  */
@@ -99,10 +75,10 @@ async function catalogueUrls() {
   }
 
   const sources = [
-    { path: "/api/v1/products", url: (e) => productPath(e.id, e.name), changefreq: "weekly", priority: 0.7, prerender: true },
-    { path: "/api/services",    url: (e) => `/services/${e.id}`, changefreq: "weekly", priority: 0.7 },
-    { path: "/api/events",      url: (e) => `/events/${e.slug ?? e.id}`, changefreq: "daily", priority: 0.7 },
-    { path: "/api/v1/packages", url: (e) => `/packages/${e.id}`, changefreq: "weekly", priority: 0.6 },
+    { path: "/api/v1/products", url: (e) => productPath(e.id, e.name), changefreq: "weekly", priority: 0.7 },
+    { path: "/api/services",    url: (e) => servicePath(e.id, e.title || e.name), changefreq: "weekly", priority: 0.7 },
+    { path: "/api/events",      url: (e) => eventPath(e.id, e.title), changefreq: "daily", priority: 0.7 },
+    { path: "/api/v1/packages", url: (e) => packagePath(e.id, e.name), changefreq: "weekly", priority: 0.6 },
   ];
 
   const urls = [];
@@ -111,7 +87,6 @@ async function catalogueUrls() {
       const items = await fetchPaged(src.path);
       for (const e of items) {
         if (e?.id == null) continue;
-        if (src.prerender) prerenderable.push(productMeta(e, src.url(e)));
         urls.push({
           loc: src.url(e),
           lastmod: (e.updatedAt ?? e.createdAt ?? "").slice(0, 10) || lastmod,
@@ -128,14 +103,6 @@ async function catalogueUrls() {
 }
 
 const catalogue = await catalogueUrls();
-
-// Written unconditionally: an empty file is how the prerenderer learns the API
-// gave nothing this build. A stale one left from an earlier run would publish
-// product pages for a catalogue that no longer matches the sitemap.
-writeFileSync(
-  resolve(root, ".seo-catalogue.json"),
-  JSON.stringify(prerenderable)
-);
 
 const entry = (loc, mod, changefreq, priority) =>
   `  <url>\n` +
@@ -175,5 +142,5 @@ const llms =
 writeFileSync(resolve(root, "public/llms.txt"), llms);
 
 console.log(
-  `sitemap.xml: ${Object.keys(routes).length} static + ${catalogue.length} catalogue urls · ${prerenderable.length} prerenderable · llms.txt written`
+  `sitemap.xml: ${Object.keys(routes).length} static + ${catalogue.length} catalogue urls · llms.txt written`
 );

@@ -1,6 +1,5 @@
 
 import { useTranslation } from "react-i18next";
-import { useStaticSeo } from "@/hooks/useSeo";
 
 const privacyCommitments = [
   {
@@ -60,7 +59,6 @@ const googlePlayDisclosures = [
 ];
 
 export default function Privacy() {
-  useStaticSeo("/privacy");
   const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gray-50">

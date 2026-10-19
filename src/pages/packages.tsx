@@ -25,7 +25,7 @@ import { categoryService } from "@/services/categoryService";
 import { formatPrice, getCurrencyDecimals } from "@/lib/currency";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { useTranslation } from "react-i18next";
-import { useStaticSeo } from "@/hooks/useSeo";
+import { packagePath } from "@/lib/seo";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -103,7 +103,6 @@ const toOptionalNumber = (value: string | null): number | undefined => {
 };
 
 export default function PackagesPage() {
-  useStaticSeo("/packages");
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -508,7 +507,7 @@ export default function PackagesPage() {
                 return (
                   <Link
                     key={pkg.id}
-                    to={`/packages/${pkg.id}`}
+                    to={packagePath(pkg.id, pkg.name)}
                     className="group block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300"
                   >
                     <div className="aspect-square bg-gray-100 overflow-hidden">

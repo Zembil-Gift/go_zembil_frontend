@@ -65,7 +65,7 @@ export default function AdminDeliveryPricing() {
 
   useEffect(() => {
     loadConfigs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const patchConfig = (

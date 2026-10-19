@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Mic, MicOff, Volume2, Languages, Loader2, X } from 'lucide-react';
 import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { cn } from '@/lib/utils';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from "react-i18next";
 
 interface VoiceSearchButtonProps {
@@ -29,7 +29,7 @@ export function VoiceSearchButton({
   variant = 'outline' 
 }: VoiceSearchButtonProps) {
   const { t } = useTranslation();
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const [selectedLanguage, setSelectedLanguage] = useState('en-US');
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);

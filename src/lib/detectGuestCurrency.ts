@@ -71,7 +71,9 @@ const TIMEZONE_TO_CURRENCY: Record<string, string> = {
 };
 
 
-const LOCALE_COUNTRY_TO_CURRENCY: Record<string, string> = {
+// ISO 3166 country code -> currency. Also used by the server, which gets the
+// visitor's country from Cloudflare's CF-IPCountry header (src/lib/prefs.ts).
+export const LOCALE_COUNTRY_TO_CURRENCY: Record<string, string> = {
   US: 'USD',
   CA: 'CAD',
   GB: 'GBP',
