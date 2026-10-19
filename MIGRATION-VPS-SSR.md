@@ -29,7 +29,7 @@ Settled during planning. Don't relitigate without a reason.
 |---|---|
 | Host | Hostinger KVM 2 (`62.72.16.76`, 2 vCPU, 7.7 GiB, Ubuntu 26.04), same box as the backend |
 | Runtime | Docker Compose, image built in GitHub Actions → GHCR → pulled on the box (same as backend/bot) |
-| Deploy | Blue/green (`web-blue` / `web-green`), Caddy `lb_policy first` + health check, same as backend. Deploys on push to **`serdesiyon`** (same branch as the backend) |
+| Deploy | Blue/green (`web-blue` / `web-green`), Caddy `lb_policy first` + health check, same as backend. Deploys on push to **`main`** |
 | Framework | React Router v7 **framework mode**, still Vite, **stay on React 18** |
 | What renders on the server | Public/catalogue routes only. Every authenticated route stays client-only (`clientLoader` + `HydrateFallback`). **Authenticated SSR is dropped** — crawlers never log in, and the refresh cookie lives on `gogerami-api.online`, which a `gogerami.com` server never receives |
 | Currency on the server | `currency` cookie → else Cloudflare `CF-IPCountry` → else **USD**. After hydration, if the currency was *not* from a cookie, the browser checks its timezone and, if it disagrees, switches, converts and writes the cookie. Logged-in users: their preferred currency is written to the cookie |
@@ -175,7 +175,7 @@ today, so Phase 2/3 failures can only be code.
       and `:latest`, rsync `deploy/` (no `--delete`), rewrite `IMAGE_TAG`, ensure the
       network, log in to GHCR with `GITHUB_TOKEN` into `DOCKER_CONFIG=/opt/zembil-web/.docker`
       (token over stdin), swap colours with `--wait`, stop (don't remove) the old colour. `concurrency`
-      group. Deploy branch: `serdesiyon`.
+      group. Deploy branch: `main`.
       `VITE_*` values are the `VITE_` lines of `/opt/zembil-web/.env`, read over SSH and
       passed to the build as a BuildKit secret, so they never land in an image layer.
 - [x] `reverse-proxy`: `frontend.{$DOMAIN}` block (§6.9), `encode zstd gzip`, and the Caddy `metrics` global option.
@@ -603,7 +603,7 @@ crawl stats and coverage against the Phase 0 baseline. Don't change URLs during 
 
 ## 12. Still open
 
-Settled 2026-10-08: deploy branch `serdesiyon`; staging deferred; Merchant Center targets
+Settled 2026-10-08: deploy branch `serdesiyon` (changed to `main` on 2026-10-19); staging deferred; Merchant Center targets
 USA and Ethiopia; root tasks in §5.1.
 
 1. **Who implements**, and is there a date the cutover must happen by?
