@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, Sparkles, Loader2, Check, Star } from 'lucide-react'
 import { extractPriceAmount } from '@/services/productService';
@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { cdnImage, cdnSrcSet } from '@/utils/imageUtils';
 import { useTranslation } from "react-i18next";
 import { productPath } from "@/lib/seo";
+import { cn } from "@/lib/utils";
 
 // Denser grids (up to 8 columns) render the card ~240px at xl, ~30vw on
 // mobile. Top width covers 2x DPR — asking for more just wastes bytes.
@@ -30,6 +31,8 @@ const GiftItemCard = ({ product, className, priority = false }: GiftItemCardProp
     const [secondImageLoaded, setSecondImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [secondImageError, setSecondImageError] = useState(false);
+    const imgRef = useRef<HTMLImageElement>(null);
+    const secondImgRef = useRef<HTMLImageElement>(null);
     // ponytail: if the resize layer 404s, fall back to the untransformed R2 url rather than
     // showing nothing. Drop this once /cdn-cgi/image/ is confirmed healthy.
     const [rawFallback, setRawFallback] = useState(false);
@@ -106,6 +109,28 @@ const GiftItemCard = ({ product, className, priority = false }: GiftItemCardProp
     const secondaryImage = normalizedImages[1] || null;
     const hasSecondImage = !!secondaryImage && !secondImageError;
 
+    // Detect images that already completed before hydration or from browser cache
+    useEffect(() => {
+        if (imgRef.current?.complete) {
+            if (imgRef.current.naturalWidth > 0) {
+                setImageLoaded(true);
+            } else {
+                if (!rawFallback) {
+                    setRawFallback(true);
+                } else {
+                    setImageError(true);
+                    setImageLoaded(true);
+                }
+            }
+        }
+    }, [primaryImage, rawFallback]);
+
+    useEffect(() => {
+        if (secondImgRef.current?.complete && secondImgRef.current.naturalWidth > 0) {
+            setSecondImageLoaded(true);
+        }
+    }, [secondaryImage]);
+
     return (
         <Link
             to={productPath(product.id, name)}
@@ -119,23 +144,31 @@ const GiftItemCard = ({ product, className, priority = false }: GiftItemCardProp
         >
             {/* Image Container */}
             <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-light-cream to-white rounded-t-md">
-                {/* Elegant skeleton loader with shimmer */}
+                {/* Elegant skeleton loader with shimmer - unmounted as soon as image loads */}
                 {!imageLoaded && !imageError && (
                     <div className="absolute inset-0 bg-gradient-to-r from-june-bud/10 via-white to-june-bud/10 animate-shimmer"
                         style={{ backgroundSize: '200% 100%' }}
                     />
                 )}
 
-                {/* Primary Product Image */}
+                {/* Primary Product Image - relative stacks it above the shimmer loader */}
                 <img
+                    ref={imgRef}
                     src={imageError ? '/placeholder-product.jpg' : rawFallback ? primaryImage : cdnImage(primaryImage, 300)}
                     srcSet={imageError || rawFallback ? undefined : cdnSrcSet(primaryImage, CARD_WIDTHS)}
                     sizes={CARD_SIZES}
                     alt={name}
-                    className={`w-full h-full object-cover transition-all duration-500 ease-out rounded-t-md
-                        ${imageLoaded ? 'opacity-100' : 'opacity-0'}
-                        ${isHovered && hasSecondImage ? 'opacity-0' : 'opacity-100'}
-                    `}
+                    className={cn(
+                        'relative w-full h-full object-cover rounded-t-md',
+                        hasSecondImage && 'transition-opacity duration-500 ease-out',
+                        priority
+                            ? (isHovered && hasSecondImage ? 'opacity-0' : 'opacity-100')
+                            : (
+                                !imageLoaded
+                                    ? 'opacity-0'
+                                    : (isHovered && hasSecondImage ? 'opacity-0' : 'opacity-100 transition-opacity duration-500 ease-out')
+                            )
+                    )}
                     onLoad={() => setImageLoaded(true)}
                     onError={() => {
                         if (!rawFallback) {
@@ -147,27 +180,33 @@ const GiftItemCard = ({ product, className, priority = false }: GiftItemCardProp
                         setImageLoaded(true);
                     }}
                     loading={priority ? "eager" : "lazy"}
+                    fetchPriority={priority ? "high" : undefined}
+                    decoding={priority ? "sync" : "async"}
                 />
 
                 {/* Secondary Product Image (shown on hover) */}
                 {secondaryImage && (
                     <img
+                        ref={secondImgRef}
                         src={rawFallback
                             ? (secondImageError ? primaryImage : secondaryImage)
                             : cdnImage(secondImageError ? primaryImage : secondaryImage, 300)}
                         srcSet={rawFallback ? undefined : cdnSrcSet(secondImageError ? primaryImage : secondaryImage, CARD_WIDTHS)}
                         sizes={CARD_SIZES}
                         alt={`${name} - alternate view`}
-                        className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ease-out rounded-t-md
-                            ${secondImageLoaded ? '' : 'opacity-0'}
-                            ${isHovered && hasSecondImage ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}
-                        `}
+                        className={cn(
+                            'absolute inset-0 w-full h-full object-cover rounded-t-md transition-all duration-500 ease-out',
+                            secondImageLoaded && isHovered && hasSecondImage
+                                ? 'opacity-100 scale-105'
+                                : 'opacity-0 scale-100 pointer-events-none'
+                        )}
                         onLoad={() => setSecondImageLoaded(true)}
                         onError={() => {
                             setSecondImageError(true);
                             setSecondImageLoaded(true);
                         }}
                         loading="lazy"
+                        decoding="async"
                     />
                 )}
 
