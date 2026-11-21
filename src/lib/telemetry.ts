@@ -7,6 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 export type TelemetryEvent =
   | "maps_loaded"
   | "maps_load_failed"
+  | "maps_auth_failed"
   | "maps_geolocation_denied";
 
 /**
