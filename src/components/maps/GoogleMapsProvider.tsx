@@ -25,10 +25,20 @@ interface GoogleMapsProviderProps {
   children: ReactNode;
 }
 
+// A bad key does not fail the script load: Google loads, then calls this global
+// and greys out every map. Without it a revoked key, billing switched off or a
+// wrong referrer restriction all report as maps_loaded. Set at module load,
+// before the script can call it.
+if (typeof window !== 'undefined') {
+  (window as Window & { gm_authFailure?: () => void }).gm_authFailure = () => {
+    reportEvent('maps_auth_failed');
+  };
+}
+
 /**
  * Provider component that loads the Google Maps JavaScript API once
  * and makes it available to all child components via context.
- * 
+ *
  * Usage: Wrap your app (or specific routes) with <GoogleMapsProvider>
  * Then use useGoogleMaps() in child components to check isLoaded.
  */

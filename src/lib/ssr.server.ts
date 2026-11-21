@@ -39,6 +39,9 @@ const API_URL = (
 // deploy, which is fine; upgrade to per-route TTLs or a shared store only if
 // stale prices or a cold cache actually show up.
 const TTL_MS = 60_000;
+// How old a copy may be and still stand in for an API that is failing.
+const STALE_MS = 24 * 60 * 60_000;
+const SSR_TIMEOUT_MS = 8_000;
 const MAX_ENTRIES = 2000;
 type Cached = { at: number; res: Pick<AxiosResponse, "data" | "status" | "statusText" | "headers"> };
 const cache = new Map<string, Cached>();
@@ -53,8 +56,22 @@ const cachedAdapter: AxiosAdapter = async (config) => {
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL_MS) return { ...hit.res, config, request: undefined };
 
-  // The http adapter rejects non-2xx, so only successful responses get here.
-  const res = await http(config);
+  // A render waits on this, so it gets less patience than the browser's 20s.
+  config.timeout = SSR_TIMEOUT_MS;
+  let res: AxiosResponse;
+  try {
+    // The http adapter rejects non-2xx, so only successful responses get past here.
+    res = await http(config);
+  } catch (error) {
+    // API down or slow: an expired copy beats a 503 page. A 4xx is the API's
+    // real answer (gone, bad id) and is never papered over.
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    if (hit && (status === undefined || status >= 500) && Date.now() - hit.at < STALE_MS) {
+      console.warn(JSON.stringify({ level: "warn", msg: "serving stale api response", status, ageMs: Date.now() - hit.at, url: config.url }));
+      return { ...hit.res, config, request: undefined };
+    }
+    throw error;
+  }
   cache.delete(key); // re-insert so the newest is last in eviction order
   cache.set(key, { at: Date.now(), res: { data: res.data, status: res.status, statusText: res.statusText, headers: res.headers } });
   if (cache.size > MAX_ENTRIES) cache.delete(cache.keys().next().value!);
